@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableIconSize
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ContentUnavailableViewPaddingHorizontal
@@ -33,23 +32,22 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveButtonText
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
 @Suppress("LongParameterList")
 @Composable
 internal fun NoActiveUserManagementView(
-    screenTitle: String,
-    screenSubtitle: String?,
+    screen: CustomerCenterConfigData.Screen,
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
-    supportedPaths: List<HelpPath>,
     offering: Offering?,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         ContentUnavailableView(
-            title = screenTitle,
-            description = screenSubtitle,
+            title = screen.title,
+            description = screen.subtitle,
             modifier = Modifier.padding(
                 top = ManagementViewHorizontalPadding,
                 start = ManagementViewHorizontalPadding,
@@ -61,9 +59,7 @@ internal fun NoActiveUserManagementView(
         offering?.let {
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.ShowPaywall) },
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.BUY_SUBSCRIPTION,
-                ),
+                title = screen.resolveButtonText(localization),
                 style = SettingsButtonStyle.FILLED,
                 modifier = Modifier.padding(
                     top = ManagementViewHorizontalPadding,
@@ -75,7 +71,7 @@ internal fun NoActiveUserManagementView(
 
         ManageSubscriptionsButtonsView(
             associatedPurchaseInformation = null,
-            supportedPaths = supportedPaths,
+            supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
             addContactButton = true,
@@ -142,11 +138,9 @@ private fun NoActiveUserManagementView_Preview() {
                 .background(MaterialTheme.colorScheme.background),
         ) {
             NoActiveUserManagementView(
-                screenTitle = noActiveScreen.title,
-                screenSubtitle = noActiveScreen.subtitle,
+                screen = noActiveScreen,
                 contactEmail = "support@example.com",
                 localization = testData.localization,
-                supportedPaths = noActiveScreen.paths,
                 offering = null, // No offering in preview
                 onAction = { },
             )

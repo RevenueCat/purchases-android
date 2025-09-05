@@ -137,6 +137,7 @@ class PaywallViewModelTest {
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
+        every { purchases.preferredUILocaleOverride } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs

@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
@@ -173,7 +174,15 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
+            val localeProvider = DefaultLocaleProvider()
+            val httpClient = HTTPClient(
+                appConfig,
+                eTagManager,
+                diagnosticsTracker,
+                signingManager,
+                cache,
+                localeProvider = localeProvider,
+            )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -209,6 +218,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
+                automaticDeviceIdentifierCollectionEnabled,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
@@ -225,7 +235,10 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val offeringsCache = OfferingsCache(cache)
+            val offeringsCache = OfferingsCache(
+                deviceCache = cache,
+                localeProvider = localeProvider,
+            )
 
             val identityManager = IdentityManager(
                 cache,
@@ -365,6 +378,7 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
             )
 

@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
@@ -45,6 +46,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -127,6 +129,7 @@ internal class PurchasesOrchestrator(
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
     private val fontLoader: FontLoader,
+    private val localeProvider: DefaultLocaleProvider,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -195,10 +198,22 @@ internal class PurchasesOrchestrator(
     @SuppressWarnings("MagicNumber")
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
+    @SuppressWarnings("MagicNumber")
+    private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
+
     var storefrontCountryCode: String? = null
         private set
 
+    @Volatile
+    private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
+
+    val preferredUILocaleOverride: String?
+        get() = _preferredUILocaleOverride
+
     init {
+        // Initialize locale provider with the initial preferred locale override
+        localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
+
         identityManager.configure(backingFieldAppUserID)
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -434,6 +449,40 @@ internal class PurchasesOrchestrator(
             onSuccess = { callback.onSuccess(it) },
             onError = { callback.onError(it) },
         )
+    }
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+     * This allows you to display the UI in a specific language, different from the system locale.
+     *
+     * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+     *                     Pass null to revert to using the system default locale.
+     *
+     * **Note:** This only affects UI components from the RevenueCatUI module and requires
+     * importing RevenueCatUI in your project. The locale override will take effect the next time
+     * a paywall or customer center is displayed.
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        val previousLocale = _preferredUILocaleOverride
+
+        if (previousLocale == localeString) {
+            debugLog { "Locale unchanged, no fresh fetch needed" }
+            return false
+        }
+
+        synchronized(this) {
+            _preferredUILocaleOverride = localeString
+            localeProvider.setPreferredLocaleOverride(localeString)
+        }
+
+        debugLog { "Locale changed, attempting to fetch fresh offerings" }
+        return fetchOfferingsWithRateLimit { offerings, error ->
+            if (offerings != null) {
+                debugLog { "Fresh offerings fetch completed successfully" }
+            } else {
+                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+            }
+        }
     }
 
     fun getOfferings(
@@ -900,6 +949,39 @@ internal class PurchasesOrchestrator(
     }
 
     // endregion
+
+    /**
+     * Fetches fresh offerings with rate limiting to prevent excessive network requests.
+     *
+     * @param callback Callback to handle the result
+     * @return true if fresh fetch was triggered, false if rate limited
+     */
+    private fun fetchOfferingsWithRateLimit(callback: (Offerings?, PurchasesError?) -> Unit): Boolean {
+        return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
+            verboseLog { "Fetching fresh offerings" }
+            getOfferings(
+                object : ReceiveOfferingsCallback {
+                    override fun onReceived(offerings: Offerings) {
+                        callback(offerings, null)
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        callback(null, error)
+                    }
+                },
+                fetchCurrent = true,
+            )
+            true
+        } else {
+            debugLog {
+                "Fresh offerings fetch rate limit reached: ${preferredLocaleOverrideRateLimiter.maxCallsInPeriod} " +
+                    "per ${preferredLocaleOverrideRateLimiter.periodSeconds.inWholeSeconds} seconds. " +
+                    "Fetch not triggered."
+            }
+            false
+        }
+    }
+
     // region Campaign parameters
 
     fun setMediaSource(mediaSource: String?) {
