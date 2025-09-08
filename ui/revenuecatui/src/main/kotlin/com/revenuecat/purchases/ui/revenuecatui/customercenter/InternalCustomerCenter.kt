@@ -459,6 +459,7 @@ private fun MainScreenContent(
                 supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
                 virtualCurrencies = state.virtualCurrencies,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases

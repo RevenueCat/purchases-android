@@ -31,6 +31,7 @@ internal fun RelevantPurchasesListView(
     supportedPaths: List<HelpPath>,
     contactEmail: String?,
     virtualCurrencies: VirtualCurrencies?,
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
     onAction: (CustomerCenterAction) -> Unit,
@@ -82,7 +83,7 @@ internal fun RelevantPurchasesListView(
 
                 VirtualCurrenciesListView(
                     virtualCurrencies = virtualCurrencies,
-                    appearance = CustomerCenterConfigTestData.standardAppearance,
+                    appearance = appearance,
                     localization = localization,
                     onAction = onAction,
                     modifier = Modifier
@@ -159,6 +160,7 @@ private fun RelevantPurchasesListViewPreview() {
                 supportedPaths = managementScreen.paths,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
@@ -179,6 +181,7 @@ private fun NoActiveSubscriptionsViewPreview() {
                 supportedPaths = noActiveScreen.paths,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
@@ -197,6 +200,7 @@ private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
@@ -219,6 +223,7 @@ private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
@@ -244,6 +249,7 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = noActiveScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
@@ -269,6 +275,7 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = null,
@@ -297,6 +304,7 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesAndVirtualCurrenciesPr
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
