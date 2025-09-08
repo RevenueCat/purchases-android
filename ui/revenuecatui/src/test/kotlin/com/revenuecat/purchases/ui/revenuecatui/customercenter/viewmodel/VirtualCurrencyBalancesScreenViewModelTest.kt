@@ -14,8 +14,10 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -49,70 +51,65 @@ class VirtualCurrencyBalancesScreenViewModelTest {
     }
 
     @Test
-    fun `loadData invalidates the virtual currencies cache`() = runTest {
+    fun `flow invalidates the virtual currencies cache when collected`() = runTest {
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
 
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
-
+        viewModel.viewState.take(2).toList()
+        
         verify(exactly = 1) { mockPurchases.invalidateVirtualCurrenciesCache() }
-        coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
     }
 
     @Test
-    fun `loadData success with VCs sets the state to Loaded`() = runTest {
+    fun `flow success with VCs sets the state to Loaded`() = runTest {
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
-        val expectedVCList = CustomerCenterConfigTestData.fourVirtualCurrencies.all.values.sortedByDescending { it.balance }
-
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
+        
+        val states = viewModel.viewState.take(2).toList()
 
         coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
 
-        val state = viewModel.viewState.value
-        assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
-        val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
+        val finalState = states.last()
+        assertThat(finalState).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        val loadedState = finalState as VirtualCurrencyBalancesScreenViewState.Loaded
         assertThat(loadedState.virtualCurrencyBalanceData).hasSize(4)
     }
 
     @Test
-    fun `loadData success with no VCs sets the state to Loaded`() = runTest {
+    fun `flow success with no VCs sets the state to Loaded`() = runTest {
         val emptyVirtualCurrencies = createEmptyVirtualCurrencies()
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns emptyVirtualCurrencies
 
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
+        val states = viewModel.viewState.take(2).toList()
 
         coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
 
-        val state = viewModel.viewState.value
-        assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
-        val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
+        val finalState = states.last()
+        assertThat(finalState).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        val loadedState = finalState as VirtualCurrencyBalancesScreenViewState.Loaded
         assertThat(loadedState.virtualCurrencyBalanceData).isEmpty()
     }
 
     @Test
-    fun `loadData failure sets error state`() = runTest {
+    fun `flow failure sets error state`() = runTest {
         val error = PurchasesError(code = PurchasesErrorCode.UnknownError, underlyingErrorMessage = "Test error")
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } throws PurchasesException(error)
 
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
+        val states = viewModel.viewState.take(2).toList()
 
         coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
-        assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Error(error = error))
+        
+        val finalState = states.last()
+        assertThat(finalState).isEqualTo(VirtualCurrencyBalancesScreenViewState.Error(error = error))
     }
 
     @Test
     fun `virtual currencies are sorted by balance descending`() = runTest {
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
 
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
+        val states = viewModel.viewState.take(2).toList()
 
-        val state = viewModel.viewState.value
-        assertThat(state).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
-        val loadedState = state as VirtualCurrencyBalancesScreenViewState.Loaded
+        val finalState = states.last()
+        assertThat(finalState).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        val loadedState = finalState as VirtualCurrencyBalancesScreenViewState.Loaded
         val data = loadedState.virtualCurrencyBalanceData
 
         assertThat(data).hasSize(4)
@@ -127,27 +124,66 @@ class VirtualCurrencyBalancesScreenViewModelTest {
     }
 
     @Test
-    fun `onViewAppeared sets loading state initially`() = runTest {
+    fun `flow does not execute until collected`() = runTest {
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
+        
+        // Initializing viewModel shouldn't trigger VC loading
+        val newViewModel = VirtualCurrencyBalancesScreenViewModel(mockPurchases)
+        coVerify(exactly = 0) { mockPurchases.awaitGetVirtualCurrencies() }
+        coVerify(exactly = 0) { mockPurchases.invalidateVirtualCurrenciesCache() }
+        
+        val states = newViewModel.viewState.take(2).toList()
+        
+        coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
+        verify(exactly = 1) { mockPurchases.invalidateVirtualCurrenciesCache() }
+        
+        // Should have Loading -> Loaded states
+        assertThat(states).hasSize(2)
+        assertThat(states[0]).isEqualTo(VirtualCurrencyBalancesScreenViewState.Loading)
+        assertThat(states[1]).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+    }
 
-        assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Loading)
-
-        viewModel.onViewAppeared()
-
-        assertThat(viewModel.viewState.value).isEqualTo(VirtualCurrencyBalancesScreenViewState.Loading)
+    @Test  
+    fun `multiple collectors share the same flow execution`() = runTest {
+        coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
+        
+        // Start two collectors simultaneously
+        val states1 = async { viewModel.viewState.take(2).toList() }
+        val states2 = async { viewModel.viewState.take(2).toList() }
+        
+        val result1 = states1.await()
+        val result2 = states2.await()
+        
+        // Should only call once, not twice
+        coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
+        verify(exactly = 1) { mockPurchases.invalidateVirtualCurrenciesCache() }
+        
+        assertThat(result1).isEqualTo(result2)
+        assertThat(result1).hasSize(2)
+        assertThat(result1[0]).isEqualTo(VirtualCurrencyBalancesScreenViewState.Loading)
+        assertThat(result1[1]).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
     }
 
     @Test
-    fun `multiple calls to onViewAppeared work correctly`() = runTest {
+    fun `flow caches result and does not restart immediately after completion`() = runTest {
         coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns CustomerCenterConfigTestData.fourVirtualCurrencies
+        
+        val states1 = viewModel.viewState.take(2).toList()
+        coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
+        assertThat(states1.last()).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        
+        coEvery { mockPurchases.awaitGetVirtualCurrencies() } returns createEmptyVirtualCurrencies()
+        
+        // Second collection - should get cached result
+        val currentState = viewModel.viewState.value
+        
+        assertThat(currentState).isInstanceOf(VirtualCurrencyBalancesScreenViewState.Loaded::class.java)
+        val loadedState = currentState as VirtualCurrencyBalancesScreenViewState.Loaded
+        
+        assertThat(loadedState.virtualCurrencyBalanceData).hasSize(4)
 
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
-        viewModel.onViewAppeared()
-        advanceUntilIdle()
-
-        verify(exactly = 2) { mockPurchases.invalidateVirtualCurrenciesCache() }
-        coVerify(exactly = 2) { mockPurchases.awaitGetVirtualCurrencies() }
+        coVerify(exactly = 1) { mockPurchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 1) { mockPurchases.awaitGetVirtualCurrencies() }
     }
 
     private fun createEmptyVirtualCurrencies(): VirtualCurrencies {
