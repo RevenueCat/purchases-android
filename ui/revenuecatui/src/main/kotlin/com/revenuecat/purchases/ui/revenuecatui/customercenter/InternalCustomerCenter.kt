@@ -77,14 +77,19 @@ internal fun InternalCustomerCenter(
     ),
     onDismiss: () -> Unit,
 ) {
-    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark = isSystemInDarkTheme()
+
+    LaunchedEffect(colorScheme, isDark) {
+        viewModel.refreshColors(colorScheme, isDark)
+    }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    if (state is CustomerCenterState.NotLoaded) {
-        coroutineScope.launch {
+    LaunchedEffect(state !is CustomerCenterState.Success) {
+        if (state is CustomerCenterState.NotLoaded) {
             viewModel.loadCustomerCenter()
         }
     }
