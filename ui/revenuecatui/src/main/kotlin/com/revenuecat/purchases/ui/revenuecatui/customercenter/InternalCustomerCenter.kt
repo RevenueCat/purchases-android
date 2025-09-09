@@ -81,7 +81,7 @@ internal fun InternalCustomerCenter(
     val isDark = isSystemInDarkTheme()
 
     LaunchedEffect(colorScheme, isDark) {
-        viewModel.refreshStateIfColorsChanged(colorScheme, isDark)
+        viewModel.refreshColors(colorScheme, isDark)
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
