@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.content.res.Configuration
-import android.content.res.Resources
 import android.icu.number.NumberFormatter
 import android.os.Build
 import androidx.compose.foundation.clickable
