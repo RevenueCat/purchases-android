@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 
-private const val STOP_TIMEOUT_MILLIS = 5_000L
-
 @Stable
 internal class VirtualCurrencyBalancesScreenViewModel(
     private val purchases: PurchasesType,
 ) : ViewModel() {
+    companion object {
+        private const val STOP_TIMEOUT_MILLIS = 5_000L
+    }
 
     val viewState: StateFlow<VirtualCurrencyBalancesScreenViewState> = flow {
         emit(VirtualCurrencyBalancesScreenViewState.Loading)
