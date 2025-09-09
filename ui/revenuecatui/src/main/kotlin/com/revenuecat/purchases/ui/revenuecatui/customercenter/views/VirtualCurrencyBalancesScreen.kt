@@ -114,6 +114,7 @@ private fun InternalVirtualCurrencyBalancesScreen(
 
                         VirtualCurrencyRow(
                             appearance = appearance,
+                            localization = localization,
                             virtualCurrency = virtualCurrency,
                             position = position,
                         )

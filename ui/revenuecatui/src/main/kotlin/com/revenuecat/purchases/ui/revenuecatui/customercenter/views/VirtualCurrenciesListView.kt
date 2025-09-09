@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
@@ -93,6 +94,7 @@ internal fun VirtualCurrenciesListView(
 
             VirtualCurrencyRow(
                 appearance = appearance,
+                localization = localization,
                 virtualCurrency = virtualCurrency,
                 position = position,
             )
@@ -112,6 +114,7 @@ internal fun VirtualCurrenciesListView(
 @Composable
 internal fun VirtualCurrencyRow(
     appearance: CustomerCenterConfigData.Appearance,
+    localization: CustomerCenterConfigData.Localization,
     virtualCurrency: VirtualCurrency,
     position: ButtonPosition,
     modifier: Modifier = Modifier,
@@ -119,7 +122,7 @@ internal fun VirtualCurrencyRow(
     val formattedBalance = remember(virtualCurrency.balance) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             NumberFormatter.with()
-                .locale(Resources.getSystem().configuration.locales.get(0))
+                .locale(createLocaleFromString(localization.locale))
                 .format(virtualCurrency.balance)
                 .toString()
         } else {
