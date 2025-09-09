@@ -115,7 +115,7 @@ internal interface CustomerCenterViewModel {
 
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
-    fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
+    fun refreshColors(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
 
     // tracks customer center impression the first time is shown
     fun trackImpressionIfNeeded()
@@ -866,14 +866,12 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean) {
-        if (isDarkMode != isSystemInDarkTheme) {
-            isDarkMode = isSystemInDarkTheme
-        }
-
-        if (_colorScheme.value != currentColorScheme) {
-            _colorScheme.value = currentColorScheme
-        }
+    override fun refreshColors(
+        currentColorScheme: ColorScheme,
+        isSystemInDarkTheme: Boolean,
+    ) {
+        isDarkMode = isSystemInDarkTheme
+        _colorScheme.value = currentColorScheme
     }
 
     override fun trackImpressionIfNeeded() {
