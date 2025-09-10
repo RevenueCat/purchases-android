@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
+import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 
 /**
  * Provides an instance of SharedPreferences to be used by the RevenueCat SDK.
@@ -14,7 +15,7 @@ import androidx.core.content.edit
 internal class SharedPreferencesManager(
     context: Context,
     private val revenueCatSharedPreferences: SharedPreferences = context.getSharedPreferences(
-        REVENUECAT_PREFS_FILE_NAME,
+        RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
         Context.MODE_PRIVATE,
     ),
     private val legacySharedPreferences: Lazy<SharedPreferences> = lazy {
@@ -23,9 +24,6 @@ internal class SharedPreferencesManager(
 ) {
 
     companion object {
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
-
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
