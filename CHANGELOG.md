@@ -1,3 +1,9 @@
+## 9.7.0
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Display Virtual Currencies in Customer Center (#2652) via Will Taylor (@fire-at-will)
+
 ## 9.6.0
 ## RevenueCat SDK
 ### ✨ New Features
