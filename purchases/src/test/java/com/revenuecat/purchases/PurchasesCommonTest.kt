@@ -1260,6 +1260,32 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `when making a purchase, backup manager is notified of data change`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val storeProduct = stubStoreProduct(productId)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var callCount = 0
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ ->
+                callCount++
+            }, onError = { _, _ -> fail("should be successful") })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+        assertThat(callCount).isEqualTo(1)
+    }
+
     // endregion
 
     // region customer info
