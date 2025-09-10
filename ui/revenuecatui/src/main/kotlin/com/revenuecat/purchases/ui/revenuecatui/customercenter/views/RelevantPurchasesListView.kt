@@ -23,12 +23,15 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 internal fun RelevantPurchasesListView(
     supportedPaths: List<HelpPath>,
     contactEmail: String?,
+    virtualCurrencies: VirtualCurrencies?,
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
     onAction: (CustomerCenterAction) -> Unit,
@@ -72,6 +75,22 @@ internal fun RelevantPurchasesListView(
                 totalPurchaseCount = purchases.size,
                 onPurchaseSelect = onPurchaseSelect,
             )
+        }
+
+        virtualCurrencies?.let {
+            if (virtualCurrencies.all.isNotEmpty()) {
+                Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
+
+                VirtualCurrenciesListView(
+                    virtualCurrencies = virtualCurrencies,
+                    appearance = appearance,
+                    localization = localization,
+                    onAction = onAction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
+                )
+            }
         }
 
         ManageSubscriptionsButtonsView(
@@ -140,6 +159,8 @@ private fun RelevantPurchasesListViewPreview() {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
@@ -159,6 +180,8 @@ private fun NoActiveSubscriptionsViewPreview() {
             RelevantPurchasesListView(
                 supportedPaths = noActiveScreen.paths,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 onPurchaseSelect = {},
                 onAction = {},
@@ -177,8 +200,10 @@ private fun RelevantPurchasesListViewWithLifetimePurchasePreview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
                 onPurchaseSelect = {},
                 onAction = {},
                 purchases = listOf(
@@ -198,8 +223,10 @@ private fun RelevantPurchasesListViewWithSubscriptionsAndLifetimePurchasePreview
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
                 onPurchaseSelect = {},
                 onAction = {},
                 purchases = listOf(
@@ -222,8 +249,10 @@ private fun NoActiveSubscriptionsViewNoDescription_Preview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = noActiveScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
                 onPurchaseSelect = {},
                 onAction = {},
                 purchases = emptyList(),
@@ -246,13 +275,44 @@ private fun RelevantPurchasesListViewWithMultiplePurchasesPreview() {
         Column {
             RelevantPurchasesListView(
                 supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
                 localization = testData.localization,
                 contactEmail = "support@revenuecat.com",
+                virtualCurrencies = null,
                 onPurchaseSelect = {},
                 onAction = {},
                 purchases = listOf(
                     CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
                     CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+                ),
+            )
+        }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    device = "spec:width=412dp,height=915dp",
+    group = "scale = 1",
+    fontScale = 1F,
+)
+@Composable
+private fun RelevantPurchasesListViewWithMultiplePurchasesAndVirtualCurrenciesPreview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val managementScreen = testData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+    CustomerCenterPreviewTheme {
+        Column {
+            RelevantPurchasesListView(
+                supportedPaths = managementScreen.paths,
+                appearance = testData.appearance,
+                localization = testData.localization,
+                contactEmail = "support@revenuecat.com",
+                virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
+                onPurchaseSelect = {},
+                onAction = {},
+                purchases = listOf(
+                    CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                    CustomerCenterConfigTestData.purchaseInformationLifetime,
                 ),
             )
         }
