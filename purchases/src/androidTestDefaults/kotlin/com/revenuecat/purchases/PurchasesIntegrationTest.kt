@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.StrictMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -476,6 +477,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     return "test-storefront"
                 }
             },
+            localeProvider = DefaultLocaleProvider(),
         )
     }
 
