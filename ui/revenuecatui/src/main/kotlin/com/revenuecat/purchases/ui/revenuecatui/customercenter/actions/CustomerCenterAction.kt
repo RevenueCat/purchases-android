@@ -20,4 +20,5 @@ internal sealed class CustomerCenterAction {
     data class CustomActionSelected(val customActionData: CustomActionData) : CustomerCenterAction()
     object NavigationButtonPressed : CustomerCenterAction()
     object ShowPaywall : CustomerCenterAction()
+    object ShowVirtualCurrencyBalances : CustomerCenterAction()
 }

@@ -121,6 +121,8 @@ internal interface CustomerCenterViewModel {
     fun trackImpressionIfNeeded()
 
     fun showPaywall(context: Context)
+
+    fun showVirtualCurrencyBalances()
 }
 
 @Stable
@@ -275,6 +277,29 @@ internal class CustomerCenterViewModelImpl(
 
     override fun onCustomActionSelected(customActionData: CustomActionData) {
         notifyListenersForCustomActionSelected(customActionData)
+    }
+
+    override fun showVirtualCurrencyBalances() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+        if (state.customerCenterConfigData.support.displayVirtualCurrencies != true) { return }
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val virtualCurrencyBalancesDestination = CustomerCenterDestination.VirtualCurrencyBalances(
+                    title = state.customerCenterConfigData.localization.commonLocalizedString(
+                        key = CustomerCenterConfigData.Localization.CommonLocalizedString
+                            .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+                    ),
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
     }
 
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
@@ -798,6 +823,12 @@ internal class CustomerCenterViewModelImpl(
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
             val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
+                purchases.invalidateVirtualCurrenciesCache()
+                purchases.awaitGetVirtualCurrencies()
+            } else {
+                null
+            }
 
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
@@ -814,6 +845,7 @@ internal class CustomerCenterViewModelImpl(
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
+                virtualCurrencies = virtualCurrencies,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
