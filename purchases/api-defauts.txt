@@ -755,6 +755,21 @@ package com.revenuecat.purchases.amazon {
 
 }
 
+package com.revenuecat.purchases.backup {
+
+  public final class RevenueCatBackupAgent extends android.app.backup.BackupAgentHelper {
+    ctor public RevenueCatBackupAgent();
+    method public void onBackup(android.os.ParcelFileDescriptor? oldState, android.app.backup.BackupDataOutput? data, android.os.ParcelFileDescriptor? newState);
+    method public void onRestore(android.app.backup.BackupDataInput? data, long appVersionCode, android.os.ParcelFileDescriptor? newState);
+    field public static final com.revenuecat.purchases.backup.RevenueCatBackupAgent.Companion Companion;
+    field public static final String REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences";
+  }
+
+  public static final class RevenueCatBackupAgent.Companion {
+  }
+
+}
+
 package com.revenuecat.purchases.common {
 
   @dev.drewhamilton.poko.Poko public final class PlatformInfo {

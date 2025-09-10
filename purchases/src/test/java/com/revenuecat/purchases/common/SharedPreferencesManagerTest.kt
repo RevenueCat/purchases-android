@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
+import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -41,7 +42,7 @@ class SharedPreferencesManagerTest {
         mockLegacyEditor = mockk(relaxed = true)
         mockRevenueCatEditor = mockk(relaxed = true)
 
-        every { mockContext.getSharedPreferences(SharedPreferencesManager.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE) } returns mockRevenueCatPrefs
+        every { mockContext.getSharedPreferences(RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE) } returns mockRevenueCatPrefs
         every { mockLegacyPrefs.edit() } returns mockLegacyEditor
         every { mockRevenueCatPrefs.edit() } returns mockRevenueCatEditor
         every { mockRevenueCatEditor.apply() } just Runs
