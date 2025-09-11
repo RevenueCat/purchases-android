@@ -57,6 +57,7 @@ private class StoreProductAPI {
         when (type) {
             ProductType.SUBS,
             ProductType.INAPP,
+            ProductType.SUBS_BUNDLE,
             ProductType.UNKNOWN,
             -> {}
         }.exhaustive
