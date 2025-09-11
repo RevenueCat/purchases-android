@@ -93,6 +93,7 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.runBlocking
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -126,7 +127,7 @@ internal class PurchasesOrchestrator(
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
     private val fontLoader: FontLoader,
@@ -220,9 +221,11 @@ internal class PurchasesOrchestrator(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(
-                    allowSharingPlayStoreAccount,
-                )
+                runBlocking {
+                    postPendingTransactionsHelper.syncPendingPurchaseQueue(
+                        allowSharingPlayStoreAccount,
+                    )
+                }
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
@@ -290,7 +293,9 @@ internal class PurchasesOrchestrator(
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
-            postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+            runBlocking {
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+            }
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
             flushPaywallEvents()

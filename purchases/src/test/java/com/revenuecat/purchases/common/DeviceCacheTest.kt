@@ -7,7 +7,6 @@ package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -16,7 +15,6 @@ import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlem
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.subtract
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import io.mockk.every
 import kotlinx.serialization.SerializationException
@@ -28,6 +26,8 @@ import io.mockk.unmockkObject
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
@@ -96,7 +96,7 @@ class DeviceCacheTest {
 
         every { mockDateProvider.now } returns currentTime
 
-        cache = DeviceCache(mockPrefs, apiKey, dateProvider = mockDateProvider)
+        cache = DeviceCache(mockPrefs, apiKey, dateProvider = mockDateProvider, dispatcher = Dispatchers.Unconfined)
     }
 
     @After
@@ -110,14 +110,14 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given no cached info, cached purchased info is null`() {
+    fun `given no cached info, cached purchased info is null`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), null)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
-    fun `given a customer info, the key in the cache is correct`() {
+    fun `given a customer info, the key in the cache is correct`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), Responses.validFullPurchaserResponse)
         cache.getCachedCustomerInfo(appUserID)
         verify {
@@ -126,7 +126,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid customer info, the JSON is parsed correctly`() {
+    fun `given a valid customer info, the JSON is parsed correctly`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
@@ -134,7 +134,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
+    fun `given a valid customer info without verification result, the JSON is parsed correctly`() = runTest {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
@@ -147,7 +147,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid customer info without request date, the JSON is parsed correctly`() {
+    fun `given a valid customer info without request date, the JSON is parsed correctly`() = runTest {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
@@ -160,7 +160,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid customer info with schema version, the JSON is parsed correctly`() {
+    fun `given a valid customer info with schema version, the JSON is parsed correctly`() = runTest {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
@@ -174,7 +174,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid customer info with request date, the JSON is parsed correctly`() {
+    fun `given a valid customer info with request date, the JSON is parsed correctly`() = runTest {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
@@ -188,14 +188,14 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a invalid customer info, the information is null`() {
+    fun `given a invalid customer info, the information is null`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), "not json")
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
-    fun `given a valid customer info, the created customer info does not have verification result information`() {
+    fun `given a valid customer info, the created customer info does not have verification result information`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info?.rawData?.has("verification_result")).isFalse
@@ -273,14 +273,14 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given an older version of customer info, nothing is returned`() {
+    fun `given an older version of customer info, nothing is returned`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), oldCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
-    fun `given a valid version customer info, it is returned`() {
+    fun `given a valid version customer info, it is returned`() = runTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull

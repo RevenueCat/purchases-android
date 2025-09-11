@@ -26,6 +26,8 @@ import com.revenuecat.purchases.strings.ReceiptStrings
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.json.JSONException
@@ -41,6 +43,7 @@ internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 internal open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
+    private val dispatcher: CoroutineDispatcher,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : StorefrontProvider {
     companion object {
@@ -141,8 +144,8 @@ internal open class DeviceCache(
 
     fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
-    fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
-        return preferences.getString(customerInfoCacheKey(appUserID), null)
+    suspend fun getCachedCustomerInfo(appUserID: String): CustomerInfo? = withContext(dispatcher) {
+        return@withContext preferences.getString(customerInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
                     val cachedJSONObject = JSONObject(json)
@@ -158,7 +161,7 @@ internal open class DeviceCache(
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
-                    return if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
+                    if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
                         CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, requestDate, verificationResult)
                     } else {
                         null

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -39,7 +40,7 @@ class CustomerInfoUpdateHandlerTest {
         diagnosticsTracker = mockk()
 
         every { identityManager.currentAppUserID } returns appUserId
-        every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
+        coEvery { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
         every { appConfig.customEntitlementComputation } returns false
@@ -87,7 +88,7 @@ class CustomerInfoUpdateHandlerTest {
     @Test
     fun `setting listener does not send cached value if it does not exist`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        every { deviceCache.getCachedCustomerInfo(any()) } returns null
+        coEvery { deviceCache.getCachedCustomerInfo(any()) } returns null
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 0) { listenerMock.onReceived(mockInfo) }

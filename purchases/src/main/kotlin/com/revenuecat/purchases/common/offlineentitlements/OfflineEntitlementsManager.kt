@@ -36,7 +36,7 @@ internal class OfflineEntitlementsManager(
         }
     }
 
-    fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+    suspend fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String,
     ) = isServerError &&
