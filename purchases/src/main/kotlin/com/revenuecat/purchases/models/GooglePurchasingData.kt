@@ -27,5 +27,14 @@ sealed class GooglePurchasingData : PurchasingData {
             is Subscription -> {
                 ProductType.SUBS
             }
+            is SubscriptionBundle -> {
+                ProductType.SUBS_BUNDLE
+            }
         }
+
+    @Poko
+    class SubscriptionBundle(
+        override val productId: String,
+        val bundledSubscriptions: List<Subscription>
+    ): GooglePurchasingData()
 }

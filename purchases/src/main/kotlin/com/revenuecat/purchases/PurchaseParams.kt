@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.google.purchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -58,6 +59,14 @@ class PurchaseParams(val builder: Builder) {
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
+
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        constructor(activity: Activity, storeProducts: List<StoreProduct>): this(
+            activity,
+            purchasingData = storeProducts.purchasingData,
+            presentedOfferingContext = storeProducts.first().presentedOfferingContext,
+            product = null
+        )
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(

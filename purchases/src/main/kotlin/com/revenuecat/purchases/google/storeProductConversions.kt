@@ -4,10 +4,12 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
@@ -86,3 +88,42 @@ internal fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     }
     return storeProducts
 }
+
+// TODO: Write tests for this
+// TODO: This should throw a PurchasesError instead of IllegalArgumentException
+val List<StoreProduct>.purchasingData: GooglePurchasingData.SubscriptionBundle
+    get() {
+        require(this.all { it.type == ProductType.SUBS }) {
+            "All items in subscription bundle must be subscriptions."
+        }
+
+        val googleSubscriptions = this
+            .filter({ it.googleProduct != null })
+            .filter({ it.purchasingData is GooglePurchasingData.Subscription })
+
+        require(googleSubscriptions.size >= 2) {
+            "Subscription bundle must contain at least two subscriptions."
+        }
+
+        require(googleSubscriptions.size <= 50) {
+            "Subscription bundle cannot contain more than 50 subscriptions. Found: ${googleSubscriptions.size}"
+        }
+
+        val billingPeriods = googleSubscriptions.mapNotNull { it.period }.distinct()
+        require(billingPeriods.size <= 1) {
+            "All items in a subscription bundle must have the same recurring billing period."
+        }
+
+        val bundledSubscriptions: List<GooglePurchasingData.Subscription> = googleSubscriptions
+            .mapNotNull { it.purchasingData }
+            .filterIsInstance<GooglePurchasingData.Subscription>()
+
+        val productId = bundledSubscriptions
+            .mapNotNull({ it.productId})
+            .joinToString("-")
+
+        return GooglePurchasingData.SubscriptionBundle(
+            productId = productId,
+            bundledSubscriptions = bundledSubscriptions
+        )
+    }

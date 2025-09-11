@@ -259,6 +259,12 @@ internal class BillingWrapper(
             is GooglePurchasingData.Subscription -> {
                 googlePurchasingData.optionId
             }
+
+            is GooglePurchasingData.SubscriptionBundle -> {
+                // TODO: Should this be null? Will everything downstream of this accept this "productID"
+                // format?? (productID1-productID2-...)
+                googlePurchasingData.productId
+            }
         }
 
         if (replaceProductInfo != null) {
@@ -852,6 +858,10 @@ internal class BillingWrapper(
             is GooglePurchasingData.Subscription -> {
                 buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }
+
+            is GooglePurchasingData.SubscriptionBundle -> {
+                buildSubscriptionBundlePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
+            }
         }
     }
 
@@ -904,6 +914,42 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    private fun buildSubscriptionBundlePurchaseParams(
+        purchaseInfo: GooglePurchasingData.SubscriptionBundle,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+    ): Result<BillingFlowParams, PurchasesError> {
+        val productDetailsParamsList = purchaseInfo.bundledSubscriptions.map { purchaseInfo ->
+            BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(purchaseInfo.token)
+                setProductDetails(purchaseInfo.productDetails)
+            }.build()
+        }
+
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .setObfuscatedAccountId(appUserID.sha256()) // TODO: understand why we're setting this
+                    .apply {
+                        // TODO: Understand personalized prices
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
+                    }
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            // TODO: Identify when/if/why a NoClassDefFoundError would be thrown
+            return Result.Error(
+                PurchasesError(
+                    code = PurchasesErrorCode.UnknownError,
+                    underlyingErrorMessage = e.localizedMessage
+                ),
+            )
+        }
     }
 
     @Synchronized
