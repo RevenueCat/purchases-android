@@ -12,7 +12,8 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
@@ -66,7 +67,7 @@ internal class CustomerInfoUpdateHandler(
         if (listener != null) {
             log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
             if (!appConfig.customEntitlementComputation) {
-                runBlocking {
+                GlobalScope.launch {
                     getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
                         notifyListeners(it)
                     }

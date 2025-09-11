@@ -93,7 +93,8 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -221,20 +222,20 @@ internal class PurchasesOrchestrator(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                runBlocking {
+                GlobalScope.launch {
                     postPendingTransactionsHelper.syncPendingPurchaseQueue(
                         allowSharingPlayStoreAccount,
                     )
+                    billing.getStorefront(
+                        onSuccess = { countryCode ->
+                            storefrontCountryCode = countryCode
+                            debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
+                        },
+                        onError = { error ->
+                            errorLog(error)
+                        },
+                    )
                 }
-                billing.getStorefront(
-                    onSuccess = { countryCode ->
-                        storefrontCountryCode = countryCode
-                        debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
-                    },
-                    onError = { error ->
-                        errorLog(error)
-                    },
-                )
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -273,7 +274,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_FOREGROUNDED }
         appConfig.isAppBackgrounded = false
 
-        enqueue {
+        GlobalScope.launch {
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
@@ -293,9 +294,7 @@ internal class PurchasesOrchestrator(
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
-            runBlocking {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            }
+            postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
             flushPaywallEvents()
