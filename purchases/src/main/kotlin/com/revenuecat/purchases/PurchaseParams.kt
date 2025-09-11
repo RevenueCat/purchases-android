@@ -61,11 +61,11 @@ class PurchaseParams(val builder: Builder) {
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
 
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        constructor(activity: Activity, storeProducts: List<StoreProduct>): this(
+        constructor(activity: Activity, storeProducts: List<StoreProduct>) : this(
             activity,
             purchasingData = storeProducts.purchasingData,
             presentedOfferingContext = storeProducts.first().presentedOfferingContext,
-            product = null
+            product = null,
         )
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :

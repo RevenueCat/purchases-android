@@ -89,6 +89,8 @@ internal fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     return storeProducts
 }
 
+private const val MAX_NUMBER_OF_SUBSCRIPTIONS_IN_BUNDLE = 50
+
 // TODO: Write tests for this
 // TODO: This should throw a PurchasesError instead of IllegalArgumentException
 val List<StoreProduct>.purchasingData: GooglePurchasingData.SubscriptionBundle
@@ -105,7 +107,7 @@ val List<StoreProduct>.purchasingData: GooglePurchasingData.SubscriptionBundle
             "Subscription bundle must contain at least two subscriptions."
         }
 
-        require(googleSubscriptions.size <= 50) {
+        require(googleSubscriptions.size <= MAX_NUMBER_OF_SUBSCRIPTIONS_IN_BUNDLE) {
             "Subscription bundle cannot contain more than 50 subscriptions. Found: ${googleSubscriptions.size}"
         }
 
@@ -119,11 +121,11 @@ val List<StoreProduct>.purchasingData: GooglePurchasingData.SubscriptionBundle
             .filterIsInstance<GooglePurchasingData.Subscription>()
 
         val productId = bundledSubscriptions
-            .mapNotNull({ it.productId})
+            .mapNotNull({ it.productId })
             .joinToString("-")
 
         return GooglePurchasingData.SubscriptionBundle(
             productId = productId,
-            bundledSubscriptions = bundledSubscriptions
+            bundledSubscriptions = bundledSubscriptions,
         )
     }

@@ -946,7 +946,7 @@ internal class BillingWrapper(
             return Result.Error(
                 PurchasesError(
                     code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = e.localizedMessage
+                    underlyingErrorMessage = e.localizedMessage,
                 ),
             )
         }

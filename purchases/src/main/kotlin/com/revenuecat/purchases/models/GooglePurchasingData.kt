@@ -35,6 +35,6 @@ sealed class GooglePurchasingData : PurchasingData {
     @Poko
     class SubscriptionBundle(
         override val productId: String,
-        val bundledSubscriptions: List<Subscription>
-    ): GooglePurchasingData()
+        val bundledSubscriptions: List<Subscription>,
+    ) : GooglePurchasingData()
 }
