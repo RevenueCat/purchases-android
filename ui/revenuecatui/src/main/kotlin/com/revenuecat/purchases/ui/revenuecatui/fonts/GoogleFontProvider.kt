@@ -2,14 +2,18 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts
 
 import android.os.Parcelable
 import androidx.annotation.ArrayRes
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.googlefonts.GoogleFont
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 
 /**
  * Represents a Google font provider.
  */
 @Parcelize
-data class GoogleFontProvider(
+@Poko
+@Immutable
+class GoogleFontProvider(
     /**
      * The resource ID of the font provider's certificate(s).
      */

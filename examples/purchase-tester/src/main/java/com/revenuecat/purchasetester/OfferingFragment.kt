@@ -286,7 +286,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private fun purchase(params: PurchaseParams) {
         lifecycleScope.launch {
             try {
-                val (storeTransaction, _) = Purchases.sharedInstance.awaitPurchase(params)
+                val storeTransaction = Purchases.sharedInstance.awaitPurchase(params).storeTransaction
                 toggleLoadingIndicator(false)
                 handleSuccessfulPurchase(storeTransaction.orderId)
             } catch (exception: PurchasesTransactionException) {

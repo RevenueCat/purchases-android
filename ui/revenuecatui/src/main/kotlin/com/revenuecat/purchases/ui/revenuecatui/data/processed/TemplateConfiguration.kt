@@ -3,13 +3,16 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import android.net.Uri
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import java.util.Locale
 
+@Immutable
 internal data class TemplateConfiguration(
     val template: PaywallTemplate,
     val mode: PaywallMode,
@@ -39,19 +42,21 @@ internal data class TemplateConfiguration(
         return colorByTier ?: getCurrentColors()
     }
 
+    @Immutable
     data class PackageInfo(
         val rcPackage: Package,
         val localization: ProcessedLocalizedConfiguration,
-        val currentlySubscribed: Boolean,
         val discountRelativeToMostExpensivePerMonth: Double?,
     )
 
+    @Immutable
     data class Images(
         val iconUri: Uri?,
         val backgroundUri: Uri?,
         val headerUri: Uri?,
     )
 
+    @Immutable
     data class Colors(
         val background: Color,
         val text1: Color,
@@ -70,6 +75,7 @@ internal data class TemplateConfiguration(
         val tierControlSelectedForeground: Color?,
     )
 
+    @Immutable
     data class TierInfo(
         val name: String,
         val id: String,
@@ -77,17 +83,20 @@ internal data class TemplateConfiguration(
         val packages: List<PackageInfo>,
     )
 
+    @Stable
     sealed class PackageConfiguration {
 
         abstract val all: List<PackageInfo>
         abstract val default: PackageInfo
 
+        @Immutable
         data class MultiPackage(
             val first: PackageInfo,
             val default: PackageInfo,
             val all: List<PackageInfo>,
         )
 
+        @Immutable
         data class Single(val singlePackage: PackageInfo) : PackageConfiguration() {
             override val all: List<PackageInfo>
                 get() = listOf(singlePackage)
@@ -95,12 +104,15 @@ internal data class TemplateConfiguration(
                 get() = singlePackage
         }
 
+        @Immutable
         data class Multiple(val multiPackage: MultiPackage) : PackageConfiguration() {
             override val all: List<PackageInfo>
                 get() = multiPackage.all
             override val default: PackageInfo
                 get() = multiPackage.default
         }
+
+        @Immutable
         data class MultiTier(
             val defaultTier: TierInfo,
             val allTiers: List<TierInfo>,

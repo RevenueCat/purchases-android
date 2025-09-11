@@ -10,6 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -32,15 +33,16 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import io.mockk.Runs
@@ -135,6 +137,7 @@ class PaywallViewModelTest {
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
+        every { purchases.preferredUILocaleOverride } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -511,10 +514,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `Should load default offering`() {
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -527,12 +527,13 @@ class PaywallViewModelTest {
         val expectedPaywall = defaultOffering.paywall!!
 
         verifyPaywall(state, expectedPaywall)
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.monthly))
-            .isTrue
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.annual))
-            .isFalse
-        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.lifetime))
-            .isTrue
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.monthly })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.annual })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.lifetime })
+            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.size).isEqualTo(3)
     }
 
     @Test
@@ -541,10 +542,7 @@ class PaywallViewModelTest {
             PurchasesError(PurchasesErrorCode.NetworkError
         ))
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -564,10 +562,7 @@ class PaywallViewModelTest {
             mapOf(),
         )
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
+        val model = create()
 
         coVerify { purchases.awaitOfferings() }
 
@@ -591,6 +586,52 @@ class PaywallViewModelTest {
         if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
+        }
+
+        val expectedPaywall = offering.paywall!!
+
+        verifyPaywall(state, expectedPaywall)
+    }
+
+    @Test
+    fun `Should load selected offering with presented offering context`() {
+        val offering = TestData.template1Offering
+        val expectedPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = offering.identifier,
+            placementIdentifier = "test-placement-id",
+            targetingContext = PresentedOfferingContext.TargetingContext(
+                revision = 1,
+                ruleId = "test-rule-id"
+            )
+        )
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingIdAndPresentedOfferingContext(OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offering.identifier,
+                    presentedOfferingContext = expectedPresentedOfferingContext,
+                ))
+                .setPurchaseLogic(null)
+                .setMode(PaywallMode.default)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded.Legacy) {
+            fail("Invalid state")
+            return
+        }
+
+        assertThat(state.offering.availablePackages).allMatch {
+            it.presentedOfferingContext == expectedPresentedOfferingContext &&
+                it.product.presentedOfferingContext == expectedPresentedOfferingContext
         }
 
         val expectedPaywall = offering.paywall!!
@@ -1250,15 +1291,10 @@ class PaywallViewModelTest {
 
     private fun create(
         offering: Offering? = null,
-        activeSubscriptions: Set<String> = setOf(),
-        nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        mockActiveSubscriptions(activeSubscriptions)
-        mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
-
         return PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -1272,40 +1308,6 @@ class PaywallViewModelTest {
             isDarkMode = false,
             shouldDisplayBlock = shouldDisplayBlock,
         )
-    }
-
-    private fun mockActiveSubscriptions(subscriptions: Set<String>) {
-        every { customerInfo.activeSubscriptions } returns subscriptions
-    }
-
-    private fun mockNonSubscriptionTransactions(productIdentifiers: Set<String>) {
-        every { customerInfo.nonSubscriptionTransactions } returns productIdentifiers
-            .map { productIdentifier ->
-                Transaction(
-                    transactionIdentifier = UUID.randomUUID().toString(),
-                    revenuecatId = UUID.randomUUID().toString(),
-                    productIdentifier = productIdentifier,
-                    productId = productIdentifier,
-                    purchaseDate = Date(),
-                    storeTransactionId = UUID.randomUUID().toString(),
-                    store = Store.PLAY_STORE,
-                    displayName = "Product $productIdentifier",
-                    isSandbox = false,
-                    originalPurchaseDate = Date(),
-                    price = (1..100).random().toDouble().let {
-                        Price("$it", it.toLong() * 1_000_000, "USD")
-                    },
-                )
-            }
-    }
-
-    /**
-     * Note: this is O(n), for testing only
-     */
-    private fun TemplateConfiguration.PackageConfiguration.packageIsCurrentlySubscribed(
-        rcPackage: Package,
-    ): Boolean {
-        return all.first { it.rcPackage.identifier == rcPackage.identifier }.currentlySubscribed
     }
 
     private fun verifyPaywall(

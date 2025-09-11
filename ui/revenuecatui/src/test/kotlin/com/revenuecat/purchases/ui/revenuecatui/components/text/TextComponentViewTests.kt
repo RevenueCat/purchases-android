@@ -38,7 +38,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
@@ -66,6 +65,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 import java.net.URL
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 
 @RunWith(AndroidJUnit4::class)
 class TextComponentViewTests {
@@ -831,8 +831,8 @@ class TextComponentViewTests {
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
         val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
-        val expectedTextWithDecimals = "Price: \$ 2.00"
-        val expectedTextWithoutDecimals = "Price: MX\$1"
+        val expectedTextWithDecimals = "Price: $ 2.00"
+        val expectedTextWithoutDecimals = "Price: $1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 textKey to textWithPriceVariable,

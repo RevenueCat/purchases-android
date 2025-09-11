@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -34,6 +35,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 
 /**
@@ -165,11 +167,14 @@ class Purchases internal constructor(
     }
 
     /**
-     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
-     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
-     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * This method will send active subscriptions and unconsumed one time purchases to the RevenueCat backend.
+     * Call this when using your own implementation for subscriptions anytime a sync is needed, such as when migrating
+     * existing users to RevenueCat. The [SyncPurchasesCallback.onSuccess] callback will be called if all purchases
+     * have been synced successfully or there are no purchases.
+     * Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
      * [PurchasesError] indicating the first error found.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
@@ -350,13 +355,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            storeProduct.purchasingData,
-            null,
-            null,
-            callback,
-        )
+        purchase(PurchaseParams.Builder(activity, storeProduct).build(), callback)
     }
 
     /**
@@ -380,13 +379,7 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            packageToPurchase.product.purchasingData,
-            packageToPurchase.presentedOfferingContext,
-            null,
-            listener,
-        )
+        purchase(PurchaseParams.Builder(activity, packageToPurchase).build(), listener)
     }
 
     /**
@@ -414,11 +407,13 @@ class Purchases internal constructor(
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all active subscriptions and non consumed one time purchases associated with the current
+     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
+     * being used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
@@ -484,6 +479,41 @@ class Purchases internal constructor(
     ) {
         purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
     }
+
+    /**
+     * Fetches the virtual currencies for the current subscriber.
+     *
+     * @param callback A listener called when the virtual currencies are available.
+     */
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.getVirtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Invalidates the cache for virtual currencies.
+     *
+     * This is useful for cases where a virtual currency's balance might have been updated
+     * outside of the app, like if you decreased a user's balance from the user spending a virtual currency,
+     * or if you increased the balance from your backend using the server APIs.
+     *
+     * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
+     */
+    fun invalidateVirtualCurrenciesCache() {
+        purchasesOrchestrator.invalidateVirtualCurrenciesCache()
+    }
+
+    /**
+     * The currently cached [VirtualCurrencies] if one is available.
+     * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
+     * right away without waiting for a callback. This value will remain null until virtual currencies
+     * have been fetched at least once with [Purchases.getVirtualCurrencies] or an equivalent function.
+     *
+     * This allows initializing state to ensure that UI can be loaded from the very first frame.
+     */
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = purchasesOrchestrator.cachedVirtualCurrencies
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
@@ -655,6 +685,16 @@ class Purchases internal constructor(
         purchasesOrchestrator.setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID)
     }
 
+    /**
+     * Subscriber attribute associated with the PostHog User ID for the user
+     * Required for the RevenueCat PostHog integration
+     *
+     * @param postHogUserId null or an empty string will delete the subscriber attribute
+     */
+    fun setPostHogUserId(postHogUserId: String?) {
+        purchasesOrchestrator.setPostHogUserId(postHogUserId)
+    }
+
     // endregion
     // region Attribution IDs
 
@@ -821,6 +861,28 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             purchasesOrchestrator.allowSharingPlayStoreAccount = value
         }
+
+    /**
+     * The preferred UI locale override for RevenueCat UI components.
+     * This affects both API requests and UI rendering.
+     *
+     * @return The preferred UI locale override, or null if using system default
+     */
+    val preferredUILocaleOverride: String?
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     * This affects both API requests and UI rendering.
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations.
+     *
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    }
 
     /**
      * Gets the StoreProduct for the given list of subscription products.

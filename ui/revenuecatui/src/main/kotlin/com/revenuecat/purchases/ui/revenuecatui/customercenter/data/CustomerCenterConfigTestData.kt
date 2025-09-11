@@ -7,6 +7,8 @@ import com.revenuecat.purchases.customercenter.RCColor
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 @Suppress("MagicNumber")
 internal object CustomerCenterConfigTestData {
@@ -145,6 +147,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = false,
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -165,6 +168,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
     )
 
     val purchaseInformationYearlyExpired = PurchaseInformation(
@@ -185,6 +189,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = true,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
     )
 
     val purchaseInformationLifetime = PurchaseInformation(
@@ -198,6 +203,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = false,
+        isLifetime = true,
     )
 
     val purchaseInformationPromotional = PurchaseInformation(
@@ -211,5 +217,70 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = true,
+        isLifetime = false,
+    )
+
+    val fourVirtualCurrencies = VirtualCurrencies(
+        all = mapOf(
+            "GLD" to VirtualCurrency(
+                balance = 100,
+                name = "Gold",
+                code = "GLD",
+                serverDescription = "It's gold",
+            ),
+            "SLV" to VirtualCurrency(
+                balance = 200,
+                name = "Silver",
+                code = "SLV",
+                serverDescription = "It's silver",
+            ),
+            "BRNZ" to VirtualCurrency(
+                balance = 300,
+                name = "Bronze",
+                code = "BRNZ",
+                serverDescription = "It's bronze",
+            ),
+            "PLTNM" to VirtualCurrency(
+                balance = 400,
+                name = "Platinum",
+                code = "PLTNM",
+                serverDescription = "It's platinum",
+            ),
+        ),
+    )
+
+    val fiveVirtualCurrencies = VirtualCurrencies(
+        all = mapOf(
+            "GLD" to VirtualCurrency(
+                balance = 100,
+                name = "Gold",
+                code = "GLD",
+                serverDescription = "It's gold",
+            ),
+            "SLV" to VirtualCurrency(
+                balance = 200,
+                name = "Silver",
+                code = "SLV",
+                serverDescription = "It's silver",
+            ),
+            "BRNZ" to VirtualCurrency(
+                balance = 300,
+                name = "Bronze",
+                code = "BRNZ",
+                serverDescription = "It's bronze",
+            ),
+            "PLTNM" to VirtualCurrency(
+                balance = 400,
+                name = "Platinum",
+                code = "PLTNM",
+                serverDescription = "It's platinum",
+            ),
+            "RC_COIN" to VirtualCurrency(
+                balance = 1,
+                name = "RC Coin",
+                code = "RC_COIN",
+                serverDescription = "RevenueCat Coin",
+            ),
+        ),
     )
 }

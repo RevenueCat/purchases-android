@@ -52,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBa
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -364,10 +365,9 @@ private fun LoadedPaywallComponents_Preview_Bless() {
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     val state = offering.toComponentsPaywallState(
         validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
     )
 
     LoadedPaywallComponents(
@@ -452,10 +452,9 @@ private fun previewHelloWorldPaywallState(): PaywallState.Loaded.Components {
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
     )
 }
 

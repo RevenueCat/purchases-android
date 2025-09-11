@@ -7,6 +7,7 @@ import android.os.Parcelable
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
@@ -112,8 +114,12 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             configureSdkWithSavedData(savedInstanceState)
         }
         val args = getArgs()
+        val edgeToEdge = args?.edgeToEdge == true
+        if (edgeToEdge) {
+            enableEdgeToEdge()
+        }
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
-            .setOfferingId(args?.offeringId)
+            .setOfferingIdAndPresentedOfferingContext(args?.offeringIdAndPresentedOfferingContext)
             .setFontProvider(getFontProvider())
             .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
             .setListener(this)
@@ -121,7 +127,13 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setContent {
             MaterialTheme {
                 Scaffold { paddingValues ->
-                    Box(Modifier.fillMaxSize().padding(paddingValues)) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .conditional(!edgeToEdge) {
+                                padding(paddingValues)
+                            },
+                    ) {
                         Paywall(paywallOptions)
                     }
                 }

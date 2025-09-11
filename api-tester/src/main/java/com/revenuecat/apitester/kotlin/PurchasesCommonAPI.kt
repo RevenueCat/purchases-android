@@ -23,9 +23,12 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitOfferingsResult
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitPurchaseResult
+import com.revenuecat.purchases.awaitStorefrontCountryCode
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
+import com.revenuecat.purchases.getStorefrontCountryCodeWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -61,6 +64,10 @@ private class PurchasesCommonAPI {
             override fun onReceived(storeProducts: List<StoreProduct>) {}
             override fun onError(error: PurchasesError) {}
         }
+        val getStorefrontCallback = object : GetStorefrontCallback {
+            override fun onReceived(storefrontCountryCode: String) {}
+            override fun onError(error: PurchasesError) {}
+        }
 
         purchases.getOfferings(receiveOfferingsCallback)
 
@@ -70,6 +77,9 @@ private class PurchasesCommonAPI {
         purchases.restorePurchases(receiveCustomerInfoCallback)
 
         val appUserID: String = purchases.appUserID
+
+        val countryCode = purchases.storefrontCountryCode
+        purchases.getStorefrontCountryCode(getStorefrontCallback)
 
         purchases.removeUpdatedCustomerInfoListener()
         purchases.close()
@@ -129,6 +139,10 @@ private class PurchasesCommonAPI {
         purchases: Purchases,
         purchaseParams: PurchaseParams,
     ) {
+        purchases.getStorefrontCountryCodeWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: String -> },
+        )
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> },
@@ -163,10 +177,10 @@ private class PurchasesCommonAPI {
         activity: Activity,
         packageToPurchase: Package,
     ) {
+        val storefrontCountryCode: String = purchases.awaitStorefrontCountryCode()
         val offerings: Offerings = purchases.awaitOfferings()
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
-        val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }
@@ -209,6 +223,7 @@ private class PurchasesCommonAPI {
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .store(Store.PLAY_STORE)
             .pendingTransactionsForPrepaidPlansEnabled(true)
+            .automaticDeviceIdentifierCollectionEnabled(true)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically

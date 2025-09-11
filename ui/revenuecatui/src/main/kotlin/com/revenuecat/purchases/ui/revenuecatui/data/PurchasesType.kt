@@ -7,9 +7,11 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
@@ -18,6 +20,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
  * Abstraction over [Purchases] that can be mocked.
@@ -37,6 +40,11 @@ internal interface PurchasesType {
 
     suspend fun awaitGetProduct(productId: String, basePlan: String?): StoreProduct?
 
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies
+
+    fun invalidateVirtualCurrenciesCache()
+
     fun track(event: FeatureEvent)
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
@@ -46,6 +54,8 @@ internal interface PurchasesType {
     val storefrontCountryCode: String?
 
     val customerCenterListener: CustomerCenterListener?
+
+    val preferredUILocaleOverride: String?
 }
 
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
@@ -80,6 +90,15 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         }
     }
 
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetVirtualCurrencies(): VirtualCurrencies {
+        return purchases.awaitGetVirtualCurrencies()
+    }
+
+    override fun invalidateVirtualCurrenciesCache() {
+        purchases.invalidateVirtualCurrenciesCache()
+    }
+
     override fun track(event: FeatureEvent) {
         purchases.track(event)
     }
@@ -96,4 +115,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val customerCenterListener: CustomerCenterListener?
         get() = purchases.customerCenterListener
+
+    override val preferredUILocaleOverride: String?
+        get() = purchases.preferredUILocaleOverride
 }

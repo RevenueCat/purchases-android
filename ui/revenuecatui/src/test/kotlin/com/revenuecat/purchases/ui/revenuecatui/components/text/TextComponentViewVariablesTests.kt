@@ -31,6 +31,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2.Variable
+import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -155,6 +156,19 @@ internal class TextComponentViewVariablesTests(
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productYearlySekOneOffer = TestStoreProduct(
+            id = "com.revenuecat.annual_product",
+            name = "Annual",
+            title = "Annual (App name)",
+            price = Price(
+                amountMicros = 20000_000_000,
+                currencyCode = "SEK",
+                formatted = "20.000,00 kr",
+            ),
+            description = "Annual",
+            period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+            freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+        )
         private val productLifetimeUsd = TestStoreProduct(
             id = "com.revenuecat.lifetime_product",
             name = "Lifetime",
@@ -220,6 +234,14 @@ internal class TextComponentViewVariablesTests(
             identifier = "package_yearly",
             offering = OFFERING_ID,
             product = productYearlyJpyOneOffer,
+        )
+
+        @Suppress("DEPRECIATION")
+        private val packageYearlySekOneOffer = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = "package_yearly",
+            offering = OFFERING_ID,
+            product = productYearlySekOneOffer,
         )
 
         @Suppress("DEPRECATION")
@@ -1003,7 +1025,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥55"
+                "￥55"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
@@ -1013,7 +1035,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥384"
+                "￥384"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
@@ -1023,7 +1045,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥1,667"
+                "￥1,667"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
@@ -1033,7 +1055,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000"
+                "￥20,000"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
@@ -1054,6 +1076,48 @@ internal class TextComponentViewVariablesTests(
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
                 "¥20,000/yr"
+            ),
+            // storefrontCountryCode different from device locale. We should always prefer the storefront country when
+            // formatting calculated prices, to avoid discrepancies with prices coming from the store directly.
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "54,79 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "383,56 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "1 666,67 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "20 000,00 kr"
             ),
             // Functions:
             arrayOf(

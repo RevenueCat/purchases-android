@@ -1,9 +1,9 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import android.preference.PreferenceManager
 import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
+import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
@@ -170,8 +170,15 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
+    protected fun isRunningLoadShedderIntegrationTests(): Boolean {
+        return Constants.isRunningLoadShedderIntegrationTests.toBoolean()
+    }
+
     private fun clearAllSharedPreferences(context: Context) {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        context.getSharedPreferences(
+            RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
+            Context.MODE_PRIVATE,
+        ).edit().clear().commit()
         context.getSharedPreferences(
             eTagsSharedPreferencesNameTemplate.format(context.packageName),
             Context.MODE_PRIVATE,
@@ -183,7 +190,10 @@ open class BasePurchasesIntegrationTest {
     }
 
     private fun writeSharedPreferences(context: Context, values: Map<String, String>) {
-        val editor = PreferenceManager.getDefaultSharedPreferences(context).edit()
+        val editor = context.getSharedPreferences(
+            RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
+            Context.MODE_PRIVATE,
+        ).edit()
         values.forEach { (key, value) ->
             editor.putString(key, value)
         }

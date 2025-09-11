@@ -7,6 +7,7 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 typealias RCColor = PaywallColor
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -223,6 +224,9 @@ data class CustomerCenterConfigData(
             @SerialName("badge_free_trial_cancelled")
             BADGE_FREE_TRIAL_CANCELLED,
 
+            @SerialName("badge_lifetime")
+            BADGE_LIFETIME,
+
             @SerialName("app_store")
             APP_STORE,
 
@@ -243,6 +247,33 @@ data class CustomerCenterConfigData(
 
             @SerialName("card_store_promotional")
             CARD_STORE_PROMOTIONAL,
+
+            @SerialName("resubscribe")
+            RESUBSCRIBE,
+
+            @SerialName("type_subscription")
+            TYPE_SUBSCRIPTION,
+
+            @SerialName("type_one_time_purchase")
+            TYPE_ONE_TIME_PURCHASE,
+
+            @SerialName("buy_subscription")
+            BUY_SUBSCRIPTION,
+
+            @SerialName("last_charge_was")
+            LAST_CHARGE_WAS,
+
+            @SerialName("next_billing_date_on")
+            NEXT_BILLING_DATE_ON,
+
+            @SerialName("see_all_virtual_currencies")
+            SEE_ALL_VIRTUAL_CURRENCIES,
+
+            @SerialName("virtual_currency_balances_screen_header")
+            VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+
+            @SerialName("no_virtual_currency_balances_found")
+            NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
             ;
 
             val defaultValue: String
@@ -320,6 +351,7 @@ data class CustomerCenterConfigData(
                     BADGE_CANCELLED -> "Cancelled"
                     BADGE_FREE_TRIAL -> "Free Trial"
                     BADGE_FREE_TRIAL_CANCELLED -> "Cancelled Trial"
+                    BADGE_LIFETIME -> "Lifetime"
                     APP_STORE -> "App Store"
                     MAC_APP_STORE -> "Mac App Store"
                     GOOGLE_PLAY_STORE -> "Google Play Store"
@@ -327,6 +359,15 @@ data class CustomerCenterConfigData(
                     WEB_STORE -> "Web"
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
+                    RESUBSCRIBE -> "Resubscribe"
+                    TYPE_SUBSCRIPTION -> "Subscription"
+                    TYPE_ONE_TIME_PURCHASE -> "One time purchase"
+                    BUY_SUBSCRIPTION -> "Buy Subscription"
+                    LAST_CHARGE_WAS -> "Last charge: {{ price }}"
+                    NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
+                    SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
+                    VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
+                    NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
                 }
         }
 
@@ -344,6 +385,7 @@ data class CustomerCenterConfigData(
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
         val url: String? = null,
         @SerialName("open_method") val openMethod: OpenMethod? = null,
+        @SerialName("action_identifier") val actionIdentifier: String? = null,
     ) {
         @Serializable
         sealed class PathDetail {
@@ -414,6 +456,7 @@ data class CustomerCenterConfigData(
             CHANGE_PLANS,
             CANCEL,
             CUSTOM_URL,
+            CUSTOM_ACTION,
             UNKNOWN,
         }
 
@@ -445,11 +488,28 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
+    data class ScreenOffering(
+        val type: ScreenOfferingType,
+        @SerialName("offering_id") val offeringId: String? = null,
+        @SerialName("button_text") val buttonText: String? = null,
+    ) {
+        @Serializable
+        enum class ScreenOfferingType(val value: String) {
+            @SerialName("CURRENT")
+            CURRENT("CURRENT"),
+
+            @SerialName("SPECIFIC")
+            SPECIFIC("SPECIFIC"),
+        }
+    }
+
+    @Serializable
     data class Screen(
         val type: ScreenType,
         val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
+        val offering: ScreenOffering? = null,
     ) {
         @Serializable
         enum class ScreenType {
@@ -465,6 +525,8 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+        @SerialName("display_virtual_currencies")
+        val displayVirtualCurrencies: Boolean? = null,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {

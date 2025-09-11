@@ -34,14 +34,10 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
  * (e.g. "sans-serif"), a font resource provided by the app, or a device font provided by the OEM.
  *
  * Determining this is relatively costly for font resources. So this abstraction allows us to perform this logic only
- * once for each one (see [determineFontSpecs]) in the validation step, before resolving the actual font where needed.
- *
- * It also allows us to defer resolving the actual font to the UI layer, as only at that time do we know the exact
- * override that's being used. We need to know this, because we need to know the [FontWeight] for which to resolve the
- * font.
+ * once for each one (see [determineFontSpecs]) in the validation step.
  */
 internal sealed interface FontSpec {
-    data class Resource(@get:JvmSynthetic val id: Int) : FontSpec
+    data class Resource(@get:JvmSynthetic val fontFamily: FontFamily) : FontSpec
     data class Asset(@get:JvmSynthetic val path: String) : FontSpec
     data class Google(@get:JvmSynthetic val name: String) : FontSpec
     sealed interface Generic : FontSpec {
@@ -58,12 +54,69 @@ internal sealed interface FontSpec {
 internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     resourceProvider: ResourceProvider,
 ): Map<FontAlias, FontSpec> {
+    val resourceFontFamilies = values
+        .toSet()
+        .mapNotNull { fontsConfig ->
+            val fontInfo = fontsConfig.android as? FontInfo.Name
+            fontInfo?.family?.let { family -> family to fontInfo }
+        }
+        .groupBy({ (family, _) -> family }, { (_, fontInfo) -> fontInfo })
+        .mapNotNull { (family, fontInfos) ->
+            fontInfos.toFontSpecResource(resourceProvider)?.let {
+                family to it
+            }
+        }.associateBy({ it.first }, { it.second })
+
     // Get unique FontsConfigs, and determine their FontSpec.
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
-        resourceProvider.determineFontSpec(fontsConfig)
+        resourceProvider.determineFontSpec(fontsConfig, resourceFontFamilies)
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
+}
+
+private fun List<FontInfo.Name>.toFontSpecResource(
+    resourceProvider: ResourceProvider,
+): FontSpec.Resource? {
+    val fontResourceData = toFontResourceIdAndData(resourceProvider)
+    return if (fontResourceData.isEmpty()) {
+        null
+    } else {
+        if (fontResourceData.size == 1) {
+            resourceProvider.getXmlFontFamily(fontResourceData.first().first)?.let {
+                return FontSpec.Resource(it)
+            }
+        }
+        FontSpec.Resource(
+            FontFamily(
+                fontResourceData.map { resourceFont ->
+                    Font(
+                        resId = resourceFont.first,
+                        weight = resourceFont.second?.let { FontWeight(it) } ?: FontWeight.Normal,
+                        style = resourceFont.third ?: FontStyle.Normal,
+                    )
+                },
+            ),
+        )
+    }
+}
+
+private fun List<FontInfo.Name>.toFontResourceIdAndData(
+    resourceProvider: ResourceProvider,
+): List<Triple<Int, Int?, FontStyle?>> {
+    val resourceNamesSeen = mutableSetOf<String>()
+    return mapNotNull { fontInfo ->
+        if (fontInfo.value in resourceNamesSeen) {
+            null
+        } else {
+            resourceProvider.getResourceIdentifier(name = fontInfo.value, type = "font")
+                .takeIf { it != 0 }
+                ?.also { resourceNamesSeen.add(fontInfo.value) }
+                ?.let {
+                    Triple(it, fontInfo.weight, fontInfo.style?.toComposeFontStyle())
+                }
+        }
+    }
 }
 
 /**
@@ -111,7 +164,7 @@ internal fun FontSpec.resolve(
     weight: FontWeight,
     style: FontStyle,
 ): FontFamily = when (this) {
-    is FontSpec.Resource -> FontFamily(Font(resId = id, weight = weight, style = style))
+    is FontSpec.Resource -> fontFamily
     is FontSpec.Asset -> FontFamily(Font(path = path, assetManager = assets, weight = weight, style = style))
     is FontSpec.Google -> FontFamily(
         Font(googleFont = GoogleFont(name), fontProvider = GoogleFontsProvider, weight = weight, style = style),
@@ -138,10 +191,16 @@ internal fun FontSpec.resolve(
     )
 }
 
-private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSpec {
+private fun ResourceProvider.determineFontSpec(
+    fontsConfig: FontsConfig,
+    resourceFontFamilies: Map<String, FontSpec.Resource>,
+): FontSpec {
     return when (val fontInfo = fontsConfig.android) {
         is FontInfo.GoogleFonts -> FontSpec.Google(name = fontInfo.value)
-        is FontInfo.Name -> getBundledFontSpec(fontInfo)
+        is FontInfo.Name -> getGenericFontSpec(fontInfo)
+            ?: fontInfo.family?.let { resourceFontFamilies[fontInfo.family] }
+            ?: getAssetFontPath(name = fontInfo.value)
+                ?.let { path -> FontSpec.Asset(path = path) }
             ?: getDownloadedFontSpec(fontInfo)
             ?: FontSpec.System(name = fontInfo.value).also {
                 Logger.d(
@@ -154,20 +213,14 @@ private fun ResourceProvider.determineFontSpec(fontsConfig: FontsConfig): FontSp
     }
 }
 
-@Suppress("NestedBlockDepth")
-private fun ResourceProvider.getBundledFontSpec(
+private fun getGenericFontSpec(
     fontInfo: FontInfo.Name,
-): FontSpec? {
-    return when (fontInfo.value.takeIf { it.isNotEmpty() }) {
-        null -> null // No font specified, return null.
+): FontSpec.Generic? {
+    return when (fontInfo.value) {
         FontFamily.SansSerif.name -> FontSpec.Generic.SansSerif
         FontFamily.Serif.name -> FontSpec.Generic.Serif
         FontFamily.Monospace.name -> FontSpec.Generic.Monospace
-        else -> getResourceIdentifier(name = fontInfo.value, type = "font")
-            .takeIf { it != 0 }
-            ?.let { fontId -> FontSpec.Resource(id = fontId) }
-            ?: getAssetFontPath(name = fontInfo.value)
-                ?.let { path -> FontSpec.Asset(path = path) }
+        else -> null // Not a generic font.
     }
 }
 

@@ -18,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -107,6 +109,7 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
+    modifier: Modifier = Modifier,
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
@@ -124,7 +127,7 @@ fun PaywallsScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.testTag("paywall_screen"),
+        modifier = modifier.testTag("paywall_screen"),
     ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
@@ -235,8 +238,12 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     }
 }
 
+@Stable
 private sealed class DisplayPaywallState {
+
+    @Immutable
     object None : DisplayPaywallState()
+
     data class FullScreen
     constructor(
         val offering: Offering? = null,

@@ -96,6 +96,10 @@ internal fun ComposeLocale.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(toLanguageTag())
 
 @JvmSynthetic
+internal fun JavaLocale.toComposeLocale(): ComposeLocale =
+    ComposeLocale(toLanguageTag())
+
+@JvmSynthetic
 internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
     keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
 

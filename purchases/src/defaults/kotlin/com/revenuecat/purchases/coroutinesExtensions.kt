@@ -4,26 +4,10 @@ import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-
-/**
- * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
- * If there is any error, it will return null and log said error.
- * Coroutine friendly version of [Purchases.getStorefrontCountryCode].
- *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
- * @return The Store country code in ISO-3166-1 alpha2.
- */
-suspend fun Purchases.awaitStorefrontCountryCode(): String {
-    return suspendCoroutine { continuation ->
-        getStorefrontCountryCodeWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-        )
-    }
-}
 
 /**
  * Get latest available customer info.
@@ -188,5 +172,26 @@ suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData 
                 continuation.resumeWithException(PurchasesException(error))
             }
         })
+    }
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.getVirtualCurrencies].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
+ * the virtual currencies.
+ *
+ * @return The [VirtualCurrencies] with the subscriber's virtual currencies.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
+    return suspendCoroutine { continuation ->
+        getVirtualCurrenciesWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
     }
 }

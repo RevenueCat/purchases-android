@@ -18,7 +18,6 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -41,7 +40,6 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.not
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -49,10 +47,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
 import java.util.Date
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -296,7 +291,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserId,
                 ProductType.SUBS,
                 oldSubId,
@@ -1060,7 +1055,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val oldPurchase = mockPurchaseFound(error)
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
@@ -1163,7 +1158,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -1227,7 +1222,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -1261,6 +1256,32 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `when making a purchase, backup manager is notified of data change`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val storeProduct = stubStoreProduct(productId)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var callCount = 0
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ ->
+                callCount++
+            }, onError = { _, _ -> fail("should be successful") })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+        assertThat(callCount).isEqualTo(1)
+    }
+
     // endregion
 
     // region customer info
@@ -1283,7 +1304,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
     }
@@ -1972,7 +1994,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,

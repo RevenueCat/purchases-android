@@ -50,24 +50,6 @@ class PurchaseParamsTest {
     }
 
     @Test
-    fun `Initializing with TestStoreProduct throws error`() {
-        val storeProduct = TestStoreProduct(
-            "id",
-            "name",
-            "title",
-            "description",
-            Price("$1.99", 1_990_000, "US"),
-            Period(1, Period.Unit.MONTH, "P1M")
-        )
-        try {
-            PurchaseParams.Builder(mockk(), storeProduct).build()
-            fail("Expected error")
-        } catch (e: PurchasesException) {
-            assertThat(e.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
-        }
-    }
-
-    @Test
     fun `Initializing with SubscriptionOption sets proper presentedOfferingIdentifier`() {
         val storeProduct = stubStoreProduct(
             productId = "abc",
@@ -95,25 +77,6 @@ class PurchaseParamsTest {
 
         val expectedPurchasingData = packageToPurchase.product.purchasingData
         assertThat(purchasePackageParams.purchasingData).isEqualTo(expectedPurchasingData)
-    }
-
-    @Test
-    fun `Initializing with Package containing TestStoreProduct throws error`() {
-        val storeProduct = TestStoreProduct(
-            "id",
-            "name",
-            "title",
-            "description",
-            Price("$1.99", 1_990_000, "US"),
-            Period(1, Period.Unit.MONTH, "P1M")
-        )
-        val (_, offerings) = stubOfferings(storeProduct)
-        try {
-            PurchaseParams.Builder(mockk(), offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!).build()
-            fail("Expected error")
-        } catch (e: PurchasesException) {
-            assertThat(e.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
-        }
     }
 
     @Test

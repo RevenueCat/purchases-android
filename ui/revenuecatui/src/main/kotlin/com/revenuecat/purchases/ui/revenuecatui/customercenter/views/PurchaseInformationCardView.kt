@@ -79,11 +79,23 @@ internal fun PurchaseInformationCardView(
                     modifier = Modifier.weight(1f),
                 )
                 when {
-                    !purchaseInformation.isSubscription && !isDetailedView -> Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
+                    !purchaseInformation.isSubscription && !isDetailedView -> {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(
+                                CustomerCenterConstants.Card.BADGE_HORIZONTAL_PADDING,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (purchaseInformation.isLifetime) {
+                                PurchaseStatusBadge(purchaseInformation, localization)
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
                     else -> PurchaseStatusBadge(purchaseInformation, localization)
                 }
             }
@@ -133,7 +145,8 @@ private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Lo
         Store.PADDLE,
         Store.RC_BILLING,
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE
-        Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
+        Store.UNKNOWN_STORE,
+        -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
     }
     return localization.commonLocalizedString(key)
 }

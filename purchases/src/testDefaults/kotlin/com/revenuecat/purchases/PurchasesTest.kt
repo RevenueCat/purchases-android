@@ -21,6 +21,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -45,7 +46,6 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -184,7 +184,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -230,7 +230,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -525,6 +525,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login called with different appUserID notifies backup manager`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
     fun `login successful with new appUserID calls customer info updater to update delegate if changed`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
@@ -593,6 +615,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockOfferingsManager.fetchAndCacheOfferings(appUserID, false, any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
         }
     }
 
@@ -1214,8 +1239,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun historicalPurchasesPassedToBackend() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
-        val inAppTransactions = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val subTransactions = getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
+        val inAppTransactions = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
+        val subTransactions = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS)
 
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1300,8 +1325,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(productIdSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseList(productId, purchaseToken, ProductType.INAPP) +
+                        getMockedPurchaseList(productIdSub, purchaseTokenSub, ProductType.SUBS)
                 )
             }
         }
@@ -1644,16 +1669,66 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion Paywall fonts
 
+    // region Simulated store
+
+    @Test
+    fun `syncing transactions on simulated store does not sync purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.syncPurchases(object: SyncPurchasesCallback {
+            override fun onSuccess(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    @Test
+    fun `restore transactions on simulated store does not restore purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    // endregion Simulated store
+
     // region Private Methods
 
-    private fun getMockedPurchaseHistoryList(
+    private fun getMockedPurchaseList(
         productId: String,
         purchaseToken: String,
         productType: ProductType
     ): List<StoreTransaction> {
-        val purchaseHistoryRecordWrapper =
+        val purchaseRecordWrapper =
             getMockedStoreTransaction(productId, purchaseToken, productType)
-        return listOf(purchaseHistoryRecordWrapper)
+        return listOf(purchaseRecordWrapper)
     }
 
     private fun mockQueryingProductDetails(
@@ -1715,7 +1790,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
+            mockBillingAbstract.findPurchaseInActivePurchases(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,

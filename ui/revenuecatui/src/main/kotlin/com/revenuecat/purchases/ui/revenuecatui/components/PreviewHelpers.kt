@@ -60,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -69,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
@@ -80,7 +82,7 @@ private const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
-internal fun previewEmptyState(): PaywallState.Loaded.Components {
+internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
@@ -111,13 +113,18 @@ internal fun previewEmptyState(): PaywallState.Loaded.Components {
             data = data,
         ),
     )
-    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.map {
+        if (initialSelectedTabIndex != null) {
+            it.copy(initialSelectedTabIndex = initialSelectedTabIndex)
+        } else {
+            it
+        }
+    }?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validationResult = validated,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
     )
 }
 

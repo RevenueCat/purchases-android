@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 apply(from = "$rootDir/base-application.gradle")
@@ -15,6 +16,7 @@ android {
         }
         create("customEntitlementComputation") {
             dimension = "apis"
+            missingDimensionStrategy("apis", "defaults")
         }
     }
 
@@ -25,10 +27,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
     }
 
     composeOptions {
@@ -49,6 +47,12 @@ android {
     }
 
     namespace = "com.revenuecat.api_tester_kotlin"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    }
 }
 
 dependencies {

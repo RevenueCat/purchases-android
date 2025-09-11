@@ -5,6 +5,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
@@ -417,6 +419,7 @@ internal class MockResourceProvider(
     private val resourceIds: Map<String, Map<String, Int>> = emptyMap(),
     private val assetPaths: List<String> = emptyList(),
     private val downloadedFilesByUrl: Map<String, DownloadedFontFamily> = emptyMap(),
+    private val fontFamiliesByXmlResourceId: Map<Int, FontFamily> = emptyMap(),
 ) : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
@@ -449,6 +452,10 @@ internal class MockResourceProvider(
 
     override fun getResourceIdentifier(name: String, type: String): Int =
         resourceIds[type]?.get(name) ?: 0
+
+    override fun getXmlFontFamily(resourceId: Int): FontFamily? {
+        return fontFamiliesByXmlResourceId[resourceId]
+    }
 
     override fun getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
@@ -488,8 +495,6 @@ internal class MockViewModel(
         when (val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, resourceProvider)) {
             is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
                 variableDataProvider = VariableDataProvider(resourceProvider),
-                activelySubscribedProductIdentifiers = setOf(),
-                nonSubscriptionProductIdentifiers = setOf(),
                 mode = mode,
                 validatedPaywallData = validated.displayablePaywall,
                 template = validated.template,
@@ -498,10 +503,9 @@ internal class MockViewModel(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
-                activelySubscribedProductIds = emptySet(),
-                purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = null,
                 dateProvider = { Date(MILLIS_2025_01_25) },
+                purchases = MockPurchasesType(),
             )
         },
     )

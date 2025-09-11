@@ -25,6 +25,11 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.WebBillingPhase
+import com.revenuecat.purchases.common.networking.WebBillingPrice
+import com.revenuecat.purchases.common.networking.WebBillingProductResponse
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
+import com.revenuecat.purchases.common.networking.WebBillingPurchaseOption
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.common.toMap
@@ -43,6 +48,9 @@ import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -50,9 +58,11 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -78,16 +88,23 @@ class BackendTest {
     @Before
     fun setup() {
         mockkObject(CustomerInfoFactory)
+        mockkObject(VirtualCurrenciesFactory)
         receivedError = null
         receivedOfferingsJSON = null
         receivedCustomerInfo = null
         receivedPostReceiptErrorHandlingBehavior = null
         receivedCustomerInfoCreated = null
         receivedIsServerError = null
+        receivedVirtualCurrencies = null
+        receivedWebBillingProductsResponse = null
+        receivedAliasUsersCallCount = 0
     }
 
     @After
-    fun tearDown() = unmockkObject(CustomerInfoFactory)
+    fun tearDown() {
+        unmockkObject(CustomerInfoFactory)
+        unmockkObject(VirtualCurrenciesFactory)
+    }
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
@@ -148,6 +165,9 @@ class BackendTest {
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCustomerInfoCreated: Boolean? = null
+    private var receivedVirtualCurrencies: VirtualCurrencies? = null
+    private var receivedWebBillingProductsResponse: WebBillingProductsResponse? = null
+    private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
@@ -193,6 +213,30 @@ class BackendTest {
 
     private val onReceiveLoginErrorHandler: (PurchasesError) -> Unit = {
         this@BackendTest.receivedError = it
+    }
+
+    private val onReceiveVirtualCurrenciesSuccessHandler: (VirtualCurrencies) -> Unit = { info ->
+        this@BackendTest.receivedVirtualCurrencies = info
+    }
+
+    private val onReceiveVirtualCurrenciesErrorHandler: (PurchasesError) -> Unit = { error ->
+        this@BackendTest.receivedError = error
+    }
+
+    private val onReceiveWebBillingProductsSuccessHandler: (WebBillingProductsResponse) -> Unit = { response ->
+        this@BackendTest.receivedWebBillingProductsResponse = response
+    }
+
+    private val onReceiveWebBillingProductsErrorHandler: (PurchasesError) -> Unit = { error ->
+        this@BackendTest.receivedError = error
+    }
+
+    private val onReceiveAliasUsersSuccessHandler: () -> Unit = {
+        this@BackendTest.receivedAliasUsersCallCount += 1
+    }
+
+    private val onReceiveAliasUsersErrorHandler: (PurchasesError) -> Unit = { error ->
+        this@BackendTest.receivedError = error
     }
 
     // region general backend functionality
@@ -2405,6 +2449,535 @@ class BackendTest {
 
     // endregion
 
+    // region getVirtualCurrencies
+
+    @Test
+    fun getVirtualCurrenciesCallsProperURL() {
+        val virtualCurrencies = getVirtualCurrencies(200, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNotNull
+        assertThat(receivedVirtualCurrencies).isEqualTo(virtualCurrencies)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders
+            )
+        }
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls success handler for successful request`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            Responses.validFullVirtualCurrenciesResponse,
+            true,
+            shouldMockVirtualCurrencies = false
+        )
+        var successCalled = false
+        backend.getVirtualCurrencies(appUserID, false,
+            {
+                successCalled = true
+                val expectedVirtualCurrencies = VirtualCurrencies(
+                    all = mapOf(
+                        "COIN" to VirtualCurrency(
+                            balance = 1,
+                            name = "Coin",
+                            code = "COIN",
+                            serverDescription = "It's a coin",
+                        ),
+                        "RC_COIN" to VirtualCurrency(
+                            balance = 0,
+                            name = "RC Coin",
+                            code = "RC_COIN",
+                            serverDescription = null,
+                        ),
+                    ),
+                )
+                assertThat(it).isEqualTo(expectedVirtualCurrencies)
+            },
+            { error -> fail("expected success $error", error) }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun getVirtualCurrenciesFailsIf40X() {
+        val failureCode = 400
+
+        getVirtualCurrencies(failureCode, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun getVirtualCurrenciesFailsIf50X() {
+        val failureCode = 500
+
+        getVirtualCurrencies(failureCode, null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when a Network error occurs`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            IOException(),
+            null
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `given multiple getVirtualCurrencies calls for same subscriber same body, only one is triggered`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given getVirtualCurrencies call on foreground, then one in background, only one request without delay is triggered`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            asyncDispatcher.enqueue(any(), Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `given getVirtualCurrencies call on background, then one in foreground, both are executed`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        asyncBackend.getVirtualCurrencies(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveVirtualCurrenciesErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetVirtualCurrencies(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `getVirtualCurrencies call is enqueued with delay if on background`() {
+        dispatcher.calledDelay = null
+
+        getVirtualCurrencies(200, clientException = null, resultBody = null, appInBackground = true)
+
+        val calledWithRandomDelay: Delay? = dispatcher.calledDelay
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws JSONException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = JSONException("Invalid JSON")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws SerializationException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = SerializationException("Serialization error")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `getVirtualCurrencies calls error handler when VirtualCurrenciesFactory throws IllegalArgumentException`() {
+        mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            200,
+            null,
+            null,
+            virtualCurrenciesFactoryException = IllegalArgumentException("Invalid input")
+        )
+        var errorCalled = false
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground = false,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+    // endregion Virtual currencies
+
+    // region WebBilling products
+
+    @Test
+    fun getWebBillingProductsCallsProperURL() {
+        val productIDs = setOf("product1", "product2")
+        val response = getWebBillingProductsResponse(200, productIDs, null, null)
+
+        assertThat(receivedWebBillingProductsResponse).isNotNull
+        assertThat(receivedWebBillingProductsResponse).isEqualTo(response)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.WebBillingGetProducts(appUserID, productIDs),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders
+            )
+        }
+    }
+
+    @Test
+    fun `getWebBillingProducts calls success handler for successful request`() {
+        val productIDs = setOf("product1", "product2")
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
+            200,
+            null,
+            Responses.validWebBillingProductsResponse,
+            true,
+        )
+        var successCalled = false
+        backend.getWebBillingProducts(appUserID, productIDs,
+            {
+                successCalled = true
+                val expectedWebBillingProductsResponse = WebBillingProductsResponse(
+                    productDetails = listOf(
+                        WebBillingProductResponse(
+                            identifier = "product1",
+                            productType = "subscription",
+                            title = "Test Monthly Subscription",
+                            description = "A test monthly subscription product",
+                            defaultPurchaseOptionId = "base_option",
+                            purchaseOptions = mapOf(
+                                "base_option" to WebBillingPurchaseOption(
+                                    base = WebBillingPhase(
+                                        price = WebBillingPrice(
+                                            amountMicros = 9990000,
+                                            currency = "EUR",
+                                        ),
+                                        periodDuration = "P1M",
+                                        cycleCount = 1,
+                                    )
+                                )
+                            ),
+                        ),
+                        WebBillingProductResponse(
+                            identifier = "product2",
+                            productType = "subscription",
+                            title = "Test Monthly Subscription",
+                            description = "A test monthly subscription product",
+                            defaultPurchaseOptionId = "base_option",
+                            purchaseOptions = mapOf(
+                                "base_option" to WebBillingPurchaseOption(
+                                    base = WebBillingPhase(
+                                        price = WebBillingPrice(
+                                            amountMicros = 9990000,
+                                            currency = "EUR",
+                                        ),
+                                        periodDuration = "P1M",
+                                        cycleCount = 1,
+                                    )
+                                )
+                            ),
+                        ),
+                    ),
+                )
+                assertThat(it).isEqualTo(expectedWebBillingProductsResponse)
+            },
+            { error -> fail("expected success $error", error) }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun getWebBillingProductsFailsIf40X() {
+        val failureCode = 400
+
+        getWebBillingProductsResponse(failureCode, emptySet(), null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun getWebBillingProductsFailsIf50X() {
+        val failureCode = 500
+
+        getWebBillingProductsResponse(failureCode, emptySet(), null, null)
+
+        assertThat(receivedVirtualCurrencies).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getWebBillingProducts calls error handler when a Network error occurs`() {
+        val productIDs = setOf("product1", "product2")
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
+            200,
+            IOException(),
+            null
+        )
+        var errorCalled = false
+        backend.getWebBillingProducts(
+            appUserID,
+            productIDs,
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `given multiple getWebBillingProduct calls for same subscriber same body, only one is triggered`() {
+        val productIDs = setOf("product1", "product2")
+        mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getWebBillingProducts(appUserID, productIDs, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveWebBillingProductsErrorHandler)
+        asyncBackend.getWebBillingProducts(appUserID, productIDs, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveWebBillingProductsErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.WebBillingGetProducts(appUserID, productIDs),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+    // endregion WebBilling Products
+
+    // region Alias Users
+
+    @Test
+    fun getAliasUsersCallsProperURL() {
+        postAliasUsers(responseCode = 200)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(1)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.AliasUsers("test-old-app-user-id"),
+                body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders
+            )
+        }
+    }
+
+    @Test
+    fun `getAliasUsers calls success handler for successful request`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            null,
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+            true,
+        )
+        var successCalled = false
+        backend.aliasUsers(appUserID, "test-new-user-id",
+            { successCalled = true },
+            { error -> fail("expected success $error", error) }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun getAliasUsersProductsFailsIf40X() {
+        val failureCode = 400
+
+        postAliasUsers(responseCode = failureCode)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(0)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun getAliasUsersProductsFailsIf50X() {
+        val failureCode = 500
+
+        postAliasUsers(responseCode = failureCode)
+
+        assertThat(receivedAliasUsersCallCount).isEqualTo(0)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getAliasUsers calls error handler when a Network error occurs`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            IOException(),
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id")
+        )
+        var errorCalled = false
+        backend.aliasUsers(
+            appUserID,
+            "test-new-user-id",
+            { fail("expected error handler to be called") },
+            { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `given multiple getAliasUsers calls for same subscriber same body, only one is triggered`() {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(appUserID),
+            200,
+            null,
+            body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.aliasUsers(appUserID, newAppUserID = "test-new-user-id", onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = onReceiveAliasUsersErrorHandler)
+        asyncBackend.aliasUsers(appUserID, newAppUserID = "test-new-user-id", onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = onReceiveAliasUsersErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.AliasUsers(appUserID),
+                body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+    // endregion AliasUsers
+
     // region helpers
 
     private fun mockResponse(
@@ -2549,6 +3122,184 @@ class BackendTest {
         )
 
         return info
+    }
+
+    private fun getVirtualCurrencies(
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        appInBackground: Boolean = false
+    ): VirtualCurrencies {
+        val virtualCurrencies = mockGetVirtualCurrenciesResponse(
+            Endpoint.GetVirtualCurrencies(appUserID),
+            null,
+            responseCode,
+            clientException,
+            resultBody
+        )
+
+        backend.getVirtualCurrencies(
+            appUserID,
+            appInBackground,
+            onReceiveVirtualCurrenciesSuccessHandler,
+            onReceiveVirtualCurrenciesErrorHandler
+        )
+
+        return virtualCurrencies
+    }
+
+    private fun getWebBillingProductsResponse(
+        responseCode: Int,
+        productIDs: Set<String> = emptySet(),
+        clientException: Exception?,
+        resultBody: String?,
+    ): WebBillingProductsResponse {
+        val productsResponse = mockGetWebBillingProductsResponse(
+            Endpoint.WebBillingGetProducts(appUserID, productIDs),
+            responseCode,
+            clientException,
+            resultBody
+        )
+
+        backend.getWebBillingProducts(
+            appUserID,
+            productIDs,
+            onReceiveWebBillingProductsSuccessHandler,
+            onReceiveWebBillingProductsErrorHandler,
+        )
+
+        return productsResponse
+    }
+
+    private fun postAliasUsers(
+        responseCode: Int,
+        oldAppUserID: String = "test-old-app-user-id",
+        newAppUserID: String = "test-new-app-user-id",
+        clientException: Exception? = null,
+    ) {
+        mockAliasUsersResponse(
+            Endpoint.AliasUsers(oldAppUserID),
+            responseCode,
+            clientException,
+            body = mapOf("app_user_id" to oldAppUserID, "new_app_user_id" to newAppUserID),
+        )
+
+        backend.aliasUsers(
+            oldAppUserID,
+            newAppUserID,
+            onReceiveAliasUsersSuccessHandler,
+            onReceiveAliasUsersErrorHandler,
+        )
+    }
+
+    private fun mockGetVirtualCurrenciesResponse(
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        delayed: Boolean = false,
+        shouldMockVirtualCurrencies: Boolean = true,
+        virtualCurrenciesFactoryException: Exception? = null,
+        baseURL: URL = mockBaseURL
+    ): VirtualCurrencies {
+        val virtualCurrencies: VirtualCurrencies = mockk()
+
+        val result = HTTPResult.createResult(responseCode, resultBody ?: "{\"virtual_currencies\":{}}")
+
+        if (virtualCurrenciesFactoryException != null) {
+            every {
+                VirtualCurrenciesFactory.buildVirtualCurrencies(result)
+            } throws virtualCurrenciesFactoryException
+        } else if (shouldMockVirtualCurrencies) {
+            every {
+                VirtualCurrenciesFactory.buildVirtualCurrencies(result)
+            } returns virtualCurrencies
+        }
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(baseURL),
+                eq(endpoint),
+                (if (body == null) any() else capture(requestBodySlot)),
+                any(),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) Thread.sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
+
+        return virtualCurrencies
+    }
+
+    private fun mockGetWebBillingProductsResponse(
+        endpoint: Endpoint,
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        delayed: Boolean = false,
+        baseURL: URL = mockBaseURL
+    ): WebBillingProductsResponse {
+        val response = WebBillingProductsResponse(productDetails = emptyList())
+
+        val result = HTTPResult.createResult(responseCode, resultBody ?: "{\"product_details\":[]}")
+
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(baseURL),
+                eq(endpoint),
+                null,
+                any(),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) Thread.sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
+
+        return response
+    }
+
+    private fun mockAliasUsersResponse(
+        endpoint: Endpoint,
+        responseCode: Int,
+        clientException: Exception?,
+        body: Map<String, String>?,
+        delayed: Boolean = false,
+        baseURL: URL = mockBaseURL
+    ) {
+        val result = HTTPResult.createResult(responseCode, "{}")
+
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(baseURL),
+                eq(endpoint),
+                body,
+                any(),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) Thread.sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
     }
 
     // endregion

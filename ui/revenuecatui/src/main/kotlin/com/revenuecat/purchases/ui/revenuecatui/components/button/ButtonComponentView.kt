@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -33,6 +35,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -68,101 +71,134 @@ internal fun ButtonComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Get a ButtonComponentState that calculates the stateful properties we should use.
-    val buttonState = rememberButtonComponentState(
-        style = style,
-        paywallState = state,
-    )
+    TransitionView(transition = style.transition) {
+        // Get a ButtonComponentState that calculates the stateful properties we should use.
+        val buttonState = rememberButtonComponentState(
+            style = style,
+            paywallState = state,
+        )
 
-    val coroutineScope = rememberCoroutineScope()
-    // Whether there's an action in progress anywhere on the paywall.
-    val anyActionInProgress by state::actionInProgress
-    // Whether this button's action is in progress.
-    var myActionInProgress by remember { mutableStateOf(false) }
-    val contentAlpha by remember {
-        derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
-    }
-    val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
-    val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
-    val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
+        val coroutineScope = rememberCoroutineScope()
+        // Whether there's an action in progress anywhere on the paywall.
+        val anyActionInProgress by state::actionInProgress
+        // Whether this button's action is in progress.
+        var myActionInProgress by remember { mutableStateOf(false) }
+        val contentAlpha by remember {
+            derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
+        }
+        val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
+        val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
+        val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
 
-    val layoutDirection = LocalLayoutDirection.current
-    val marginTop = remember(style.stackComponentStyle.margin) {
-        style.stackComponentStyle.margin.calculateTopPadding()
-    }
-    val marginBottom = remember(style.stackComponentStyle.margin) {
-        style.stackComponentStyle.margin.calculateBottomPadding()
-    }
-    val marginStart = remember(style.stackComponentStyle.margin, layoutDirection) {
-        style.stackComponentStyle.margin.calculateStartPadding(layoutDirection)
-    }
-    val marginEnd = remember(style.stackComponentStyle.margin, layoutDirection) {
-        style.stackComponentStyle.margin.calculateEndPadding(layoutDirection)
-    }
+        val layoutDirection = LocalLayoutDirection.current
+        val marginTop = remember(style.stackComponentStyle.margin) {
+            style.stackComponentStyle.margin.calculateTopPadding()
+        }
+        val marginBottom = remember(style.stackComponentStyle.margin) {
+            style.stackComponentStyle.margin.calculateBottomPadding()
+        }
+        val marginStart = remember(style.stackComponentStyle.margin, layoutDirection) {
+            style.stackComponentStyle.margin.calculateStartPadding(layoutDirection)
+        }
+        val marginEnd = remember(style.stackComponentStyle.margin, layoutDirection) {
+            style.stackComponentStyle.margin.calculateEndPadding(layoutDirection)
+        }
 
-    // We are using a custom Layout instead of a Box to properly handle the case where the StackComponentView is
-    // smaller than the CircularProgressIndicator, in either dimension. In this case, we want the
-    // CircularProgressIndicator to shrink so it doesn't exceed the StackComponentView's bounds. Using IntrinsicSize
-    // and matchParentSize() was considered, but in the end a custom Layout seemed to be the only reliable option.
-    Layout(
-        content = {
-            StackComponentView(
-                style = style.stackComponentStyle,
-                state = state,
-                // We're the button, so we're handling the click already.
-                clickHandler = { },
-                contentAlpha = animatedContentAlpha,
-            )
-            CircularProgressIndicator(
-                modifier = Modifier.alpha(animatedProgressAlpha),
-                color = progressColorFor(style.stackComponentStyle.background),
-            )
-        },
-        modifier = modifier.clickable(enabled = !anyActionInProgress) {
-            myActionInProgress = true
-            state.update(actionInProgress = true)
-            coroutineScope.launch {
-                onClick(buttonState.action)
-                myActionInProgress = false
-                state.update(actionInProgress = false)
-            }
-        },
-        measurePolicy = { measurables, constraints ->
-            val stack = measurables[0].measure(constraints)
-            // Ensure that the progress indicator is not bigger than the stack.
-            val marginStartPx = marginStart.toPx()
-            val marginEndPx = marginEnd.toPx()
-            val marginTopPx = marginTop.toPx()
-            val marginBottomPx = marginBottom.toPx()
-            val progressSize = min(
-                stack.width - marginStartPx - marginEndPx,
-                stack.height - marginTopPx - marginBottomPx,
-            ).toInt()
-            val progress = measurables[1].measure(
-                Constraints(
-                    minWidth = progressSize,
-                    maxWidth = progressSize,
-                    minHeight = progressSize,
-                    maxHeight = progressSize,
-                ),
-            )
-            val totalWidth = stack.width
-            val totalHeight = stack.height
-            val stackHeightMinusMargin = totalHeight - marginTopPx - marginBottomPx
-            val stackWidthMinusMargin = totalWidth - marginStartPx - marginEndPx
-            layout(
-                width = totalWidth,
-                height = totalHeight,
-            ) {
-                stack.placeRelative(x = 0, y = 0)
-                // Center the progress indicator.
-                progress.placeRelative(
-                    x = marginStartPx.toInt() + ((stackWidthMinusMargin / 2f) - (progress.width / 2f)).roundToInt(),
-                    y = marginTopPx.toInt() + ((stackHeightMinusMargin / 2f) - (progress.height / 2f)).roundToInt(),
+        // We are using a custom Layout instead of a Box to properly handle the case where the StackComponentView is
+        // smaller than the CircularProgressIndicator, in either dimension. In this case, we want the
+        // CircularProgressIndicator to shrink so it doesn't exceed the StackComponentView's bounds. Using IntrinsicSize
+        // and matchParentSize() was considered, but in the end a custom Layout seemed to be the only reliable option.
+        Layout(
+            content = {
+                StackComponentView(
+                    style = style.stackComponentStyle,
+                    state = state,
+                    // We're the button, so we're handling the click already.
+                    clickHandler = { },
+                    contentAlpha = animatedContentAlpha,
                 )
-            }
-        },
-    )
+                CircularProgressIndicator(
+                    modifier = Modifier.alpha(animatedProgressAlpha),
+                    color = progressColorFor(style.stackComponentStyle.background),
+                )
+            },
+            modifier = modifier.clickable(enabled = !anyActionInProgress) {
+                myActionInProgress = true
+                state.update(actionInProgress = true)
+                coroutineScope.launch {
+                    onClick(buttonState.action)
+                    myActionInProgress = false
+                    state.update(actionInProgress = false)
+                }
+            },
+            measurePolicy = { measurables, constraints ->
+                val stack = measurables[0].measure(constraints)
+                // Ensure that the progress indicator is not bigger than the stack.
+                val marginStartPx = marginStart.toPx()
+                val marginEndPx = marginEnd.toPx()
+                val marginTopPx = marginTop.toPx()
+                val marginBottomPx = marginBottom.toPx()
+                val progressSize = progressSize(
+                    stackWidthPx = stack.width,
+                    stackHeightPx = stack.height,
+                    stackMarginStartPx = marginStartPx,
+                    stackMarginEndPx = marginEndPx,
+                    stackMarginTopPx = marginTopPx,
+                    stackMarginBottomPx = marginBottomPx,
+                )
+                val progress = measurables[1].measure(
+                    Constraints(
+                        minWidth = progressSize,
+                        maxWidth = progressSize,
+                        minHeight = progressSize,
+                        maxHeight = progressSize,
+                    ),
+                )
+                val totalWidth = stack.width
+                val totalHeight = stack.height
+                val stackHeightMinusMargin = totalHeight - marginTopPx - marginBottomPx
+                val stackWidthMinusMargin = totalWidth - marginStartPx - marginEndPx
+                layout(
+                    width = totalWidth,
+                    height = totalHeight,
+                ) {
+                    stack.placeRelative(x = 0, y = 0)
+                    // Center the progress indicator.
+                    progress.placeRelative(
+                        x = marginStartPx.toInt() + ((stackWidthMinusMargin / 2f) - (progress.width / 2f)).roundToInt(),
+                        y = marginTopPx.toInt() + ((stackHeightMinusMargin / 2f) - (progress.height / 2f)).roundToInt(),
+                    )
+                }
+            },
+        )
+    }
+}
+
+@Suppress("LongParameterList")
+private fun Density.progressSize(
+    stackWidthPx: Int,
+    stackHeightPx: Int,
+    stackMarginStartPx: Float,
+    stackMarginEndPx: Float,
+    stackMarginTopPx: Float,
+    stackMarginBottomPx: Float,
+): Int {
+    val minDimensionDp = min(
+        a = stackWidthPx - stackMarginStartPx - stackMarginEndPx,
+        b = stackHeightPx - stackMarginTopPx - stackMarginBottomPx,
+    ).toDp()
+
+    val progressMarginDp = when {
+        minDimensionDp >= 32.dp -> 16.dp
+        minDimensionDp >= 24.dp -> minDimensionDp - 16.dp
+        minDimensionDp >= 16.dp -> 8.dp
+        minDimensionDp >= 8.dp -> minDimensionDp - 8.dp
+        else -> 0.dp
+    }
+
+    return (minDimensionDp - progressMarginDp)
+        .coerceIn(0.dp, 38.dp)
+        .roundToPx()
 }
 
 @Composable

@@ -41,7 +41,10 @@ class OfferingsTest {
     private val monthlyPackageID = PackageType.MONTHLY.identifier!!
     private val annualPackageID = PackageType.ANNUAL.identifier!!
 
-    private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+    private val offeringsParser = OfferingParserFactory.createOfferingParser(
+        Store.PLAY_STORE,
+        apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+    )
 
     @Test
     fun `createPackage returns null if packageJson planIdentifier doesnt match any sub StoreProduct base plan ids`() {

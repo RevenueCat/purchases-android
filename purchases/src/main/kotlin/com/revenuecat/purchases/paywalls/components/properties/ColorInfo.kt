@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.ColorInt
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.parseRGBAColor
@@ -15,9 +17,11 @@ import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
 @Serializable
+@Stable
 sealed interface ColorInfo {
 
     @Poko
+    @Immutable
     @Serializable
     @SerialName("hex")
     class Hex(
@@ -28,6 +32,7 @@ sealed interface ColorInfo {
     ) : ColorInfo
 
     @Poko
+    @Immutable
     @Serializable
     @SerialName("alias")
     class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
@@ -35,6 +40,7 @@ sealed interface ColorInfo {
     sealed interface Gradient : ColorInfo {
 
         @Poko
+        @Immutable
         @Serializable
         @SerialName("linear")
         class Linear(
@@ -43,6 +49,7 @@ sealed interface ColorInfo {
         ) : Gradient
 
         @Poko
+        @Immutable
         @Serializable
         @SerialName("radial")
         class Radial(
@@ -53,6 +60,7 @@ sealed interface ColorInfo {
          * A point in a gradient. Used by [Linear] and [Radial].
          */
         @Poko
+        @Immutable
         @Serializable
         class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
@@ -68,6 +76,7 @@ sealed interface ColorInfo {
 
 @InternalRevenueCatAPI
 @Poko
+@Immutable
 @Serializable
 class ColorScheme(
     @get:JvmSynthetic val light: ColorInfo,

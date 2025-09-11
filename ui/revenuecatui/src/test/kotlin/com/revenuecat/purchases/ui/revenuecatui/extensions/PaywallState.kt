@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -17,17 +19,15 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponent
  */
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
-    activelySubscribedProductIds: Set<String> = emptySet(),
-    purchasedNonSubscriptionProductIds: Set<String> = emptySet(),
     storefrontCountryCode: String? = null,
-    dateProvider: () -> Date = { Date() }
+    dateProvider: () -> Date = { Date() },
+    purchases: PurchasesType = MockPurchasesType(),
 ): PaywallState.Loaded.Components =
     actualToComponentsPaywallState(
         validationResult = validationResult,
-        activelySubscribedProductIds = activelySubscribedProductIds,
-        purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
         storefrontCountryCode = storefrontCountryCode,
         dateProvider = dateProvider,
+        purchases = purchases,
     )
 
 /**

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
@@ -306,31 +307,6 @@ class DiagnosticsTrackerTest {
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST &&
-                    event.properties == expectedProperties
-            })
-        }
-    }
-
-    @Test
-    fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
-        val expectedProperties = mapOf(
-            "play_store_version" to "123",
-            "play_services_version" to "456",
-            "product_type_queried" to "inapp",
-            "billing_response_code" to 12,
-            "billing_debug_message" to "test-debug-message",
-            "response_time_millis" to 1234L
-        )
-        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
-        diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
-            productType = "inapp",
-            billingResponseCode = 12,
-            billingDebugMessage = "test-debug-message",
-            responseTime = 1234L.milliseconds
-        )
-        verify(exactly = 1) {
-            diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -922,6 +898,7 @@ class DiagnosticsTrackerTest {
             proxyURL = null,
             store = store,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 

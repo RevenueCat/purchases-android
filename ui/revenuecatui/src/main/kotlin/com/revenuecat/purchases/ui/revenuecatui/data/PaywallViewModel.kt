@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import android.app.Activity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -25,11 +27,11 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.currentlySubscribed
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -44,6 +46,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+@Stable
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
     val resourceProvider: ResourceProvider
@@ -121,9 +124,17 @@ internal class PaywallViewModelImpl(
     }
 
     override fun refreshStateIfLocaleChanged() {
-        if (_lastLocaleList.value != getCurrentLocaleList()) {
-            _lastLocaleList.value = getCurrentLocaleList()
-            updateState()
+        val currentLocaleList = getCurrentLocaleList()
+        if (_lastLocaleList.value != currentLocaleList) {
+            _lastLocaleList.value = currentLocaleList
+
+            // If we have a Components paywall state, update its locale instead of recreating the entire state
+            val currentState = _state.value
+            if (currentState is PaywallState.Loaded.Components) {
+                currentState.update(localeList = currentLocaleList.toFrameworkLocaleList())
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -263,17 +274,13 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchaseIfNecessary(activity, selectedPackage)
+                performPurchase(activity, selectedPackage.rcPackage)
             }
             is PaywallState.Loaded.Components -> {
                 // Purchase the provided package if not null, otherwise purchase the selected package.
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
-                        currentlySubscribed = it.currentlySubscribed(
-                            activelySubscribedProductIdentifiers = currentState.activelySubscribedProductIds,
-                            nonSubscriptionProductIdentifiers = currentState.purchasedNonSubscriptionProductIds,
-                        ),
                     )
                 } ?: currentState.selectedPackageInfo
                 performPurchaseIfNecessary(activity, selectedPackageInfo)
@@ -287,23 +294,10 @@ internal class PaywallViewModelImpl(
 
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
-        packageInfo: TemplateConfiguration.PackageInfo,
-    ) {
-        if (!packageInfo.currentlySubscribed) {
-            performPurchase(activity, packageInfo.rcPackage)
-        } else {
-            Logger.d("Ignoring purchase request for already subscribed package")
-        }
-    }
-
-    private suspend fun performPurchaseIfNecessary(
-        activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
-        } else if (packageInfo.currentlySubscribed) {
-            Logger.d("Ignoring purchase request for already subscribed package")
         } else {
             performPurchase(activity, packageInfo.rcPackage)
         }
@@ -378,11 +372,20 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                var currentOffering = options.offeringSelection.offering
-                if (currentOffering == null) {
-                    val offerings = purchases.awaitOfferings()
-                    currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
-                        ?: offerings.current
+                val currentOffering: Offering? = when (val offeringSelection = options.offeringSelection) {
+                    is OfferingSelection.OfferingType -> offeringSelection.offeringType
+                    is OfferingSelection.IdAndPresentedOfferingContext -> {
+                        val offerings = purchases.awaitOfferings()
+                        val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                        val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                        presentedOfferingContext?.let {
+                            offering?.copy(presentedOfferingContext)
+                        } ?: offering
+                    }
+                    is OfferingSelection.None -> {
+                        val offerings = purchases.awaitOfferings()
+                        offerings.current
+                    }
                 }
 
                 if (currentOffering == null) {
@@ -392,7 +395,6 @@ internal class PaywallViewModelImpl(
                 } else {
                     _state.value = calculateState(
                         currentOffering,
-                        purchases.awaitCustomerInfo(),
                         _colorScheme.value,
                         purchases.storefrontCountryCode,
                         options.mode,
@@ -407,12 +409,26 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
+
+        return try {
+            val locale = createLocaleFromString(preferredLocale)
+            val localeList = LocaleListCompat.create(locale)
+            localeList
+        } catch (e: IllegalArgumentException) {
+            Logger.e("Invalid preferred locale format: $preferredLocale. Using system default.", e)
+            LocaleListCompat.getDefault()
+        }
+    }
+
+    @Suppress("SpreadOperator")
+    private fun LocaleListCompat.toFrameworkLocaleList(): android.os.LocaleList {
+        val locales = Array(size()) { i -> get(i)!! }
+        return android.os.LocaleList(*locales)
     }
 
     private fun calculateState(
         offering: Offering,
-        customerInfo: CustomerInfo,
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
         mode: PaywallMode,
@@ -437,15 +453,9 @@ internal class PaywallViewModelImpl(
             Logger.e(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
-        val activelySubscribedProductIds = customerInfo.activeSubscriptions
-        val purchasedNonSubscriptionProductIds: Set<String> = customerInfo.nonSubscriptionTransactions
-            .mapTo(mutableSetOf()) { it.productIdentifier }
-
         return when (validationResult) {
             is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
                 variableDataProvider = variableDataProvider,
-                activelySubscribedProductIdentifiers = activelySubscribedProductIds,
-                nonSubscriptionProductIdentifiers = purchasedNonSubscriptionProductIds,
                 mode = mode,
                 validatedPaywallData = validationResult.displayablePaywall,
                 template = validationResult.template,
@@ -454,10 +464,9 @@ internal class PaywallViewModelImpl(
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,
-                activelySubscribedProductIds = activelySubscribedProductIds,
-                purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
+                purchases = purchases,
             )
         }
     }

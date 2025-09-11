@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -28,6 +29,8 @@ import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -64,6 +67,9 @@ internal typealias PostReceiptDataErrorCallback = (
 internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
+internal typealias AliasCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+
+/** @suppress */
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
@@ -76,6 +82,10 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
+
+internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
+
+internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -119,6 +129,9 @@ internal class Backend(
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
     @get:Synchronized @set:Synchronized
+    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
+
+    @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
 
     @get:Synchronized @set:Synchronized
@@ -132,6 +145,13 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var virtualCurrenciesCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -442,6 +462,57 @@ internal class Backend(
         }
     }
 
+    fun aliasUsers(
+        oldAppUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val cacheKey = listOfNotNull(
+            oldAppUserID,
+            newAppUserID,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                val body = mapOf(
+                    APP_USER_ID to oldAppUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    Endpoint.AliasUsers(oldAppUserID),
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    aliasCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (result.isSuccessful()) {
+                    synchronized(this@Backend) {
+                        aliasCallbacks.remove(cacheKey)
+                    }?.forEach { (onSuccessHandler, _) ->
+                        onSuccessHandler()
+                    }
+                } else {
+                    onError(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            aliasCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
+    }
+
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
@@ -737,6 +808,132 @@ internal class Backend(
                 dispatcher,
                 path,
                 onResultHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun getVirtualCurrencies(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (VirtualCurrencies) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
+                                httpResult = result,
+                            )
+                            onSuccessHandler(virtualCurrencies)
+                        } catch (e: JSONException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            virtualCurrenciesCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWebBillingProducts(
+        appUserID: String,
+        productIds: Set<String>,
+        onSuccess: (WebBillingProductsResponse) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.WebBillingGetProducts(appUserID, productIds)
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
+                                result.payload,
+                            )
+                            onSuccessHandler(productsResponse)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            webBillingProductsCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccess to onError,
                 Delay.NONE,
             )
         }

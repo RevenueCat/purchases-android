@@ -46,7 +46,7 @@ internal class HTTPClient(
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
-    private val localeProvider: LocaleProvider = DefaultLocaleProvider(),
+    private val localeProvider: LocaleProvider,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -183,14 +183,13 @@ internal class HTTPClient(
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath()
-        val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
         try {
-            val fullURL = URL(baseURL, urlPathWithVersion)
+            val fullURL = URL(baseURL, path)
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
@@ -198,7 +197,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
-                urlPathWithVersion,
+                path,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -233,7 +232,7 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(urlPathWithVersion, connection, payload, nonce, postFieldsToSignHeader)
+            verifyResponse(path, connection, payload, nonce, postFieldsToSignHeader)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -248,7 +247,7 @@ internal class HTTPClient(
             responseCode,
             payload,
             getETagHeader(connection),
-            urlPathWithVersion,
+            path,
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,

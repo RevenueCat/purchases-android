@@ -21,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -31,7 +32,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import java.util.Date
-import kotlin.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
 @Suppress("ReturnCount")
@@ -168,17 +168,6 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     ) { backendRootComponentResult, stickyFooterResult, background ->
         val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
             stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
-        // Check if there are any packages available in the offering
-        if (!hasAnyPackages) {
-            return RcResult.Error(
-                nonEmptyListOf(
-                    PaywallValidationError.MissingAllPackages(
-                        identifier,
-                        availablePackages.map { it.identifier },
-                    ),
-                ),
-            )
-        }
 
         val backendRootComponent = backendRootComponentResult.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
@@ -285,8 +274,6 @@ private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationErro
 @Suppress("ReturnCount", "TooGenericExceptionCaught", "LongParameterList")
 internal fun Offering.toLegacyPaywallState(
     variableDataProvider: VariableDataProvider,
-    activelySubscribedProductIdentifiers: Set<String>,
-    nonSubscriptionProductIdentifiers: Set<String>,
     mode: PaywallMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
@@ -298,8 +285,6 @@ internal fun Offering.toLegacyPaywallState(
         mode = mode,
         paywallData = validatedPaywallData,
         availablePackages = availablePackages,
-        activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-        nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
         template,
         storefrontCountryCode = storefrontCountryCode,
     )
@@ -318,10 +303,9 @@ internal fun Offering.toLegacyPaywallState(
 @Suppress("LongParameterList")
 internal fun Offering.toComponentsPaywallState(
     validationResult: PaywallValidationResult.Components,
-    activelySubscribedProductIds: Set<String>,
-    purchasedNonSubscriptionProductIds: Set<String>,
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
+    purchases: PurchasesType,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -336,11 +320,11 @@ internal fun Offering.toComponentsPaywallState(
         variableDataProvider = validationResult.variableDataProvider,
         offering = this,
         locales = validationResult.locales,
-        activelySubscribedProductIds = activelySubscribedProductIds,
-        purchasedNonSubscriptionProductIds = purchasedNonSubscriptionProductIds,
+        storefrontCountryCode = storefrontCountryCode,
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        purchases = purchases,
     )
 }
 

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,10 +61,13 @@ internal sealed interface BackgroundStyle {
 /**
  * Background properties with resolved colors.
  */
+@Stable
 internal sealed interface BackgroundStyles {
     @JvmInline
+    @Immutable
     value class Color(@get:JvmSynthetic val color: ColorStyles) : BackgroundStyles
 
+    @Immutable
     data class Image(
         @get:JvmSynthetic val sources: ThemeImageUrls,
         @get:JvmSynthetic val contentScale: ContentScale,
@@ -96,6 +101,7 @@ internal fun Background.toBackgroundStyles(
         )
     }
 
+@Stable
 @Composable
 @JvmSynthetic
 internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundStyle =
@@ -120,6 +126,7 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
         }
     }
 
+@Stable
 @Composable
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }

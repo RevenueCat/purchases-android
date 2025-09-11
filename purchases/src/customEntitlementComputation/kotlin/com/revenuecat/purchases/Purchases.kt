@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -153,11 +154,13 @@ class Purchases internal constructor(
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all active subscriptions and non consumed one time purchases associated with the current
+     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
+     * being used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
@@ -178,6 +181,14 @@ class Purchases internal constructor(
      */
     fun switchUser(newAppUserID: String) {
         purchasesOrchestrator.switchUser(newAppUserID)
+    }
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
     }
     //endregion
 

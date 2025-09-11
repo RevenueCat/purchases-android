@@ -5,6 +5,7 @@ import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
 import com.revenuecat.purchases.utils.pricePerYear
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
@@ -12,7 +13,8 @@ import java.util.Locale
  * Encapsulates how a user pays for a subscription at a given point in time.
  */
 @Parcelize
-data class PricingPhase(
+@Poko
+class PricingPhase(
     /**
      * Billing period for which the [PricingPhase] applies.
      */

@@ -4,18 +4,20 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -49,6 +51,7 @@ import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -57,6 +60,7 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
+    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
@@ -69,9 +73,17 @@ internal class PurchasesFactory(
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
     ): Purchases {
-        validateConfiguration(configuration)
+        val apiKeyValidationResult = validateConfiguration(configuration)
 
         with(configuration) {
+            val finalStore = if (
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+            ) {
+                Store.UNKNOWN_STORE // We should add a new store when we fully support the simulated store.
+            } else {
+                store
+            }
+
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
@@ -79,8 +91,9 @@ internal class PurchasesFactory(
                 showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,
-                store,
+                finalStore,
                 isDebugBuild(),
+                apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
                 forceServerErrors,
@@ -102,7 +115,7 @@ internal class PurchasesFactory(
             }
 
             val prefs = try {
-                PreferenceManager.getDefaultSharedPreferences(contextForStorage)
+                SharedPreferencesManager(contextForStorage).getSharedPreferences()
             } catch (e: IllegalStateException) {
                 @Suppress("MaxLineLength")
                 if (!UserManagerCompat.isUserUnlocked(context)) {
@@ -161,7 +174,15 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
+            val localeProvider = DefaultLocaleProvider()
+            val httpClient = HTTPClient(
+                appConfig,
+                eTagManager,
+                diagnosticsTracker,
+                signingManager,
+                cache,
+                localeProvider = localeProvider,
+            )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -175,7 +196,7 @@ internal class PurchasesFactory(
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
-                store,
+                finalStore,
                 application,
                 backendHelper,
                 cache,
@@ -183,6 +204,8 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                backend,
+                apiKeyValidationResult,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -195,6 +218,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
+                automaticDeviceIdentifierCollectionEnabled,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
@@ -211,7 +235,10 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val offeringsCache = OfferingsCache(cache)
+            val offeringsCache = OfferingsCache(
+                deviceCache = cache,
+                localeProvider = localeProvider,
+            )
 
             val identityManager = IdentityManager(
                 cache,
@@ -266,7 +293,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(store)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore, apiKeyValidationResult)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
@@ -319,6 +346,13 @@ internal class PurchasesFactory(
                 ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name)
             }
 
+            val virtualCurrencyManager = VirtualCurrencyManager(
+                identityManager = identityManager,
+                deviceCache = cache,
+                backend = backend,
+                appConfig = appConfig,
+            )
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -344,6 +378,8 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                localeProvider = localeProvider,
+                virtualCurrencyManager = virtualCurrencyManager,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -380,7 +416,7 @@ internal class PurchasesFactory(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun validateConfiguration(configuration: PurchasesConfiguration) {
+    fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
             require(context.hasPermission(Manifest.permission.INTERNET)) {
                 "Purchases requires INTERNET permission."
@@ -388,9 +424,23 @@ internal class PurchasesFactory(
 
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
+            val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
+
+            if (!isDebugBuild() &&
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+            ) {
+                throw PurchasesException(
+                    PurchasesError(
+                        code = PurchasesErrorCode.ConfigurationError,
+                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
+                            "RevenueCat dashboard and use its corresponding API key before releasing.",
+                    ),
+                )
+            }
+
             require(context.applicationContext is Application) { "Needs an application context." }
 
-            apiKeyValidator.validateAndLog(apiKey, store)
+            return apiKeyValidationResult
         }
     }
 
