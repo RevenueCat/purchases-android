@@ -1,12 +1,14 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.revenuecat.purchases.google.purchasingData
+import com.revenuecat.purchases.google.validateAndFilterCompatibleAddOnProducts
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.Throws
 
 @Poko
 class PurchaseParams(val builder: Builder) {
@@ -45,10 +47,14 @@ class PurchaseParams(val builder: Builder) {
      */
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
-        @get:JvmSynthetic internal val purchasingData: PurchasingData,
+        @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
+        companion object {
+            const val MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER = "|"
+        }
+
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
@@ -59,14 +65,6 @@ class PurchaseParams(val builder: Builder) {
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
-
-        @ExperimentalPreviewRevenueCatPurchasesAPI
-        constructor(activity: Activity, storeProducts: List<StoreProduct>) : this(
-            activity,
-            purchasingData = storeProducts.purchasingData,
-            presentedOfferingContext = storeProducts.first().presentedOfferingContext,
-            product = null,
-        )
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
@@ -129,6 +127,42 @@ class PurchaseParams(val builder: Builder) {
          */
         fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
             this.googleReplacementMode = googleReplacementMode
+        }
+
+        /*
+         * The subscription products to add on to the subscription passed in to the Builder's constructor.
+         *
+         * TODO: Flesh out these docs
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @Throws(PurchasesException::class)
+        fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) {
+            val baseProductPurchasingData = this.purchasingData
+
+            val baseSubscription = baseProductPurchasingData as? GooglePurchasingData.Subscription
+                ?: throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.PurchaseInvalidError,
+                        "Add-ons are currently only supported for Google subscriptions."
+                    )
+                )
+
+            // This call will throw a PurchasesException if there is a validation issue with the add-on products
+            val compatibleAddOnProducts: List<GooglePurchasingData> = validateAndFilterCompatibleAddOnProducts(
+                baseProductPurchasingData = baseProductPurchasingData,
+                addOnProducts = addOnStoreProducts,
+            )
+
+            val multilineProductId = baseSubscription.productId + MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER +
+                compatibleAddOnProducts.joinToString(separator = MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER) {
+                    it.productId
+                }
+
+            this.purchasingData = GooglePurchasingData.ProductWithAddOns(
+                productId = multilineProductId,
+                baseProduct = baseSubscription,
+                addOnProducts = compatibleAddOnProducts,
+            )
         }
 
         open fun build(): PurchaseParams {

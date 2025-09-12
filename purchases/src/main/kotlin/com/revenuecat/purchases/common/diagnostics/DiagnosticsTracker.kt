@@ -595,6 +595,5 @@ private val ProductType.diagnosticsName: String
     get() = when (this) {
         ProductType.SUBS -> "AUTO_RENEWABLE_SUBSCRIPTION"
         ProductType.INAPP -> "NON_SUBSCRIPTION"
-        ProductType.SUBS_BUNDLE -> "AUTO_RENEWABLE_SUBSCRIPTION_BUNDLE"
         ProductType.UNKNOWN -> "UNKNOWN"
     }
