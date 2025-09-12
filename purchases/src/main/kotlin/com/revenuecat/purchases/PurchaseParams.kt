@@ -136,7 +136,7 @@ class PurchaseParams(val builder: Builder) {
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)
-        fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) {
+        fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) = apply {
             val baseProductPurchasingData = this.purchasingData
 
             val baseSubscription = baseProductPurchasingData as? GooglePurchasingData.Subscription
