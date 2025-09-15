@@ -143,8 +143,8 @@ class PurchaseParams(val builder: Builder) {
                 ?: throw PurchasesException(
                     PurchasesError(
                         PurchasesErrorCode.PurchaseInvalidError,
-                        "Add-ons are currently only supported for Google subscriptions."
-                    )
+                        "Add-ons are currently only supported for Google subscriptions.",
+                    ),
                 )
 
             // This call will throw a PurchasesException if there is a validation issue with the add-on products

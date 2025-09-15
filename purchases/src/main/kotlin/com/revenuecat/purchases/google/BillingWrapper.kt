@@ -873,7 +873,7 @@ internal class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = buildOneTimeProductDetailsParams(purchaseInfo=purchaseInfo)
+        val productDetailsParamsList = buildOneTimeProductDetailsParams(purchaseInfo = purchaseInfo)
 
         return Result.Success(
             BillingFlowParams.newBuilder()
@@ -937,24 +937,29 @@ internal class BillingWrapper(
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
         fun buildProductDetailsParams(
-            purchasingData: PurchasingData
+            purchasingData: PurchasingData,
         ): Result<BillingFlowParams.ProductDetailsParams, PurchasesError> {
-            return when(purchasingData) {
+            return when (purchasingData) {
                 is InAppProduct -> Result.Success(buildOneTimeProductDetailsParams(purchaseInfo = purchasingData))
                 is Subscription -> Result.Success(buildSubscriptionProductDetailsParams(purchaseInfo = purchasingData))
                 else -> {
                     return Result.Error(
                         PurchasesError(
                             code = PurchasesErrorCode.PurchaseInvalidError,
-                            underlyingErrorMessage = "Only subscriptions and one time purchases are supported for purchases with add-ons."
-                        )
+                            underlyingErrorMessage = "Only subscriptions and one time purchases are supported " +
+                                "for purchases with add-ons.",
+                        ),
                     )
                 }
             }
         }
 
         val productDetailsParamsList: MutableList<BillingFlowParams.ProductDetailsParams> = ArrayList()
-        when(val baseProductProductDetailsParams = buildProductDetailsParams(purchasingData=purchasingData.baseProduct)) {
+        when (
+            val baseProductProductDetailsParams = buildProductDetailsParams(
+                purchasingData = purchasingData.baseProduct,
+            )
+        ) {
             is Result.Error -> return Result.Error(value = baseProductProductDetailsParams.value)
             is Result.Success<BillingFlowParams.ProductDetailsParams> -> {
                 productDetailsParamsList.add(baseProductProductDetailsParams.value)
@@ -962,7 +967,7 @@ internal class BillingWrapper(
         }
 
         for (addOnProduct in purchasingData.addOnProducts) {
-            when(val addOnProductDetailsParams = buildProductDetailsParams(purchasingData = addOnProduct)) {
+            when (val addOnProductDetailsParams = buildProductDetailsParams(purchasingData = addOnProduct)) {
                 is Result.Error -> return Result.Error(value = addOnProductDetailsParams.value)
                 is Result.Success<BillingFlowParams.ProductDetailsParams> -> {
                     productDetailsParamsList.add(addOnProductDetailsParams.value)

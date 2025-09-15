@@ -4,12 +4,10 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers

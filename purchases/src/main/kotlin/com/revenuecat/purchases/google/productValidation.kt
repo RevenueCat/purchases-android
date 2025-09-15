@@ -1,5 +1,3 @@
-@file:JvmName("ProductValidation")
-
 package com.revenuecat.purchases.google
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -33,19 +31,19 @@ internal const val MAX_NUMBER_OF_ADD_ON_PRODUCTS = 49
 @Throws(PurchasesException::class)
 internal fun validateAndFilterCompatibleAddOnProducts(
     baseProductPurchasingData: PurchasingData,
-    addOnProducts: List<StoreProduct>
+    addOnProducts: List<StoreProduct>,
 ): List<GooglePurchasingData> {
     if (baseProductPurchasingData !is GooglePurchasingData.Subscription) {
         throw PurchasesException(
             PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
-                "Add-ons are currently only supported for Google subscriptions."
-            )
+                "Add-ons are currently only supported for Google subscriptions.",
+            ),
         )
     }
     val addOnProductsWithSameProductType: MutableList<GooglePurchasingData> = ArrayList()
     val billingPeriods = mutableSetOf<Period>()
-    
+
     for (addOnProduct in addOnProducts) {
         // Only process add-ons whose product type matches that of the baseProduct.
         val addOnPurchasingData = addOnProduct.purchasingData
@@ -63,8 +61,8 @@ internal fun validateAndFilterCompatibleAddOnProducts(
         throw PurchasesException(
             PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
-                "At least one add-on with the same product type as the base product must be provided."
-            )
+                "At least one add-on with the same product type as the base product must be provided.",
+            ),
         )
     }
 
@@ -73,8 +71,8 @@ internal fun validateAndFilterCompatibleAddOnProducts(
             PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
                 "Multi-line purchases cannot contain more than ${MAX_NUMBER_OF_ADD_ON_PRODUCTS + 1} products " +
-                    "(1 base + $MAX_NUMBER_OF_ADD_ON_PRODUCTS add-ons)."
-            )
+                    "(1 base + $MAX_NUMBER_OF_ADD_ON_PRODUCTS add-ons).",
+            ),
         )
     }
 
@@ -82,8 +80,8 @@ internal fun validateAndFilterCompatibleAddOnProducts(
         throw PurchasesException(
             PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
-                "All items in a multi-line purchase must have the same billing period."
-            )
+                "All items in a multi-line purchase must have the same billing period.",
+            ),
         )
     }
 
