@@ -13,12 +13,16 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
+import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
@@ -44,6 +48,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
+    private var packageCardAdapter: PackageCardAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +78,28 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupBundlePurchaseUI()
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+    }
+
+    private fun setupBundlePurchaseUI() {
+        binding.isBundleMode = false
+        
+        binding.bundlePurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            binding.isBundleMode = isChecked
+            packageCardAdapter?.setBundleMode(isChecked)
+            // Force refresh the adapter to update UI
+            packageCardAdapter?.notifyDataSetChanged()
+        }
+
+        binding.purchaseAllButton.setOnClickListener {
+            val selectedPackages = packageCardAdapter?.getSelectedPackages()
+            if (selectedPackages.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Please select at least one package", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            onBundlePurchaseClicked(selectedPackages)
+        }
     }
 
     private fun populateOfferings(offerings: Offerings) {
@@ -82,13 +108,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
 
-        binding.offeringDetailsPackagesRecycler.adapter =
-            PackageCardAdapter(
-                offering.availablePackages,
-                activeSubscriptions,
-                this,
-                isPlayStore,
-            )
+        packageCardAdapter = PackageCardAdapter(
+            offering.availablePackages,
+            activeSubscriptions,
+            this,
+            isPlayStore,
+        )
+        binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
     }
 
     override fun onPurchasePackageClicked(
@@ -127,6 +153,53 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
+        }
+    }
+
+    override fun onBundlePurchaseClicked(selectedPackages: List<Package>) {
+        if (Purchases.sharedInstance.finishTransactions) {
+            startBundlePurchase(selectedPackages)
+        } else {
+            startBundlePurchaseWithoutFinishingTransaction(selectedPackages)
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private fun startBundlePurchase(selectedPackages: List<Package>) {
+        toggleLoadingIndicator(true)
+        val basePackage = selectedPackages.first()
+        val addOnPackages = selectedPackages.subList(1, toIndex = selectedPackages.size)
+        val purchaseParams = PurchaseParams.Builder(
+            activity = requireActivity(),
+            packageToPurchase = selectedPackages.first()
+        )
+            .setAddOnProducts(addOnPackages.map { it.product })
+            .build()
+
+        Purchases.sharedInstance.purchase(
+            purchaseParams = purchaseParams,
+            callback = object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    toggleLoadingIndicator(false)
+                    Toast.makeText(requireContext(), "Bundle purchase completed successfully!", Toast.LENGTH_LONG).show()
+                    findNavController().navigateUp()
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    toggleLoadingIndicator(false)
+                    if (!userCancelled) {
+                        Toast.makeText(requireContext(), "Bundle purchase failed: ${error.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+        )
+    }
+
+    private fun startBundlePurchaseWithoutFinishingTransaction(selectedPackages: List<Package>) {
+        // For non-finishing transactions, we'll handle each package individually
+        // This is a simplified approach - in a real implementation you might want to handle this differently
+        selectedPackages.forEach { pkg ->
+            startPurchaseWithoutFinishingTransaction(pkg.product.purchasingData)
         }
     }
 
