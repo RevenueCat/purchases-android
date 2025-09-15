@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.AssetManager
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontFamily
@@ -24,10 +25,11 @@ internal interface ResourceProvider {
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
     fun getXmlFontFamily(resourceId: Int): FontFamily?
-    fun getAssetFontPath(name: String): String?
+    fun getAssetFontPaths(names: List<String>): Map<String, String>?
     fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily?
+    fun getAssetManager(): AssetManager?
 }
 
 internal class PaywallResourceProvider(
@@ -79,12 +81,22 @@ internal class PaywallResourceProvider(
         }
     }
 
-    override fun getAssetFontPath(name: String): String? {
-        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+    override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
+        val assetsList = resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
 
-        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
-            ?.find { it == nameWithExtension }
-            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+        return names
+            .mapNotNull { name ->
+                val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+                val path = assetsList?.find { it == nameWithExtension }
+                    ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+                if (path != null) {
+                    name to path
+                } else {
+                    null
+                }
+            }
+            .associateBy({ it.first }, { it.second })
+            .takeIf { it.isNotEmpty() }
     }
 
     override fun getCachedFontFamilyOrStartDownload(
@@ -96,6 +108,10 @@ internal class PaywallResourceProvider(
             Logger.e("getCachedFontFileOrStartDownload called before Purchases is configured. Returning null.")
             null
         }
+    }
+
+    override fun getAssetManager(): AssetManager? {
+        return resources.assets
     }
 }
 
