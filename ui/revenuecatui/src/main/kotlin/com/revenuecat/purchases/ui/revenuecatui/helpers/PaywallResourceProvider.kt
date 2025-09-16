@@ -95,7 +95,7 @@ internal class PaywallResourceProvider(
                     null
                 }
             }
-            .associateBy({ it.first }, { it.second })
+            .toMap()
             .takeIf { it.isNotEmpty() }
     }
 
