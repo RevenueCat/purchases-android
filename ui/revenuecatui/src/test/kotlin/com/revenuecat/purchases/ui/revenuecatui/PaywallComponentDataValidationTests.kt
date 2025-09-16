@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.content.res.AssetManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.Font
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -51,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -369,11 +372,31 @@ class PaywallComponentDataValidationTests {
         val primaryFontAlias = FontAlias("primary")
         val secondaryFontAlias = FontAlias("secondary")
         val tertiaryFontAlias = FontAlias("tertiary")
+        val quaternaryFontAlias = FontAlias("quaternary")
         val robotoFont = FontSpec.Resource(
             fontFamily = FontFamily(
                 listOf(
                     Font(resId = 1, weight = androidx.compose.ui.text.font.FontWeight(400), style = FontStyle.Normal),
                     Font(resId = 2, weight = androidx.compose.ui.text.font.FontWeight(700), style = FontStyle.Italic),
+                )
+            )
+        )
+        val mockAssetManager = mockk<AssetManager>()
+        val openSansFont = FontSpec.Asset(
+            fontFamily = FontFamily(
+                listOf(
+                    Font(
+                        path = "fonts/open_sans_regular.ttf",
+                        assetManager = mockAssetManager,
+                        weight = androidx.compose.ui.text.font.FontWeight(400),
+                        style = FontStyle.Normal
+                    ),
+                    Font(
+                        path = "fonts/open_sans_bold.ttf",
+                        assetManager = mockAssetManager,
+                        weight = androidx.compose.ui.text.font.FontWeight(700),
+                        style = FontStyle.Italic
+                    )
                 )
             )
         )
@@ -389,14 +412,25 @@ class PaywallComponentDataValidationTests {
             weight = 700,
             style = com.revenuecat.purchases.paywalls.components.properties.FontStyle.ITALIC,
         )
-        val openSansFont = FontSpec.Asset("fonts/open_sans.ttf")
-        val openSansFontAssetName = FontInfo.Name("open_sans")
+        val openSansRegularFontAssetName = FontInfo.Name(
+            value = "open_sans_regular",
+            family = "open_sans",
+            weight = 400,
+            style = com.revenuecat.purchases.paywalls.components.properties.FontStyle.NORMAL,
+        )
+        val openSansBoldFontAssetName = FontInfo.Name(
+            value = "open_sans_bold",
+            family = "open_sans",
+            weight = 700,
+            style = com.revenuecat.purchases.paywalls.components.properties.FontStyle.ITALIC,
+        )
         val uiConfig = UiConfig(
             app = AppConfig(
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
-                    secondaryFontAlias to FontsConfig(openSansFontAssetName),
+                    secondaryFontAlias to FontsConfig(openSansRegularFontAssetName),
                     tertiaryFontAlias to FontsConfig(robotoFontBoldItalicResourceName),
+                    quaternaryFontAlias to FontsConfig(openSansBoldFontAssetName),
                 ),
             ),
         )
@@ -408,8 +442,10 @@ class PaywallComponentDataValidationTests {
                 ),
             ),
             assetPaths = listOf(
-                openSansFont.path
-            )
+                "fonts/open_sans_regular.ttf",
+                "fonts/open_sans_bold.ttf",
+            ),
+            mockAssetManager = mockAssetManager,
         )
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
