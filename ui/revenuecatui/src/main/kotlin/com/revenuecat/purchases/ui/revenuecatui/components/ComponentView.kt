@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
@@ -56,6 +58,12 @@ internal fun ComponentView(
         modifier = modifier,
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
+    is VideoComponentStyle -> VideoComponentView(
+        context = LocalContext.current,
+        style = style,
+        state = state,
+        modifier = modifier
+    )
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,

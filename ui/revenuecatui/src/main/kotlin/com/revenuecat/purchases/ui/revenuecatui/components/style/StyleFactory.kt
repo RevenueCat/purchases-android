@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -31,6 +33,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
@@ -39,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -48,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.videoForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
@@ -77,7 +82,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 @Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
@@ -400,6 +405,7 @@ internal class StyleFactory(
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
+            is VideoComponent -> createVideoComponentStyle(component)
         }
     }
 
@@ -679,6 +685,60 @@ internal class StyleFactory(
         )
     }
 
+    private fun StyleFactoryScope.createVideoComponentStyle(
+        component: VideoComponent,
+    ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
+        second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
+        third = component.overrides?.toPresentedOverrides { videoPartial ->
+            videoPartial.source
+                ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
+                .orSuccessfullyNull()
+                .flatMap { sources ->
+                    PresentedVideoPartial(
+                        from = videoPartial,
+                        sources = sources,
+                        fallbackSources = videoPartial.fallbackSource
+                            ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
+                            ?.let {
+                                when (it) {
+                                    is Result.Success -> it.value
+                                    else -> null
+                                }
+                            },
+                        aliases = colorAliases,
+                    )
+                }
+        }
+            ?.mapError { nonEmptyListOf(it) }
+            .orSuccessfullyNull(),
+        fourth = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fifth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+        sixth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, fallbackSources, presentedOverrides, overlay, border, shadow ->
+        VideoComponentStyle(
+            sources = sources,
+            fallbackSources = fallbackSources,
+            overlay = overlay,
+            border = border,
+            shadow = shadow,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
+            size = component.size,
+            padding = component.padding?.toPaddingValues() ?: PaddingValues(),
+            margin = component.margin?.toPaddingValues() ?: PaddingValues(),
+            rcPackage = rcPackage,
+            tabIndex = tabControlIndex,
+            overrides = presentedOverrides ?: emptyList(),
+            showControls = component.showControls,
+            autoplay = component.autoplay,
+            loop = component.loop,
+            muteAudio = component.muteAudio,
+            shape = component.maskShape?.toShape(),
+            contentScale = component.fitMode.toContentScale(),
+            ignoreTopWindowInsets = ignoreTopWindowInsets,
+        )
+    }
+
     private fun StyleFactoryScope.createIconComponentStyle(
         component: IconComponent,
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
@@ -921,6 +981,15 @@ internal class StyleFactory(
     ): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<PaywallValidationError.MissingImageLocalization>> =
         overrideSourceLid
             ?.let { key -> localizations.imageForAllLocales(key) }
+            .orSuccessfullyNull()
+            // Ensure the default source keyed by the default locale is present in the result.
+            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+
+    private fun ThemeVideoUrls.withLocalizedOverrides(
+        overrideSourceLid: LocalizationKey?,
+    ): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
+        overrideSourceLid
+            ?.let { key -> localizations.videoForAllLocales(key) }
             .orSuccessfullyNull()
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
