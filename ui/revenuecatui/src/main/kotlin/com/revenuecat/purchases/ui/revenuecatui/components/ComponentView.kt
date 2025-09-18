@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
@@ -32,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 /**
@@ -59,7 +59,6 @@ internal fun ComponentView(
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
     is VideoComponentStyle -> VideoComponentView(
-        context = LocalContext.current,
         style = style,
         state = state,
         modifier = modifier
