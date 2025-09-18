@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
-import android.content.Context
-import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -26,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 @JvmSynthetic
 @Composable
 internal fun VideoComponentView(
-    context: Context,
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
@@ -48,13 +45,10 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            // TODO: use file repository to save data
-            // TODO: use file repository to load state
-            // TODO: use image component view as the fallback
+            // TO DO: use image component view as the fallback
 //            ImageComponentView()
             VideoView(
-                context = context,
-                videoUri = videoState.videoUrls.url.toString().let(Uri::parse),
+                videoUri = videoState.videoUrls.url.toString(),
                 modifier = Modifier
                     .size(videoState.size)
                     .applyIfNotNull(videoState.aspectRatio) { aspectRatio(it) }
@@ -64,6 +58,7 @@ internal fun VideoComponentView(
                 autoPlay = style.autoplay,
                 loop = style.loop,
                 muteAudio = style.muteAudio,
+                contentScale = style.contentScale,
             )
         }
     }
