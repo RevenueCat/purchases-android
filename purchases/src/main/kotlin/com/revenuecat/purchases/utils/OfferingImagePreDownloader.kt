@@ -113,6 +113,9 @@ internal class OfferingImagePreDownloader(
                         it.properties.source?.findImageUrisToDownload().orEmpty()
                     }
                 }
+                is VideoComponent -> {
+                    component.fallbackSource?.findImageUrisToDownload().orEmpty()
+                }
                 else -> emptySet()
             }
         }
@@ -175,12 +178,12 @@ internal class OfferingImagePreDownloader(
                     queue.addAll(current.items.flatMap { listOfNotNull(it.title, it.description, it.icon) })
                 }
 
+                is VideoComponent,
                 is TabControlToggleComponent,
                 is TabControlComponent,
                 is ImageComponent,
                 is IconComponent,
                 is TextComponent,
-                is VideoComponent,
                 -> {
                     // These don't have child components.
                 }
