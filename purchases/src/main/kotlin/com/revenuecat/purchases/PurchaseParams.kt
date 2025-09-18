@@ -1,12 +1,16 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.google.android.gms.common.logging.Logger
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.validateAndFilterCompatibleAddOnProducts
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 import kotlin.jvm.Throws
 
@@ -130,7 +134,18 @@ class PurchaseParams(val builder: Builder) {
         }
 
         /*
-         * The subscription products to add on to the subscription passed in to the Builder's constructor.
+         * The packages to add on to the package passed in to the Builder's constructor.
+         *
+         * TODO: Flesh out these docs
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @Throws(PurchasesException::class)
+        fun setAddOnPackages(addOnPackages: List<Package>) = apply {
+            this.setAddOnProducts(addOnPackages.map { it.product })
+        }
+
+        /*
+         * The products to add on to the product passed in to the Builder's constructor.
          *
          * TODO: Flesh out these docs
          */

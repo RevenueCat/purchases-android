@@ -55,4 +55,6 @@ internal object PurchaseStrings {
     const val EXTRA_CALLBACK_CANMAKEPAYMENTS = "Callback has already been called when checking if device can " +
         "make payments."
     const val EXCEPTION_CANMAKEPAYMENTS = "Exception received when checking if device can make payments: \n%s."
+    const val EMPTY_ADD_ONS_LIST_PASSED = "An empty list of add-ons was provided. Will proceed with purchasing the " +
+        "base product."
 }
