@@ -7,4 +7,5 @@ sealed class Tab(val route: String, val title: String, val iconResourceId: Int) 
     object Paywalls : Tab("paywalls", "Paywalls", R.drawable.ic_dialog_map)
     object Offerings : Tab("offerings", "Offerings", R.drawable.ic_dialog_dialer)
     object Locale : Tab("locale", "Locale", R.drawable.ic_menu_edit)
+    object VideoTest : Tab("video-test", "Video POC", R.drawable.ic_media_play)
 }
