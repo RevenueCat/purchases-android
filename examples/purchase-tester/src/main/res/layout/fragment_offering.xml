@@ -72,7 +72,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/padding_small"
-                        android:text="Purchase All"
+                        android:text="Purchase Selected"
                         android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toEndOf="@+id/bundle_purchase_checkbox"
                         app:layout_constraintTop_toTopOf="@+id/bundle_purchase_checkbox"
