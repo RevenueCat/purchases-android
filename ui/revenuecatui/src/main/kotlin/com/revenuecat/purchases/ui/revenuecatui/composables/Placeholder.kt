@@ -209,6 +209,7 @@ private data class PlaceholderElement(
         properties["color"] = color
         properties["highlight"] = highlight
         properties["shape"] = shape
+        properties["loadingDescription"] = "Loading.."
     }
 }
 
