@@ -1052,7 +1052,6 @@ internal class BillingWrapper(
         fun buildProductDetailsParams(
             purchasingData: PurchasingData,
         ): Result<BillingFlowParams.ProductDetailsParams, PurchasesError> {
-        ): Result<ProductDetailsParams, PurchasesError> {
             return when (purchasingData) {
                 is InAppProduct -> Result.Success(buildOneTimeProductDetailsParams(purchaseInfo = purchasingData))
                 is Subscription -> Result.Success(buildSubscriptionProductDetailsParams(purchaseInfo = purchasingData))
