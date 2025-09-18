@@ -137,6 +137,10 @@ class PurchaseParams(val builder: Builder) {
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)
         fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+            if (addOnStoreProducts.isEmpty()) {
+                log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
+            }
+
             val baseProductPurchasingData = this.purchasingData
 
             val baseProduct = baseProductPurchasingData as? GooglePurchasingData.Subscription
