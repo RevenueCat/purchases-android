@@ -13,7 +13,7 @@
                 type="com.revenuecat.purchases.Offering" />
 
         <variable
-                name="isBundleMode"
+                name="isAddOnPurchaseMode"
                 type="Boolean" />
 
     </data>
@@ -59,11 +59,11 @@
                         bind:header="@{`Description:`}" />
 
                 <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/bundle_purchase_checkbox"
+                        android:id="@+id/add_on_purchase_checkbox"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_small"
-                        android:text="Use Bundle Purchase"
+                        android:text="Make Add-On Purchase"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
 
@@ -76,9 +76,9 @@
                         android:layout_marginTop="@dimen/padding_tiny"
                         android:text="Replacement Mode"
                         android:textColor="#808080"
-                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/bundle_purchase_checkbox" />
+                        app:layout_constraintTop_toBottomOf="@+id/add_on_purchase_checkbox" />
 
                 <androidx.appcompat.widget.AppCompatSpinner
                         android:id="@+id/replacement_mode_spinner"
@@ -87,7 +87,7 @@
                         android:layout_marginStart="@dimen/padding_small"
                         android:layout_marginTop="@dimen/padding_tiny"
                         android:layout_marginEnd="@dimen/padding_small"
-                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/replacement_mode_label" />
@@ -99,7 +99,7 @@
                         android:layout_marginStart="@dimen/padding_small"
                         android:layout_marginTop="@dimen/padding_tiny"
                         android:text="Purchase Selected"
-                        android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/replacement_mode_spinner" />
 

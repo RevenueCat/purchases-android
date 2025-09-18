@@ -80,18 +80,18 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupBundlePurchaseUI()
+        setupAddOnPurchaseUI()
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
-    private fun setupBundlePurchaseUI() {
-        binding.isBundleMode = false
+    private fun setupAddOnPurchaseUI() {
+        binding.isAddOnPurchaseMode = false
 
         setupReplacementModeSpinner()
 
-        binding.bundlePurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
-            binding.isBundleMode = isChecked
-            packageCardAdapter?.setBundleMode(isChecked)
+        binding.addOnPurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            binding.isAddOnPurchaseMode = isChecked
+            packageCardAdapter?.setAddOnMode(isChecked)
             // Force refresh the adapter to update UI
             packageCardAdapter?.notifyDataSetChanged()
         }
@@ -109,7 +109,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 return@setOnClickListener
             }
 
-            onBundlePurchaseClicked(selectedPackages)
+            onAddOnPurchaseClicked(selectedPackages)
         }
     }
 
@@ -191,16 +191,16 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onBundlePurchaseClicked(selectedPackages: List<Package>) {
+    override fun onAddOnPurchaseClicked(selectedPackages: List<Package>) {
         if (Purchases.sharedInstance.finishTransactions) {
-            startBundlePurchase(selectedPackages)
+            startAddOnPurchase(selectedPackages)
         } else {
-            startBundlePurchaseWithoutFinishingTransaction(selectedPackages)
+            startAddOnPurchaseWithoutFinishingTransaction(selectedPackages)
         }
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun startBundlePurchase(selectedPackages: List<Package>) {
+    private fun startAddOnPurchase(selectedPackages: List<Package>) {
         toggleLoadingIndicator(true)
         val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
         val addOnPackages = selectedPackages.filter { it != basePackage }
@@ -222,21 +222,21 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             callback = object : PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
                     toggleLoadingIndicator(false)
-                    Toast.makeText(requireContext(), "Bundle purchase completed successfully!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Add-On purchase completed successfully!", Toast.LENGTH_LONG).show()
                     findNavController().navigateUp()
                 }
 
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     toggleLoadingIndicator(false)
                     if (!userCancelled) {
-                        Toast.makeText(requireContext(), "Bundle purchase failed: ${error.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "Add-On purchase failed: ${error.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             },
         )
     }
 
-    private fun startBundlePurchaseWithoutFinishingTransaction(selectedPackages: List<Package>) {
+    private fun startAddOnPurchaseWithoutFinishingTransaction(selectedPackages: List<Package>) {
         // For non-finishing transactions, we'll handle each package individually
         // This is a simplified approach - in a real implementation you might want to handle this differently
         selectedPackages.forEach { pkg ->

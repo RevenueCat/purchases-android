@@ -25,7 +25,7 @@
                 type="Boolean" />
 
         <variable
-                name="isBundleMode"
+                name="isAddOnMode"
                 type="Boolean" />
 
         <variable
@@ -153,7 +153,7 @@
                     android:layout_height="wrap_content"
                     android:text="Buy Option"
                     android:checked="@{isSelected}"
-                    android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
                     app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
@@ -164,7 +164,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Base Product"
-                    android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
                     app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/buy_option_checkbox"
@@ -176,7 +176,7 @@
                     android:layout_height="wrap_content"
                     android:text="Is product change?"
                     android:enabled="@{isPlayStore}"
-                    android:visibility="@{isBundleMode ? View.GONE : View.VISIBLE}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="parent"
@@ -188,7 +188,7 @@
                     android:layout_height="wrap_content"
                     android:text="Is personalized price?"
                     android:enabled="@{isPlayStore}"
-                    android:visibility="@{isBundleMode ? View.GONE : View.VISIBLE}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="@id/is_upgrade_checkbox"
@@ -200,7 +200,7 @@
                     android:layout_height="wrap_content"
                     android:text="Buy package (default option)"
                     android:textSize="10dp"
-                    android:visibility="@{isBundleMode ? View.GONE : View.VISIBLE}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/is_personalized_checkbox"
@@ -212,7 +212,7 @@
                     android:layout_height="wrap_content"
                     android:textSize="10dp"
                     android:text="Buy product (default option)"
-                    android:visibility="@{isBundleMode ? View.GONE : View.VISIBLE}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button"
                     app:layout_constraintStart_toStartOf="@+id/option_buy_button" />
@@ -222,7 +222,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Buy option"
-                    android:visibility="@{isPlayStore &amp;&amp; !isBundleMode ? View.VISIBLE : View.INVISIBLE}"
+                    android:visibility="@{isPlayStore &amp;&amp; !isAddOnMode ? View.VISIBLE : View.INVISIBLE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
 

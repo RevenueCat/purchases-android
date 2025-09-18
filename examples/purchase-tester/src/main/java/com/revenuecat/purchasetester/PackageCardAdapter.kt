@@ -24,7 +24,7 @@ class PackageCardAdapter(
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
-    private var isBundleMode = false
+    private var isAddOnMode = false
     private val selectedPackages = mutableSetOf<Package>()
     private var baseProduct: Package? = null
 
@@ -36,11 +36,11 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position], isPlayStore, isBundleMode, selectedPackages.contains(packages[position]))
+        holder.bind(packages[position], isPlayStore, isAddOnMode, selectedPackages.contains(packages[position]))
     }
 
-    fun setBundleMode(enabled: Boolean) {
-        isBundleMode = enabled
+    fun setAddOnMode(enabled: Boolean) {
+        isAddOnMode = enabled
         if (!enabled) {
             selectedPackages.clear()
             baseProduct = null
@@ -61,13 +61,13 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package, isPlayStore: Boolean, isBundleMode: Boolean, isSelected: Boolean) {
+        fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
-            binding.isBundleMode = isBundleMode
+            binding.isAddOnMode = isAddOnMode
             binding.isSelected = isSelected
 
             // Set the checkbox state and listener
@@ -204,6 +204,6 @@ class PackageCardAdapter(
             isUpgrade: Boolean,
             isPersonalizedPrice: Boolean,
         )
-        fun onBundlePurchaseClicked(selectedPackages: List<Package>)
+        fun onAddOnPurchaseClicked(selectedPackages: List<Package>)
     }
 }
