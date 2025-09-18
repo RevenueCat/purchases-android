@@ -60,7 +60,8 @@ interface LocalFileCache {
 }
 
 @InternalRevenueCatAPI
-internal class DefaultFileRepository(
+class DefaultFileRepository
+internal constructor(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
     private val fileCacheManager: LocalFileCache,
