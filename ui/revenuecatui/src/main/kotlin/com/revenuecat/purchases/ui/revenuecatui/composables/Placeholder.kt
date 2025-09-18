@@ -1,25 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.annotation.FloatRange
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.InfiniteRepeatableSpec
-import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Transition
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Brush
@@ -30,16 +20,18 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.node.Ref
-import androidx.compose.ui.platform.debugInspectorInfo
+import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 internal object PlaceholderDefaults {
-    /**
-     * The default [InfiniteRepeatableSpec] to use for [fade].
-     */
     val fadeAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
         infiniteRepeatable(
             animation = tween(delayMillis = 200, durationMillis = 600),
@@ -49,8 +41,7 @@ internal object PlaceholderDefaults {
 }
 
 /**
- * From https://github.com/google/accompanist/blob/main/placeholder/src/main/java/com/google/accompanist/placeholder/Placeholder.kt
- * See https://github.com/google/accompanist/pull/1672. That's deprecated, so we're copying it here for now.
+ * Internal placeholder systems to draw placeholder UI on the paywalls.
  *
  * @param visible whether the placeholder should be visible or not.
  * @param color the color used to draw the placeholder UI.
@@ -61,115 +52,164 @@ internal object PlaceholderDefaults {
  * @param contentFadeTransitionSpec The transition spec to use when fading the content
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
-@Suppress("LongParameterList", "MagicNumber", "LongMethod")
+@Suppress("LongParameterList")
 internal fun Modifier.placeholder(
     visible: Boolean,
     color: Color,
     shape: Shape = RectangleShape,
     highlight: PlaceholderHighlight? = null,
-    placeholderFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> =
-        { spring() },
-    contentFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> = { spring() },
-): Modifier = composed(
-    inspectorInfo = debugInspectorInfo {
+    placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+    contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+): Modifier = this.then(
+    PlaceholderElement(
+        visible = visible,
+        color = color,
+        shape = shape,
+        highlight = highlight,
+        placeholderFadeTransitionSpec = placeholderFadeTransitionSpec,
+        contentFadeTransitionSpec = contentFadeTransitionSpec,
+    ),
+)
+
+// The private class that implements the placeholder logic as a Modifier.Node
+
+@Suppress("LongParameterList", "MagicNumber")
+private class PlaceholderNode(
+    var visible: Boolean,
+    var color: Color,
+    var shape: Shape,
+    var highlight: PlaceholderHighlight?,
+    var placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
+    var contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
+) : Modifier.Node(), DrawModifierNode {
+
+    private var lastSize: Size? = null
+    private var lastLayoutDirection: LayoutDirection? = null
+    private var lastOutline: Outline? = null
+
+    private val placeholderAlpha = Animatable(if (visible) 1f else 0f)
+    private val contentAlpha = Animatable(if (visible) 0f else 1f)
+    private val highlightProgress = Animatable(0f)
+    private val paint = Paint()
+
+    private var highlightAnimationJob: Job? = null
+
+    // onAttach is called when the node is attached to the composition.
+    override fun onAttach() {
+        // Coroutine for the crossfade animation
+        coroutineScope.launch {
+            snapshotFlow { visible }
+                .collectLatest { isVisible ->
+                    launch {
+                        placeholderAlpha.animateTo(
+                            targetValue = if (isVisible) 1f else 0f,
+                            animationSpec = placeholderFadeTransitionSpec(),
+                        )
+                    }
+                    launch {
+                        contentAlpha.animateTo(
+                            targetValue = if (isVisible) 0f else 1f,
+                            animationSpec = contentFadeTransitionSpec(),
+                        )
+                    }
+                }
+        }
+
+        // Coroutine for the infinite highlight (shimmer) animation
+        coroutineScope.launch {
+            snapshotFlow { visible && highlight?.animationSpec != null }
+                .collectLatest { shouldAnimateHighlight ->
+                    highlightAnimationJob?.cancel()
+                    if (shouldAnimateHighlight) {
+                        highlightAnimationJob = launch {
+                            highlightProgress.animateTo(
+                                targetValue = 1f,
+                                animationSpec = highlight!!.animationSpec!!,
+                            )
+                        }
+                    } else {
+                        highlightProgress.snapTo(0f)
+                    }
+                }
+        }
+    }
+
+    override fun ContentDrawScope.draw() {
+        val pAlpha = placeholderAlpha.value
+        val cAlpha = contentAlpha.value
+
+        // Draw content
+        if (cAlpha > 0.01f) {
+            paint.alpha = cAlpha
+            withLayer(paint) {
+                with(this@draw) {
+                    drawContent()
+                }
+            }
+        }
+
+        // Draw placeholder
+        if (pAlpha > 0.01f) {
+            paint.alpha = pAlpha
+            withLayer(paint) {
+                lastOutline = drawPlaceholder(
+                    shape = shape,
+                    color = color,
+                    highlight = highlight,
+                    progress = highlightProgress.value,
+                    lastOutline = lastOutline,
+                    lastLayoutDirection = lastLayoutDirection,
+                    lastSize = lastSize,
+                )
+            }
+        }
+
+        // Cache size and direction
+        lastSize = size
+        lastLayoutDirection = layoutDirection
+    }
+}
+
+// The factory for our PlaceholderNode
+private data class PlaceholderElement(
+    val visible: Boolean,
+    val color: Color,
+    val shape: Shape,
+    val highlight: PlaceholderHighlight?,
+    val placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
+    val contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
+) : ModifierNodeElement<PlaceholderNode>() {
+    override fun create(): PlaceholderNode {
+        return PlaceholderNode(
+            visible,
+            color,
+            shape,
+            highlight,
+            placeholderFadeTransitionSpec,
+            contentFadeTransitionSpec,
+        )
+    }
+
+    override fun update(node: PlaceholderNode) {
+        node.visible = visible
+        node.color = color
+        node.shape = shape
+        node.highlight = highlight
+        node.placeholderFadeTransitionSpec = placeholderFadeTransitionSpec
+        node.contentFadeTransitionSpec = contentFadeTransitionSpec
+    }
+
+    override fun InspectorInfo.inspectableProperties() {
         name = "placeholder"
         value = visible
         properties["visible"] = visible
         properties["color"] = color
         properties["highlight"] = highlight
         properties["shape"] = shape
-    },
-) {
-    // Values used for caching purposes
-    val lastSize = remember { Ref<Size>() }
-    val lastLayoutDirection = remember { Ref<LayoutDirection>() }
-    val lastOutline = remember { Ref<Outline>() }
-
-    // The current highlight animation progress
-    var highlightProgress: Float by remember { mutableStateOf(0f) }
-
-    // This is our crossfade transition
-    val transitionState = remember { MutableTransitionState(visible) }.apply {
-        targetState = visible
-    }
-    val transition = updateTransition(transitionState, "placeholder_crossfade")
-
-    val placeholderAlpha by transition.animateFloat(
-        transitionSpec = placeholderFadeTransitionSpec,
-        label = "placeholder_fade",
-        targetValueByState = { placeholderVisible -> if (placeholderVisible) 1f else 0f },
-    )
-    val contentAlpha by transition.animateFloat(
-        transitionSpec = contentFadeTransitionSpec,
-        label = "content_fade",
-        targetValueByState = { placeholderVisible -> if (placeholderVisible) 0f else 1f },
-    )
-
-    // Run the optional animation spec and update the progress if the placeholder is visible
-    val animationSpec = highlight?.animationSpec
-    if (animationSpec != null && (visible || placeholderAlpha >= 0.01f)) {
-        val infiniteTransition = rememberInfiniteTransition(label = "Transition")
-        highlightProgress = infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = animationSpec,
-            label = "Animation",
-        ).value
-    }
-
-    val paint = remember { Paint() }
-    remember(color, shape, highlight) {
-        drawWithContent {
-            // Draw the composable content first
-            if (contentAlpha in 0.01f..0.99f) {
-                // If the content alpha is between 1% and 99%, draw it in a layer with
-                // the alpha applied
-                paint.alpha = contentAlpha
-                withLayer(paint) {
-                    with(this@drawWithContent) {
-                        drawContent()
-                    }
-                }
-            } else if (contentAlpha >= 0.99f) {
-                // If the content alpha is > 99%, draw it with no alpha
-                drawContent()
-            }
-
-            if (placeholderAlpha in 0.01f..0.99f) {
-                // If the placeholder alpha is between 1% and 99%, draw it in a layer with
-                // the alpha applied
-                paint.alpha = placeholderAlpha
-                withLayer(paint) {
-                    lastOutline.value = drawPlaceholder(
-                        shape = shape,
-                        color = color,
-                        highlight = highlight,
-                        progress = highlightProgress,
-                        lastOutline = lastOutline.value,
-                        lastLayoutDirection = lastLayoutDirection.value,
-                        lastSize = lastSize.value,
-                    )
-                }
-            } else if (placeholderAlpha >= 0.99f) {
-                // If the placeholder alpha is > 99%, draw it with no alpha
-                lastOutline.value = drawPlaceholder(
-                    shape = shape,
-                    color = color,
-                    highlight = highlight,
-                    progress = highlightProgress,
-                    lastOutline = lastOutline.value,
-                    lastLayoutDirection = lastLayoutDirection.value,
-                    lastSize = lastSize.value,
-                )
-            }
-
-            // Keep track of the last size & layout direction
-            lastSize.value = size
-            lastLayoutDirection.value = layoutDirection
-        }
     }
 }
 
+// Helper functions and interfaces remain the same
 @Suppress("LongParameterList")
 private fun DrawScope.drawPlaceholder(
     shape: Shape,
@@ -180,29 +220,22 @@ private fun DrawScope.drawPlaceholder(
     lastLayoutDirection: LayoutDirection?,
     lastSize: Size?,
 ): Outline? {
-    // shortcut to avoid Outline calculation and allocation
     if (shape === RectangleShape) {
-        // Draw the initial background color
         drawRect(color = color)
-
         if (highlight != null) {
             drawRect(
                 brush = highlight.brush(progress, size),
                 alpha = highlight.alpha(progress),
             )
         }
-        // We didn't create an outline so return null
         return null
     }
 
-    // Otherwise we need to create an outline from the shape
     val outline = lastOutline.takeIf {
         size == lastSize && layoutDirection == lastLayoutDirection
     } ?: shape.createOutline(size, layoutDirection, this)
 
-    // Draw the placeholder color
     drawOutline(outline = outline, color = color)
-
     if (highlight != null) {
         drawOutline(
             outline = outline,
@@ -210,8 +243,6 @@ private fun DrawScope.drawPlaceholder(
             alpha = highlight.alpha(progress),
         )
     }
-
-    // Return the outline we used
     return outline
 }
 
@@ -224,34 +255,12 @@ private inline fun DrawScope.withLayer(
     canvas.restore()
 }
 
-// region highlights
-
 internal interface PlaceholderHighlight {
-    /**
-     * The optional animation spec to use when running the animation for this highlight.
-     */
     val animationSpec: InfiniteRepeatableSpec<Float>?
+    fun brush(@FloatRange(from = 0.0, to = 1.0) progress: Float, size: Size): Brush
 
-    /**
-     * Return a [Brush] to draw for the given [progress] and [size].
-     *
-     * @param progress the current animated progress in the range of 0f..1f.
-     * @param size The size of the current layout to draw in.
-     */
-    fun brush(
-        @FloatRange(from = 0.0, to = 1.0) progress: Float,
-        size: Size,
-    ): Brush
-
-    /**
-     * Return the desired alpha value used for drawing the [Brush] returned from [brush].
-     *
-     * @param progress the current animated progress in the range of 0f..1f.
-     */
     @FloatRange(from = 0.0, to = 1.0)
     fun alpha(progress: Float): Float
-
-    companion object
 }
 
 internal data class Fade(
@@ -259,7 +268,6 @@ internal data class Fade(
     override val animationSpec: InfiniteRepeatableSpec<Float>,
 ) : PlaceholderHighlight {
     private val brush = SolidColor(highlightColor)
-
     override fun brush(progress: Float, size: Size): Brush = brush
     override fun alpha(progress: Float): Float = progress
 }
