@@ -146,7 +146,9 @@ class TextureVideoView @JvmOverloads constructor(
                 return true // we release the surface
             }
 
-            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
+            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
+                // No-op
+            }
         }
 
         controller = MediaController(context).apply {
@@ -184,7 +186,7 @@ class TextureVideoView @JvmOverloads constructor(
                 } catch (_: Throwable) {
                     false
                 }
-            )
+                )
         } else {
             resumePlayWhenReady
         }
