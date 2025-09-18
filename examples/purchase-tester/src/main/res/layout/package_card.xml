@@ -157,6 +157,17 @@
                     app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/base_product_checkbox"/>
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/base_product_checkbox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Base Product"
+                    android:visibility="@{isBundleMode ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/buy_option_checkbox"
                     app:layout_constraintBottom_toBottomOf="parent"/>
 
             <com.google.android.material.checkbox.MaterialCheckBox

@@ -104,10 +104,8 @@ internal class PostReceiptHelper(
             marketplace = purchase.marketplace,
             initiationSource = initiationSource,
             onSuccess = { postReceiptResponse ->
-                // Currently we only support a single token per postReceipt call but multiple product Ids.
-                // The backend would fail if given more than one product id (multiline purchases which are
-                // not supported) so it's safe to pickup the first one.
-                // We would need to refactor this if/when we support multiple tokens per call.
+                // Currently we only support a single token per postReceipt call but multiple product Ids
+                // (for multi-line subscriptions).
                 val shouldConsume = postReceiptResponse.productInfoByProductId
                     ?.filterKeys { it in purchase.productIds }
                     ?.values

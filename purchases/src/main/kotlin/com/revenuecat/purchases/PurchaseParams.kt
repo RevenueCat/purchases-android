@@ -139,7 +139,7 @@ class PurchaseParams(val builder: Builder) {
         fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) = apply {
             val baseProductPurchasingData = this.purchasingData
 
-            val baseSubscription = baseProductPurchasingData as? GooglePurchasingData.Subscription
+            val baseProduct = baseProductPurchasingData as? GooglePurchasingData.Subscription
                 ?: throw PurchasesException(
                     PurchasesError(
                         PurchasesErrorCode.PurchaseInvalidError,
@@ -153,14 +153,23 @@ class PurchaseParams(val builder: Builder) {
                 addOnProducts = addOnStoreProducts,
             )
 
-            val multilineProductId = baseSubscription.productId + MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER +
-                compatibleAddOnProducts.joinToString(separator = MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER) {
-                    it.productId
-                }
+            // Try just using the productID for the productID
+            // TODO: Validate if this works. If it does, then we need to:
+            //  1. Remove old commented code
+            //  2. Add a comment explaining why we only use the baseProduct's ID.
+//            val multilineProductId = if (compatibleAddOnProducts.isNotEmpty()) {
+//                baseSubscription.productId + MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER +
+//                    compatibleAddOnProducts.joinToString(separator = MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER) {
+//                        it.productId
+//                    }
+//            } else {
+//                baseSubscription.productId
+//            }
+            val productId = baseProduct.productId
 
             this.purchasingData = GooglePurchasingData.ProductWithAddOns(
-                productId = multilineProductId,
-                baseProduct = baseSubscription,
+                productId = productId,
+                baseProduct = baseProduct,
                 addOnProducts = compatibleAddOnProducts,
             )
         }

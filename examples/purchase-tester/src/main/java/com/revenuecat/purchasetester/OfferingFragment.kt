@@ -98,6 +98,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 Toast.makeText(requireContext(), "Please select at least one package", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
+            val baseProduct = packageCardAdapter?.getBaseProduct()
+            if (baseProduct != null && !selectedPackages.contains(baseProduct)) {
+                Toast.makeText(requireContext(), "Base product must also be selected", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             onBundlePurchaseClicked(selectedPackages)
         }
     }
@@ -167,11 +174,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun startBundlePurchase(selectedPackages: List<Package>) {
         toggleLoadingIndicator(true)
-        val basePackage = selectedPackages.first()
-        val addOnPackages = selectedPackages.subList(1, toIndex = selectedPackages.size)
+        val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
+        val addOnPackages = selectedPackages.filter { it != basePackage }
+
         val purchaseParams = PurchaseParams.Builder(
             activity = requireActivity(),
-            packageToPurchase = selectedPackages.first()
+            packageToPurchase = basePackage
         )
             .setAddOnProducts(addOnPackages.map { it.product })
             .build()

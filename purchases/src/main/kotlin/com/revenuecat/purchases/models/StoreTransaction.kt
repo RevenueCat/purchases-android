@@ -28,8 +28,7 @@ class StoreTransaction(
     /**
      * Product IDs purchased.
      *
-     * If size > 1, indicates that a multi-line purchase occurred, which RevenueCat does not support.
-     * Only the first productId will be processed by the SDK.
+     * If size > 1, indicates that a multi-line purchase occurred.
      */
     val productIds: List<String>,
 

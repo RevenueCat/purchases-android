@@ -26,6 +26,7 @@ class PackageCardAdapter(
 
     private var isBundleMode = false
     private val selectedPackages = mutableSetOf<Package>()
+    private var baseProduct: Package? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
         val binding = PackageCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -42,11 +43,18 @@ class PackageCardAdapter(
         isBundleMode = enabled
         if (!enabled) {
             selectedPackages.clear()
+            baseProduct = null
         }
         notifyDataSetChanged()
     }
 
     fun getSelectedPackages(): List<Package> = selectedPackages.toList()
+
+    fun getBaseProduct(): Package? = baseProduct
+
+    private fun setBaseProduct(pkg: Package?) {
+        baseProduct = pkg
+    }
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -69,6 +77,19 @@ class PackageCardAdapter(
                     selectedPackages.add(currentPackage)
                 } else {
                     selectedPackages.remove(currentPackage)
+                }
+            }
+
+            val isBaseProduct = baseProduct == currentPackage
+            binding.baseProductCheckbox.setOnCheckedChangeListener(null) // Clear listener first
+            binding.baseProductCheckbox.isChecked = isBaseProduct
+            binding.baseProductCheckbox.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    setBaseProduct(currentPackage)
+                    // Post a refresh to avoid recursion during binding
+                    binding.root.post { notifyDataSetChanged() }
+                } else if (isBaseProduct) {
+                    setBaseProduct(null)
                 }
             }
 

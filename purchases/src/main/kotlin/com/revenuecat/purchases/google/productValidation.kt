@@ -56,17 +56,7 @@ internal fun validateAndFilterCompatibleAddOnProducts(
         }
     }
 
-    val addOnProductsWithSameProductTypeCount = addOnProductsWithSameProductType.count()
-    if (addOnProductsWithSameProductTypeCount == 0) {
-        throw PurchasesException(
-            PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
-                "At least one add-on with the same product type as the base product must be provided.",
-            ),
-        )
-    }
-
-    if (addOnProductsWithSameProductTypeCount > MAX_NUMBER_OF_ADD_ON_PRODUCTS) {
+    if (addOnProductsWithSameProductType.count() > MAX_NUMBER_OF_ADD_ON_PRODUCTS) {
         throw PurchasesException(
             PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,

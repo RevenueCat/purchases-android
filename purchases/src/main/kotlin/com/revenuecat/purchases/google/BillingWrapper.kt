@@ -13,6 +13,7 @@ import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
@@ -264,8 +265,6 @@ internal class BillingWrapper(
             }
 
             is GooglePurchasingData.ProductWithAddOns -> {
-                // TODO: Should this be null? Will everything downstream of this accept this "productID"
-                // format?? (productID1|productID2|...)
                 googlePurchasingData.productId
             }
         }
@@ -295,24 +294,26 @@ internal class BillingWrapper(
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
             )
         }
-        executeRequestOnUIThread {
-            val result = buildPurchaseParams(
-                purchasingData,
-                replaceProductInfo,
-                appUserID,
-                isPersonalizedPrice,
-            )
-            when (result) {
-                is Result.Success -> {
-                    trackPurchaseStartIfNeeded(
-                        googlePurchasingData,
-                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
-                    )
-                    launchBillingFlow(activity, result.value)
+        val result = buildPurchaseParams(
+            purchasingData,
+            replaceProductInfo,
+            appUserID,
+            isPersonalizedPrice,
+            onCompletion = { result ->
+                executeRequestOnUIThread {
+                    when (result) {
+                        is Result.Success -> {
+                            trackPurchaseStartIfNeeded(
+                                googlePurchasingData,
+                                replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
+                            )
+                            launchBillingFlow(activity, result.value)
+                        }
+                        is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+                    }
                 }
-                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
-        }
+        )
     }
 
     @UiThread
@@ -852,18 +853,26 @@ internal class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
-    ): Result<BillingFlowParams, PurchasesError> {
-        return when (purchaseInfo) {
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit
+    ) {
+        when (purchaseInfo) {
             is GooglePurchasingData.InAppProduct -> {
-                buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
+                onCompletion(buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice))
             }
 
             is GooglePurchasingData.Subscription -> {
-                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
+                onCompletion(
+                    buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
+                )
             }
 
             is GooglePurchasingData.ProductWithAddOns -> {
-                buildProductWithAddOnsPurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
+                buildProductWithAddOnsPurchaseParams(
+                    purchaseInfo,
+                    appUserID,
+                    isPersonalizedPrice,
+                    onCompletion = onCompletion
+                )
             }
         }
     }
@@ -935,10 +944,115 @@ internal class BillingWrapper(
         purchasingData: ProductWithAddOns,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
-    ): Result<BillingFlowParams, PurchasesError> {
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit
+    ) {
+
+        val productDetailsParamsList: List<ProductDetailsParams>
+        when (val productDetailsParamsListResult = buildProductWithAddOnsProductDetailsList(purchasingData = purchasingData)) {
+            is Result.Error -> {
+                onCompletion(productDetailsParamsListResult)
+                return@buildProductWithAddOnsPurchaseParams
+            }
+            is Result.Success<List<ProductDetailsParams>> -> {
+                productDetailsParamsList = productDetailsParamsListResult.value
+            }
+        }
+
+        // Determine if the base product has been purchased before
+        queryPurchases(
+            appUserID = appUserID,
+            onSuccess = { purchasedProductsMap ->
+//                val productsToPurchase: MutableList<GooglePurchasingData> = mutableListOf(purchasingData.baseProduct)
+//                productsToPurchase.addAll(productsToPurchase.size, purchasingData.addOnProducts)
+
+                val billingFlowParams: BillingFlowParams
+                val previousTransactionForBaseProduct = purchasedProductsMap
+                    .map { it.value }
+                    // TODO: Probably make sure the transaction isn't expired
+                    .firstOrNull { it.productIds.contains(purchasingData.baseProduct.productId) }
+
+                if (previousTransactionForBaseProduct != null) {
+                    // Base product has been purchased before
+                    val purchaseToken = previousTransactionForBaseProduct.purchaseToken
+                    println("We are making a setSubscriptionUpdateParams thing")
+                    print(purchaseToken)
+                    billingFlowParams = BillingFlowParams.newBuilder()
+                        .setSubscriptionUpdateParams(
+                            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                                .setOldPurchaseToken(purchaseToken)
+                                // TODO: Set subscriptionReplacementMode
+                                // TODO: No need to set if change does not affect the base item.
+//                                .setSubscriptionReplacementMode(GoogleReplacementMode.)
+                                .build())
+                        .setObfuscatedAccountId(appUserID.sha256())
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        .apply {
+                            isPersonalizedPrice?.let {
+                                setIsOfferPersonalized(it)
+                            }
+                        }
+                        .build();
+                } else {
+                    // Base product has not been purchased before
+                    billingFlowParams = BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        .setObfuscatedAccountId(appUserID.sha256())
+                        .apply {
+                            isPersonalizedPrice?.let {
+                                setIsOfferPersonalized(it)
+                            }
+                        }
+                        .build()
+                }
+
+                onCompletion(Result.Success(billingFlowParams))
+            },
+            onError = { error ->
+                onCompletion(Result.Error(error))
+            }
+        )
+
+//        try {
+//            return Result.Success(
+//                BillingFlowParams.newBuilder()
+//                    .setProductDetailsParamsList(productDetailsParamsList)
+//                    .setObfuscatedAccountId(appUserID.sha256()) // TODO: understand why we're setting this
+//                    .apply {
+//                        // TODO: Understand personalized prices
+//                        isPersonalizedPrice?.let {
+//                            setIsOfferPersonalized(it)
+//                        }
+//                    }
+//                    .build(),
+//            )
+//        } catch (e: NoClassDefFoundError) {
+//            // TODO: Identify when/if/why a NoClassDefFoundError would be thrown
+//            return Result.Error(
+//                PurchasesError(
+//                    code = PurchasesErrorCode.UnknownError,
+//                    underlyingErrorMessage = e.localizedMessage,
+//                ),
+//            )
+//        }
+    }
+
+
+    /**
+     * Builds a list of ProductDetailsParams for bundle purchases containing a base product and add-ons.
+     *
+     * @param purchasingData Contains the base product and list of add-on products for the bundle
+     * @return List of ProductDetailsParams ready for purchasing, or throws on conversion failure
+     */
+    private fun buildProductWithAddOnsProductDetailsList(
+        purchasingData: ProductWithAddOns
+    ): Result<List<ProductDetailsParams>, PurchasesError> {
+        /**
+         * Converts PurchasingData into a ProductDetailsParams for both InAppProducts and Subscriptions.
+         */
         fun buildProductDetailsParams(
             purchasingData: PurchasingData,
         ): Result<BillingFlowParams.ProductDetailsParams, PurchasesError> {
+        ): Result<ProductDetailsParams, PurchasesError> {
             return when (purchasingData) {
                 is InAppProduct -> Result.Success(buildOneTimeProductDetailsParams(purchaseInfo = purchasingData))
                 is Subscription -> Result.Success(buildSubscriptionProductDetailsParams(purchaseInfo = purchasingData))
@@ -975,28 +1089,7 @@ internal class BillingWrapper(
             }
         }
 
-        try {
-            return Result.Success(
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                    .setObfuscatedAccountId(appUserID.sha256()) // TODO: understand why we're setting this
-                    .apply {
-                        // TODO: Understand personalized prices
-                        isPersonalizedPrice?.let {
-                            setIsOfferPersonalized(it)
-                        }
-                    }
-                    .build(),
-            )
-        } catch (e: NoClassDefFoundError) {
-            // TODO: Identify when/if/why a NoClassDefFoundError would be thrown
-            return Result.Error(
-                PurchasesError(
-                    code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = e.localizedMessage,
-                ),
-            )
-        }
+        return Result.Success(productDetailsParamsList)
     }
 
     @Synchronized
