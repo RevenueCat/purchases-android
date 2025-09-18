@@ -28,6 +28,7 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -100,17 +101,19 @@ private class PlaceholderNode(
         coroutineScope.launch {
             snapshotFlow { visible }
                 .collectLatest { isVisible ->
-                    launch {
-                        placeholderAlpha.animateTo(
-                            targetValue = if (isVisible) 1f else 0f,
-                            animationSpec = placeholderFadeTransitionSpec(),
-                        )
-                    }
-                    launch {
-                        contentAlpha.animateTo(
-                            targetValue = if (isVisible) 0f else 1f,
-                            animationSpec = contentFadeTransitionSpec(),
-                        )
+                    coroutineScope { // ties the animations into a same sibling.
+                        launch {
+                            placeholderAlpha.animateTo(
+                                targetValue = if (isVisible) 1f else 0f,
+                                animationSpec = placeholderFadeTransitionSpec(),
+                            )
+                        }
+                        launch {
+                            contentAlpha.animateTo(
+                                targetValue = if (isVisible) 0f else 1f,
+                                animationSpec = contentFadeTransitionSpec(),
+                            )
+                        }
                     }
                 }
         }
@@ -209,7 +212,6 @@ private data class PlaceholderElement(
     }
 }
 
-// Helper functions and interfaces remain the same
 @Suppress("LongParameterList")
 private fun DrawScope.drawPlaceholder(
     shape: Shape,
@@ -263,11 +265,26 @@ internal interface PlaceholderHighlight {
     fun alpha(progress: Float): Float
 }
 
+// region highlights
+
 internal data class Fade(
     private val highlightColor: Color,
     override val animationSpec: InfiniteRepeatableSpec<Float>,
 ) : PlaceholderHighlight {
     private val brush = SolidColor(highlightColor)
+
+    /**
+     * Return a [Brush] to draw for the given [progress] and [size].
+     *
+     * @param progress the current animated progress in the range of 0f..1f.
+     * @param size The size of the current layout to draw in.
+     */
     override fun brush(progress: Float, size: Size): Brush = brush
+
+    /**
+     * Return the desired alpha value used for drawing the [Brush] returned from [brush].
+     *
+     * @param progress the current animated progress in the range of 0f..1f.
+     */
     override fun alpha(progress: Float): Float = progress
 }
