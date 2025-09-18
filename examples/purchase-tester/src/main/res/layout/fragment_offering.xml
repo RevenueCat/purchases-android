@@ -16,6 +16,10 @@
                 name="isAddOnPurchaseMode"
                 type="Boolean" />
 
+        <variable
+                name="isPurchaseButtonEnabled"
+                type="Boolean" />
+
     </data>
 
     <androidx.core.widget.NestedScrollView
@@ -99,6 +103,7 @@
                         android:layout_marginStart="@dimen/padding_small"
                         android:layout_marginTop="@dimen/padding_tiny"
                         android:text="Purchase Selected"
+                        android:enabled="@{isPurchaseButtonEnabled}"
                         android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/replacement_mode_spinner" />

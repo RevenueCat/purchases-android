@@ -46,6 +46,7 @@ class PackageCardAdapter(
             baseProduct = null
         }
         notifyDataSetChanged()
+        notifySelectionChanged()
     }
 
     fun getSelectedPackages(): List<Package> = selectedPackages.toList()
@@ -54,6 +55,13 @@ class PackageCardAdapter(
 
     private fun setBaseProduct(pkg: Package?) {
         baseProduct = pkg
+    }
+
+    private fun notifySelectionChanged() {
+        val hasSelectedPackages = selectedPackages.isNotEmpty()
+        val hasBaseProduct = baseProduct != null
+        val baseProductIsSelected = baseProduct != null && selectedPackages.contains(baseProduct)
+        listener.onSelectionChanged(hasSelectedPackages, hasBaseProduct && baseProductIsSelected)
     }
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
@@ -78,6 +86,7 @@ class PackageCardAdapter(
                 } else {
                     selectedPackages.remove(currentPackage)
                 }
+                notifySelectionChanged()
             }
 
             val isBaseProduct = baseProduct == currentPackage
@@ -91,6 +100,7 @@ class PackageCardAdapter(
                 } else if (isBaseProduct) {
                     setBaseProduct(null)
                 }
+                notifySelectionChanged()
             }
 
             binding.packageBuyButton.setOnClickListener {
@@ -205,5 +215,6 @@ class PackageCardAdapter(
             isPersonalizedPrice: Boolean,
         )
         fun onAddOnPurchaseClicked(selectedPackages: List<Package>)
+        fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean)
     }
 }

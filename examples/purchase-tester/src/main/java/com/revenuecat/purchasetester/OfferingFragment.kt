@@ -86,6 +86,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun setupAddOnPurchaseUI() {
         binding.isAddOnPurchaseMode = false
+        binding.isPurchaseButtonEnabled = false
 
         setupReplacementModeSpinner()
 
@@ -94,6 +95,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             packageCardAdapter?.setAddOnMode(isChecked)
             // Force refresh the adapter to update UI
             packageCardAdapter?.notifyDataSetChanged()
+            updatePurchaseButtonState(false, false) // Reset button state when mode changes
         }
 
         binding.purchaseAllButton.setOnClickListener {
@@ -105,7 +107,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
             val baseProduct = packageCardAdapter?.getBaseProduct()
             if (baseProduct != null && !selectedPackages.contains(baseProduct)) {
-                Toast.makeText(requireContext(), "Base product must also be selected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Base product must also be marked as a Buy Option", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -197,6 +199,15 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         } else {
             startAddOnPurchaseWithoutFinishingTransaction(selectedPackages)
         }
+    }
+
+    override fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
+        updatePurchaseButtonState(hasSelectedPackages, hasValidBaseProduct)
+    }
+
+    private fun updatePurchaseButtonState(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
+        val isEnabled = binding.isAddOnPurchaseMode == true && hasSelectedPackages && hasValidBaseProduct
+        binding.isPurchaseButtonEnabled = isEnabled
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
