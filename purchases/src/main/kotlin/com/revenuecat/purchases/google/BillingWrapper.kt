@@ -962,9 +962,6 @@ internal class BillingWrapper(
         queryPurchases(
             appUserID = appUserID,
             onSuccess = { purchasedProductsMap ->
-//                val productsToPurchase: MutableList<GooglePurchasingData> = mutableListOf(purchasingData.baseProduct)
-//                productsToPurchase.addAll(productsToPurchase.size, purchasingData.addOnProducts)
-
                 val billingFlowParams: BillingFlowParams
                 val previousTransactionForBaseProduct = purchasedProductsMap
                     .map { it.value }
@@ -973,16 +970,11 @@ internal class BillingWrapper(
 
                 if (previousTransactionForBaseProduct != null) {
                     // Base product has been purchased before
-                    val purchaseToken = previousTransactionForBaseProduct.purchaseToken
-                    println("We are making a setSubscriptionUpdateParams thing")
-                    print(purchaseToken)
                     billingFlowParams = BillingFlowParams.newBuilder()
                         .setSubscriptionUpdateParams(
                             BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                                .setOldPurchaseToken(purchaseToken)
-                                // TODO: Set subscriptionReplacementMode
-                                // TODO: No need to set if change does not affect the base item.
-//                                .setSubscriptionReplacementMode(GoogleReplacementMode.)
+                                .setOldPurchaseToken(previousTransactionForBaseProduct.purchaseToken)
+                                .setSubscriptionReplacementMode(purchasingData.replacementMode.playBillingClientMode)
                                 .build())
                         .setObfuscatedAccountId(appUserID.sha256())
                         .setProductDetailsParamsList(productDetailsParamsList)

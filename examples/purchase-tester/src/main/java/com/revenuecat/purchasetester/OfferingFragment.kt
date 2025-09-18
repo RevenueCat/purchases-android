@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -49,6 +50,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
     private var packageCardAdapter: PackageCardAdapter? = null
+    private var selectedReplacementMode: GoogleReplacementMode? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +86,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun setupBundlePurchaseUI() {
         binding.isBundleMode = false
-        
+
+        setupReplacementModeSpinner()
+
         binding.bundlePurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
             binding.isBundleMode = isChecked
             packageCardAdapter?.setBundleMode(isChecked)
@@ -106,6 +110,30 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
 
             onBundlePurchaseClicked(selectedPackages)
+        }
+    }
+
+    private fun setupReplacementModeSpinner() {
+        val replacementModeOptions = listOf("Default") + GoogleReplacementMode.values().map { it.name }
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            replacementModeOptions
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.replacementModeSpinner.adapter = adapter
+        binding.replacementModeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedReplacementMode = if (position == 0) {
+                    null // "Default" option
+                } else {
+                    GoogleReplacementMode.values()[position - 1]
+                }
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                selectedReplacementMode = null
+            }
         }
     }
 
@@ -177,12 +205,17 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
         val addOnPackages = selectedPackages.filter { it != basePackage }
 
-        val purchaseParams = PurchaseParams.Builder(
+        val purchaseParamsBuilder = PurchaseParams.Builder(
             activity = requireActivity(),
             packageToPurchase = basePackage
         )
             .setAddOnProducts(addOnPackages.map { it.product })
-            .build()
+
+        selectedReplacementMode?.let {
+            purchaseParamsBuilder.googleReplacementMode(it)
+        }
+
+        val purchaseParams = purchaseParamsBuilder.build()
 
         Purchases.sharedInstance.purchase(
             purchaseParams = purchaseParams,

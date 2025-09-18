@@ -171,6 +171,7 @@ class PurchaseParams(val builder: Builder) {
                 productId = productId,
                 baseProduct = baseProduct,
                 addOnProducts = compatibleAddOnProducts,
+                replacementMode = this.googleReplacementMode
             )
         }
 

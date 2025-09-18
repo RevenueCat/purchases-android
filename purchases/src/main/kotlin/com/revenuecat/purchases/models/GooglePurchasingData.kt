@@ -40,5 +40,6 @@ sealed class GooglePurchasingData : PurchasingData {
         override val productId: String,
         val baseProduct: GooglePurchasingData,
         val addOnProducts: List<GooglePurchasingData>,
+        val replacementMode: GoogleReplacementMode,
     ) : GooglePurchasingData()
 }
