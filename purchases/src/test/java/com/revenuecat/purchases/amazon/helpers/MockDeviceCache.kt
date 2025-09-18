@@ -2,12 +2,13 @@ package com.revenuecat.purchases.amazon.helpers
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.common.caching.DeviceCache
+import kotlinx.coroutines.Dispatchers
 import org.json.JSONObject
 
 internal class MockDeviceCache(
     preferences: SharedPreferences,
     apiKey: String
-) : DeviceCache(preferences, apiKey) {
+) : DeviceCache(preferences, apiKey, Dispatchers.Unconfined) {
 
     var stubCache = mutableMapOf<String, String>()
 
