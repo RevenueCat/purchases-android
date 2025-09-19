@@ -26,6 +26,7 @@ class GooglePurchasingDataTest {
             productId = "123|456",
             baseProduct = inApp,
             addOnProducts = listOf(subscription),
+            replacementMode = GoogleReplacementMode.DEFERRED,
         )
 
         assertThat(productWithAddOns.productType).isEqualTo(ProductType.INAPP)
@@ -37,6 +38,7 @@ class GooglePurchasingDataTest {
             productId = "456|123",
             baseProduct = subscription,
             addOnProducts = listOf(inApp),
+            replacementMode = GoogleReplacementMode.DEFERRED,
         )
 
         assertThat(productWithAddOns.productType).isEqualTo(ProductType.SUBS)
