@@ -3,6 +3,7 @@ package com.revenuecat.purchases.paywalls.components
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
@@ -61,8 +62,11 @@ class VideoComponent(
     @get:JvmSynthetic
     val shadow: Shadow?,
     @get:JvmSynthetic
-    val overrides: ComponentOverride<PartialVideoComponent>?,
-)
+    val overrides: List<ComponentOverride<PartialVideoComponent>>?,
+    @get:JvmSynthetic
+    @SerialName("override_source_lid")
+    val overrideSourceLid: LocalizationKey? = null,
+) : PaywallComponent
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -107,4 +111,7 @@ class PartialVideoComponent(
     val border: Border? = null,
     @get:JvmSynthetic
     val shadow: Shadow? = null,
+    @get:JvmSynthetic
+    @SerialName("override_source_lid")
+    val overrideSourceLid: LocalizationKey? = null,
 ) : PartialComponent

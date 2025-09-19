@@ -25,11 +25,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 /**
@@ -56,6 +58,11 @@ internal fun ComponentView(
         modifier = modifier,
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
+    is VideoComponentStyle -> VideoComponentView(
+        style = style,
+        state = state,
+        modifier = modifier
+    )
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,

@@ -1,25 +1,25 @@
 package com.revenuecat.purchases.storage
 
 import com.revenuecat.purchases.LogHandler
-import io.mockk.every
-import io.mockk.mockk
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
-import java.net.URI
-import java.net.URL
 import com.revenuecat.purchases.utils.CoroutineTest
 import com.revenuecat.purchases.utils.TestUrlConnection
 import com.revenuecat.purchases.utils.TestUrlConnectionFactory
 import io.mockk.Runs
+import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.URI
+import java.net.URL
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FileRepositoryTest : CoroutineTest() {
@@ -30,12 +30,12 @@ class FileRepositoryTest : CoroutineTest() {
         val url: URL = URL(TEST_URL)
         val goodConnection = TestUrlConnection(
             responseCode = HttpURLConnection.HTTP_OK,
-            inputStream = ByteArrayInputStream(ByteArray(0))
+            inputStream = ByteArrayInputStream(ByteArray(0)),
         )
 
         val badConnection = TestUrlConnection(
             responseCode = HttpURLConnection.HTTP_BAD_REQUEST,
-            inputStream = ByteArrayInputStream(ByteArray(0))
+            inputStream = ByteArrayInputStream(ByteArray(0)),
         )
     }
 
@@ -48,6 +48,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.cachedContentExists(cacheUri) } returns true
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
@@ -69,6 +70,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             ioScope = this,
             logHandler = mockk<LogHandler>(relaxed = true),
@@ -94,6 +96,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.generateLocalFilesystemURI(url) } returns null
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
@@ -112,6 +115,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.cachedContentExists(cacheUri) } returns false
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
@@ -134,6 +138,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.saveData(any(), cacheUri) } just Runs
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
@@ -155,6 +160,7 @@ class FileRepositoryTest : CoroutineTest() {
         } throws IOException("Failed to save data")
 
         val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
             fileCacheManager = mockCache,
             logHandler = mockk<LogHandler>(relaxed = true),
             urlConnectionFactory = factory,
