@@ -1,11 +1,17 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.google.validateAndFilterCompatibleAddOnProducts
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.Throws
 
 @Poko
 class PurchaseParams(val builder: Builder) {
@@ -44,10 +50,14 @@ class PurchaseParams(val builder: Builder) {
      */
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
-        @get:JvmSynthetic internal val purchasingData: PurchasingData,
+        @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
+        companion object {
+            const val MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER = "|"
+        }
+
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
@@ -120,6 +130,69 @@ class PurchaseParams(val builder: Builder) {
          */
         fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
             this.googleReplacementMode = googleReplacementMode
+        }
+
+        /*
+         * The [Package]s to add on to the base package passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor.
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on packages must be the same and match the period of the base product.
+         * - No more than 49 add-ons packages per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @Throws(PurchasesException::class)
+        fun addOnPackages(addOnPackages: List<Package>) = apply {
+            this.addOnStoreProducts(addOnPackages.map { it.product })
+        }
+
+        /*
+         * The [StoreProduct]s to add on to the base product passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor.
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on products must be the same and match the period of the base product.
+         * - No more than 49 add-ons products per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @Throws(PurchasesException::class)
+        fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+            if (addOnStoreProducts.isEmpty()) {
+                log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
+            }
+
+            val baseProductPurchasingData = this.purchasingData
+
+            val baseProduct = baseProductPurchasingData as? GooglePurchasingData.Subscription
+                ?: throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.PurchaseInvalidError,
+                        "Add-ons are currently only supported for Google subscriptions.",
+                    ),
+                )
+
+            // This call will throw a PurchasesException if there is a validation issue with the add-on products
+            val compatibleAddOnProducts: List<GooglePurchasingData> = validateAndFilterCompatibleAddOnProducts(
+                baseProductPurchasingData = baseProductPurchasingData,
+                addOnProducts = addOnStoreProducts,
+            )
+
+            // The purchasesOrchestrator caches callbacks using productId as the key. When a product
+            // change removes products, BillingClient.Purchase.productIds still includes the removed
+            // products alongside active ones. If we use add-on product IDs in the cache key, we won't
+            // be able to find the purchase callbacks in this scenario, leaving the app unaware the purchase completed.
+            val productId = baseProduct.productId
+
+            this.purchasingData = GooglePurchasingData.ProductWithAddOns(
+                productId = productId,
+                baseProduct = baseProduct,
+                addOnProducts = compatibleAddOnProducts,
+                replacementMode = this.googleReplacementMode,
+            )
         }
 
         open fun build(): PurchaseParams {

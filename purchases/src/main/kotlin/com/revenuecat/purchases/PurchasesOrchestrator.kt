@@ -70,6 +70,7 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
@@ -1289,6 +1290,15 @@ internal class PurchasesOrchestrator(
                     }
                 }",
             )
+        }
+
+        if (purchasingData is GooglePurchasingData.ProductWithAddOns && this.store != Store.PLAY_STORE) {
+            val error = PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }
+            listener.dispatch(error)
+            return
         }
 
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)

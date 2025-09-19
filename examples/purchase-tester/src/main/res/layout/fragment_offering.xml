@@ -6,9 +6,19 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
                 name="offering"
                 type="com.revenuecat.purchases.Offering" />
+
+        <variable
+                name="isAddOnPurchaseMode"
+                type="Boolean" />
+
+        <variable
+                name="isPurchaseButtonEnabled"
+                type="Boolean" />
 
     </data>
 
@@ -52,6 +62,52 @@
                         bind:detail="@{offering.serverDescription}"
                         bind:header="@{`Description:`}" />
 
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/add_on_purchase_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Make Add-On Purchase"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/replacement_mode_label"
+                        style="@style/TextAppearance.AppCompat.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="Replacement Mode"
+                        android:textColor="#808080"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/add_on_purchase_checkbox" />
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/replacement_mode_spinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/replacement_mode_label" />
+
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/purchase_all_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="Purchase Selected"
+                        android:enabled="@{isPurchaseButtonEnabled}"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/replacement_mode_spinner" />
+
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/offering_details_packages_header"
                         android:layout_width="match_parent"
@@ -60,8 +116,8 @@
                         android:layout_marginTop="@dimen/padding_small"
                         android:text="Packages"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchase_all_button" />
 
                 <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/offering__details_packages_recycler"
