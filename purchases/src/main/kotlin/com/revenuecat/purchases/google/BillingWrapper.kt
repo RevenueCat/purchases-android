@@ -968,25 +968,24 @@ internal class BillingWrapper(
                 val billingFlowParams: BillingFlowParams
                 val previousTransactionForBaseProduct = purchasedProductsMap
                     .map { it.value }
-                    // TODO: Probably make sure the transaction isn't expired
                     .firstOrNull { it.productIds.contains(purchasingData.baseProduct.productId) }
 
                 if (previousTransactionForBaseProduct != null) {
-                    // Base product has been purchased before
+                    val replaceProductInfo = ReplaceProductInfo(
+                        previousTransactionForBaseProduct,
+                        purchasingData.replacementMode
+                    )
+                    // Base product has been purchased before, use SubscriptionUpdateParams
                     billingFlowParams = BillingFlowParams.newBuilder()
-                        .setSubscriptionUpdateParams(
-                            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                                .setOldPurchaseToken(previousTransactionForBaseProduct.purchaseToken)
-                                .setSubscriptionReplacementMode(purchasingData.replacementMode.playBillingClientMode)
-                                .build(),
-                        )
-                        .setObfuscatedAccountId(appUserID.sha256())
-                        .setProductDetailsParamsList(productDetailsParamsList)
                         .apply {
+                            setUpgradeInfo(replaceProductInfo)
                             isPersonalizedPrice?.let {
                                 setIsOfferPersonalized(it)
                             }
                         }
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        // TODO: Determine if we need to not do this on product changes
+                        .setObfuscatedAccountId(appUserID.sha256())
                         .build()
                 } else {
                     // Base product has not been purchased before
