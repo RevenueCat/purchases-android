@@ -35,6 +35,7 @@ internal sealed class PaywallValidationError : Throwable() {
             }
             is MissingStringLocalization -> message
             is MissingImageLocalization -> message
+            is MissingVideoLocalization -> message
             is AllLocalizationsMissing -> message
             is AllVariableLocalizationsMissing -> message
             is MissingPackage -> message
@@ -70,6 +71,14 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String = locale?.let {
             PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
         } ?: PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
+    }
+    data class MissingVideoLocalization(
+        val key: LocalizationKey,
+        val locale: LocaleId? = null,
+    ) : PaywallValidationError() {
+        override val message: String = locale?.let {
+            PaywallValidationErrorStrings.MISSING_VIDEO_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
+        } ?: PaywallValidationErrorStrings.MISSING_VIDEO_LOCALIZATION.format(key.value)
     }
     data class AllLocalizationsMissing(
         val locale: LocaleId,
