@@ -133,9 +133,14 @@ class PurchaseParams(val builder: Builder) {
         }
 
         /*
-         * The packages to add on to the package passed in to the Builder's constructor.
+         * The [Package]s to add on to the base package passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor.
          *
-         * TODO: Flesh out these docs
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on packages must be the same and match the period of the base product.
+         * - No more than 49 add-ons packages per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)
@@ -144,9 +149,14 @@ class PurchaseParams(val builder: Builder) {
         }
 
         /*
-         * The products to add on to the product passed in to the Builder's constructor.
+         * The [StoreProduct]s to add on to the base product passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor.
          *
-         * TODO: Flesh out these docs
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on products must be the same and match the period of the base product.
+         * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)

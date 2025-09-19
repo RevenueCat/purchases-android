@@ -328,8 +328,10 @@ class PurchaseParamsTest {
     @Test
     fun `addOnPackages throws if add-ons with different periods are provided`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
-        val monthlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "monthly_addon", period = Period(1, Period.Unit.MONTH, "P1M"))
-        val yearlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "yearly_addon", period = Period(1, Period.Unit.YEAR, "P1Y"))
+        val monthlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "monthly_addon",
+            period = Period(1, Period.Unit.MONTH, "P1M"))
+        val yearlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "yearly_addon",
+            period = Period(1, Period.Unit.YEAR, "P1Y"))
         val monthlyPackage = Package(
             identifier = "monthly_package",
             packageType = PackageType.UNKNOWN,
