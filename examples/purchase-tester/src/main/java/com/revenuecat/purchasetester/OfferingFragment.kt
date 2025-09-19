@@ -22,15 +22,15 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
-import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
@@ -107,7 +107,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
             val baseProduct = packageCardAdapter?.getBaseProduct()
             if (baseProduct != null && !selectedPackages.contains(baseProduct)) {
-                Toast.makeText(requireContext(), "Base product must also be marked as a Buy Option", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Base product must also be marked as a Buy Option",
+                    Toast.LENGTH_SHORT,
+                ).show()
                 return@setOnClickListener
             }
 
@@ -120,11 +124,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            replacementModeOptions
+            replacementModeOptions,
         )
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.replacementModeSpinner.adapter = adapter
-        binding.replacementModeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+        binding.replacementModeSpinner
+            .onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedReplacementMode = if (position == 0) {
                     null // "Default" option
@@ -218,7 +223,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         val purchaseParamsBuilder = PurchaseParams.Builder(
             activity = requireActivity(),
-            packageToPurchase = basePackage
+            packageToPurchase = basePackage,
         )
             .setAddOnPackages(addOnPackages = addOnPackages)
 
@@ -233,14 +238,22 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             callback = object : PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
                     toggleLoadingIndicator(false)
-                    Toast.makeText(requireContext(), "Add-On purchase completed successfully!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Add-On purchase completed successfully!",
+                        Toast.LENGTH_LONG,
+                    ).show()
                     findNavController().navigateUp()
                 }
 
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     toggleLoadingIndicator(false)
                     if (!userCancelled) {
-                        Toast.makeText(requireContext(), "Add-On purchase failed: ${error.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "Add-On purchase failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
                     }
                 }
             },

@@ -69,6 +69,7 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
+        @Suppress("LongMethod")
         fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import com.android.billingclient.api.Purchase
-import com.revenuecat.purchases.strings.BillingStrings
 
 internal fun Purchase.toHumanReadableDescription() =
     "productIds: ${
@@ -15,9 +14,3 @@ internal fun Purchase.toHumanReadableDescription() =
  */
 internal val Purchase.firstProductId: String
     get() = products[0]
-//        .also {
-//        // TODO: Remove this log
-//        if (products.size > 1) {
-//            log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PURCHASE_MORE_THAN_ONE_SKU }
-//        }
-//    }

@@ -312,7 +312,7 @@ internal class BillingWrapper(
                         is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
                     }
                 }
-            }
+            },
         )
     }
 
@@ -853,7 +853,7 @@ internal class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
-        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit,
     ) {
         when (purchaseInfo) {
             is GooglePurchasingData.InAppProduct -> {
@@ -862,7 +862,7 @@ internal class BillingWrapper(
 
             is GooglePurchasingData.Subscription -> {
                 onCompletion(
-                    buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
+                    buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice),
                 )
             }
 
@@ -871,7 +871,7 @@ internal class BillingWrapper(
                     purchaseInfo,
                     appUserID,
                     isPersonalizedPrice,
-                    onCompletion = onCompletion
+                    onCompletion = onCompletion,
                 )
             }
         }
@@ -944,11 +944,14 @@ internal class BillingWrapper(
         purchasingData: ProductWithAddOns,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
-        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit,
     ) {
-
         val productDetailsParamsList: List<ProductDetailsParams>
-        when (val productDetailsParamsListResult = buildProductWithAddOnsProductDetailsList(purchasingData = purchasingData)) {
+        when (
+            val productDetailsParamsListResult = buildProductWithAddOnsProductDetailsList(
+                purchasingData = purchasingData,
+            )
+        ) {
             is Result.Error -> {
                 onCompletion(productDetailsParamsListResult)
                 return@buildProductWithAddOnsPurchaseParams
@@ -975,7 +978,8 @@ internal class BillingWrapper(
                             BillingFlowParams.SubscriptionUpdateParams.newBuilder()
                                 .setOldPurchaseToken(previousTransactionForBaseProduct.purchaseToken)
                                 .setSubscriptionReplacementMode(purchasingData.replacementMode.playBillingClientMode)
-                                .build())
+                                .build(),
+                        )
                         .setObfuscatedAccountId(appUserID.sha256())
                         .setProductDetailsParamsList(productDetailsParamsList)
                         .apply {
@@ -983,7 +987,7 @@ internal class BillingWrapper(
                                 setIsOfferPersonalized(it)
                             }
                         }
-                        .build();
+                        .build()
                 } else {
                     // Base product has not been purchased before
                     billingFlowParams = BillingFlowParams.newBuilder()
@@ -1001,33 +1005,9 @@ internal class BillingWrapper(
             },
             onError = { error ->
                 onCompletion(Result.Error(error))
-            }
+            },
         )
-
-//        try {
-//            return Result.Success(
-//                BillingFlowParams.newBuilder()
-//                    .setProductDetailsParamsList(productDetailsParamsList)
-//                    .setObfuscatedAccountId(appUserID.sha256()) // TODO: understand why we're setting this
-//                    .apply {
-//                        // TODO: Understand personalized prices
-//                        isPersonalizedPrice?.let {
-//                            setIsOfferPersonalized(it)
-//                        }
-//                    }
-//                    .build(),
-//            )
-//        } catch (e: NoClassDefFoundError) {
-//            // TODO: Identify when/if/why a NoClassDefFoundError would be thrown
-//            return Result.Error(
-//                PurchasesError(
-//                    code = PurchasesErrorCode.UnknownError,
-//                    underlyingErrorMessage = e.localizedMessage,
-//                ),
-//            )
-//        }
     }
-
 
     /**
      * Builds a list of ProductDetailsParams for bundle purchases containing a base product and add-ons.
@@ -1035,8 +1015,9 @@ internal class BillingWrapper(
      * @param purchasingData Contains the base product and list of add-on products for the bundle
      * @return List of ProductDetailsParams ready for purchasing, or throws on conversion failure
      */
+    @Suppress("ReturnCount")
     private fun buildProductWithAddOnsProductDetailsList(
-        purchasingData: ProductWithAddOns
+        purchasingData: ProductWithAddOns,
     ): Result<List<ProductDetailsParams>, PurchasesError> {
         /**
          * Converts PurchasingData into a ProductDetailsParams for both InAppProducts and Subscriptions.
@@ -1047,15 +1028,13 @@ internal class BillingWrapper(
             return when (purchasingData) {
                 is InAppProduct -> Result.Success(buildOneTimeProductDetailsParams(purchaseInfo = purchasingData))
                 is Subscription -> Result.Success(buildSubscriptionProductDetailsParams(purchaseInfo = purchasingData))
-                else -> {
-                    return Result.Error(
-                        PurchasesError(
-                            code = PurchasesErrorCode.PurchaseInvalidError,
-                            underlyingErrorMessage = "Only subscriptions and one time purchases are supported " +
-                                "for purchases with add-ons.",
-                        ),
-                    )
-                }
+                else -> Result.Error(
+                    PurchasesError(
+                        code = PurchasesErrorCode.PurchaseInvalidError,
+                        underlyingErrorMessage = "Only subscriptions and one time purchases are supported " +
+                            "for purchases with add-ons.",
+                    ),
+                )
             }
         }
 

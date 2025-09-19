@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.google.android.gms.common.logging.Logger
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.validateAndFilterCompatibleAddOnProducts
@@ -172,25 +171,17 @@ class PurchaseParams(val builder: Builder) {
                 addOnProducts = addOnStoreProducts,
             )
 
-            // Try just using the productID for the productID
-            // TODO: Validate if this works. If it does, then we need to:
-            //  1. Remove old commented code
-            //  2. Add a comment explaining why we only use the baseProduct's ID.
-//            val multilineProductId = if (compatibleAddOnProducts.isNotEmpty()) {
-//                baseSubscription.productId + MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER +
-//                    compatibleAddOnProducts.joinToString(separator = MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER) {
-//                        it.productId
-//                    }
-//            } else {
-//                baseSubscription.productId
-//            }
+            // The purchasesOrchestrator caches callbacks using productId as the key. When a product
+            // change removes products, BillingClient.Purchase.productIds still includes the removed
+            // products alongside active ones. If we use add-on product IDs in the cache key, we won't
+            // be able to find the purchase callbacks in this scenario, leaving the app unaware the purchase completed.
             val productId = baseProduct.productId
 
             this.purchasingData = GooglePurchasingData.ProductWithAddOns(
                 productId = productId,
                 baseProduct = baseProduct,
                 addOnProducts = compatibleAddOnProducts,
-                replacementMode = this.googleReplacementMode
+                replacementMode = this.googleReplacementMode,
             )
         }
 

@@ -8,7 +8,6 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.googleProduct
 import kotlin.jvm.Throws
 
 /**
@@ -29,6 +28,7 @@ internal const val MAX_NUMBER_OF_ADD_ON_PRODUCTS = 49
 // TODO: Write tests for this
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesException::class)
+@Suppress("ThrowsCount")
 internal fun validateAndFilterCompatibleAddOnProducts(
     baseProductPurchasingData: PurchasingData,
     addOnProducts: List<StoreProduct>,
