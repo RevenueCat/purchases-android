@@ -42,7 +42,6 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -53,7 +52,6 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
@@ -72,6 +70,7 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
@@ -1283,7 +1282,6 @@ internal class PurchasesOrchestrator(
         isPersonalizedPrice: Boolean?,
         listener: PurchaseCallback,
     ) {
-        // TODO: Error if purchasingData is GooglePurchasingDataProductWithAddOns and store isn't PLAY_STORE
         log(LogIntent.PURCHASE) {
             PurchaseStrings.PURCHASE_STARTED.format(
                 " $purchasingData ${
@@ -1292,6 +1290,15 @@ internal class PurchasesOrchestrator(
                     }
                 }",
             )
+        }
+
+        if (purchasingData is GooglePurchasingData.ProductWithAddOns && this.store != Store.PLAY_STORE) {
+            val error = PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }
+            listener.dispatch(error)
+            return
         }
 
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
