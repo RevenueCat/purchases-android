@@ -45,10 +45,8 @@ internal fun validateAndFilterCompatibleAddOnProducts(
     val billingPeriods = mutableSetOf<Period>()
 
     for (addOnProduct in addOnProducts) {
-        // Only process add-ons whose product type matches that of the baseProduct.
         val addOnPurchasingData = addOnProduct.purchasingData
-        if (addOnProduct.googleProduct != null &&
-            addOnPurchasingData is GooglePurchasingData &&
+        if (addOnPurchasingData is GooglePurchasingData &&
             addOnPurchasingData::class == baseProductPurchasingData::class
         ) {
             addOnProductsWithSameProductType.add(addOnPurchasingData)

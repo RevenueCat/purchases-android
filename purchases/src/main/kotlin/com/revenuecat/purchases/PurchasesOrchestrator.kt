@@ -1294,8 +1294,8 @@ internal class PurchasesOrchestrator(
 
         if (purchasingData is GooglePurchasingData.ProductWithAddOns && this.store != Store.PLAY_STORE) {
             val error = PurchasesError(
-                PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
             ).also { errorLog(it) }
             listener.dispatch(error)
             return

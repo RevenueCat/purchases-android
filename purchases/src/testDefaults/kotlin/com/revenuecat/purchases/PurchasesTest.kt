@@ -22,7 +22,9 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
@@ -33,6 +35,7 @@ import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubOfferings
+import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -1718,6 +1721,170 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion Simulated store
+
+    // region Add-On Purchases
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with empty add-ons list starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .setAddOnProducts(addOnStoreProducts = emptyList())
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.ProductWithAddOns::class.java)
+        val productWithAddOns = capturedPurchasingData as GooglePurchasingData.ProductWithAddOns
+        assertThat(productWithAddOns.baseProduct).isEqualTo(baseProduct.purchasingData)
+        assertThat(productWithAddOns.addOnProducts).isEmpty()
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with add-ons starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+
+        val addOns = listOf(
+            stubStoreProductWithGoogleSubscriptionPurchaseData(
+                productId = "abc123",
+                optionId = "option1",
+                token = "abc"
+            ),
+            stubStoreProductWithGoogleSubscriptionPurchaseData(
+                productId = "xyz789",
+                optionId = "option2",
+                token = "xyz"
+            ),
+        )
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .setAddOnProducts(addOnStoreProducts = addOns)
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.ProductWithAddOns::class.java)
+        val productWithAddOns = capturedPurchasingData as GooglePurchasingData.ProductWithAddOns
+        assertThat(productWithAddOns.baseProduct).isEqualTo(baseProduct.purchasingData)
+        val capturedAddOns = productWithAddOns.addOnProducts
+        assertThat(capturedAddOns.size).isEqualTo(2)
+        assertThat(capturedAddOns.first().productId).isEqualTo("abc123")
+        assertThat(capturedAddOns.first().productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedAddOns.last().productId).isEqualTo("xyz789")
+        assertThat(capturedAddOns.last().productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with add-ons throws when Store is not PLAY_STORE`() {
+        val purchaseParams = PurchaseParams.Builder(
+            activity = mockActivity,
+            storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        )
+            .setAddOnProducts(addOnStoreProducts = emptyList())
+            .build()
+
+        for (store in Store.values()) {
+            if (store == Store.PLAY_STORE) { continue }
+            buildPurchases(
+                anonymous = false,
+                apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+                enableSimulatedStore = true,
+                store = store
+            )
+
+            val latch = CountDownLatch(1)
+            var capturedError: PurchasesError? = null
+            var capturedUserCancelled: Boolean? = null
+
+            purchases.purchase(
+                purchaseParams = purchaseParams,
+                callback = object: PurchaseCallback {
+                    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                        fail("purchase() should fail with a purchase with add-ons when the store is not the Play Store")
+                        latch.countDown()
+                    }
+
+                    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                        capturedError = error
+                        capturedUserCancelled = userCancelled
+                        latch.countDown()
+                    }
+                },
+            )
+
+            assertThat(latch.await(3, TimeUnit.SECONDS)).withFailMessage(
+                "Callback was not called within timeout for store: $store"
+            ).isTrue()
+
+            assertThat(capturedError).withFailMessage(
+                "Expected error to be captured for store: $store"
+            ).isNotNull()
+
+            assertThat(capturedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+            assertThat(capturedError?.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
+            assertThat(capturedError?.underlyingErrorMessage).isEqualTo("Making a purchase with add-ons is only supported on" +
+                " the Play Store.")
+
+            assertThat(capturedUserCancelled).withFailMessage(
+                "Expected userCancelled to be false for store: $store"
+            ).isNotNull().isFalse()
+        }
+    }
+    // endregion Add-On Purchases
 
     // region Private Methods
 
