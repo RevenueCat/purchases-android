@@ -265,6 +265,15 @@ data class CustomerCenterConfigData(
 
             @SerialName("next_billing_date_on")
             NEXT_BILLING_DATE_ON,
+
+            @SerialName("see_all_virtual_currencies")
+            SEE_ALL_VIRTUAL_CURRENCIES,
+
+            @SerialName("virtual_currency_balances_screen_header")
+            VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+
+            @SerialName("no_virtual_currency_balances_found")
+            NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
             ;
 
             val defaultValue: String
@@ -356,6 +365,9 @@ data class CustomerCenterConfigData(
                     BUY_SUBSCRIPTION -> "Buy Subscription"
                     LAST_CHARGE_WAS -> "Last charge: {{ price }}"
                     NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
+                    SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
+                    VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
+                    NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
                 }
         }
 
@@ -513,6 +525,8 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+        @SerialName("display_virtual_currencies")
+        val displayVirtualCurrencies: Boolean? = null,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {

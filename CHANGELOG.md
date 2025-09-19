@@ -1,3 +1,35 @@
+## 9.7.1
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix bundled font families when using assets folder (#2672) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add 8.24.0 CHANGELOG to main (#2662) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `489faef` to `a6dc551` (#2673) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `7d97553` to `489faef` (#2671) via dependabot[bot] (@dependabot[bot])
+* File Repository (#2634) via Jacob Rakidzich (@JZDesign)
+
+## 9.7.0
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Display Virtual Currencies in Customer Center (#2652) via Will Taylor (@fire-at-will)
+
+## 9.6.0
+## RevenueCat SDK
+### ✨ New Features
+* Add `RevenueCatBackupAgent` (#2625) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Fix CoroutineCreationDuringComposition lint error on AGP 8.13.0 (#2659) via Cesar de la Vega (@vegaro)
+* Support setting null offering id on PaywallView (#2658) via Toni Rico (@tonidero)
+
 ## 9.5.0
 ## RevenueCat SDK
 ### ✨ New Features
@@ -262,6 +294,35 @@ Using the SDK with your own IAP code is still supported in v9. Other than updati
 * Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
 * Add V9 migration guide (#2508) via Toni Rico (@tonidero)
 * [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2499) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.24.0
+## RevenueCat SDK
+> [!NOTE]  
+> This release brings all non-breaking changes between SDK versions 9.4.0 and 9.6.0 to major 8, so developers that don't/can't use major 9, can still get the latest updates.
+
+### ✨ New Features
+* Add `RevenueCatBackupAgent` (#2625) via Toni Rico (@tonidero)
+* Add preferred UI locale override for RevenueCat UI components (#2620) via Josh Holtz (@joshdholtz)
+* Add option to disable automatic ID collection when setting attribution network IDs at configuration time (#2643) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Handle payment pending errors when restoring properly (#2635) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* MON-1193 Support delayed close button (Component Transitions) (#2623) via Jacob Rakidzich (@JZDesign)
+#### 🐞 Bugfixes
+* Fix PaywallDialog going over screen size on Android 35+ (#2642) via Toni Rico (@tonidero)
+### Customer Center
+#### ✨ New Features
+* Add button_text to ScreenOffering (#2638) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Fix CoroutineCreationDuringComposition lint error on AGP 8.13.0 (#2659) via Cesar de la Vega (@vegaro)
+* Support setting null offering id on PaywallView (#2658) via Toni Rico (@tonidero)
+* Improve thread safety of setting paywalls preferred locale (#2655) via Josh Holtz (@joshdholtz)
+* Remove validation for no packages on paywalls (#2653) via Josh Holtz (@joshdholtz)
+* MON-1193 flatten Transition JSON structure after chatting more thoroughly with team (#2641) via Jacob Rakidzich (@JZDesign)
 
 ## 8.23.0
 > [!NOTE]  

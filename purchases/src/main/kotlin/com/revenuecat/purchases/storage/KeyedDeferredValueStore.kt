@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.storage
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.coroutines.Deferred
 
+@InternalRevenueCatAPI
 class KeyedDeferredValueStore<H, T>(
     private val lock: Any = object {},
 ) {
