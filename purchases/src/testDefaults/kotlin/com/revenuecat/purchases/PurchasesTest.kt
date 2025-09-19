@@ -1728,7 +1728,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `purchase with empty add-ons list starts purchase with expected parameters`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
-            .setAddOnProducts(addOnStoreProducts = emptyList())
+            .addOnStoreProducts(addOnStoreProducts = emptyList())
             .build()
         buildPurchases(
             anonymous = false,
@@ -1784,7 +1784,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             ),
         )
         val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
-            .setAddOnProducts(addOnStoreProducts = addOns)
+            .addOnStoreProducts(addOnStoreProducts = addOns)
             .build()
         buildPurchases(
             anonymous = false,
@@ -1834,7 +1834,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             activity = mockActivity,
             storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         )
-            .setAddOnProducts(addOnStoreProducts = emptyList())
+            .addOnStoreProducts(addOnStoreProducts = emptyList())
             .build()
 
         for (store in Store.values()) {

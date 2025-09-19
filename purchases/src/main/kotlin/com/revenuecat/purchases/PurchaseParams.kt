@@ -139,8 +139,8 @@ class PurchaseParams(val builder: Builder) {
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)
-        fun setAddOnPackages(addOnPackages: List<Package>) = apply {
-            this.setAddOnProducts(addOnPackages.map { it.product })
+        fun addOnPackages(addOnPackages: List<Package>) = apply {
+            this.addOnStoreProducts(addOnPackages.map { it.product })
         }
 
         /*
@@ -150,7 +150,7 @@ class PurchaseParams(val builder: Builder) {
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @Throws(PurchasesException::class)
-        fun setAddOnProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+        fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
             if (addOnStoreProducts.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
             }
