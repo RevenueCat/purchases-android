@@ -404,7 +404,6 @@ private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
 private fun VideoCard(
     modifier: Modifier,
     scaleType: TextureVideoView.ScaleType,
-//    containerAspect: Float = 16f / 16f,
     repository: FileRepository,
     videoUri: String,
     showControls: Boolean,
@@ -441,10 +440,7 @@ private fun VideoCard(
         }
     }
     Box(
-        modifier = modifier
-//            .fillMaxWidth() // <- full width of padded area (can be 0 padding)
-//            .aspectRatio(containerAspect)
-            .clipToBounds(),
+        modifier = modifier.clipToBounds(),
         contentAlignment = Alignment.Center,
     ) {
         AndroidView(

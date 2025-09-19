@@ -55,8 +55,6 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            // TO DO: use image component view as the fallback
-//            ImageComponentView()
 
             val repository = DefaultFileRepository(LocalContext.current)
 
