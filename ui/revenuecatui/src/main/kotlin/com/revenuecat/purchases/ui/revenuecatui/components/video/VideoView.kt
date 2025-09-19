@@ -29,11 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
 import java.net.URL
 
@@ -47,8 +45,8 @@ fun VideoView(
     loop: Boolean = false,
     muteAudio: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
+    repository: FileRepository
 ) {
-    val repository = DefaultFileRepository(LocalContext.current)
     VideoCard(
         modifier,
         scaleType = if (contentScale == ContentScale.Fit) {
