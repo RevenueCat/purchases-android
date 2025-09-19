@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
@@ -31,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import java.net.URI
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @JvmSynthetic
 @Composable
 internal fun VideoComponentView(
@@ -77,8 +77,8 @@ internal fun VideoComponentView(
                             rcPackage = style.rcPackage,
                             tabIndex = style.tabIndex,
                             overrides = emptyList(), // TODO
-                            ignoreTopWindowInsets = style.ignoreTopWindowInsets
-                        )
+                            ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                        ),
                     )
                 } else {
                     mutableStateOf(null)
@@ -153,7 +153,7 @@ internal fun VideoComponentView(
                     loop = style.loop,
                     muteAudio = style.muteAudio,
                     contentScale = style.contentScale,
-                    repository = repository
+                    repository = repository,
                 )
             }
         }
