@@ -85,26 +85,17 @@ internal fun VideoComponentView(
 
             var videoUrl by rememberSaveable { mutableStateOf(repository.getFile(videoState.videoUrls.url)) }
 
+            // If the low res and normal resolution files were not yet found on disk
+            // then we attempt to finish the download by calling the following method.
+            // this method will share the async task that the Predownload started
+            // if it didn't error out, expediting the download time and reducing the memory
+            // footprint of paywalls
             suspend fun fetchVideoUrl(withUrgency: Boolean) {
                 try {
-                    // if there is nothing displaying at all, start rendering the low res if possible then download
-                    // the full size version and render that when done
                     if (withUrgency) {
-                        val url = videoState.videoUrls.urlLowRes?.toString()?.let(::URI)
-                        if (url != null) {
-                            videoUrl = url
-                        } else {
-                            // if there is no low res to show right away, just give the view the remote url and
-                            // let it handle the download itself
-                            videoUrl = videoState.videoUrls.url.toString().let(::URI)
-                            return
-                        }
+                        videoUrl = videoState.videoUrls.urlLowRes?.toString()?.let(::URI)
                     }
 
-                    // an optimization we can make later is to share the instance of the file repository
-                    // with our PreLoader so that we can expedite the job by sharing the download task
-                    // this is somewhat complex because of the application context that is required to
-                    // initialize the file repository
                     val url = repository.generateOrGetCachedFileURL(videoState.videoUrls.url)
                     videoUrl = url
                     imageViewStyle = null
