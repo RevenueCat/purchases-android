@@ -50,6 +50,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingVideoPredownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -334,6 +335,7 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                OfferingVideoPredownloader(application),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
             )

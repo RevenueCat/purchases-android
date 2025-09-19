@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
@@ -112,6 +113,9 @@ internal class OfferingImagePreDownloader(
                         it.properties.source?.findImageUrisToDownload().orEmpty()
                     }
                 }
+                is VideoComponent -> {
+                    component.fallbackSource?.findImageUrisToDownload().orEmpty()
+                }
                 else -> emptySet()
             }
         }
@@ -174,6 +178,7 @@ internal class OfferingImagePreDownloader(
                     queue.addAll(current.items.flatMap { listOfNotNull(it.title, it.description, it.icon) })
                 }
 
+                is VideoComponent,
                 is TabControlToggleComponent,
                 is TabControlComponent,
                 is ImageComponent,
