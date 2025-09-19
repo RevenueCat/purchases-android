@@ -25,7 +25,6 @@ internal const val MAX_NUMBER_OF_ADD_ON_PRODUCTS = 49
  * @return A filtered list containing only add-ons that match the base product's purchasing data type
  * @throws PurchasesException If the add-ons failed validation for some reason.
  */
-// TODO: Write tests for this
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesException::class)
 @Suppress("ThrowsCount")

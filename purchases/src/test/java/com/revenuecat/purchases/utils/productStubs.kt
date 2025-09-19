@@ -348,10 +348,11 @@ fun getAmazonPackageJSON(
 fun stubStoreProductWithGoogleSubscriptionPurchaseData(
     productId: String = STUB_PRODUCT_IDENTIFIER,
     optionId: String = "optionId",
-    token: String = "token"
+    token: String = "token",
+    period: Period = Period(1, Period.Unit.MONTH, "P1M")
 ): StoreProduct {
     val productDetails: ProductDetails = mockk()
-    val subscriptionOption = object : SubscriptionOption by stubSubscriptionOption("p1m", "P1M") {
+    val subscriptionOption = object : SubscriptionOption by stubSubscriptionOption("p1m", productId, period) {
         override val purchasingData: PurchasingData
             get() = GooglePurchasingData.Subscription(
                 productId = productId,
@@ -361,7 +362,7 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
             )
     }
 
-    return object : StoreProduct by stubStoreProduct(STUB_PRODUCT_IDENTIFIER, subscriptionOption) {
+    return object : StoreProduct by stubStoreProduct(productId, subscriptionOption) {
         override val purchasingData: PurchasingData
             get() = GooglePurchasingData.Subscription(
                 productId = productId,
