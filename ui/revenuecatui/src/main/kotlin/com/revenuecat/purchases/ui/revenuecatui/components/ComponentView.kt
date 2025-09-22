@@ -61,7 +61,7 @@ internal fun ComponentView(
     is VideoComponentStyle -> VideoComponentView(
         style = style,
         state = state,
-        modifier = modifier
+        modifier = modifier,
     )
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(

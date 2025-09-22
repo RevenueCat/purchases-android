@@ -55,7 +55,6 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-
             val repository = DefaultFileRepository(LocalContext.current)
 
             var imageViewStyle: ImageComponentStyle? by rememberSaveable {

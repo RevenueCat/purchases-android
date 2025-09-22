@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingVideoPredownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -42,6 +43,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockOfferingVideoPreDownloader: OfferingVideoPredownloader
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -58,15 +60,20 @@ class OfferingsManagerTest {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
 
+        mockOfferingVideoPreDownloader = mockk {
+            every { downloadVideos(any()) } just Runs
+        }
+
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
 
         offeringsManager = OfferingsManager(
-            cache,
-            backend,
-            offeringsFactory,
-            offeringImagePreDownloader,
-            mockDiagnosticsTracker,
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            offeringVideoPreDownloader = mockOfferingVideoPreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
         )
     }
@@ -364,11 +371,13 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
-        verify(exactly = 1) { offeringsFactory.createOfferings(
-            offeringsJSON = backendResponse,
-            onError = any(),
-            onSuccess = any()
-        ) }
+        verify(exactly = 1) {
+            offeringsFactory.createOfferings(
+                offeringsJSON = backendResponse,
+                onError = any(),
+                onSuccess = any()
+            )
+        }
     }
 
     @Test
@@ -570,7 +579,6 @@ class OfferingsManagerTest {
         }
     }
 
-
     @Test
     fun `getOfferings tracks result event on error with NOT_FOUND cache`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
@@ -725,7 +733,7 @@ class OfferingsManagerTest {
         offerings: Offerings = testOfferings,
         requestedProductIds: Set<String> = setOf(productId),
         notFoundProductIds: Set<String> = emptySet(),
-        error: PurchasesError? = null
+        error: PurchasesError? = null,
     ) {
         if (error == null) {
             every {
@@ -735,7 +743,13 @@ class OfferingsManagerTest {
                     onSuccess = captureLambda()
                 )
             } answers {
-                lambda<(OfferingsResultData) -> Unit>().captured.invoke(OfferingsResultData(offerings, requestedProductIds, notFoundProductIds))
+                lambda<(OfferingsResultData) -> Unit>().captured.invoke(
+                    OfferingsResultData(
+                        offerings,
+                        requestedProductIds,
+                        notFoundProductIds
+                    )
+                )
             }
         } else {
             every {
@@ -760,7 +774,7 @@ class OfferingsManagerTest {
 
     private fun mockBackendResponseError(
         error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError),
-        isServerError: Boolean = true
+        isServerError: Boolean = true,
     ) {
         every {
             backend.getOfferings(any(), any(), any(), captureLambda())
@@ -771,7 +785,7 @@ class OfferingsManagerTest {
 
     private fun mockCacheStale(
         offeringsStale: Boolean = false,
-        appInBackground: Boolean = false
+        appInBackground: Boolean = false,
     ) {
         every {
             cache.isOfferingsCacheStale(appInBackground)
@@ -790,7 +804,17 @@ class OfferingsManagerTest {
 
     private fun mockDiagnosticsTracker() {
         every { mockDiagnosticsTracker.trackGetOfferingsStarted() } just runs
-        every { mockDiagnosticsTracker.trackGetOfferingsResult(any(), any(), any(), any(), any(), any(), any()) } just runs
+        every {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } just runs
     }
 
     private fun Offerings.copy(current: Offering?): Offerings =
