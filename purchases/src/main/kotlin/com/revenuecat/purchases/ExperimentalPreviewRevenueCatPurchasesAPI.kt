@@ -15,6 +15,5 @@ package com.revenuecat.purchases
     AnnotationTarget.CLASS,
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
-    AnnotationTarget.CONSTRUCTOR,
 )
 annotation class ExperimentalPreviewRevenueCatPurchasesAPI
