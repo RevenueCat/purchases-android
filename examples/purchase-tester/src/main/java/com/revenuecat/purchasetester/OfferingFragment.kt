@@ -225,7 +225,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             activity = requireActivity(),
             packageToPurchase = basePackage,
         )
-            .setAddOnPackages(addOnPackages = addOnPackages)
+            .addOnPackages(addOnPackages = addOnPackages)
 
         selectedReplacementMode?.let {
             purchaseParamsBuilder.googleReplacementMode(it)
