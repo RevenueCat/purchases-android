@@ -984,7 +984,6 @@ internal class BillingWrapper(
                             }
                         }
                         .setProductDetailsParamsList(productDetailsParamsList)
-                        // TODO: Determine if we need to not do this on product changes
                         .setObfuscatedAccountId(appUserID.sha256())
                         .build()
                 } else {
