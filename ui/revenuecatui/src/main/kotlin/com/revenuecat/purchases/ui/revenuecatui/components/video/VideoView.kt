@@ -45,7 +45,7 @@ fun VideoView(
     loop: Boolean = false,
     muteAudio: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
-    repository: FileRepository
+    repository: FileRepository,
 ) {
     VideoCard(
         modifier,
@@ -164,7 +164,7 @@ class TextureVideoView @JvmOverloads constructor(
     }
 
     // Inside TextureVideoView.kt
-    data class PlaybackState(val positionMs: Int, val playWhenReady: Boolean)
+    class PlaybackState(val positionMs: Int, val playWhenReady: Boolean)
 
     fun getPlaybackState(): PlaybackState {
         // If not prepared yet, return last requested state (resumePosMs / resumePlayWhenReady)

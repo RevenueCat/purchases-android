@@ -1400,6 +1400,12 @@ package com.revenuecat.purchases.utils {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
   }
 
+  public final class OfferingVideoPredownloader {
+    ctor public OfferingVideoPredownloader(android.content.Context context);
+    method public void downloadVideos(com.revenuecat.purchases.Offering offering);
+    method public void setFileRepository(com.revenuecat.purchases.storage.FileRepository);
+  }
+
 }
 
 package com.revenuecat.purchases.virtualcurrencies {

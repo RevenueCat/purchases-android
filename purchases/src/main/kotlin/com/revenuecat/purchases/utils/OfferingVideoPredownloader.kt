@@ -97,7 +97,7 @@ class OfferingVideoPredownloader(context: Context) {
                 is ImageComponent,
                 is IconComponent,
                 is TextComponent,
-                    -> {
+                -> {
                     // These don't have child components.
                 }
             }
