@@ -122,9 +122,9 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     }
 
     @InternalRevenueCatAPI
-    @JvmSynthetic
+    @JvmOverloads
     fun launch(
-        offeringIdentifier: String,
+        offeringIdentifier: String?,
         presentedOfferingContext: PresentedOfferingContext,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
@@ -247,10 +247,10 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
 
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
-    @JvmSynthetic
+    @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
-        offeringIdentifier: String,
+        offeringIdentifier: String?,
         presentedOfferingContext: PresentedOfferingContext,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
@@ -264,10 +264,12 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                            offeringId = offeringIdentifier,
-                            presentedOfferingContext = presentedOfferingContext,
-                        ),
+                        offeringIdAndPresentedOfferingContext = offeringIdentifier?.let {
+                            OfferingSelection.IdAndPresentedOfferingContext(
+                                offeringId = it,
+                                presentedOfferingContext = presentedOfferingContext,
+                            )
+                        },
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
