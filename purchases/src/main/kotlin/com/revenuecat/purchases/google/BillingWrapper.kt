@@ -973,7 +973,7 @@ internal class BillingWrapper(
                 if (previousTransactionForBaseProduct != null) {
                     val replaceProductInfo = ReplaceProductInfo(
                         previousTransactionForBaseProduct,
-                        purchasingData.replacementMode
+                        purchasingData.replacementMode,
                     )
                     // Base product has been purchased before, use SubscriptionUpdateParams
                     billingFlowParams = BillingFlowParams.newBuilder()
