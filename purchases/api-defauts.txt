@@ -334,6 +334,8 @@ package com.revenuecat.purchases {
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.SubscriptionOption subscriptionOption);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public final com.revenuecat.purchases.PurchaseParams.Builder addOnPackages(java.util.List<com.revenuecat.purchases.Package> addOnPackages) throws com.revenuecat.purchases.PurchasesException;
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts) throws com.revenuecat.purchases.PurchasesException;
     method public com.revenuecat.purchases.PurchaseParams build();
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
@@ -978,6 +980,18 @@ package com.revenuecat.purchases.models {
     method public String getProductId();
     property public final com.android.billingclient.api.ProductDetails productDetails;
     property public String productId;
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.ProductWithAddOns extends com.revenuecat.purchases.models.GooglePurchasingData {
+    ctor public GooglePurchasingData.ProductWithAddOns(String productId, com.revenuecat.purchases.models.GooglePurchasingData baseProduct, java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData> addOnProducts, com.revenuecat.purchases.models.GoogleReplacementMode replacementMode);
+    method public java.util.List<com.revenuecat.purchases.models.GooglePurchasingData> getAddOnProducts();
+    method public com.revenuecat.purchases.models.GooglePurchasingData getBaseProduct();
+    method public String getProductId();
+    method public com.revenuecat.purchases.models.GoogleReplacementMode getReplacementMode();
+    property public final java.util.List<com.revenuecat.purchases.models.GooglePurchasingData> addOnProducts;
+    property public final com.revenuecat.purchases.models.GooglePurchasingData baseProduct;
+    property public String productId;
+    property public final com.revenuecat.purchases.models.GoogleReplacementMode replacementMode;
   }
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {

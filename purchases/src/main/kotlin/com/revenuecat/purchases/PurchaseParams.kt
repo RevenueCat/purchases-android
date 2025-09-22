@@ -54,10 +54,6 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
-        companion object {
-            const val MULTI_LINE_PRODUCT_ID_PRODUCT_DELIMITER = "|"
-        }
-
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
