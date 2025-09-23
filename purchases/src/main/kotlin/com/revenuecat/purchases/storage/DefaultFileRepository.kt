@@ -183,7 +183,7 @@ internal constructor(
     }
 }
 
-@InternalRevenueCatAPI
+@OptIn(InternalRevenueCatAPI::class)
 private class DefaultFileCache(
     private val context: Context,
 ) : LocalFileCache {
