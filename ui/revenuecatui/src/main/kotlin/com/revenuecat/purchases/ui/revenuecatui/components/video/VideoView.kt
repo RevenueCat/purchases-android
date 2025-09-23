@@ -38,8 +38,8 @@ import java.net.URL
 @Suppress("LongParameterList")
 @Composable
 fun VideoView(
-    videoUri: String,
     modifier: Modifier = Modifier,
+    videoUri: String,
     showControls: Boolean = true,
     autoPlay: Boolean = false,
     loop: Boolean = false,
