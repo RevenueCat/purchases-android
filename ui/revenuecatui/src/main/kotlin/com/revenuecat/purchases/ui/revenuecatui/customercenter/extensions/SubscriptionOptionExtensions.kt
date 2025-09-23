@@ -5,9 +5,11 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions
 import android.icu.text.MeasureFormat
 import android.icu.util.Measure
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization
 import com.revenuecat.purchases.models.OfferPaymentMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.measureUnit
 import java.util.Locale
@@ -29,8 +31,9 @@ internal fun SubscriptionOption.getLocalizedDescription(
 private fun PricingPhase.localizedDuration(
     locale: Locale,
 ): String {
+    val duration = (billingCycleCount ?: 1) * billingPeriod.value
     return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).format(
-        Measure(billingCycleCount, billingPeriod.unit.measureUnit),
+        Measure(duration, billingPeriod.unit.measureUnit),
     )
 }
 
@@ -47,10 +50,23 @@ private fun SubscriptionOption.getTwoPhaseDescription(
         showZeroDecimalPlacePrices = false,
     )
 
+    val billingPeriod = phase.billingPeriod.localizedAbbreviatedPeriod(locale)
+    val billingCycles = if ((phase.billingCycleCount ?: 1) == 1) "" else " for ${phase.billingCycleCount} periods"
+    val billingCycleCount = phase.billingCycleCount ?: 1
+    val pricePerPeriod = phase.price.localizedPerPeriod(
+        phase.billingPeriod,
+        locale,
+        showZeroDecimalPlacePrices = false,
+    )
+
     val replacements = mapOf(
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to duration,
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE to phase.price.formatted,
-        CustomerCenterConfigData.Localization.VariableName.PRICE to basePrice,
+        Localization.VariableName.SUB_OFFER_DURATION to duration,
+        Localization.VariableName.SUB_OFFER_PRICE to phase.price.formatted,
+        Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD to pricePerPeriod,
+        Localization.VariableName.PRICE to basePrice,
+        Localization.VariableName.SUB_OFFER_BILLING_PERIOD to billingPeriod,
+        Localization.VariableName.SUB_OFFER_BILLING_CYCLES to billingCycles,
+        Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to billingCycleCount.toString(),
     )
 
     return when (phase.offerPaymentMode) {
@@ -73,10 +89,10 @@ private fun SubscriptionOption.getTwoPhaseDescription(
         }
 
         OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT -> {
-            // "$0.99 during 2 months, then $3.99/mth"
+            // "$0.99/mth for 2 periods, then $3.99/mth" (always billingCycleCount >= 2)
             val commonLocalizedString =
                 localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.DISCOUNTED_RECURRING_THEN_PRICE,
+                    Localization.CommonLocalizedString.DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE,
                 )
             replaceVariables(commonLocalizedString, replacements)
         }
@@ -86,7 +102,7 @@ private fun SubscriptionOption.getTwoPhaseDescription(
 }
 
 private fun SubscriptionOption.getThreePhaseDescription(
-    localization: CustomerCenterConfigData.Localization,
+    localization: Localization,
     locale: Locale,
 ): String {
     val firstPhase = pricingPhases.first()
@@ -106,11 +122,26 @@ private fun SubscriptionOption.getThreePhaseDescription(
     val trialDuration = firstPhase.localizedDuration(locale)
     val secondDuration = secondPhase.localizedDuration(locale)
 
+    // For discounted recurring, add billing period and cycle info
+    val secondBillingPeriod = secondPhase.billingPeriod.localizedAbbreviatedPeriod(locale)
+    val secondBillingCycles =
+        if ((secondPhase.billingCycleCount ?: 1) == 1) "" else " for ${secondPhase.billingCycleCount} periods"
+    val secondBillingCycleCount = secondPhase.billingCycleCount ?: 1
+    val secondPricePerPeriod = secondPhase.price.localizedPerPeriod(
+        secondPhase.billingPeriod,
+        locale,
+        showZeroDecimalPlacePrices = false,
+    )
+
     val replacements = mapOf(
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION to trialDuration,
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_DURATION_2 to secondDuration,
-        CustomerCenterConfigData.Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
-        CustomerCenterConfigData.Localization.VariableName.PRICE to basePrice,
+        Localization.VariableName.SUB_OFFER_DURATION to trialDuration,
+        Localization.VariableName.SUB_OFFER_DURATION_2 to secondDuration,
+        Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
+        Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD_2 to secondPricePerPeriod,
+        Localization.VariableName.PRICE to basePrice,
+        Localization.VariableName.SUB_OFFER_BILLING_PERIOD to secondBillingPeriod,
+        Localization.VariableName.SUB_OFFER_BILLING_CYCLES to secondBillingCycles,
+        Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to secondBillingCycleCount.toString(),
     )
 
     return when (secondPhase.offerPaymentMode) {
@@ -123,9 +154,10 @@ private fun SubscriptionOption.getThreePhaseDescription(
         }
 
         OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT -> {
+            // "Try X for free, then $0.99/mth for 2 periods, and $3.99/mth thereafter" (always billingCycleCount >= 2)
             val commonLocalizedString =
                 localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.FREE_TRIAL_DISCOUNTED_THEN_PRICE,
+                    Localization.CommonLocalizedString.FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE,
                 )
             replaceVariables(commonLocalizedString, replacements)
         }
