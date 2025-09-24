@@ -7,6 +7,7 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
+import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,35 +122,34 @@ internal constructor(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    @Suppress("ThrowsCount")
-    private suspend fun downloadFile(url: URL): ByteArray {
-        return try {
-            withContext(Dispatchers.IO) {
-                verboseLog { "Downloading remote font from $url" }
+    private suspend fun downloadFile(url: URL): ByteArray = try {
+        withContext(Dispatchers.IO) {
+            verboseLog { "Downloading remote file from $url" }
 
-                val connection = urlConnectionFactory.createConnection(url.toString())
+            val connection = urlConnectionFactory.createConnection(url.toString())
 
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                    throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
-                }
-                try {
-                    val bytes = connection.inputStream.use { inputStream ->
-                        inputStream.readBytes()
-                    }
-                    connection.disconnect()
-                    return@withContext bytes
-                } catch (e: IOException) {
-                    val message = "Failed to read input stream for file at: $url. Error: ${e.localizedMessage}"
-                    logHandler.e("FileRepository", message, e)
-                    connection.disconnect()
-                    throw Error.FailedToFetchFileFromRemoteSource(message)
-                }
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
             }
-        } catch (e: IOException) {
-            val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
-            logHandler.e("FileRepository", message, e)
-            throw Error.FailedToFetchFileFromRemoteSource(message)
+            return@withContext connection.consumeBytes()
         }
+    } catch (e: IOException) {
+        val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
+        logHandler.e("FileRepository", message, e)
+        throw Error.FailedToFetchFileFromRemoteSource(message)
+    }
+
+    private fun UrlConnection.consumeBytes(): ByteArray = try {
+        val bytes = inputStream.use { inputStream ->
+            inputStream.readBytes()
+        }
+        disconnect()
+        bytes
+    } catch (e: IOException) {
+        val message = "Failed to read input stream for file. Error: ${e.localizedMessage}"
+        logHandler.e("FileRepository", message, e)
+        disconnect()
+        throw Error.FailedToFetchFileFromRemoteSource(message)
     }
 
     private fun saveCachedFile(uri: URI, data: ByteArray) {
