@@ -330,7 +330,7 @@ class SubscriptionOptionExtensionsTest(
                     ),
                 ),
                 arrayOf(
-                    "Three phases - free trial, discounted recurring, then full price",
+                    "Three phases - free trial, discounted recurring, then full 6M price",
                     TestCase(
                         pricingPhases = listOf(trialPhase, discount6MPhase, full6MPricePhase),
                         localization = mockLocalization,

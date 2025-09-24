@@ -40,8 +40,6 @@ data class CustomerCenterConfigData(
             SUB_OFFER_PRICE_2("sub_offer_price_2"),
             SUB_OFFER_PRICE_PER_PERIOD("sub_offer_price_per_period"),
             SUB_OFFER_PRICE_PER_PERIOD_2("sub_offer_price_per_period_2"),
-            SUB_OFFER_BILLING_PERIOD("sub_offer_billing_period"),
-            SUB_OFFER_BILLING_CYCLES("sub_offer_billing_cycles"),
             SUB_OFFER_BILLING_CYCLE_COUNT("sub_offer_billing_cycle_count"),
             ;
 

@@ -9,7 +9,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localiza
 import com.revenuecat.purchases.models.OfferPaymentMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.measureUnit
 import java.util.Locale
@@ -50,8 +49,6 @@ private fun SubscriptionOption.getTwoPhaseDescription(
         showZeroDecimalPlacePrices = false,
     )
 
-    val billingPeriod = phase.billingPeriod.localizedAbbreviatedPeriod(locale)
-    val billingCycles = if ((phase.billingCycleCount ?: 1) == 1) "" else " for ${phase.billingCycleCount} periods"
     val billingCycleCount = phase.billingCycleCount ?: 1
     val pricePerPeriod = phase.price.localizedPerPeriod(
         phase.billingPeriod,
@@ -64,8 +61,6 @@ private fun SubscriptionOption.getTwoPhaseDescription(
         Localization.VariableName.SUB_OFFER_PRICE to phase.price.formatted,
         Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD to pricePerPeriod,
         Localization.VariableName.PRICE to basePrice,
-        Localization.VariableName.SUB_OFFER_BILLING_PERIOD to billingPeriod,
-        Localization.VariableName.SUB_OFFER_BILLING_CYCLES to billingCycles,
         Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to billingCycleCount.toString(),
     )
 
@@ -123,9 +118,6 @@ private fun SubscriptionOption.getThreePhaseDescription(
     val secondDuration = secondPhase.localizedDuration(locale)
 
     // For discounted recurring, add billing period and cycle info
-    val secondBillingPeriod = secondPhase.billingPeriod.localizedAbbreviatedPeriod(locale)
-    val secondBillingCycles =
-        if ((secondPhase.billingCycleCount ?: 1) == 1) "" else " for ${secondPhase.billingCycleCount} periods"
     val secondBillingCycleCount = secondPhase.billingCycleCount ?: 1
     val secondPricePerPeriod = secondPhase.price.localizedPerPeriod(
         secondPhase.billingPeriod,
@@ -139,8 +131,6 @@ private fun SubscriptionOption.getThreePhaseDescription(
         Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
         Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD_2 to secondPricePerPeriod,
         Localization.VariableName.PRICE to basePrice,
-        Localization.VariableName.SUB_OFFER_BILLING_PERIOD to secondBillingPeriod,
-        Localization.VariableName.SUB_OFFER_BILLING_CYCLES to secondBillingCycles,
         Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to secondBillingCycleCount.toString(),
     )
 
