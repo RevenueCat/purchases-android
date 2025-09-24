@@ -27,7 +27,7 @@ internal fun SubscriptionOption.getLocalizedDescription(
     }
 }
 
-private fun PricingPhase.localizedDuration(
+private fun PricingPhase.localizedTotalDuration(
     locale: Locale,
 ): String {
     val duration = (billingCycleCount ?: 1) * billingPeriod.value
@@ -41,7 +41,7 @@ private fun SubscriptionOption.getTwoPhaseDescription(
     locale: Locale,
 ): String {
     val phase = pricingPhases.first()
-    val duration = phase.localizedDuration(locale)
+    val duration = phase.localizedTotalDuration(locale)
     val fullPricePhase = this.pricingPhases.last()
     val basePrice = fullPricePhase.price.localizedPerPeriod(
         fullPricePhase.billingPeriod,
@@ -114,8 +114,8 @@ private fun SubscriptionOption.getThreePhaseDescription(
         return this.getTwoPhaseDescription(localization, locale)
     }
 
-    val trialDuration = firstPhase.localizedDuration(locale)
-    val secondDuration = secondPhase.localizedDuration(locale)
+    val trialDuration = firstPhase.localizedTotalDuration(locale)
+    val secondDuration = secondPhase.localizedTotalDuration(locale)
 
     // For discounted recurring, add billing period and cycle info
     val secondBillingCycleCount = secondPhase.billingCycleCount ?: 1
