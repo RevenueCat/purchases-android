@@ -120,15 +120,15 @@ class SubscriptionOptionExtensionsTest(
 
             every {
                 mockLocalization.commonLocalizedString(
-                    CommonLocalizedString.DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE,
+                    CommonLocalizedString.DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
                 )
-            } returns CommonLocalizedString.DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE.defaultValue
+            } returns CommonLocalizedString.DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE.defaultValue
 
             every {
                 mockLocalization.commonLocalizedString(
-                    CommonLocalizedString.FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE,
+                    CommonLocalizedString.FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
                 )
-            } returns CommonLocalizedString.FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE.defaultValue
+            } returns CommonLocalizedString.FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE.defaultValue
 
             return listOf(
                 arrayOf(

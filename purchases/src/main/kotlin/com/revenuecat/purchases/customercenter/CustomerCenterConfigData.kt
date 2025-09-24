@@ -38,9 +38,8 @@ data class CustomerCenterConfigData(
             SUB_OFFER_DURATION_2("sub_offer_duration_2"),
             SUB_OFFER_PRICE("sub_offer_price"),
             SUB_OFFER_PRICE_2("sub_offer_price_2"),
-            SUB_OFFER_PRICE_PER_PERIOD("sub_offer_price_per_period"),
-            SUB_OFFER_PRICE_PER_PERIOD_2("sub_offer_price_per_period_2"),
-            SUB_OFFER_BILLING_CYCLE_COUNT("sub_offer_billing_cycle_count"),
+            DISCOUNTED_RECURRING_PAYMENT_PRICE_PER_PERIOD("discounted_recurring_payment_price_per_period"),
+            DISCOUNTED_RECURRING_PAYMENT_CYCLES("discounted_recurring_payment_cycles"),
             ;
 
             companion object {
@@ -200,11 +199,11 @@ data class CustomerCenterConfigData(
             @SerialName("free_trial_discounted_then_price")
             FREE_TRIAL_DISCOUNTED_THEN_PRICE,
 
-            @SerialName("discounted_recurring_price_per_period_then_price")
-            DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE,
+            @SerialName("discounted_recurring_payment_then_price")
+            DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
 
-            @SerialName("free_trial_discounted_price_per_period_then_price")
-            FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE,
+            @SerialName("free_trial_discounted_recurring_payment_then_price")
+            FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
 
             @SerialName("done")
             DONE,
@@ -352,13 +351,14 @@ data class CustomerCenterConfigData(
                         "Try {{ sub_offer_duration }} for free, " +
                             "then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, " +
                             "and {{ price }} thereafter"
-                    DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE ->
-                        "{{ sub_offer_price_per_period }} for {{ sub_offer_billing_cycle_count }} periods, " +
+                    DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE ->
+                        "{{ discounted_recurring_payment_price_per_period }} for " +
+                            "{{ discounted_recurring_payment_cycles }} periods, " +
                             "then {{ price }}"
-                    FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE ->
+                    FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE ->
                         "Try {{ sub_offer_duration }} for free, " +
-                            "then {{ sub_offer_price_per_period_2 }} for " +
-                            "{{ sub_offer_billing_cycle_count }} periods, and {{ price }} thereafter"
+                            "then {{ discounted_recurring_payment_price_per_period }} for " +
+                            "{{ discounted_recurring_payment_cycles }} periods, and {{ price }} thereafter"
                     DONE -> "Done"
                     RENEWS_ON_DATE_FOR_PRICE -> "Your next charge is {{ price }} on {{ date }}."
                     RENEWS_ON_DATE -> "Renews on {{ date }}"

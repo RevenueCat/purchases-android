@@ -59,9 +59,9 @@ private fun SubscriptionOption.getTwoPhaseDescription(
     val replacements = mapOf(
         Localization.VariableName.SUB_OFFER_DURATION to duration,
         Localization.VariableName.SUB_OFFER_PRICE to phase.price.formatted,
-        Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD to pricePerPeriod,
         Localization.VariableName.PRICE to basePrice,
-        Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to billingCycleCount.toString(),
+        Localization.VariableName.DISCOUNTED_RECURRING_PAYMENT_PRICE_PER_PERIOD to pricePerPeriod,
+        Localization.VariableName.DISCOUNTED_RECURRING_PAYMENT_CYCLES to billingCycleCount.toString(),
     )
 
     return when (phase.offerPaymentMode) {
@@ -87,7 +87,7 @@ private fun SubscriptionOption.getTwoPhaseDescription(
             // "$0.99/mth for 2 periods, then $3.99/mth" (always billingCycleCount >= 2)
             val commonLocalizedString =
                 localization.commonLocalizedString(
-                    Localization.CommonLocalizedString.DISCOUNTED_RECURRING_PRICE_PER_PERIOD_THEN_PRICE,
+                    Localization.CommonLocalizedString.DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
                 )
             replaceVariables(commonLocalizedString, replacements)
         }
@@ -129,9 +129,9 @@ private fun SubscriptionOption.getThreePhaseDescription(
         Localization.VariableName.SUB_OFFER_DURATION to trialDuration,
         Localization.VariableName.SUB_OFFER_DURATION_2 to secondDuration,
         Localization.VariableName.SUB_OFFER_PRICE_2 to secondPhase.price.formatted,
-        Localization.VariableName.SUB_OFFER_PRICE_PER_PERIOD_2 to secondPricePerPeriod,
+        Localization.VariableName.DISCOUNTED_RECURRING_PAYMENT_PRICE_PER_PERIOD to secondPricePerPeriod,
         Localization.VariableName.PRICE to basePrice,
-        Localization.VariableName.SUB_OFFER_BILLING_CYCLE_COUNT to secondBillingCycleCount.toString(),
+        Localization.VariableName.DISCOUNTED_RECURRING_PAYMENT_CYCLES to secondBillingCycleCount.toString(),
     )
 
     return when (secondPhase.offerPaymentMode) {
@@ -147,7 +147,7 @@ private fun SubscriptionOption.getThreePhaseDescription(
             // "Try X for free, then $0.99/mth for 2 periods, and $3.99/mth thereafter" (always billingCycleCount >= 2)
             val commonLocalizedString =
                 localization.commonLocalizedString(
-                    Localization.CommonLocalizedString.FREE_TRIAL_DISCOUNTED_PRICE_PER_PERIOD_THEN_PRICE,
+                    Localization.CommonLocalizedString.FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
                 )
             replaceVariables(commonLocalizedString, replacements)
         }
