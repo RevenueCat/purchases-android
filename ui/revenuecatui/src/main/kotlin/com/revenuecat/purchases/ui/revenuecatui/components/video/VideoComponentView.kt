@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import com.revenuecat.purchases.storage.DefaultFileRepository
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
@@ -37,6 +38,7 @@ internal fun VideoComponentView(
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    repository: FileRepository = DefaultFileRepository(LocalContext.current),
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
 
@@ -55,7 +57,6 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            val repository = DefaultFileRepository(LocalContext.current)
 
             var imageViewStyle: ImageComponentStyle? by rememberSaveable {
                 if (style.fallbackSources != null) {
@@ -141,7 +142,6 @@ internal fun VideoComponentView(
                     loop = style.loop,
                     muteAudio = style.muteAudio,
                     contentScale = style.contentScale,
-                    repository = repository,
                 )
             }
         }

@@ -32,8 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.storage.FileRepository
-import java.net.URL
 
 @Suppress("LongParameterList")
 @Composable
@@ -45,7 +43,6 @@ fun VideoView(
     loop: Boolean = false,
     muteAudio: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
-    repository: FileRepository,
 ) {
     VideoCard(
         modifier,
@@ -54,7 +51,6 @@ fun VideoView(
         } else {
             TextureVideoView.ScaleType.FILL
         },
-        repository = repository,
         videoUri = videoUri,
         showControls = showControls,
         autoPlay = autoPlay,
@@ -404,7 +400,6 @@ private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
 private fun VideoCard(
     modifier: Modifier,
     scaleType: TextureVideoView.ScaleType,
-    repository: FileRepository,
     videoUri: String,
     showControls: Boolean,
     autoPlay: Boolean,
@@ -456,9 +451,7 @@ private fun VideoCard(
                     // Initial load case: use autoPlay parameter
                     autoPlay
                 }
-                // Try to get local cached file first, fallback to remote URL
-                val localFileUri = repository.getFile(URL(videoUri))
-                val videoUri = localFileUri?.toString()?.toUri() ?: videoUri.toUri()
+                val videoUri = videoUri.toUri()
 
                 TextureVideoView(
                     context = ctx,
