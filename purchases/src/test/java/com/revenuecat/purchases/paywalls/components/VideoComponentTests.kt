@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -155,6 +156,7 @@ class VideoComponentTests {
                 y = 45.2,
             ),
             overrides = null,
+            overrideSourceLid = LocalizationKey("abc123"),
         )
         // Arrange, Act
         val actual = JsonTools.json.decodeFromString<VideoComponent>(json)
