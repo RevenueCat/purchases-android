@@ -79,8 +79,8 @@ class TextureVideoView @JvmOverloads constructor(
     private val player = MediaPlayer()
     private var controller: MediaController? = null
 
-    private var videoW = 0
-    private var videoH = 0
+    private var videoWidth = 0
+    private var videoHeight = 0
     private var prepared = false
     private var released = false
     private var uri: Uri? = null
@@ -93,7 +93,7 @@ class TextureVideoView @JvmOverloads constructor(
     private var resumePlayWhenReady = false
 
     private val layoutListener = ViewTreeObserver.OnGlobalLayoutListener { applySizing() }
-    private var vtoListening = false
+    private var viewTreeObserverListening = false
 
     init {
         clipToPadding = true
@@ -108,9 +108,9 @@ class TextureVideoView @JvmOverloads constructor(
             override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                 if (released) return
                 player.setSurface(Surface(st))
-                if (!vtoListening) {
+                if (!viewTreeObserverListening) {
                     viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
-                    vtoListening = true
+                    viewTreeObserverListening = true
                 }
                 // If we were already prepared before, just resume; otherwise prepare
                 if (prepared) {
@@ -164,7 +164,7 @@ class TextureVideoView @JvmOverloads constructor(
 
     fun getPlaybackState(): PlaybackState {
         // If not prepared yet, return last requested state (resumePosMs / resumePlayWhenReady)
-        val pos = if (prepared) {
+        val position = if (prepared) {
             try {
                 player.currentPosition
             } catch (_: Throwable) {
@@ -184,7 +184,7 @@ class TextureVideoView @JvmOverloads constructor(
         } else {
             resumePlayWhenReady
         }
-        return PlaybackState(pos, play)
+        return PlaybackState(position, play)
     }
 
     fun setPlaybackState(state: PlaybackState) {
@@ -232,9 +232,9 @@ class TextureVideoView @JvmOverloads constructor(
         })
         player.release()
         released = true
-        if (vtoListening) {
+        if (viewTreeObserverListening) {
             viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
-            vtoListening = false
+            viewTreeObserverListening = false
         }
     }
 
@@ -249,8 +249,8 @@ class TextureVideoView @JvmOverloads constructor(
         player.setOnPreparedListener {
             if (released) return@setOnPreparedListener
             prepared = true
-            videoW = it.videoWidth
-            videoH = it.videoHeight
+            videoWidth = it.videoWidth
+            videoHeight = it.videoHeight
             it.isLooping = looping
             if (muteAudio) {
                 // Simple approach: just try to set volume to 0, catch any exceptions
@@ -276,8 +276,8 @@ class TextureVideoView @JvmOverloads constructor(
 
         player.setOnVideoSizeChangedListener { _, w, h ->
             if (released) return@setOnVideoSizeChangedListener
-            videoW = w
-            videoH = h
+            videoWidth = w
+            videoHeight = h
             applySizing()
         }
 
@@ -291,12 +291,12 @@ class TextureVideoView @JvmOverloads constructor(
 
     private fun applySizing() {
         @Suppress("ComplexCondition")
-        if (released || width == 0 || height == 0 || videoW == 0 || videoH == 0) return
+        if (released || width == 0 || height == 0 || videoWidth == 0 || videoHeight == 0) return
 
         val parentW = width
         val parentH = height
         val parentAR = parentW.toFloat() / parentH
-        val videoAR = videoW.toFloat() / videoH
+        val videoAR = videoWidth.toFloat() / videoHeight
 
         val lp = texture.layoutParams as LayoutParams
         if (scaleType == ScaleType.FIT) {
@@ -323,9 +323,9 @@ class TextureVideoView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun safeSeekTo(pos: Int) {
+    private fun safeSeekTo(position: Int) {
         safely(execute = {
-            if (prepared && pos > 0) player.seekTo(pos)
+            if (prepared && position > 0) player.seekTo(position)
         })
     }
 
@@ -369,7 +369,7 @@ class TextureVideoView @JvmOverloads constructor(
 }
 
 @Stable
-private data class SavedPlayback(val pos: Int, val play: Boolean)
+private data class SavedPlayback(val position: Int, val play: Boolean)
 
 // Simple static state holder as fallback when rememberSaveable fails
 private object VideoStateHolder {
@@ -380,14 +380,14 @@ private object VideoStateHolder {
     }
 
     fun restore(key: String): SavedPlayback {
-        val state = states[key] ?: SavedPlayback(pos = 0, play = true)
+        val state = states[key] ?: SavedPlayback(position = 0, play = true)
         return state
     }
 }
 
 private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
     save = {
-        listOf(it.value.pos, it.value.play)
+        listOf(it.value.position, it.value.play)
     },
     restore = {
         val restored = SavedPlayback(it[0] as Int, it[1] as Boolean)
@@ -428,7 +428,7 @@ private fun VideoCard(
             videoView.value?.let { view ->
                 val state = view.getPlaybackState()
                 val playbackState =
-                    SavedPlayback(pos = state.positionMs, play = state.playWhenReady)
+                    SavedPlayback(position = state.positionMs, play = state.playWhenReady)
                 saved.value = playbackState
                 VideoStateHolder.save(key, playbackState)
             }
@@ -442,9 +442,9 @@ private fun VideoCard(
             factory = { ctx ->
                 // Always check both saved state and static holder
                 val restoredState = VideoStateHolder.restore(key)
-                val usePos = maxOf(saved.value.pos, restoredState.pos)
+                val usePosition = maxOf(saved.value.position, restoredState.position)
                 // If we have a saved position, always try to continue playing (rotation should resume)
-                val usePlay = if (usePos > 0) {
+                val usePlay = if (usePosition > 0) {
                     // Rotation case: use the saved play state (respects if user paused)
                     saved.value.play || restoredState.play // Either source might have the correct state
                 } else {
@@ -464,10 +464,10 @@ private fun VideoCard(
                     setAutoStart(usePlay)
                     setVideoURI(videoUri)
                     // Set the resume position - this will be applied when video is prepared
-                    if (usePos > 0) {
+                    if (usePosition > 0) {
                         setPlaybackState(
                             TextureVideoView.PlaybackState(
-                                positionMs = usePos,
+                                positionMs = usePosition,
                                 playWhenReady = usePlay,
                             ),
                         )
@@ -485,7 +485,7 @@ private fun VideoCard(
                 view.run {
                     val st = getPlaybackState()
                     val playbackState =
-                        SavedPlayback(pos = st.positionMs, play = st.playWhenReady)
+                        SavedPlayback(position = st.positionMs, play = st.playWhenReady)
                     saved.value = playbackState
                     VideoStateHolder.save(key, playbackState)
                     release()

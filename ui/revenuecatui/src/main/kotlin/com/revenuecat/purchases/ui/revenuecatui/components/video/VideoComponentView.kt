@@ -57,7 +57,7 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            var imageViewStyle: ImageComponentStyle? by rememberSaveable {
+            var fallbackImageViewStyle: ImageComponentStyle? by rememberSaveable {
                 if (style.fallbackSources != null) {
                     mutableStateOf(
                         ImageComponentStyle(
@@ -97,7 +97,7 @@ internal fun VideoComponentView(
 
                     val url = repository.generateOrGetCachedFileURL(videoState.videoUrls.url)
                     videoUrl = url
-                    imageViewStyle = null
+                    fallbackImageViewStyle = null
                 } catch (_: Exception) {
                     // This is a fallback state where it is possible that we render the video on top of the image view
                     // this may result in some paywalls not looking so good depending on the fallback image they used
@@ -120,13 +120,13 @@ internal fun VideoComponentView(
             // If both of the video files are not found on disk
             if (videoUrl == null) {
                 LaunchedEffect(Unit) {
-                    fetchVideoUrl(withUrgency = imageViewStyle == null)
+                    fetchVideoUrl(withUrgency = fallbackImageViewStyle == null)
                 }
             } else {
-                imageViewStyle = null
+                fallbackImageViewStyle = null
             }
 
-            imageViewStyle?.let { ImageComponentView(it, state, modifier) }
+            fallbackImageViewStyle?.let { ImageComponentView(it, state, modifier) }
 
             videoUrl?.let {
                 VideoView(
