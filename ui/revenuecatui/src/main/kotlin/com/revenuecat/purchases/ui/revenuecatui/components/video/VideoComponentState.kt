@@ -321,8 +321,7 @@ internal fun rememberUpdatedVideoComponentState(
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current
-
-    return remember(style) {
+    return remember(style, windowSize, density, darkMode, layoutDirection) {
         VideoComponentState(
             initialWindowSize = windowSize,
             initialDensity = density,
@@ -332,13 +331,6 @@ internal fun rememberUpdatedVideoComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-        )
-    }.apply {
-        update(
-            windowSize = windowSize,
-            density = density,
-            darkMode = darkMode,
-            layoutDirection = layoutDirection,
         )
     }
 }
