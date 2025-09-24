@@ -31,7 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import java.net.URI
 
-@Suppress("CyclomaticComplexMethod", "LongMethod")
+@Suppress("CyclomaticComplexMethod", "LongMethod", "ModifierNotUsedAtRoot", "ModifierReused")
 @JvmSynthetic
 @Composable
 internal fun VideoComponentView(
@@ -57,7 +57,6 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-
             var imageViewStyle: ImageComponentStyle? by rememberSaveable {
                 if (style.fallbackSources != null) {
                     mutableStateOf(

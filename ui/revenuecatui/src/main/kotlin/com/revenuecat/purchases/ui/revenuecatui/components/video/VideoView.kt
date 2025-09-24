@@ -36,8 +36,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 @Suppress("LongParameterList")
 @Composable
 fun VideoView(
-    modifier: Modifier = Modifier,
     videoUri: String,
+    modifier: Modifier = Modifier,
     showControls: Boolean = true,
     autoPlay: Boolean = false,
     loop: Boolean = false,
@@ -45,7 +45,6 @@ fun VideoView(
     contentScale: ContentScale = ContentScale.Fit,
 ) {
     VideoCard(
-        modifier,
         scaleType = if (contentScale == ContentScale.Fit) {
             TextureVideoView.ScaleType.FIT
         } else {
@@ -56,6 +55,7 @@ fun VideoView(
         autoPlay = autoPlay,
         loop = loop,
         muteAudio = muteAudio,
+        modifier = modifier,
     )
 }
 
@@ -398,13 +398,13 @@ private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun VideoCard(
-    modifier: Modifier,
     scaleType: TextureVideoView.ScaleType,
     videoUri: String,
     showControls: Boolean,
     autoPlay: Boolean,
     loop: Boolean,
     muteAudio: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val key = "video_${scaleType}_$videoUri"
 
