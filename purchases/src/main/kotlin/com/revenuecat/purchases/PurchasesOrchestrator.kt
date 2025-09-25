@@ -16,7 +16,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
