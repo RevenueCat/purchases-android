@@ -140,7 +140,6 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
-    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -365,9 +364,7 @@ internal class PurchasesOrchestrator(
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
-        if (isSimulatedStoreEnabled() &&
-            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
-        ) {
+        if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
             log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_SIMULATED_STORE }
             getCustomerInfo(object : ReceiveCustomerInfoCallback {
                 override fun onReceived(customerInfo: CustomerInfo) {
@@ -557,9 +554,7 @@ internal class PurchasesOrchestrator(
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
         }
-        if (isSimulatedStoreEnabled() &&
-            appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
-        ) {
+        if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
             log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_SIMULATED_STORE }
             getCustomerInfo(callback)
             return

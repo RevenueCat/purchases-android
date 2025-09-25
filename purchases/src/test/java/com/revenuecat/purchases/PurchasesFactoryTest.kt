@@ -101,7 +101,6 @@ class PurchasesFactoryTest {
         purchasesFactory = PurchasesFactory(
             isDebugBuild = { false },
             apiKeyValidator = apiKeyValidatorMock,
-            isSimulatedStoreEnabled = { true },
         )
 
         every {
