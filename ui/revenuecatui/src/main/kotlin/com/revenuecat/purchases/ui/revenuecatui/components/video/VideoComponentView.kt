@@ -108,8 +108,8 @@ internal fun VideoComponentView(
 
             // If the full size video wasn't found on disk try the low res
             if (videoUrl == null) {
-                if (videoState.videoUrls.urlLowRes != null) {
-                    videoUrl = repository.getFile(videoState.videoUrls.urlLowRes!!)
+                videoState.videoUrls.urlLowRes?.run {
+                    videoUrl = repository.getFile(this)
                     // if the low res was found, we should fetch the better one
                     LaunchedEffect(Unit) {
                         fetchVideoUrl(withUrgency = false)
