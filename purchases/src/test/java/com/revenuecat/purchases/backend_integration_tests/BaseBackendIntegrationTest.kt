@@ -20,6 +20,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.BeforeClass
@@ -100,7 +101,7 @@ internal abstract class BaseBackendIntegrationTest {
         }
         eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
-        deviceCache = DeviceCache(sharedPreferences, apiKey())
+        deviceCache = DeviceCache(sharedPreferences, apiKey(), Dispatchers.Unconfined)
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache, localeProvider = DefaultLocaleProvider())
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
