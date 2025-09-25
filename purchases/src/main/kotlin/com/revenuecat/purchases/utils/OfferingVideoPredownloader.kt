@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.utils
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -25,9 +24,10 @@ import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
 
-class OfferingVideoPredownloader(context: Context) {
-    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    var fileRepository: FileRepository = DefaultFileRepository(context)
+internal class OfferingVideoPredownloader(
+    context: Context,
+    private val fileRepository: FileRepository = DefaultFileRepository(context),
+) {
     private val shouldPredownload: Boolean = try {
         Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
         true
