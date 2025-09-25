@@ -35,7 +35,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 
 @Suppress("LongParameterList")
 @Composable
-fun VideoView(
+internal fun VideoView(
     videoUri: String,
     modifier: Modifier = Modifier,
     showControls: Boolean = true,
@@ -66,7 +66,7 @@ fun VideoView(
  */
 @SuppressLint("ViewConstructor")
 @Suppress("TooManyFunctions")
-class TextureVideoView @JvmOverloads constructor(
+internal class TextureVideoView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     private val showControls: Boolean,

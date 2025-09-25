@@ -182,50 +182,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.image {
 
 }
 
-package com.revenuecat.purchases.ui.revenuecatui.components.video {
-
-  public final class TextureVideoView extends android.widget.FrameLayout implements android.widget.MediaController.MediaPlayerControl {
-    ctor public TextureVideoView(android.content.Context context, optional android.util.AttributeSet? attrs, boolean showControls, boolean muteAudio);
-    ctor public TextureVideoView(android.content.Context context, boolean showControls, boolean muteAudio);
-    method public boolean canPause();
-    method public boolean canSeekBackward();
-    method public boolean canSeekForward();
-    method public int getAudioSessionId();
-    method public int getBufferPercentage();
-    method public int getCurrentPosition();
-    method public int getDuration();
-    method public com.revenuecat.purchases.ui.revenuecatui.components.video.TextureVideoView.PlaybackState getPlaybackState();
-    method public boolean isPlaying();
-    method public void pause();
-    method public void release();
-    method public void seekTo(int pos);
-    method public void setAutoStart(boolean enabled);
-    method public void setLooping(boolean loop);
-    method public void setPlaybackState(com.revenuecat.purchases.ui.revenuecatui.components.video.TextureVideoView.PlaybackState state);
-    method public void setScaleType(com.revenuecat.purchases.ui.revenuecatui.components.video.TextureVideoView.ScaleType type);
-    method public void setVideoURI(android.net.Uri uri);
-    method public void start();
-  }
-
-  public static final class TextureVideoView.PlaybackState {
-    ctor public TextureVideoView.PlaybackState(int positionMs, boolean playWhenReady);
-    method public boolean getPlayWhenReady();
-    method public int getPositionMs();
-    property public final boolean playWhenReady;
-    property public final int positionMs;
-  }
-
-  public enum TextureVideoView.ScaleType {
-    enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.components.video.TextureVideoView.ScaleType FILL;
-    enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.components.video.TextureVideoView.ScaleType FIT;
-  }
-
-  public final class VideoViewKt {
-    method @androidx.compose.runtime.Composable public static void VideoView(String videoUri, optional androidx.compose.ui.Modifier modifier, optional boolean showControls, optional boolean autoPlay, optional boolean loop, optional boolean muteAudio, optional androidx.compose.ui.layout.ContentScale contentScale);
-  }
-
-}
-
 package com.revenuecat.purchases.ui.revenuecatui.composables {
 
   public final class AutoResizedTextKt {
