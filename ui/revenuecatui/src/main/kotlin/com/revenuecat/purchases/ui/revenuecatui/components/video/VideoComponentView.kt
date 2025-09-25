@@ -89,9 +89,9 @@ internal fun VideoComponentView(
             // this method will share the async task that the Predownload started
             // if it didn't error out, expediting the download time and reducing the memory
             // footprint of paywalls
-            suspend fun fetchVideoUrl(withUrgency: Boolean) {
+            suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
                 try {
-                    if (withUrgency) {
+                    if (setLowResVideoURLFirst) {
                         videoUrl = videoState.videoUrls.urlLowRes?.toString()?.let(::URI)
                     }
 
@@ -112,7 +112,7 @@ internal fun VideoComponentView(
                     videoUrl = repository.getFile(this)
                     // if the low res was found, we should fetch the better one
                     LaunchedEffect(Unit) {
-                        fetchVideoUrl(withUrgency = false)
+                        fetchVideoUrl(setLowResVideoURLFirst = false)
                     }
                 }
             }
@@ -120,7 +120,7 @@ internal fun VideoComponentView(
             // If both of the video files are not found on disk
             if (videoUrl == null) {
                 LaunchedEffect(Unit) {
-                    fetchVideoUrl(withUrgency = fallbackImageViewStyle == null)
+                    fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
                 }
             } else {
                 fallbackImageViewStyle = null
