@@ -240,11 +240,12 @@ class TextureVideoView @JvmOverloads constructor(
 
     private fun prepareIfNeeded() {
         if (released) return
-        val u = uri ?: return
 
-        prepared = false
-        player.reset()
-        player.setDataSource(context, u)
+        uri?.let {
+            prepared = false
+            player.reset()
+            player.setDataSource(context, it)
+        } ?: return
 
         player.setOnPreparedListener {
             if (released) return@setOnPreparedListener
