@@ -8,7 +8,6 @@ import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.AttributeSet
-import android.util.Log
 import android.view.Gravity
 import android.view.Surface
 import android.view.TextureView
@@ -32,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @Suppress("LongParameterList")
 @Composable
@@ -503,7 +503,7 @@ private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? =
         execute()
     } catch (e: Exception) {
         failureMessage(e)?.run {
-            Log.e("TextureVideoView", this)
+            Logger.e("TextureVideoView: $this", e)
         }
     }
 }
