@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
@@ -47,6 +48,7 @@ internal fun VideoComponentView(
         val borderStyle = videoState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = videoState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(videoState.shape) { derivedStateOf { videoState.shape ?: RectangleShape } }
+        val (videoUrl, fallbackImageViewStyle) = rememberVideoContentState(style, videoState.videoUrls, repository)
 
         Box(
             modifier = modifier
@@ -57,75 +59,6 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            var fallbackImageViewStyle: ImageComponentStyle? by rememberSaveable {
-                if (style.fallbackSources != null) {
-                    mutableStateOf(
-                        ImageComponentStyle(
-                            sources = style.fallbackSources,
-                            visible = style.visible,
-                            size = style.size,
-                            padding = style.padding,
-                            margin = style.margin,
-                            shape = style.shape,
-                            border = style.border,
-                            shadow = style.shadow,
-                            overlay = style.overlay,
-                            contentScale = style.contentScale,
-                            rcPackage = style.rcPackage,
-                            tabIndex = style.tabIndex,
-                            overrides = emptyList(), // TODO
-                            ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-                        ),
-                    )
-                } else {
-                    mutableStateOf(null)
-                }
-            }
-
-            var videoUrl by rememberSaveable { mutableStateOf(repository.getFile(videoState.videoUrls.url)) }
-
-            // If the low res and normal resolution files were not yet found on disk
-            // then we attempt to finish the download by calling the following method.
-            // this method will share the async task that the Predownload started
-            // if it didn't error out, expediting the download time and reducing the memory
-            // footprint of paywalls
-            suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
-                try {
-                    if (setLowResVideoURLFirst) {
-                        videoUrl = videoState.videoUrls.urlLowRes?.toString()?.let(::URI)
-                    }
-
-                    val url = repository.generateOrGetCachedFileURL(videoState.videoUrls.url)
-                    videoUrl = url
-                    fallbackImageViewStyle = null
-                } catch (_: Exception) {
-                    // This is a fallback state where it is possible that we render the video on top of the image view
-                    // this may result in some paywalls not looking so good depending on the fallback image they used
-                    // and the styles applied to the video component
-                    videoUrl = videoState.videoUrls.url.toString().let(::URI)
-                }
-            }
-
-            // If the full size video wasn't found on disk try the low res
-            if (videoUrl == null) {
-                videoState.videoUrls.urlLowRes?.run {
-                    videoUrl = repository.getFile(this)
-                    // if the low res was found, we should fetch the better one
-                    LaunchedEffect(Unit) {
-                        fetchVideoUrl(setLowResVideoURLFirst = false)
-                    }
-                }
-            }
-
-            // If both of the video files are not found on disk
-            if (videoUrl == null) {
-                LaunchedEffect(Unit) {
-                    fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
-                }
-            } else {
-                fallbackImageViewStyle = null
-            }
-
             fallbackImageViewStyle?.let { ImageComponentView(it, state, modifier) }
 
             videoUrl?.let {
@@ -145,4 +78,73 @@ internal fun VideoComponentView(
             }
         }
     }
+}
+
+@Composable
+private fun rememberVideoContentState(
+    style: VideoComponentStyle,
+    videoUrls: VideoUrls,
+    repository: FileRepository,
+): Pair<URI?, ImageComponentStyle?> {
+    var fallbackImageViewStyle: ImageComponentStyle? by rememberSaveable(style.fallbackSources) {
+        if (style.fallbackSources != null) {
+            mutableStateOf(
+                ImageComponentStyle(
+                    sources = style.fallbackSources,
+                    visible = style.visible,
+                    size = style.size,
+                    padding = style.padding,
+                    margin = style.margin,
+                    shape = style.shape,
+                    border = style.border,
+                    shadow = style.shadow,
+                    overlay = style.overlay,
+                    contentScale = style.contentScale,
+                    rcPackage = style.rcPackage,
+                    tabIndex = style.tabIndex,
+                    overrides = emptyList(), // TODO
+                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                ),
+            )
+        } else {
+            mutableStateOf(null)
+        }
+    }
+
+    var videoUrl by rememberSaveable(videoUrls.url) {
+        mutableStateOf(repository.getFile(videoUrls.url))
+    }
+
+    suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
+        try {
+            if (setLowResVideoURLFirst) {
+                videoUrl = videoUrls.urlLowRes?.toString()?.let(::URI)
+            }
+
+            val url = repository.generateOrGetCachedFileURL(videoUrls.url)
+            videoUrl = url
+            fallbackImageViewStyle = null
+        } catch (_: Exception) {
+            videoUrl = videoUrls.url.toString().let(::URI)
+        }
+    }
+
+    if (videoUrl == null) {
+        videoUrls.urlLowRes?.run {
+            videoUrl = repository.getFile(this)
+            LaunchedEffect(Unit) {
+                fetchVideoUrl(setLowResVideoURLFirst = false)
+            }
+        }
+    }
+
+    if (videoUrl == null) {
+        LaunchedEffect(Unit) {
+            fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
+        }
+    } else {
+        fallbackImageViewStyle = null
+    }
+
+    return videoUrl to fallbackImageViewStyle
 }
