@@ -44,7 +44,7 @@ internal fun VideoView(
     muteAudio: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
 ) {
-    VideoCard(
+    Video(
         scaleType = if (contentScale == ContentScale.Fit) {
             TextureVideoView.ScaleType.FIT
         } else {
@@ -398,7 +398,7 @@ private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
 
 @Suppress("LongMethod", "LongParameterList")
 @Composable
-private fun VideoCard(
+private fun Video(
     scaleType: TextureVideoView.ScaleType,
     videoUri: String,
     showControls: Boolean,
