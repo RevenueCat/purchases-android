@@ -189,12 +189,12 @@ internal data class Placeholder(
     }
 
     internal fun ContentDrawScope.draw() {
-        val pAlpha = placeholderAlpha.value
-        val cAlpha = contentAlpha.value
+        val placeholderAlpha = this@Placeholder.placeholderAlpha.value
+        val contentAlpha = this@Placeholder.contentAlpha.value
 
         // Draw content
-        if (cAlpha > 0.01f) {
-            paint.alpha = cAlpha
+        if (contentAlpha > 0.01f) {
+            paint.alpha = contentAlpha
             withLayer(paint) {
                 with(this@draw) {
                     drawContent()
@@ -203,8 +203,8 @@ internal data class Placeholder(
         }
 
         // Draw placeholder
-        if (pAlpha > 0.01f) {
-            paint.alpha = pAlpha
+        if (placeholderAlpha > 0.01f) {
+            paint.alpha = placeholderAlpha
             withLayer(paint) {
                 lastOutline = drawPlaceholder(
                     shape = shape,
