@@ -8,7 +8,10 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -27,12 +31,11 @@ import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 internal object PlaceholderDefaults {
+    /**
+     * The default [InfiniteRepeatableSpec] to use for [fade].
+     */
     val fadeAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
         infiniteRepeatable(
             animation = tween(delayMillis = 200, durationMillis = 600),
@@ -42,7 +45,41 @@ internal object PlaceholderDefaults {
 }
 
 /**
- * Internal placeholder systems to draw placeholder UI on the paywalls.
+ * Internal custom placeholder Modifier.
+ *
+ * @param visible whether the placeholder should be visible or not.
+ * @param color the color used to draw the placeholder UI.
+ * @param shape desired shape of the placeholder. Defaults to [RectangleShape].
+ * @param highlight optional highlight animation.
+ * @param placeholderFadeTransitionSpec The transition spec to use when fading the placeholder
+ * on/off screen. The boolean parameter defined for the transition is [visible].
+ * @param contentFadeTransitionSpec The transition spec to use when fading the content
+ * on/off screen. The boolean parameter defined for the transition is [visible].
+ */
+@Suppress("LongParameterList", "ModifierComposable")
+@Composable
+internal fun Modifier.placeholder(
+    visible: Boolean,
+    color: Color,
+    shape: Shape = RectangleShape,
+    highlight: PlaceholderHighlight? = null,
+    placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+    contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+): Modifier {
+    val placeholder = rememberPlaceholder(
+        visible = visible,
+        color = color,
+        shape = shape,
+        highlight = highlight,
+        placeholderFadeTransitionSpec = placeholderFadeTransitionSpec,
+        contentFadeTransitionSpec = contentFadeTransitionSpec,
+    )
+
+    return this then PlaceholderElement(placeholder = placeholder)
+}
+
+/**
+ * Internal placeholder systems to remember placeholder and running & stopping the placeholder.
  *
  * @param visible whether the placeholder should be visible or not.
  * @param color the color used to draw the placeholder UI.
@@ -54,36 +91,61 @@ internal object PlaceholderDefaults {
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
 @Suppress("LongParameterList")
-internal fun Modifier.placeholder(
+@Composable
+internal fun rememberPlaceholder(
     visible: Boolean,
     color: Color,
     shape: Shape = RectangleShape,
     highlight: PlaceholderHighlight? = null,
     placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
     contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
-): Modifier = this.then(
-    PlaceholderElement(
-        visible = visible,
-        color = color,
-        shape = shape,
-        highlight = highlight,
-        placeholderFadeTransitionSpec = placeholderFadeTransitionSpec,
-        contentFadeTransitionSpec = contentFadeTransitionSpec,
-    ),
-)
+): Placeholder {
+    val placeholder: Placeholder = remember(
+        keys = arrayOf(visible, color, shape, highlight, placeholderFadeTransitionSpec, contentFadeTransitionSpec),
+    ) {
+        Placeholder(
+            visible = visible,
+            color = color,
+            shape = shape,
+            highlight = highlight,
+            placeholderFadeTransitionSpec = placeholderFadeTransitionSpec,
+            contentFadeTransitionSpec = contentFadeTransitionSpec,
+        )
+    }
 
-// The private class that implements the placeholder logic as a Modifier.Node
+    LaunchedEffect(key1 = placeholder) {
+        if (visible) {
+            placeholder.startAnimation()
+        } else {
+            placeholder.stopAnimation()
+        }
+    }
 
+    return placeholder
+}
+
+/**
+ * Internal placeholder data class for holding placeholder relevant data.
+ *
+ * @param visible whether the placeholder should be visible or not.
+ * @param color the color used to draw the placeholder UI.
+ * @param shape desired shape of the placeholder. Defaults to [RectangleShape].
+ * @param highlight optional highlight animation.
+ * @param placeholderFadeTransitionSpec The transition spec to use when fading the placeholder
+ * on/off screen. The boolean parameter defined for the transition is [visible].
+ * @param contentFadeTransitionSpec The transition spec to use when fading the content
+ * on/off screen. The boolean parameter defined for the transition is [visible].
+ */
 @Suppress("LongParameterList", "MagicNumber")
-private class PlaceholderNode(
-    var visible: Boolean,
-    var color: Color,
-    var shape: Shape,
-    var highlight: PlaceholderHighlight?,
-    var placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
-    var contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
-) : Modifier.Node(), DrawModifierNode {
-
+@Stable
+internal data class Placeholder(
+    private val visible: Boolean,
+    private val color: Color,
+    private val shape: Shape = RectangleShape,
+    private val highlight: PlaceholderHighlight? = null,
+    private val placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+    private val contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float> = { spring() },
+) {
     private var lastSize: Size? = null
     private var lastLayoutDirection: LayoutDirection? = null
     private var lastOutline: Outline? = null
@@ -91,53 +153,42 @@ private class PlaceholderNode(
     private val placeholderAlpha = Animatable(if (visible) 1f else 0f)
     private val contentAlpha = Animatable(if (visible) 0f else 1f)
     private val highlightProgress = Animatable(0f)
-    private val paint = Paint()
+    private val paint = Paint().apply {
+        isAntiAlias = true
+        style = PaintingStyle.Fill
+        blendMode = this.blendMode
+    }
 
-    private var highlightAnimationJob: Job? = null
-
-    // onAttach is called when the node is attached to the composition.
-    override fun onAttach() {
-        // Coroutine for the crossfade animation
-        coroutineScope.launch {
-            snapshotFlow { visible }
-                .collectLatest { isVisible ->
-                    coroutineScope { // ties the animations into a same sibling.
-                        launch {
-                            placeholderAlpha.animateTo(
-                                targetValue = if (isVisible) 1f else 0f,
-                                animationSpec = placeholderFadeTransitionSpec(),
-                            )
-                        }
-                        launch {
-                            contentAlpha.animateTo(
-                                targetValue = if (isVisible) 0f else 1f,
-                                animationSpec = contentFadeTransitionSpec(),
-                            )
-                        }
-                    }
-                }
-        }
+    internal suspend fun startAnimation() {
+        placeholderAlpha.animateTo(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = placeholderFadeTransitionSpec(),
+        )
+        contentAlpha.animateTo(
+            targetValue = if (visible) 0f else 1f,
+            animationSpec = contentFadeTransitionSpec(),
+        )
 
         // Coroutine for the infinite highlight (shimmer) animation
-        coroutineScope.launch {
-            snapshotFlow { visible && highlight?.animationSpec != null }
-                .collectLatest { shouldAnimateHighlight ->
-                    highlightAnimationJob?.cancel()
-                    if (shouldAnimateHighlight) {
-                        highlightAnimationJob = launch {
-                            highlightProgress.animateTo(
-                                targetValue = 1f,
-                                animationSpec = highlight!!.animationSpec!!,
-                            )
-                        }
-                    } else {
-                        highlightProgress.snapTo(0f)
-                    }
-                }
+        val shouldAnimateHighlight = visible && highlight?.animationSpec != null
+        highlightProgress.stop()
+        if (shouldAnimateHighlight) {
+            highlightProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = highlight!!.animationSpec!!,
+            )
+        } else {
+            highlightProgress.snapTo(0f)
         }
     }
 
-    override fun ContentDrawScope.draw() {
+    internal suspend fun stopAnimation() {
+        placeholderAlpha.stop()
+        contentAlpha.stop()
+        highlightProgress.stop()
+    }
+
+    internal fun ContentDrawScope.draw() {
         val pAlpha = placeholderAlpha.value
         val cAlpha = contentAlpha.value
 
@@ -173,42 +224,32 @@ private class PlaceholderNode(
     }
 }
 
+private class PlaceholderNode(
+    var placeholder: Placeholder,
+) : Modifier.Node(), DrawModifierNode {
+
+    override fun ContentDrawScope.draw() {
+        with(placeholder) {
+            draw()
+        }
+    }
+}
+
 // The factory for our PlaceholderNode
 private data class PlaceholderElement(
-    val visible: Boolean,
-    val color: Color,
-    val shape: Shape,
-    val highlight: PlaceholderHighlight?,
-    val placeholderFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
-    val contentFadeTransitionSpec: () -> FiniteAnimationSpec<Float>,
+    var placeholder: Placeholder,
 ) : ModifierNodeElement<PlaceholderNode>() {
     override fun create(): PlaceholderNode {
-        return PlaceholderNode(
-            visible,
-            color,
-            shape,
-            highlight,
-            placeholderFadeTransitionSpec,
-            contentFadeTransitionSpec,
-        )
+        return PlaceholderNode(placeholder = placeholder)
     }
 
     override fun update(node: PlaceholderNode) {
-        node.visible = visible
-        node.color = color
-        node.shape = shape
-        node.highlight = highlight
-        node.placeholderFadeTransitionSpec = placeholderFadeTransitionSpec
-        node.contentFadeTransitionSpec = contentFadeTransitionSpec
+        node.placeholder = placeholder
     }
 
     override fun InspectorInfo.inspectableProperties() {
         name = "placeholder"
-        value = visible
-        properties["visible"] = visible
-        properties["color"] = color
-        properties["highlight"] = highlight
-        properties["shape"] = shape
+        properties["placeholder"] = placeholder
         properties["loadingDescription"] = "Loading.."
     }
 }
