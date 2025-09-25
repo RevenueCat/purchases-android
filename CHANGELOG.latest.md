@@ -3,13 +3,10 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Fix bundled font families when using assets folder (#2672) via Toni Rico (@tonidero)
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add 8.24.0 CHANGELOG to main (#2662) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `489faef` to `a6dc551` (#2673) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane-plugin-revenuecat_internal from `7d97553` to `489faef` (#2671) via dependabot[bot] (@dependabot[bot])
-* File Repository (#2634) via Jacob Rakidzich (@JZDesign)
+* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
+* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])
