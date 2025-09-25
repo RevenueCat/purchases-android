@@ -78,7 +78,7 @@ internal fun LocalizationDictionary.image(key: LocalizationKey): Result<ThemeIma
         ?: Result.Error(MissingImageLocalization(key))
 
 /**
- * Retrieves an Video for all locales in this map, associated with the provided [key].
+ * Retrieves a Video for all locales in this map, associated with the provided [key].
  *
  * @return A successful result containing the video keyed by the locale if it was found for all locales, or an error
  * result containing a [MissingVideoLocalization] error for each locale the [key] wasn't found for.
@@ -94,7 +94,7 @@ internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.videoForAllLocales(
     }.mapValuesOrAccumulate { it }
 
 /**
- * Retrieves an video from this [LocalizationDictionary] associated with the provided [key].
+ * Retrieves a video from this [LocalizationDictionary] associated with the provided [key].
  *
  * @return A successful result containing the video if it was found, or an error result containing a
  * [MissingStringLocalization] error if there was no image value associated with the provided [key].
