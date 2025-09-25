@@ -199,11 +199,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onAddOnPurchaseClicked(selectedPackages: List<Package>) {
-        if (Purchases.sharedInstance.finishTransactions) {
-            startAddOnPurchase(selectedPackages)
-        } else {
-            startAddOnPurchaseWithoutFinishingTransaction(selectedPackages)
-        }
+        startAddOnPurchase(selectedPackages)
     }
 
     override fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
