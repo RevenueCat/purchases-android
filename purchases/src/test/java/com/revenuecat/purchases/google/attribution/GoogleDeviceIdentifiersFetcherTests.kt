@@ -5,6 +5,7 @@ import android.content.Context
 import android.provider.Settings
 import android.util.Log
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -74,7 +75,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            expectedException = GooglePlayServicesRepairableException(1, "error", mockk())
+            expectedException = GooglePlayServicesNotAvailableException(1)
         )
 
         var completionCalled = false
