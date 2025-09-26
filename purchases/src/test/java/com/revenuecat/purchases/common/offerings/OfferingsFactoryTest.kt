@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -379,6 +380,43 @@ class OfferingsFactoryTest {
         assertThat(
             offerings!!.all.values.first().availablePackages.first().presentedOfferingContext.targetingContext
         ).isNull()
+    }
+
+    @Test
+    fun `copy offering can create a copy with a different presented offering context`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.all.size).isEqualTo(1)
+
+        val offering = offerings!![STUB_OFFERING_IDENTIFIER]!!
+        val originalPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = STUB_OFFERING_IDENTIFIER,
+            placementIdentifier = null,
+            targetingContext = null
+        )
+        assertThat(offering.availablePackages).allMatch {
+            it.presentedOfferingContext == originalPresentedOfferingContext &&
+                it.product.presentedOfferingContext == originalPresentedOfferingContext
+        }
+        val newPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = STUB_OFFERING_IDENTIFIER,
+            placementIdentifier = "new_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(1, "new_rule")
+        )
+        val modifiedOffering = offering.copy(newPresentedOfferingContext)
+        assertThat(modifiedOffering.availablePackages).allMatch {
+            it.presentedOfferingContext == newPresentedOfferingContext &&
+                it.product.presentedOfferingContext == newPresentedOfferingContext
+        }
     }
 
     // region helpers

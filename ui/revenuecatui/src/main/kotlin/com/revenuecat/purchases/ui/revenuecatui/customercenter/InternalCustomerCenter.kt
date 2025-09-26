@@ -54,18 +54,21 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import kotlinx.coroutines.launch
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
@@ -77,14 +80,19 @@ internal fun InternalCustomerCenter(
     ),
     onDismiss: () -> Unit,
 ) {
-    viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark = isSystemInDarkTheme()
+
+    LaunchedEffect(colorScheme, isDark) {
+        viewModel.refreshColors(colorScheme, isDark)
+    }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    if (state is CustomerCenterState.NotLoaded) {
-        coroutineScope.launch {
+    LaunchedEffect(state !is CustomerCenterState.Success) {
+        if (state is CustomerCenterState.NotLoaded) {
             viewModel.loadCustomerCenter()
         }
     }
@@ -144,6 +152,7 @@ internal fun InternalCustomerCenter(
                 }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
+                is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
             }
         },
     )
@@ -176,11 +185,11 @@ private fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterState.Loading -> {
-                    CustomerCenterLoading()
+                    CustomerCenterLoadingView()
                 }
 
                 is CustomerCenterState.Error -> {
-                    CustomerCenterError(state)
+                    CustomerCenterErrorView(state)
                 }
 
                 is CustomerCenterState.Success -> {
@@ -351,18 +360,6 @@ private fun CustomerCenterNavigationIcon(
 }
 
 @Composable
-private fun CustomerCenterLoading() {
-    // CustomerCenter WIP: Add proper loading UI
-    Text("Loading...")
-}
-
-@Composable
-private fun CustomerCenterError(state: CustomerCenterState.Error) {
-    // CustomerCenter WIP: Add proper error UI
-    Text("Error: ${state.error}")
-}
-
-@Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
@@ -429,6 +426,13 @@ private fun CustomerCenterNavHost(
                     onAction = onAction,
                 )
             }
+
+            is CustomerCenterDestination.VirtualCurrencyBalances -> {
+                VirtualCurrencyBalancesScreen(
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                )
+            }
         }
     }
 
@@ -459,6 +463,8 @@ private fun MainScreenContent(
             RelevantPurchasesListView(
                 supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
+                virtualCurrencies = state.virtualCurrencies,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
@@ -476,12 +482,12 @@ private fun MainScreenContent(
     } else {
         configuration.getNoActiveScreen()?.let { noActiveScreen ->
             NoActiveUserManagementView(
-                screenTitle = noActiveScreen.title,
-                screenSubtitle = noActiveScreen.subtitle,
+                screen = noActiveScreen,
                 contactEmail = configuration.support.email,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
-                supportedPaths = noActiveScreen.paths,
-                offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
+                offering = state.noActiveScreenOffering,
+                virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
             )
         } ?: run {

@@ -64,7 +64,7 @@ suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
  *   - Falls back to use base plan
  *
  * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
- * @throws [PurchasesTransactionException] with a [PurchasesTransactionException] if there's an error when purchasing
+ * @throws [PurchasesTransactionException] with a [PurchasesError] if there's an error when purchasing
  * and a userCancelled boolean that indicates if the user cancelled the purchase flow.
  * @return The [StoreTransaction] for this purchase and the updated [CustomerInfo] for this user.
  */

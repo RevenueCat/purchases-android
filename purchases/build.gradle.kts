@@ -43,12 +43,6 @@ android {
         testApplicationId = obtainTestApplicationId()
         testBuildType = obtainTestBuildType()
 
-        buildConfigField(
-            type = "boolean",
-            name = "ENABLE_SIMULATED_STORE",
-            value = (localProperties["ENABLE_SIMULATED_STORE"] as? String ?: "false").toString(),
-        )
-
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
@@ -117,6 +111,11 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     }
 }
 
+tasks.withType<Test> {
+    // Disabling verification in tests until Amazon publishes a version of their SDK compiled with a modern JDK.
+    jvmArgs("-noverify")
+}
+
 fun obtainTestApplicationId(): String =
     if (project.hasProperty("testApplicationId")) {
         project.properties["testApplicationId"] as String
@@ -140,13 +139,17 @@ dependencies {
     implementation(libs.androidx.lifecycle.common)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.google.blockstore)
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
     api(libs.billing)
 
+    compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
     compileOnly(libs.coil.base)
+
+    debugImplementation(libs.androidx.annotation.experimental)
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
@@ -170,6 +173,7 @@ dependencies {
     androidTestImplementation(libs.mockk.agent)
 
     baselineProfile(project(":baselineprofile"))
+    testImplementation(kotlin("test"))
 }
 
 tasks.dokkaHtmlPartial.configure {
@@ -245,19 +249,19 @@ tasks.dokkaHtmlPartial.configure {
     }
 }
 
+// Remove afterEvaluate
+// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
+afterEvaluate {
+    dependencies {
+        add("kover", project(":feature:amazon"))
+    }
+}
+
 baselineProfile {
     mergeIntoMain = true
     baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.**")
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")
-    }
-}
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
     }
 }

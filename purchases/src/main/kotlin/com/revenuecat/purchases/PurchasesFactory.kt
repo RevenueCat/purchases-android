@@ -4,19 +4,19 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -59,7 +59,6 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
-    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
@@ -76,7 +75,7 @@ internal class PurchasesFactory(
 
         with(configuration) {
             val finalStore = if (
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 Store.UNKNOWN_STORE // We should add a new store when we fully support the simulated store.
             } else {
@@ -114,7 +113,7 @@ internal class PurchasesFactory(
             }
 
             val prefs = try {
-                PreferenceManager.getDefaultSharedPreferences(contextForStorage)
+                SharedPreferencesManager(contextForStorage).getSharedPreferences()
             } catch (e: IllegalStateException) {
                 @Suppress("MaxLineLength")
                 if (!UserManagerCompat.isUserUnlocked(context)) {
@@ -173,7 +172,15 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
+            val localeProvider = DefaultLocaleProvider()
+            val httpClient = HTTPClient(
+                appConfig,
+                eTagManager,
+                diagnosticsTracker,
+                signingManager,
+                cache,
+                localeProvider = localeProvider,
+            )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -209,6 +216,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
+                automaticDeviceIdentifierCollectionEnabled,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
@@ -225,7 +233,10 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val offeringsCache = OfferingsCache(cache)
+            val offeringsCache = OfferingsCache(
+                deviceCache = cache,
+                localeProvider = localeProvider,
+            )
 
             val identityManager = IdentityManager(
                 cache,
@@ -365,6 +376,7 @@ internal class PurchasesFactory(
                 dispatcher = dispatcher,
                 initialConfiguration = configuration,
                 fontLoader = fontLoader,
+                localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
             )
 
@@ -413,7 +425,7 @@ internal class PurchasesFactory(
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
 
             if (!isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 throw PurchasesException(
                     PurchasesError(

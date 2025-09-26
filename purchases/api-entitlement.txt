@@ -404,11 +404,13 @@ package com.revenuecat.purchases {
     ctor public PurchasesConfiguration(com.revenuecat.purchases.PurchasesConfiguration.Builder builder);
     method public final String getApiKey();
     method public final String? getAppUserID();
+    method public final boolean getAutomaticDeviceIdentifierCollectionEnabled();
     method public final android.content.Context getContext();
     method public final com.revenuecat.purchases.DangerousSettings getDangerousSettings();
     method public final boolean getDiagnosticsEnabled();
     method @Deprecated public final boolean getObserverMode();
     method public final boolean getPendingTransactionsForPrepaidPlansEnabled();
+    method public final String? getPreferredUILocaleOverride();
     method public final com.revenuecat.purchases.PurchasesAreCompletedBy getPurchasesAreCompletedBy();
     method public final java.util.concurrent.ExecutorService? getService();
     method public final boolean getShowInAppMessagesAutomatically();
@@ -416,11 +418,13 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.EntitlementVerificationMode getVerificationMode();
     property public final String apiKey;
     property public final String? appUserID;
+    property public final boolean automaticDeviceIdentifierCollectionEnabled;
     property public final android.content.Context context;
     property public final com.revenuecat.purchases.DangerousSettings dangerousSettings;
     property public final boolean diagnosticsEnabled;
     property @Deprecated public final boolean observerMode;
     property public final boolean pendingTransactionsForPrepaidPlansEnabled;
+    property public final String? preferredUILocaleOverride;
     property public final com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy;
     property public final java.util.concurrent.ExecutorService? service;
     property public final boolean showInAppMessagesAutomatically;
@@ -431,6 +435,7 @@ package com.revenuecat.purchases {
   public static class PurchasesConfiguration.Builder {
     ctor public PurchasesConfiguration.Builder(android.content.Context context, String apiKey);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder appUserID(String? appUserID);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder automaticDeviceIdentifierCollectionEnabled(boolean automaticDeviceIdentifierCollectionEnabled);
     method public com.revenuecat.purchases.PurchasesConfiguration build();
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder dangerousSettings(com.revenuecat.purchases.DangerousSettings dangerousSettings);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder diagnosticsEnabled(boolean diagnosticsEnabled);
@@ -438,6 +443,7 @@ package com.revenuecat.purchases {
     method @Deprecated @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PurchasesConfiguration.Builder informationalVerificationModeAndDiagnosticsEnabled(boolean enabled);
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder preferredUILocaleOverride(String? localeString);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder purchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder service(java.util.concurrent.ExecutorService service);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder showInAppMessagesAutomatically(boolean showInAppMessagesAutomatically);
@@ -454,7 +460,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode.Builder showInAppMessagesAutomatically(boolean enabled);
   }
 
-  @kotlinx.parcelize.Parcelize public final class PurchasesError implements android.os.Parcelable java.io.Serializable {
+  @androidx.compose.runtime.Immutable @kotlinx.parcelize.Parcelize public final class PurchasesError implements android.os.Parcelable java.io.Serializable {
     ctor public PurchasesError(com.revenuecat.purchases.PurchasesErrorCode code, optional String? underlyingErrorMessage);
     method public com.revenuecat.purchases.PurchasesErrorCode getCode();
     method public String getMessage();
@@ -655,6 +661,21 @@ package com.revenuecat.purchases.amazon {
 
   public final class AmazonStoreProductKt {
     method public static com.revenuecat.purchases.amazon.AmazonStoreProduct? getAmazonProduct(com.revenuecat.purchases.models.StoreProduct);
+  }
+
+}
+
+package com.revenuecat.purchases.backup {
+
+  public final class RevenueCatBackupAgent extends android.app.backup.BackupAgentHelper {
+    ctor public RevenueCatBackupAgent();
+    method public void onBackup(android.os.ParcelFileDescriptor? oldState, android.app.backup.BackupDataOutput? data, android.os.ParcelFileDescriptor? newState);
+    method public void onRestore(android.app.backup.BackupDataInput? data, long appVersionCode, android.os.ParcelFileDescriptor? newState);
+    field public static final com.revenuecat.purchases.backup.RevenueCatBackupAgent.Companion Companion;
+    field public static final String REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences";
+  }
+
+  public static final class RevenueCatBackupAgent.Companion {
   }
 
 }
@@ -1200,9 +1221,12 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko public final class TestStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
     ctor @Deprecated public TestStoreProduct(String id, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price);
     ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period);
     ctor @Deprecated public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.Period? freeTrialPeriod, optional com.revenuecat.purchases.models.Price? introPrice);
-    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase);
+    ctor public TestStoreProduct(String id, String name, String title, String description, com.revenuecat.purchases.models.Price price, optional com.revenuecat.purchases.models.Period? period, optional com.revenuecat.purchases.models.PricingPhase? freeTrialPricingPhase, optional com.revenuecat.purchases.models.PricingPhase? introPricePricingPhase, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
     method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();

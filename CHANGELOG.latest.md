@@ -1,25 +1,12 @@
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* Add lifetime badge to customer center (#2565) via Cesar de la Vega (@vegaro)
-### Customer Center
-#### ✨ New Features
-* Introduce custom actions for customer center (#2572) via Facundo Menzella (@facumenzella)
-
-## RevenueCatUI SDK
-### ✨ New Features
-* Add support for az-AZ locale (#2575) via Franco Correa (@francocorreasosa)
-### Customer Center
-#### 🐞 Bugfixes
-* Display latest expired subscription if no active subscriptions (#2564) via Cesar de la Vega (@vegaro)
+* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Expose getStorefront APIs in CustomEntitlementComputation flavor (#2579) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2578) via RevenueCat Git Bot (@RCGitBot)
-* Add missing dokka-hide-internal tests to CI and fix reported number of tests  (#2569) via Cesar de la Vega (@vegaro)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2574) via RevenueCat Git Bot (@RCGitBot)
-* Convert WebBilling products into TestStoreProducts (#2573) via Toni Rico (@tonidero)
-* Add WebBillingGetProducts endpoint (#2571) via Toni Rico (@tonidero)
-* Remove TestStoreProduct purchase check (#2570) via Toni Rico (@tonidero)
-* Improve 9.0.0 changelog (#2568) via Toni Rico (@tonidero)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2567) via RevenueCat Git Bot (@RCGitBot)
-* Parallel test jobs (#2549) via Cesar de la Vega (@vegaro)
+* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
+* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])

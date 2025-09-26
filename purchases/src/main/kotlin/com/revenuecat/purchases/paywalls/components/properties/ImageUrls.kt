@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import dev.drewhamilton.poko.Poko
@@ -10,6 +11,7 @@ import java.net.URL
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class ImageUrls(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
@@ -30,6 +32,7 @@ class ImageUrls(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class ThemeImageUrls(
     @get:JvmSynthetic val light: ImageUrls,
     @get:JvmSynthetic val dark: ImageUrls? = null,

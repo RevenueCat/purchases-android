@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
@@ -77,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
 @Suppress("TooManyFunctions")
+@Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
@@ -344,6 +346,7 @@ internal class StyleFactory(
         }
     }
 
+    @Immutable
     class StyleResult(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
@@ -421,6 +424,7 @@ internal class StyleFactory(
             ButtonComponentStyle(
                 stackComponentStyle = stack,
                 action = action,
+                transition = component.transition,
             )
         }
     }
