@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -367,6 +368,13 @@ internal class TextureVideoView @JvmOverloads constructor(
         super.onDetachedFromWindow()
         release()
     }
+
+    @Suppress("ComplexCondition")
+    fun startIfNeeded() {
+        if (prepared && !released && !player.isPlaying && autoStart) {
+            start()
+        }
+    }
 }
 
 @Stable
@@ -423,6 +431,16 @@ private fun Video(
         mutableStateOf<TextureVideoView?>(null)
     }
 
+    // To guarantee autoplay starts on view creation
+    // The code in the factory is not as reliable for view creation but better
+    // for rotation
+    LaunchedEffect(videoView.value) {
+        videoView.value?.run {
+            setAutoStart(autoPlay)
+            startIfNeeded()
+        }
+    }
+
     // Capture playback state before rotation/destruction
     DisposableEffect(videoView.value) {
         onDispose {
@@ -444,14 +462,15 @@ private fun Video(
                 // Always check both saved state and static holder
                 val restoredState = VideoStateHolder.restore(key)
                 val usePosition = maxOf(saved.value.position, restoredState.position)
+
+                // Rotation case: use the saved play state (respects if user paused)
                 // If we have a saved position, always try to continue playing (rotation should resume)
                 val usePlay = if (usePosition > 0) {
-                    // Rotation case: use the saved play state (respects if user paused)
                     saved.value.play || restoredState.play // Either source might have the correct state
                 } else {
-                    // Initial load case: use autoPlay parameter
                     autoPlay
                 }
+
                 val videoUri = videoUri.toUri()
 
                 TextureVideoView(
