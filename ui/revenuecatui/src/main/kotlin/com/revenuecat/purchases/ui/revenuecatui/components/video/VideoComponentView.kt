@@ -132,12 +132,14 @@ private fun rememberVideoContentState(
     }
 
     if (videoUrl == null) {
-        videoUrls.urlLowRes?.run {
-            videoUrl = repository.getFile(this)
-            LaunchedEffect(Unit) {
-                fetchVideoUrl(setLowResVideoURLFirst = false)
+        videoUrls.urlLowRes
+            ?.takeIf { it != videoUrls.url }
+            ?.run {
+                videoUrl = repository.getFile(this)
+                LaunchedEffect(Unit) {
+                    fetchVideoUrl(setLowResVideoURLFirst = false)
+                }
             }
-        }
     }
 
     if (videoUrl == null) {
