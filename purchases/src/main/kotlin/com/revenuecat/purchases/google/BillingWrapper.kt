@@ -13,6 +13,7 @@ import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
@@ -54,6 +55,9 @@ import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GooglePurchasingData.InAppProduct
+import com.revenuecat.purchases.models.GooglePurchasingData.ProductWithAddOns
+import com.revenuecat.purchases.models.GooglePurchasingData.Subscription
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
@@ -259,6 +263,10 @@ internal class BillingWrapper(
             is GooglePurchasingData.Subscription -> {
                 googlePurchasingData.optionId
             }
+
+            is GooglePurchasingData.ProductWithAddOns -> {
+                googlePurchasingData.productId
+            }
         }
 
         if (replaceProductInfo != null) {
@@ -286,24 +294,26 @@ internal class BillingWrapper(
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
             )
         }
-        executeRequestOnUIThread {
-            val result = buildPurchaseParams(
-                purchasingData,
-                replaceProductInfo,
-                appUserID,
-                isPersonalizedPrice,
-            )
-            when (result) {
-                is Result.Success -> {
-                    trackPurchaseStartIfNeeded(
-                        googlePurchasingData,
-                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
-                    )
-                    launchBillingFlow(activity, result.value)
+        val result = buildPurchaseParams(
+            purchasingData,
+            replaceProductInfo,
+            appUserID,
+            isPersonalizedPrice,
+            onCompletion = { result ->
+                executeRequestOnUIThread {
+                    when (result) {
+                        is Result.Success -> {
+                            trackPurchaseStartIfNeeded(
+                                googlePurchasingData,
+                                replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
+                            )
+                            launchBillingFlow(activity, result.value)
+                        }
+                        is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+                    }
                 }
-                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
-            }
-        }
+            },
+        )
     }
 
     @UiThread
@@ -843,14 +853,26 @@ internal class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
-    ): Result<BillingFlowParams, PurchasesError> {
-        return when (purchaseInfo) {
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit,
+    ) {
+        when (purchaseInfo) {
             is GooglePurchasingData.InAppProduct -> {
-                buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
+                onCompletion(buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice))
             }
 
             is GooglePurchasingData.Subscription -> {
-                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
+                onCompletion(
+                    buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice),
+                )
+            }
+
+            is GooglePurchasingData.ProductWithAddOns -> {
+                buildProductWithAddOnsPurchaseParams(
+                    purchaseInfo,
+                    appUserID,
+                    isPersonalizedPrice,
+                    onCompletion = onCompletion,
+                )
             }
         }
     }
@@ -860,9 +882,7 @@ internal class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setProductDetails(purchaseInfo.productDetails)
-        }.build()
+        val productDetailsParamsList = buildOneTimeProductDetailsParams(purchaseInfo = purchaseInfo)
 
         return Result.Success(
             BillingFlowParams.newBuilder()
@@ -877,16 +897,21 @@ internal class BillingWrapper(
         )
     }
 
+    private fun buildOneTimeProductDetailsParams(
+        purchaseInfo: GooglePurchasingData.InAppProduct,
+    ): BillingFlowParams.ProductDetailsParams {
+        return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setProductDetails(purchaseInfo.productDetails)
+        }.build()
+    }
+
     private fun buildSubscriptionPurchaseParams(
-        purchaseInfo: GooglePurchasingData.Subscription,
+        purchaseInfo: Subscription,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(purchaseInfo.token)
-            setProductDetails(purchaseInfo.productDetails)
-        }.build()
+        val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
         return Result.Success(
             BillingFlowParams.newBuilder()
@@ -904,6 +929,135 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    private fun buildSubscriptionProductDetailsParams(
+        purchaseInfo: Subscription,
+    ): BillingFlowParams.ProductDetailsParams {
+        return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(purchaseInfo.token)
+            setProductDetails(purchaseInfo.productDetails)
+        }.build()
+    }
+
+    private fun buildProductWithAddOnsPurchaseParams(
+        purchasingData: ProductWithAddOns,
+        appUserID: String,
+        isPersonalizedPrice: Boolean?,
+        onCompletion: (Result<BillingFlowParams, PurchasesError>) -> Unit,
+    ) {
+        val productDetailsParamsList: List<ProductDetailsParams>
+        when (
+            val productDetailsParamsListResult = buildProductWithAddOnsProductDetailsList(
+                purchasingData = purchasingData,
+            )
+        ) {
+            is Result.Error -> {
+                onCompletion(productDetailsParamsListResult)
+                return@buildProductWithAddOnsPurchaseParams
+            }
+            is Result.Success<List<ProductDetailsParams>> -> {
+                productDetailsParamsList = productDetailsParamsListResult.value
+            }
+        }
+
+        // Determine if the base product has been purchased before
+        queryPurchases(
+            appUserID = appUserID,
+            onSuccess = { purchasedProductsMap ->
+                val billingFlowParams: BillingFlowParams
+                val previousTransactionForBaseProduct = purchasedProductsMap
+                    .map { it.value }
+                    .firstOrNull { it.productIds.contains(purchasingData.baseProduct.productId) }
+
+                if (previousTransactionForBaseProduct != null) {
+                    val replaceProductInfo = ReplaceProductInfo(
+                        previousTransactionForBaseProduct,
+                        purchasingData.replacementMode,
+                    )
+                    // Base product has been purchased before, use SubscriptionUpdateParams
+                    billingFlowParams = BillingFlowParams.newBuilder()
+                        .apply {
+                            setUpgradeInfo(replaceProductInfo)
+                            isPersonalizedPrice?.let {
+                                setIsOfferPersonalized(it)
+                            }
+                        }
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        .setObfuscatedAccountId(appUserID.sha256())
+                        .build()
+                } else {
+                    // Base product has not been purchased before
+                    billingFlowParams = BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        .setObfuscatedAccountId(appUserID.sha256())
+                        .apply {
+                            isPersonalizedPrice?.let {
+                                setIsOfferPersonalized(it)
+                            }
+                        }
+                        .build()
+                }
+
+                onCompletion(Result.Success(billingFlowParams))
+            },
+            onError = { error ->
+                onCompletion(Result.Error(error))
+            },
+        )
+    }
+
+    /**
+     * Builds a list of ProductDetailsParams for bundle purchases containing a base product and add-ons.
+     *
+     * @param purchasingData Contains the base product and list of add-on products for the bundle
+     * @return List of ProductDetailsParams ready for purchasing, or throws on conversion failure
+     */
+    @Suppress("ReturnCount")
+    private fun buildProductWithAddOnsProductDetailsList(
+        purchasingData: ProductWithAddOns,
+    ): Result<List<ProductDetailsParams>, PurchasesError> {
+        /**
+         * Converts PurchasingData into a ProductDetailsParams for both InAppProducts and Subscriptions.
+         */
+        fun buildProductDetailsParams(
+            purchasingData: PurchasingData,
+        ): Result<BillingFlowParams.ProductDetailsParams, PurchasesError> {
+            return when (purchasingData) {
+                is InAppProduct -> Result.Success(buildOneTimeProductDetailsParams(purchaseInfo = purchasingData))
+                is Subscription -> Result.Success(buildSubscriptionProductDetailsParams(purchaseInfo = purchasingData))
+                else -> Result.Error(
+                    PurchasesError(
+                        code = PurchasesErrorCode.PurchaseInvalidError,
+                        underlyingErrorMessage = "Only subscriptions and one time purchases are supported " +
+                            "for purchases with add-ons.",
+                    ),
+                )
+            }
+        }
+
+        val productDetailsParamsList: MutableList<BillingFlowParams.ProductDetailsParams> = ArrayList()
+        when (
+            val baseProductProductDetailsParams = buildProductDetailsParams(
+                purchasingData = purchasingData.baseProduct,
+            )
+        ) {
+            is Result.Error -> return Result.Error(value = baseProductProductDetailsParams.value)
+            is Result.Success<BillingFlowParams.ProductDetailsParams> -> {
+                productDetailsParamsList.add(baseProductProductDetailsParams.value)
+            }
+        }
+
+        for (addOnProduct in purchasingData.addOnProducts) {
+            when (val addOnProductDetailsParams = buildProductDetailsParams(purchasingData = addOnProduct)) {
+                is Result.Error -> return Result.Error(value = addOnProductDetailsParams.value)
+                is Result.Success<BillingFlowParams.ProductDetailsParams> -> {
+                    productDetailsParamsList.add(addOnProductDetailsParams.value)
+                }
+            }
+        }
+
+        return Result.Success(productDetailsParamsList)
     }
 
     @Synchronized
