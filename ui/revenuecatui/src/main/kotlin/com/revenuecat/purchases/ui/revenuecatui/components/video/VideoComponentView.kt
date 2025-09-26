@@ -102,7 +102,7 @@ private fun rememberVideoContentState(
                     contentScale = style.contentScale,
                     rcPackage = style.rcPackage,
                     tabIndex = style.tabIndex,
-                    overrides = emptyList(), // TODO
+                    overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
                     ignoreTopWindowInsets = style.ignoreTopWindowInsets,
                 ),
             )
