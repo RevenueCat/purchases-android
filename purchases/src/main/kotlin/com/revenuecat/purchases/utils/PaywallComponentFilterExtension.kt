@@ -63,7 +63,7 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
             is ImageComponent,
             is IconComponent,
             is TextComponent,
-                -> {
+            -> {
                 // These don't have child components.
             }
         }

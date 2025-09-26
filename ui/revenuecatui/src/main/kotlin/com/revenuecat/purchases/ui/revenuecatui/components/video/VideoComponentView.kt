@@ -37,10 +37,10 @@ import java.net.URI
 @JvmSynthetic
 @Composable
 internal fun VideoComponentView(
-    context: Context = LocalContext.current,
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    context: Context = LocalContext.current,
     repository: FileRepository = remember { DefaultFileRepository(context) },
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
