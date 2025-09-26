@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.storage
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.coroutines.Deferred
 
-internal class KeyedDeferredValueStore<H, T>(
+@InternalRevenueCatAPI
+class KeyedDeferredValueStore<H, T>(
     private val lock: Any = object {},
 ) {
     val deferred: MutableMap<H, Deferred<T>> = mutableMapOf()
