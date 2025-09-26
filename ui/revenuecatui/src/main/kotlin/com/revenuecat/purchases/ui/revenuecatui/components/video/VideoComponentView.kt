@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -36,10 +37,11 @@ import java.net.URI
 @JvmSynthetic
 @Composable
 internal fun VideoComponentView(
+    context: Context = LocalContext.current,
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    repository: FileRepository = DefaultFileRepository(LocalContext.current),
+    repository: FileRepository = remember { DefaultFileRepository(context) },
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
 
