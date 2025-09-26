@@ -1286,10 +1286,10 @@ internal class PurchasesOrchestrator(
             )
         }
 
-        if(
-            purchasingData is GooglePurchasingData.Subscription
-            && !purchasingData.addOnProducts.isNullOrEmpty()
-            && this.store != Store.PLAY_STORE
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            !purchasingData.addOnProducts.isNullOrEmpty() &&
+            this.store != Store.PLAY_STORE
         ) {
             val error = PurchasesError(
                 code = PurchasesErrorCode.PurchaseInvalidError,

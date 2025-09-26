@@ -180,7 +180,7 @@ class PurchaseParams(val builder: Builder) {
                 optionId = existingPurchasingData.optionId,
                 productDetails = existingPurchasingData.productDetails,
                 token = existingPurchasingData.token,
-                addOnProducts = compatibleAddOnProducts
+                addOnProducts = compatibleAddOnProducts,
             )
 
             this.purchasingData = newPurchasingData
