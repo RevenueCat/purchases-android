@@ -1286,7 +1286,11 @@ internal class PurchasesOrchestrator(
             )
         }
 
-        if (purchasingData is GooglePurchasingData.ProductWithAddOns && this.store != Store.PLAY_STORE) {
+        if(
+            purchasingData is GooglePurchasingData.Subscription
+            && !purchasingData.addOnProducts.isNullOrEmpty()
+            && this.store != Store.PLAY_STORE
+        ) {
             val error = PurchasesError(
                 code = PurchasesErrorCode.PurchaseInvalidError,
                 underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
