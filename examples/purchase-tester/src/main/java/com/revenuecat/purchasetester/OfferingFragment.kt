@@ -256,14 +256,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         )
     }
 
-    private fun startAddOnPurchaseWithoutFinishingTransaction(selectedPackages: List<Package>) {
-        // For non-finishing transactions, we'll handle each package individually
-        // This is a simplified approach - in a real implementation you might want to handle this differently
-        selectedPackages.forEach { pkg ->
-            startPurchaseWithoutFinishingTransaction(pkg.product.purchasingData)
-        }
-    }
-
     private fun startPurchase(
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
