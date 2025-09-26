@@ -161,9 +161,7 @@ class PurchaseParams(val builder: Builder) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
             }
 
-            val baseProductPurchasingData = this.purchasingData
-
-            val baseProduct = baseProductPurchasingData as? GooglePurchasingData.Subscription
+            val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
                 ?: throw PurchasesException(
                     PurchasesError(
                         PurchasesErrorCode.PurchaseInvalidError,
@@ -173,22 +171,19 @@ class PurchaseParams(val builder: Builder) {
 
             // This call will throw a PurchasesException if there is a validation issue with the add-on products
             val compatibleAddOnProducts: List<GooglePurchasingData> = validateAndFilterCompatibleAddOnProducts(
-                baseProductPurchasingData = baseProductPurchasingData,
+                baseProductPurchasingData = existingPurchasingData,
                 addOnProducts = addOnStoreProducts,
             )
 
-            // The purchasesOrchestrator caches callbacks using productId as the key. When a product
-            // change removes products, BillingClient.Purchase.productIds still includes the removed
-            // products alongside active ones. If we use add-on product IDs in the cache key, we won't
-            // be able to find the purchase callbacks in this scenario, leaving the app unaware the purchase completed.
-            val productId = baseProduct.productId
-
-            this.purchasingData = GooglePurchasingData.ProductWithAddOns(
-                productId = productId,
-                baseProduct = baseProduct,
-                addOnProducts = compatibleAddOnProducts,
-                replacementMode = this.googleReplacementMode,
+            val newPurchasingData = GooglePurchasingData.Subscription(
+                productId = existingPurchasingData.productId,
+                optionId = existingPurchasingData.optionId,
+                productDetails = existingPurchasingData.productDetails,
+                token = existingPurchasingData.token,
+                addOnProducts = compatibleAddOnProducts
             )
+
+            this.purchasingData = newPurchasingData
         }
 
         open fun build(): PurchaseParams {
