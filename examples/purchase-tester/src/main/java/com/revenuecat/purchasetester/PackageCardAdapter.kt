@@ -24,6 +24,9 @@ class PackageCardAdapter(
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
+    private var isBundleMode = false
+    private val selectedPackages = mutableSetOf<Package>()
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
         val binding = PackageCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return PackageViewHolder(binding)
@@ -32,21 +35,61 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position], isPlayStore)
+        holder.bind(packages[position], isPlayStore, isBundleMode, selectedPackages.contains(packages[position]))
     }
+
+    fun setBundleMode(enabled: Boolean) {
+        isBundleMode = enabled
+        if (!enabled) {
+            selectedPackages.clear()
+        }
+        notifyDataSetChanged()
+    }
+
+    fun getSelectedPackages(): List<Package> = selectedPackages.toList()
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package, isPlayStore: Boolean) {
+        fun bind(currentPackage: Package, isPlayStore: Boolean, isBundleMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
+            setupBindingData(currentPackage, product, isPlayStore, isBundleMode, isSelected)
+            setupCheckbox(currentPackage, isSelected)
+            setupPurchaseButtons(currentPackage, product)
+            setupPackageDetails(currentPackage, product)
+            bindSubscriptionOptions(product)
+            setupRootClickListener()
+        }
+
+        private fun setupBindingData(
+            currentPackage: Package,
+            product: StoreProduct,
+            isPlayStore: Boolean,
+            isBundleMode: Boolean,
+            isSelected: Boolean,
+        ) {
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
+            binding.isBundleMode = isBundleMode
+            binding.isSelected = isSelected
+        }
 
+        private fun setupCheckbox(currentPackage: Package, isSelected: Boolean) {
+            binding.buyOptionCheckbox.isChecked = isSelected
+            binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    selectedPackages.add(currentPackage)
+                } else {
+                    selectedPackages.remove(currentPackage)
+                }
+            }
+        }
+
+        private fun setupPurchaseButtons(currentPackage: Package, product: StoreProduct) {
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
                     binding.root,
@@ -81,7 +124,9 @@ class PackageCardAdapter(
                     showErrorMessage(errorStartingPurchase)
                 }
             }
+        }
 
+        private fun setupPackageDetails(currentPackage: Package, product: StoreProduct) {
             binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
                 "custom -> ${currentPackage.packageType.identifier}"
             } else {
@@ -90,14 +135,6 @@ class PackageCardAdapter(
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
                 ?: product.amazonProduct?.originalProductJSON.toString()
-
-            bindSubscriptionOptions(product)
-
-            binding.root.setOnClickListener {
-                with(binding.packageDetailsContainer) {
-                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
-                }
-            }
         }
 
         private fun bindSubscriptionOptions(product: StoreProduct) {
@@ -137,6 +174,14 @@ class PackageCardAdapter(
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
         }
+
+        private fun setupRootClickListener() {
+            binding.root.setOnClickListener {
+                with(binding.packageDetailsContainer) {
+                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+                }
+            }
+        }
     }
 
     interface PackageCardAdapterListener {
@@ -158,5 +203,6 @@ class PackageCardAdapter(
             isUpgrade: Boolean,
             isPersonalizedPrice: Boolean,
         )
+        fun onBundlePurchaseClicked(selectedPackages: List<Package>)
     }
 }

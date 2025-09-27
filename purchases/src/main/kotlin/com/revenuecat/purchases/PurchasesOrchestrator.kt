@@ -1320,6 +1320,101 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun startBundlePurchase(
+        activity: Activity,
+        packages: List<Package>,
+        listener: PurchaseCallback,
+        activeSubId: String? = null,
+    ) {
+        validateBundlePurchase(packages)?.let { error ->
+            listener.dispatch(error.also { errorLog(it) })
+            return
+        }
+
+        val purchasingDataList = packages.map { it.product.purchasingData }
+
+        log(LogIntent.PURCHASE) {
+            "Bundle purchase started for packages: ${packages.map { it.identifier }}"
+        }
+
+        trackPurchaseStarted(packages.first().product.id, packages.first().product.type)
+        val startTime = dateProvider.now
+
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(
+            listener,
+            packages.first().product.purchasingData,
+            startTime,
+        )
+
+        var userPurchasing: String? = null
+        synchronized(this@PurchasesOrchestrator) {
+            if (!appConfig.finishTransactions) {
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
+            }
+
+            // Check if any of the packages are already being purchased
+            val alreadyPurchasing = packages.any { packageToPurchase ->
+                state.purchaseCallbacksByProductId.containsKey(packageToPurchase.product.id)
+            }
+
+            if (!alreadyPurchasing) {
+                // Register callbacks for all packages
+                val mapOfProductIdToListener = packages.associate { packageToPurchase ->
+                    packageToPurchase.product.id to listenerWithDiagnostics
+                }
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
+                )
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+
+        userPurchasing?.let { appUserID ->
+            // Use the billing wrapper's bundle purchase method
+            (billing as? com.revenuecat.purchases.google.BillingWrapper)?.makeBundlePurchaseAsync(
+                activity,
+                appUserID,
+                purchasingDataList,
+                packages.first().presentedOfferingContext,
+                null,
+                activeSubId,
+            ) ?: run {
+                listenerWithDiagnostics.dispatch(
+                    PurchasesError(
+                        PurchasesErrorCode.PurchaseNotAllowedError,
+                        "Bundle purchases are only supported on Google Play Store",
+                    ).also { errorLog(it) },
+                )
+            }
+        } ?: listenerWithDiagnostics.dispatch(
+            PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            },
+        )
+    }
+
+    private fun validateBundlePurchase(packages: List<Package>): PurchasesError? {
+        return when {
+            packages.isEmpty() -> PurchasesError(
+                PurchasesErrorCode.PurchaseInvalidError,
+                "Bundle purchase requires at least one package",
+            )
+            store != Store.PLAY_STORE -> PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                "Bundle purchases are only supported on Google Play Store",
+            )
+            packages.any { it.product.type != ProductType.SUBS } -> {
+                val nonSubscriptionPackages = packages.filter { it.product.type != ProductType.SUBS }
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    "Bundle purchases only support subscriptions. Found non-subscription packages: " +
+                        "${nonSubscriptionPackages.map { it.identifier }}",
+                )
+            }
+            else -> null
+        }
+    }
+
     private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
