@@ -834,6 +834,14 @@ internal class StyleFactory(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
         createTabsComponentStyleTabControl(component.control).flatMap { control ->
+            // Set the default tab index based on the defaultTabId
+            component.defaultTabId?.let { defaultTabId ->
+                val tabIndex = component.tabs.indexOfFirst { it.id == defaultTabId }
+                if (tabIndex >= 0) {
+                    defaultTabIndex = tabIndex
+                }
+            }
+
             zipOrAccumulate(
                 first = component.overrides
                     .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
