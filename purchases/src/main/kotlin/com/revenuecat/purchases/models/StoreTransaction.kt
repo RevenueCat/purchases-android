@@ -114,6 +114,41 @@ class StoreTransaction(
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
+    constructor(
+        orderId: String?,
+        productIds: List<String>,
+        type: ProductType,
+        purchaseTime: Long,
+        purchaseToken: String,
+        purchaseState: PurchaseState,
+        isAutoRenewing: Boolean?,
+        signature: String?,
+        originalJson: JSONObject,
+        presentedOfferingContext: PresentedOfferingContext?,
+        storeUserID: String?,
+        purchaseType: PurchaseType,
+        marketplace: String?,
+        subscriptionOptionId: String?,
+        replacementMode: ReplacementMode?,
+    ) : this(
+        orderId = orderId,
+        productIds = productIds,
+        type = type,
+        purchaseTime = purchaseTime,
+        purchaseToken = purchaseToken,
+        purchaseState = purchaseState,
+        isAutoRenewing = isAutoRenewing,
+        signature = signature,
+        originalJson = originalJson,
+        presentedOfferingContext = presentedOfferingContext,
+        storeUserID = storeUserID,
+        purchaseType = purchaseType,
+        marketplace = marketplace,
+        subscriptionOptionId = subscriptionOptionId,
+        subscriptionOptionIdsForProductIDs = emptyMap(),
+        replacementMode = replacementMode,
+    )
+
     @Deprecated("Use constructor with presentedOfferingContext instead")
     constructor(
         orderId: String?,
