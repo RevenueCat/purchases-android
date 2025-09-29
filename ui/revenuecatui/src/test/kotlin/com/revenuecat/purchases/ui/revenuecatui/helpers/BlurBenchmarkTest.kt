@@ -1,12 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.content.ContentValues.TAG
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import blur
 import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
@@ -18,19 +16,18 @@ class BlurBenchmarkTest {
     @Ignore("Test is for checking performance only")
     @Test
     fun `Blur images using native blur`() = runBlocking {
-        benchmarkBlur("Native Blur") { image, context, radius ->
-            image.blur(context = context, radius = radius)
+        benchmarkBlur("Native Blur") { image, radius ->
+            image.blur(radius = radius)
         }
     }
 
-    private suspend fun benchmarkBlur(functionName: String, blurFunction: suspend (Bitmap, Context, Float) -> Unit) {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private suspend fun benchmarkBlur(functionName: String, blurFunction: suspend (Bitmap, Int) -> Unit) {
         val image = openImage()
-        val radius = 25f
+        val radius = 25
         val iterations = 100
         val startTime = System.currentTimeMillis()
         repeat(iterations) {
-            blurFunction(image, context, radius)
+            blurFunction(image, radius)
         }
         val endTime = System.currentTimeMillis()
         val totalTime = endTime - startTime
