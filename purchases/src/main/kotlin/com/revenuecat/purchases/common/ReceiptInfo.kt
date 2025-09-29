@@ -56,15 +56,22 @@ constructor(
             // a StoreProduct
             // We want the PlatformProductID with most info (like GooglePlatformProductId from a SubscriptionOption)
             // so this logic prevents duplicate productIds (PlatformProductID) from being returned
+            //
+            // To simplify backend processing when handling a subscription purchase with add-ons,
+            // we want to use the same order as the products returned from purchase, so that the base item
+            // is first in the list.
             val platformProductIds: List<PlatformProductId> = productIDs
-                .filter { it != storeProductPlatformProductId?.productId }
                 .map { productId ->
-                    subscriptionOptionsForProductIDs
-                        ?.get(productId)?.platformProductId()
-                        ?: PlatformProductId(productId)
+                    if (storeProductPlatformProductId != null && productId == storeProductPlatformProductId.productId) {
+                        storeProductPlatformProductId
+                    } else {
+                        subscriptionOptionsForProductIDs
+                            ?.get(productId)?.platformProductId()
+                            ?: PlatformProductId(productId)
+                    }
                 }
 
-            return listOfNotNull(storeProductPlatformProductId) + platformProductIds
+            return platformProductIds
         }
 
     override fun hashCode(): Int {

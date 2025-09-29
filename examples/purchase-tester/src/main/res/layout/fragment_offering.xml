@@ -71,30 +71,16 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
 
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/replacement_mode_label"
-                        style="@style/TextAppearance.AppCompat.Caption"
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/is_add_on_purchase_upgrade_checkbox"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginStart="@dimen/padding_large"
                         android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="Replacement Mode"
-                        android:textColor="#808080"
+                        android:text="Is Product Change"
                         android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/add_on_purchase_checkbox" />
-
-                <androidx.appcompat.widget.AppCompatSpinner
-                        android:id="@+id/replacement_mode_spinner"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/padding_small"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:layout_marginEnd="@dimen/padding_small"
-                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/replacement_mode_label" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/purchase_all_button"
@@ -106,7 +92,7 @@
                         android:enabled="@{isPurchaseButtonEnabled}"
                         android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/replacement_mode_spinner" />
+                        app:layout_constraintTop_toBottomOf="@+id/is_add_on_purchase_upgrade_checkbox" />
 
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/offering_details_packages_header"

@@ -50,7 +50,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
     private var packageCardAdapter: PackageCardAdapter? = null
-    private var selectedReplacementMode: GoogleReplacementMode? = null
+    private var isAddOnPurchaseUpgrade: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,14 +88,16 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.isAddOnPurchaseMode = false
         binding.isPurchaseButtonEnabled = false
 
-        setupReplacementModeSpinner()
-
         binding.addOnPurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
             binding.isAddOnPurchaseMode = isChecked
             packageCardAdapter?.setAddOnMode(isChecked)
             // Force refresh the adapter to update UI
             packageCardAdapter?.notifyDataSetChanged()
             updatePurchaseButtonState(false, false) // Reset button state when mode changes
+        }
+
+        binding.isAddOnPurchaseUpgradeCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            isAddOnPurchaseUpgrade = isChecked
         }
 
         binding.purchaseAllButton.setOnClickListener {
@@ -116,31 +118,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
 
             onAddOnPurchaseClicked(selectedPackages)
-        }
-    }
-
-    private fun setupReplacementModeSpinner() {
-        val replacementModeOptions = listOf("Default") + GoogleReplacementMode.values().map { it.name }
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            replacementModeOptions,
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.replacementModeSpinner.adapter = adapter
-        binding.replacementModeSpinner
-            .onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedReplacementMode = if (position == 0) {
-                    null // "Default" option
-                } else {
-                    GoogleReplacementMode.values()[position - 1]
-                }
-            }
-
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
-                selectedReplacementMode = null
-            }
         }
     }
 
@@ -214,6 +191,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun startAddOnPurchase(selectedPackages: List<Package>) {
         toggleLoadingIndicator(true)
+        println(this.isAddOnPurchaseUpgrade)
         val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
         val addOnPackages = selectedPackages.filter { it != basePackage }
 
@@ -223,12 +201,26 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         )
             .addOnPackages(addOnPackages = addOnPackages)
 
-        selectedReplacementMode?.let {
-            purchaseParamsBuilder.googleReplacementMode(it)
+        if (isAddOnPurchaseUpgrade) {
+            promptForProductChangeInfo { oldProductId, replacementMode ->
+                oldProductId?.let {
+                    purchaseParamsBuilder.oldProductId(it)
+
+                    replacementMode?.let {
+                        purchaseParamsBuilder.googleReplacementMode(replacementMode)
+                    }
+
+                    val purchaseParams = purchaseParamsBuilder.build()
+                    startAddOnPurchase(purchaseParams)
+                }
+            }
+        } else {
+            val purchaseParams = purchaseParamsBuilder.build()
+            startAddOnPurchase(purchaseParams)
         }
+    }
 
-        val purchaseParams = purchaseParamsBuilder.build()
-
+    private fun startAddOnPurchase(purchaseParams: PurchaseParams) {
         Purchases.sharedInstance.purchase(
             purchaseParams = purchaseParams,
             callback = object : PurchaseCallback {
