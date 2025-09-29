@@ -1,0 +1,4 @@
+/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86/CMakeFiles/revenuecat-renderscript-toolkit.dir
+/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86/CMakeFiles/cpufeatures.dir
+/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86/CMakeFiles/edit_cache.dir
+/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86/CMakeFiles/rebuild_cache.dir

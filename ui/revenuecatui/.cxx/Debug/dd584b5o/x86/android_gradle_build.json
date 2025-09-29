@@ -1,0 +1,46 @@
+{
+  "buildFiles": [
+    "/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/jaewoong/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/jaewoong/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "cpufeatures::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "cpufeatures",
+      "output": "/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/.cxx/Debug/dd584b5o/x86/libcpufeatures.a"
+    },
+    "revenuecat-renderscript-toolkit::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "revenuecat-renderscript-toolkit",
+      "output": "/Users/jaewoong/Desktop/projects/revenuecat/purchases-android/ui/revenuecatui/build/intermediates/cxx/Debug/dd584b5o/obj/x86/librevenuecat-renderscript-toolkit.so",
+      "runtimeFiles": []
+    }
+  },
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/Users/jaewoong/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/Users/jaewoong/Library/Android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": [
+    "cpp"
+  ]
+}

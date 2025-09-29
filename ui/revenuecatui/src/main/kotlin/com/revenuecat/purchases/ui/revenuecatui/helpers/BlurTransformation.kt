@@ -1,13 +1,9 @@
-import android.content.Context
 import android.graphics.Bitmap
-import android.renderscript.Allocation
-import android.renderscript.Element
-import android.renderscript.RenderScript
-import android.renderscript.ScriptIntrinsicBlur
 import androidx.annotation.VisibleForTesting
-import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import coil.size.Size
 import coil.transform.Transformation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.RenderScriptToolkit
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -20,8 +16,7 @@ import kotlin.math.roundToInt
  *                    produce a more pronounced blur effect.
  */
 internal class BlurTransformation(
-    private val context: Context,
-    private val radius: Float,
+    private val radius: Int,
 ) : Transformation {
     override val cacheKey: String = "${javaClass.name}-$radius"
 
@@ -29,42 +24,24 @@ internal class BlurTransformation(
         input: Bitmap,
         size: Size,
     ): Bitmap {
-        return input.blur(context, radius)
+        return input.blur(radius)
     }
 }
 
 private object BlurConstants {
     // max radius supported by RenderScript
-    const val maxSupportedRadius = 25f
+    const val maxSupportedRadius = 25
     const val maxImageSize = 400
 }
 
 @VisibleForTesting
-internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = true): Bitmap {
+internal fun Bitmap.blur(radius: Int, scaleDown: Boolean = true): Bitmap {
     if (radius < 1f) {
         return this@blur
     }
-    val updatedRadius = min(radius.toDouble(), BlurConstants.maxSupportedRadius.toDouble())
-
+    val updatedRadius = min(radius, BlurConstants.maxSupportedRadius)
     val bitmap = if (scaleDown) this.scaledDown() else this
-
-    val rs = RenderScript.create(context)
-    val input = Allocation.createFromBitmap(rs, bitmap)
-    val output = Allocation.createTyped(rs, input.type)
-    val script = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs))
-
-    script.setRadius(updatedRadius.toFloat())
-    script.setInput(input)
-    script.forEach(output)
-
-    val blurredBitmap = config?.let { createBitmap(bitmap.width, bitmap.height, it) }
-    output.copyTo(blurredBitmap)
-
-    input.destroy()
-    output.destroy()
-    script.destroy()
-    rs.destroy()
-
+    val blurredBitmap = RenderScriptToolkit.blur(inputBitmap = bitmap, radius = updatedRadius)
     return blurredBitmap ?: bitmap
 }
 
@@ -76,5 +53,5 @@ private fun Bitmap.scaledDown(): Bitmap {
     val width = (ratio * width).roundToInt()
     val height = (ratio * height).roundToInt()
 
-    return Bitmap.createScaledBitmap(this, width, height, true)
+    return this.scale(width, height)
 }

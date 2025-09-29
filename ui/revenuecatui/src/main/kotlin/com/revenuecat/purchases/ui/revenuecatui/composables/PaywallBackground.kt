@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -24,13 +23,14 @@ import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
     val supportsNativeBlurring = Build.VERSION.SDK_INT >= BackgroundUIConstants.minSDKVersionSupportingBlur
     val shouldBlur = templateConfiguration.configuration.blurredBackgroundImage
-    val imageAlpha = if (shouldBlur) { BackgroundUIConstants.blurAlpha } else 1.0f
+    val imageAlpha = if (shouldBlur) {
+        BackgroundUIConstants.blurAlpha
+    } else {
+        1.0f
+    }
 
     val backwardsCompatibleTransformation = if (shouldBlur && !supportsNativeBlurring) {
-        BlurTransformation(
-            context = LocalContext.current,
-            radius = BackgroundUIConstants.blurSize.toFloatPx(),
-        )
+        BlurTransformation(radius = BackgroundUIConstants.blurSize.toIntPx())
     } else {
         null
     }
@@ -71,7 +71,7 @@ private object BackgroundUIConstants {
 }
 
 @Composable
-private fun Dp.toFloatPx(): Float {
+private fun Dp.toIntPx(): Int {
     val density = LocalDensity.current.density
-    return (this.value * density)
+    return (this.value * density).toInt()
 }
