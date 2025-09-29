@@ -120,6 +120,7 @@ class PostTransactionWithProductDetailsHelperTest {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockSubsTransaction,
                 storeProduct = null,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
@@ -147,6 +148,7 @@ class PostTransactionWithProductDetailsHelperTest {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockInAppTransaction,
                 storeProduct = mockStoreProduct,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
@@ -174,6 +176,7 @@ class PostTransactionWithProductDetailsHelperTest {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockSubsTransaction,
                 storeProduct = mockStoreProduct,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
@@ -261,6 +264,7 @@ class PostTransactionWithProductDetailsHelperTest {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transaction,
                 storeProduct = storeProduct,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,

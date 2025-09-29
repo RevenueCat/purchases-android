@@ -104,6 +104,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
+                subscriptionOptionsForProductIDs = any(),
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
@@ -1269,15 +1270,17 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = inAppTransactions[0],
                 storeProduct = null,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
             )
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = subTransactions[0],
                 storeProduct = null,
+                subscriptionOptionsForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
@@ -1343,6 +1346,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = any(),
                 storeProduct = any(),
+                subscriptionOptionsForProductIDs = null,
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
@@ -1759,10 +1763,11 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         val capturedPurchasingData = purchasingDataSlot.captured
-        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.ProductWithAddOns::class.java)
-        val productWithAddOns = capturedPurchasingData as GooglePurchasingData.ProductWithAddOns
-        assertThat(productWithAddOns.baseProduct).isEqualTo(baseProduct.purchasingData)
-        assertThat(productWithAddOns.addOnProducts).isEmpty()
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        assertThat(subscription.addOnProducts).isEmpty()
         assertThat(capturedError).isNull()
     }
 
@@ -1815,15 +1820,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         val capturedPurchasingData = purchasingDataSlot.captured
-        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.ProductWithAddOns::class.java)
-        val productWithAddOns = capturedPurchasingData as GooglePurchasingData.ProductWithAddOns
-        assertThat(productWithAddOns.baseProduct).isEqualTo(baseProduct.purchasingData)
-        val capturedAddOns = productWithAddOns.addOnProducts
-        assertThat(capturedAddOns.size).isEqualTo(2)
-        assertThat(capturedAddOns.first().productId).isEqualTo("abc123")
-        assertThat(capturedAddOns.first().productType).isEqualTo(ProductType.SUBS)
-        assertThat(capturedAddOns.last().productId).isEqualTo("xyz789")
-        assertThat(capturedAddOns.last().productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        val capturedAddOns = subscription.addOnProducts
+        assertThat(capturedAddOns?.size).isEqualTo(2)
+        assertThat(capturedAddOns?.first()?.productId).isEqualTo("abc123")
+        assertThat(capturedAddOns?.first()?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedAddOns?.last()?.productId).isEqualTo("xyz789")
+        assertThat(capturedAddOns?.last()?.productType).isEqualTo(ProductType.SUBS)
         assertThat(capturedError).isNull()
     }
 
@@ -1834,7 +1840,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             activity = mockActivity,
             storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         )
-            .addOnStoreProducts(addOnStoreProducts = emptyList())
+            .addOnStoreProducts(addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData()))
             .build()
 
         for (store in Store.values()) {
