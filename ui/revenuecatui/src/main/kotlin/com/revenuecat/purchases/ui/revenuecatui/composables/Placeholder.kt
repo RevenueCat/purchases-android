@@ -31,6 +31,7 @@ import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 internal object PlaceholderDefaults {
     /**
@@ -113,8 +114,9 @@ internal fun rememberPlaceholder(
         )
     }
 
+    val inPreviewMode = isInPreviewMode()
     LaunchedEffect(key1 = placeholder) {
-        if (visible) {
+        if (visible && !inPreviewMode) {
             placeholder.startAnimation()
         } else {
             placeholder.stopAnimation()
