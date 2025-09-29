@@ -178,6 +178,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
+        CustomerCenterConfigTestData.purchaseInformationFreeTrial,
         CustomerCenterConfigTestData.purchaseInformationPromotional,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
