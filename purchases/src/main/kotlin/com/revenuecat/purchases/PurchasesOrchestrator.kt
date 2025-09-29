@@ -602,6 +602,7 @@ internal class PurchasesOrchestrator(
                                 postReceiptHelper.postTransactionAndConsumeIfNeeded(
                                     purchase = purchase,
                                     storeProduct = null,
+                                    subscriptionOptionsForProductIDs = null,
                                     isRestore = true,
                                     appUserID = appUserID,
                                     initiationSource = PostReceiptInitiationSource.RESTORE,

@@ -282,11 +282,27 @@ internal class BillingWrapper(
                 } else {
                     googlePurchasingData.productId
                 }
+
+            // Create a map that tells us which subscription option ID was purchased for a given product ID.
+            // This is required for multi-line subscriptions to set the platform_product_ids in the ReceiptInfo
+            // after the purchase has completed.
+            val subscriptionOptionIdsForProductIDs = buildMap {
+                subscriptionOptionId?.let { optionId -> put(googlePurchasingData.productId, optionId) }
+
+                (googlePurchasingData as? GooglePurchasingData.Subscription)
+                    ?.addOnProducts
+                    ?.filterIsInstance<GooglePurchasingData.Subscription>()
+                    ?.forEach { addOnProduct ->
+                        put(addOnProduct.productId, addOnProduct.optionId)
+                    }
+            }
+
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
+                subscriptionOptionIdsForProductIDs,
             )
         }
         executeRequestOnUIThread {

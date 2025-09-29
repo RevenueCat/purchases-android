@@ -3,8 +3,12 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.Transaction
 
 /**
  * This class will post store transactions after querying the product details to enrich the data.
@@ -48,10 +52,29 @@ internal class PostTransactionWithProductDetailsHelper(
                                     product.id == transaction.productIds.firstOrNull()
                                 }
                             }
+
+                        val subscriptionOptionsForGoogleProductIDs = transaction.subscriptionOptionIdsForProductIDs?.let { subscriptionOptionIds ->
+                            val googleProductsMap = storeProducts
+                                .filterIsInstance<GoogleStoreProduct>()
+                                .associateBy { "${it.productId}_${it.basePlanId}" }
+
+                            buildMap {
+                                subscriptionOptionIds.forEach { (productId, subscriptionOptionId) ->
+                                    googleProductsMap["${productId}_${subscriptionOptionId}"]
+                                        ?.subscriptionOptions
+                                        ?.firstOrNull { it.id == subscriptionOptionId }
+                                        ?.let { subscriptionOption ->
+                                            put(productId, subscriptionOption)
+                                        }
+                                }
+                            }
+                        }
+
                         debugLog { "Store product found for transaction: $purchasedStoreProduct" }
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = purchasedStoreProduct,
+                            subscriptionOptionsForProductIDs = subscriptionOptionsForGoogleProductIDs,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,
@@ -63,6 +86,7 @@ internal class PostTransactionWithProductDetailsHelper(
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = null,
+                            subscriptionOptionsForProductIDs = null,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,

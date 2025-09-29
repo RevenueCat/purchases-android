@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
@@ -82,6 +83,7 @@ internal class PostReceiptHelper(
     fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,
+        subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>?,
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
@@ -93,6 +95,7 @@ internal class PostReceiptHelper(
             presentedOfferingContext = purchase.presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
+            subscriptionOptionsForProductIDs = subscriptionOptionsForProductIDs,
             replacementMode = purchase.replacementMode,
         )
         postReceiptAndSubscriberAttributes(
