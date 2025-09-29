@@ -128,6 +128,6 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
             id,
             productDetails,
             offerToken,
-            addOnProducts = emptyList(), // TODO: See if we should expose this in GoogleSubscriptionOption
+            addOnProducts = emptyList(),
         )
 }

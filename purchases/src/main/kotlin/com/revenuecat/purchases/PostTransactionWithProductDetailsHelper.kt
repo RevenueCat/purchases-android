@@ -5,10 +5,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.models.Transaction
 
 /**
  * This class will post store transactions after querying the product details to enrich the data.
@@ -21,7 +18,7 @@ internal class PostTransactionWithProductDetailsHelper(
     /**
      * The callbacks in this method are called for each transaction in the list.
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     fun postTransactions(
         transactions: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
@@ -53,22 +50,23 @@ internal class PostTransactionWithProductDetailsHelper(
                                 }
                             }
 
-                        val subscriptionOptionsForGoogleProductIDs = transaction.subscriptionOptionIdsForProductIDs?.let { subscriptionOptionIds ->
-                            val googleProductsMap = storeProducts
-                                .filterIsInstance<GoogleStoreProduct>()
-                                .associateBy { "${it.productId}_${it.basePlanId}" }
+                        val subscriptionOptionsForGoogleProductIDs = transaction
+                            .subscriptionOptionIdsForProductIDs?.let { subscriptionOptionIds ->
+                                val googleProductsMap = storeProducts
+                                    .filterIsInstance<GoogleStoreProduct>()
+                                    .associateBy { "${it.productId}_${it.basePlanId}" }
 
-                            buildMap {
-                                subscriptionOptionIds.forEach { (productId, subscriptionOptionId) ->
-                                    googleProductsMap["${productId}_${subscriptionOptionId}"]
-                                        ?.subscriptionOptions
-                                        ?.firstOrNull { it.id == subscriptionOptionId }
-                                        ?.let { subscriptionOption ->
-                                            put(productId, subscriptionOption)
-                                        }
+                                buildMap {
+                                    subscriptionOptionIds.forEach { (productId, subscriptionOptionId) ->
+                                        googleProductsMap["${productId}_$subscriptionOptionId"]
+                                            ?.subscriptionOptions
+                                            ?.firstOrNull { it.id == subscriptionOptionId }
+                                            ?.let { subscriptionOption ->
+                                                put(productId, subscriptionOption)
+                                            }
+                                    }
                                 }
                             }
-                        }
 
                         debugLog { "Store product found for transaction: $purchasedStoreProduct" }
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
