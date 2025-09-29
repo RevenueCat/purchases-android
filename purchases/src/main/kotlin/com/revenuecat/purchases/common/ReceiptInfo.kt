@@ -16,6 +16,7 @@ constructor(
     val productIDs: List<String>,
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val subscriptionOptionId: String? = null,
+    val subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>? = null,
     val storeProduct: StoreProduct? = null,
 
     val price: Double? = storeProduct?.price?.amountMicros?.div(MICRO_MULTIPLIER),
@@ -55,11 +56,15 @@ constructor(
             // a StoreProduct
             // We want the PlatformProductID with most info (like GooglePlatformProductId from a SubscriptionOption)
             // so this logic prevents duplicate productIds (PlatformProductID) from being returned
-            val platformProductIds = productIDs
+            val platformProductIds: List<PlatformProductId> = productIDs
                 .filter { it != storeProductPlatformProductId?.productId }
-                .map { PlatformProductId(it) }
+                .map { productId ->
+                    subscriptionOptionsForProductIDs
+                        ?.get(productId)?.platformProductId()
+                        ?: PlatformProductId(productId)
+                }
 
-            return platformProductIds + listOfNotNull(storeProductPlatformProductId)
+            return listOfNotNull(storeProductPlatformProductId) + platformProductIds
         }
 
     override fun hashCode(): Int {

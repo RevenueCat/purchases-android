@@ -17,6 +17,7 @@ sealed class GooglePurchasingData : PurchasingData {
         val optionId: String,
         val productDetails: ProductDetails,
         val token: String,
+        val addOnProducts: List<GooglePurchasingData>?,
     ) : GooglePurchasingData()
 
     override val productType: ProductType
@@ -27,19 +28,5 @@ sealed class GooglePurchasingData : PurchasingData {
             is Subscription -> {
                 ProductType.SUBS
             }
-            is ProductWithAddOns -> {
-                // Can be either INAPP or SUBS. Since all of the types in the
-                // multi-line purchase must match, we use the type from the
-                // base product.
-                baseProduct.productType
-            }
         }
-
-    @Poko
-    class ProductWithAddOns(
-        override val productId: String,
-        val baseProduct: GooglePurchasingData,
-        val addOnProducts: List<GooglePurchasingData>,
-        val replacementMode: GoogleReplacementMode,
-    ) : GooglePurchasingData()
 }

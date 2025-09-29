@@ -12,6 +12,7 @@ internal fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingContext: PresentedOfferingContext? = null,
     subscriptionOptionId: String? = null,
+    subscriptionOptionIdsForProductIDs: Map<String, String>? = null,
     replacementMode: GoogleReplacementMode? = null,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
@@ -28,6 +29,7 @@ internal fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
+    subscriptionOptionIdsForProductIDs = subscriptionOptionIdsForProductIDs,
     replacementMode = replacementMode,
 )
 
@@ -36,6 +38,7 @@ internal fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): Stor
         purchaseContext.productType,
         purchaseContext.presentedOfferingContext,
         purchaseContext.selectedSubscriptionOptionId,
+        purchaseContext.subscriptionOptionIdsForProductIDs,
         purchaseContext.replacementMode,
     )
 

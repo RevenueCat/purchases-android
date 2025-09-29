@@ -164,7 +164,7 @@ class PurchaseParamsTest {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `addOnStoreProducts with empty list correctly sets purchasingData to ProductWithAddOns`() {
+    fun `addOnStoreProducts with empty list correctly sets purchasingData to Subscription`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
             .addOnStoreProducts(addOnStoreProducts = emptyList())
@@ -178,7 +178,7 @@ class PurchaseParamsTest {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `addOnPackages with empty list correctly sets purchasingData to ProductWithAddOns`() {
+    fun `addOnPackages with empty list correctly sets purchasingData to Subscription`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
             .addOnPackages(addOnPackages = emptyList())
@@ -194,19 +194,16 @@ class PurchaseParamsTest {
         purchasingData: PurchasingData,
         baseProduct: StoreProduct
     ) {
-        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.ProductWithAddOns::class)
-        val productWithAddOns = purchasingData as GooglePurchasingData.ProductWithAddOns
-        assertThat(productWithAddOns.addOnProducts).isEmpty()
-        assertThat(productWithAddOns.productId).isEqualTo(baseProduct.purchasingData.productId)
-        assertThat(productWithAddOns.productType).isEqualTo(ProductType.SUBS)
-        assertThat(productWithAddOns.baseProduct.productId).isEqualTo(baseProduct.purchasingData.productId)
-        assertThat(productWithAddOns.baseProduct.productType).isEqualTo(ProductType.SUBS)
-        assertThat(productWithAddOns.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
+        val subscription = purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.addOnProducts).isEmpty()
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(ProductType.SUBS)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `addOnStoreProducts with add-ons provided correctly sets purchasingData to ProductWithAddOns`() {
+    fun `addOnStoreProducts with add-ons provided correctly sets purchasingData to Subscription`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val addOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
 
@@ -223,7 +220,7 @@ class PurchaseParamsTest {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `addOnPackages with add-ons provided correctly sets purchasingData to ProductWithAddOns`() {
+    fun `addOnPackages with add-ons provided correctly sets purchasingData to Subscription`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val addOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
         val aPackage = Package(
@@ -248,15 +245,12 @@ class PurchaseParamsTest {
         baseProduct: StoreProduct,
         addOn: StoreProduct
     ) {
-        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.ProductWithAddOns::class)
-        val productWithAddOns = purchasingData as GooglePurchasingData.ProductWithAddOns
-        assertThat(productWithAddOns.productId).isEqualTo(baseProduct.purchasingData.productId)
-        assertThat(productWithAddOns.productType).isEqualTo(ProductType.SUBS)
-        assertThat(productWithAddOns.baseProduct.productId).isEqualTo(baseProduct.purchasingData.productId)
-        assertThat(productWithAddOns.baseProduct.productType).isEqualTo(ProductType.SUBS)
-        assertThat(productWithAddOns.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
-        assertThat(productWithAddOns.addOnProducts.size).isEqualTo(1)
-        val addOnProduct = productWithAddOns.addOnProducts.first()
+        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
+        val subscription = purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(ProductType.SUBS)
+        assertThat(subscription.addOnProducts?.size).isEqualTo(1)
+        val addOnProduct = subscription.addOnProducts!!.first()
         assertThat(addOnProduct).isEqualTo(addOn.purchasingData)
     }
 

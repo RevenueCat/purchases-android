@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.GooglePlatformProductId
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
@@ -14,9 +15,12 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -143,6 +147,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
@@ -183,6 +188,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -216,6 +222,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -239,6 +246,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -261,6 +269,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -288,6 +297,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -314,6 +324,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -336,6 +347,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -360,6 +372,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -384,6 +397,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -409,6 +423,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -433,6 +448,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -459,6 +475,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -482,6 +499,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -501,6 +519,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -521,6 +540,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -555,6 +575,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -582,6 +603,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -609,6 +631,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -642,6 +665,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -661,6 +685,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -678,6 +703,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -695,6 +721,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -713,6 +740,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockInAppProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -730,6 +758,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -761,6 +790,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = purchase,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -778,6 +808,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -795,6 +826,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -817,6 +849,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -1437,6 +1470,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
@@ -1470,6 +1504,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
@@ -1492,6 +1527,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -1518,6 +1554,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -1544,6 +1581,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = initiationSource,
@@ -1570,6 +1608,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = initiationSource,

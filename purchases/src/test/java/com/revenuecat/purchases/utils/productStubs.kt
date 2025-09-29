@@ -358,7 +358,8 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
                 productId = productId,
                 optionId = optionId,
                 productDetails = productDetails,
-                token = token
+                token = token,
+                addOnProducts = emptyList()
             )
     }
 
@@ -368,7 +369,8 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
                 productId = productId,
                 optionId = optionId,
                 productDetails = productDetails,
-                token = token
+                token = token,
+                addOnProducts = emptyList()
             )
         val storeProduct: GoogleStoreProduct?
             get() = mockk()

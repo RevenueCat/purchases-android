@@ -982,24 +982,14 @@ package com.revenuecat.purchases.models {
     property public String productId;
   }
 
-  @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.ProductWithAddOns extends com.revenuecat.purchases.models.GooglePurchasingData {
-    ctor public GooglePurchasingData.ProductWithAddOns(String productId, com.revenuecat.purchases.models.GooglePurchasingData baseProduct, java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData> addOnProducts, com.revenuecat.purchases.models.GoogleReplacementMode replacementMode);
-    method public java.util.List<com.revenuecat.purchases.models.GooglePurchasingData> getAddOnProducts();
-    method public com.revenuecat.purchases.models.GooglePurchasingData getBaseProduct();
-    method public String getProductId();
-    method public com.revenuecat.purchases.models.GoogleReplacementMode getReplacementMode();
-    property public final java.util.List<com.revenuecat.purchases.models.GooglePurchasingData> addOnProducts;
-    property public final com.revenuecat.purchases.models.GooglePurchasingData baseProduct;
-    property public String productId;
-    property public final com.revenuecat.purchases.models.GoogleReplacementMode replacementMode;
-  }
-
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
-    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
+    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
+    method public java.util.List<com.revenuecat.purchases.models.GooglePurchasingData>? getAddOnProducts();
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
     method public String getToken();
+    property public final java.util.List<com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts;
     property public final String optionId;
     property public final com.android.billingclient.api.ProductDetails productDetails;
     property public String productId;
@@ -1255,6 +1245,7 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
     ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
+    ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdsForProductIDs, com.revenuecat.purchases.ReplacementMode? replacementMode);
     ctor @Deprecated public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, String? presentedOfferingIdentifier, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     method public String? getMarketplace();
     method public String? getOrderId();
@@ -1271,6 +1262,7 @@ package com.revenuecat.purchases.models {
     method @Deprecated public java.util.List<java.lang.String> getSkus();
     method public String? getStoreUserID();
     method public String? getSubscriptionOptionId();
+    method public java.util.Map<java.lang.String,java.lang.String>? getSubscriptionOptionIdsForProductIDs();
     method public com.revenuecat.purchases.ProductType getType();
     method public Boolean? isAutoRenewing();
     property public final Boolean? isAutoRenewing;
@@ -1289,6 +1281,7 @@ package com.revenuecat.purchases.models {
     property @Deprecated @kotlinx.parcelize.IgnoredOnParcel public final java.util.List<java.lang.String> skus;
     property public final String? storeUserID;
     property public final String? subscriptionOptionId;
+    property public final java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdsForProductIDs;
     property public final com.revenuecat.purchases.ProductType type;
   }
 

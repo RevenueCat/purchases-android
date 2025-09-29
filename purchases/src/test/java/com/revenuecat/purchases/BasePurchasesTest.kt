@@ -242,6 +242,7 @@ internal open class BasePurchasesTest {
                 postTransactionAndConsumeIfNeeded(
                     purchase = any(),
                     storeProduct = any(),
+                    subscriptionOptionsForProductIDs = any(),
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
@@ -560,11 +561,17 @@ internal open class BasePurchasesTest {
             acknowledged = acknowledged
         )
 
+        val subscriptionOptionIdsForProductIDs =
+            subscriptionOptionId
+                ?.takeIf { productType == ProductType.SUBS }
+                ?.let { mapOf(productId to it) }
+
         return listOf(
             p.toStoreTransaction(
                 productType,
                 presentedOfferingContext,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
+                if (productType == ProductType.SUBS) subscriptionOptionId else null,
+                subscriptionOptionIdsForProductIDs
             )
         )
     }
