@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
+import com.emergetools.snapshots.runtime.LocalEmergeSnapshotMode
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -214,13 +214,14 @@ private class LoadingViewModel(
     override fun clearActionError() = Unit
 }
 
-@EmergeSnapshotConfig(precision = 0.95f)
 @Preview(showBackground = true)
 @Composable
 internal fun LoadingPaywallPreview() {
-    LoadingPaywall(
-        mode = PaywallMode.FULL_SCREEN,
-        shouldDisplayDismissButton = false,
-        onDismiss = {},
-    )
+    if (LocalEmergeSnapshotMode.current) {
+        LoadingPaywall(
+            mode = PaywallMode.FULL_SCREEN,
+            shouldDisplayDismissButton = false,
+            onDismiss = {},
+        )
+    }
 }
