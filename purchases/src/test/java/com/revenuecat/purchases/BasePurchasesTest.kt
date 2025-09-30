@@ -561,7 +561,7 @@ internal open class BasePurchasesTest {
             acknowledged = acknowledged
         )
 
-        val subscriptionOptionIdsForProductIDs =
+        val subscriptionOptionIdForProductIDs =
             subscriptionOptionId
                 ?.takeIf { productType == ProductType.SUBS }
                 ?.let { mapOf(productId to it) }
@@ -571,7 +571,7 @@ internal open class BasePurchasesTest {
                 productType,
                 presentedOfferingContext,
                 if (productType == ProductType.SUBS) subscriptionOptionId else null,
-                subscriptionOptionIdsForProductIDs
+                subscriptionOptionIdForProductIDs
             )
         )
     }

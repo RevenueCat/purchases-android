@@ -200,7 +200,7 @@ class PostTransactionWithProductDetailsHelperTest {
         val mockTransaction = createTransaction(
             ProductType.SUBS,
             productIDs = listOf(productID, productID2),
-            subscriptionOptionIdsForProductIDs = mapOf(
+            subscriptionOptionIdForProductIDs = mapOf(
                 productID to subscriptionOptionId,
                 productID2 to subscriptionOptionId2
             )
@@ -288,7 +288,7 @@ class PostTransactionWithProductDetailsHelperTest {
         type: ProductType = ProductType.SUBS,
         productID: String = this.productID,
         productIDs: List<String>? = null,
-        subscriptionOptionIdsForProductIDs: Map<String, String>? = null,
+        subscriptionOptionIdForProductIDs: Map<String, String>? = null,
     ): StoreTransaction {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
@@ -298,7 +298,7 @@ class PostTransactionWithProductDetailsHelperTest {
         return purchase.toStoreTransaction(
             type,
             subscriptionOptionId = subscriptionOptionId,
-            subscriptionOptionIdsForProductIDs = subscriptionOptionIdsForProductIDs
+            subscriptionOptionIdForProductIDs = subscriptionOptionIdForProductIDs
         )
     }
 

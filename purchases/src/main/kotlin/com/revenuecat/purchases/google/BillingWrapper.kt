@@ -55,7 +55,6 @@ import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GooglePurchasingData.InAppProduct
 import com.revenuecat.purchases.models.GooglePurchasingData.Subscription
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -286,7 +285,7 @@ internal class BillingWrapper(
             // Create a map that tells us which subscription option ID was purchased for a given product ID.
             // This is required for multi-line subscriptions to set the platform_product_ids in the ReceiptInfo
             // after the purchase has completed.
-            val subscriptionOptionIdsForProductIDs = buildMap {
+            val subscriptionOptionIdForProductIDs = buildMap {
                 subscriptionOptionId?.let { optionId -> put(googlePurchasingData.productId, optionId) }
 
                 (googlePurchasingData as? GooglePurchasingData.Subscription)
@@ -302,7 +301,7 @@ internal class BillingWrapper(
                 presentedOfferingContext,
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
-                subscriptionOptionIdsForProductIDs,
+                subscriptionOptionIdForProductIDs,
             )
         }
         executeRequestOnUIThread {
