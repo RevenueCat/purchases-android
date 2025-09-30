@@ -72,6 +72,7 @@ class TabsComponentViewTests {
     val composeTestRule = createComposeRule()
 
     private val defaultLocaleIdentifier = LocaleId("en_US")
+    private val testAssetBaseURL = URL("https://assets.pawwalls.com")
 
     @Test
     fun `Should properly update selected state of tab control button children`(): Unit = with(composeTestRule) {
@@ -141,7 +142,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -319,7 +320,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -1154,7 +1155,7 @@ class TabsComponentViewTests {
     ): PaywallComponentsData =
         PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = rootStack,
@@ -1358,7 +1359,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -1457,7 +1458,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -1554,7 +1555,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
