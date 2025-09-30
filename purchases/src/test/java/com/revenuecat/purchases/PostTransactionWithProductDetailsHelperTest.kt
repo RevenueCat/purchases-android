@@ -189,7 +189,7 @@ class PostTransactionWithProductDetailsHelperTest {
             )
         }
     }
-    
+
     @Test
     fun `if multi-line subscription, txn is posted with product information and correct subscription options`() {
         val product1 = mockGoogleStoreProduct(productID, subscriptionOptionId)
