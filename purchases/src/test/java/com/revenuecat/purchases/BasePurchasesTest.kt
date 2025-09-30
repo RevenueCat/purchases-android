@@ -242,7 +242,7 @@ internal open class BasePurchasesTest {
                 postTransactionAndConsumeIfNeeded(
                     purchase = any(),
                     storeProduct = any(),
-                    subscriptionOptionsForProductIDs = any(),
+                    subscriptionOptionForProductIDs = any(),
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),

@@ -83,7 +83,7 @@ internal class PostReceiptHelper(
     fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,
-        subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>?,
+        subscriptionOptionForProductIDs: Map<String, SubscriptionOption>?,
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
@@ -95,7 +95,7 @@ internal class PostReceiptHelper(
             presentedOfferingContext = purchase.presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
-            subscriptionOptionsForProductIDs = subscriptionOptionsForProductIDs,
+            subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
             replacementMode = purchase.replacementMode,
         )
         postReceiptAndSubscriberAttributes(

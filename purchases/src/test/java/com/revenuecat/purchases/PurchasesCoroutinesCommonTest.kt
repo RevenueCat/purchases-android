@@ -268,7 +268,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = storeTransaction,
                 storeProduct = any(),
-                subscriptionOptionsForProductIDs = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = PostReceiptInitiationSource.RESTORE,

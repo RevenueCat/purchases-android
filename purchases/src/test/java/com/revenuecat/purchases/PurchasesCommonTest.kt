@@ -273,7 +273,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = oldPurchase,
                 storeProduct = any(),
-                subscriptionOptionsForProductIDs = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
@@ -562,7 +562,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                     purchase = transaction,
                     storeProduct = any(),
-                    subscriptionOptionsForProductIDs = null,
+                    subscriptionOptionForProductIDs = null,
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
@@ -580,7 +580,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedInApps[0],
                 storeProduct = match { it.purchasingData.productId == inAppProductId },
-                subscriptionOptionsForProductIDs = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
@@ -590,7 +590,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedSubs[0],
                 storeProduct = match { it.purchasingData.productId == subProductId },
-                subscriptionOptionsForProductIDs = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
@@ -609,7 +609,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = any(),
                 storeProduct = any(),
-                subscriptionOptionsForProductIDs = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
@@ -1122,7 +1122,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = null,
-                subscriptionOptionsForProductIDs = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
@@ -1810,7 +1810,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
-                subscriptionOptionsForProductIDs = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
@@ -1834,7 +1834,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
-                subscriptionOptionsForProductIDs = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,

@@ -72,7 +72,7 @@ internal class PostTransactionWithProductDetailsHelper(
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = purchasedStoreProduct,
-                            subscriptionOptionsForProductIDs = subscriptionOptionsForGoogleProductIDs,
+                            subscriptionOptionForProductIDs = subscriptionOptionsForGoogleProductIDs,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,
@@ -84,7 +84,7 @@ internal class PostTransactionWithProductDetailsHelper(
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = null,
-                            subscriptionOptionsForProductIDs = null,
+                            subscriptionOptionForProductIDs = null,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,
