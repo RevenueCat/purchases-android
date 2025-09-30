@@ -121,6 +121,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         )
     }
 
+    @JvmName("launchWithOfferingId")
     @InternalRevenueCatAPI
     @JvmOverloads
     fun launch(
@@ -245,6 +246,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         }
     }
 
+    @JvmName("launchIfNeededWithOfferingId")
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
