@@ -113,6 +113,7 @@ dependencies {
     implementation(libs.compose.material)
     implementation(libs.compose.material3)
     implementation(libs.compose.material3Adaptive)
+    implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.constraintlayout)
     implementation(libs.activity.compose)
     implementation(libs.compose.ui.google.fonts)

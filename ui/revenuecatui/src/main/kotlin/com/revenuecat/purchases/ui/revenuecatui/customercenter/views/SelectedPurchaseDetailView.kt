@@ -24,9 +24,13 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCen
 internal fun SelectedPurchaseDetailView(
     contactEmail: String?,
     localization: CustomerCenterConfigData.Localization,
+    appearance: CustomerCenterConfigData.Appearance,
     purchaseInformation: PurchaseInformation,
     supportedPaths: List<HelpPath>,
     modifier: Modifier = Modifier,
+    shouldShowAccountDetails: Boolean = false,
+    originalAppUserId: String? = null,
+    originalPurchaseDate: String? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
@@ -55,6 +59,14 @@ internal fun SelectedPurchaseDetailView(
             contactEmail = contactEmail,
             onAction = onAction,
         )
+
+        if (shouldShowAccountDetails && (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)) {
+            AccountDetailsSection(
+                appUserId = originalAppUserId,
+                appearance = appearance,
+                modifier = Modifier.padding(bottom = CustomerCenterConstants.Layout.SECTION_SPACING),
+            )
+        }
     }
 }
 
@@ -73,9 +85,13 @@ private fun SelectedPurchaseDetailViewPreview() {
         SelectedPurchaseDetailView(
             contactEmail = testData.support.email,
             localization = testData.localization,
+            appearance = testData.appearance,
             purchaseInformation = purchaseInfo,
             supportedPaths = managementScreen.paths,
             onAction = {},
+            shouldShowAccountDetails = true,
+            originalAppUserId = "user-123",
+            originalPurchaseDate = "May 4, 2024",
         )
     }
 }

@@ -186,6 +186,7 @@ internal class CustomerCenterViewModelImpl(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+    private var latestCustomerInfo: CustomerInfo? = null
 
     override fun pathButtonPressed(
         context: Context,
@@ -529,6 +530,7 @@ internal class CustomerCenterViewModelImpl(
         localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+        latestCustomerInfo = customerInfo
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
@@ -830,6 +832,17 @@ internal class CustomerCenterViewModelImpl(
                 null
             }
 
+            val originalAppUserId = latestCustomerInfo?.originalAppUserId?.takeIf { it.isNotBlank() }
+            val originalPurchaseDate = latestCustomerInfo?.originalPurchaseDate?.let {
+                dateFormatter.format(
+                    it,
+                    locale,
+                )
+            }
+            val shouldShowUserDetailsSection =
+                customerCenterConfigData.support.displayUserDetailsSection &&
+                    (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)
+
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
                 try {
@@ -846,6 +859,9 @@ internal class CustomerCenterViewModelImpl(
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
+                originalAppUserId = originalAppUserId,
+                originalPurchaseDate = originalPurchaseDate,
+                shouldShowUserDetailsSection = shouldShowUserDetailsSection,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 

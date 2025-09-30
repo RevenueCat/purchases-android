@@ -146,6 +146,7 @@ class CustomerCenterConfigDataTest {
     fun `Support email is correctly set`() {
         val support = CustomerCenterConfigData.Support(email = "support@example.com")
         assertThat(support.email).isEqualTo("support@example.com")
+        assertThat(support.displayUserDetailsSection).isTrue()
     }
 
     @Test

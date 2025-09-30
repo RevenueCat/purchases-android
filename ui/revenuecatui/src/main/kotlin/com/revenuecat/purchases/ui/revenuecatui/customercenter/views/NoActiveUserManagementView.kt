@@ -45,6 +45,9 @@ internal fun NoActiveUserManagementView(
     localization: CustomerCenterConfigData.Localization,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
+    shouldShowAccountDetails: Boolean = false,
+    originalAppUserId: String? = null,
+    originalPurchaseDate: String? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -96,6 +99,14 @@ internal fun NoActiveUserManagementView(
             addContactButton = true,
             onAction = onAction,
         )
+
+        if (shouldShowAccountDetails && (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)) {
+            AccountDetailsSection(
+                appUserId = originalAppUserId,
+                appearance = appearance,
+                modifier = Modifier.padding(bottom = ManagementViewHorizontalPadding),
+            )
+        }
     }
 }
 
@@ -163,6 +174,9 @@ private fun NoActiveUserManagementView_Preview() {
                 localization = testData.localization,
                 offering = null, // No offering in preview
                 onAction = { },
+                shouldShowAccountDetails = true,
+                originalAppUserId = "user-123",
+                originalPurchaseDate = "May 4, 2024",
             )
         }
     }
@@ -195,6 +209,9 @@ private fun NoActiveUserManagementView_WithVCs_Preview() {
                 offering = null, // No offering in preview
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
                 onAction = { },
+                shouldShowAccountDetails = true,
+                originalAppUserId = "user-123",
+                originalPurchaseDate = "May 4, 2024",
             )
         }
     }
