@@ -897,7 +897,7 @@ internal class BillingWrapper(
     }
 
     private fun buildSubscriptionPurchaseParams(
-        purchaseInfo: Subscription,
+        purchaseInfo: GooglePurchasingData.Subscription,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,

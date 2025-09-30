@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PurchasingData
@@ -33,12 +34,12 @@ internal fun validateAndFilterCompatibleAddOnProducts(
     addOnProducts: List<StoreProduct>,
 ): List<GooglePurchasingData> {
     if (baseProductPurchasingData !is GooglePurchasingData.Subscription) {
-        throw PurchasesException(
-            PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
-                "Add-ons are currently only supported for Google subscriptions.",
-            ),
-        )
+        val error = PurchasesError(
+            PurchasesErrorCode.PurchaseInvalidError,
+            "Add-ons are currently only supported for Google subscriptions.",
+        ).also { errorLog(it) }
+
+        throw PurchasesException(error)
     }
     val addOnProductsWithSameProductType: MutableList<GooglePurchasingData> = ArrayList()
     val billingPeriods = mutableSetOf<Period>()
@@ -54,22 +55,22 @@ internal fun validateAndFilterCompatibleAddOnProducts(
     }
 
     if (addOnProductsWithSameProductType.count() > MAX_NUMBER_OF_ADD_ON_PRODUCTS) {
-        throw PurchasesException(
-            PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
-                "Multi-line purchases cannot contain more than ${MAX_NUMBER_OF_ADD_ON_PRODUCTS + 1} products " +
-                    "(1 base + $MAX_NUMBER_OF_ADD_ON_PRODUCTS add-ons).",
-            ),
-        )
+        val error = PurchasesError(
+            PurchasesErrorCode.PurchaseInvalidError,
+            "Multi-line purchases cannot contain more than ${MAX_NUMBER_OF_ADD_ON_PRODUCTS + 1} products " +
+                "(1 base + $MAX_NUMBER_OF_ADD_ON_PRODUCTS add-ons).",
+        ).also { errorLog(it) }
+
+        throw PurchasesException(error)
     }
 
     if (billingPeriods.size > 1) {
-        throw PurchasesException(
-            PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
-                "All items in a multi-line purchase must have the same billing period.",
-            ),
-        )
+        val error = PurchasesError(
+            PurchasesErrorCode.PurchaseInvalidError,
+            "All items in a multi-line purchase must have the same billing period.",
+        ).also { errorLog(it) }
+
+        throw PurchasesException(error)
     }
 
     return addOnProductsWithSameProductType
