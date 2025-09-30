@@ -121,8 +121,9 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         )
     }
 
+    @JvmName("launchWithOfferingId")
     @InternalRevenueCatAPI
-    @JvmSynthetic
+    @JvmOverloads
     fun launch(
         offeringIdentifier: String,
         presentedOfferingContext: PresentedOfferingContext,
@@ -245,9 +246,10 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         }
     }
 
+    @JvmName("launchIfNeededWithOfferingId")
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
-    @JvmSynthetic
+    @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
@@ -264,10 +266,12 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                            offeringId = offeringIdentifier,
-                            presentedOfferingContext = presentedOfferingContext,
-                        ),
+                        offeringIdAndPresentedOfferingContext = offeringIdentifier?.let {
+                            OfferingSelection.IdAndPresentedOfferingContext(
+                                offeringId = it,
+                                presentedOfferingContext = presentedOfferingContext,
+                            )
+                        },
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
