@@ -407,6 +407,7 @@ package com.revenuecat.purchases {
     method public void setAd(String? ad);
     method public void setAdGroup(String? adGroup);
     method public void setAdjustID(String? adjustID);
+    method public void setAirbridgeDeviceID(String? airbridgeDeviceID);
     method public void setAirshipChannelID(String? airshipChannelID);
     method @Deprecated @kotlin.jvm.Synchronized public void setAllowSharingPlayStoreAccount(boolean);
     method public void setAppsflyerID(String? appsflyerID);
