@@ -85,6 +85,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -722,7 +723,7 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
     }
 
 private val ComponentStyle.ignoreTopWindowInsets: Boolean
-    get() = this is ImageComponentStyle && ignoreTopWindowInsets
+    get() = (this is ImageComponentStyle || this is VideoComponentStyle) && ignoreTopWindowInsets
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)

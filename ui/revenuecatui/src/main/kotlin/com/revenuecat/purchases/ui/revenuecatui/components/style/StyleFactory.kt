@@ -157,19 +157,19 @@ internal class StyleFactory(
             /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
-            private var stillLookingForHeaderImage = true
+            private var stillLookingForHeaderMedia = true
 
             /**
              * This will be called for every component in the tree, and will determine whether we have a header image
-             * that needs special top-window-insets treatment. A header image is found if the first non-container
-             * component is an image component with a Fill width and a ZLayer parent stack.
+             * or video that needs special top-window-insets treatment. A header image is found if the first
+             * non-container component is an image component with a Fill width and a ZLayer parent stack.
              */
-            fun handleHeaderImageWindowInsets(component: PaywallComponent) {
+            fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
-                    is StackComponent -> if (stillLookingForHeaderImage) {
+                    is StackComponent -> if (stillLookingForHeaderMedia) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderImage == true
+                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderMedia == true
                                 topWindowInsetsApplied
                             }
 
@@ -180,18 +180,37 @@ internal class StyleFactory(
                     }
 
                     is ImageComponent -> {
-                        if (stillLookingForHeaderImage) {
+                        if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
                         }
-                        stillLookingForHeaderImage = false
+                        stillLookingForHeaderMedia = false
                     }
 
-                    else -> stillLookingForHeaderImage = false
+                    is VideoComponent -> {
+                        if (stillLookingForHeaderMedia) {
+                            ignoreTopWindowInsets = component.isHeaderVideo
+                        }
+                        stillLookingForHeaderMedia = false
+                    }
+
+                    else -> stillLookingForHeaderMedia = false
                 }
             }
 
+            private val PaywallComponent.isHeaderMedia: Boolean
+                get() = isHeaderImage || isHeaderVideo
+
             private val PaywallComponent.isHeaderImage: Boolean
                 get() = this is ImageComponent &&
+                    when (size.width) {
+                        is SizeConstraint.Fill -> true
+                        is SizeConstraint.Fit,
+                        is SizeConstraint.Fixed,
+                        -> false
+                    }
+
+            private val PaywallComponent.isHeaderVideo: Boolean
+                get() = this is VideoComponent &&
                     when (size.width) {
                         is SizeConstraint.Fill -> true
                         is SizeConstraint.Fit,
@@ -309,7 +328,7 @@ internal class StyleFactory(
                 }
             }
 
-            windowInsetsState.handleHeaderImageWindowInsets(component)
+            windowInsetsState.handleHeaderMediaViewWindowInsets(component)
         }
 
         /**
