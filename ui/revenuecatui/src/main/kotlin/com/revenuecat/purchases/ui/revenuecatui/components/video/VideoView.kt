@@ -67,7 +67,7 @@ internal fun VideoView(
  */
 @SuppressLint("ViewConstructor")
 @Suppress("TooManyFunctions")
-internal class TextureVideoView @JvmOverloads constructor(
+private class TextureVideoView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     private val showControls: Boolean,
