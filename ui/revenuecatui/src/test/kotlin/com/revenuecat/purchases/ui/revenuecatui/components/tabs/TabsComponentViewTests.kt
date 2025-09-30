@@ -1403,4 +1403,198 @@ class TabsComponentViewTests {
         // Verify that the selected tab index in state is 1
         assert(state.selectedTabIndex == 1) { "Expected selectedTabIndex to be 1, but was ${state.selectedTabIndex}" }
     }
+
+    @Test
+    fun `Should fall back to first tab when defaultTabId is null`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+
+        val tab0Key = LocalizationKey("tab0")
+        val tab1Key = LocalizationKey("tab1")
+        val tab0Text = LocalizationData.Text("Tab 0 content")
+        val tab1Text = LocalizationData.Text("Tab 1 content")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                tab0Key to tab0Text,
+                tab1Key to tab1Text,
+            )
+        )
+
+        val tabsComponent = TabsComponent(
+            defaultTabId = null, // Should fall back to first tab
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "tab_zero",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab0Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_one",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab1Key, color = textColor)
+                    ))
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = listOf(
+                    TabControlButtonComponent(
+                        tabIndex = 0,
+                        tabId = "tab_zero",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 1,
+                        tabId = "tab_one",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                ))
+            )
+        )
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        // Act
+        setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+
+        // Assert - Tab 0 (first tab) should be selected by default when defaultTabId is null
+        onNodeWithText(tab0Text.value)
+            .assertIsDisplayed()
+        onNodeWithText(tab1Text.value)
+            .assertIsNotDisplayed()
+
+        // Verify that the selected tab index in state is 0
+        assert(state.selectedTabIndex == 0) { "Expected selectedTabIndex to be 0, but was ${state.selectedTabIndex}" }
+    }
+
+    @Test
+    fun `Should fall back to first tab when defaultTabId is blank`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+
+        val tab0Key = LocalizationKey("tab0")
+        val tab1Key = LocalizationKey("tab1")
+        val tab0Text = LocalizationData.Text("Tab 0 content")
+        val tab1Text = LocalizationData.Text("Tab 1 content")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                tab0Key to tab0Text,
+                tab1Key to tab1Text,
+            )
+        )
+
+        val tabsComponent = TabsComponent(
+            defaultTabId = "", // Should fall back to first tab when blank
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "tab_zero",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab0Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_one",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab1Key, color = textColor)
+                    ))
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = listOf(
+                    TabControlButtonComponent(
+                        tabIndex = 0,
+                        tabId = "tab_zero",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 1,
+                        tabId = "tab_one",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                ))
+            )
+        )
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        // Act
+        setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+
+        // Assert - Tab 0 (first tab) should be selected by default when defaultTabId is blank
+        onNodeWithText(tab0Text.value)
+            .assertIsDisplayed()
+        onNodeWithText(tab1Text.value)
+            .assertIsNotDisplayed()
+
+        // Verify that the selected tab index in state is 0
+        assert(state.selectedTabIndex == 0) { "Expected selectedTabIndex to be 0, but was ${state.selectedTabIndex}" }
+    }
 }
