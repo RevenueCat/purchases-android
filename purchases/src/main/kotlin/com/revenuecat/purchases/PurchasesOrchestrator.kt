@@ -946,6 +946,16 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirbridgeDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airbridge,
+            airbridgeDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
     // endregion
 
     /**
