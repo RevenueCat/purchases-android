@@ -50,3 +50,11 @@ internal val Context.playServicesVersionName: String?
 
 internal val Context.isDeviceProtectedStorageCompat: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage
+
+internal val canUsePaywallUI: Boolean
+    get() = try {
+        Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
+        true
+    } catch (_: ClassNotFoundException) {
+        false
+    }

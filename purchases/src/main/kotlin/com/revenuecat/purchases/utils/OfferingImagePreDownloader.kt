@@ -5,6 +5,7 @@ package com.revenuecat.purchases.utils
 import android.net.Uri
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
@@ -21,12 +22,7 @@ internal class OfferingImagePreDownloader(
      * We check for the existance of the paywalls SDK. If so, the Coil SDK should be available to
      * pre-download the images.
      */
-    private val shouldPredownloadImages: Boolean = try {
-        Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
-        true
-    } catch (_: ClassNotFoundException) {
-        false
-    },
+    private val shouldPredownloadImages: Boolean = canUsePaywallUI,
     private val coilImageDownloader: CoilImageDownloader,
 ) {
     fun preDownloadOfferingImages(offering: Offering) {
