@@ -209,6 +209,7 @@ private class PurchasesAPI {
             setCampaign("")
             setCleverTapID("")
             setKochavaDeviceID("")
+            setAirbridgeDeviceID("")
             setAdGroup("")
             setAd("")
             setKeyword("")

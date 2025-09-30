@@ -294,6 +294,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setAirbridgeDeviceID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Airbridge) { parameter ->
+            underTest.setAirbridgeDeviceID(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs

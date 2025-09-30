@@ -149,6 +149,7 @@ final class PurchasesAPI {
         purchases.setCampaign("");
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
+        purchases.setAirbridgeDeviceID("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");
