@@ -405,6 +405,7 @@ package com.revenuecat.purchases {
     method public void setAd(String? ad);
     method public void setAdGroup(String? adGroup);
     method public void setAdjustID(String? adjustID);
+    method public void setAirbridgeDeviceID(String? airbridgeDeviceID);
     method public void setAirshipChannelID(String? airshipChannelID);
     method @Deprecated @kotlin.jvm.Synchronized public void setAllowSharingPlayStoreAccount(boolean);
     method public void setAppsflyerID(String? appsflyerID);
@@ -421,7 +422,6 @@ package com.revenuecat.purchases {
     method public void setFirebaseAppInstanceID(String? firebaseAppInstanceID);
     method public void setKeyword(String? keyword);
     method public void setKochavaDeviceID(String? kochavaDeviceID);
-    method public void setAirbridgeDeviceID(String? airbridgeDeviceID);
     method @kotlin.jvm.Synchronized public static void setLogHandler(com.revenuecat.purchases.LogHandler);
     method public static void setLogLevel(com.revenuecat.purchases.LogLevel);
     method public void setMediaSource(String? mediaSource);
@@ -1423,3 +1423,4 @@ package com.revenuecat.purchases.virtualcurrencies {
   }
 
 }
+
