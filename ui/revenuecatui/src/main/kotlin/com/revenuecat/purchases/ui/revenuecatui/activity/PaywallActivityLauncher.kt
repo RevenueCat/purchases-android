@@ -124,7 +124,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @InternalRevenueCatAPI
     @JvmOverloads
     fun launch(
-        offeringIdentifier: String?,
+        offeringIdentifier: String,
         presentedOfferingContext: PresentedOfferingContext,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
@@ -250,7 +250,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
-        offeringIdentifier: String?,
+        offeringIdentifier: String,
         presentedOfferingContext: PresentedOfferingContext,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
