@@ -37,6 +37,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.InstallmentsInfo
@@ -1704,6 +1705,143 @@ class BillingWrapperTest {
 
     // endregion findPurchaseInActivePurchases
 
+    // region Multi-line subscriptions
+    @Test
+    fun `can make a multi-line subscription purchase`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val productId2 = "productId2"
+        val storeProduct2 = createStoreProductWithoutOffers(productId = productId2)
+        val optionId = "base_plan_1"
+        val productDetails = createMockProductDetailsNoOffers()
+        val purchasingData = GooglePurchasingData.Subscription(
+            productId = productDetails.productId,
+            optionId = optionId,
+            productDetails = productDetails,
+            token = "mock-subscription-offer-token",
+            addOnProducts = listOf(storeProduct2.purchasingData as GooglePurchasingData)
+        )
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            mockReplaceSkuInfo(),
+            PresentedOfferingContext("offering_a"),
+        )
+
+        verify {
+            mockClient.launchBillingFlow(
+                eq(mockActivity),
+                any()
+            )
+        }
+
+        assertThat(wrapper.purchaseContext.size).isEqualTo(1)
+        val purchaseContext = wrapper.purchaseContext[purchasingData.productId]
+        assertThat(purchaseContext).isNotNull
+        assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
+        assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(optionId)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+
+        val subscriptionOptionIdForProductIDs = purchaseContext?.subscriptionOptionIdForProductIDs
+        assertThat(subscriptionOptionIdForProductIDs).isNotNull
+        assertThat(subscriptionOptionIdForProductIDs!!.size).isEqualTo(2)
+        assertThat(subscriptionOptionIdForProductIDs[productDetails.productId]).isEqualTo(optionId)
+        assertThat(subscriptionOptionIdForProductIDs[productId2]).isEqualTo("mock-base-plan-id:mock-offer-id")
+    }
+
+    @Test
+    fun `properly sets billingFlowParams for subscription purchase with add-ons`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        val productDetailsParamsSlot = slot<List<ProductDetailsParams>>()
+        every {
+            mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
+        val mockSubscriptionUpdateParamsBuilder =
+            mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val oldPurchaseTokenSlot = slot<String>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val replacementModeSlot = slot<Int>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(capture(replacementModeSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val isPersonalizedPriceSlot = slot<Boolean>()
+        every {
+            mockBuilder.setIsOfferPersonalized(capture(isPersonalizedPriceSlot))
+        } returns mockBuilder
+
+        val productId = "productId1"
+        val productId2 = "productId2"
+
+        val upgradeInfo = mockReplaceSkuInfo()
+        val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val purchasingData = GooglePurchasingData.Subscription(
+            productId = productDetails.productId,
+            optionId = "base_plan",
+            productDetails = productDetails,
+            token = "mock-subscription-offer-token",
+            addOnProducts = listOf(
+                createStoreProductWithoutOffers(productId = productId2).purchasingData as GooglePurchasingData
+            )
+        )
+        val isPersonalizedPrice = true
+
+        val slot = slot<BillingFlowParams>()
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+        } answers {
+            val capturedProductDetailsParams = productDetailsParamsSlot.captured
+
+            assertThat(capturedProductDetailsParams.size).isEqualTo(2)
+            assertThat(capturedProductDetailsParams[0].zza().productId).isEqualTo(productId)
+            assertThat(capturedProductDetailsParams[0].zza().productType).isEqualTo(subsGoogleProductType)
+            assertThat(capturedProductDetailsParams[1].zza().productId).isEqualTo(productId2)
+            assertThat(capturedProductDetailsParams[1].zza().productType).isEqualTo(subsGoogleProductType)
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
+            assertThat((upgradeInfo.replacementMode as GoogleReplacementMode?)?.playBillingClientMode).isEqualTo(replacementModeSlot.captured)
+
+            assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            upgradeInfo,
+            null,
+            isPersonalizedPrice
+        )
+    }
+    // endregion
+
     // endregion
 
     private fun mockPurchaseRecordWrapper(): StoreTransaction {
@@ -1763,8 +1901,14 @@ class BillingWrapperTest {
         }
     }
 
-    private fun createStoreProductWithoutOffers(): StoreProduct {
-        val productDetails = createMockProductDetailsNoOffers()
+    private fun createStoreProductWithoutOffers(
+        productId: String? = null
+    ): StoreProduct {
+        val productDetails = if (productId != null) {
+            mockProductDetails(productId = productId)
+        } else {
+            createMockProductDetailsNoOffers()
+        }
         return productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
         )!!
