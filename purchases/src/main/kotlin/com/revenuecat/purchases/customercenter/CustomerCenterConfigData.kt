@@ -542,6 +542,8 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+        @SerialName("display_user_details_section")
+        val displayUserDetailsSection: Boolean = true,
         @SerialName("display_virtual_currencies")
         val displayVirtualCurrencies: Boolean? = null,
     )
