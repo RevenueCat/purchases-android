@@ -52,15 +52,22 @@ internal class PostTransactionWithProductDetailsHelper(
 
                         val subscriptionOptionsForGoogleProductIDs = transaction
                             .subscriptionOptionIdForProductIDs?.let { subscriptionOptionIds ->
-                                val googleProductsMap = storeProducts
+                                // Build a map in the format "productID_subscriptionOptionID" for all
+                                // product/subscription option combos
+                                val allSubscriptionOptionsMap = storeProducts
                                     .filterIsInstance<GoogleStoreProduct>()
-                                    .associateBy { "${it.productId}_${it.basePlanId}" }
+                                    .flatMap { product ->
+                                        product.subscriptionOptions?.map { option ->
+                                            "${product.productId}_${option.id}" to option
+                                        } ?: emptyList()
+                                    }
+                                    .toMap()
 
+                                // Then, return back only the productID/subscription option combinations
+                                // that are in the transaction.
                                 buildMap {
                                     subscriptionOptionIds.forEach { (productId, subscriptionOptionId) ->
-                                        googleProductsMap["${productId}_$subscriptionOptionId"]
-                                            ?.subscriptionOptions
-                                            ?.firstOrNull { it.id == subscriptionOptionId }
+                                        allSubscriptionOptionsMap["${productId}_$subscriptionOptionId"]
                                             ?.let { subscriptionOption ->
                                                 put(productId, subscriptionOption)
                                             }
