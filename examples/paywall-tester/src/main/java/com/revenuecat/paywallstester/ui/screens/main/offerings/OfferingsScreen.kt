@@ -15,10 +15,13 @@ import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,16 +52,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@SuppressWarnings("LongParameterList")
 @Composable
 fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
     tappedOnOfferingFooter: (Offering) -> Unit,
     tappedOnOfferingCondensedFooter: (Offering) -> Unit,
     tappedOnOfferingByPlacement: (String) -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsStateWithLifecycle().value) {
-        is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state)
+        is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state, modifier)
         is OfferingsState.Loaded -> OfferingsListScreen(
             offeringsState = state,
             tappedOnNavigateToOffering = tappedOnOffering,
@@ -66,14 +71,20 @@ fun OfferingsScreen(
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
             tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
             tappedOnReloadOfferings = { viewModel.refreshOfferings() },
+            onSearchQueryChange = { query -> viewModel.updateSearchQuery(query) },
+            modifier,
         )
-        OfferingsState.Loading -> LoadingOfferingsScreen()
+        OfferingsState.Loading -> LoadingOfferingsScreen(modifier)
     }
 }
 
 @Composable
-private fun ErrorOfferingsScreen(errorState: OfferingsState.Error) {
+private fun ErrorOfferingsScreen(
+    errorState: OfferingsState.Error,
+    modifier: Modifier = Modifier,
+) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -82,8 +93,11 @@ private fun ErrorOfferingsScreen(errorState: OfferingsState.Error) {
 }
 
 @Composable
-private fun LoadingOfferingsScreen() {
+private fun LoadingOfferingsScreen(
+    modifier: Modifier = Modifier,
+) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -101,14 +115,58 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
     tappedOnReloadOfferings: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // Filter offerings based on search query
+    val filteredOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
+        val query = offeringsState.searchQuery.lowercase().trim()
+        if (query.isEmpty()) {
+            offeringsState.offerings.all.values.toList()
+        } else {
+            offeringsState.offerings.all.values.filter { offering ->
+                offering.identifier.lowercase().contains(query) ||
+                    offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
+                    offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
+            }
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
         LazyColumn {
+            // Search bar
+            item {
+                OutlinedTextField(
+                    value = offeringsState.searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    label = { Text("Search offerings...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                        )
+                    },
+                    trailingIcon = {
+                        if (offeringsState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear search",
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -126,7 +184,7 @@ private fun OfferingsListScreen(
                     }
                 }
             }
-            items(offeringsState.offerings.all.values.toList()) { offering ->
+            items(filteredOfferings) { offering ->
                 Box(modifier = Modifier.fillMaxWidth()) {
                     if (offering == dropdownExpandedOffering) {
                         DisplayOfferingMenu(
@@ -317,6 +375,10 @@ fun OfferingsScreenPreview() {
                 get() = _offeringsState.asStateFlow()
 
             override fun refreshOfferings() {
+                // no-op
+            }
+
+            override fun updateSearchQuery(query: String) {
                 // no-op
             }
         },

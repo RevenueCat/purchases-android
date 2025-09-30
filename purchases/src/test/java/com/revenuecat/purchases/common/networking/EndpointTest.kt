@@ -22,6 +22,7 @@ class EndpointTest {
         Endpoint.PostPaywallEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
+        Endpoint.AliasUsers("test-user-id")
     )
 
     @Test
@@ -116,6 +117,19 @@ class EndpointTest {
     }
 
     @Test
+    fun `AliasUsers has correct path`() {
+        val endpoint = Endpoint.AliasUsers(userId = "test user-id")
+        val expectedPath = "/v1/subscribers/test%20user-id/alias"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `AliasUsers has correct name`() {
+        val endpoint = Endpoint.AliasUsers(userId = "test user-id")
+        assertThat(endpoint.name).isEqualTo("alias_users")
+    }
+
+    @Test
     fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
@@ -141,6 +155,7 @@ class EndpointTest {
             Endpoint.PostDiagnostics,
             Endpoint.PostPaywallEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.AliasUsers("test-user-id"),
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -186,6 +201,7 @@ class EndpointTest {
             Endpoint.PostDiagnostics,
             Endpoint.PostPaywallEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.AliasUsers("test-user-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 import com.revenuecat.purchases.Offering;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView;
@@ -28,12 +29,14 @@ final class PaywallViewAPI {
         PaywallView paywallView8 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, () -> null);
     }
 
-    static void checkMethods(PaywallView paywallView, PaywallListener listener) {
+    static void checkMethods(PaywallView paywallView, PaywallListener listener, PresentedOfferingContext context) {
         paywallView.setPaywallListener(null);
         paywallView.setPaywallListener(listener);
         paywallView.setDismissHandler(null);
         paywallView.setDismissHandler(() -> null);
         paywallView.setOfferingId(null);
         paywallView.setOfferingId("offeringId");
+        paywallView.setOfferingId(null, null);
+        paywallView.setOfferingId("offeringId", context);
     }
 }

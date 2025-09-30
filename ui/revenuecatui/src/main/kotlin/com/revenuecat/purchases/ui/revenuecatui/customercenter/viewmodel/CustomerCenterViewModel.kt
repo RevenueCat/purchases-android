@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
@@ -16,8 +18,11 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -31,11 +36,16 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -44,8 +54,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
@@ -88,6 +100,8 @@ internal interface CustomerCenterViewModel {
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
     fun dismissPromotionalOffer(context: Context, originalPath: HelpPath)
     fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
+
+    @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
     fun openURL(
         context: Context,
@@ -101,16 +115,25 @@ internal interface CustomerCenterViewModel {
 
     // trigger state refresh
     fun refreshStateIfLocaleChanged()
-    fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
+    fun refreshColors(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean)
 
     // tracks customer center impression the first time is shown
     fun trackImpressionIfNeeded()
+
+    fun showPaywall(context: Context)
+
+    fun showVirtualCurrencyBalances()
 }
 
+@Stable
 internal sealed class TransactionDetails(
     open val productIdentifier: String,
     open val store: Store,
+    open val price: Price?,
+    open val isSandbox: Boolean,
 ) {
+
+    @Immutable
     data class Subscription(
         override val productIdentifier: String,
         val productPlanIdentifier: String?,
@@ -120,12 +143,17 @@ internal sealed class TransactionDetails(
         val expiresDate: Date?,
         val isTrial: Boolean,
         val managementURL: Uri?,
-    ) : TransactionDetails(productIdentifier, store)
+        override val price: Price?,
+        override val isSandbox: Boolean,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 
+    @Immutable
     data class NonSubscription(
         override val productIdentifier: String,
         override val store: Store,
-    ) : TransactionDetails(productIdentifier, store)
+        override val price: Price?,
+        override val isSandbox: Boolean,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -249,6 +277,29 @@ internal class CustomerCenterViewModelImpl(
 
     override fun onCustomActionSelected(customActionData: CustomActionData) {
         notifyListenersForCustomActionSelected(customActionData)
+    }
+
+    override fun showVirtualCurrencyBalances() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+        if (state.customerCenterConfigData.support.displayVirtualCurrencies != true) { return }
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val virtualCurrencyBalancesDestination = CustomerCenterDestination.VirtualCurrencyBalances(
+                    title = state.customerCenterConfigData.localization.commonLocalizedString(
+                        key = CustomerCenterConfigData.Localization.CommonLocalizedString
+                            .VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+                    ),
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
     }
 
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
@@ -475,6 +526,7 @@ internal class CustomerCenterViewModelImpl(
     private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
@@ -494,6 +546,7 @@ internal class CustomerCenterViewModelImpl(
                         entitlement,
                         dateFormatter,
                         locale,
+                        localization,
                     )
                 }
             } else {
@@ -513,6 +566,7 @@ internal class CustomerCenterViewModelImpl(
                     entitlement,
                     dateFormatter,
                     locale,
+                    localization,
                 ),
             )
         } else {
@@ -540,6 +594,8 @@ internal class CustomerCenterViewModelImpl(
                 is Transaction -> TransactionDetails.NonSubscription(
                     productIdentifier = it.productIdentifier,
                     store = it.store,
+                    price = it.price,
+                    isSandbox = it.isSandbox,
                 )
 
                 else -> null
@@ -558,6 +614,7 @@ internal class CustomerCenterViewModelImpl(
         entitlement: EntitlementInfo?,
         dateFormatter: DateFormatter,
         locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
     ): PurchaseInformation {
         val product = if (transaction.store == Store.PLAY_STORE) {
             purchases.awaitGetProduct(
@@ -581,6 +638,7 @@ internal class CustomerCenterViewModelImpl(
             transaction = transaction,
             dateFormatter = dateFormatter,
             locale = locale,
+            localization = localization,
         )
     }
 
@@ -753,6 +811,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
         _state.update { state ->
             if (state !is CustomerCenterState.Loading) {
@@ -763,12 +822,30 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchases = loadPurchases(dateFormatter, locale)
+            val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
+                purchases.invalidateVirtualCurrenciesCache()
+                purchases.awaitGetVirtualCurrencies()
+            } else {
+                null
+            }
+
+            // Resolve NO_ACTIVE screen offering if it exists
+            val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
+                try {
+                    noActiveScreen.resolveOfferingSuspend(purchases)
+                } catch (e: PurchasesException) {
+                    Logger.d("Failed to resolve NO_ACTIVE screen offering: $e")
+                    null
+                }
+            }
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
-                purchases,
+                purchaseInformationList,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
+                noActiveScreenOffering = noActiveScreenOffering,
+                virtualCurrencies = virtualCurrencies,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -789,14 +866,12 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    override fun refreshStateIfColorsChanged(currentColorScheme: ColorScheme, isSystemInDarkTheme: Boolean) {
-        if (isDarkMode != isSystemInDarkTheme) {
-            isDarkMode = isSystemInDarkTheme
-        }
-
-        if (_colorScheme.value != currentColorScheme) {
-            _colorScheme.value = currentColorScheme
-        }
+    override fun refreshColors(
+        currentColorScheme: ColorScheme,
+        isSystemInDarkTheme: Boolean,
+    ) {
+        isDarkMode = isSystemInDarkTheme
+        _colorScheme.value = currentColorScheme
     }
 
     override fun trackImpressionIfNeeded() {
@@ -835,7 +910,18 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride
+        if (preferredLocale == null) {
+            return LocaleListCompat.getDefault()
+        }
+
+        return try {
+            val locale = createLocaleFromString(preferredLocale)
+            LocaleListCompat.create(locale)
+        } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+            Logger.w("Invalid preferred locale format: $preferredLocale. Using system default.")
+            LocaleListCompat.getDefault()
+        }
     }
 
     private fun displayFeedbackSurvey(
@@ -1044,6 +1130,72 @@ internal class CustomerCenterViewModelImpl(
         )
     }
 
+    override fun showPaywall(context: Context) {
+        val currentState = _state.value
+        if (currentState !is CustomerCenterState.Success) return
+
+        val offering = currentState.noActiveScreenOffering
+        if (offering != null) {
+            launchPaywallActivity(context, offering)
+        } else {
+            // Fallback to current offering if no screen-specific offering is configured
+            tryFallbackToCurrentOffering(context)
+        }
+    }
+
+    private fun tryFallbackToCurrentOffering(context: Context) {
+        Purchases.sharedInstance.getOfferingsWith(
+            onError = { error ->
+                handlePaywallError("Failed to get current offering: ${error.message}", error.code)
+            },
+            onSuccess = { offerings ->
+                val currentOffering = offerings.current
+                if (currentOffering != null) {
+                    Logger.d("Falling back to current offering: ${currentOffering.identifier}")
+                    launchPaywallActivity(context, currentOffering)
+                } else {
+                    handlePaywallError(
+                        "No offering available for paywall presentation",
+                        PurchasesErrorCode.ConfigurationError,
+                    )
+                }
+            },
+        )
+    }
+
+    private fun launchPaywallActivity(context: Context, offering: Offering) {
+        try {
+            Logger.d("Showing paywall for offering: ${offering.identifier}")
+
+            val paywallArgs = PaywallActivityArgs(
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = offering.identifier,
+                    presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                ),
+                shouldDisplayDismissButton = true,
+            )
+
+            val intent = Intent(context, PaywallActivity::class.java).apply {
+                putExtra(PaywallActivity.ARGS_EXTRA, paywallArgs)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            context.startActivity(intent)
+            Logger.d("Successfully launched paywall for offering: ${offering.identifier}")
+        } catch (e: ActivityNotFoundException) {
+            handlePaywallError("PaywallActivity not found: ${e.message}", PurchasesErrorCode.ConfigurationError)
+        } catch (e: SecurityException) {
+            handlePaywallError("Security error launching paywall: ${e.message}", PurchasesErrorCode.UnknownError)
+        } catch (e: IllegalArgumentException) {
+            handlePaywallError("Invalid argument for paywall: ${e.message}", PurchasesErrorCode.UnknownError)
+        }
+    }
+
+    private fun handlePaywallError(message: String, errorCode: PurchasesErrorCode) {
+        Logger.e(message)
+        _actionError.value = PurchasesError(errorCode, message)
+    }
+
     private fun SubscriptionInfo.asTransactionDetails() = TransactionDetails.Subscription(
         productIdentifier = productIdentifier,
         productPlanIdentifier = productPlanIdentifier,
@@ -1053,5 +1205,7 @@ internal class CustomerCenterViewModelImpl(
         expiresDate = expiresDate,
         isTrial = periodType == PeriodType.TRIAL,
         managementURL = managementURL,
+        price = price,
+        isSandbox = isSandbox,
     )
 }

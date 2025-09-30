@@ -35,6 +35,8 @@ open class PurchasesConfiguration(builder: Builder) {
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    val automaticDeviceIdentifierCollectionEnabled: Boolean
+    val preferredUILocaleOverride: String?
 
     init {
         this.context =
@@ -53,6 +55,9 @@ open class PurchasesConfiguration(builder: Builder) {
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
+        this.automaticDeviceIdentifierCollectionEnabled =
+            builder.automaticDeviceIdentifierCollectionEnabled
+        this.preferredUILocaleOverride = builder.preferredUILocaleOverride
     }
 
     internal fun copy(
@@ -68,6 +73,10 @@ open class PurchasesConfiguration(builder: Builder) {
             .dangerousSettings(dangerousSettings)
             .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
             .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+            .automaticDeviceIdentifierCollectionEnabled(
+                automaticDeviceIdentifierCollectionEnabled,
+            )
+            .preferredUILocaleOverride(preferredUILocaleOverride)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -106,6 +115,12 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var pendingTransactionsForPrepaidPlansEnabled: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var automaticDeviceIdentifierCollectionEnabled: Boolean = true
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var preferredUILocaleOverride: String? = null
 
         /**
          * A unique id for identifying the user
@@ -257,6 +272,35 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Enable this setting to allow the collection of identifiers when setting the identifier for an
+         * attribution network. For example, when calling [Purchases.setAdjustID] or [Purchases.setAppsflyerID],
+         * the SDK would collect the Android advertising ID, IP and device versions, if available, and send them
+         * to RevenueCat. This is required by some attribution networks to attribute installs and re-installs.
+         *
+         * Enabling this setting does NOT mean we will always collect the identifiers. We will only do so when
+         * setting an attribution network ID AND the user has not limited ad tracking on their device.
+         *
+         * Default is enabled.
+         */
+        fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean) = apply {
+            this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
+        }
+
+        /**
+         * Sets the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+         * This allows you to override the system locale and display the UI in a specific language.
+         *
+         * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+         *                     Pass null to use the system default locale.
+         *
+         * **Note:** This only affects UI components from the RevenueCatUI module and requires
+         * importing RevenueCatUI in your project.
+         */
+        fun preferredUILocaleOverride(localeString: String?) = apply {
+            this.preferredUILocaleOverride = localeString
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         open fun build(): PurchasesConfiguration {
@@ -279,6 +323,8 @@ open class PurchasesConfiguration(builder: Builder) {
         if (dangerousSettings != other.dangerousSettings) return false
         if (verificationMode != other.verificationMode) return false
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
+        if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
+        if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
 
         return true
     }
@@ -293,6 +339,8 @@ open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + verificationMode.hashCode()
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
+        result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
+        result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
         return result
     }
 }

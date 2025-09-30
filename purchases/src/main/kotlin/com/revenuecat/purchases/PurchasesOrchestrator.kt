@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +16,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -22,6 +24,7 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
@@ -43,6 +46,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -125,6 +129,7 @@ internal class PurchasesOrchestrator(
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
     private val fontLoader: FontLoader,
+    private val localeProvider: DefaultLocaleProvider,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
             backend,
@@ -134,6 +139,8 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
+    private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
+    private val backupManager: BackupManager = BackupManager(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -191,10 +198,22 @@ internal class PurchasesOrchestrator(
     @SuppressWarnings("MagicNumber")
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
+    @SuppressWarnings("MagicNumber")
+    private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
+
     var storefrontCountryCode: String? = null
         private set
 
+    @Volatile
+    private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
+
+    val preferredUILocaleOverride: String?
+        get() = _preferredUILocaleOverride
+
     init {
+        // Initialize locale provider with the initial preferred locale override
+        localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
+
         identityManager.configure(backingFieldAppUserID)
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -257,6 +276,15 @@ internal class PurchasesOrchestrator(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     appInBackground = false,
                     allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                    callback = object : ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: CustomerInfo) {
+                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                        }
+
+                        override fun onError(error: PurchasesError) {
+                            // no-op
+                        }
+                    },
                 )
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
@@ -335,6 +363,19 @@ internal class PurchasesOrchestrator(
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
+        if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
+            log(LogIntent.DEBUG) { RestoreStrings.SYNC_PURCHASES_SIMULATED_STORE }
+            getCustomerInfo(object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    listener?.onSuccess(customerInfo)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    listener?.onError(error)
+                }
+            })
+            return
+        }
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
             appInBackground = this.state.appInBackground,
@@ -408,6 +449,40 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    /**
+     * Override the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+     * This allows you to display the UI in a specific language, different from the system locale.
+     *
+     * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+     *                     Pass null to revert to using the system default locale.
+     *
+     * **Note:** This only affects UI components from the RevenueCatUI module and requires
+     * importing RevenueCatUI in your project. The locale override will take effect the next time
+     * a paywall or customer center is displayed.
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        val previousLocale = _preferredUILocaleOverride
+
+        if (previousLocale == localeString) {
+            debugLog { "Locale unchanged, no fresh fetch needed" }
+            return false
+        }
+
+        synchronized(this) {
+            _preferredUILocaleOverride = localeString
+            localeProvider.setPreferredLocaleOverride(localeString)
+        }
+
+        debugLog { "Locale changed, attempting to fetch fresh offerings" }
+        return fetchOfferingsWithRateLimit { offerings, error ->
+            if (offerings != null) {
+                debugLog { "Fresh offerings fetch completed successfully" }
+            } else {
+                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+            }
+        }
+    }
+
     fun getOfferings(
         listener: ReceiveOfferingsCallback,
         fetchCurrent: Boolean = false,
@@ -470,12 +545,18 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @Suppress("LongMethod")
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING) { RestoreStrings.SHARING_ACC_RESTORE_FALSE }
+        }
+        if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
+            log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_SIMULATED_STORE }
+            getCustomerInfo(callback)
+            return
         }
 
         val startTime = dateProvider.now
@@ -507,43 +588,46 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isEmpty()) {
-                    getCustomerInfo(callbackWithTracking)
-                } else {
-                    allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                        sortedByTime.forEach { purchase ->
-                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                                purchase = purchase,
-                                storeProduct = null,
-                                isRestore = true,
-                                appUserID = appUserID,
-                                initiationSource = PostReceiptInitiationSource.RESTORE,
-                                onSuccess = { _, info ->
-                                    log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onReceived(info) }
-                                    }
-                                },
-                                onError = { _, error ->
-                                    log(LogIntent.RC_ERROR) {
-                                        RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
-                                    }
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callbackWithTracking.onError(error) }
-                                    }
-                                },
-                            )
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            billing.queryAllPurchases(
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
+                    if (allPurchases.isEmpty()) {
+                        log(LogIntent.DEBUG) { RestoreStrings.RESTORE_PURCHASES_NO_PURCHASES_FOUND }
+                        getCustomerInfo(callbackWithTracking)
+                    } else {
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            sortedByTime.forEach { purchase ->
+                                postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                                    purchase = purchase,
+                                    storeProduct = null,
+                                    isRestore = true,
+                                    appUserID = appUserID,
+                                    initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    onSuccess = { _, info ->
+                                        log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { _, error ->
+                                        log(LogIntent.RC_ERROR) {
+                                            RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
+                                        }
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callbackWithTracking.onError(error) }
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-            },
-            onReceivePurchaseHistoryError = { error ->
-                dispatch { callbackWithTracking.onError(error) }
-            },
-        )
+                },
+                onReceivePurchaseHistoryError = { error ->
+                    dispatch { callbackWithTracking.onError(error) }
+                },
+            )
+        }
     }
 
     fun logIn(
@@ -551,19 +635,22 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.logIn(
-                newAppUserID,
-                onSuccess = { customerInfo, created ->
-                    dispatch {
-                        callback?.onReceived(customerInfo, created)
-                        customerInfoUpdateHandler.notifyListeners(customerInfo)
-                    }
-                    offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                },
-                onError = { error ->
-                    dispatch { callback?.onError(error) }
-                },
-            )
+            blockstoreHelper.clearUserIdBackupIfNeeded {
+                identityManager.logIn(
+                    newAppUserID,
+                    onSuccess = { customerInfo, created ->
+                        dispatch {
+                            callback?.onReceived(customerInfo, created)
+                            customerInfoUpdateHandler.notifyListeners(customerInfo)
+                        }
+                        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                        backupManager.dataChanged()
+                    },
+                    onError = { error ->
+                        dispatch { callback?.onError(error) }
+                    },
+                )
+            }
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -590,6 +677,7 @@ internal class PurchasesOrchestrator(
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
+                backupManager.dataChanged()
             }
         }
     }
@@ -858,7 +946,50 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirbridgeDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airbridge,
+            airbridgeDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
     // endregion
+
+    /**
+     * Fetches fresh offerings with rate limiting to prevent excessive network requests.
+     *
+     * @param callback Callback to handle the result
+     * @return true if fresh fetch was triggered, false if rate limited
+     */
+    private fun fetchOfferingsWithRateLimit(callback: (Offerings?, PurchasesError?) -> Unit): Boolean {
+        return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
+            verboseLog { "Fetching fresh offerings" }
+            getOfferings(
+                object : ReceiveOfferingsCallback {
+                    override fun onReceived(offerings: Offerings) {
+                        callback(offerings, null)
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        callback(null, error)
+                    }
+                },
+                fetchCurrent = true,
+            )
+            true
+        } else {
+            debugLog {
+                "Fresh offerings fetch rate limit reached: ${preferredLocaleOverrideRateLimiter.maxCallsInPeriod} " +
+                    "per ${preferredLocaleOverrideRateLimiter.periodSeconds.inWholeSeconds} seconds. " +
+                    "Fetch not triggered."
+            }
+            false
+        }
+    }
+
     // region Campaign parameters
 
     fun setMediaSource(mediaSource: String?) {
@@ -1103,9 +1234,15 @@ internal class PurchasesOrchestrator(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                dispatch {
-                    purchaseCallback.onCompleted(storeTransaction, info)
+            // This lets the backup manager know a change in data happened that would be good to backup.
+            // In this case, we want to make sure that if there is a purchase, we schedule a backup.
+            backupManager.dataChanged()
+            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+                blockstoreHelper.storeUserIdIfNeeded(info)
+                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                    dispatch {
+                        purchaseCallback.onCompleted(storeTransaction, info)
+                    }
                 }
             }
         }

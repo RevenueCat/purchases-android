@@ -21,6 +21,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -524,6 +525,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login called with different appUserID notifies backup manager`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
     fun `login successful with new appUserID calls customer info updater to update delegate if changed`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
@@ -592,6 +615,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockOfferingsManager.fetchAndCacheOfferings(appUserID, false, any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
         }
     }
 
@@ -1642,6 +1668,56 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion Paywall fonts
+
+    // region Simulated store
+
+    @Test
+    fun `syncing transactions on simulated store does not sync purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.syncPurchases(object: SyncPurchasesCallback {
+            override fun onSuccess(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    @Test
+    fun `restore transactions on simulated store does not restore purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    // endregion Simulated store
 
     // region Private Methods
 

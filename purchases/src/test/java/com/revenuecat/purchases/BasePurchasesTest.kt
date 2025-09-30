@@ -8,14 +8,17 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -76,12 +79,14 @@ internal open class BasePurchasesTest {
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
+    protected val mockBackupManager = mockk<BackupManager>()
     internal val mockEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
+    private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -138,6 +143,19 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
+        every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
+        every {
+            mockBlockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every {
+            mockBlockstoreHelper.clearUserIdBackupIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every { mockBackupManager.dataChanged() } just Runs
+
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
 
@@ -163,6 +181,8 @@ internal open class BasePurchasesTest {
             mockLifecycleOwner,
             mockLifecycle,
             mockFontLoader,
+            mockBlockstoreHelper,
+            mockBackupManager,
         )
     }
 
@@ -407,6 +427,8 @@ internal open class BasePurchasesTest {
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
+        enableSimulatedStore: Boolean = false,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -416,6 +438,7 @@ internal open class BasePurchasesTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
@@ -450,7 +473,10 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = mockVirtualCurrencyManager,
+            blockstoreHelper = mockBlockstoreHelper,
+            backupManager = mockBackupManager,
         )
 
         purchases = Purchases(

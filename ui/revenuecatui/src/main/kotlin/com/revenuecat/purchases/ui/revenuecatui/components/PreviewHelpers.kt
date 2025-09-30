@@ -60,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -123,6 +124,7 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
         validationResult = validated,
         storefrontCountryCode = null,
         dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
     )
 }
 

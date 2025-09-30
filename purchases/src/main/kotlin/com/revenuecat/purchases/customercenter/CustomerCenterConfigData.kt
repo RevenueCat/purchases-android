@@ -38,6 +38,8 @@ data class CustomerCenterConfigData(
             SUB_OFFER_DURATION_2("sub_offer_duration_2"),
             SUB_OFFER_PRICE("sub_offer_price"),
             SUB_OFFER_PRICE_2("sub_offer_price_2"),
+            DISCOUNTED_RECURRING_PAYMENT_PRICE_PER_PERIOD("discounted_recurring_payment_price_per_period"),
+            DISCOUNTED_RECURRING_PAYMENT_CYCLES("discounted_recurring_payment_cycles"),
             ;
 
             companion object {
@@ -197,6 +199,12 @@ data class CustomerCenterConfigData(
             @SerialName("free_trial_discounted_then_price")
             FREE_TRIAL_DISCOUNTED_THEN_PRICE,
 
+            @SerialName("discounted_recurring_payment_then_price")
+            DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
+
+            @SerialName("free_trial_discounted_recurring_payment_then_price")
+            FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE,
+
             @SerialName("done")
             DONE,
 
@@ -250,6 +258,30 @@ data class CustomerCenterConfigData(
 
             @SerialName("resubscribe")
             RESUBSCRIBE,
+
+            @SerialName("type_subscription")
+            TYPE_SUBSCRIPTION,
+
+            @SerialName("type_one_time_purchase")
+            TYPE_ONE_TIME_PURCHASE,
+
+            @SerialName("buy_subscription")
+            BUY_SUBSCRIPTION,
+
+            @SerialName("last_charge_was")
+            LAST_CHARGE_WAS,
+
+            @SerialName("next_billing_date_on")
+            NEXT_BILLING_DATE_ON,
+
+            @SerialName("see_all_virtual_currencies")
+            SEE_ALL_VIRTUAL_CURRENCIES,
+
+            @SerialName("virtual_currency_balances_screen_header")
+            VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER,
+
+            @SerialName("no_virtual_currency_balances_found")
+            NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
             ;
 
             val defaultValue: String
@@ -316,8 +348,17 @@ data class CustomerCenterConfigData(
                         "Try {{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for" +
                             " {{ sub_offer_price_2 }}, and {{ price }} thereafter"
                     FREE_TRIAL_DISCOUNTED_THEN_PRICE ->
-                        "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} " +
-                            "during {{ sub_offer_duration_2 }}, and {{ price }} thereafter"
+                        "Try {{ sub_offer_duration }} for free, " +
+                            "then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, " +
+                            "and {{ price }} thereafter"
+                    DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE ->
+                        "{{ discounted_recurring_payment_price_per_period }} for " +
+                            "{{ discounted_recurring_payment_cycles }} periods, " +
+                            "then {{ price }}"
+                    FREE_TRIAL_DISCOUNTED_RECURRING_PAYMENT_THEN_PRICE ->
+                        "Try {{ sub_offer_duration }} for free, " +
+                            "then {{ discounted_recurring_payment_price_per_period }} for " +
+                            "{{ discounted_recurring_payment_cycles }} periods, and {{ price }} thereafter"
                     DONE -> "Done"
                     RENEWS_ON_DATE_FOR_PRICE -> "Your next charge is {{ price }} on {{ date }}."
                     RENEWS_ON_DATE -> "Renews on {{ date }}"
@@ -336,6 +377,14 @@ data class CustomerCenterConfigData(
                     UNKNOWN_STORE -> "Unknown"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
+                    TYPE_SUBSCRIPTION -> "Subscription"
+                    TYPE_ONE_TIME_PURCHASE -> "One time purchase"
+                    BUY_SUBSCRIPTION -> "Buy Subscription"
+                    LAST_CHARGE_WAS -> "Last charge: {{ price }}"
+                    NEXT_BILLING_DATE_ON -> "Next billing date: {{ date }}"
+                    SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
+                    VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
+                    NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
                 }
         }
 
@@ -456,11 +505,28 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
+    data class ScreenOffering(
+        val type: ScreenOfferingType,
+        @SerialName("offering_id") val offeringId: String? = null,
+        @SerialName("button_text") val buttonText: String? = null,
+    ) {
+        @Serializable
+        enum class ScreenOfferingType(val value: String) {
+            @SerialName("CURRENT")
+            CURRENT("CURRENT"),
+
+            @SerialName("SPECIFIC")
+            SPECIFIC("SPECIFIC"),
+        }
+    }
+
+    @Serializable
     data class Screen(
         val type: ScreenType,
         val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
+        val offering: ScreenOffering? = null,
     ) {
         @Serializable
         enum class ScreenType {
@@ -476,6 +542,8 @@ data class CustomerCenterConfigData(
         val email: String? = null,
         @SerialName("should_warn_customer_to_update")
         val shouldWarnCustomerToUpdate: Boolean? = null,
+        @SerialName("display_virtual_currencies")
+        val displayVirtualCurrencies: Boolean? = null,
     )
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {

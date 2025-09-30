@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -21,6 +22,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("tab_control_button")
+@Immutable
 class TabControlButtonComponent(
     @get:JvmSynthetic
     @SerialName("tab_index")
@@ -35,6 +37,7 @@ class TabControlButtonComponent(
 @Poko
 @Serializable
 @SerialName("tab_control_toggle")
+@Immutable
 class TabControlToggleComponent(
     @get:JvmSynthetic
     @SerialName("default_value")
@@ -62,6 +65,7 @@ object TabControlComponent : PaywallComponent
 @Poko
 @Serializable
 @SerialName("tabs")
+@Immutable
 class TabsComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
@@ -122,6 +126,7 @@ class TabsComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
+@Immutable
 class PartialTabsComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,

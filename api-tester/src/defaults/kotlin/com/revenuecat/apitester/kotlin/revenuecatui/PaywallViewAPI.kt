@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
@@ -40,6 +41,7 @@ private class PaywallViewAPI {
         paywallView: PaywallView,
         paywallListener: PaywallListener,
         dismissHandler: () -> Unit,
+        presentedOfferingContext: PresentedOfferingContext?,
     ) {
         paywallView.setPaywallListener(null)
         paywallView.setPaywallListener(paywallListener)
@@ -47,5 +49,7 @@ private class PaywallViewAPI {
         paywallView.setDismissHandler(dismissHandler)
         paywallView.setOfferingId(null)
         paywallView.setOfferingId("offering_id")
+        paywallView.setOfferingId(null, presentedOfferingContext)
+        paywallView.setOfferingId("offering_id", presentedOfferingContext)
     }
 }

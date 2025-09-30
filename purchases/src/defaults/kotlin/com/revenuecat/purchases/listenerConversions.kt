@@ -4,7 +4,6 @@ import android.app.Activity
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
-import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -105,28 +104,6 @@ internal fun getCustomerCenterConfigDataListener(
     override fun onError(error: PurchasesError) {
         onError(error)
     }
-}
-
-/**
- * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
- * If there is any error, it will return null and log said error.
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.getStorefrontCountryCodeWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (storefrontCountryCode: String) -> Unit,
-) {
-    getStorefrontCountryCode(object : GetStorefrontCallback {
-        override fun onReceived(storefrontCountryCode: String) {
-            onSuccess(storefrontCountryCode)
-        }
-
-        override fun onError(error: PurchasesError) {
-            onError(error)
-        }
-    })
 }
 
 /**

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.attributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -74,6 +76,7 @@ class SubscriberAttributesPurchasesTests {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
@@ -115,6 +118,7 @@ class SubscriberAttributesPurchasesTests {
             dispatcher = SyncDispatcher(),
             initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
             fontLoader = fontLoaderMock,
+            localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = virtualCurrencyManagerMock,
         )
 
@@ -205,7 +209,13 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, any())
+            customerInfoHelperMock.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = any(),
+                callback = any(),
+            )
         } just Runs
         every {
             offeringsManagerMock.onAppForeground(appUserId)
@@ -281,6 +291,13 @@ class SubscriberAttributesPurchasesTests {
     fun `setKochavaDeviceID`() {
         attributionIDTest(SubscriberAttributeKey.AttributionIds.Kochava) { parameter ->
             underTest.setKochavaDeviceID(parameter)
+        }
+    }
+
+    @Test
+    fun `setAirbridgeDeviceID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Airbridge) { parameter ->
+            underTest.setAirbridgeDeviceID(parameter)
         }
     }
 

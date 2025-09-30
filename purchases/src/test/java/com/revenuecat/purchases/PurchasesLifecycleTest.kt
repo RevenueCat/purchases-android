@@ -64,7 +64,8 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
         verify(exactly = 0) {
@@ -108,7 +109,8 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
         verify(exactly = 1) {
@@ -174,6 +176,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
             proxyURL = null,
             Store.AMAZON,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 

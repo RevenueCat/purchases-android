@@ -1,22 +1,12 @@
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* Resubscribe if cancelled (#2487) via Cesar de la Vega (@vegaro)
-### Virtual Currency
-#### 🐞 Bugfixes
-* Update VC Caching Log Message (#2552) via Will Taylor (@fire-at-will)
-
-## RevenueCatUI SDK
-### Customer Center
-#### 🐞 Bugfixes
-* Update design of No Active subscriptions screen in Customer Center (#2559) via Cesar de la Vega (@vegaro)
+* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2561) via RevenueCat Git Bot (@RCGitBot)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2560) via RevenueCat Git Bot (@RCGitBot)
-* Bump danger from 9.5.1 to 9.5.3 (#2556) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane from 2.227.2 to 2.228.0 (#2557) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane-plugin-revenuecat_internal from `9a29f63` to `7d97553` (#2558) via dependabot[bot] (@dependabot[bot])
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2555) via RevenueCat Git Bot (@RCGitBot)
-* Bump nokogiri from 1.18.8 to 1.18.9 (#2553) via dependabot[bot] (@dependabot[bot])
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2551) via RevenueCat Git Bot (@RCGitBot)
-* Fix paywall tester so customer center doesn't close when changing to dark mode (#2550) via Cesar de la Vega (@vegaro)
+* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
+* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])

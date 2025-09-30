@@ -64,7 +64,7 @@ suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
  *   - Falls back to use base plan
  *
  * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
- * @throws [PurchasesTransactionException] with a [PurchasesTransactionException] if there's an error when purchasing
+ * @throws [PurchasesTransactionException] with a [PurchasesError] if there's an error when purchasing
  * and a userCancelled boolean that indicates if the user cancelled the purchase flow.
  * @return The [StoreTransaction] for this purchase and the updated [CustomerInfo] for this user.
  */
@@ -233,6 +233,23 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
             onError = {
                 continuation.resume(Result.failure(PurchasesException(it)))
             },
+        )
+    }
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+ * If there is any error, it will return null and log said error.
+ * Coroutine friendly version of [Purchases.getStorefrontCountryCode].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
+ * @return The Store country code in ISO-3166-1 alpha2.
+ */
+suspend fun Purchases.awaitStorefrontCountryCode(): String {
+    return suspendCoroutine { continuation ->
+        getStorefrontCountryCodeWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }

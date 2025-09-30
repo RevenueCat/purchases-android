@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -365,6 +366,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
             paywallComponents = null,
         ),
         locales = paywallLocales.map { LocaleId(it) }.toNonEmptySetOrNull()!!,
+        storefrontCountryCode = "US",
         dateProvider = { Date() },
         packages = PaywallState.Loaded.Components.AvailablePackages(
             packagesOutsideTabs = emptyList(),
@@ -372,6 +374,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         ),
         initialLocaleList = LocaleList(deviceLocales.map { Locale(it) }),
         initialSelectedTabIndex = 0,
+        purchases = MockPurchasesType(),
     )
 
 }

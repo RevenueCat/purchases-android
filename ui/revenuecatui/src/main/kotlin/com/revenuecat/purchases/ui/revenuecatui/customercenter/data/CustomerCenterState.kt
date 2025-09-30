@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 internal sealed class CustomerCenterState(
     @get:JvmSynthetic open val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
@@ -29,11 +31,13 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val mainScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val detailScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
+        @get:JvmSynthetic val noActiveScreenOffering: Offering? = null,
         @get:JvmSynthetic val navigationState: CustomerCenterNavigationState = CustomerCenterNavigationState(
             showingActivePurchasesScreen = purchases.isNotEmpty(),
             managementScreenTitle = customerCenterConfigData.getManagementScreen()?.title,
         ),
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
+        @get:JvmSynthetic val virtualCurrencies: VirtualCurrencies? = null,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination

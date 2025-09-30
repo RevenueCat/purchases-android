@@ -18,6 +18,7 @@ import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -27,9 +28,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
+import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
+
 @Stable
 internal sealed interface PaywallState {
 
@@ -91,11 +95,13 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
+            private val storefrontCountryCode: String?,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
+            private val purchases: PurchasesType,
         ) : Loaded {
 
             data class AvailablePackages(
@@ -143,7 +149,48 @@ internal sealed interface PaywallState {
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
+            // We find all available device locales with the same country as the storefront country.
+            private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
+                if (storefrontCountryCode.isNullOrBlank()) {
+                    emptyMap()
+                } else {
+                    buildMap {
+                        Locale.getAvailableLocales().forEach { availableLocale ->
+                            if (availableLocale.country.equals(storefrontCountryCode, ignoreCase = true)) {
+                                put(availableLocale.language.lowercase(), availableLocale)
+                            }
+                        }
+                    }
+                }
+            }
+
+            /**
+             * The locale to use for the paywall's localized content, such as text.
+             */
             val locale by derivedStateOf { localeId.toComposeLocale() }
+
+            /**
+             * The locale to use when formatting currencies. This corresponds to the user's storefront country, to
+             * avoid discrepancies between calculated prices (per period) and the price coming directly from the store.
+             */
+            val currencyLocale by derivedStateOf {
+                if (storefrontCountryCode.isNullOrBlank()) {
+                    locale
+                } else {
+                    val deviceLanguageCode = locale.language.lowercase()
+
+                    // We pick the one with the same language as the device if available. If not, we just pick the
+                    // first. If the list is empty, we use the device locale with the storefront country.
+                    val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
+                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
+                        ?: Locale.Builder()
+                            .setLocale(locale.toJavaLocale())
+                            .setRegion(storefrontCountryCode.uppercase())
+                            .build()
+
+                    javaLocale.toComposeLocale()
+                }
+            }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, Package?>().apply {
                 putAll(
@@ -210,11 +257,30 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
-            private fun LocaleList.toLocaleId(): LocaleId =
-                // Configured locales take precedence over the default one.
-                map { it.toLocaleId() }.plus(locales.head)
-                    // Find the first locale we have a LocalizationDictionary for.
-                    .firstNotNullOf { locale -> locales.getBestMatch(locale) }
+            private fun LocaleList.toLocaleId(): LocaleId {
+                val preferredOverride = purchases.preferredUILocaleOverride
+                val deviceLocales = map { it.toLocaleId() }.plus(locales.head)
+
+                val allLocales = if (preferredOverride != null) {
+                    // Parse preferred locale override and put it first in priority
+                    val preferredLocaleId = try {
+                        createLocaleFromString(preferredOverride).toComposeLocale().toLocaleId()
+                    } catch (@Suppress("SwallowedException", "TooGenericExceptionCaught") e: Exception) {
+                        // Fallback to null if preferred locale string is malformed
+                        null
+                    }
+                    if (preferredLocaleId != null) {
+                        listOf(preferredLocaleId) + deviceLocales
+                    } else {
+                        deviceLocales
+                    }
+                } else {
+                    deviceLocales
+                }
+
+                // Find the first locale we have a LocalizationDictionary for.
+                return allLocales.firstNotNullOf { locale -> locales.getBestMatch(locale) }
+            }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
