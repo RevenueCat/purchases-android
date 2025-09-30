@@ -163,7 +163,7 @@
                     android:id="@+id/base_product_checkbox"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Base Product"
+                    android:text="Base Item"
                     android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
                     app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintEnd_toEndOf="parent"
