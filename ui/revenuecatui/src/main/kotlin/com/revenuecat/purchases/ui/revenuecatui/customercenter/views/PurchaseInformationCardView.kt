@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -27,6 +27,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @SuppressWarnings("LongParameterList", "LongMethod")
@@ -177,6 +178,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
+        CustomerCenterConfigTestData.purchaseInformationFreeTrial,
         CustomerCenterConfigTestData.purchaseInformationPromotional,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
@@ -186,13 +188,12 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
 }
 
 @Preview(group = "scale = 1", fontScale = 1F)
+@Preview(group = "scale = 1", fontScale = 1F, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PurchaseInformationCardView_Preview(
     @PreviewParameter(PurchaseInformationProvider::class) details: PurchaseInformation,
 ) {
-    Surface(
-        color = Color.White,
-    ) {
+    CustomerCenterPreviewTheme {
         PurchaseInformationCardView(
             purchaseInformation = details,
             localization = CustomerCenterConfigTestData.customerCenterData(
@@ -204,13 +205,12 @@ private fun PurchaseInformationCardView_Preview(
 }
 
 @Preview(group = "scale = 2", fontScale = 2F)
+@Preview(group = "scale = 2", fontScale = 2F, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PurchaseInformationCardView_Preview_Scale2(
     @PreviewParameter(PurchaseInformationProvider::class) details: PurchaseInformation,
 ) {
-    Surface(
-        color = Color.White,
-    ) {
+    CustomerCenterPreviewTheme {
         PurchaseInformationCardView(
             purchaseInformation = details,
             localization = CustomerCenterConfigTestData.customerCenterData(
