@@ -18,6 +18,7 @@ internal class PostTransactionWithProductDetailsHelper(
     /**
      * The callbacks in this method are called for each transaction in the list.
      */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongParameterList", "LongMethod")
     fun postTransactions(
         transactions: List<StoreTransaction>,
