@@ -1143,7 +1143,7 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
     ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
-    ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdsForProductIDs, com.revenuecat.purchases.ReplacementMode? replacementMode);
+    ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdForProductIDs, com.revenuecat.purchases.ReplacementMode? replacementMode);
     ctor @Deprecated public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, String? presentedOfferingIdentifier, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     method public String? getMarketplace();
     method public String? getOrderId();
@@ -1160,7 +1160,7 @@ package com.revenuecat.purchases.models {
     method @Deprecated public java.util.List<java.lang.String> getSkus();
     method public String? getStoreUserID();
     method public String? getSubscriptionOptionId();
-    method public java.util.Map<java.lang.String,java.lang.String>? getSubscriptionOptionIdsForProductIDs();
+    method public java.util.Map<java.lang.String,java.lang.String>? getSubscriptionOptionIdForProductIDs();
     method public com.revenuecat.purchases.ProductType getType();
     method public Boolean? isAutoRenewing();
     property public final Boolean? isAutoRenewing;
@@ -1179,7 +1179,7 @@ package com.revenuecat.purchases.models {
     property @Deprecated @kotlinx.parcelize.IgnoredOnParcel public final java.util.List<java.lang.String> skus;
     property public final String? storeUserID;
     property public final String? subscriptionOptionId;
-    property public final java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdsForProductIDs;
+    property public final java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdForProductIDs;
     property public final com.revenuecat.purchases.ProductType type;
   }
 

@@ -98,13 +98,13 @@ class StoreTransaction(
     val subscriptionOptionId: String?,
 
     /**
-     * The ids of the SubscriptionOption purchased for each product ID.
+     * The id of the SubscriptionOption purchased for each product ID.
      *
      * In Google, this will be calculated from the basePlanId and offerId
      * Null in Google for restored transactions and purchases initiated outside of the app.
      * Null for Amazon purchases.
      */
-    val subscriptionOptionIdsForProductIDs: Map<String, String>?,
+    val subscriptionOptionIdForProductIDs: Map<String, String>?,
 
     /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
@@ -145,7 +145,7 @@ class StoreTransaction(
         purchaseType = purchaseType,
         marketplace = marketplace,
         subscriptionOptionId = subscriptionOptionId,
-        subscriptionOptionIdsForProductIDs = emptyMap(),
+        subscriptionOptionIdForProductIDs = emptyMap(),
         replacementMode = replacementMode,
     )
 

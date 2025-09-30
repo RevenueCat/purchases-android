@@ -51,7 +51,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             }
 
                         val subscriptionOptionsForGoogleProductIDs = transaction
-                            .subscriptionOptionIdsForProductIDs?.let { subscriptionOptionIds ->
+                            .subscriptionOptionIdForProductIDs?.let { subscriptionOptionIds ->
                                 val googleProductsMap = storeProducts
                                     .filterIsInstance<GoogleStoreProduct>()
                                     .associateBy { "${it.productId}_${it.basePlanId}" }

@@ -29,7 +29,7 @@ internal fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
-    subscriptionOptionIdsForProductIDs = subscriptionOptionIdsForProductIDs,
+    subscriptionOptionIdForProductIDs = subscriptionOptionIdsForProductIDs,
     replacementMode = replacementMode,
 )
 
