@@ -61,7 +61,9 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            fallbackImageViewStyle?.let { ImageComponentView(it, state, modifier) }
+            if (videoUrl == null && fallbackImageViewStyle != null) {
+                ImageComponentView(fallbackImageViewStyle, state, modifier)
+            }
 
             videoUrl?.let {
                 VideoView(
@@ -125,7 +127,6 @@ private fun rememberVideoContentState(
 
             val url = repository.generateOrGetCachedFileURL(videoUrls.url)
             videoUrl = url
-            fallbackImageViewStyle = null
         } catch (_: Exception) {
             videoUrl = videoUrls.url.toString().let(::URI)
         }
@@ -146,8 +147,6 @@ private fun rememberVideoContentState(
         LaunchedEffect(Unit) {
             fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
         }
-    } else {
-        fallbackImageViewStyle = null
     }
 
     return videoUrl to fallbackImageViewStyle
