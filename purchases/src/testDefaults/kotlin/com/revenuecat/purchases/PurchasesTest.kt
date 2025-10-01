@@ -1840,7 +1840,9 @@ internal class PurchasesTest : BasePurchasesTest() {
             activity = mockActivity,
             storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         )
-            .addOnStoreProducts(addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData()))
+            .addOnStoreProducts(
+                addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "abc"))
+            )
             .build()
 
         for (store in Store.values()) {
