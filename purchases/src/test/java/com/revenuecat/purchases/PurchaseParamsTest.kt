@@ -258,11 +258,14 @@ class PurchaseParamsTest {
     @Test
     fun `addOnStoreProducts throws if more than 49 add-ons are provided`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
-        val addOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
+        val addOns = ArrayList<StoreProduct>()
+        for (i in 1..50) {
+            addOns.add(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz_$i"))
+        }
 
         val exception = catchThrowable {
             PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnStoreProducts(addOnStoreProducts = List(size = 50) { addOn })
+                .addOnStoreProducts(addOnStoreProducts = addOns)
                 .build()
         }
         validateExceptionForAddOnsThrowIfMoreThan49AddOnsAreProvided(exception)
@@ -272,17 +275,21 @@ class PurchaseParamsTest {
     @Test
     fun `addOnPackages throws if more than 49 add-ons are provided`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
-        val addOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
-        val aPackage = Package(
-            identifier = "abc",
-            packageType = PackageType.UNKNOWN,
-            product = addOnProduct,
-            presentedOfferingContext = mockk()
-        )
+        val addOns = ArrayList<Package>()
+        for (i in 1..50) {
+            addOns.add(
+                Package(
+                    identifier = "abc",
+                    packageType = PackageType.UNKNOWN,
+                    product = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz_$i"),
+                    presentedOfferingContext = mockk()
+                )
+            )
+        }
 
         val exception = catchThrowable {
             PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnPackages(addOnPackages = List(size = 50) { aPackage })
+                .addOnPackages(addOnPackages = addOns)
                 .build()
         }
         validateExceptionForAddOnsThrowIfMoreThan49AddOnsAreProvided(exception)
@@ -358,6 +365,54 @@ class PurchaseParamsTest {
         assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
         assertThat(purchasesException.error.underlyingErrorMessage)
             .isEqualTo("All items in a multi-line purchase must have the same billing period.")
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `addOnStoreProducts throws if multiple purchases for the same product are provided`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
+        val yearlyAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.YEAR, "P1Y"))
+
+        val exception = catchThrowable {
+            PurchaseParams.Builder(mockk(), baseProduct)
+                .addOnStoreProducts(addOnStoreProducts = listOf(yearlyAddOn))
+                .build()
+        }
+
+        validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `addOnPackages throws if multiple purchases for the same product are provided`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
+        val yearlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.YEAR, "P1Y"))
+        val yearlyPackage = Package(
+            identifier = "yearly_package",
+            packageType = PackageType.UNKNOWN,
+            product = yearlyAddOnProduct,
+            presentedOfferingContext = mockk()
+        )
+
+        val exception = catchThrowable {
+            PurchaseParams.Builder(mockk(), baseProduct)
+                .addOnPackages(addOnPackages = listOf(yearlyPackage))
+                .build()
+        }
+
+        validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception)
+    }
+
+    private fun validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception: Throwable) {
+        val expectedErrorMessage = "Multi-line purchases cannot contain multiple purchases for the same product. " +
+            "Multiple purchases for the product monthly_freetrial were provided."
+        assertThat(exception::class).isEqualTo(PurchasesException::class)
+        val purchasesException = exception as PurchasesException
+        assertThat(purchasesException.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(purchasesException.underlyingErrorMessage).isEqualTo(expectedErrorMessage)
+        assertThat(purchasesException.error.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
+        assertThat(purchasesException.error.underlyingErrorMessage).isEqualTo(expectedErrorMessage)
     }
     // endregion Add-Ons
 }

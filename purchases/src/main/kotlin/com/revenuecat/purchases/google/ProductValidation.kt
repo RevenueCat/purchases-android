@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PurchasingData
@@ -43,6 +44,8 @@ internal fun validateAndFilterCompatibleAddOnProducts(
     }
     val addOnProductsWithSameProductType: MutableList<GooglePurchasingData> = ArrayList()
     val billingPeriods = mutableSetOf<Period>()
+    var productIds = mutableSetOf<String>()
+    productIds.add(baseProductPurchasingData.productId)
 
     for (addOnProduct in addOnProducts) {
         val addOnPurchasingData = addOnProduct.purchasingData
@@ -51,6 +54,20 @@ internal fun validateAndFilterCompatibleAddOnProducts(
         ) {
             addOnProductsWithSameProductType.add(addOnPurchasingData)
             addOnProduct.period?.let { billingPeriods.add(it) }
+
+            val addOnProductId = addOnProduct.platformProductId().productId
+            if (productIds.contains(addOnProductId)) {
+                // The developer is attempting to purchase multiple options on the same product.
+                val error = PurchasesError(
+                    PurchasesErrorCode.PurchaseInvalidError,
+                    "Multi-line purchases cannot contain multiple purchases for the same product." +
+                        " Multiple purchases for the product $addOnProductId were provided.",
+                ).also { errorLog(it) }
+
+                throw PurchasesException(error)
+            } else {
+                productIds.add(addOnProductId)
+            }
         }
     }
 
