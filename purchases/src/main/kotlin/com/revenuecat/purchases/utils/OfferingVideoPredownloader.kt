@@ -6,7 +6,7 @@ import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.canUsePaywallUI
-import com.revenuecat.purchases.common.isVideoComponentEnabled
+import com.revenuecat.purchases.common.checkIfVideoComponentIsEnabled
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
@@ -14,10 +14,10 @@ import com.revenuecat.purchases.storage.FileRepository
 internal class OfferingVideoPredownloader(
     context: Context,
     canShowPaywalls: Boolean = canUsePaywallUI,
-    videoComponentIsEnabled: Boolean = isVideoComponentEnabled,
+    videoComponentIsEnabled: () -> Boolean = ::checkIfVideoComponentIsEnabled,
     private val fileRepository: FileRepository = DefaultFileRepository(context),
 ) {
-    private val shouldPredownload: Boolean = canShowPaywalls && videoComponentIsEnabled
+    private val shouldPredownload: Boolean = canShowPaywalls && videoComponentIsEnabled()
 
     fun downloadVideos(offering: Offering) {
         if (shouldPredownload) {

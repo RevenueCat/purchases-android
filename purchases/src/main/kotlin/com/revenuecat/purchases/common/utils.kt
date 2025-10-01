@@ -61,6 +61,9 @@ internal val canUsePaywallUI: Boolean
         false
     }
 
+internal fun checkIfVideoComponentIsEnabled(): Boolean = BuildConfig.ENABLE_VIDEO_COMPONENT
+
+// Expose for UI package
 @InternalRevenueCatAPI
 val isVideoComponentEnabled: Boolean
-    get() = BuildConfig.ENABLE_VIDEO_COMPONENT
+    get() = checkIfVideoComponentIsEnabled()
