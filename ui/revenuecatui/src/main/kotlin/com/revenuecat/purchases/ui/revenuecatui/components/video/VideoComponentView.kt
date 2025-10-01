@@ -90,7 +90,7 @@ private fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
 ): Pair<URI?, ImageComponentStyle?> {
-    var fallbackImageViewStyle: ImageComponentStyle? by rememberSaveable(style.fallbackSources) {
+    var fallbackImageViewStyle: ImageComponentStyle? by remember(style.fallbackSources) {
         if (style.fallbackSources != null) {
             mutableStateOf(
                 ImageComponentStyle(
