@@ -18,17 +18,18 @@ internal class OfferingVideoPredownloader(
 
     fun downloadVideos(offering: Offering) {
         if (shouldPredownload) {
+            // WIP: We will add a remote flag in the offering metadata that will indicate if we should download
+            // the high res videos or not. For now, we want to only download the low-res to ensure we don't rack up
+            // high cloudfront costs
             offering.paywallComponents?.data?.componentsConfig?.base?.stack
                 ?.filter { it is VideoComponent }
                 ?.forEach { component ->
                     if (component is VideoComponent) {
-                        val videos = setOfNotNull(
-                            component.source.light.url,
+                        val lowResVideos = setOfNotNull(
                             component.source.light.urlLowRes,
-                            component.source.dark?.url,
                             component.source.dark?.urlLowRes,
                         )
-                        fileRepository.prefetch(videos.toList())
+                        fileRepository.prefetch(lowResVideos.toList())
                     }
                 }
         }
