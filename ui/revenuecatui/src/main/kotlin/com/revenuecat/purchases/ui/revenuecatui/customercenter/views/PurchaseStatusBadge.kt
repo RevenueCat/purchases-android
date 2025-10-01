@@ -51,6 +51,7 @@ private data class BadgeInfo(
     val textColor: Color? = null,
 )
 
+@Composable
 private fun getBadgeInfo(
     status: PurchaseStatus,
     localization: CustomerCenterConfigData.Localization,
@@ -87,7 +88,7 @@ private fun getBadgeInfo(
             color = Color.Transparent,
             border = BorderStroke(
                 1.dp,
-                Color(CustomerCenterConstants.Card.COLOR_LIFETIME_BORDER).copy(
+                MaterialTheme.colorScheme.onSurface.copy(
                     alpha = CustomerCenterConstants.Card.LIFETIME_BORDER_ALPHA,
                 ),
             ),
