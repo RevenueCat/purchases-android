@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
-import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -14,9 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
-import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
@@ -40,8 +38,7 @@ internal fun VideoComponentView(
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    context: Context = LocalContext.current,
-    repository: FileRepository = remember { DefaultFileRepository(context) },
+    repository: FileRepository = Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
 

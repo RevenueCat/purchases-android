@@ -61,21 +61,14 @@ interface LocalFileCache {
 }
 
 @InternalRevenueCatAPI
-class DefaultFileRepository
-internal constructor(
+internal class DefaultFileRepository(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val store: KeyedDeferredValueStore<URL, URI> = urlToUriStore,
+    internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore(),
     private val fileCacheManager: LocalFileCache,
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
     private val logHandler: LogHandler = currentLogHandler,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) : FileRepository {
-    companion object {
-        // This allows us to share the asynchronous tasks across callsites
-        // and instances of the file repository, making it possible to pick up
-        // file downloads in the middle of the download.
-        val urlToUriStore = KeyedDeferredValueStore<URL, URI>()
-    }
 
     // Convenience constructor for Android
     constructor(
