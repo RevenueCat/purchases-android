@@ -145,7 +145,7 @@ internal class PurchasesOrchestrator(
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
-    val fileRepository: FileRepository = DefaultFileRepository(application)
+    val fileRepository: FileRepository = DefaultFileRepository(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
