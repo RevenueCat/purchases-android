@@ -25,6 +25,8 @@ class TabControlButtonComponent(
     @get:JvmSynthetic
     @SerialName("tab_index")
     val tabIndex: Int,
+    @SerialName("tab_id")
+    val tabId: String,
     @get:JvmSynthetic
     val stack: StackComponent,
 ) : PaywallComponent
@@ -85,12 +87,17 @@ class TabsComponent(
     @get:JvmSynthetic
     val tabs: List<Tab>,
     @get:JvmSynthetic
+    @SerialName("default_tab_id")
+    val defaultTabId: String? = null,
+    @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko
     @Serializable
     class Tab(
+        @get:JvmSynthetic
+        val id: String,
         @get:JvmSynthetic
         val stack: StackComponent,
     )
