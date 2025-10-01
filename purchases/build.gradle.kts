@@ -45,6 +45,12 @@ android {
 
         buildConfigField(
             type = "boolean",
+            name = "ENABLE_VIDEO_COMPONENT",
+            value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
+        )
+
+        buildConfigField(
+            type = "boolean",
             name = "ENABLE_SIMULATED_STORE",
             value = (localProperties["ENABLE_SIMULATED_STORE"] as? String ?: "false").toString(),
         )
