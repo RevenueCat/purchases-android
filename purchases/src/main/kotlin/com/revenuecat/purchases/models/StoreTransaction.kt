@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
@@ -104,6 +105,7 @@ class StoreTransaction(
      * Null in Google for restored transactions and purchases initiated outside of the app.
      * Null for Amazon purchases.
      */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     val subscriptionOptionIdForProductIDs: Map<String, String>?,
 
     /**
