@@ -1,0 +1,11 @@
+# CODEOWNERS for purchases-android
+
+# Default owners
+* @RevenueCat/coresdk
+
+# Customer Center code and related UI tests
+/purchases/src/**/com/revenuecat/purchases/customercenter/** @RevenueCat/customer-center
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/customercenter/** @RevenueCat/customer-center
+
+# Paywalls
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/templates/** @RevenueCat/monetization
