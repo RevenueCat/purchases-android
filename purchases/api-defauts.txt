@@ -781,6 +781,10 @@ package com.revenuecat.purchases.common {
     property public final String? version;
   }
 
+  public final class UtilsKt {
+    method public static boolean isVideoComponentEnabled();
+  }
+
 }
 
 package com.revenuecat.purchases.customercenter {
