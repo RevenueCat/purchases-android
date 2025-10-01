@@ -14,8 +14,7 @@ internal object CustomerCenterConstants {
         const val COLOR_BADGE_CANCELLED = 0x33F2545B
         const val COLOR_BADGE_FREE_TRIAL = 0x5BF5CA5C
         const val COLOR_BADGE_ACTIVE = 0x9911D483
-        const val COLOR_BADGE_EXPIRED = 0xFFF2F2F7
-        const val COLOR_LIFETIME_BORDER = 0xFF3C3C43
+        const val COLOR_BADGE_EXPIRED = 0x1A1D1B20
         const val LIFETIME_BORDER_ALPHA = 0.29f
     }
 

@@ -749,6 +749,16 @@ class Purchases internal constructor(
         purchasesOrchestrator.setKochavaDeviceID(kochavaDeviceID)
     }
 
+    /**
+     * Subscriber attribute associated with the Airbridge Device ID for the user
+     * Recommended for the RevenueCat Airbridge integration
+     *
+     * @param airbridgeDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
+    }
+
     // endregion
     // region Campaign parameters
 
