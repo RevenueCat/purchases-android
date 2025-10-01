@@ -4,9 +4,21 @@
 
 
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
+### ✨ New Features
+* Add Airbridge device ID subscriber attribute (#2696) via Lim Hoang (@limdauto)
+* Enable Test Store (#2685) via Antonio Pallares (@ajpallares)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* Expose `launch` and `launchIfNeeded` to Java (#2695) via Cesar de la Vega (@vegaro)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix Expired badge in Customer Center dark mode (#2693) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
-* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])
+* Add CODEOWNERS (#2664) via Facundo Menzella (@facumenzella)
+* Adds new tab ID properties to `TabsComponent`. (#2577) via JayShortway (@JayShortway)
+* Bump fastlane-plugin-revenuecat_internal from `401d148` to `7508f17` (#2697) via dependabot[bot] (@dependabot[bot])
+* Reimplement placeholder with Modifier.Node (#2677) via Jaewoong Eum (@skydoves)
+* Remove unused kotlinCompilerExtensionVersion (#2691) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2667) via RevenueCat Git Bot (@RCGitBot)
