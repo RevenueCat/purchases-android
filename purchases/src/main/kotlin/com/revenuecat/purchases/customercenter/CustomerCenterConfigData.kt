@@ -282,6 +282,15 @@ data class CustomerCenterConfigData(
 
             @SerialName("no_virtual_currency_balances_found")
             NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
+
+            @SerialName("screen_purchase_history_account_details_title")
+            ACCOUNT_DETAILS,
+
+            @SerialName("screen_purchase_history_original_purchase_date")
+            DATE_WHEN_APP_WAS_PURCHASED,
+
+            @SerialName("screen_purchase_history_user_id")
+            USER_ID,
             ;
 
             val defaultValue: String
@@ -385,6 +394,9 @@ data class CustomerCenterConfigData(
                     SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
                     VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
                     NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
+                    ACCOUNT_DETAILS -> "Account details"
+                    DATE_WHEN_APP_WAS_PURCHASED -> "Original purchase date"
+                    USER_ID -> "App user ID"
                 }
         }
 

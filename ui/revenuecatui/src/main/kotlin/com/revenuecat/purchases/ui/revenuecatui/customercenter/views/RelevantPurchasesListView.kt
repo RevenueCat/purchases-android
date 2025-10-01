@@ -37,7 +37,7 @@ internal fun RelevantPurchasesListView(
     modifier: Modifier = Modifier,
     purchases: List<PurchaseInformation> = emptyList(),
     shouldShowAccountDetails: Boolean = false,
-    originalAppUserId: String? = null,
+    originalAppUserId: String = "",
     originalPurchaseDate: String? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
@@ -108,11 +108,12 @@ internal fun RelevantPurchasesListView(
             onAction = onAction,
         )
 
-        if (shouldShowAccountDetails && (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)) {
+        if (shouldShowAccountDetails && (originalAppUserId.isNotBlank() || originalPurchaseDate != null)) {
             AccountDetailsSection(
                 appUserId = originalAppUserId,
                 appearance = appearance,
-                originalPurchaseDate = originalPurchaseDate,
+                localization = localization,
+                originalPurchaseDate = "aweqwe12",
             )
         }
     }

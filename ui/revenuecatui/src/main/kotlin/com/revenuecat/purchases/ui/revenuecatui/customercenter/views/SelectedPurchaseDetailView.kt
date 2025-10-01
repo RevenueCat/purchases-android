@@ -29,7 +29,7 @@ internal fun SelectedPurchaseDetailView(
     supportedPaths: List<HelpPath>,
     modifier: Modifier = Modifier,
     shouldShowAccountDetails: Boolean = false,
-    originalAppUserId: String? = null,
+    originalAppUserId: String = "",
     originalPurchaseDate: String? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
@@ -60,10 +60,12 @@ internal fun SelectedPurchaseDetailView(
             onAction = onAction,
         )
 
-        if (shouldShowAccountDetails && (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)) {
+        if (shouldShowAccountDetails && (originalAppUserId.isNotBlank() || originalPurchaseDate != null)) {
             AccountDetailsSection(
                 appUserId = originalAppUserId,
                 appearance = appearance,
+                localization = localization,
+                originalPurchaseDate = originalPurchaseDate,
                 modifier = Modifier.padding(bottom = CustomerCenterConstants.Layout.SECTION_SPACING),
             )
         }

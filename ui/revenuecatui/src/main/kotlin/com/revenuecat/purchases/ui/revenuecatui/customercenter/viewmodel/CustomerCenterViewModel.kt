@@ -832,7 +832,7 @@ internal class CustomerCenterViewModelImpl(
                 null
             }
 
-            val originalAppUserId = latestCustomerInfo?.originalAppUserId?.takeIf { it.isNotBlank() }
+            val originalAppUserId = latestCustomerInfo?.originalAppUserId ?: ""
             val originalPurchaseDate = latestCustomerInfo?.originalPurchaseDate?.let {
                 dateFormatter.format(
                     it,
@@ -841,7 +841,7 @@ internal class CustomerCenterViewModelImpl(
             }
             val shouldShowUserDetailsSection =
                 customerCenterConfigData.support.displayUserDetailsSection &&
-                    (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)
+                    (originalAppUserId.isNotBlank() || originalPurchaseDate != null)
 
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->

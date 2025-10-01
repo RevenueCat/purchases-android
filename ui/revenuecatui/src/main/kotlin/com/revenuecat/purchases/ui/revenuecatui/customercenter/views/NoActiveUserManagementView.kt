@@ -46,7 +46,7 @@ internal fun NoActiveUserManagementView(
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     shouldShowAccountDetails: Boolean = false,
-    originalAppUserId: String? = null,
+    originalAppUserId: String = "",
     originalPurchaseDate: String? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
@@ -100,10 +100,12 @@ internal fun NoActiveUserManagementView(
             onAction = onAction,
         )
 
-        if (shouldShowAccountDetails && (!originalAppUserId.isNullOrBlank() || originalPurchaseDate != null)) {
+        if (shouldShowAccountDetails && (originalAppUserId.isNotBlank() || originalPurchaseDate != null)) {
             AccountDetailsSection(
                 appUserId = originalAppUserId,
                 appearance = appearance,
+                localization = localization,
+                originalPurchaseDate = originalPurchaseDate,
                 modifier = Modifier.padding(bottom = ManagementViewHorizontalPadding),
             )
         }
