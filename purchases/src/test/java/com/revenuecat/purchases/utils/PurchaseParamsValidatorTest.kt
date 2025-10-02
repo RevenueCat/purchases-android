@@ -3,40 +3,173 @@ package com.revenuecat.purchases.utils
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.DefaultAsserter.fail
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseParamsValidatorTest {
+
+    @Test
+    fun `purchaseParams with storeProduct passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            stubStoreProduct(productId = "abc")
+        )
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with package passes validation`() {
+        val mockProduct = stubStoreProduct(productId = "abc")
+        val mockPackage = mockk<Package>()
+        every { mockPackage.product } returns mockProduct
+        every { mockPackage.presentedOfferingContext } returns mockk()
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            packageToPurchase = mockPackage
+        )
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with subscriptionOption passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with oldProductId passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .oldProductId("123")
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with GoogleReplacementMode passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .googleReplacementMode(GoogleReplacementMode.WITHOUT_PRORATION)
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with oldProductId and GoogleReplacementMode passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .oldProductId("123")
+            .googleReplacementMode(GoogleReplacementMode.WITHOUT_PRORATION)
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with personalized price passes validation`() {
+        for (personalizedPrice in listOf(true, false)) {
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+            )
+                .isPersonalizedPrice(personalizedPrice)
+                .build()
+
+            val validationResult = validator.validate(purchaseParams)
+            assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+        }
+    }
+
+    @Test
+    fun `purchaseParams with presentedOfferingContext passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .presentedOfferingContext(mockk())
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
     // region Add-On Validation
 
     private val validator = PurchaseParamsValidator()
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `purchaseParams with base item that isn't a google subscription fails validation`() {
+    fun `purchaseParams with add-ons list provided and base item that isn't a google subscription fails validation`() {
         val purchaseParams = PurchaseParams.Builder(
             mockk(),
             stubStoreProduct(productId = "abc")
         )
-            .addOnStoreProducts(addOnStoreProducts = emptyList())
+            .addOnStoreProducts(addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData()))
             .build()
 
         val validationResult = validator.validate(purchaseParams)
+        if (validationResult is Result.Error) {
+            val purchasesError = validationResult.value
+            assertThat(purchasesError.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+            assertThat(purchasesError.underlyingErrorMessage)
+                .isEqualTo("Add-ons are currently only supported for Google subscriptions.")
+        } else {
+            fail("Validation result should be error")
+        }
+    }
+
+    @Test
+    fun `purchaseParams with add-on item that isn't a google subscription fails validation`() {
+        // We need to mock the purchase params since the addOnProducts() function ignores products
+        // that aren't Google subscriptions
+        val mockPurchasesParams = mockk<PurchaseParams>()
+        val mockAddOnProduct = stubStoreProduct(productId = "abc")
+        val mockGoogleSubscriptionProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+
+        val mockPurchasingData = mockk<GooglePurchasingData.Subscription>()
+        every { mockPurchasingData.addOnProducts } returns listOf(mockk<GooglePurchasingData.InAppProduct>())
+        every { mockPurchasingData.productId } returns "123"
+
+
+        every { mockPurchasesParams.purchasingData } returns mockPurchasingData
+        every { mockPurchasesParams.addOnProducts } returns listOf(mockAddOnProduct)
+        every { mockPurchasesParams.baseItemProduct } returns mockGoogleSubscriptionProduct
+
+        val validationResult = validator.validate(mockPurchasesParams)
         if (validationResult is Result.Error) {
             val purchasesError = validationResult.value
             assertThat(purchasesError.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)

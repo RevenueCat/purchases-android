@@ -23,9 +23,11 @@ internal class PurchaseParamsValidator {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Throws(PurchasesException::class)
     fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
-        val addOnProductsValidationError = validateAddOnProducts(purchaseParams = purchaseParams)
-        if (addOnProductsValidationError is Result.Error) {
-            return addOnProductsValidationError
+        if (!purchaseParams.addOnProducts.isNullOrEmpty()) {
+            val addOnProductsValidationError = validateAddOnProducts(purchaseParams = purchaseParams)
+            if (addOnProductsValidationError is Result.Error) {
+                return addOnProductsValidationError
+            }
         }
 
         return Result.Success(Unit)
@@ -37,7 +39,7 @@ internal class PurchaseParamsValidator {
         purchaseParams: PurchaseParams,
     ): Result<Unit, PurchasesError> {
         val isGoogleSubscriptionPurchase = purchaseParams.purchasingData is GooglePurchasingData.Subscription
-        if (!isGoogleSubscriptionPurchase && (purchaseParams.addOnProducts?.isEmpty() != false)) {
+        if (!isGoogleSubscriptionPurchase && !purchaseParams.addOnProducts.isNullOrEmpty()) {
             val error = PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
                 "Add-ons are currently only supported for Google subscriptions.",
