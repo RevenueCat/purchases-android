@@ -7,8 +7,6 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
@@ -18,7 +16,6 @@ import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurc
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -109,69 +106,14 @@ class PurchaseParamsTest {
     // region Add-Ons
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `addOnStoreProducts with empty list doesn't throw`() {
-        PurchaseParams.Builder(mockk(), stubStoreProductWithGoogleSubscriptionPurchaseData())
-            .addOnStoreProducts(addOnStoreProducts = emptyList())
-            .build()
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnPackages with empty list doesn't throw`() {
-        PurchaseParams.Builder(mockk(), stubStoreProductWithGoogleSubscriptionPurchaseData())
-            .addOnPackages(addOnPackages = emptyList())
-            .build()
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `calling addOnStoreProducts when base product isn't a google subscription throws`() {
-        val exception = catchThrowable {
-            PurchaseParams.Builder(
-                mockk(),
-                stubStoreProduct(productId = "abc")
-            )
-                .addOnStoreProducts(addOnStoreProducts = emptyList())
-                .build()
-        }
-
-        validateExceptionForAddOnsWhenBaseProductIsntGoogleSubThrows(exception)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `calling addOnPackages when base product isn't a google subscription throws`() {
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), stubStoreProduct(productId = "abc"))
-                .addOnPackages(addOnPackages = emptyList())
-                .build()
-        }
-
-        validateExceptionForAddOnsWhenBaseProductIsntGoogleSubThrows(exception)
-    }
-
-    private fun validateExceptionForAddOnsWhenBaseProductIsntGoogleSubThrows(exception: Throwable) {
-        assertThat(exception::class).isEqualTo(PurchasesException::class)
-        val purchasesException = exception as PurchasesException
-        assertThat(purchasesException.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.underlyingErrorMessage)
-            .isEqualTo("Add-ons are currently only supported for Google subscriptions.")
-        assertThat(purchasesException.error.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
-        assertThat(purchasesException.error.underlyingErrorMessage)
-            .isEqualTo("Add-ons are currently only supported for Google subscriptions.")
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
     fun `addOnStoreProducts with empty list correctly sets purchasingData to Subscription`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
             .addOnStoreProducts(addOnStoreProducts = emptyList())
             .build()
 
-        validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchasingData(
-            purchasingData = purchaseParams.purchasingData,
+        validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchaseParams(
+            purchaseParams = purchaseParams,
             baseProduct = baseProduct
         )
     }
@@ -184,18 +126,20 @@ class PurchaseParamsTest {
             .addOnPackages(addOnPackages = emptyList())
             .build()
 
-        validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchasingData(
-            purchasingData = purchaseParams.purchasingData,
+        validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchaseParams(
+            purchaseParams = purchaseParams,
             baseProduct = baseProduct
         )
     }
 
-    private fun validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchasingData(
-        purchasingData: PurchasingData,
+    private fun validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchaseParams(
+        purchaseParams: PurchaseParams,
         baseProduct: StoreProduct
     ) {
-        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
-        val subscription = purchasingData as GooglePurchasingData.Subscription
+        assertThat(purchaseParams.purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
+        assertThat(purchaseParams.baseItemProduct).isEqualTo(baseProduct)
+        assertThat(purchaseParams.addOnProducts).isEqualTo(emptyList<StoreProduct>())
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
         assertThat(subscription.addOnProducts).isEmpty()
         assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
         assertThat(subscription.productType).isEqualTo(ProductType.SUBS)
@@ -211,8 +155,8 @@ class PurchaseParamsTest {
             .addOnStoreProducts(addOnStoreProducts = listOf(addOn))
             .build()
 
-        validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchasingData(
-            purchasingData = purchaseParams.purchasingData,
+        validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchaseParams(
+            purchaseParams = purchaseParams,
             baseProduct = baseProduct,
             addOn = addOn
         )
@@ -233,186 +177,27 @@ class PurchaseParamsTest {
             .addOnPackages(addOnPackages = listOf(aPackage))
             .build()
 
-        validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchasingData(
-            purchasingData = purchaseParams.purchasingData,
+        validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchaseParams(
+            purchaseParams = purchaseParams,
             baseProduct = baseProduct,
             addOn = addOnProduct
         )
     }
 
-    private fun validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchasingData(
-        purchasingData: PurchasingData,
+    private fun validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchaseParams(
+        purchaseParams: PurchaseParams,
         baseProduct: StoreProduct,
         addOn: StoreProduct
     ) {
-        assertThat(purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
-        val subscription = purchasingData as GooglePurchasingData.Subscription
+        assertThat(purchaseParams.purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
+        assertThat(purchaseParams.baseItemProduct).isEqualTo(baseProduct)
+        assertThat(purchaseParams.addOnProducts).isEqualTo(listOf(addOn))
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
         assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
         assertThat(subscription.productType).isEqualTo(ProductType.SUBS)
         assertThat(subscription.addOnProducts?.size).isEqualTo(1)
         val addOnProduct = subscription.addOnProducts!!.first()
         assertThat(addOnProduct).isEqualTo(addOn.purchasingData)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnStoreProducts throws if more than 49 add-ons are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
-        val addOns = ArrayList<StoreProduct>()
-        for (i in 1..50) {
-            addOns.add(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz_$i"))
-        }
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnStoreProducts(addOnStoreProducts = addOns)
-                .build()
-        }
-        validateExceptionForAddOnsThrowIfMoreThan49AddOnsAreProvided(exception)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnPackages throws if more than 49 add-ons are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
-        val addOns = ArrayList<Package>()
-        for (i in 1..50) {
-            addOns.add(
-                Package(
-                    identifier = "abc",
-                    packageType = PackageType.UNKNOWN,
-                    product = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz_$i"),
-                    presentedOfferingContext = mockk()
-                )
-            )
-        }
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnPackages(addOnPackages = addOns)
-                .build()
-        }
-        validateExceptionForAddOnsThrowIfMoreThan49AddOnsAreProvided(exception)
-    }
-
-    private fun validateExceptionForAddOnsThrowIfMoreThan49AddOnsAreProvided(exception: Throwable) {
-        assertThat(exception::class).isEqualTo(PurchasesException::class)
-        val purchasesException = exception as PurchasesException
-        assertThat(purchasesException.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.underlyingErrorMessage)
-            .isEqualTo("Multi-line purchases cannot contain more than 50 products (1 base + 49 add-ons).")
-        assertThat(purchasesException.error.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
-        assertThat(purchasesException.error.underlyingErrorMessage)
-            .isEqualTo("Multi-line purchases cannot contain more than 50 products (1 base + 49 add-ons).")
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnStoreProducts throws if add-ons with different periods are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
-        val monthlyAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "monthly_addon",
-            period = Period(1, Period.Unit.MONTH, "P1M"))
-        val yearlyAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "yearly_addon",
-            period = Period(1, Period.Unit.YEAR, "P1Y"))
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnStoreProducts(addOnStoreProducts = listOf(monthlyAddOn, yearlyAddOn))
-                .build()
-        }
-
-        validateExceptionForAddOnsThrowIfDifferentPeriodsAreProvided(exception)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnPackages throws if add-ons with different periods are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
-        val monthlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "monthly_addon",
-            period = Period(1, Period.Unit.MONTH, "P1M"))
-        val yearlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "yearly_addon",
-            period = Period(1, Period.Unit.YEAR, "P1Y"))
-        val monthlyPackage = Package(
-            identifier = "monthly_package",
-            packageType = PackageType.UNKNOWN,
-            product = monthlyAddOnProduct,
-            presentedOfferingContext = mockk()
-        )
-        val yearlyPackage = Package(
-            identifier = "yearly_package",
-            packageType = PackageType.UNKNOWN,
-            product = yearlyAddOnProduct,
-            presentedOfferingContext = mockk()
-        )
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnPackages(addOnPackages = listOf(monthlyPackage, yearlyPackage))
-                .build()
-        }
-
-        validateExceptionForAddOnsThrowIfDifferentPeriodsAreProvided(exception)
-    }
-
-    private fun validateExceptionForAddOnsThrowIfDifferentPeriodsAreProvided(exception: Throwable) {
-        assertThat(exception::class).isEqualTo(PurchasesException::class)
-        val purchasesException = exception as PurchasesException
-        assertThat(purchasesException.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.underlyingErrorMessage)
-            .isEqualTo("All items in a multi-line purchase must have the same billing period.")
-        assertThat(purchasesException.error.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
-        assertThat(purchasesException.error.underlyingErrorMessage)
-            .isEqualTo("All items in a multi-line purchase must have the same billing period.")
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnStoreProducts throws if multiple purchases for the same product are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
-        val yearlyAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.YEAR, "P1Y"))
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnStoreProducts(addOnStoreProducts = listOf(yearlyAddOn))
-                .build()
-        }
-
-        validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `addOnPackages throws if multiple purchases for the same product are provided`() {
-        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.MONTH, "P1M"))
-        val yearlyAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(period = Period(1, Period.Unit.YEAR, "P1Y"))
-        val yearlyPackage = Package(
-            identifier = "yearly_package",
-            packageType = PackageType.UNKNOWN,
-            product = yearlyAddOnProduct,
-            presentedOfferingContext = mockk()
-        )
-
-        val exception = catchThrowable {
-            PurchaseParams.Builder(mockk(), baseProduct)
-                .addOnPackages(addOnPackages = listOf(yearlyPackage))
-                .build()
-        }
-
-        validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception)
-    }
-
-    private fun validateExceptionForAddOnsThrownIfMultiplePurchasesForSameProductAreProvided(exception: Throwable) {
-        val expectedErrorMessage = "Multi-line purchases cannot contain multiple purchases for the same product. " +
-            "Multiple purchases for the product monthly_freetrial were provided."
-        assertThat(exception::class).isEqualTo(PurchasesException::class)
-        val purchasesException = exception as PurchasesException
-        assertThat(purchasesException.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.underlyingErrorMessage).isEqualTo(expectedErrorMessage)
-        assertThat(purchasesException.error.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(purchasesException.error.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
-        assertThat(purchasesException.error.underlyingErrorMessage).isEqualTo(expectedErrorMessage)
     }
     // endregion Add-Ons
 }
