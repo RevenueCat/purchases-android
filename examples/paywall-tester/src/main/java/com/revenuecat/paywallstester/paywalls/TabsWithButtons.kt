@@ -92,6 +92,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                         components = (0..2).map { index ->
                                             TabControlButtonComponent(
                                                 tabIndex = index,
+                                                tabId = "tab-$index",
                                                 stack = StackComponent(
                                                     components = listOf(
                                                         TextComponent(
@@ -123,6 +124,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                 ),
                                 tabs = listOf(
                                     TabsComponent.Tab(
+                                        id = "tab-0",
                                         stack = StackComponent(
                                             components = listOf(
                                                 TabControlComponent,
@@ -173,6 +175,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                         ),
                                     ),
                                     TabsComponent.Tab(
+                                        id = "tab-1",
                                         stack = StackComponent(
                                             components = listOf(
                                                 TabControlComponent,
@@ -223,6 +226,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                         ),
                                     ),
                                     TabsComponent.Tab(
+                                        id = "tab-2",
                                         stack = StackComponent(
                                             components = listOf(
                                                 TabControlComponent,
