@@ -306,7 +306,7 @@ package com.revenuecat.purchases {
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.SubscriptionOption subscriptionOption);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public final com.revenuecat.purchases.PurchaseParams.Builder addOnPackages(java.util.List<com.revenuecat.purchases.Package> addOnPackages) throws com.revenuecat.purchases.PurchasesException;
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts) throws com.revenuecat.purchases.PurchasesException;
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
     method public com.revenuecat.purchases.PurchaseParams build();
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
@@ -881,13 +881,15 @@ package com.revenuecat.purchases.models {
   }
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
-    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
+    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, com.revenuecat.purchases.models.Period? billingPeriod, java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
     method public java.util.List<com.revenuecat.purchases.models.GooglePurchasingData>? getAddOnProducts();
+    method public com.revenuecat.purchases.models.Period? getBillingPeriod();
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
     method public String getToken();
     property public final java.util.List<com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts;
+    property public final com.revenuecat.purchases.models.Period? billingPeriod;
     property public final String optionId;
     property public final com.android.billingclient.api.ProductDetails productDetails;
     property public String productId;

@@ -1721,7 +1721,8 @@ class BillingWrapperTest {
             optionId = optionId,
             productDetails = productDetails,
             token = "mock-subscription-offer-token",
-            addOnProducts = listOf(storeProduct2.purchasingData as GooglePurchasingData)
+            billingPeriod = mockk(),
+            addOnProducts = listOf(storeProduct2.purchasingData as GooglePurchasingData),
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -1805,9 +1806,10 @@ class BillingWrapperTest {
             optionId = "base_plan",
             productDetails = productDetails,
             token = "mock-subscription-offer-token",
+            billingPeriod = mockk(),
             addOnProducts = listOf(
                 createStoreProductWithoutOffers(productId = productId2).purchasingData as GooglePurchasingData
-            )
+            ),
         )
         val isPersonalizedPrice = true
 

@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.google.validateAndFilterCompatibleAddOnProducts
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
@@ -29,6 +28,9 @@ class PurchaseParams(val builder: Builder) {
     @get:JvmSynthetic
     internal var presentedOfferingContext: PresentedOfferingContext?
 
+    @get:JvmSynthetic
+    internal var containsAddOnItems: Boolean
+
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
@@ -36,6 +38,7 @@ class PurchaseParams(val builder: Builder) {
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
+        this.containsAddOnItems = builder.containsAddOnProducts
     }
 
     /**
@@ -53,6 +56,7 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
+        @get:JvmSynthetic internal var containsAddOnProducts: Boolean = false,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
@@ -151,39 +155,35 @@ class PurchaseParams(val builder: Builder) {
          *
          * The following restrictions apply to add-on purchases:
          * - Add-on purchases are currently only supported for subscriptions on the Play Store.
-         * - The renewal periods of all add-on products must be the same and match the period of the base product.
+         * - The renewal periods of all add-on products must be the same and match the period of the base item.
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        @Throws(PurchasesException::class)
         fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
             if (addOnStoreProducts.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
             }
 
             val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
-                ?: throw PurchasesException(
-                    PurchasesError(
-                        PurchasesErrorCode.PurchaseInvalidError,
-                        "Add-ons are currently only supported for Google subscriptions.",
-                    ),
+            existingPurchasingData?.let {
+                val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
+                    .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+                if (compatibleAddOnProducts.isNotEmpty()) {
+                    this.containsAddOnProducts = true
+                }
+
+                val newPurchasingData = GooglePurchasingData.Subscription(
+                    productId = existingPurchasingData.productId,
+                    optionId = existingPurchasingData.optionId,
+                    productDetails = existingPurchasingData.productDetails,
+                    token = existingPurchasingData.token,
+                    billingPeriod = existingPurchasingData.billingPeriod,
+                    addOnProducts = compatibleAddOnProducts,
                 )
 
-            // This call will throw a PurchasesException if there is a validation issue with the add-on products
-            val compatibleAddOnProducts: List<GooglePurchasingData> = validateAndFilterCompatibleAddOnProducts(
-                baseProductPurchasingData = existingPurchasingData,
-                addOnProducts = addOnStoreProducts,
-            )
-
-            val newPurchasingData = GooglePurchasingData.Subscription(
-                productId = existingPurchasingData.productId,
-                optionId = existingPurchasingData.optionId,
-                productDetails = existingPurchasingData.productDetails,
-                token = existingPurchasingData.token,
-                addOnProducts = compatibleAddOnProducts,
-            )
-
-            this.purchasingData = newPurchasingData
+                this.purchasingData = newPurchasingData
+            }
         }
 
         open fun build(): PurchaseParams {
