@@ -13,12 +13,13 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.strings.PurchaseStrings
 import kotlin.jvm.Throws
 
-/**
- * Maximum number of add-on products allowed in a multi-line purchase.
- */
-internal const val MAX_NUMBER_OF_ADD_ON_PRODUCTS = 49
-
 internal class PurchaseParamsValidator {
+    companion object {
+        /**
+         * Maximum number of add-on products allowed in a multi-line purchase.
+         */
+        internal const val MAX_NUMBER_OF_ADD_ON_PRODUCTS = 49
+    }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Throws(PurchasesException::class)
