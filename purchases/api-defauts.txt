@@ -424,6 +424,7 @@ package com.revenuecat.purchases {
     method public void getCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method public void getCustomerInfo(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method @Deprecated public static boolean getDebugLogsEnabled();
+    method public com.revenuecat.purchases.storage.FileRepository getFileRepository();
     method @Deprecated @kotlin.jvm.Synchronized public boolean getFinishTransactions();
     method public static String getFrameworkVersion();
     method @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();
@@ -510,6 +511,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.PurchasesConfiguration currentConfiguration;
     property public final com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener;
     property @Deprecated public static final boolean debugLogsEnabled;
+    property public final com.revenuecat.purchases.storage.FileRepository fileRepository;
     property @Deprecated @kotlin.jvm.Synchronized public final boolean finishTransactions;
     property public static final String frameworkVersion;
     property public final boolean isAnonymous;
@@ -858,6 +860,10 @@ package com.revenuecat.purchases.common {
     method public String? getVersion();
     property public final String flavor;
     property public final String? version;
+  }
+
+  public final class UtilsKt {
+    method public static boolean isVideoComponentEnabled();
   }
 
 }

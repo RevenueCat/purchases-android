@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.api.BuildConfig
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -50,3 +52,18 @@ internal val Context.playServicesVersionName: String?
 
 internal val Context.isDeviceProtectedStorageCompat: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isDeviceProtectedStorage
+
+internal val canUsePaywallUI: Boolean
+    get() = try {
+        Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
+        true
+    } catch (_: ClassNotFoundException) {
+        false
+    }
+
+internal fun checkIfVideoComponentIsEnabled(): Boolean = BuildConfig.ENABLE_VIDEO_COMPONENT
+
+// Expose for UI package
+@InternalRevenueCatAPI
+val isVideoComponentEnabled: Boolean
+    get() = checkIfVideoComponentIsEnabled()
