@@ -35,7 +35,7 @@ internal class PurchaseParamsValidator {
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod")
-    internal fun validateAddOnProducts(
+    private fun validateAddOnProducts(
         purchaseParams: PurchaseParams,
     ): Result<Unit, PurchasesError> {
         val isGoogleSubscriptionPurchase = purchaseParams.purchasingData is GooglePurchasingData.Subscription
