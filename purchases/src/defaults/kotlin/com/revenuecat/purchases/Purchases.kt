@@ -148,7 +148,7 @@ class Purchases internal constructor(
     /**
      * The currently configured FileRepository
      */
-    @OptIn(InternalRevenueCatAPI::class)
+    @InternalRevenueCatAPI
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
 
