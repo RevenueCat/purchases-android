@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.strings.PurchaseStrings
 import kotlin.jvm.Throws
 
@@ -24,7 +23,7 @@ internal class PurchaseParamsValidator {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Throws(PurchasesException::class)
     fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
-        if (!purchaseParams.addOnProducts.isNullOrEmpty()) {
+        if (purchaseParams.containsAddOnItems) {
             val addOnProductsValidationError = validateAddOnProducts(purchaseParams = purchaseParams)
             if (addOnProductsValidationError is Result.Error) {
                 return addOnProductsValidationError
@@ -40,7 +39,8 @@ internal class PurchaseParamsValidator {
         purchaseParams: PurchaseParams,
     ): Result<Unit, PurchasesError> {
         val isGoogleSubscriptionPurchase = purchaseParams.purchasingData is GooglePurchasingData.Subscription
-        if (!isGoogleSubscriptionPurchase && !purchaseParams.addOnProducts.isNullOrEmpty()) {
+
+        if (!isGoogleSubscriptionPurchase && purchaseParams.containsAddOnItems) {
             val error = PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
                 "Add-ons are currently only supported for Google subscriptions.",
@@ -67,7 +67,7 @@ internal class PurchaseParamsValidator {
             return Result.Error(error)
         }
 
-        var productIds = mutableSetOf<String>()
+        val productIds = mutableSetOf<String>()
         productIds.add(googleSubscriptionPurchasingData.productId)
         for (addOnProduct in addOnProducts) {
             if (addOnProduct is GooglePurchasingData.Subscription) {
@@ -95,11 +95,13 @@ internal class PurchaseParamsValidator {
             }
         }
 
-        val billingPeriods = mutableSetOf<Period>()
-        purchaseParams.baseItemProduct?.period?.let { billingPeriods.add(it) }
-        val addOnBillingPeriods = purchaseParams.addOnProducts?.mapNotNull { it.period } ?: emptyList()
+        val baseItemBillingPeriod = googleSubscriptionPurchasingData.billingPeriod?.iso8601
+        val addOnBillingPeriods = addOnProducts
+            .filterIsInstance<GooglePurchasingData.Subscription>()
+            .mapNotNull { it.billingPeriod } ?: emptyList()
+
         for (billingPeriod in addOnBillingPeriods) {
-            if (!billingPeriods.contains(billingPeriod)) {
+            if (billingPeriod.iso8601 != baseItemBillingPeriod) {
                 val error = PurchasesError(
                     PurchasesErrorCode.PurchaseInvalidError,
                     "All items in a multi-line purchase must have the same billing period.",

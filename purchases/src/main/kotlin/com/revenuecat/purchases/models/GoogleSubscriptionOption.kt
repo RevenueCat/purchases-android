@@ -128,6 +128,19 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
             id,
             productDetails,
             offerToken,
+            primaryPricingPhase?.billingPeriod,
             addOnProducts = emptyList(),
         )
+
+    /**
+     * The "primary" pricing phase for the description, defined by either the first infinitely recurring phase,
+     * or if no infinitely recurring phase is found, then the last one.
+     */
+    private val primaryPricingPhase: PricingPhase?
+        get() {
+            val infiniteRecurringPricingPhase = pricingPhases
+                .firstOrNull { it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING }
+
+            return infiniteRecurringPricingPhase ?: pricingPhases.lastOrNull()
+        }
 }

@@ -7,7 +7,6 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -137,8 +136,7 @@ class PurchaseParamsTest {
         baseProduct: StoreProduct
     ) {
         assertThat(purchaseParams.purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
-        assertThat(purchaseParams.baseItemProduct).isEqualTo(baseProduct)
-        assertThat(purchaseParams.addOnProducts).isEqualTo(emptyList<StoreProduct>())
+        assertThat(purchaseParams.containsAddOnItems).isFalse()
         val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
         assertThat(subscription.addOnProducts).isEmpty()
         assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
@@ -190,14 +188,49 @@ class PurchaseParamsTest {
         addOn: StoreProduct
     ) {
         assertThat(purchaseParams.purchasingData::class).isEqualTo(GooglePurchasingData.Subscription::class)
-        assertThat(purchaseParams.baseItemProduct).isEqualTo(baseProduct)
-        assertThat(purchaseParams.addOnProducts).isEqualTo(listOf(addOn))
+        assertThat(purchaseParams.containsAddOnItems).isTrue()
         val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
         assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
         assertThat(subscription.productType).isEqualTo(ProductType.SUBS)
         assertThat(subscription.addOnProducts?.size).isEqualTo(1)
         val addOnProduct = subscription.addOnProducts!!.first()
         assertThat(addOnProduct).isEqualTo(addOn.purchasingData)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchaseParams with add-ons sets containsAddOns to true`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val addOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
+
+        val purchaseParamsWithStoreProducts = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = listOf(addOn))
+            .build()
+
+        assertThat(purchaseParamsWithStoreProducts.containsAddOnItems).isTrue()
+
+        val purchaseParamsWithStorePackages = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnPackages(listOf(
+                Package(
+                    identifier = "abc",
+                    packageType = PackageType.UNKNOWN,
+                    product = addOn,
+                    presentedOfferingContext = mockk()
+                )
+            ))
+            .build()
+
+        assertThat(purchaseParamsWithStorePackages.containsAddOnItems).isTrue()
+    }
+
+    @Test
+    fun `purchaseParams with no add-ons sets containsAddOns to false`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .build()
+
+        assertThat(purchaseParams.containsAddOnItems).isFalse()
     }
     // endregion Add-Ons
 }

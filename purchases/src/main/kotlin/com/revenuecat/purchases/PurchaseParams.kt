@@ -29,10 +29,7 @@ class PurchaseParams(val builder: Builder) {
     internal var presentedOfferingContext: PresentedOfferingContext?
 
     @get:JvmSynthetic
-    internal val baseItemProduct: StoreProduct?
-
-    @get:JvmSynthetic
-    internal val addOnProducts: List<StoreProduct>?
+    internal var containsAddOnItems: Boolean
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -41,8 +38,7 @@ class PurchaseParams(val builder: Builder) {
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
-        this.baseItemProduct = builder.product
-        this.addOnProducts = builder.addOnProducts
+        this.containsAddOnItems = builder.containsAddOnProducts
     }
 
     /**
@@ -60,7 +56,7 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
-        @get:JvmSynthetic internal var addOnProducts: List<StoreProduct>?,
+        @get:JvmSynthetic internal var containsAddOnProducts: Boolean = false,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
@@ -68,11 +64,10 @@ class PurchaseParams(val builder: Builder) {
                 packageToPurchase.product.purchasingData,
                 packageToPurchase.presentedOfferingContext,
                 packageToPurchase.product,
-                null,
             )
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
-            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct, null)
+            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
@@ -80,7 +75,6 @@ class PurchaseParams(val builder: Builder) {
                 subscriptionOption.purchasingData,
                 subscriptionOption.presentedOfferingContext,
                 product = null,
-                addOnProducts = null,
             )
 
         @set:JvmSynthetic
@@ -170,18 +164,21 @@ class PurchaseParams(val builder: Builder) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
             }
 
-            this.addOnProducts = addOnStoreProducts
-
             val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
             existingPurchasingData?.let {
                 val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
                     .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+                if (compatibleAddOnProducts.isNotEmpty()) {
+                    this.containsAddOnProducts = true
+                }
 
                 val newPurchasingData = GooglePurchasingData.Subscription(
                     productId = existingPurchasingData.productId,
                     optionId = existingPurchasingData.optionId,
                     productDetails = existingPurchasingData.productDetails,
                     token = existingPurchasingData.token,
+                    billingPeriod = existingPurchasingData.billingPeriod,
                     addOnProducts = compatibleAddOnProducts,
                 )
 

@@ -134,14 +134,15 @@ class PurchaseParamsValidatorTest {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `purchaseParams with add-ons list provided and base item that isn't a google subscription fails validation`() {
-        val purchaseParams = PurchaseParams.Builder(
-            mockk(),
-            stubStoreProduct(productId = "abc")
-        )
-            .addOnStoreProducts(addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData()))
-            .build()
+        // We need to mock the purchase params since the addOnProducts() function ignores products
+        // that aren't GooglePurchasingData.Subscription
+        val mockPurchasesParams = mockk<PurchaseParams>()
+        val mockPurchasingData = mockk<GooglePurchasingData.InAppProduct>()
+        every { mockPurchasingData.productId } returns "123"
+        every { mockPurchasesParams.purchasingData } returns mockPurchasingData
+        every { mockPurchasesParams.containsAddOnItems } returns true
 
-        val validationResult = validator.validate(purchaseParams)
+        val validationResult = validator.validate(mockPurchasesParams)
         if (validationResult is Result.Error) {
             val purchasesError = validationResult.value
             assertThat(purchasesError.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
@@ -155,19 +156,15 @@ class PurchaseParamsValidatorTest {
     @Test
     fun `purchaseParams with add-on item that isn't a google subscription fails validation`() {
         // We need to mock the purchase params since the addOnProducts() function ignores products
-        // that aren't Google subscriptions
+        // that aren't GooglePurchasingData.Subscription
         val mockPurchasesParams = mockk<PurchaseParams>()
-        val mockAddOnProduct = stubStoreProduct(productId = "abc")
-        val mockGoogleSubscriptionProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
-
         val mockPurchasingData = mockk<GooglePurchasingData.Subscription>()
         every { mockPurchasingData.addOnProducts } returns listOf(mockk<GooglePurchasingData.InAppProduct>())
         every { mockPurchasingData.productId } returns "123"
 
 
         every { mockPurchasesParams.purchasingData } returns mockPurchasingData
-        every { mockPurchasesParams.addOnProducts } returns listOf(mockAddOnProduct)
-        every { mockPurchasesParams.baseItemProduct } returns mockGoogleSubscriptionProduct
+        every { mockPurchasesParams.containsAddOnItems } returns true
 
         val validationResult = validator.validate(mockPurchasesParams)
         if (validationResult is Result.Error) {
@@ -208,7 +205,6 @@ class PurchaseParamsValidatorTest {
     fun `purchaseParams with Google Subscription base item and valid add-ons passes validation`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val addOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "xyz")
-
         val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
             .addOnStoreProducts(addOnStoreProducts = listOf(addOn))
             .build()

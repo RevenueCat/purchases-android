@@ -359,6 +359,7 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
                 optionId = optionId,
                 productDetails = productDetails,
                 token = token,
+                billingPeriod = period,
                 addOnProducts = emptyList()
             )
     }
@@ -370,6 +371,7 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
                 optionId = optionId,
                 productDetails = productDetails,
                 token = token,
+                billingPeriod = period,
                 addOnProducts = emptyList()
             )
         val storeProduct: GoogleStoreProduct?
