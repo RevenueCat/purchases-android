@@ -43,6 +43,12 @@ android {
         testApplicationId = obtainTestApplicationId()
         testBuildType = obtainTestBuildType()
 
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_VIDEO_COMPONENT",
+            value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
+        )
+
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )

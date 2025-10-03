@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.utils.mapNotNullKeys
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -43,6 +44,10 @@ sealed interface LocalizationData {
     @Serializable
     @JvmInline
     value class Image(@get:JvmSynthetic val value: ThemeImageUrls) : LocalizationData
+
+    @Serializable
+    @JvmInline
+    value class Video(@get:JvmSynthetic val value: ThemeVideoUrls) : LocalizationData
 }
 
 @OptIn(InternalRevenueCatAPI::class)
