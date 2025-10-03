@@ -2,6 +2,7 @@ package com.revenuecat.purchases.storage
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.verboseLog
@@ -25,7 +26,8 @@ import java.security.MessageDigest
 /**
  * A file repository that handles downloading and caching files from remote URLs.
  */
-internal interface FileRepository {
+@InternalRevenueCatAPI
+interface FileRepository {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of URL to fetch data from.
@@ -39,20 +41,29 @@ internal interface FileRepository {
      * @return The local file's URI where the data can be found after caching is complete.
      */
     suspend fun generateOrGetCachedFileURL(url: URL): URI
+
+    /**
+     * Get the cached file url if it exists.
+     * @param url The url for the remote data to cache into a file.
+     * @return The local file's URI where the data can be found after caching is complete.
+     * */
+    fun getFile(url: URL): URI?
 }
 
 /**
  * The file repository is a service capable of storing data and returning the URL where that stored data exists.
  */
-internal interface LocalFileCache {
+@InternalRevenueCatAPI
+interface LocalFileCache {
     fun generateLocalFilesystemURI(remoteURL: URL): URI?
     fun cachedContentExists(uri: URI): Boolean
     fun saveData(data: ByteArray, uri: URI)
 }
 
+@InternalRevenueCatAPI
 internal class DefaultFileRepository(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore<URL, URI>(),
+    internal val store: KeyedDeferredValueStore<URL, URI> = KeyedDeferredValueStore(),
     private val fileCacheManager: LocalFileCache,
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO + NonCancellable),
     private val logHandler: LogHandler = currentLogHandler,
@@ -99,9 +110,14 @@ internal class DefaultFileRepository(
         }.await()
     }
 
+    override fun getFile(url: URL): URI? =
+        fileCacheManager.generateLocalFilesystemURI(remoteURL = url)?.let {
+            if (fileCacheManager.cachedContentExists(it)) it else null
+        }
+
     private suspend fun downloadFile(url: URL): ByteArray = try {
         withContext(Dispatchers.IO) {
-            verboseLog { "Downloading remote font from $url" }
+            verboseLog { "Downloading remote file from $url" }
 
             val connection = urlConnectionFactory.createConnection(url.toString())
 
@@ -160,6 +176,7 @@ internal class DefaultFileRepository(
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 private class DefaultFileCache(
     private val context: Context,
 ) : LocalFileCache {
