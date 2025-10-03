@@ -192,8 +192,10 @@ internal class PurchasesOrchestrator(
     }
 
     var allowSharingPlayStoreAccount: Boolean
-        @Synchronized get() =
-            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+        get() {
+            val currentValue = synchronized(this) { state.allowSharingPlayStoreAccount }
+            return currentValue ?: identityManager.currentUserIsAnonymous()
+        }
 
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
