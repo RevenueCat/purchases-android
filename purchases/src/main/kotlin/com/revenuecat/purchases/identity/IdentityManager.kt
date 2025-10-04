@@ -20,6 +20,9 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
@@ -35,6 +38,8 @@ internal class IdentityManager(
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
+    // FIXME use correct scope or change method configure to suspend
+    private val scope: CoroutineScope = GlobalScope,
 ) {
     companion object {
         private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
@@ -67,7 +72,9 @@ internal class IdentityManager(
         val cacheEditor = deviceCache.startEditing()
         deviceCache.cacheAppUserID(appUserIDToUse, cacheEditor)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse, cacheEditor)
-        invalidateETagCacheIfNeeded(appUserIDToUse)
+        scope.launch {
+            invalidateETagCacheIfNeeded(appUserIDToUse)
+        }
         cacheEditor.apply()
 
         enqueue {
@@ -180,7 +187,7 @@ internal class IdentityManager(
         }
     }
 
-    private fun invalidateETagCacheIfNeeded(
+    private suspend fun invalidateETagCacheIfNeeded(
         appUserID: String,
     ) {
         if (backend.verificationMode == SignatureVerificationMode.Disabled) {

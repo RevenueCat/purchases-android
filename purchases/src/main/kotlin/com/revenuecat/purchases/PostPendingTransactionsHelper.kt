@@ -11,6 +11,8 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal sealed class SyncPendingPurchaseResult {
     data class Success(val customerInfo: CustomerInfo) : SyncPendingPurchaseResult()
@@ -28,14 +30,13 @@ internal class PostPendingTransactionsHelper(
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
 ) {
 
-    fun syncPendingPurchaseQueue(
+    suspend fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
-        callback: ((SyncPendingPurchaseResult) -> Unit)? = null,
-    ) {
+    ): SyncPendingPurchaseResult = suspendCoroutine { continuation ->
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.DEBUG) { PurchaseStrings.SKIPPING_AUTOMATIC_SYNC }
-            callback?.invoke(SyncPendingPurchaseResult.AutoSyncDisabled)
-            return
+            continuation.resume(SyncPendingPurchaseResult.AutoSyncDisabled)
+            return@suspendCoroutine
         }
         log(LogIntent.DEBUG) { PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE }
         val appUserID = identityManager.currentAppUserID
@@ -55,19 +56,19 @@ internal class PostPendingTransactionsHelper(
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
-                            callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+                            continuation.resume(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
                         },
                         onError = { error ->
-                            callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                            continuation.resume(SyncPendingPurchaseResult.Error(error))
                         },
                         onSuccess = { customerInfo ->
-                            callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
+                            continuation.resume(SyncPendingPurchaseResult.Success(customerInfo))
                         },
                     )
                 },
                 onError = { error ->
                     log(LogIntent.GOOGLE_ERROR) { error.toString() }
-                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                    continuation.resume(SyncPendingPurchaseResult.Error(error))
                 },
             )
         })
