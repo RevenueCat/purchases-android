@@ -34,9 +34,12 @@ internal fun RelevantPurchasesListView(
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
-    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
     purchases: List<PurchaseInformation> = emptyList(),
+    shouldShowAccountDetails: Boolean = false,
+    originalAppUserId: String = "",
+    originalPurchaseDate: String? = null,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -104,6 +107,15 @@ internal fun RelevantPurchasesListView(
             contactEmail = contactEmail,
             onAction = onAction,
         )
+
+        if (shouldShowAccountDetails && (originalAppUserId.isNotBlank() || originalPurchaseDate != null)) {
+            AccountDetailsSection(
+                appUserId = originalAppUserId,
+                appearance = appearance,
+                localization = localization,
+                originalPurchaseDate = "aweqwe12",
+            )
+        }
     }
 }
 
@@ -165,6 +177,8 @@ private fun RelevantPurchasesListViewPreview() {
                 onPurchaseSelect = {},
                 onAction = {},
                 purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+                shouldShowAccountDetails = true,
+                originalAppUserId = "user-123",
             )
         }
     }

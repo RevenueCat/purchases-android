@@ -146,6 +146,7 @@ class CustomerCenterConfigDataTest {
     fun `Support email is correctly set`() {
         val support = CustomerCenterConfigData.Support(email = "support@example.com")
         assertThat(support.email).isEqualTo("support@example.com")
+        assertThat(support.displayUserDetailsSection).isTrue()
     }
 
     @Test
@@ -212,6 +213,33 @@ class CustomerCenterConfigDataTest {
         support.put("display_virtual_currencies", false)
         val configData = createSampleConfigData(json.toString())
         assertThat(configData.support.displayVirtualCurrencies).isFalse()
+    }
+
+    @Test
+    fun `can parse json without display_user_details_section`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.remove("display_user_details_section")
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayUserDetailsSection).isTrue()
+    }
+
+    @Test
+    fun `can parse json with display_user_details_section true`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.put("display_user_details_section", true)
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayUserDetailsSection).isTrue()
+    }
+
+    @Test
+    fun `can parse json with display_user_details_section false`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.put("display_user_details_section", false)
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayUserDetailsSection).isFalse()
     }
 
     private fun createSampleConfigData(json: String = loadTestJSON()): CustomerCenterConfigData {

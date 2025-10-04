@@ -421,9 +421,13 @@ private fun CustomerCenterNavHost(
                 SelectedPurchaseDetailView(
                     contactEmail = customerCenterState.customerCenterConfigData.support.email,
                     localization = customerCenterState.customerCenterConfigData.localization,
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
                     purchaseInformation = destination.purchaseInformation,
                     supportedPaths = customerCenterState.detailScreenPaths,
                     onAction = onAction,
+                    shouldShowAccountDetails = customerCenterState.shouldShowUserDetailsSection,
+                    originalAppUserId = customerCenterState.originalAppUserId,
+                    originalPurchaseDate = customerCenterState.originalPurchaseDate,
                 )
             }
 
@@ -474,6 +478,9 @@ private fun MainScreenContent(
                 },
                 onAction = onAction,
                 purchases = state.purchases,
+                shouldShowAccountDetails = state.shouldShowUserDetailsSection,
+                originalAppUserId = state.originalAppUserId,
+                originalPurchaseDate = state.originalPurchaseDate,
             )
         } ?: run {
             // Handle missing management screen
@@ -489,6 +496,9 @@ private fun MainScreenContent(
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
+                shouldShowAccountDetails = state.shouldShowUserDetailsSection,
+                originalAppUserId = state.originalAppUserId,
+                originalPurchaseDate = state.originalPurchaseDate,
             )
         } ?: run {
             // Fallback with a restore button
@@ -550,6 +560,9 @@ private val previewConfigData = CustomerCenterConfigData(
         localizedStrings = mapOf(
             "cancel" to "Cancel",
             "subscription" to "Subscription",
+            "account_details_title" to "Account details",
+            "account_details_user_id" to "App User ID",
+            "account_details_purchase_date" to "Original purchase date",
         ),
     ),
     support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
@@ -607,6 +620,9 @@ internal fun CustomerCenterLoadedPreview() {
             detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
                 it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
             } ?: emptyList(),
+            originalAppUserId = "user-123",
+            originalPurchaseDate = "May 4, 2024",
+            shouldShowUserDetailsSection = true,
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -632,6 +648,9 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
             detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
                 it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
             } ?: emptyList(),
+            originalAppUserId = "user-123",
+            originalPurchaseDate = "May 4, 2024",
+            shouldShowUserDetailsSection = true,
         ),
         modifier = Modifier
             .fillMaxSize()

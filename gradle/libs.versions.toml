@@ -110,6 +110,7 @@ compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayou
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }

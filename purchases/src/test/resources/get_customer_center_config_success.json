@@ -141,7 +141,8 @@
     },
     "support":{
       "email":"support@revenuecat.com",
-      "should_warn_customer_to_update": true
+      "should_warn_customer_to_update": true,
+      "display_user_details_section": true
     }
   },
   "itunes_track_id":null,
