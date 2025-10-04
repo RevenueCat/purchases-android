@@ -242,6 +242,7 @@ internal open class BasePurchasesTest {
                 postTransactionAndConsumeIfNeeded(
                     purchase = any(),
                     storeProduct = any(),
+                    subscriptionOptionForProductIDs = any(),
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
@@ -429,6 +430,7 @@ internal open class BasePurchasesTest {
         showInAppMessagesAutomatically: Boolean = false,
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
         enableSimulatedStore: Boolean = false,
+        store: Store = Store.PLAY_STORE,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -436,7 +438,7 @@ internal open class BasePurchasesTest {
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE,
+            store = store,
             isDebugBuild = false,
             apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
@@ -559,11 +561,17 @@ internal open class BasePurchasesTest {
             acknowledged = acknowledged
         )
 
+        val subscriptionOptionIdForProductIDs =
+            subscriptionOptionId
+                ?.takeIf { productType == ProductType.SUBS }
+                ?.let { mapOf(productId to it) }
+
         return listOf(
             p.toStoreTransaction(
                 productType,
                 presentedOfferingContext,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
+                if (productType == ProductType.SUBS) subscriptionOptionId else null,
+                subscriptionOptionIdForProductIDs
             )
         )
     }
