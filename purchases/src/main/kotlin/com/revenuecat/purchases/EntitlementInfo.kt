@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -177,74 +178,78 @@ class EntitlementInfo(
 /**
  * Enum of supported stores
  */
-@Serializable
+@Serializable(with = StoreSerializer::class)
 enum class Store {
     /**
      * For entitlements granted via Apple App Store.
      */
-    @SerialName("app_store")
     APP_STORE,
 
     /**
      * For entitlements granted via Apple Mac App Store.
      */
-    @SerialName("mac_app_store")
     MAC_APP_STORE,
 
     /**
      * For entitlements granted via Google Play Store.
      */
-    @SerialName("play_store")
     PLAY_STORE,
 
     /**
      * For entitlements granted via Stripe.
      */
-    @SerialName("stripe")
     STRIPE,
 
     /**
      * For entitlements granted via a promo in RevenueCat.
      */
-    @SerialName("promotional")
     PROMOTIONAL,
 
     /**
      * For entitlements granted via an unknown store.
      */
-    @SerialName("unknown")
     UNKNOWN_STORE,
 
     /**
      * For entitlements granted via Amazon store.
      */
-    @SerialName("amazon")
     AMAZON,
 
     /**
      * For entitlements granted via RevenueCat's Web Billing.
      */
-    @SerialName("rc_billing")
     RC_BILLING,
 
     /**
      * For entitlements granted via RevenueCat's External Purchases API.
      */
-    @SerialName("external")
     EXTERNAL,
 
     /**
      * For entitlements granted via Paddle.
      */
-    @SerialName("paddle")
     PADDLE,
 
     /**
      * For entitlements granted via RevenueCat's Test Store.
      */
-    @SerialName("test_store")
     TEST_STORE,
     ;
+
+    internal val stringValue: String
+        get() = when (this) {
+            APP_STORE -> "app_store"
+            MAC_APP_STORE -> "mac_app_store"
+            PLAY_STORE -> "play_store"
+            STRIPE -> "stripe"
+            PROMOTIONAL -> "promotional"
+            UNKNOWN_STORE -> "unknown"
+            AMAZON -> "amazon"
+            RC_BILLING -> "rc_billing"
+            EXTERNAL -> "external"
+            PADDLE -> "paddle"
+            TEST_STORE -> "test_store"
+        }
 
     internal companion object {
         @JvmSynthetic
@@ -265,6 +270,11 @@ enum class Store {
         }
     }
 }
+
+internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
+    defaultValue = Store.UNKNOWN_STORE,
+    typeForValue = { value -> value.stringValue },
+)
 
 /**
  * Enum of supported period types for an entitlement.
