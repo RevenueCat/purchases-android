@@ -76,6 +76,9 @@ data class CustomerCenterConfigData(
             @SerialName("current_price")
             CURRENT_PRICE,
 
+            @SerialName("copy_title")
+            COPY_TITLE,
+
             @SerialName("expired")
             EXPIRED,
 
@@ -302,6 +305,7 @@ data class CustomerCenterConfigData(
                     CANCEL -> "Cancel"
                     BILLING_CYCLE -> "Billing cycle"
                     CURRENT_PRICE -> "Current price"
+                    COPY_TITLE -> "Copy"
                     EXPIRED -> "Expired"
                     EXPIRES -> "Expires"
                     NEXT_BILLING_DATE -> "Next billing date"

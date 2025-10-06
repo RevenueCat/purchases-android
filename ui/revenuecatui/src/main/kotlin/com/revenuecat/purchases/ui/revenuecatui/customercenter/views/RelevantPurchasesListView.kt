@@ -113,7 +113,7 @@ internal fun RelevantPurchasesListView(
                 appUserId = originalAppUserId,
                 appearance = appearance,
                 localization = localization,
-                originalPurchaseDate = "aweqwe12",
+                originalPurchaseDate = originalPurchaseDate,
             )
         }
     }

@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.BuildConfig
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForTheme
 
@@ -212,7 +212,9 @@ private fun UserIdSection(
         ) {
             Icon(
                 imageVector = Icons.Outlined.ContentCopy,
-                contentDescription = "Copy",
+                contentDescription = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.COPY_TITLE,
+                ),
                 tint = textColor,
             )
         }

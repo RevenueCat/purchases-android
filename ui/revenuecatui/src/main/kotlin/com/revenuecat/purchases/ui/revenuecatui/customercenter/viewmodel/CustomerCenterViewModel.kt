@@ -43,6 +43,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
@@ -186,7 +187,6 @@ internal class CustomerCenterViewModelImpl(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
-    private var latestCustomerInfo: CustomerInfo? = null
 
     override fun pathButtonPressed(
         context: Context,
@@ -528,52 +528,56 @@ internal class CustomerCenterViewModelImpl(
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
-    ): List<PurchaseInformation> {
+    ): Pair<List<PurchaseInformation>, CustomerInfo> {
         val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
-        latestCustomerInfo = customerInfo
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
-        if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
-            val activeTransactions = findActiveTransactions(customerInfo)
+        val purchaseInformationList = when {
+            hasActiveSubscriptions || hasNonSubscriptionTransactions -> {
+                val activeTransactions = findActiveTransactions(customerInfo)
+                if (activeTransactions.isNotEmpty()) {
+                    activeTransactions.map { transaction ->
+                        val entitlement = customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
-            if (activeTransactions.isNotEmpty()) {
-                return activeTransactions.map { transaction ->
-                    val entitlement = customerInfo.entitlements.all.values
-                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
-
-                    createPurchaseInformation(
-                        transaction,
-                        entitlement,
-                        dateFormatter,
-                        locale,
-                        localization,
-                    )
+                        createPurchaseInformation(
+                            transaction,
+                            entitlement,
+                            dateFormatter,
+                            locale,
+                            localization,
+                        )
+                    }
+                } else {
+                    Logger.w("Could not find subscription information")
+                    emptyList()
                 }
-            } else {
-                Logger.w("Could not find subscription information")
+            }
+            else -> {
+                // If no active purchases found, try to find the latest expired subscription
+                val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
+                if (latestExpiredTransaction != null) {
+                    val entitlement = customerInfo.entitlements.all.values
+                        .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+
+                    listOf(
+                        createPurchaseInformation(
+                            latestExpiredTransaction,
+                            entitlement,
+                            dateFormatter,
+                            locale,
+                            localization,
+                        ),
+                    )
+                } else {
+                    emptyList()
+                }
             }
         }
 
-        // If no active purchases found, try to find the latest expired subscription
-        val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
-        return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
-                .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
-
-            listOf(
-                createPurchaseInformation(
-                    latestExpiredTransaction,
-                    entitlement,
-                    dateFormatter,
-                    locale,
-                    localization,
-                ),
-            )
-        } else {
-            emptyList()
-        }
+        return purchaseInformationList to customerInfo
     }
 
     private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
@@ -824,7 +828,11 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val (purchaseInformationList, customerInfo) = loadPurchases(
+                dateFormatter,
+                locale,
+                customerCenterConfigData.localization,
+            )
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
                 purchases.awaitGetVirtualCurrencies()
@@ -832,16 +840,8 @@ internal class CustomerCenterViewModelImpl(
                 null
             }
 
-            val originalAppUserId = latestCustomerInfo?.originalAppUserId ?: ""
-            val originalPurchaseDate = latestCustomerInfo?.originalPurchaseDate?.let {
-                dateFormatter.format(
-                    it,
-                    locale,
-                )
-            }
-            val shouldShowUserDetailsSection =
-                customerCenterConfigData.support.displayUserDetailsSection &&
-                    (originalAppUserId.isNotBlank() || originalPurchaseDate != null)
+            val (originalAppUserId, originalPurchaseDate, shouldShowUserDetailsSection) =
+                computeUserDetailsInfo(customerInfo, customerCenterConfigData)
 
             // Resolve NO_ACTIVE screen offering if it exists
             val noActiveScreenOffering = customerCenterConfigData.getNoActiveScreen()?.let { noActiveScreen ->
@@ -873,6 +873,20 @@ internal class CustomerCenterViewModelImpl(
                 CustomerCenterState.Error(e.error)
             }
         }
+    }
+
+    private fun computeUserDetailsInfo(
+        customerInfo: CustomerInfo,
+        customerCenterConfigData: CustomerCenterConfigData,
+    ): Triple<String, String?, Boolean> {
+        val originalAppUserId = customerInfo.originalAppUserId ?: ""
+        val originalPurchaseDate = customerInfo.originalPurchaseDate?.let {
+            dateFormatter.format(it, locale)
+        }
+        val shouldShowUserDetailsSection =
+            customerCenterConfigData.support.displayUserDetailsSection &&
+                (BuildConfig.DEBUG || originalPurchaseDate != null)
+        return Triple(originalAppUserId, originalPurchaseDate, shouldShowUserDetailsSection)
     }
 
     override fun refreshStateIfLocaleChanged() {
