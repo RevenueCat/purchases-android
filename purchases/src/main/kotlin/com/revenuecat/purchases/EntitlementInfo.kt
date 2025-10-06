@@ -239,6 +239,9 @@ enum class Store {
     @SerialName("paddle")
     PADDLE,
 
+    /**
+     * For entitlements granted via RevenueCat's Test Store.
+     */
     @SerialName("test_store")
     TEST_STORE,
     ;
