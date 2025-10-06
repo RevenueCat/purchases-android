@@ -540,6 +540,7 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("promotional") public static final com.revenuecat.purchases.Store PROMOTIONAL;
     enum_constant @kotlinx.serialization.SerialName("rc_billing") public static final com.revenuecat.purchases.Store RC_BILLING;
     enum_constant @kotlinx.serialization.SerialName("stripe") public static final com.revenuecat.purchases.Store STRIPE;
+    enum_constant @kotlinx.serialization.SerialName("test_store") public static final com.revenuecat.purchases.Store TEST_STORE;
     enum_constant @kotlinx.serialization.SerialName("unknown") public static final com.revenuecat.purchases.Store UNKNOWN_STORE;
   }
 
