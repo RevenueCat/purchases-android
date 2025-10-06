@@ -303,7 +303,7 @@ class PurchaseParamsValidatorTest {
             assertThat(purchasesError.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
             assertThat(purchasesError.underlyingErrorMessage)
                 .isEqualTo("Multi-line purchases cannot contain multiple purchases for the same product. " +
-                    "Multiple purchases for the product monthly_freetrial were provided."
+                    "Multiple instances for the product monthly_freetrial were provided."
                 )
         } else {
             fail("Validation result should be error")
@@ -333,7 +333,7 @@ class PurchaseParamsValidatorTest {
             assertThat(purchasesError.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
             assertThat(purchasesError.underlyingErrorMessage)
                 .isEqualTo("Multi-line purchases cannot contain multiple purchases for the same product. " +
-                    "Multiple purchases for the product product123 were provided."
+                    "Multiple instances for the product product123 were provided."
                 )
         } else {
             fail("Validation result should be error")
