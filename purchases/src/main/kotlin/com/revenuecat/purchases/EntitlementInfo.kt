@@ -239,7 +239,7 @@ enum class Store {
     @SerialName("paddle")
     PADDLE,
 
-    @SerialName("simulated_store")
+    @SerialName("test_store")
     TEST_STORE,
     ;
 
@@ -256,7 +256,7 @@ enum class Store {
                 "rc_billing" -> RC_BILLING
                 "external" -> EXTERNAL
                 "paddle" -> PADDLE
-                "simulated_store" -> TEST_STORE
+                "test_store" -> TEST_STORE
                 else -> UNKNOWN_STORE
             }
         }
