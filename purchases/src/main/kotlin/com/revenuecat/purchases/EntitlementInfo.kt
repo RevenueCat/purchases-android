@@ -238,14 +238,27 @@ enum class Store {
      */
     @SerialName("paddle")
     PADDLE,
+
+    @SerialName("simulated_store")
+    TEST_STORE,
     ;
 
     internal companion object {
         @JvmSynthetic
         fun fromString(text: String): Store {
-            return runCatching {
-                enumValueOf<Store>(text.uppercase())
-            }.getOrDefault(UNKNOWN_STORE)
+            return when (text) {
+                "app_store" -> APP_STORE
+                "mac_app_store" -> MAC_APP_STORE
+                "play_store" -> PLAY_STORE
+                "stripe" -> STRIPE
+                "promotional" -> PROMOTIONAL
+                "amazon" -> AMAZON
+                "rc_billing" -> RC_BILLING
+                "external" -> EXTERNAL
+                "paddle" -> PADDLE
+                "simulated_store" -> TEST_STORE
+                else -> UNKNOWN_STORE
+            }
         }
     }
 }
