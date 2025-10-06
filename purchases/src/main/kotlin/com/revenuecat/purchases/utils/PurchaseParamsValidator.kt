@@ -77,7 +77,7 @@ internal class PurchaseParamsValidator {
                     val error = PurchasesError(
                         PurchasesErrorCode.PurchaseInvalidError,
                         "Multi-line purchases cannot contain multiple purchases for the same product." +
-                            " Multiple purchases for the product $addOnProductId were provided.",
+                            " Multiple instances for the product $addOnProductId were provided.",
                     ).also { errorLog(it) }
 
                     return Result.Error(error)
