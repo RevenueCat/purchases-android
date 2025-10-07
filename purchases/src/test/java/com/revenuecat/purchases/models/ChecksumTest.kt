@@ -2,8 +2,6 @@ package com.revenuecat.purchases.models
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.io.ByteArrayInputStream
-import java.io.File
 
 class ChecksumTest {
 
@@ -46,56 +44,6 @@ class ChecksumTest {
     }
 
     @Test
-    fun `generate checksum from file - streaming`() {
-        val file = File.createTempFile("test", ".tmp")
-        try {
-            file.writeBytes("Test content".toByteArray())
-
-            val checksum = Checksum.generate(file, Checksum.Algorithm.MD5)
-
-            assertThat(checksum.value).hasSize(32) // MD5 produces 32 hex chars
-            assertThat(checksum.value).matches("[a-f0-9]{32}")
-        } finally {
-            file.delete()
-        }
-    }
-
-    @Test
-    fun `generate checksum from large file - memory efficient`() {
-        val file = File.createTempFile("large", ".tmp")
-        try {
-            // Create 1MB file
-            val largeData = ByteArray(1024 * 1024) { it.toByte() }
-            file.writeBytes(largeData)
-
-            val checksum = Checksum.generate(file, Checksum.Algorithm.SHA256)
-
-            assertThat(checksum.value).isNotEmpty()
-            assertThat(checksum.value).hasSize(64) // SHA256 produces 64 hex chars
-        } finally {
-            file.delete()
-        }
-    }
-
-    @Test
-    fun `generateAndConsume validates while streaming`() {
-        val testData = "Test content".toByteArray()
-        val inputStream = ByteArrayInputStream(testData)
-        val capturedChunks = mutableListOf<ByteArray>()
-
-        val checksum = Checksum.generateAndConsume(
-            inputStream,
-            Checksum.Algorithm.MD5
-        ) { buffer, bytesRead ->
-            capturedChunks.add(buffer.copyOfRange(0, bytesRead))
-        }
-
-        assertThat(checksum.value).hasSize(32) // MD5 produces 32 hex chars
-        assertThat(checksum.value).matches("[a-f0-9]{32}")
-        assertThat(capturedChunks).isNotEmpty()
-    }
-
-    @Test
     fun `compare matching checksums - succeeds`() {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.SHA256, "abc123")
@@ -118,13 +66,9 @@ class ChecksumTest {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.SHA256, "def456")
 
-        val exception = assertThrows<Checksum.ChecksumValidationException> {
+        assertThrows<Checksum.ChecksumValidationException> {
             checksum1.compare(checksum2)
         }
-
-        assertThat(exception.message).contains("Checksum mismatch")
-        assertThat(exception.message).contains("expected def456")
-        assertThat(exception.message).contains("got abc123")
     }
 
     @Test
@@ -132,13 +76,9 @@ class ChecksumTest {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.MD5, "abc123")
 
-        val exception = assertThrows<Checksum.ChecksumValidationException> {
+        assertThrows<Checksum.ChecksumValidationException> {
             checksum1.compare(checksum2)
         }
-
-        assertThat(exception.message).contains("Algorithm mismatch")
-        assertThat(exception.message).contains("expected MD5")
-        assertThat(exception.message).contains("got SHA256")
     }
 
     @Test

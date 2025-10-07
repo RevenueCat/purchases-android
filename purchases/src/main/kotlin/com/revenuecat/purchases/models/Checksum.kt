@@ -52,48 +52,6 @@ data class Checksum(
             val hash = digest.digest(data)
             return Checksum(algorithm, hash.toHexString())
         }
-
-        /**
-         * Generate a checksum from a file using streaming
-         * (memory efficient - doesn't load entire file)
-         */
-        fun generate(file: File, algorithm: Algorithm): Checksum {
-            val digest = MessageDigest.getInstance(algorithm.algorithmName)
-
-            FileInputStream(file).use { inputStream ->
-                val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead: Int
-
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    digest.update(buffer, 0, bytesRead)
-                }
-            }
-
-            val hash = digest.digest()
-            return Checksum(algorithm, hash.toHexString())
-        }
-
-        /**
-         * Generate checksum from an InputStream while reading it
-         * (useful for validating during download)
-         */
-        fun generateAndConsume(
-            inputStream: InputStream,
-            algorithm: Algorithm,
-            onData: (ByteArray, Int) -> Unit
-        ): Checksum {
-            val digest = MessageDigest.getInstance(algorithm.algorithmName)
-            val buffer = ByteArray(BUFFER_SIZE)
-            var bytesRead: Int
-
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                digest.update(buffer, 0, bytesRead)
-                onData(buffer, bytesRead)
-            }
-
-            val hash = digest.digest()
-            return Checksum(algorithm, hash.toHexString())
-        }
     }
 
     /**
@@ -101,23 +59,15 @@ data class Checksum(
      * @throws ChecksumValidationException if checksums don't match
      */
     fun compare(other: Checksum) {
-        if (this.algorithm != other.algorithm) {
-            throw ChecksumValidationException(
-                "Algorithm mismatch: expected ${other.algorithm}, got ${this.algorithm}"
-            )
-        }
-
-        if (this.value.lowercase() != other.value.lowercase()) {
-            throw ChecksumValidationException(
-                "Checksum mismatch: expected ${other.value}, got ${this.value}"
-            )
+        if (this.value.lowercase() != other.value.lowercase() || this.algorithm != other.algorithm) {
+            throw ChecksumValidationException()
         }
     }
 
     /**
      * Exception thrown when checksum validation fails
      */
-    class ChecksumValidationException(message: String) : Exception(message)
+    class ChecksumValidationException : Exception()
 }
 
 internal fun ByteArray.toHexString(): String {

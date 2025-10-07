@@ -352,7 +352,7 @@ class FileRepositoryTest : CoroutineTest() {
         every { mockCache.cachedContentExists(checksumUri) } returns false
         every {
             mockCache.saveData(any<InputStream>(), checksumUri, wrongChecksum)
-        } throws Checksum.ChecksumValidationException("Checksum mismatch")
+        } throws Checksum.ChecksumValidationException()
 
         val defaultFileRepository = DefaultFileRepository(
             store = KeyedDeferredValueStore(),
