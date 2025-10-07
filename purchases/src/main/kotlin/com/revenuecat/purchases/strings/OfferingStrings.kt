@@ -40,4 +40,5 @@ internal object OfferingStrings {
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
+    const val GOOGLE_PRODUCT_MISSING_PRIMARY_BILLING_PHASE = "The product with ID %s has no pricing phases."
 }

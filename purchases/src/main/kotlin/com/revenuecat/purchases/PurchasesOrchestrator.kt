@@ -89,7 +89,9 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
@@ -139,6 +141,7 @@ internal class PurchasesOrchestrator(
             customerInfoUpdateHandler,
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
+    private val purchaseParamsValidator: PurchaseParamsValidator,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -523,6 +526,12 @@ internal class PurchasesOrchestrator(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
+        val purchaseParamsValidationResult = purchaseParamsValidator.validate(purchaseParams = purchaseParams)
+        if (purchaseParamsValidationResult is Result.Error) {
+            dispatch { callback.onError(purchaseParamsValidationResult.value, userCancelled = false) }
+            return
+        }
+
         with(purchaseParams) {
             oldProductId?.let { productId ->
                 startProductChange(
@@ -1345,6 +1354,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
@@ -1363,6 +1373,18 @@ internal class PurchasesOrchestrator(
             PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
+            return
+        }
+
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            (purchasingData.addOnProducts?.isNotEmpty() == true) &&
+            this.store != Store.PLAY_STORE
+        ) {
+            PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
             ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
             return
         }

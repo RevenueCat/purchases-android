@@ -49,6 +49,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -351,6 +352,8 @@ internal class PurchasesFactory(
                 appConfig = appConfig,
             )
 
+            val purchaseParamsValidator = PurchaseParamsValidator()
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -378,6 +381,7 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
                 localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
+                purchaseParamsValidator = purchaseParamsValidator,
             )
 
             return Purchases(purchasesOrchestrator)
