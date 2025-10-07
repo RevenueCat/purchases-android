@@ -113,7 +113,7 @@ private fun rememberVideoContentState(
     }
 
     var videoUrl by rememberSaveable(videoUrls.url) {
-        mutableStateOf(repository.getFile(videoUrls.url))
+        mutableStateOf(repository.getFile(videoUrls.url, videoUrls.checksum))
     }
 
     suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
@@ -122,7 +122,7 @@ private fun rememberVideoContentState(
                 videoUrl = videoUrls.urlLowRes?.toString()?.let(::URI)
             }
 
-            val url = repository.generateOrGetCachedFileURL(videoUrls.url)
+            val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
             videoUrl = url
         } catch (_: Exception) {
             videoUrl = videoUrls.url.toString().let(::URI)
@@ -133,7 +133,7 @@ private fun rememberVideoContentState(
         videoUrls.urlLowRes
             ?.takeIf { it != videoUrls.url }
             ?.run {
-                videoUrl = repository.getFile(this)
+                videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
                 LaunchedEffect(Unit) {
                     fetchVideoUrl(setLowResVideoURLFirst = false)
                 }
