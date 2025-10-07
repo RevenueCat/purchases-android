@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
@@ -377,29 +378,12 @@ private class TextureVideoView @JvmOverloads constructor(
     }
 }
 
-@Stable
-private data class SavedPlayback(val position: Int, val play: Boolean)
-
-// Simple static state holder as fallback when rememberSaveable fails
-private object VideoStateHolder {
-    private val states = mutableMapOf<String, SavedPlayback>()
-
-    fun save(key: String, state: SavedPlayback) {
-        states[key] = state
-    }
-
-    fun restore(key: String): SavedPlayback {
-        val state = states[key] ?: SavedPlayback(position = 0, play = true)
-        return state
-    }
-}
-
-private val SavedPlaybackSaver = Saver<MutableState<SavedPlayback>, List<Any>>(
+private val SavedPlaybackSaver = Saver<MutableState<VideoPlaybackState>, List<Any>>(
     save = {
-        listOf(it.value.position, it.value.play)
+        listOf(it.value.positionMs, it.value.playWhenReady)
     },
     restore = {
-        val restored = SavedPlayback(it[0] as Int, it[1] as Boolean)
+        val restored = VideoPlaybackState(it[0] as Int, it[1] as Boolean)
         mutableStateOf(restored)
     },
 )
@@ -417,12 +401,15 @@ private fun Video(
 ) {
     val key = "video_${scaleType}_$videoUri"
 
+    // ViewModel survives activity recreation
+    val viewModel: VideoPlaybackViewModel = viewModel()
+
     val saved = rememberSaveable(
         key = key,
         saver = SavedPlaybackSaver,
     ) {
-        // Try to restore from static holder first, fallback to default
-        val restored = VideoStateHolder.restore(key)
+        // Try to restore from ViewModel first, fallback to default
+        val restored = viewModel.restorePlaybackState(key)
         mutableStateOf(restored)
     }
 
@@ -447,9 +434,9 @@ private fun Video(
             videoView.value?.let { view ->
                 val state = view.getPlaybackState()
                 val playbackState =
-                    SavedPlayback(position = state.positionMs, play = state.playWhenReady)
+                    VideoPlaybackState(positionMs = state.positionMs, playWhenReady = state.playWhenReady)
                 saved.value = playbackState
-                VideoStateHolder.save(key, playbackState)
+                viewModel.savePlaybackState(key, playbackState)
             }
         }
     }
@@ -459,14 +446,14 @@ private fun Video(
     ) {
         AndroidView(
             factory = { ctx ->
-                // Always check both saved state and static holder
-                val restoredState = VideoStateHolder.restore(key)
-                val usePosition = maxOf(saved.value.position, restoredState.position)
+                // Always check both saved state and ViewModel
+                val restoredState = viewModel.restorePlaybackState(key)
+                val usePosition = maxOf(saved.value.positionMs, restoredState.positionMs)
 
                 // Rotation case: use the saved play state (respects if user paused)
                 // If we have a saved position, always try to continue playing (rotation should resume)
                 val usePlay = if (usePosition > 0) {
-                    saved.value.play || restoredState.play // Either source might have the correct state
+                    saved.value.playWhenReady || restoredState.playWhenReady // Either source might have the correct state
                 } else {
                     autoPlay
                 }
@@ -505,9 +492,9 @@ private fun Video(
                 view.run {
                     val st = getPlaybackState()
                     val playbackState =
-                        SavedPlayback(position = st.positionMs, play = st.playWhenReady)
+                        VideoPlaybackState(positionMs = st.positionMs, playWhenReady = st.playWhenReady)
                     saved.value = playbackState
-                    VideoStateHolder.save(key, playbackState)
+                    viewModel.savePlaybackState(key, playbackState)
                     release()
                 }
                 videoView.value = null
