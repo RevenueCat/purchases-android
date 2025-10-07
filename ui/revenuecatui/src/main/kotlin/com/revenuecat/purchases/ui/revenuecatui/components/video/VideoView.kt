@@ -385,6 +385,9 @@ private val SavedPlaybackSaver = Saver<MutableState<VideoPlaybackState>, List<An
     },
 )
 
+@Composable
+private fun getVideoViewModel() = viewModel<VideoPlaybackViewModel>()
+
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun Video(
@@ -395,11 +398,11 @@ private fun Video(
     loop: Boolean,
     muteAudio: Boolean,
     modifier: Modifier = Modifier,
+    viewModel: VideoPlaybackViewModel = getVideoViewModel(),
 ) {
     val key = "video_${scaleType}_$videoUri"
 
     // ViewModel survives activity recreation
-    val viewModel: VideoPlaybackViewModel = viewModel()
 
     val saved = rememberSaveable(
         key = key,
