@@ -24,6 +24,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
+@Suppress("LongMethod")
 @Composable
 fun MainPage(modifier: Modifier = Modifier) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -44,13 +45,13 @@ fun MainPage(modifier: Modifier = Modifier) {
             })
                 .setOffering(paywallOffering)
                 .setShouldDisplayDismissButton(true)
-                .build()
+                .build(),
         )
     } else if (selectedPackage != null) {
         // If a package is selected, show the package details screen
         PackageScreen(
             rcPackage = selectedPackage!!,
-            onBackClick = { selectedPackage = null }
+            onBackClick = { selectedPackage = null },
         )
     } else if (selectedOffering != null) {
         // If an offering is selected, show the offering details screen
@@ -58,7 +59,7 @@ fun MainPage(modifier: Modifier = Modifier) {
             offering = selectedOffering!!,
             onBackClick = { selectedOffering = null },
             onShowPaywall = { offering -> paywallOffering = offering },
-            onPackageClick = { pkg -> selectedPackage = pkg }
+            onPackageClick = { pkg -> selectedPackage = pkg },
         )
     } else {
         // Otherwise show the main navigation
@@ -70,26 +71,26 @@ fun MainPage(modifier: Modifier = Modifier) {
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
                         icon = { Icon(Icons.Default.Info, contentDescription = "Customer Info") },
-                        label = { Text("Customer Info") }
+                        label = { Text("Customer Info") },
                     )
                     NavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
                         icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Offerings") },
-                        label = { Text("Offerings") }
+                        label = { Text("Offerings") },
                     )
                 }
-            }
+            },
         ) { paddingValues ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(paddingValues),
             ) {
                 when (selectedTab) {
                     0 -> CustomerInfoPage()
                     1 -> OfferingsPage(
-                        onOfferingClick = { offering -> selectedOffering = offering }
+                        onOfferingClick = { offering -> selectedOffering = offering },
                     )
                 }
             }

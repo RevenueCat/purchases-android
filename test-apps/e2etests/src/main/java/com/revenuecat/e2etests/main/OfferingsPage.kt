@@ -31,7 +31,10 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 
 @Composable
-fun OfferingsPage(onOfferingClick: (Offering) -> Unit) {
+fun OfferingsPage(
+    onOfferingClick: (Offering) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var offerings by remember { mutableStateOf<Offerings?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -47,25 +50,25 @@ fun OfferingsPage(onOfferingClick: (Offering) -> Unit) {
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         when {
             isLoading -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
             error != null -> {
                 Text(
                     text = "Error: $error",
                     modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
             offerings != null -> {
                 OfferingsContent(
                     offerings = offerings!!,
-                    onOfferingClick = onOfferingClick
+                    onOfferingClick = onOfferingClick,
                 )
             }
         }
@@ -75,19 +78,19 @@ fun OfferingsPage(onOfferingClick: (Offering) -> Unit) {
 @Composable
 private fun OfferingsContent(
     offerings: Offerings,
-    onOfferingClick: (Offering) -> Unit
+    onOfferingClick: (Offering) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Text(
                 text = "Available Offerings",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -95,7 +98,7 @@ private fun OfferingsContent(
             OfferingCard(
                 offering = offering,
                 isCurrent = offering.identifier == offerings.current?.identifier,
-                onClick = { onOfferingClick(offering) }
+                onClick = { onOfferingClick(offering) },
             )
         }
     }
@@ -105,33 +108,33 @@ private fun OfferingsContent(
 private fun OfferingCard(
     offering: Offering,
     isCurrent: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = offering.identifier,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 if (isCurrent) {
                     Text(
                         text = "CURRENT",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -140,14 +143,14 @@ private fun OfferingCard(
                 Text(
                     text = offering.serverDescription,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Text(
                 text = "${offering.availablePackages.size} package(s) available",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

@@ -34,8 +34,11 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+@Suppress("LongMethod")
 @Composable
-fun CustomerInfoPage() {
+fun CustomerInfoPage(
+    modifier: Modifier = Modifier,
+) {
     var customerInfo by remember { mutableStateOf<CustomerInfo?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -54,30 +57,31 @@ fun CustomerInfoPage() {
     }
 
     Scaffold(
+        modifier = modifier,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { refreshTrigger++ }
+                onClick = { refreshTrigger++ },
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = "Refresh")
             }
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             when {
                 isLoading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
                 error != null -> {
                     Text(
                         text = "Error: $error",
                         modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
                 customerInfo != null -> {
@@ -88,6 +92,7 @@ fun CustomerInfoPage() {
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun CustomerInfoContent(customerInfo: CustomerInfo) {
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm:ss", Locale.getDefault()) }
@@ -96,7 +101,7 @@ private fun CustomerInfoContent(customerInfo: CustomerInfo) {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
             InfoSection(title = "Basic Info") {
@@ -144,7 +149,7 @@ private fun CustomerInfoContent(customerInfo: CustomerInfo) {
                     customerInfo.entitlements.all.forEach { (key, entitlement) ->
                         InfoItem(
                             label = key,
-                            value = "Active: ${entitlement.isActive}, Product: ${entitlement.productIdentifier}"
+                            value = "Active: ${entitlement.isActive}, Product: ${entitlement.productIdentifier}",
                         )
                     }
                 }
@@ -159,7 +164,7 @@ private fun CustomerInfoContent(customerInfo: CustomerInfo) {
                     customerInfo.allExpirationDatesByProduct.forEach { (productId, date) ->
                         InfoItem(
                             label = productId,
-                            value = date?.let { dateFormat.format(it) } ?: "No expiration"
+                            value = date?.let { dateFormat.format(it) } ?: "No expiration",
                         )
                     }
                 }
@@ -179,19 +184,19 @@ private fun CustomerInfoContent(customerInfo: CustomerInfo) {
 @Composable
 private fun InfoSection(
     title: String,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             content()
         }
@@ -204,11 +209,11 @@ private fun InfoItem(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

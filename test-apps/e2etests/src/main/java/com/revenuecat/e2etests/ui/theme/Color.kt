@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.revenuecat.e2etests.ui.theme
 
 import androidx.compose.ui.graphics.Color

@@ -17,8 +17,8 @@ class E2ETestsApplication : Application() {
         Purchases.configure(
             PurchasesConfiguration.Builder(
                 context = this,
-                apiKey = apiKey
-            ).build()
+                apiKey = apiKey,
+            ).build(),
         )
     }
 }
