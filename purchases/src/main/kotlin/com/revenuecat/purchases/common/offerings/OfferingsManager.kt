@@ -150,7 +150,6 @@ internal class OfferingsManager(
             onSuccess = { offeringsResultData ->
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
-                    offeringVideoPreDownloader.downloadVideos(it)
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
