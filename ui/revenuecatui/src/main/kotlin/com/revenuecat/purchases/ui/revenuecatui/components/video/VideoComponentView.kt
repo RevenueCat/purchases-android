@@ -41,7 +41,7 @@ internal fun VideoComponentView(
     repository: FileRepository = Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
-
+    println("HELP_ME_OB1 - In video view")
     if (videoState.visible) {
         val overlay = videoState.overlay?.forCurrentTheme
         val borderStyle = videoState.border?.let { rememberBorderStyle(border = it) }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
@@ -57,7 +58,7 @@ interface FileRepository {
 interface LocalFileCache {
     fun generateLocalFilesystemURI(remoteURL: URL): URI?
     fun cachedContentExists(uri: URI): Boolean
-    fun saveData(data: ByteArray, uri: URI)
+    fun saveData(inputStream: InputStream, uri: URI)
 }
 
 @InternalRevenueCatAPI
@@ -103,8 +104,8 @@ internal class DefaultFileRepository(
                     return@async cachedUri
                 }
 
-                val data = downloadFile(url = url)
-                saveCachedFile(cachedUri, data)
+                val connectionWithStream = downloadFile(url = url)
+                saveCachedFile(cachedUri, connectionWithStream)
                 return@async cachedUri
             }
         }.await()
@@ -115,16 +116,18 @@ internal class DefaultFileRepository(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    private suspend fun downloadFile(url: URL): ByteArray = try {
+    private suspend fun downloadFile(url: URL): UrlConnection = try {
         withContext(Dispatchers.IO) {
             verboseLog { "Downloading remote file from $url" }
 
             val connection = urlConnectionFactory.createConnection(url.toString())
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                connection.disconnect()
                 throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
             }
-            return@withContext connection.consumeBytes()
+
+            return@withContext connection
         }
     } catch (e: IOException) {
         val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
@@ -132,26 +135,17 @@ internal class DefaultFileRepository(
         throw Error.FailedToFetchFileFromRemoteSource(message)
     }
 
-    private fun UrlConnection.consumeBytes(): ByteArray = try {
-        val bytes = inputStream.use { inputStream ->
-            inputStream.readBytes()
-        }
-        disconnect()
-        bytes
-    } catch (e: IOException) {
-        val message = "Failed to read input stream for file. Error: ${e.localizedMessage}"
-        logHandler.e("FileRepository", message, e)
-        disconnect()
-        throw Error.FailedToFetchFileFromRemoteSource(message)
-    }
-
-    private fun saveCachedFile(uri: URI, data: ByteArray) {
+    private fun saveCachedFile(uri: URI, connectionWithStream: UrlConnection) {
         try {
-            fileCacheManager.saveData(data, uri)
+            connectionWithStream.inputStream.use { stream ->
+                fileCacheManager.saveData(stream, uri)
+            }
         } catch (e: IOException) {
             val message = "Failed to save cached file: $uri. Error: ${e.localizedMessage}"
             logHandler.e("FileRepository", message, e)
             throw Error.FailedToSaveCachedFile(message)
+        } finally {
+            connectionWithStream.disconnect()
         }
     }
 
@@ -177,7 +171,7 @@ internal class DefaultFileRepository(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private class DefaultFileCache(
+internal class DefaultFileCache(
     private val context: Context,
 ) : LocalFileCache {
 
@@ -203,16 +197,48 @@ private class DefaultFileCache(
     override fun cachedContentExists(uri: URI): Boolean =
         File(uri).exists()
 
-    override fun saveData(data: ByteArray, uri: URI) =
-        writeBytes(data, File(uri))
+    override fun saveData(inputStream: InputStream, uri: URI) {
+        val finalFile = File(uri)
+        val tempFile = File.createTempFile(
+            "rc_download_",
+            ".tmp",
+            finalFile.parentFile,
+        )
+
+        try {
+            streamToFile(inputStream, tempFile)
+
+            // We will first attempt to just move the file in one shot. This is an atomic and very fast operation
+            // but it is prone to failure if the temp directory and cache directory are on different volumes
+            // like the SDCard and the device's internal storage
+            if (!tempFile.renameTo(finalFile)) {
+                // If that rename fails, we will try again with a slower,
+                // non-atomic, operation that will work across volumes
+                tempFile.copyTo(finalFile, overwrite = true)
+            }
+        } finally {
+            tempFile.delete()
+        }
+    }
 
     private fun md5Hex(bytes: ByteArray): String =
         md.digest(bytes).joinToString("") { "%02x".format(it) }
 
     @Throws(IOException::class)
-    private fun writeBytes(data: ByteArray, file: File) {
-        FileOutputStream(file).use { out ->
-            out.write(data)
+    private fun streamToFile(inputStream: InputStream, file: File) {
+        FileOutputStream(file).use { outputStream ->
+            val buffer = ByteArray(BUFFER_SIZE)
+            var bytesRead: Int
+
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+            }
+
+            outputStream.flush()
         }
+    }
+
+    companion object {
+        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }
