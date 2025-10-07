@@ -812,7 +812,7 @@ jobs:
           at: .
       - install-sdkman
       - run:
-          name: Replace API_KEY
+          name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
           command: |
             sed -i s/\"API_KEY_A\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
