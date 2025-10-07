@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -29,7 +30,11 @@ class PurchaseParams(val builder: Builder) {
     internal var presentedOfferingContext: PresentedOfferingContext?
 
     @get:JvmSynthetic
-    internal var containsAddOnItems: Boolean
+    internal val containsAddOnItems: Boolean
+        get() = (purchasingData as? GooglePurchasingData.Subscription)
+            ?.addOnProducts
+            ?.isNotEmpty()
+            ?: false
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -38,7 +43,6 @@ class PurchaseParams(val builder: Builder) {
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
-        this.containsAddOnItems = builder.containsAddOnProducts
     }
 
     /**
@@ -56,7 +60,6 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
-        @get:JvmSynthetic internal var containsAddOnProducts: Boolean = false,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
@@ -168,10 +171,6 @@ class PurchaseParams(val builder: Builder) {
             existingPurchasingData?.let {
                 val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
                     .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
-
-                if (compatibleAddOnProducts.isNotEmpty()) {
-                    this.containsAddOnProducts = true
-                }
 
                 val newPurchasingData = GooglePurchasingData.Subscription(
                     productId = existingPurchasingData.productId,
