@@ -38,7 +38,7 @@ internal class OfferingVideoPredownloader(
     }
 }
 
-fun ThemeVideoUrls.checkedUrls(): List<Pair<URL, Checksum?>> = listOfNotNull(
+private fun ThemeVideoUrls.checkedUrls(): List<Pair<URL, Checksum?>> = listOfNotNull(
     light.url to light.checksum,
     dark?.url?.let { it to dark.checksum },
     light.urlLowRes?.let { it to light.checksumLowRes },
