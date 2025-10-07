@@ -16,7 +16,6 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.OfferingVideoPredownloader
 import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
@@ -27,7 +26,6 @@ internal class OfferingsManager(
     private val backend: Backend,
     private val offeringsFactory: OfferingsFactory,
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
-    private val offeringVideoPreDownloader: OfferingVideoPredownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
     private val dateProvider: DateProvider = DefaultDateProvider(),

@@ -79,7 +79,7 @@ internal class DefaultFileRepository(
     // Cache key now includes checksum
     internal data class CacheKey(
         val url: URL,
-        val checksum: Checksum?
+        val checksum: Checksum?,
     )
 
     // Convenience constructor for Android
@@ -106,7 +106,7 @@ internal class DefaultFileRepository(
             ioScope.async {
                 val cachedUri = fileCacheManager.generateLocalFilesystemURI(
                     remoteURL = url,
-                    checksum = checksum
+                    checksum = checksum,
                 ) ?: {
                     val error = Error.FailedToCreateCacheDirectory(url.toString())
                     logHandler.e("FileRepository", "Failed to create cache directory for $url", error)
@@ -274,7 +274,7 @@ internal class DefaultFileCache(
     private fun streamToFileAndCompareChecksum(
         inputStream: InputStream,
         file: File,
-        checksum: Checksum
+        checksum: Checksum,
     ) {
         val digest = MessageDigest.getInstance(checksum.algorithm.algorithmName)
 
@@ -297,7 +297,7 @@ internal class DefaultFileCache(
 
         val computedChecksum = Checksum(
             checksum.algorithm,
-            hash.toHexString()
+            hash.toHexString(),
         )
 
         // throws if comparison is invalid

@@ -3,9 +3,6 @@ package com.revenuecat.purchases.models
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
 import java.security.MessageDigest
 
 /**
@@ -18,17 +15,25 @@ data class Checksum(
     @SerialName("algo") val algorithm: Algorithm,
 
     /** The checksum hash value */
-    @SerialName("value") val value: String
+    @SerialName("value") val value: String,
 ) {
     /**
      * Supported hashing algorithms
      */
     @Serializable
     enum class Algorithm(val algorithmName: String) {
-        @SerialName("sha256") SHA256("SHA-256"),
-        @SerialName("sha384") SHA384("SHA-384"),
-        @SerialName("sha512") SHA512("SHA-512"),
-        @SerialName("md5") MD5("MD5");
+        @SerialName("sha256")
+        SHA256("SHA-256"),
+
+        @SerialName("sha384")
+        SHA384("SHA-384"),
+
+        @SerialName("sha512")
+        SHA512("SHA-512"),
+
+        @SerialName("md5")
+        MD5("MD5"),
+        ;
 
         companion object {
             fun fromString(value: String): Algorithm? = when (value.lowercase()) {
@@ -42,8 +47,6 @@ data class Checksum(
     }
 
     companion object {
-        private const val BUFFER_SIZE = 256 * 1024 // 256KB
-
         /**
          * Generate a checksum from data
          */
