@@ -808,6 +808,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - run:
           name: Replace API_KEY
@@ -837,7 +839,7 @@ jobs:
           command: |
             maestro test maestro_tests/paywall_tester/
       - store_artifacts:
-          path: maestro_tests/paywall_tester/.maestro/screenshots
+          path: ~/.maestro/tests/
 
   update-paywall-preview-resources-submodule:
     docker:
