@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
@@ -176,13 +175,11 @@ private class TextureVideoView @JvmOverloads constructor(
             resumePosMs
         }
         val play = if (prepared) {
-            (
-                try {
-                    player.isPlaying
-                } catch (_: Throwable) {
-                    false
-                }
-                )
+            try {
+                player.isPlaying
+            } catch (_: Throwable) {
+                false
+            }
         } else {
             resumePlayWhenReady
         }
@@ -453,7 +450,8 @@ private fun Video(
                 // Rotation case: use the saved play state (respects if user paused)
                 // If we have a saved position, always try to continue playing (rotation should resume)
                 val usePlay = if (usePosition > 0) {
-                    saved.value.playWhenReady || restoredState.playWhenReady // Either source might have the correct state
+                    // Either source might have the correct state
+                    saved.value.playWhenReady || restoredState.playWhenReady
                 } else {
                     autoPlay
                 }
