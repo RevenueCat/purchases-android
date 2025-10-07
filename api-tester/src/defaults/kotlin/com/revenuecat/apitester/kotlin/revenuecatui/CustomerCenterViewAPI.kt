@@ -24,7 +24,8 @@ private class CustomerCenterViewAPI {
         CustomerCenterView(context, attrs)
         CustomerCenterView(context, attrs, defStyleAttr)
         CustomerCenterView(context, dismissHandler)
-        CustomerCenterView(context, dismissHandler, listener)
+        CustomerCenterView(context, listener)
+        CustomerCenterView(context, listener, dismissHandler)
     }
 
     fun checkMethods(

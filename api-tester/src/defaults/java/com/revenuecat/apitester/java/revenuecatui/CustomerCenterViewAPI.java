@@ -28,7 +28,8 @@ final class CustomerCenterViewAPI {
         new CustomerCenterView(context, attrs);
         new CustomerCenterView(context, attrs, defStyleAttr);
         new CustomerCenterView(context, dismissHandler::run);
-        new CustomerCenterView(context, dismissHandler::run, listener);
+        new CustomerCenterView(context, listener);
+        new CustomerCenterView(context, listener, dismissHandler::run);
     }
 
     static void checkMethods(

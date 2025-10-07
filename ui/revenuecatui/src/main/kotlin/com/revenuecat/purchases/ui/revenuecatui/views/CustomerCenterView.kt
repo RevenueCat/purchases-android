@@ -27,14 +27,23 @@ public class CustomerCenterView : CompatComposeView {
     /**
      * Constructor for programmatic use.
      */
-    @JvmOverloads
     constructor(
         context: Context,
         dismissHandler: (() -> Unit)? = null,
+    ) : this(
+        context = context,
+        customerCenterListener = null,
+        dismissHandler = dismissHandler,
+    )
+
+    @JvmOverloads
+    constructor(
+        context: Context,
         customerCenterListener: CustomerCenterListener? = null,
+        dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
-        this.dismissHandler = dismissHandler
         this.customerCenterListener = customerCenterListener
+        this.dismissHandler = dismissHandler
         init()
     }
 

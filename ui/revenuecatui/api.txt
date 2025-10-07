@@ -341,7 +341,9 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     ctor public CustomerCenterView(android.content.Context context);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs, int defStyleAttr);
-    ctor public CustomerCenterView(android.content.Context context, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler, optional com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
+    ctor public CustomerCenterView(android.content.Context context, kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
+    ctor public CustomerCenterView(android.content.Context context, com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
+    ctor public CustomerCenterView(android.content.Context context, com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener, kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method public final void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
     method @androidx.compose.runtime.Composable public void Content();
     method public androidx.lifecycle.Lifecycle getLifecycle();
