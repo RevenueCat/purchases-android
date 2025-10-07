@@ -818,7 +818,7 @@ jobs:
             sed -i s/\"API_KEY_A\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
       - android/create_avd:
           avd_name: test-paywall-tester
-          system_image: system-images;android-35;google_apis;x86_64
+          system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-paywall-tester
