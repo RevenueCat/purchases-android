@@ -3,6 +3,7 @@ package com.revenuecat.purchases.storage
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.models.Checksum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -228,6 +229,97 @@ class DefaultFileCacheTest {
 
         // Then: URIs are different
         assertThat(uri1).isNotEqualTo(uri2)
+    }
+
+    // Checksum validation tests
+
+    @Test
+    fun `saveData with checksum validation - valid checksum succeeds`() {
+        val testData = "Test content".toByteArray()
+        val expectedChecksum = Checksum.generate(testData, Checksum.Algorithm.SHA256)
+        val inputStream = ByteArrayInputStream(testData)
+        val url = URL("https://example.com/test.txt")
+        val uri = cache.generateLocalFilesystemURI(url, expectedChecksum)!!
+
+        // Should not throw
+        cache.saveData(inputStream, uri, expectedChecksum)
+
+        val savedFile = File(uri)
+        assertThat(savedFile.exists()).isTrue()
+        assertThat(savedFile.readBytes()).isEqualTo(testData)
+    }
+
+    @Test
+    fun `saveData with checksum validation - invalid checksum throws`() {
+        val testData = "Test content".toByteArray()
+        val wrongChecksum = Checksum(Checksum.Algorithm.SHA256, "wrong_hash_value_here_0123456789abcdef0123456789abcdef0123456789abcdef")
+        val inputStream = ByteArrayInputStream(testData)
+        val url = URL("https://example.com/test.txt")
+        val uri = cache.generateLocalFilesystemURI(url, wrongChecksum)!!
+
+        val exception = assertThrows<Checksum.ChecksumValidationException> {
+            cache.saveData(inputStream, uri, wrongChecksum)
+        }
+
+        assertThat(exception.message).contains("Checksum mismatch")
+
+        // Verify temp file was cleaned up
+        val tempFiles = cacheDir.listFiles { _, name -> name.startsWith("rc_download_") }
+        assertThat(tempFiles).isEmpty()
+    }
+
+    @Test
+    fun `generateLocalFilesystemURI uses checksum as extension`() {
+        val url = URL("https://example.com/video.mp4")
+        val checksum = Checksum(Checksum.Algorithm.SHA256, "abc123def456")
+
+        val uri = cache.generateLocalFilesystemURI(url, checksum)
+
+        assertThat(uri.toString()).endsWith(".abc123def456")
+    }
+
+    @Test
+    fun `different checksums produce different cache entries`() {
+        val url = URL("https://example.com/video.mp4")
+        val checksum1 = Checksum(Checksum.Algorithm.SHA256, "hash1")
+        val checksum2 = Checksum(Checksum.Algorithm.SHA256, "hash2")
+
+        val uri1 = cache.generateLocalFilesystemURI(url, checksum1)
+        val uri2 = cache.generateLocalFilesystemURI(url, checksum2)
+
+        assertThat(uri1).isNotEqualTo(uri2)
+    }
+
+    @Test
+    fun `saveData without checksum - backwards compatible`() {
+        val testData = "Test content".toByteArray()
+        val inputStream = ByteArrayInputStream(testData)
+        val url = URL("https://example.com/test.txt")
+        val uri = cache.generateLocalFilesystemURI(url, null)!!
+
+        // Should work without checksum (backwards compatible)
+        cache.saveData(inputStream, uri, null)
+
+        val savedFile = File(uri)
+        assertThat(savedFile.exists()).isTrue()
+        assertThat(savedFile.readBytes()).isEqualTo(testData)
+    }
+
+    @Test
+    fun `saveData with checksum validates during streaming not after`() {
+        // Large enough file to span multiple buffer reads
+        val testData = ByteArray(512 * 1024) { it.toByte() }
+        val expectedChecksum = Checksum.generate(testData, Checksum.Algorithm.SHA256)
+        val inputStream = ByteArrayInputStream(testData)
+        val url = URL("https://example.com/large.bin")
+        val uri = cache.generateLocalFilesystemURI(url, expectedChecksum)!!
+
+        // Should validate while streaming
+        cache.saveData(inputStream, uri, expectedChecksum)
+
+        val savedFile = File(uri)
+        assertThat(savedFile.exists()).isTrue()
+        assertThat(savedFile.readBytes()).isEqualTo(testData)
     }
 
     private inline fun <reified T : Throwable> assertThrows(block: () -> Unit): T {

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.storage
 
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.utils.CoroutineTest
 import com.revenuecat.purchases.utils.TestUrlConnection
 import com.revenuecat.purchases.utils.TestUrlConnectionFactory
@@ -47,7 +48,7 @@ class FileRepositoryTest : CoroutineTest() {
         val factory = TestUrlConnectionFactory(emptyMap())
 
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns true
 
         val defaultFileRepository = DefaultFileRepository(
@@ -68,9 +69,9 @@ class FileRepositoryTest : CoroutineTest() {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
         val mockCache = mockk<LocalFileCache>()
 
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
-        every { mockCache.saveData(any<InputStream>(), cacheUri) } just Runs
+        every { mockCache.saveData(any<InputStream>(), cacheUri, null) } just Runs
 
         val defaultFileRepository = DefaultFileRepository(
             store = KeyedDeferredValueStore(),
@@ -80,7 +81,7 @@ class FileRepositoryTest : CoroutineTest() {
             urlConnectionFactory = factory,
         )
 
-        defaultFileRepository.prefetch(listOf(url))
+        defaultFileRepository.prefetch(listOf(url to null))
 
         advanceUntilIdle()
 
@@ -88,7 +89,7 @@ class FileRepositoryTest : CoroutineTest() {
 
         assertThat(factory.createdConnections.size).isEqualTo(1)
         assertThat(factory.createdConnections.first()).isEqualTo(TEST_URL)
-        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri) }
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
     }
 
     @Test
@@ -96,7 +97,7 @@ class FileRepositoryTest : CoroutineTest() {
         val factory = TestUrlConnectionFactory(emptyMap())
 
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns null
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns null
 
         val defaultFileRepository = DefaultFileRepository(
             store = KeyedDeferredValueStore(),
@@ -114,7 +115,7 @@ class FileRepositoryTest : CoroutineTest() {
     fun `when network fails, throws exception`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to badConnection))
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
 
         val defaultFileRepository = DefaultFileRepository(
@@ -136,9 +137,9 @@ class FileRepositoryTest : CoroutineTest() {
     fun `when network succeeds, saves file, returns uri`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
-        every { mockCache.saveData(any<InputStream>(), cacheUri) } just Runs
+        every { mockCache.saveData(any<InputStream>(), cacheUri, null) } just Runs
 
         val defaultFileRepository = DefaultFileRepository(
             store = KeyedDeferredValueStore(),
@@ -149,17 +150,17 @@ class FileRepositoryTest : CoroutineTest() {
 
         val result = defaultFileRepository.generateOrGetCachedFileURL(url)
         assertThat(result).isEqualTo(cacheUri)
-        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri) }
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
     }
 
     @Test
     fun `when save fails, throws exception`() = runTest {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to goodConnection))
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every {
-            mockCache.saveData(any<InputStream>(), cacheUri)
+            mockCache.saveData(any<InputStream>(), cacheUri, null)
         } throws IOException("Failed to save data")
 
         val defaultFileRepository = DefaultFileRepository(
@@ -173,7 +174,7 @@ class FileRepositoryTest : CoroutineTest() {
             defaultFileRepository.generateOrGetCachedFileURL(url)
         }
 
-        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri) }
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
     }
 
     @Test
@@ -184,9 +185,9 @@ class FileRepositoryTest : CoroutineTest() {
         )
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
-        every { mockCache.saveData(any<InputStream>(), cacheUri) } just Runs
+        every { mockCache.saveData(any<InputStream>(), cacheUri, null) } just Runs
 
         val defaultFileRepository = DefaultFileRepository(
             store = KeyedDeferredValueStore(),
@@ -209,10 +210,10 @@ class FileRepositoryTest : CoroutineTest() {
         )
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
         val mockCache = mockk<LocalFileCache>()
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every {
-            mockCache.saveData(any<InputStream>(), cacheUri)
+            mockCache.saveData(any<InputStream>(), cacheUri, null)
         } throws IOException("Save failed")
 
         val defaultFileRepository = DefaultFileRepository(
@@ -241,7 +242,7 @@ class FileRepositoryTest : CoroutineTest() {
         val mockCache = mockk<LocalFileCache>()
         val streamSlot = slot<InputStream>()
 
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
         every { mockCache.saveData(capture(streamSlot), cacheUri) } answers {
             // Verify stream content
@@ -259,7 +260,7 @@ class FileRepositoryTest : CoroutineTest() {
 
         defaultFileRepository.generateOrGetCachedFileURL(url)
 
-        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri) }
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
     }
 
     @Test
@@ -271,11 +272,11 @@ class FileRepositoryTest : CoroutineTest() {
         val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
         val mockCache = mockk<LocalFileCache>()
 
-        every { mockCache.generateLocalFilesystemURI(url) } returns cacheUri
+        every { mockCache.generateLocalFilesystemURI(url, null) } returns cacheUri
         every { mockCache.cachedContentExists(cacheUri) } returns false
-        every { mockCache.saveData(any<InputStream>(), cacheUri) } just Runs
+        every { mockCache.saveData(any<InputStream>(), cacheUri, null) } just Runs
 
-        val store = KeyedDeferredValueStore<URL, URI>()
+        val store = KeyedDeferredValueStore<DefaultFileRepository.CacheKey, URI>()
         val defaultFileRepository = DefaultFileRepository(
             store = store,
             fileCacheManager = mockCache,
@@ -296,6 +297,109 @@ class FileRepositoryTest : CoroutineTest() {
 
         // Network was only called once
         assertThat(factory.createdConnections.size).isEqualTo(1)
-        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri) }
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
+    }
+
+    // Checksum validation tests
+
+    @Test
+    fun `generateOrGetCachedFileURL with checksum validation succeeds`() = runTest {
+        val testData = "test content".toByteArray()
+        val expectedChecksum = Checksum.generate(testData, Checksum.Algorithm.SHA256)
+        val checksumUri = URI("$TEST_URI.${expectedChecksum.value}")
+
+        val connection = TestUrlConnection(
+            responseCode = HttpURLConnection.HTTP_OK,
+            inputStream = ByteArrayInputStream(testData),
+        )
+        val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
+        val mockCache = mockk<LocalFileCache>()
+
+        every { mockCache.generateLocalFilesystemURI(url, expectedChecksum) } returns checksumUri
+        every { mockCache.cachedContentExists(checksumUri) } returns false
+        every { mockCache.saveData(any<InputStream>(), checksumUri, expectedChecksum) } just Runs
+
+        val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
+            fileCacheManager = mockCache,
+            logHandler = mockk<LogHandler>(relaxed = true),
+            urlConnectionFactory = factory,
+        )
+
+        val uri = defaultFileRepository.generateOrGetCachedFileURL(url, expectedChecksum)
+
+        assertThat(uri).isEqualTo(checksumUri)
+        verify(exactly = 1) { mockCache.saveData(any<InputStream>(), checksumUri, expectedChecksum) }
+    }
+
+    @Test
+    fun `generateOrGetCachedFileURL with wrong checksum throws`() = runTest {
+        val testData = "test content".toByteArray()
+        val wrongChecksum = Checksum(
+            Checksum.Algorithm.SHA256,
+            "wrong_hash_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        )
+        val checksumUri = URI("$TEST_URI.${wrongChecksum.value}")
+
+        val connection = TestUrlConnection(
+            responseCode = HttpURLConnection.HTTP_OK,
+            inputStream = ByteArrayInputStream(testData),
+        )
+        val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
+        val mockCache = mockk<LocalFileCache>()
+
+        every { mockCache.generateLocalFilesystemURI(url, wrongChecksum) } returns checksumUri
+        every { mockCache.cachedContentExists(checksumUri) } returns false
+        every {
+            mockCache.saveData(any<InputStream>(), checksumUri, wrongChecksum)
+        } throws Checksum.ChecksumValidationException("Checksum mismatch")
+
+        val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
+            fileCacheManager = mockCache,
+            logHandler = mockk<LogHandler>(relaxed = true),
+            urlConnectionFactory = factory,
+        )
+
+        assertThrows(DefaultFileRepository.Error.ChecksumValidationFailed::class) {
+            defaultFileRepository.generateOrGetCachedFileURL(url, wrongChecksum)
+        }
+    }
+
+    @Test
+    fun `different checksums create separate cache entries`() = runTest {
+        val testData = "test content".toByteArray()
+        val checksum1 = Checksum(Checksum.Algorithm.SHA256, "hash1")
+        val checksum2 = Checksum(Checksum.Algorithm.SHA256, "hash2")
+        val uri1 = URI("$TEST_URI.hash1")
+        val uri2 = URI("$TEST_URI.hash2")
+
+        val connection = TestUrlConnection(
+            responseCode = HttpURLConnection.HTTP_OK,
+            inputStream = ByteArrayInputStream(testData),
+        )
+        val factory = TestUrlConnectionFactory(mapOf(TEST_URL to connection))
+        val mockCache = mockk<LocalFileCache>()
+
+        every { mockCache.generateLocalFilesystemURI(url, checksum1) } returns uri1
+        every { mockCache.generateLocalFilesystemURI(url, checksum2) } returns uri2
+        every { mockCache.cachedContentExists(uri1) } returns false
+        every { mockCache.cachedContentExists(uri2) } returns false
+        every { mockCache.saveData(any<InputStream>(), uri1, checksum1) } just Runs
+        every { mockCache.saveData(any<InputStream>(), uri2, checksum2) } just Runs
+
+        val defaultFileRepository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
+            fileCacheManager = mockCache,
+            logHandler = mockk<LogHandler>(relaxed = true),
+            urlConnectionFactory = factory,
+        )
+
+        val result1 = defaultFileRepository.generateOrGetCachedFileURL(url, checksum1)
+        val result2 = defaultFileRepository.generateOrGetCachedFileURL(url, checksum2)
+
+        assertThat(result1).isEqualTo(uri1)
+        assertThat(result2).isEqualTo(uri2)
+        assertThat(result1).isNotEqualTo(result2)
     }
 }
