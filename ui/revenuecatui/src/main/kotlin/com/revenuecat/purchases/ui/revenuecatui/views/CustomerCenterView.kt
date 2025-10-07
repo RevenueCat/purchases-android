@@ -3,7 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.runtime.Composable
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
@@ -26,18 +31,61 @@ public class CustomerCenterView : CompatComposeView {
     constructor(
         context: Context,
         dismissHandler: (() -> Unit)? = null,
+        customerCenterListener: CustomerCenterListener? = null,
     ) : super(context) {
         this.dismissHandler = dismissHandler
+        this.customerCenterListener = customerCenterListener
         init()
     }
 
     private var dismissHandler: (() -> Unit)? = null
+    private var customerCenterListener: CustomerCenterListener? = null
+    private val internalListener = object : CustomerCenterListener {
+        override fun onRestoreStarted() {
+            customerCenterListener?.onRestoreStarted()
+        }
+
+        override fun onRestoreFailed(error: PurchasesError) {
+            customerCenterListener?.onRestoreFailed(error)
+        }
+
+        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            customerCenterListener?.onRestoreCompleted(customerInfo)
+        }
+
+        override fun onShowingManageSubscriptions() {
+            customerCenterListener?.onShowingManageSubscriptions()
+        }
+
+        override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+            customerCenterListener?.onFeedbackSurveyCompleted(feedbackSurveyOptionId)
+        }
+
+        override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+            customerCenterListener?.onManagementOptionSelected(action)
+        }
+
+        override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+            customerCenterListener?.onCustomActionSelected(actionIdentifier, purchaseIdentifier)
+        }
+    }
+    private val customerCenterOptions = CustomerCenterOptions.Builder()
+        .setListener(internalListener)
+        .build()
 
     /**
      * Sets a dismiss handler for when the customer center is closed.
      */
     fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
+    }
+
+    /**
+     * Sets a [CustomerCenterListener] that will receive callbacks for this instance of the Customer Center.
+     * If not provided, callbacks fall back to the listener configured on [com.revenuecat.purchases.Purchases].
+     */
+    fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
+        this.customerCenterListener = customerCenterListener
     }
 
     override fun onBackPressed() {
@@ -50,12 +98,12 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
-        CustomerCenterUI(dismissHandler = dismissHandler)
+        CustomerCenterUI(options = customerCenterOptions)
     }
 
     @Composable
-    private fun CustomerCenterUI(dismissHandler: (() -> Unit)?) {
-        CustomerCenter {
+    private fun CustomerCenterUI(options: CustomerCenterOptions) {
+        CustomerCenter(options = options) {
             dismissHandler?.invoke()
         }
     }

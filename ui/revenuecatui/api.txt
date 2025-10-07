@@ -341,7 +341,8 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     ctor public CustomerCenterView(android.content.Context context);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs);
     ctor public CustomerCenterView(android.content.Context context, android.util.AttributeSet? attrs, int defStyleAttr);
-    ctor public CustomerCenterView(android.content.Context context, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
+    ctor public CustomerCenterView(android.content.Context context, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler, optional com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
+    method public final void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
     method @androidx.compose.runtime.Composable public void Content();
     method public androidx.lifecycle.Lifecycle getLifecycle();
     method public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
@@ -399,4 +400,3 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
   }
 
 }
-
