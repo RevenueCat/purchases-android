@@ -9,6 +9,8 @@ import androidx.compose.ui.platform.AbstractComposeView;
 
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
 
 @SuppressWarnings({"unused"})
 final class CustomerCenterViewAPI {
@@ -24,12 +26,20 @@ final class CustomerCenterViewAPI {
             @NonNull Runnable dismissHandler,
             @NonNull CustomerCenterListener listener
     ) {
+        Function0<Unit> dismissHandlerFunction = new Function0<Unit>() {
+            @Override
+            public Unit invoke() {
+                dismissHandler.run();
+                return Unit.INSTANCE;
+            }
+        };
+
         new CustomerCenterView(context);
         new CustomerCenterView(context, attrs);
         new CustomerCenterView(context, attrs, defStyleAttr);
-        new CustomerCenterView(context, dismissHandler::run);
+        new CustomerCenterView(context, dismissHandlerFunction);
         new CustomerCenterView(context, listener);
-        new CustomerCenterView(context, listener, dismissHandler::run);
+        new CustomerCenterView(context, listener, dismissHandlerFunction);
     }
 
     static void checkMethods(
@@ -37,8 +47,16 @@ final class CustomerCenterViewAPI {
             @NonNull Runnable dismissHandler,
             @NonNull CustomerCenterListener listener
     ) {
+        Function0<Unit> dismissHandlerFunction = new Function0<Unit>() {
+            @Override
+            public Unit invoke() {
+                dismissHandler.run();
+                return Unit.INSTANCE;
+            }
+        };
+
         view.setDismissHandler(null);
-        view.setDismissHandler(dismissHandler::run);
+        view.setDismissHandler(dismissHandlerFunction);
         view.setCustomerCenterListener(null);
         view.setCustomerCenterListener(listener);
     }
