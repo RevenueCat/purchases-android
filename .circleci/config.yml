@@ -803,6 +803,42 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
+  run-maestro-paywall-tester-tests:
+    description: "Run Maestro tests for Paywall Tester app"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - install-sdkman
+      - run:
+          name: Replace API_KEY
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i s/\"API_KEY_A\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
+      - android/create_avd:
+          avd_name: test-paywall-tester
+          system_image: system-images;android-35;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-paywall-tester
+          post_emulator_launch_assemble_command: ./gradlew examples:paywall-tester:assembleDebug
+      - android/restore_gradle_cache
+      - run:
+          name: Install Paywall Tester on emulator
+          command: |
+            adb install examples/paywall-tester/build/outputs/apk/debug/paywall-tester-debug.apk
+      - run:
+          name: Install Maestro
+          command: |
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+            echo 'export PATH="$HOME/.maestro/bin:$PATH"' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Run Maestro tests
+          command: |
+            maestro test maestro_tests/paywall_tester/
+      - store_artifacts:
+          path: maestro_tests/paywall_tester/.maestro/screenshots
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
@@ -930,6 +966,9 @@ workflows:
           requires:
             - prepare-tests
       - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
+      - run-maestro-paywall-tester-tests:
           requires:
             - prepare-tests
       - integration-tests-build: *release-branches
