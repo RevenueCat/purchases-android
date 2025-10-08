@@ -827,7 +827,7 @@ jobs:
       - run:
           name: Install E2E Tester on emulator
           command: |
-            adb install test-apps/e2etests/build/outputs/apk/debug/paywall-tester-debug.apk
+            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
       - revenuecat/install-maestro
       - run:
           name: Run Maestro tests
