@@ -3,7 +3,7 @@ appId: com.revenuecat.e2etests
 - launchApp:
     clearState: true
 - tapOn: Customer Info
-- assertVisible: "Active Subscriptions: None"
+- assertVisible: "Active Subscriptions: wrong_subs"
 - assertVisible: "Entitlements: None"
 - tapOn: Offerings
 - tapOn: default
