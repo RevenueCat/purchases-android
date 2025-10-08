@@ -207,12 +207,7 @@ private fun InfoSection(
 private fun InfoItem(label: String, value: String) {
     Column {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
+            text = "$label: $value",
             style = MaterialTheme.typography.bodyMedium,
         )
     }
