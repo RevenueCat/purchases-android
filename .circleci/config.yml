@@ -815,7 +815,7 @@ jobs:
           name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
           command: |
-            sed -i s/\"<api_key_to_replace>\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
+            sed -i s/\"api_key_to_replace\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
       - android/create_avd:
           avd_name: test-e2e-tester
           system_image: system-images;android-32;google_apis;x86_64
