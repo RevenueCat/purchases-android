@@ -189,11 +189,11 @@ internal class SimulatedStoreBillingWrapper(
             negativeButtonText = "Test failed Purchase",
             neutralButtonText = "Cancel",
             onPositiveButtonClicked = {
-                debugLog { "Test store: Performing test purchase. This purchase won't appear in production." }
+                debugLog { "[Test store] Performing test purchase. This purchase won't appear in production." }
                 completePurchase(product, presentedOfferingContext)
             },
             onNegativeButtonClicked = {
-                debugLog { "Test store: Simulating purchase error." }
+                debugLog { "[Test store] Purchase failure simulated successfully in Test Store." }
                 purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                     PurchasesError(
                         PurchasesErrorCode.ProductNotAvailableForPurchaseError,
