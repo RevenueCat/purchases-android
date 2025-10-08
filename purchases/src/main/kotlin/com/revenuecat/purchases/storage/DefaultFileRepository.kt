@@ -76,13 +76,11 @@ internal class DefaultFileRepository(
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
 ) : FileRepository {
 
-    // Cache key now includes checksum
     internal data class CacheKey(
         val url: URL,
         val checksum: Checksum?,
     )
 
-    // Convenience constructor for Android
     constructor(
         context: Context,
     ) : this(
