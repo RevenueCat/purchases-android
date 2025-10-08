@@ -832,9 +832,11 @@ jobs:
       - run:
           name: Run Maestro tests
           command: |
-            maestro test maestro/
+            maestro test --format junit --output maestro/report.xml maestro/
       - store_artifacts:
           path: ~/.maestro/tests/
+      - store_test_results:
+          path: maestro/report.xml
 
   update-paywall-preview-resources-submodule:
     docker:
