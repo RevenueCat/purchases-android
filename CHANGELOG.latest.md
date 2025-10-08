@@ -4,21 +4,16 @@
 
 
 ## RevenueCat SDK
-### ✨ New Features
-* Add Airbridge device ID subscriber attribute (#2696) via Lim Hoang (@limdauto)
-* Enable Test Store (#2685) via Antonio Pallares (@ajpallares)
-
-## RevenueCatUI SDK
-### ✨ New Features
-* Expose `launch` and `launchIfNeeded` to Java (#2695) via Cesar de la Vega (@vegaro)
-### Customer Center
-#### 🐞 Bugfixes
-* Fix Expired badge in Customer Center dark mode (#2693) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Fix deadlock in `allowSharingPlayStoreAccount` (#2707) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add CODEOWNERS (#2664) via Facundo Menzella (@facumenzella)
-* Adds new tab ID properties to `TabsComponent`. (#2577) via JayShortway (@JayShortway)
-* Bump fastlane-plugin-revenuecat_internal from `401d148` to `7508f17` (#2697) via dependabot[bot] (@dependabot[bot])
-* Reimplement placeholder with Modifier.Node (#2677) via Jaewoong Eum (@skydoves)
-* Remove unused kotlinCompilerExtensionVersion (#2691) via Jaewoong Eum (@skydoves)
-* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2667) via RevenueCat Git Bot (@RCGitBot)
+* Add E2E Test app for integration tests (#2715) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2714) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `a8770fd` to `3f7fffc` (#2712) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `e555afb` to `a8770fd` (#2708) via dependabot[bot] (@dependabot[bot])
+* Correct Opt In for FileRepository (#2709) via Jacob Rakidzich (@JZDesign)
+* Paywalls -> Video Component (#2680) via Jacob Rakidzich (@JZDesign)
+* Update fastlane-plugin-revenuecat_internal to e555afb (#2705) via Cesar de la Vega (@vegaro)
+* Revert kotlinCompilerExtensionVersion for MagicWeatherCompose and CustomEntitlementComputationSample (#2701) via Jaewoong Eum (@skydoves)
+* [EXTERNAL] Fix incorrect exception use in test (#2674) via @nikit19 (#2703) via Toni Rico (@tonidero)
