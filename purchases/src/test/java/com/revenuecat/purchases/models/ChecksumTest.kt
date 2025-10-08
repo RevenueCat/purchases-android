@@ -21,8 +21,7 @@ class ChecksumTest {
 
         assertThat(checksum.algorithm).isEqualTo(Checksum.Algorithm.MD5)
         // MD5 hash of "Test content"
-        assertThat(checksum.value).hasSize(32) // MD5 produces 32 hex chars
-        assertThat(checksum.value).matches("[a-f0-9]{32}")
+        assertThat(checksum.value).isEqualTo("8bfa8e0684108f419933a5995264d150")
     }
 
     @Test
@@ -31,16 +30,23 @@ class ChecksumTest {
         val checksum = Checksum.generate(data, Checksum.Algorithm.SHA384)
 
         assertThat(checksum.algorithm).isEqualTo(Checksum.Algorithm.SHA384)
-        assertThat(checksum.value).hasSize(96) // SHA384 produces 96 hex chars
+        assertThat(checksum.value)
+            .isEqualTo(
+                "7b8f4654076b80eb963911f19cfad1aaf4285ed48e826f6cde1b01a79aa73fadb5446e667fc4f90417782c91270540f3",
+            )
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `generate checksum from data - SHA512`() {
         val data = "Test".toByteArray()
         val checksum = Checksum.generate(data, Checksum.Algorithm.SHA512)
 
         assertThat(checksum.algorithm).isEqualTo(Checksum.Algorithm.SHA512)
-        assertThat(checksum.value).hasSize(128) // SHA512 produces 128 hex chars
+        assertThat(checksum.value)
+            .isEqualTo(
+                "c6ee9e33cf5c6715a1d148fd73f7318884b41adcb916021e2bc0e800a5c5dd97f5142178f6ae88c8fdd98e1afb0ce4c8d2c54b5f37b30b7da1997bb33b0b8a31",
+            )
     }
 
     @Test
@@ -48,8 +54,7 @@ class ChecksumTest {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.SHA256, "abc123")
 
-        // Should not throw
-        checksum1.compare(checksum2)
+        assert(checksum1 == checksum2)
     }
 
     @Test
@@ -57,28 +62,23 @@ class ChecksumTest {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "ABC123")
         val checksum2 = Checksum(Checksum.Algorithm.SHA256, "abc123")
 
-        // Should not throw
-        checksum1.compare(checksum2)
+        assert(checksum1 == checksum2)
     }
 
     @Test
-    fun `compare mismatched checksums - throws`() {
+    fun `compare mismatched checksums - returns false`() {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.SHA256, "def456")
 
-        assertThrows<Checksum.ChecksumValidationException> {
-            checksum1.compare(checksum2)
-        }
+        assert(checksum1 != checksum2)
     }
 
     @Test
-    fun `compare mismatched algorithms - throws`() {
+    fun `compare mismatched algorithms - returns false`() {
         val checksum1 = Checksum(Checksum.Algorithm.SHA256, "abc123")
         val checksum2 = Checksum(Checksum.Algorithm.MD5, "abc123")
 
-        assertThrows<Checksum.ChecksumValidationException> {
-            checksum1.compare(checksum2)
-        }
+        assert(checksum1 != checksum2)
     }
 
     @Test
@@ -125,15 +125,5 @@ class ChecksumTest {
         val checksum2 = Checksum.generate(data2, Checksum.Algorithm.SHA256)
 
         assertThat(checksum1.value).isNotEqualTo(checksum2.value)
-    }
-
-    private inline fun <reified T : Throwable> assertThrows(block: () -> Unit): T {
-        try {
-            block()
-            throw AssertionError("Expected ${T::class.simpleName} but no exception was thrown")
-        } catch (e: Throwable) {
-            if (e is T) return e
-            throw AssertionError("Expected ${T::class.simpleName} but got ${e::class.simpleName}", e)
-        }
     }
 }

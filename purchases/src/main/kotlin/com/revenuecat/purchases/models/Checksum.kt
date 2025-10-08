@@ -57,14 +57,12 @@ data class Checksum(
         }
     }
 
-    /**
-     * Compare this checksum to another
-     * @throws ChecksumValidationException if checksums don't match
-     */
-    fun compare(other: Checksum) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is Checksum) return false
         if (this.value.lowercase() != other.value.lowercase() || this.algorithm != other.algorithm) {
-            throw ChecksumValidationException()
+            return false
         }
+        return true
     }
 
     /**

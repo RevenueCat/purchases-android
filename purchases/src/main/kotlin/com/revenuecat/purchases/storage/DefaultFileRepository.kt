@@ -233,7 +233,7 @@ internal class DefaultFileCache(
         try {
             // Stream to temp file, optionally calculating checksum if available
             if (checksum != null) {
-                streamToFileAndCompareChecksum(inputStream, tempFile, checksum)
+                streamToFileAndCompareChecksum(inputStream, tempFile, checksum).getOrThrow()
             } else {
                 streamToFile(inputStream, tempFile)
             }
@@ -244,7 +244,12 @@ internal class DefaultFileCache(
             if (!tempFile.renameTo(finalFile)) {
                 // If that rename fails, we will try again with a slower,
                 // non-atomic, operation that will work across volumes
-                tempFile.copyTo(finalFile, overwrite = true)
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    tempFile.copyTo(finalFile, overwrite = true)
+                } catch (_: Exception) {
+                    finalFile.delete()
+                }
             }
         } finally {
             tempFile.delete()
@@ -266,7 +271,7 @@ internal class DefaultFileCache(
         inputStream: InputStream,
         file: File,
         checksum: Checksum,
-    ) {
+    ): Result<Unit> {
         val digest = MessageDigest.getInstance(checksum.algorithm.algorithmName)
 
         FileOutputStream(file).use { outputStream ->
@@ -291,8 +296,11 @@ internal class DefaultFileCache(
             hash.toHexString(),
         )
 
-        // throws if comparison is invalid
-        computedChecksum.compare(checksum)
+        return if (checksum == computedChecksum) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Checksum.ChecksumValidationException())
+        }
     }
 
     companion object {
