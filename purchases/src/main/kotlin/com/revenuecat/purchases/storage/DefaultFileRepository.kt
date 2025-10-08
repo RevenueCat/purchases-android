@@ -257,14 +257,7 @@ internal class DefaultFileCache(
     @Throws(IOException::class)
     private fun streamToFile(inputStream: InputStream, file: File) {
         FileOutputStream(file).use { outputStream ->
-            val buffer = ByteArray(BUFFER_SIZE)
-            var bytesRead: Int
-
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                outputStream.write(buffer, 0, bytesRead)
-            }
-
-            outputStream.flush()
+            inputStream.copyTo(outputStream, bufferSize = BUFFER_SIZE)
         }
     }
 
