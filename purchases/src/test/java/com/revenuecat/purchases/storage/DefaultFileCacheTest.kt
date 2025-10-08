@@ -2,22 +2,20 @@ package com.revenuecat.purchases.storage
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.Checksum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.URL
 
-@OptIn(InternalRevenueCatAPI::class)
-@RunWith(RobolectricTestRunner::class)
+@RunWith(AndroidJUnit4::class)
 class DefaultFileCacheTest {
 
     private lateinit var context: Context
