@@ -19,10 +19,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +29,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
@@ -375,19 +373,6 @@ private class TextureVideoView @JvmOverloads constructor(
     }
 }
 
-private val SavedPlaybackSaver = Saver<MutableState<VideoPlaybackState>, List<Any>>(
-    save = {
-        listOf(it.value.positionMs, it.value.playWhenReady)
-    },
-    restore = {
-        val restored = VideoPlaybackState(it[0] as Int, it[1] as Boolean)
-        mutableStateOf(restored)
-    },
-)
-
-@Composable
-private fun getVideoViewModel() = viewModel<VideoPlaybackViewModel>()
-
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun Video(
@@ -398,19 +383,11 @@ private fun Video(
     loop: Boolean,
     muteAudio: Boolean,
     modifier: Modifier = Modifier,
-    viewModel: VideoPlaybackViewModel = getVideoViewModel(),
 ) {
     val key = "video_${scaleType}_$videoUri"
 
-    // ViewModel survives activity recreation
-
-    val saved = rememberSaveable(
-        key = key,
-        saver = SavedPlaybackSaver,
-    ) {
-        // Try to restore from ViewModel first, fallback to default
-        val restored = viewModel.restorePlaybackState(key)
-        mutableStateOf(restored)
+    val savedState = rememberSaveable(key = key) {
+        mutableMapOf<String, VideoPlaybackState>()
     }
 
     // Remember the TextureVideoView instance across recompositions
@@ -435,8 +412,7 @@ private fun Video(
                 val state = view.getPlaybackState()
                 val playbackState =
                     VideoPlaybackState(positionMs = state.positionMs, playWhenReady = state.playWhenReady)
-                saved.value = playbackState
-                viewModel.savePlaybackState(key, playbackState)
+                savedState[key] = playbackState
             }
         }
     }
@@ -446,15 +422,13 @@ private fun Video(
     ) {
         AndroidView(
             factory = { ctx ->
-                // Always check both saved state and ViewModel
-                val restoredState = viewModel.restorePlaybackState(key)
-                val usePosition = maxOf(saved.value.positionMs, restoredState.positionMs)
+                val restoredState = savedState[key] ?: VideoPlaybackState(0, autoPlay)
+                val usePosition = maxOf(restoredState.positionMs, restoredState.positionMs)
 
                 // Rotation case: use the saved play state (respects if user paused)
                 // If we have a saved position, always try to continue playing (rotation should resume)
                 val usePlay = if (usePosition > 0) {
-                    // Either source might have the correct state
-                    saved.value.playWhenReady || restoredState.playWhenReady
+                    restoredState.playWhenReady
                 } else {
                     autoPlay
                 }
@@ -494,8 +468,7 @@ private fun Video(
                     val st = getPlaybackState()
                     val playbackState =
                         VideoPlaybackState(positionMs = st.positionMs, playWhenReady = st.playWhenReady)
-                    saved.value = playbackState
-                    viewModel.savePlaybackState(key, playbackState)
+                    savedState[key] = playbackState
                     release()
                 }
                 videoView.value = null
@@ -514,3 +487,15 @@ private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? =
         }
     }
 }
+
+/**
+ * Represents the playback state of a video at a point in time.
+ *
+ * @property positionMs Current playback position in milliseconds
+ * @property playWhenReady Whether the video should be playing (true) or paused (false)
+ */
+@Stable
+internal data class VideoPlaybackState(
+    val positionMs: Int,
+    val playWhenReady: Boolean,
+)
