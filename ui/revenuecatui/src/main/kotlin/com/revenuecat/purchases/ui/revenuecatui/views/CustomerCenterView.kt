@@ -107,13 +107,8 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
-        CustomerCenterUI(options = customerCenterOptions)
-    }
-
-    @Composable
-    private fun CustomerCenterUI(options: CustomerCenterOptions) {
-        CustomerCenter(options = options) {
-            dismissHandler?.invoke()
+        CustomerCenter(options = customerCenterOptions) {
+            onBackPressed()
         }
     }
 }
