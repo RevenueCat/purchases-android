@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.OfferingVideoPredownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -41,7 +40,6 @@ class OfferingsManagerTest {
     private lateinit var backend: Backend
     private lateinit var offeringsFactory: OfferingsFactory
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
-    private lateinit var offeringVideoPreDownloader: OfferingVideoPredownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
 
@@ -60,10 +58,6 @@ class OfferingsManagerTest {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
 
-        offeringVideoPreDownloader = mockk {
-            every { downloadVideos(any()) } just Runs
-        }
-
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
 
@@ -72,7 +66,6 @@ class OfferingsManagerTest {
             backend = backend,
             offeringsFactory = offeringsFactory,
             offeringImagePreDownloader = offeringImagePreDownloader,
-            offeringVideoPreDownloader = offeringVideoPreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
         )
@@ -440,73 +433,6 @@ class OfferingsManagerTest {
     }
 
     // endregion getOfferings
-
-    // region pre download offering videos
-
-    @Test
-    fun `getOfferings pre downloads offering videos for current offering`() {
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory()
-        mockDeviceCache()
-
-        offeringsManager.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be a success") },
-            onSuccess = {},
-        )
-
-        verify(exactly = 1) {
-            offeringVideoPreDownloader.downloadVideos(testOfferings.current!!)
-        }
-    }
-
-    @Test
-    fun `getOfferings does not pre download offering videos if current offering is null`() {
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory(testOfferings.copy(current = null))
-        mockDeviceCache()
-
-        offeringsManager.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be a success") },
-            onSuccess = {},
-        )
-
-        verify(exactly = 0) {
-            offeringVideoPreDownloader.downloadVideos(any())
-        }
-    }
-
-    @Test
-    fun `getOfferings pre downloads offering videos for current offering when request fails and served from cache`() {
-        every {
-            cache.cachedOfferings
-        } returns null
-        every {
-            cache.cacheOfferings(any(), any())
-        } just Runs
-
-        mockBackendResponseError()
-        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
-        every { cache.cachedOfferingsResponse } returns backendResponse
-        mockDeviceCache(wasSuccessful = false)
-        mockOfferingsFactory()
-
-        offeringsManager.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be a success") },
-            onSuccess = {},
-        )
-
-        verify(exactly = 1) {
-            offeringVideoPreDownloader.downloadVideos(testOfferings.current!!)
-        }
-    }
-
-    // endregion pre download offering videos
 
     // region pre download offering images
 
