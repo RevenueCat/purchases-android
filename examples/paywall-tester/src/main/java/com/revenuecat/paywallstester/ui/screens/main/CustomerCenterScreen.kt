@@ -47,41 +47,42 @@ fun CustomerCenterScreen(
     }
 }
 
-private fun createCustomerCenterListener(
+internal fun createCustomerCenterListener(
+    tag: String = TAG,
     onCustomAction: (actionIdentifier: String, purchaseIdentifier: String?) -> Unit = { _, _ -> },
 ): CustomerCenterListener {
     return object : CustomerCenterListener {
         override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
-            Log.d(TAG, "Local listener: onManagementOptionSelected called with action: $action")
+            Log.d(tag, "Local listener: onManagementOptionSelected called with action: $action")
         }
 
         override fun onRestoreStarted() {
-            Log.d(TAG, "Local listener: onRestoreStarted called")
+            Log.d(tag, "Local listener: onRestoreStarted called")
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             Log.d(
-                TAG,
+                tag,
                 "Local listener: onRestoreCompleted called with customer info: " +
                     customerInfo.originalAppUserId,
             )
         }
 
         override fun onRestoreFailed(error: PurchasesError) {
-            Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
+            Log.d(tag, "Local listener: onRestoreFailed called with error: ${error.message}")
         }
 
         override fun onShowingManageSubscriptions() {
-            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
+            Log.d(tag, "Local listener: onShowingManageSubscriptions called")
         }
 
         override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
-            Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
+            Log.d(tag, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
         }
 
         override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
             Log.d(
-                TAG,
+                tag,
                 "Local listener: onCustomActionSelected called with action: $actionIdentifier, " +
                     "purchaseIdentifier: $purchaseIdentifier",
             )
