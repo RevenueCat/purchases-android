@@ -222,6 +222,9 @@ internal class DefaultFileCache(
     override fun cachedContentExists(uri: URI): Boolean =
         File(uri).exists()
 
+    // For readability. I reads like a sentence and ! is harder to see than isFalse
+    private val Boolean.isFalse: Boolean get() = !this
+
     override fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum?) {
         val finalFile = File(uri)
         val tempFile = File.createTempFile(
@@ -233,7 +236,7 @@ internal class DefaultFileCache(
         try {
             // Stream to temp file, optionally calculating checksum if available
             if (checksum != null) {
-                streamToFileAndCompareChecksum(inputStream, tempFile, checksum).getOrThrow()
+                if (streamToFileAndCompareChecksum(inputStream, tempFile, checksum).isFalse) return
             } else {
                 streamToFile(inputStream, tempFile)
             }
@@ -272,7 +275,7 @@ internal class DefaultFileCache(
         inputStream: InputStream,
         file: File,
         checksum: Checksum,
-    ): Result<Unit> {
+    ): Boolean {
         val digest = MessageDigest.getInstance(checksum.algorithm.algorithmName)
 
         FileOutputStream(file).use { outputStream ->
@@ -297,11 +300,7 @@ internal class DefaultFileCache(
             hash.toHexString(),
         )
 
-        return if (checksum == computedChecksum) {
-            Result.success(Unit)
-        } else {
-            Result.failure(Checksum.ChecksumValidationException())
-        }
+        return checksum == computedChecksum
     }
 
     companion object {
