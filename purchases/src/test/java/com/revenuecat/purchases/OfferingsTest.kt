@@ -43,7 +43,6 @@ class OfferingsTest {
 
     private val offeringsParser = OfferingParserFactory.createOfferingParser(
         Store.PLAY_STORE,
-        apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
     )
 
     @Test

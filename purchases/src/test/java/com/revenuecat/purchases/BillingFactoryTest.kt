@@ -6,9 +6,11 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertIs
 
 @RunWith(AndroidJUnit4::class)
 class BillingFactoryTest {
@@ -31,8 +33,29 @@ class BillingFactoryTest {
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
+    }
+
+    @Test
+    fun `SimulatedStoreBillingWrapper gets created when store is test store`() {
+        val mockApplication = mockk<Application>(relaxed = true)
+        val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
+        val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
+
+        val simulatedBilling = BillingFactory.createBilling(
+            Store.TEST_STORE,
+            mockApplication,
+            mockBackendHelper,
+            mockCache,
+            finishTransactions = true,
+            mockDiagnosticsTracker,
+            PurchasesStateCache(PurchasesState()),
+            pendingTransactionsForPrepaidPlansEnabled = true,
+            backend = mockBackend,
+        )
+        assertIs<SimulatedStoreBillingWrapper>(simulatedBilling)
     }
 
     @Test
@@ -52,7 +75,6 @@ class BillingFactoryTest {
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 }
