@@ -594,6 +594,7 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode ReceiptAlreadyInUseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode SignatureVerificationError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode StoreProblemError;
+    enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode TestStoreSimulatedPurchaseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnexpectedBackendResponseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnknownBackendError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnknownError;
