@@ -53,18 +53,7 @@ internal fun JSONObject.buildEntitlementInfos(
     )
 }
 
-internal fun JSONObject.getStore(name: String) = when (getString(name)) {
-    "app_store" -> Store.APP_STORE
-    "mac_app_store" -> Store.MAC_APP_STORE
-    "play_store" -> Store.PLAY_STORE
-    "stripe" -> Store.STRIPE
-    "promotional" -> Store.PROMOTIONAL
-    "amazon" -> Store.AMAZON
-    "rc_billing" -> Store.RC_BILLING
-    "external" -> Store.EXTERNAL
-    "paddle" -> Store.PADDLE
-    else -> Store.UNKNOWN_STORE
-}
+internal fun JSONObject.getStore(name: String) = Store.fromString(getString(name))
 
 internal fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     "normal" -> PeriodType.NORMAL
