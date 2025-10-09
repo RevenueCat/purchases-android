@@ -65,5 +65,5 @@ internal fun checkIfVideoComponentIsEnabled(): Boolean = BuildConfig.ENABLE_VIDE
 
 // Expose for UI package
 @InternalRevenueCatAPI
-val isVideoComponentEnabled: Boolean = true
-//    get() = checkIfVideoComponentIsEnabled()
+val isVideoComponentEnabled: Boolean
+    get() = checkIfVideoComponentIsEnabled()
