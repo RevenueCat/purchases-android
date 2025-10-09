@@ -248,7 +248,7 @@ class DefaultFileCacheTest {
     }
 
     @Test
-    fun `saveData with checksum validation - invalid checksum throws`() {
+    fun `saveData with checksum validation - invalid checksum - fails silently and cleans up`() {
         val testData = "Test content".toByteArray()
         val wrongChecksum = Checksum(
             Checksum.Algorithm.SHA256,
@@ -258,13 +258,13 @@ class DefaultFileCacheTest {
         val url = URL("https://example.com/test.txt")
         val uri = cache.generateLocalFilesystemURI(url, wrongChecksum)!!
 
-        assertThrows<Checksum.ChecksumValidationException> {
-            cache.saveData(inputStream, uri, wrongChecksum)
-        }
+        cache.saveData(inputStream, uri, wrongChecksum)
 
         // Verify temp file was cleaned up
         val tempFiles = cacheDir.listFiles { _, name -> name.startsWith("rc_download_") }
         assertThat(tempFiles).isEmpty()
+
+        assert(!cache.cachedContentExists(uri))
     }
 
     @Test
