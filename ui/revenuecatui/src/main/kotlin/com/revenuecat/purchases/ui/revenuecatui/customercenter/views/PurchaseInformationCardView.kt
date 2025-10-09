@@ -148,6 +148,7 @@ private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Lo
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE
         Store.UNKNOWN_STORE,
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
+        Store.TEST_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.TEST_STORE
     }
     return localization.commonLocalizedString(key)
 }

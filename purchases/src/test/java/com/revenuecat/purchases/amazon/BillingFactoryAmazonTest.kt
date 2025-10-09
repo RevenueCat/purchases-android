@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.BillingFactory
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
@@ -36,7 +35,6 @@ class BillingFactoryAmazonTest {
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 
@@ -57,7 +55,6 @@ class BillingFactoryAmazonTest {
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             backend = mockBackend,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 }

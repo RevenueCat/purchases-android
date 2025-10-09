@@ -252,6 +252,9 @@ data class CustomerCenterConfigData(
             @SerialName("unknown_store")
             UNKNOWN_STORE,
 
+            @SerialName("test_store")
+            TEST_STORE,
+
             @SerialName("card_store_promotional")
             CARD_STORE_PROMOTIONAL,
 
@@ -374,6 +377,7 @@ data class CustomerCenterConfigData(
                     AMAZON_STORE -> "Amazon Store"
                     WEB_STORE -> "Web"
                     UNKNOWN_STORE -> "Unknown"
+                    TEST_STORE -> "Test Store"
                     CARD_STORE_PROMOTIONAL -> "Via Support"
                     RESUBSCRIBE -> "Resubscribe"
                     TYPE_SUBSCRIPTION -> "Subscription"
