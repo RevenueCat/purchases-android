@@ -196,8 +196,8 @@ internal class SimulatedStoreBillingWrapper(
                 debugLog { "[Test store] Purchase failure simulated successfully in Test Store." }
                 purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                     PurchasesError(
-                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                        "Test purchase failure: no real transaction occurred.",
+                        PurchasesErrorCode.TestStoreSimulatedPurchaseError,
+                        "Simulated error successfully.",
                     ),
                 )
             },

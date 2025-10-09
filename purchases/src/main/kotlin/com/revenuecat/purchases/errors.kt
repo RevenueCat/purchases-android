@@ -90,4 +90,5 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
         36,
         "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info.",
     ),
+    TestStoreSimulatedPurchaseError(42, "Purchase failure simulated successfully in Test Store."),
 }
