@@ -247,7 +247,8 @@ internal class DefaultFileCache(
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     tempFile.copyTo(finalFile, overwrite = true)
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    verboseLog { "Failed to copy temp file to final file: ${e.message}" }
                     finalFile.delete()
                 }
             }
