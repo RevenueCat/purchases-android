@@ -55,7 +55,10 @@ fun AppInfoScreen(
         val state by viewModel.state.collectAsState()
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
+        val currentActiveEntitlements by remember { derivedStateOf { state.activeEntitlements } }
+        Spacer(modifier = Modifier.weight(1f))
         Text(text = "Current user ID: $currentUserID")
+        Text(text = "Current active entitlements: $currentActiveEntitlements")
         Text(text = "Current API key: $currentApiKeyDescription")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
@@ -73,6 +76,10 @@ fun AppInfoScreen(
             tappedOnCustomerCenter()
         }) {
             Text(text = "Show customer center")
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = { viewModel.refresh() }) {
+            Text(text = "Refresh")
         }
     }
 
@@ -190,11 +197,18 @@ fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
             override val state: StateFlow<UiState>
-                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
+                get() = MutableStateFlow(
+                    UiState(
+                        appUserID = "test-user-id",
+                        apiKeyDescription = "test-api-key",
+                        activeEntitlements = listOf("pro", "premium"),
+                    ),
+                )
 
             override fun logIn(newAppUserId: String) { }
             override fun logOut() { }
             override fun switchApiKey(newApiKey: String) { }
+            override fun refresh() { }
         },
         tappedOnCustomerCenter = {},
     )
