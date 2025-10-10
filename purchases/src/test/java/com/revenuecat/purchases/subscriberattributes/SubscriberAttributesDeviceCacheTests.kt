@@ -13,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -70,7 +71,7 @@ class SubscriberAttributesDeviceCacheTests {
             } returns mockEditor
         }
 
-        cache = DeviceCache(mockPrefs, apiKey)
+        cache = DeviceCache(mockPrefs, apiKey, Dispatchers.Unconfined)
         underTest = SubscriberAttributesCache(cache)
 
         every {

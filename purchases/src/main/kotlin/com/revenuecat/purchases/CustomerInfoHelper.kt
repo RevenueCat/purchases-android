@@ -16,7 +16,12 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.android.asCoroutineDispatcher
+import kotlinx.coroutines.launch
 import java.util.Date
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 
 /**
@@ -40,6 +45,7 @@ internal class CustomerInfoHelper(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val handler: Handler = Handler(Looper.getMainLooper()),
+    private val scope: CoroutineScope = CoroutineScope(handler.asCoroutineDispatcher())
 ) {
 
     fun retrieveCustomerInfo(
@@ -55,8 +61,7 @@ internal class CustomerInfoHelper(
         val startTime = dateProvider.now
 
         val callbackWithDiagnostics: ((CustomerInfoDataResult) -> Unit)? = if (callback != null || trackDiagnostics) {
-            {
-                    customerInfoDataResult ->
+            { customerInfoDataResult ->
                 trackGetCustomerInfoResultIfNeeded(trackDiagnostics, startTime, customerInfoDataResult, fetchPolicy)
 
                 callback?.let {
@@ -64,6 +69,7 @@ internal class CustomerInfoHelper(
                         is Result.Success -> {
                             it.onReceived(customerInfoDataResult.result.value)
                         }
+
                         is Result.Error -> {
                             it.onError(customerInfoDataResult.result.value)
                         }
@@ -74,108 +80,89 @@ internal class CustomerInfoHelper(
             null
         }
 
-        when (fetchPolicy) {
-            CacheFetchPolicy.CACHE_ONLY -> getCustomerInfoCacheOnly(appUserID, callbackWithDiagnostics)
-            CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesAndFetchCustomerInfo(
-                appUserID,
-                appInBackground,
-                allowSharingPlayStoreAccount,
-                callbackWithDiagnostics,
-            )
-            CacheFetchPolicy.CACHED_OR_FETCHED -> getCustomerInfoCachedOrFetched(
-                appUserID,
-                appInBackground,
-                allowSharingPlayStoreAccount,
-                callbackWithDiagnostics,
-            )
-            CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT -> getCustomerInfoNotStaledCachedOrFetched(
-                appUserID,
-                appInBackground,
-                allowSharingPlayStoreAccount,
-                callbackWithDiagnostics,
-            )
+        scope.launch {
+            val customerInfo = when (fetchPolicy) {
+                CacheFetchPolicy.CACHE_ONLY -> if (callback != null || trackDiagnostics) {
+                    getCustomerInfoCacheOnly(appUserID)
+                } else return@launch
+
+                CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesAndFetchCustomerInfo(
+                    appUserID,
+                    appInBackground,
+                    allowSharingPlayStoreAccount,
+                )
+                CacheFetchPolicy.CACHED_OR_FETCHED -> getCustomerInfoCachedOrFetched(
+                    appUserID,
+                    appInBackground,
+                    allowSharingPlayStoreAccount,
+                )
+                CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT -> getCustomerInfoNotStaledCachedOrFetched(
+                    appUserID,
+                    appInBackground,
+                    allowSharingPlayStoreAccount,
+                )
+            }
+
+            callbackWithDiagnostics?.let { dispatch { it(customerInfo) } }
         }
     }
 
-    private fun getCustomerInfoCacheOnly(
-        appUserID: String,
-        callback: ((CustomerInfoDataResult) -> Unit)?,
-    ) {
-        if (callback == null) return
+    private suspend fun getCustomerInfoCacheOnly(appUserID: String) : CustomerInfoDataResult {
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
-        if (cachedCustomerInfo != null) {
+        return if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG) { CustomerInfoStrings.VENDING_CACHE }
-            dispatch { callback(CustomerInfoDataResult(Result.Success(cachedCustomerInfo))) }
+            CustomerInfoDataResult(Result.Success(cachedCustomerInfo))
         } else {
             val error = PurchasesError(
                 PurchasesErrorCode.CustomerInfoError,
                 CustomerInfoStrings.MISSING_CACHED_CUSTOMER_INFO,
             )
             errorLog(error)
-            dispatch { callback(CustomerInfoDataResult(Result.Error(error))) }
+            CustomerInfoDataResult(Result.Error(error))
         }
     }
 
-    private fun postPendingPurchasesAndFetchCustomerInfo(
+    private suspend fun postPendingPurchasesAndFetchCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ((CustomerInfoDataResult) -> Unit)? = null,
-    ) {
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(
-            allowSharingPlayStoreAccount,
-            { syncResult ->
-                when (syncResult) {
-                    is SyncPendingPurchaseResult.Success -> {
-                        log(LogIntent.RC_SUCCESS) {
-                            CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_SYNCING_PENDING_PURCHASES
-                        }
-                        dispatch {
-                            callback?.invoke(
-                                CustomerInfoDataResult(
-                                    Result.Success(syncResult.customerInfo),
-                                    hadUnsyncedPurchasesBefore = true,
-                                ),
-                            )
-                        }
-                    }
-                    is SyncPendingPurchaseResult.Error -> {
-                        getCustomerInfoFetchOnly(
-                            appUserID,
-                            appInBackground,
-                            { result ->
-                                callback?.invoke(CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = true))
-                            },
-                        )
-                    }
-                    is SyncPendingPurchaseResult.AutoSyncDisabled -> {
-                        getCustomerInfoFetchOnly(
-                            appUserID,
-                            appInBackground,
-                            { result ->
-                                callback?.invoke(CustomerInfoDataResult(result))
-                            },
-                        )
-                    }
-                    is SyncPendingPurchaseResult.NoPendingPurchasesToSync -> {
-                        getCustomerInfoFetchOnly(
-                            appUserID,
-                            appInBackground,
-                            { result ->
-                                callback?.invoke(CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = false))
-                            },
-                        )
-                    }
+    ): CustomerInfoDataResult {
+        val syncResult = postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        return when (syncResult) {
+            is SyncPendingPurchaseResult.Success -> {
+                log(LogIntent.RC_SUCCESS) {
+                    CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_SYNCING_PENDING_PURCHASES
                 }
-            },
-        )
+                CustomerInfoDataResult(
+                    Result.Success(syncResult.customerInfo),
+                    hadUnsyncedPurchasesBefore = true,
+                )
+            }
+
+            is SyncPendingPurchaseResult.Error -> {
+                val result = getCustomerInfoFetchOnly(appUserID, appInBackground)
+                CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = true)
+            }
+
+            is SyncPendingPurchaseResult.AutoSyncDisabled -> {
+                val result = getCustomerInfoFetchOnly(appUserID, appInBackground)
+                CustomerInfoDataResult(result)
+            }
+
+            is SyncPendingPurchaseResult.NoPendingPurchasesToSync -> {
+                val result = getCustomerInfoFetchOnly(
+                    appUserID,
+                    appInBackground
+                )
+                CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = false)
+            }
+        }
     }
 
-    private fun getCustomerInfoFetchOnly(
+    private suspend fun getCustomerInfoFetchOnly(
         appUserID: String,
         appInBackground: Boolean,
-        callback: ((Result<CustomerInfo, PurchasesError>) -> Unit)? = null,
-    ) {
+    ): Result<CustomerInfo, PurchasesError> = suspendCoroutine { continuation ->
         deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
         backend.getCustomerInfo(
             appUserID,
@@ -184,79 +171,77 @@ internal class CustomerInfoHelper(
                 log(LogIntent.RC_SUCCESS) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK }
                 offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                 customerInfoUpdateHandler.cacheAndNotifyListeners(info)
-                dispatch { callback?.invoke(Result.Success(info)) }
+                continuation.resume(Result.Success(info))
             },
             { backendError, isServerError ->
                 errorLog { CustomerInfoStrings.ERROR_FETCHING_CUSTOMER_INFO.format(backendError) }
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
-                if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-                        isServerError,
-                        appUserID,
-                    )
-                ) {
-                    offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
-                        appUserID,
-                        onSuccess = { offlineComputedCustomerInfo ->
-                            customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo)
-                            dispatch { callback?.invoke(Result.Success(offlineComputedCustomerInfo)) }
-                        },
-                        onError = {
-                            dispatch { callback?.invoke(Result.Error(backendError)) }
-                        },
-                    )
-                } else {
-                    dispatch { callback?.invoke(Result.Error(backendError)) }
+                scope.launch {
+                    if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+                            isServerError,
+                            appUserID,
+                        )
+                    ) {
+                        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                            appUserID,
+                            onSuccess = { offlineComputedCustomerInfo ->
+                                customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo)
+                                continuation.resume(Result.Success(offlineComputedCustomerInfo))
+                            },
+                            onError = {
+                                continuation.resume(Result.Error(backendError))
+                            },
+                        )
+                    } else {
+                        continuation.resume(Result.Error(backendError))
+                    }
                 }
             },
         )
     }
 
-    private fun getCustomerInfoCachedOrFetched(
+    private suspend fun getCustomerInfoCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ((CustomerInfoDataResult) -> Unit)? = null,
-    ) {
+    ) : CustomerInfoDataResult {
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
-        if (cachedCustomerInfo != null) {
+        return if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG) { CustomerInfoStrings.VENDING_CACHE }
-            dispatch { callback?.invoke(CustomerInfoDataResult(Result.Success(cachedCustomerInfo))) }
             updateCachedCustomerInfoIfStale(appUserID, appInBackground, allowSharingPlayStoreAccount)
+            CustomerInfoDataResult(Result.Success(cachedCustomerInfo))
         } else {
             log(LogIntent.DEBUG) { CustomerInfoStrings.NO_CACHED_CUSTOMERINFO }
             postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                callback,
             )
         }
     }
 
-    private fun getCustomerInfoNotStaledCachedOrFetched(
+    private suspend fun getCustomerInfoNotStaledCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
-        callback: ((CustomerInfoDataResult) -> Unit)? = null,
-    ) {
-        if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
+    ) : CustomerInfoDataResult {
+        return if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
-                callback,
             )
         } else {
-            getCustomerInfoCachedOrFetched(appUserID, appInBackground, allowSharingPlayStoreAccount, callback)
+            getCustomerInfoCachedOrFetched(appUserID, appInBackground, allowSharingPlayStoreAccount)
         }
     }
 
-    private fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
+    private suspend fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return offlineEntitlementsManager.offlineCustomerInfo
             ?: deviceCache.getCachedCustomerInfo(appUserID)
     }
 
-    private fun updateCachedCustomerInfoIfStale(
+    private suspend fun updateCachedCustomerInfoIfStale(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
