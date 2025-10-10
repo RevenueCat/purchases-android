@@ -17,6 +17,7 @@ sealed class GooglePurchasingData : PurchasingData {
         val optionId: String,
         val productDetails: ProductDetails,
         val token: String,
+        val addOnProducts: List<GooglePurchasingData>?,
     ) : GooglePurchasingData()
 
     override val productType: ProductType

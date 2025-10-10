@@ -8,6 +8,8 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -17,6 +19,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
+import io.mockk.mockk
 import org.json.JSONObject
 
 @SuppressWarnings("MatchingDeclarationName")
@@ -341,3 +344,36 @@ fun getAmazonPackageJSON(
                 }
         """.trimIndent(),
     )
+
+fun stubStoreProductWithGoogleSubscriptionPurchaseData(
+    productId: String = STUB_PRODUCT_IDENTIFIER,
+    optionId: String = "optionId",
+    token: String = "token",
+    period: Period = Period(1, Period.Unit.MONTH, "P1M")
+): StoreProduct {
+    val productDetails: ProductDetails = mockk()
+    val subscriptionOption = object : SubscriptionOption by stubSubscriptionOption("p1m", productId, period) {
+        override val purchasingData: PurchasingData
+            get() = GooglePurchasingData.Subscription(
+                productId = productId,
+                optionId = optionId,
+                productDetails = productDetails,
+                token = token,
+                addOnProducts = emptyList()
+            )
+    }
+
+    return object : StoreProduct by stubStoreProduct(productId, subscriptionOption) {
+        override val purchasingData: PurchasingData
+            get() = GooglePurchasingData.Subscription(
+                productId = productId,
+                optionId = optionId,
+                productDetails = productDetails,
+                token = token,
+                addOnProducts = emptyList()
+            )
+        val storeProduct: GoogleStoreProduct?
+            get() = mockk()
+
+    }
+}
