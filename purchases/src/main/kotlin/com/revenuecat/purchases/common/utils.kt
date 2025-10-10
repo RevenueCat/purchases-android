@@ -9,8 +9,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
-import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.api.BuildConfig
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -60,10 +58,3 @@ internal val canUsePaywallUI: Boolean
     } catch (_: ClassNotFoundException) {
         false
     }
-
-internal fun checkIfVideoComponentIsEnabled(): Boolean = BuildConfig.ENABLE_VIDEO_COMPONENT
-
-// Expose for UI package
-@InternalRevenueCatAPI
-val isVideoComponentEnabled: Boolean
-    get() = checkIfVideoComponentIsEnabled()
