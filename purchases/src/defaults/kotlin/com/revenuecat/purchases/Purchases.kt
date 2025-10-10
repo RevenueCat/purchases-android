@@ -38,6 +38,7 @@ import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -114,6 +115,38 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
         }
+
+    /**
+     * Determines the Locale used for formatting currencies based on the `storefrontCountryCode` and the device's available locale's
+     * The `storefrontCountryCode` argument will be used instead of the cached `storefrontCountryCode` if provided
+     * The `locale` argument is used as fallback in case no `storefrontCountryCode` is available or when there are no matching device locale's
+     */
+    fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String? = null, locale: Locale): Locale {
+        val storefrontCountryCode = storefrontCountryCode ?: this.storefrontCountryCode;
+        if (storefrontCountryCode.isNullOrBlank()) {
+            return locale;
+        }
+
+        // We find all available device locales with the same country as the storefront country.
+        val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> = buildMap {
+            Locale.getAvailableLocales().forEach { availableLocale ->
+                if (availableLocale.country.equals(storefrontCountryCode, ignoreCase = true)) {
+                    put(availableLocale.language.lowercase(), availableLocale)
+                }
+            }
+        }
+
+        val deviceLanguageCode = locale.language.lowercase()
+
+        // We pick the one with the same language as the device if available. If not, we just pick the
+        // first. If the list is empty, we use the device locale with the storefront country.
+        return availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
+            ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
+            ?: Locale.Builder()
+                .setLocale(locale)
+                .setRegion(storefrontCountryCode.uppercase())
+                .build()
+    }
 
     /**
      * Listener that receives callbacks for Customer Center events such as restore initiated,
