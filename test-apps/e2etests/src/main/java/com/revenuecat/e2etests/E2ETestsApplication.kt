@@ -12,12 +12,10 @@ class E2ETestsApplication : Application() {
         // Configure RevenueCat SDK
         Purchases.logLevel = LogLevel.DEBUG
 
-        val apiKey = "<REVENUECAT_API_KEY>" // replace with your key for local testing
-
         Purchases.configure(
             PurchasesConfiguration.Builder(
                 context = this,
-                apiKey = apiKey,
+                apiKey = Constants.API_KEY,
             ).build(),
         )
     }
