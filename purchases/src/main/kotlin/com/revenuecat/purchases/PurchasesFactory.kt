@@ -51,7 +51,6 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.OfferingVideoPredownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -80,7 +79,7 @@ internal class PurchasesFactory(
             val finalStore = if (
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                Store.UNKNOWN_STORE // We should add a new store when we fully support the simulated store.
+                Store.TEST_STORE
             } else {
                 store
             }
@@ -206,7 +205,6 @@ internal class PurchasesFactory(
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
                 backend,
-                apiKeyValidationResult,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -294,7 +292,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore, apiKeyValidationResult)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
@@ -335,7 +333,6 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
-                OfferingVideoPredownloader(application),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
             )

@@ -6,7 +6,6 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -43,7 +42,6 @@ class AmazonOfferingsTest {
 
     private val offeringsParser = OfferingParserFactory.createOfferingParser(
         Store.AMAZON,
-        apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
     )
 
     @Test

@@ -594,6 +594,7 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode ReceiptAlreadyInUseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode SignatureVerificationError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode StoreProblemError;
+    enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode TestStoreSimulatedPurchaseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnexpectedBackendResponseError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnknownBackendError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode UnknownError;
@@ -622,17 +623,18 @@ package com.revenuecat.purchases {
     property public abstract String name;
   }
 
-  @kotlinx.serialization.Serializable public enum Store {
-    enum_constant @kotlinx.serialization.SerialName("amazon") public static final com.revenuecat.purchases.Store AMAZON;
-    enum_constant @kotlinx.serialization.SerialName("app_store") public static final com.revenuecat.purchases.Store APP_STORE;
-    enum_constant @kotlinx.serialization.SerialName("external") public static final com.revenuecat.purchases.Store EXTERNAL;
-    enum_constant @kotlinx.serialization.SerialName("mac_app_store") public static final com.revenuecat.purchases.Store MAC_APP_STORE;
-    enum_constant @kotlinx.serialization.SerialName("paddle") public static final com.revenuecat.purchases.Store PADDLE;
-    enum_constant @kotlinx.serialization.SerialName("play_store") public static final com.revenuecat.purchases.Store PLAY_STORE;
-    enum_constant @kotlinx.serialization.SerialName("promotional") public static final com.revenuecat.purchases.Store PROMOTIONAL;
-    enum_constant @kotlinx.serialization.SerialName("rc_billing") public static final com.revenuecat.purchases.Store RC_BILLING;
-    enum_constant @kotlinx.serialization.SerialName("stripe") public static final com.revenuecat.purchases.Store STRIPE;
-    enum_constant @kotlinx.serialization.SerialName("unknown") public static final com.revenuecat.purchases.Store UNKNOWN_STORE;
+  @kotlinx.serialization.Serializable(with=StoreSerializer::class) public enum Store {
+    enum_constant public static final com.revenuecat.purchases.Store AMAZON;
+    enum_constant public static final com.revenuecat.purchases.Store APP_STORE;
+    enum_constant public static final com.revenuecat.purchases.Store EXTERNAL;
+    enum_constant public static final com.revenuecat.purchases.Store MAC_APP_STORE;
+    enum_constant public static final com.revenuecat.purchases.Store PADDLE;
+    enum_constant public static final com.revenuecat.purchases.Store PLAY_STORE;
+    enum_constant public static final com.revenuecat.purchases.Store PROMOTIONAL;
+    enum_constant public static final com.revenuecat.purchases.Store RC_BILLING;
+    enum_constant public static final com.revenuecat.purchases.Store STRIPE;
+    enum_constant public static final com.revenuecat.purchases.Store TEST_STORE;
+    enum_constant public static final com.revenuecat.purchases.Store UNKNOWN_STORE;
   }
 
   public final class SubscriptionInfo {
