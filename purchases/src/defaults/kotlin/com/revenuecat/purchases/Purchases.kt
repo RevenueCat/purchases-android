@@ -148,6 +148,7 @@ class Purchases internal constructor(
     /**
      * The currently configured FileRepository
      */
+    @get:JvmSynthetic
     @InternalRevenueCatAPI
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
