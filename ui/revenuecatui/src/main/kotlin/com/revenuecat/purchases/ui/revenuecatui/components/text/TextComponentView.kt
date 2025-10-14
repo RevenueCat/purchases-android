@@ -128,8 +128,13 @@ private fun rememberProcessedText(
                     pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
+                val absoluteDiscountMicros = discountAbsoluteMicros(
+                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
+                    mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
+                )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
+                    discountAbsoluteToMostExpensivePerMonthMicros = absoluteDiscountMicros,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
 
@@ -160,6 +165,12 @@ private fun discountPercentage(pricePerMonthMicros: Long?, mostExpensiveMicros: 
     }
 
     return (mostExpensiveMicros - pricePerMonthMicros) / mostExpensiveMicros.toDouble()
+}
+
+private fun discountAbsoluteMicros(pricePerMonthMicros: Long?, mostExpensiveMicros: Long?): Long? {
+    if (pricePerMonthMicros == null || mostExpensiveMicros == null) return null
+    if (mostExpensiveMicros <= pricePerMonthMicros) return null
+    return (mostExpensiveMicros - pricePerMonthMicros)
 }
 
 @Preview(name = "Default")

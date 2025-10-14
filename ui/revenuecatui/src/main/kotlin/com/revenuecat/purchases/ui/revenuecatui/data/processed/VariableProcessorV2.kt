@@ -55,6 +55,7 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD("product.secondary_offer_period"),
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
+        PRODUCT_ABSOLUTE_DISCOUNT("product.absolute_discount"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
         ;
 
@@ -404,6 +405,12 @@ internal object VariableProcessorV2 {
             rcPackage.secondIntroOffer?.productOfferPeriodAbbreviated(localizedVariableKeys)
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext.relativeDiscount(localizedVariableKeys)
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT -> packageContext.absoluteDiscount(
+            variableDataProvider = variableDataProvider,
+            rcPackage = rcPackage,
+            locale = currencyLocale,
+            showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
+        )
 
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage.product.name
     }
@@ -585,6 +592,31 @@ internal object VariableProcessorV2 {
             ?.let { discountPercentage ->
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
             }
+
+    private fun PackageContext.absoluteDiscount(
+        variableDataProvider: VariableDataProvider,
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
+        val diffMicros = discountAbsoluteToMostExpensivePerMonthMicros ?: return null
+        if (diffMicros <= 0L) return null
+
+        // Build a Price using same currency as the product and format it
+        val currencyCode = rcPackage.product.price.currencyCode
+        val price = com.revenuecat.purchases.utils.PriceFactory.createPrice(
+            amountMicros = diffMicros,
+            currencyCode = currencyCode,
+            locale = locale,
+        )
+
+        // Apply zero-decimal rounding logic consistent with product.price
+        return if (showZeroDecimalPlacePrices && price.endsIn00Cents()) {
+            price.getTruncatedFormatted(locale)
+        } else {
+            price.formatted
+        }
+    }
 
     private val Package.firstIntroOffer: PricingPhase?
         get() = product.defaultOption?.let { option -> option.freePhase ?: option.introPhase }
