@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.Purchases.Companion.configure
+import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -19,6 +21,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -38,6 +41,7 @@ import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -103,6 +107,15 @@ class Purchases internal constructor(
      */
     val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
+
+    /**
+     * The storefront locale. **Note:** this locale only has a region set.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontLocale] or [awaitStorefrontLocale].
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val storefrontLocale: Locale?
+        get() = storefrontCountryCode?.let { Locale.Builder().setRegion(it).build() }
 
     /**
      * The listener is responsible for handling changes to customer information.
@@ -172,6 +185,27 @@ class Purchases internal constructor(
      */
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) locale.
+     * If there is any error, it will return null and log said error.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(
+            object : GetStorefrontCallback {
+                override fun onReceived(storefrontCountryCode: String) {
+                    callback.onReceived(
+                        storefrontLocale = Locale.Builder().setRegion(storefrontCountryCode).build(),
+                    )
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback.onError(error)
+                }
+            },
+        )
     }
 
     /**
