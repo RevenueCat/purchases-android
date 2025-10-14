@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,6 +63,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
+import com.revenuecat.purchases.ui.revenuecatui.icons.ArrowBack
+import com.revenuecat.purchases.ui.revenuecatui.icons.Close
 import kotlinx.coroutines.launch
 
 @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -351,8 +350,8 @@ private fun CustomerCenterNavigationIcon(
     }) {
         Icon(
             imageVector = when (navigationButtonType) {
-                CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
-                CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                CustomerCenterState.NavigationButtonType.BACK -> ArrowBack
+                CustomerCenterState.NavigationButtonType.CLOSE -> Close
             },
             contentDescription = null,
         )
