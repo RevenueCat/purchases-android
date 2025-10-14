@@ -47,6 +47,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.net.URL
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -170,6 +171,26 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is correctly constructed from storefront country`() {
+        // Arrange
+        val regionCode = "US"
+        val expectedLocale = Locale.Builder().setRegion(regionCode).build()
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke(regionCode)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        purchases.getStorefrontLocaleWith { actualLocaleFromCallback = it }
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
     }
 
     // endregion storefrontCountryCode
