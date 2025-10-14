@@ -32,6 +32,7 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
@@ -143,6 +144,14 @@ class Purchases internal constructor(
      */
     val store: Store
         get() = purchasesOrchestrator.store
+
+    /**
+     * The currently configured FileRepository
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    val fileRepository: FileRepository
+        get() = purchasesOrchestrator.fileRepository
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")

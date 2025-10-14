@@ -25,17 +25,14 @@ internal object BillingFactory {
         stateProvider: PurchasesStateProvider,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
         backend: Backend,
-        apiKeyValidationResult: APIKeyValidator.ValidationResult,
     ): BillingAbstract {
-        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
-            return SimulatedStoreBillingWrapper(
+        return when (store) {
+            Store.TEST_STORE -> SimulatedStoreBillingWrapper(
                 deviceCache = cache,
                 mainHandler = Handler(application.mainLooper),
                 purchasesStateProvider = stateProvider,
                 backend = backend,
             )
-        }
-        return when (store) {
             Store.PLAY_STORE -> BillingWrapper(
                 BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
                 Handler(application.mainLooper),

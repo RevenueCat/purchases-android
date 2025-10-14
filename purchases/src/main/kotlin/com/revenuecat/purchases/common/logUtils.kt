@@ -66,6 +66,7 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.CustomerInfoError,
         PurchasesErrorCode.SignatureVerificationError,
         PurchasesErrorCode.InvalidSubscriberAttributesError,
+        PurchasesErrorCode.TestStoreSimulatedPurchaseError,
         -> log(LogIntent.RC_ERROR) { error.toString() }
 
         PurchasesErrorCode.PurchaseCancelledError,

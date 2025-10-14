@@ -9,12 +9,9 @@ internal object OfferingParserFactory {
 
     fun createOfferingParser(
         store: Store,
-        apiKeyValidationResult: APIKeyValidator.ValidationResult,
     ): OfferingParser {
-        if (apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
-            return SimulatedStoreOfferingParser()
-        }
         return when (store) {
+            Store.TEST_STORE -> SimulatedStoreOfferingParser()
             Store.PLAY_STORE -> GoogleOfferingParser()
             Store.AMAZON -> {
                 try {

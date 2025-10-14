@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
 import android.app.Activity
@@ -79,6 +81,8 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.storage.DefaultFileRepository
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -145,6 +149,7 @@ internal class PurchasesOrchestrator(
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
+    val fileRepository: FileRepository = DefaultFileRepository(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -192,8 +197,10 @@ internal class PurchasesOrchestrator(
     }
 
     var allowSharingPlayStoreAccount: Boolean
-        @Synchronized get() =
-            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+        get() {
+            val currentValue = synchronized(this) { state.allowSharingPlayStoreAccount }
+            return currentValue ?: identityManager.currentUserIsAnonymous()
+        }
 
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
