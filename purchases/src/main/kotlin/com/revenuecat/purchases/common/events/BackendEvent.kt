@@ -93,6 +93,21 @@ internal sealed class BackendEvent : Event {
         val localeIdentifier: String,
     ) : BackendEvent()
 
+    @Serializable
+    @SerialName("ads")
+    data class Ad(
+        val id: String,
+        @SerialName("event_version")
+        val eventVersion: Int,
+        @SerialName("event_type")
+        val type: String,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+        val timestamp: Long,
+    ) : BackendEvent()
+
     /**
      * Companion object containing constants related to backend events.
      */

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -31,6 +32,10 @@ internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("paywalls")
     data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
+
+    @Serializable
+    @SerialName("ad")
+    data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
 }
 
 /**
@@ -43,6 +48,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
     return when (this) {
         is BackendStoredEvent.Paywalls -> { this.event }
         is BackendStoredEvent.CustomerCenter -> { this.event }
+        is BackendStoredEvent.Ad -> { this.event }
     }
 }
 
@@ -133,6 +139,24 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
             path = data.path,
             url = data.url,
             surveyOptionID = data.surveyOptionID,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = eventId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            timestamp = timestamp,
+            eventVersion = eventVersion,
+            type = type.type,
         ),
     )
 }

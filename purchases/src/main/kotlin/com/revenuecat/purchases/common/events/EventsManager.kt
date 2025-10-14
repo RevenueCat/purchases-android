@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -18,6 +20,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import java.net.URL
 import java.util.UUID
 
 /**
@@ -25,18 +28,22 @@ import java.util.UUID
  *
  * @property legacyEventsFileHelper File helper for legacy paywall events.
  * @property fileHelper File helper for new backend stored events.
+ * @property adFileHelper File helper for ad events tracking.
  * @property identityManager Manages user identity within the system.
  * @property eventsDispatcher Dispatches event-related operations.
  * @property postEvents Function for sending events to the backend.
  */
+@Suppress("LongParameterList")
 internal class EventsManager(
     private val appSessionID: UUID = Companion.appSessionID,
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
+    private val adFileHelper: EventsFileHelper<BackendStoredEvent.Ad>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
         EventsRequest,
+        URL,
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
@@ -46,6 +53,7 @@ internal class EventsManager(
         private const val FLUSH_COUNT = 50
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
         internal val appSessionID: UUID = UUID.randomUUID()
 
         @OptIn(ExperimentalSerializationApi::class)
@@ -75,6 +83,21 @@ internal class EventsManager(
         }
 
         /**
+         * Creates an `EventsFileHelper` for handling ad events.
+         *
+         * @param fileHelper The file helper used for event storage.
+         * @return An `EventsFileHelper` for `BackendStoredEvent.Ad`.
+         */
+        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent.Ad> {
+            return EventsFileHelper(
+                fileHelper,
+                AD_EVENTS_FILE_PATH,
+                { event -> json.encodeToString(BackendStoredEvent.Ad.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendStoredEvent.Ad.serializer(), jsonString) },
+            )
+        }
+
+        /**
          * Creates an `EventsFileHelper` for handling paywall events.
          *
          * @param fileHelper The file helper used for event storage.
@@ -93,6 +116,10 @@ internal class EventsManager(
     @get:Synchronized
     @set:Synchronized
     private var flushInProgress = false
+
+    @get:Synchronized
+    @set:Synchronized
+    private var adFlushInProgress = false
 
     @get:Synchronized
     @set:Synchronized
@@ -132,6 +159,16 @@ internal class EventsManager(
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    fun track(event: AdEvent) {
+        fileHelper.appendEvent(
+            event.toBackendStoredEvent(
+                identityManager.currentAppUserID,
+                appSessionID.toString(),
+            ),
+        )
+    }
+
     /**
      * Initiates flushing of stored events to the backend.
      */
@@ -161,6 +198,7 @@ internal class EventsManager(
             verboseLog { "New event flush: posting ${storedEvents.size} events." }
             postEvents(
                 EventsRequest(storedEvents.map { it.toBackendEvent() }),
+                AppConfig.paywallEventsURL,
                 {
                     verboseLog { "New event flush: success." }
                     enqueue {
@@ -175,6 +213,48 @@ internal class EventsManager(
                             fileHelper.clear(storedEventsWithNullValues.size)
                         }
                         flushInProgress = false
+                    }
+                },
+            )
+        }
+    }
+
+    @Synchronized
+    fun adFlushEvents() {
+        enqueue {
+            if (adFlushInProgress) {
+                debugLog { "Ad Flush already in progress." }
+                return@enqueue
+            }
+            adFlushInProgress = true
+
+            val storedEventsWithNullValues = getAdStoredEvents()
+            val storedEvents = storedEventsWithNullValues.filterNotNull()
+
+            if (storedEvents.isEmpty()) {
+                verboseLog { "No new ad events to sync." }
+                adFlushInProgress = false
+                return@enqueue
+            }
+
+            verboseLog { "New ad event flush: posting ${storedEvents.size} events." }
+            postEvents(
+                EventsRequest(storedEvents.map { it.toBackendEvent() }),
+                AppConfig.adEventsURL,
+                {
+                    verboseLog { "New ad event flush: success." }
+                    enqueue {
+                        adFileHelper.clear(storedEventsWithNullValues.size)
+                        adFlushInProgress = false
+                    }
+                },
+                { error, shouldMarkAsSynced ->
+                    errorLog { "New ad event flush error: $error." }
+                    enqueue {
+                        if (shouldMarkAsSynced) {
+                            adFileHelper.clear(storedEventsWithNullValues.size)
+                        }
+                        adFlushInProgress = false
                     }
                 },
             )
@@ -198,6 +278,7 @@ internal class EventsManager(
             verboseLog { "Legacy event flush: posting ${storedBackendEvents.size} events." }
             postEvents(
                 EventsRequest(storedBackendEvents.map { it.toBackendEvent() }),
+                AppConfig.paywallEventsURL,
                 {
                     verboseLog { "Legacy event flush: success." }
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
@@ -222,6 +303,14 @@ internal class EventsManager(
     private fun getStoredEvents(): List<BackendStoredEvent?> {
         var events: List<BackendStoredEvent?> = emptyList()
         fileHelper.readFile { sequence ->
+            events = sequence.take(FLUSH_COUNT).toList()
+        }
+        return events
+    }
+
+    private fun getAdStoredEvents(): List<BackendStoredEvent.Ad?> {
+        var events: List<BackendStoredEvent.Ad?> = emptyList()
+        adFileHelper.readFile { sequence ->
             events = sequence.take(FLUSH_COUNT).toList()
         }
         return events
