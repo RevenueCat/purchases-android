@@ -5,14 +5,13 @@
 
 ## RevenueCat SDK
 ### ✨ New Features
-* Add support for the Test Store (#2710) via Toni Rico (@tonidero)
+* Turn on Video Component (#2725) via Jacob Rakidzich (@JZDesign)
 
 ## RevenueCatUI SDK
 ### Customer Center
-#### ✨ New Features
-* Add Customer Center per-view listener for hybrids (#2713) via Facundo Menzella (@facumenzella)
+#### 🐞 Bugfixes
+* Fix potential `NoClassDefFoundError` crash finding `Icons` caused by material3 1.4.0  (#2727) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add `TestStoreSimulatedPurchaseError` error code (#2716) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `3f7fffc` to `25c7fb8` (#2721) via dependabot[bot] (@dependabot[bot])
-* Disable offline entitlements in test store (#2718) via Toni Rico (@tonidero)
+* Add test store maestro test (#2711) via Toni Rico (@tonidero)
+* Finalize video component to include a checksum, and optimize memory usage for large file downloads (#2717) via Jacob Rakidzich (@JZDesign)
