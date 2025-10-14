@@ -60,7 +60,7 @@ internal fun PurchaseInformationCardView(
     Surface(
         modifier = modifier,
         shape = shape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier
