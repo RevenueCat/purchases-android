@@ -4,7 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.revenuecat.purchases.common.isVideoComponentEnabled
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
@@ -46,7 +45,6 @@ internal fun ComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    videoComponentIsEnabled: Boolean = isVideoComponentEnabled,
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
@@ -61,15 +59,11 @@ internal fun ComponentView(
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
     is VideoComponentStyle -> {
-        if (videoComponentIsEnabled) {
-            VideoComponentView(
-                style = style,
-                state = state,
-                modifier = modifier,
-            )
-        } else {
-            null
-        }
+        VideoComponentView(
+            style = style,
+            state = state,
+            modifier = modifier,
+        )
     }
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
     is StickyFooterComponentStyle -> StickyFooterComponentView(
