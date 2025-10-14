@@ -115,7 +115,7 @@ class Purchases internal constructor(
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     val storefrontLocale: Locale?
-        get() = storefrontCountryCode?.let { Locale.Builder().setRegion(it).build() }
+        get() = purchasesOrchestrator.storefrontLocale
 
     /**
      * The listener is responsible for handling changes to customer information.
@@ -193,19 +193,7 @@ class Purchases internal constructor(
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
-        purchasesOrchestrator.getStorefrontCountryCode(
-            object : GetStorefrontCallback {
-                override fun onReceived(storefrontCountryCode: String) {
-                    callback.onReceived(
-                        storefrontLocale = Locale.Builder().setRegion(storefrontCountryCode).build(),
-                    )
-                }
-
-                override fun onError(error: PurchasesError) {
-                    callback.onError(error)
-                }
-            },
-        )
+        purchasesOrchestrator.getStorefrontLocale(callback)
     }
 
     /**
