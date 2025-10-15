@@ -179,7 +179,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         // Arrange
         val regionCode = "US"
         val expectedLocale = Locale.Builder().setRegion(regionCode).build()
-        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+        every { mockBillingAbstract.getStorefront(onSuccess = captureLambda(), onError = any()) }.answers {
             lambda<(String) -> Unit>().captured.invoke(regionCode)
         }
 
@@ -191,6 +191,34 @@ internal class PurchasesTest : BasePurchasesTest() {
         // Assert
         assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
         assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is null when the billing library returns an error`() {
+        // Arrange
+        val expectedLocale: Locale? = null
+        val expectedError = PurchasesError(
+            code = PurchasesErrorCode.StoreProblemError,
+            underlyingErrorMessage = "Error getting storefront"
+        )
+        every { mockBillingAbstract.getStorefront(onSuccess = any(), onError = captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        var actualErrorFromCallback: PurchasesError? = null
+        purchases.getStorefrontLocaleWith(
+            onSuccess = { actualLocaleFromCallback = it },
+            onError = { actualErrorFromCallback = it }
+        )
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        assertThat(actualErrorFromCallback).isEqualTo(expectedError)
     }
 
     // endregion storefrontCountryCode
