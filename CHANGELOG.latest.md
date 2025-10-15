@@ -5,13 +5,9 @@
 
 ## RevenueCat SDK
 ### ✨ New Features
-* Turn on Video Component (#2725) via Jacob Rakidzich (@JZDesign)
+* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
 
 ## RevenueCatUI SDK
 ### Customer Center
 #### 🐞 Bugfixes
-* Fix potential `NoClassDefFoundError` crash finding `Icons` caused by material3 1.4.0  (#2727) via Cesar de la Vega (@vegaro)
-
-### 🔄 Other Changes
-* Add test store maestro test (#2711) via Toni Rico (@tonidero)
-* Finalize video component to include a checksum, and optimize memory usage for large file downloads (#2717) via Jacob Rakidzich (@JZDesign)
+* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
