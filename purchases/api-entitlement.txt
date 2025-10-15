@@ -762,6 +762,11 @@ package com.revenuecat.purchases.interfaces {
     method public void onReceived(String storefrontCountryCode);
   }
 
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface GetStorefrontLocaleCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onReceived(java.util.Locale storefrontLocale);
+  }
+
   public interface GetVirtualCurrenciesCallback {
     method public void onError(com.revenuecat.purchases.PurchasesError error);
     method public void onReceived(com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies virtualCurrencies);

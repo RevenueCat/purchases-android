@@ -47,6 +47,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.net.URL
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -170,6 +171,58 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is correctly constructed from storefront country`() {
+        // Arrange
+        val regionCode = "NL"
+        val expectedIso3Country = "NLD"
+        val expectedLocale = Locale.Builder().setRegion(regionCode).build()
+        every { mockBillingAbstract.getStorefront(onSuccess = captureLambda(), onError = any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke(regionCode)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        purchases.getStorefrontLocaleWith { actualLocaleFromCallback = it }
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        // The below assertion is added so we're notified if our assumptions are no longer true. If it starts failing,
+        // we should look into providing another way of getting the 3-letter storefront country code.
+        assertThat(actualLocaleFromProperty?.isO3Country).isEqualTo(expectedIso3Country)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is null when the billing library returns an error`() {
+        // Arrange
+        val expectedLocale: Locale? = null
+        val expectedError = PurchasesError(
+            code = PurchasesErrorCode.StoreProblemError,
+            underlyingErrorMessage = "Error getting storefront"
+        )
+        every { mockBillingAbstract.getStorefront(onSuccess = any(), onError = captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        var actualErrorFromCallback: PurchasesError? = null
+        purchases.getStorefrontLocaleWith(
+            onSuccess = { actualLocaleFromCallback = it },
+            onError = { actualErrorFromCallback = it }
+        )
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        assertThat(actualErrorFromCallback).isEqualTo(expectedError)
     }
 
     // endregion storefrontCountryCode
