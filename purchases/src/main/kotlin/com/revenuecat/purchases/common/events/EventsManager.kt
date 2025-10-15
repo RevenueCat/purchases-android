@@ -22,6 +22,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import java.net.URL
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -62,6 +63,7 @@ internal class EventsManager(
                 polymorphic(BackendStoredEvent::class) {
                     subclass(BackendStoredEvent.CustomerCenter::class, BackendStoredEvent.CustomerCenter.serializer())
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
+                    subclass(BackendStoredEvent.Ad::class, BackendStoredEvent.Ad.serializer())
                 }
             }
             explicitNulls = false
@@ -113,13 +115,9 @@ internal class EventsManager(
         }
     }
 
-    @get:Synchronized
-    @set:Synchronized
-    private var flushInProgress = false
+    private var flushInProgress = AtomicBoolean(false)
 
-    @get:Synchronized
-    @set:Synchronized
-    private var adFlushInProgress = false
+    private var adFlushInProgress = AtomicBoolean(false)
 
     @get:Synchronized
     @set:Synchronized
@@ -161,12 +159,22 @@ internal class EventsManager(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun track(event: AdEvent) {
-        fileHelper.appendEvent(
-            event.toBackendStoredEvent(
+        val backendEvent = when (event) {
+            is AdEvent.Displayed -> event.toBackendStoredEvent(
                 identityManager.currentAppUserID,
                 appSessionID.toString(),
-            ),
-        )
+            )
+            is AdEvent.Open -> event.toBackendStoredEvent(
+                identityManager.currentAppUserID,
+                appSessionID.toString(),
+            )
+            is AdEvent.Revenue -> event.toBackendStoredEvent(
+                identityManager.currentAppUserID,
+                appSessionID.toString(),
+            )
+        }
+
+        fileHelper.appendEvent(backendEvent)
     }
 
     /**
@@ -175,11 +183,10 @@ internal class EventsManager(
     @Synchronized
     fun flushEvents() {
         enqueue {
-            if (flushInProgress) {
+            if (flushInProgress.getAndSet(true)) {
                 debugLog { "Flush already in progress." }
                 return@enqueue
             }
-            flushInProgress = true
 
             if (!legacyFlushTriggered) {
                 legacyFlushTriggered = true
@@ -191,7 +198,7 @@ internal class EventsManager(
 
             if (storedEvents.isEmpty()) {
                 verboseLog { "No new events to sync." }
-                flushInProgress = false
+                flushInProgress.set(false)
                 return@enqueue
             }
 
@@ -203,7 +210,7 @@ internal class EventsManager(
                     verboseLog { "New event flush: success." }
                     enqueue {
                         fileHelper.clear(storedEventsWithNullValues.size)
-                        flushInProgress = false
+                        flushInProgress.set(false)
                     }
                 },
                 { error, shouldMarkAsSynced ->
@@ -212,7 +219,7 @@ internal class EventsManager(
                         if (shouldMarkAsSynced) {
                             fileHelper.clear(storedEventsWithNullValues.size)
                         }
-                        flushInProgress = false
+                        flushInProgress.set(false)
                     }
                 },
             )
@@ -222,18 +229,17 @@ internal class EventsManager(
     @Synchronized
     fun adFlushEvents() {
         enqueue {
-            if (adFlushInProgress) {
+            if (adFlushInProgress.getAndSet(true)) {
                 debugLog { "Ad Flush already in progress." }
                 return@enqueue
             }
-            adFlushInProgress = true
 
             val storedEventsWithNullValues = getAdStoredEvents()
             val storedEvents = storedEventsWithNullValues.filterNotNull()
 
             if (storedEvents.isEmpty()) {
                 verboseLog { "No new ad events to sync." }
-                adFlushInProgress = false
+                adFlushInProgress.set(false)
                 return@enqueue
             }
 
@@ -245,7 +251,7 @@ internal class EventsManager(
                     verboseLog { "New ad event flush: success." }
                     enqueue {
                         adFileHelper.clear(storedEventsWithNullValues.size)
-                        adFlushInProgress = false
+                        adFlushInProgress.set(false)
                     }
                 },
                 { error, shouldMarkAsSynced ->
@@ -254,7 +260,7 @@ internal class EventsManager(
                         if (shouldMarkAsSynced) {
                             adFileHelper.clear(storedEventsWithNullValues.size)
                         }
-                        adFlushInProgress = false
+                        adFlushInProgress.set(false)
                     }
                 },
             )

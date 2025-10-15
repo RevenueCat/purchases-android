@@ -33,6 +33,11 @@ internal sealed class BackendStoredEvent : Event {
     @SerialName("paywalls")
     data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
 
+    /**
+     * Represents a stored event related to Ads.
+     *
+     * @property event The `BackendEvent.Ad` event that is being stored.
+     */
     @Serializable
     @SerialName("ad")
     data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
@@ -143,20 +148,71 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
-internal fun AdEvent.toBackendStoredEvent(
+internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
     appSessionID: String,
 ): BackendStoredEvent {
     return BackendStoredEvent.Ad(
         BackendEvent.Ad(
-            id = eventId,
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName,
+            placement = placement,
+            adUnitId = adUnitId,
+            adInstanceId = adInstanceId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+        ),
+    )
+}
+
+@JvmSynthetic
+internal fun AdEvent.Displayed.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
             timestamp = timestamp,
-            eventVersion = eventVersion,
-            type = type.type,
+            networkName = networkName,
+            mediatorName = mediatorName,
+            placement = placement,
+            adUnitId = adUnitId,
+            adInstanceId = adInstanceId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+        ),
+    )
+}
+
+@JvmSynthetic
+internal fun AdEvent.Revenue.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName,
+            placement = placement,
+            adUnitId = adUnitId,
+            adInstanceId = adInstanceId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            revenueMicros = revenueMicros,
+            currency = currency,
+            precision = precision,
         ),
     )
 }

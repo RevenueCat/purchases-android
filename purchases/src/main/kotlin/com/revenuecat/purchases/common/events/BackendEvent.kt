@@ -94,18 +94,29 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     @Serializable
-    @SerialName("ads")
+    @SerialName("ad_opened")
     data class Ad(
         val id: String,
-        @SerialName("event_version")
-        val eventVersion: Int,
-        @SerialName("event_type")
+        val version: Int,
         val type: String,
+        val timestamp: Long,
+        @SerialName("network_name")
+        val networkName: String,
+        @SerialName("mediator_name")
+        val mediatorName: String,
+        val placement: String?,
+        @SerialName("ad_unit_id")
+        val adUnitId: String,
+        @SerialName("ad_instance_id")
+        val adInstanceId: String,
         @SerialName("app_user_id")
         val appUserID: String,
         @SerialName("app_session_id")
         val appSessionID: String,
-        val timestamp: Long,
+        @SerialName("revenue_micros")
+        val revenueMicros: Long? = null,
+        val currency: String? = null,
+        val precision: String? = null,
     ) : BackendEvent()
 
     /**
@@ -121,5 +132,10 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the customer center event schema.
          */
         const val CUSTOMER_CENTER_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the ad event schema.
+         */
+        const val AD_EVENT_SCHEMA_VERSION = 1
     }
 }
