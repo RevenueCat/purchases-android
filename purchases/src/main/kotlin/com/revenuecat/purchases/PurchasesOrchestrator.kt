@@ -1318,6 +1318,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
@@ -1383,6 +1384,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun startProductChange(
         activity: Activity,

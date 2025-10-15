@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
 
@@ -17,7 +18,9 @@ sealed class GooglePurchasingData : PurchasingData {
         val optionId: String,
         val productDetails: ProductDetails,
         val token: String,
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         val billingPeriod: Period?,
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         val addOnProducts: List<GooglePurchasingData>?,
     ) : GooglePurchasingData()
 

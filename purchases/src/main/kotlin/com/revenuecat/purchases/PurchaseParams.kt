@@ -27,6 +27,7 @@ class PurchaseParams(val builder: Builder) {
     @get:JvmSynthetic
     internal var presentedOfferingContext: PresentedOfferingContext?
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @get:JvmSynthetic
     internal val containsAddOnItems: Boolean
         get() = (purchasingData as? GooglePurchasingData.Subscription)

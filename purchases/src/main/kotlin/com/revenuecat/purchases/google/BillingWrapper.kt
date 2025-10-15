@@ -20,6 +20,7 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -230,6 +231,7 @@ internal class BillingWrapper(
         useCase.run()
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod")
     override fun makePurchaseAsync(
         activity: Activity,
@@ -921,6 +923,7 @@ internal class BillingWrapper(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun buildSubscriptionProductDetailsParams(
         purchaseInfo: GooglePurchasingData.Subscription,
     ): List<BillingFlowParams.ProductDetailsParams> {
