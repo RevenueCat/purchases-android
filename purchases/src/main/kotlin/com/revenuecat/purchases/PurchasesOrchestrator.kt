@@ -1472,6 +1472,8 @@ internal class PurchasesOrchestrator(
     private fun flushPaywallEvents() {
         if (isAndroidNOrNewer()) {
             eventsManager?.flushEvents()
+            // WIP: Decide when/frequency to flush events
+            eventsManager?.flushAdEvents()
         }
     }
 

@@ -227,7 +227,7 @@ internal class EventsManager(
     }
 
     @Synchronized
-    fun adFlushEvents() {
+    fun flushAdEvents() {
         enqueue {
             if (adFlushInProgress.getAndSet(true)) {
                 debugLog { "Ad Flush already in progress." }
