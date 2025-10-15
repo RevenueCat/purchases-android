@@ -206,6 +206,27 @@ internal object CustomerCenterConfigTestData {
         isLifetime = true,
     )
 
+    val purchaseInformationFreeTrial = PurchaseInformation(
+        title = "Premium",
+        pricePaid = PriceDetails.Free,
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("June 15th, 2024"),
+        store = Store.PLAY_STORE,
+        managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        product = TestStoreProduct(
+            "premium_yearly_product_id",
+            "Premium",
+            "title",
+            "description",
+            Price("$59.99", 59_990_000, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y"),
+        ),
+        isSubscription = true,
+        isExpired = false,
+        isTrial = true,
+        isCancelled = false,
+        isLifetime = false,
+    )
+
     val purchaseInformationPromotional = PurchaseInformation(
         title = "rc_promo_Test1_lifetime",
         pricePaid = PriceDetails.Free,

@@ -4,9 +4,14 @@
 
 
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
+### ✨ New Features
+* Turn on Video Component (#2725) via Jacob Rakidzich (@JZDesign)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix potential `NoClassDefFoundError` crash finding `Icons` caused by material3 1.4.0  (#2727) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
-* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])
+* Add test store maestro test (#2711) via Toni Rico (@tonidero)
+* Finalize video component to include a checksum, and optimize memory usage for large file downloads (#2717) via Jacob Rakidzich (@JZDesign)

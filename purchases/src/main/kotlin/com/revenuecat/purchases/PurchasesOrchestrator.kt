@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
 import android.app.Activity
@@ -57,6 +59,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -78,6 +81,8 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.storage.DefaultFileRepository
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -95,6 +100,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.Collections
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -141,6 +147,7 @@ internal class PurchasesOrchestrator(
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
+    val fileRepository: FileRepository = DefaultFileRepository(application),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -188,8 +195,10 @@ internal class PurchasesOrchestrator(
     }
 
     var allowSharingPlayStoreAccount: Boolean
-        @Synchronized get() =
-            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+        get() {
+            val currentValue = synchronized(this) { state.allowSharingPlayStoreAccount }
+            return currentValue ?: identityManager.currentUserIsAnonymous()
+        }
 
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
@@ -203,6 +212,9 @@ internal class PurchasesOrchestrator(
 
     var storefrontCountryCode: String? = null
         private set
+
+    val storefrontLocale: Locale?
+        get() = storefrontCountryCode?.let { Locale.Builder().setRegion(it).build() }
 
     @Volatile
     private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
@@ -328,6 +340,23 @@ internal class PurchasesOrchestrator(
                 },
             )
         }
+    }
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        getStorefrontCountryCode(
+            object : GetStorefrontCallback {
+                override fun onReceived(storefrontCountryCode: String) {
+                    callback.onReceived(
+                        storefrontLocale = Locale.Builder().setRegion(storefrontCountryCode).build(),
+                    )
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback.onError(error)
+                }
+            },
+        )
     }
 
     fun syncAttributesAndOfferingsIfNeeded(
@@ -941,6 +970,16 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Kochava,
             kochavaDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirbridgeDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airbridge,
+            airbridgeDeviceID,
             appUserID,
             application,
         )

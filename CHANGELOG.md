@@ -1,3 +1,89 @@
+## 9.10.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### ✨ New Features
+* Turn on Video Component (#2725) via Jacob Rakidzich (@JZDesign)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fix potential `NoClassDefFoundError` crash finding `Icons` caused by material3 1.4.0  (#2727) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add test store maestro test (#2711) via Toni Rico (@tonidero)
+* Finalize video component to include a checksum, and optimize memory usage for large file downloads (#2717) via Jacob Rakidzich (@JZDesign)
+
+## 9.9.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### ✨ New Features
+* Add support for the Test Store (#2710) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* Add Customer Center per-view listener for hybrids (#2713) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Add `TestStoreSimulatedPurchaseError` error code (#2716) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `3f7fffc` to `25c7fb8` (#2721) via dependabot[bot] (@dependabot[bot])
+* Disable offline entitlements in test store (#2718) via Toni Rico (@tonidero)
+
+## 9.8.1
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix deadlock in `allowSharingPlayStoreAccount` (#2707) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add E2E Test app for integration tests (#2715) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2714) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `a8770fd` to `3f7fffc` (#2712) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `e555afb` to `a8770fd` (#2708) via dependabot[bot] (@dependabot[bot])
+* Correct Opt In for FileRepository (#2709) via Jacob Rakidzich (@JZDesign)
+* Paywalls -> Video Component (#2680) via Jacob Rakidzich (@JZDesign)
+* Update fastlane-plugin-revenuecat_internal to e555afb (#2705) via Cesar de la Vega (@vegaro)
+* Revert kotlinCompilerExtensionVersion for MagicWeatherCompose and CustomEntitlementComputationSample (#2701) via Jaewoong Eum (@skydoves)
+* [EXTERNAL] Fix incorrect exception use in test (#2674) via @nikit19 (#2703) via Toni Rico (@tonidero)
+
+## 9.8.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### ✨ New Features
+* Add Airbridge device ID subscriber attribute (#2696) via Lim Hoang (@limdauto)
+* Enable Test Store (#2685) via Antonio Pallares (@ajpallares)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* Expose `launch` and `launchIfNeeded` to Java (#2695) via Cesar de la Vega (@vegaro)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix Expired badge in Customer Center dark mode (#2693) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add CODEOWNERS (#2664) via Facundo Menzella (@facumenzella)
+* Adds new tab ID properties to `TabsComponent`. (#2577) via JayShortway (@JayShortway)
+* Bump fastlane-plugin-revenuecat_internal from `401d148` to `7508f17` (#2697) via dependabot[bot] (@dependabot[bot])
+* Reimplement placeholder with Modifier.Node (#2677) via Jaewoong Eum (@skydoves)
+* Remove unused kotlinCompilerExtensionVersion (#2691) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2667) via RevenueCat Git Bot (@RCGitBot)
+
 ## 9.7.2
 > [!WARNING]  
 > If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.

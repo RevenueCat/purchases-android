@@ -25,6 +25,7 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitRestoreResult
+import com.revenuecat.purchases.awaitStorefrontLocale
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -34,8 +35,10 @@ import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getStorefrontLocaleWith
 import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -48,10 +51,12 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -82,6 +87,11 @@ private class PurchasesAPI {
 
         val getVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
             override fun onReceived(virtualCurrencies: VirtualCurrencies) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val getStorefrontLocaleCallback = object : GetStorefrontLocaleCallback {
+            override fun onReceived(storefrontLocale: Locale) {}
             override fun onError(error: PurchasesError) {}
         }
 
@@ -119,8 +129,12 @@ private class PurchasesAPI {
         purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
         purchases.invalidateVirtualCurrenciesCache()
         val cachedVirtualCurrencies: VirtualCurrencies? = purchases.cachedVirtualCurrencies
+
+        val locale: Locale? = purchases.storefrontLocale
+        purchases.getStorefrontLocale(getStorefrontLocaleCallback)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
@@ -165,9 +179,13 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: VirtualCurrencies -> },
         )
+        purchases.getStorefrontLocaleWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: Locale -> },
+        )
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
@@ -183,6 +201,7 @@ private class PurchasesAPI {
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
         val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
+        val storefrontLocale: Locale = purchases.awaitStorefrontLocale()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -208,6 +227,7 @@ private class PurchasesAPI {
             setCampaign("")
             setCleverTapID("")
             setKochavaDeviceID("")
+            setAirbridgeDeviceID("")
             setAdGroup("")
             setAd("")
             setKeyword("")

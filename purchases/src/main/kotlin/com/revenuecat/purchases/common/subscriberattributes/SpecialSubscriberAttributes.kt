@@ -31,6 +31,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
     CLEVER_TAP_ID("\$clevertapId"),
     KOCHAVA_DEVICE_ID("\$kochavaDeviceId"),
+    AIRBRIDGE_DEVICE_ID("\$airbridgeDeviceId"),
 
     /**
      * Integration IDs
@@ -73,6 +74,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
         object Kochava : AttributionIds(ReservedSubscriberAttribute.KOCHAVA_DEVICE_ID)
+        object Airbridge : AttributionIds(ReservedSubscriberAttribute.AIRBRIDGE_DEVICE_ID)
     }
 
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
