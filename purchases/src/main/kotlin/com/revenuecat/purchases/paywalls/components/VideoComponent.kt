@@ -13,7 +13,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,7 +21,6 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("video")
-@OptIn(InternalSerializationApi::class)
 class VideoComponent(
     @get:JvmSynthetic
     val source: ThemeVideoUrls,
@@ -72,7 +70,6 @@ class VideoComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-@OptIn(InternalSerializationApi::class)
 class PartialVideoComponent(
     @get:JvmSynthetic
     val source: ThemeVideoUrls? = null,
