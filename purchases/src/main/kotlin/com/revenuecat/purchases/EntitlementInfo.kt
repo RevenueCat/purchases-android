@@ -40,6 +40,7 @@ import java.util.Date
  * @property verification If entitlement verification was enabled, the result of that verification.
  * If not, [VerificationResult.NOT_REQUESTED]
  */
+@SuppressWarnings("LongParameterList")
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko

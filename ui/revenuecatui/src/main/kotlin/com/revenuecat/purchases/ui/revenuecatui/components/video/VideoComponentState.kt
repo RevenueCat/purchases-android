@@ -43,6 +43,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import dev.drewhamilton.poko.Poko
 
+@SuppressWarnings("LongParameterList")
 @Poko
 internal class VideoComponentState(
     initialWindowSize: WindowWidthSizeClass,
