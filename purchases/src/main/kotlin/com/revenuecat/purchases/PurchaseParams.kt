@@ -10,7 +10,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
-import kotlin.jvm.Throws
 
 @Poko
 class PurchaseParams(val builder: Builder) {
@@ -145,7 +144,6 @@ class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons packages per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        @Throws(PurchasesException::class)
         fun addOnPackages(addOnPackages: List<Package>) = apply {
             this.addOnStoreProducts(addOnPackages.map { it.product })
         }
