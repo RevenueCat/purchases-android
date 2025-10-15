@@ -177,7 +177,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `storefront locale is correctly constructed from storefront country`() {
         // Arrange
-        val regionCode = "US"
+        val regionCode = "NL"
+        val expectedIso3Country = "NLD"
         val expectedLocale = Locale.Builder().setRegion(regionCode).build()
         every { mockBillingAbstract.getStorefront(onSuccess = captureLambda(), onError = any()) }.answers {
             lambda<(String) -> Unit>().captured.invoke(regionCode)
@@ -191,6 +192,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         // Assert
         assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
         assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        // The below assertion is added so we're notified if our assumptions are no longer true. If it starts failing,
+        // we should look into providing another way of getting the 3-letter storefront country code.
+        assertThat(actualLocaleFromProperty?.isO3Country).isEqualTo(expectedIso3Country)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
