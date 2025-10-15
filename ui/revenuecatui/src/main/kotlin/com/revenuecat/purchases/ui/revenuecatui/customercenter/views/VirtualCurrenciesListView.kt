@@ -152,7 +152,7 @@ internal fun VirtualCurrencyRow(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
             modifier = Modifier.padding(
@@ -191,7 +191,7 @@ private fun ShowAllVirtualCurrenciesRow(
             bottomStart = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
             bottomEnd = CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE,
         ),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
             modifier = Modifier
