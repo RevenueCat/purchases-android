@@ -131,6 +131,7 @@ class PurchaseParamsTest {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun validatePurchasingDataForAddOnsWithEmptyListCorrectlySetsPurchaseParams(
         purchaseParams: PurchaseParams,
         baseProduct: StoreProduct
@@ -182,6 +183,7 @@ class PurchaseParamsTest {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun validatePurchasingDataForAddOnsWhenProvidedCorrectlySetsPurchaseParams(
         purchaseParams: PurchaseParams,
         baseProduct: StoreProduct,

@@ -153,6 +153,7 @@ class PurchaseParamsValidatorTest {
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `purchaseParams with add-on item that isn't a google subscription fails validation`() {
         // We need to mock the purchase params since the addOnProducts() function ignores products
