@@ -59,6 +59,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -102,6 +103,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.Collections
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -214,6 +216,9 @@ internal class PurchasesOrchestrator(
 
     var storefrontCountryCode: String? = null
         private set
+
+    val storefrontLocale: Locale?
+        get() = storefrontCountryCode?.let { Locale.Builder().setRegion(it).build() }
 
     @Volatile
     private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
@@ -339,6 +344,23 @@ internal class PurchasesOrchestrator(
                 },
             )
         }
+    }
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        getStorefrontCountryCode(
+            object : GetStorefrontCallback {
+                override fun onReceived(storefrontCountryCode: String) {
+                    callback.onReceived(
+                        storefrontLocale = Locale.Builder().setRegion(storefrontCountryCode).build(),
+                    )
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback.onError(error)
+                }
+            },
+        )
     }
 
     fun syncAttributesAndOfferingsIfNeeded(
