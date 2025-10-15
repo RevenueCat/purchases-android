@@ -19,9 +19,9 @@ sealed class GooglePurchasingData : PurchasingData {
         val productDetails: ProductDetails,
         val token: String,
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        val billingPeriod: Period?,
+        val billingPeriod: Period? = null,
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        val addOnProducts: List<GooglePurchasingData>?,
+        val addOnProducts: List<GooglePurchasingData>? = null,
     ) : GooglePurchasingData()
 
     override val productType: ProductType
