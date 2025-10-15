@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 enum class AdEventType(val type: String) {
     DISPLAYED("displayed"),
     OPENED("opened"),
