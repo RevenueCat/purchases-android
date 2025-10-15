@@ -35,6 +35,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitGetVirtualCurrencies(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogIn(com.revenuecat.purchases.Purchases, String appUserID, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.data.LogInResult>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogOut(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitStorefrontLocale(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.util.Locale>) throws com.revenuecat.purchases.PurchasesException;
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncPurchases(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? getAmazonLWAConsentStatus(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.AmazonLWAConsentStatus>);
@@ -202,6 +203,7 @@ package com.revenuecat.purchases {
     method public static void getCustomerInfoWith(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method public static void getCustomerInfoWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method @Deprecated public static void getNonSubscriptionSkusWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> skus, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onReceiveSkus);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static void getStorefrontLocaleWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.Locale,kotlin.Unit> onSuccess);
     method @Deprecated public static void getSubscriptionSkusWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> skus, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onReceiveSkus);
     method public static void getVirtualCurrenciesWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies,kotlin.Unit> onSuccess);
     method public static void logInWith(com.revenuecat.purchases.Purchases, String appUserID, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function2<? super com.revenuecat.purchases.CustomerInfo,? super java.lang.Boolean,kotlin.Unit> onSuccess);
@@ -440,6 +442,8 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.Store getStore();
     method @kotlin.jvm.Synchronized public String? getStorefrontCountryCode();
     method public void getStorefrontCountryCode(com.revenuecat.purchases.interfaces.GetStorefrontCallback callback);
+    method public java.util.Locale? getStorefrontLocale();
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void getStorefrontLocale(com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback callback);
     method @Deprecated public void getSubscriptionSkus(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public void getVirtualCurrencies(com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback callback);
@@ -523,6 +527,7 @@ package com.revenuecat.purchases {
     property public static final com.revenuecat.purchases.Purchases sharedInstance;
     property public final com.revenuecat.purchases.Store store;
     property @kotlin.jvm.Synchronized public final String? storefrontCountryCode;
+    property @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final java.util.Locale? storefrontLocale;
     property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? updatedCustomerInfoListener;
     field public static final com.revenuecat.purchases.Purchases.Companion Companion;
   }
@@ -957,6 +962,11 @@ package com.revenuecat.purchases.interfaces {
   public interface GetStorefrontCallback {
     method public void onError(com.revenuecat.purchases.PurchasesError error);
     method public void onReceived(String storefrontCountryCode);
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface GetStorefrontLocaleCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onReceived(java.util.Locale storefrontLocale);
   }
 
   public interface GetVirtualCurrenciesCallback {

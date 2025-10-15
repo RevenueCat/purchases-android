@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PurchasesCommonAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -78,7 +79,7 @@ private class PurchasesCommonAPI {
 
         val appUserID: String = purchases.appUserID
 
-        val countryCode = purchases.storefrontCountryCode
+        val countryCode: String? = purchases.storefrontCountryCode
         purchases.getStorefrontCountryCode(getStorefrontCallback)
 
         purchases.removeUpdatedCustomerInfoListener()
