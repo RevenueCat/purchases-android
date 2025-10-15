@@ -146,7 +146,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
 
             if (infiniteRecurringPricingPhase == null) {
                 log(LogIntent.WARNING) {
-                    OfferingStrings.GOOGLE_PRODUCT_MISSING_PRIMARY_BILLING_PHASE.format(this.productId)
+                    OfferingStrings.GOOGLE_PRODUCT_MISSING_INFINITELY_RECURRING_BILLING_PHASE.format(this.productId)
                 }
             }
 
