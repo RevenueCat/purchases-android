@@ -18,9 +18,17 @@ sealed class GooglePurchasingData : PurchasingData {
         val optionId: String,
         val productDetails: ProductDetails,
         val token: String,
+        
+        // These two properties are marked with @get:JvmSynthetic because their synthesized
+        // getters were not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
+        // applied to them, and there doesn't appear to be a way to do so.
+        // We can remove the @get:JvmSynthetic annotation when we remove the experimental annotations from these
+        // properties.
         @ExperimentalPreviewRevenueCatPurchasesAPI
+        @get:JvmSynthetic
         val billingPeriod: Period? = null,
         @ExperimentalPreviewRevenueCatPurchasesAPI
+        @get:JvmSynthetic
         val addOnProducts: List<GooglePurchasingData>? = null,
     ) : GooglePurchasingData()
 
