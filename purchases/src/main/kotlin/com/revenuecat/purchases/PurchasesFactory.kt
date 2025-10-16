@@ -372,6 +372,7 @@ internal class PurchasesFactory(
                 syncPurchasesHelper = syncPurchasesHelper,
                 offeringsManager = offeringsManager,
                 eventsManager = createEventsManager(application, identityManager, eventsDispatcher, backend),
+                adEventsManager = createAdEventsManager(application, identityManager, eventsDispatcher, backend),
                 paywallPresentedCache = paywallPresentedCache,
                 purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
@@ -398,13 +399,12 @@ internal class PurchasesFactory(
             EventsManager(
                 legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
                 fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
-                adFileHelper = EventsManager.adEvents(fileHelper = FileHelper(context)),
                 identityManager = identityManager,
                 eventsDispatcher = eventsDispatcher,
-                postEvents = { request, baseURL, onSuccess, onError ->
+                postEvents = { request, onSuccess, onError ->
                     backend.postEvents(
                         paywallEventRequest = request,
-                        baseURL = baseURL,
+                        baseURL = AppConfig.paywallEventsURL,
                         onSuccessHandler = onSuccess,
                         onErrorHandler = onError,
                     )
@@ -412,6 +412,36 @@ internal class PurchasesFactory(
             )
         } else {
             debugLog { "Paywall events are only supported on Android N or newer." }
+            null
+        }
+    }
+
+    private fun createAdEventsManager(
+        context: Context,
+        identityManager: IdentityManager,
+        eventsDispatcher: Dispatcher,
+        backend: Backend,
+    ): EventsManager? {
+        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
+        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
+        // older versions.
+        return if (isAndroidNOrNewer()) {
+            EventsManager(
+                legacyEventsFileHelper = null,
+                fileHelper = EventsManager.adEvents(fileHelper = FileHelper(context)),
+                identityManager = identityManager,
+                eventsDispatcher = eventsDispatcher,
+                postEvents = { request, onSuccess, onError ->
+                    backend.postEvents(
+                        paywallEventRequest = request,
+                        baseURL = AppConfig.adEventsURL,
+                        onSuccessHandler = onSuccess,
+                        onErrorHandler = onError,
+                    )
+                },
+            )
+        } else {
+            debugLog { "Ad events are only supported on Android N or newer." }
             null
         }
     }

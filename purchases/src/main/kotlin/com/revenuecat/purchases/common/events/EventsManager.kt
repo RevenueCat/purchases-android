@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.events
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ads.events.AdEvent
-import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -20,7 +19,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
-import java.net.URL
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -29,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @property legacyEventsFileHelper File helper for legacy paywall events.
  * @property fileHelper File helper for new backend stored events.
- * @property adFileHelper File helper for ad events tracking.
  * @property identityManager Manages user identity within the system.
  * @property eventsDispatcher Dispatches event-related operations.
  * @property postEvents Function for sending events to the backend.
@@ -37,14 +34,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("LongParameterList")
 internal class EventsManager(
     private val appSessionID: UUID = Companion.appSessionID,
-    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
+    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
-    private val adFileHelper: EventsFileHelper<BackendStoredEvent.Ad>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
         EventsRequest,
-        URL,
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
@@ -90,12 +85,12 @@ internal class EventsManager(
          * @param fileHelper The file helper used for event storage.
          * @return An `EventsFileHelper` for `BackendStoredEvent.Ad`.
          */
-        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent.Ad> {
+        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
                 AD_EVENTS_FILE_PATH,
-                { event -> json.encodeToString(BackendStoredEvent.Ad.serializer(), event) },
-                { jsonString -> json.decodeFromString(BackendStoredEvent.Ad.serializer(), jsonString) },
+                { event -> json.encodeToString(BackendStoredEvent.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendStoredEvent.serializer(), jsonString) },
             )
         }
 
@@ -116,8 +111,6 @@ internal class EventsManager(
     }
 
     private var flushInProgress = AtomicBoolean(false)
-
-    private var adFlushInProgress = AtomicBoolean(false)
 
     @get:Synchronized
     @set:Synchronized
@@ -146,6 +139,18 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
+                is AdEvent.Displayed -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Open -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Revenue -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 else -> null
             }
 
@@ -155,26 +160,6 @@ internal class EventsManager(
                 debugLog { "Backend event not implemented for: $event" }
             }
         }
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    fun track(event: AdEvent) {
-        val backendEvent = when (event) {
-            is AdEvent.Displayed -> event.toBackendStoredEvent(
-                identityManager.currentAppUserID,
-                appSessionID.toString(),
-            )
-            is AdEvent.Open -> event.toBackendStoredEvent(
-                identityManager.currentAppUserID,
-                appSessionID.toString(),
-            )
-            is AdEvent.Revenue -> event.toBackendStoredEvent(
-                identityManager.currentAppUserID,
-                appSessionID.toString(),
-            )
-        }
-
-        fileHelper.appendEvent(backendEvent)
     }
 
     /**
@@ -205,7 +190,6 @@ internal class EventsManager(
             verboseLog { "New event flush: posting ${storedEvents.size} events." }
             postEvents(
                 EventsRequest(storedEvents.map { it.toBackendEvent() }),
-                AppConfig.paywallEventsURL,
                 {
                     verboseLog { "New event flush: success." }
                     enqueue {
@@ -226,51 +210,12 @@ internal class EventsManager(
         }
     }
 
-    @Synchronized
-    fun flushAdEvents() {
-        enqueue {
-            if (adFlushInProgress.getAndSet(true)) {
-                debugLog { "Ad Flush already in progress." }
-                return@enqueue
-            }
-
-            val storedEventsWithNullValues = getAdStoredEvents()
-            val storedEvents = storedEventsWithNullValues.filterNotNull()
-
-            if (storedEvents.isEmpty()) {
-                verboseLog { "No new ad events to sync." }
-                adFlushInProgress.set(false)
-                return@enqueue
-            }
-
-            verboseLog { "New ad event flush: posting ${storedEvents.size} events." }
-            postEvents(
-                EventsRequest(storedEvents.map { it.toBackendEvent() }),
-                AppConfig.adEventsURL,
-                {
-                    verboseLog { "New ad event flush: success." }
-                    enqueue {
-                        adFileHelper.clear(storedEventsWithNullValues.size)
-                        adFlushInProgress.set(false)
-                    }
-                },
-                { error, shouldMarkAsSynced ->
-                    errorLog { "New ad event flush error: $error." }
-                    enqueue {
-                        if (shouldMarkAsSynced) {
-                            adFileHelper.clear(storedEventsWithNullValues.size)
-                        }
-                        adFlushInProgress.set(false)
-                    }
-                },
-            )
-        }
-    }
-
     /**
      * Flushes legacy paywall events to the backend.
      */
     private fun flushLegacyEvents() {
+        val legacyEventsFileHelper = this.legacyEventsFileHelper
+            ?: return // No legacy events file helper provided; nothing to flush.
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
@@ -284,7 +229,6 @@ internal class EventsManager(
             verboseLog { "Legacy event flush: posting ${storedBackendEvents.size} events." }
             postEvents(
                 EventsRequest(storedBackendEvents.map { it.toBackendEvent() }),
-                AppConfig.paywallEventsURL,
                 {
                     verboseLog { "Legacy event flush: success." }
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
@@ -314,14 +258,6 @@ internal class EventsManager(
         return events
     }
 
-    private fun getAdStoredEvents(): List<BackendStoredEvent.Ad?> {
-        var events: List<BackendStoredEvent.Ad?> = emptyList()
-        adFileHelper.readFile { sequence ->
-            events = sequence.take(FLUSH_COUNT).toList()
-        }
-        return events
-    }
-
     /**
      * Retrieves stored legacy paywall events from the file system.
      *
@@ -329,7 +265,7 @@ internal class EventsManager(
      */
     private fun getLegacyPaywallsStoredEvents(): List<PaywallStoredEvent?> {
         var events: List<PaywallStoredEvent?> = emptyList()
-        legacyEventsFileHelper.readFile { sequence ->
+        legacyEventsFileHelper?.readFile { sequence ->
             events = sequence.take(FLUSH_COUNT).toList()
         }
         return events

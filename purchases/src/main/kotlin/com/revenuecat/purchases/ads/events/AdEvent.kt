@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.FeatureEvent
 import java.util.UUID
 
 internal enum class AdEventType(val value: String) {
@@ -21,7 +22,7 @@ object AdRevenuePrecision {
     const val UNKNOWN = "unknown"
 }
 
-internal sealed interface AdEvent {
+internal sealed interface AdEvent : FeatureEvent {
     val id: String
     val eventVersion: Int
     val type: AdEventType

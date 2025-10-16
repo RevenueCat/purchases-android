@@ -594,7 +594,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 onError = any()
             )
             mockEventsManager.flushEvents()
-            mockEventsManager.flushAdEvents()
         }
     }
 

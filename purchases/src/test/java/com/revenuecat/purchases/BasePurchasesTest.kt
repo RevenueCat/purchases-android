@@ -81,6 +81,7 @@ internal open class BasePurchasesTest {
     protected val mockOfferingsManager = mockk<OfferingsManager>()
     protected val mockBackupManager = mockk<BackupManager>()
     internal val mockEventsManager = mockk<EventsManager>()
+    internal val mockAdEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
@@ -140,7 +141,7 @@ internal open class BasePurchasesTest {
             mockEventsManager.flushEvents()
         } just Runs
         every {
-            mockEventsManager.flushAdEvents()
+            mockAdEventsManager.flushEvents()
         } just Runs
         every {
             mockLifecycleOwner.lifecycle
@@ -180,6 +181,7 @@ internal open class BasePurchasesTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
             mockEventsManager,
+            mockAdEventsManager,
             mockWebPurchasesRedemptionHelper,
             mockLifecycleOwner,
             mockLifecycle,
@@ -469,6 +471,7 @@ internal open class BasePurchasesTest {
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
             eventsManager = mockEventsManager,
+            adEventsManager = mockAdEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),

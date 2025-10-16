@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -92,7 +93,6 @@ class EventsManagerTest {
         }
         legacyFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context))
         fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context))
-        adFileHelper = EventsManager.adEvents(fileHelper = FileHelper(context))
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
         }
@@ -103,14 +103,13 @@ class EventsManagerTest {
             appSessionID,
             legacyFileHelper,
             fileHelper,
-            adFileHelper,
             identityManager,
             paywallEventsDispatcher,
-            postEvents = { request, baseURL, onSuccess, onError ->
+            postEvents = { request, onSuccess, onError ->
                 postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
-                    baseURL = baseURL,
+                    baseURL = AppConfig.paywallEventsURL,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
