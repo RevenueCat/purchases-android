@@ -42,7 +42,7 @@ version: 2.1
 orbs:
   android: circleci/android@3.1.0
   gcp-cli: circleci/gcp-cli@3.3.1
-  revenuecat: revenuecat/sdks-common-config@3.8.0
+  revenuecat: revenuecat/sdks-common-config@3.9.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -176,7 +176,7 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-  
+
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:
@@ -184,7 +184,7 @@ commands:
         type: string
         default: ""
     steps:
-      - run: 
+      - run:
           name: Check out submodule << parameters.path >>
           command: |
             git submodule init << parameters.path >>
@@ -1011,16 +1011,11 @@ workflows:
           <<: *release-tags
           context: maven-central-publishing
       - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
+      - revenuecat/insert-changelog-latest-in-main-if-needed:
+          cache-version: v1
           requires:
             - deploy
             - docs-deploy
-          <<: *release-tags
-      - publish-paywall-tester-release:
-          track: "alpha"
-          requires:
-              - deploy
-              - docs-deploy
           <<: *release-tags
 
   on-main-branch:
