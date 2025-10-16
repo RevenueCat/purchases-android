@@ -108,7 +108,7 @@ class StoreTransaction(
     // We've marked this with @get:JvmSynthetic because its synthesized
     // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
     // applied to it, and there doesn't appear to be a way to do so.
-    // We can remove this @get:JvmSynthetic annotation when we remove the experimental annotations from this
+    // We can remove this @get:JvmSynthetic annotation when we remove the experimental annotation from this
     // property.
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @get:JvmSynthetic
