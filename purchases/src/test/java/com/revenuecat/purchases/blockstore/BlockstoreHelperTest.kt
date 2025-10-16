@@ -208,6 +208,26 @@ class BlockstoreHelperTest {
         verify(exactly = 0) { mockBlockstoreClient.storeBytes(any()) }
     }
 
+    @Test
+    fun `storeUserIdIfNeeded does nothing when no BlockstoreClient`() {
+        blockstoreHelper = BlockstoreHelper(
+            applicationContext = mockContext,
+            identityManager = mockIdentityManager,
+            blockstoreClient = null,
+            ioScope = testScope,
+            mainScope = testScope
+        )
+
+        val mockCustomerInfo = mockk<CustomerInfo> {
+            every { allPurchasedProductIds } returns setOf("product1")
+        }
+
+        blockstoreHelper.storeUserIdIfNeeded(mockCustomerInfo)
+
+        verify(exactly = 0) { mockIdentityManager.currentAppUserID }
+        verify(exactly = 0) { mockBlockstoreClient.retrieveBytes(any()) }
+    }
+
     // endregion storeUserIdIfNeeded
 
     // region aliasCurrentAndStoredUserIdsIfNeeded
@@ -419,6 +439,26 @@ class BlockstoreHelperTest {
         
         assertThat(callbackCalled).isTrue()
         verify(exactly = 1) { mockBlockstoreClient.deleteBytes(any()) }
+    }
+
+    @Test
+    fun `clearUserIdBackupIfNeeded does nothing if no BlockstoreClient`() {
+        blockstoreHelper = BlockstoreHelper(
+            applicationContext = mockContext,
+            identityManager = mockIdentityManager,
+            blockstoreClient = null,
+            ioScope = testScope,
+            mainScope = testScope
+        )
+
+        var callbackCalled = false
+        blockstoreHelper.clearUserIdBackupIfNeeded {
+            callbackCalled = true
+        }
+
+        assertThat(callbackCalled).isTrue()
+
+        verify(exactly = 0) { mockBlockstoreClient.deleteBytes(any()) }
     }
 
     // endregion clearUserIdBackupIfNeeded
