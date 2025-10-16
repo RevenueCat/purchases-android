@@ -1031,17 +1031,6 @@ workflows:
           requires:
             - deploy
             - docs-deploy
-      - publish-purchase-tester-release:
-          requires:
-            - deploy
-            - docs-deploy
-          <<: *release-tags
-      - publish-paywall-tester-release:
-          track: "alpha"
-          requires:
-              - deploy
-              - docs-deploy
-          <<: *release-tags
 
   on-main-branch:
     when:
