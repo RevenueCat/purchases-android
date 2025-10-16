@@ -176,7 +176,7 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-  
+
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:
@@ -184,7 +184,7 @@ commands:
         type: string
         default: ""
     steps:
-      - run: 
+      - run:
           name: Check out submodule << parameters.path >>
           command: |
             git submodule init << parameters.path >>
@@ -879,6 +879,21 @@ jobs:
           name: Verify purchases-ui target SDK (34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
+  insert-changelog-latest-in-main-if-needed:
+    description: "If the release corresponds to a previous version, creates a PR to insert the release changelog into main's CHANGELOG.md"
+    docker:
+      - image: cimg/ruby:3.2
+    steps:
+      - checkout
+      - revenuecat/install-gem-mac-dependencies:
+          cache-version: v1
+      - revenuecat/trust-github-key
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Insert changelog latest in main if needed
+          command: |
+            bundle exec fastlane insert_changelog_latest_in_main_if_needed
+
 workflows:
   version: 2
   danger:
@@ -1011,6 +1026,11 @@ workflows:
           <<: *release-tags
           context: maven-central-publishing
       - docs-deploy: *release-tags
+      - insert-changelog-latest-in-main-if-needed:
+          <<: *release-tags
+          requires:
+            - deploy
+            - docs-deploy
       - publish-purchase-tester-release:
           requires:
             - deploy

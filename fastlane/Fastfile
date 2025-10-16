@@ -204,7 +204,7 @@ platform :android do
         releaseKeyAlias: release_key_alias,
         releaseKeyPassword: release_key_password,
         releaseKeystorePassword: release_keystore_password
-      }.merge(extra_properties)  
+      }.merge(extra_properties)
     )
   end
 
@@ -325,7 +325,7 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults', 
+                                        proxy_url: nil, build_type: 'release', flavor: 'defaults',
                                         is_load_shedder_integration_tests: false)
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
@@ -391,7 +391,7 @@ platform :android do
     track = options[:track] || UI.user_error!("Missing track parameter. Provide one of 'production', 'beta', 'alpha', or 'internal'")
     json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish #{package_name}.")
     aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
-    
+
     upload_to_play_store(
       package_name: package_name,
       track: track,
@@ -406,7 +406,7 @@ platform :android do
     options[:track] = 'alpha'
     publish_to_track(options)
   end
-  
+
   desc "Publish paywall tester to the specified track on Google Play"
   lane :publish_paywall_tester do |options|
     options[:package_name] = 'com.revenuecat.paywall_tester'
@@ -449,10 +449,10 @@ DESC
       project_dir = "examples/MagicWeather"
 
       tasks = [
-        "assembleAmazonDebug", 
-        "assembleAmazonRelease", 
-        "assembleGoogleDebug", 
-        "assembleGoogleRelease", 
+        "assembleAmazonDebug",
+        "assembleAmazonRelease",
+        "assembleGoogleDebug",
+        "assembleGoogleRelease",
       ]
       task = options[:task] || UI.select("Which task?", tasks)
 
@@ -537,7 +537,7 @@ DESC
 
       amazon_pem_path = options[:amazon_pem_path] || UI.input("Amazon .pem path?")
 
-      # Replace version 
+      # Replace version
       version_code_old = "purchaseTesterVersionCode=1"
       version_code_new = "purchaseTesterVersionCode=#{version_code}"
       sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{version_code_old}/#{version_code_new}/' {} \\;")
@@ -707,6 +707,23 @@ DESC
     end
   end
 
+  desc "If the release corresponds to a previous version, creates a PR to insert the release changelog into main's CHANGELOG.md"
+  lane :insert_changelog_latest_in_main_if_needed do |options|
+    if options[:dry_run]
+      dry_run = true
+    else
+      dry_run = false
+    end
+
+    insert_changelog_of_older_version(
+      sdk_version: current_version_number,
+      changelog_path: changelog_path,
+      changelog_latest_path: changelog_latest_path,
+      repo_name: repo_name,
+      dry_run: dry_run
+    )
+  end
+
   private_lane :create_or_checkout_branch do |options|
     branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
 
@@ -775,7 +792,7 @@ DESC
         labels: labels,
         team_reviewers: team_reviewers
       )
-      
+
       if pr_url.nil?
         UI.user_error!("Failed to create pull request.")
       end
@@ -793,7 +810,7 @@ DESC
     repo = options[:repo] || repo_name
     labels = options[:labels] || []
     team_reviewers = options[:team_reviewers] || []
-    
+
     has_changes = !sh("git", "status", "--porcelain").empty?
     if has_changes
       commit_and_push(
@@ -812,7 +829,7 @@ DESC
     else
       UI.message("No changes detected. Skipping commit, push, and PR creation.")
     end
-    
+
   end
 
 end
