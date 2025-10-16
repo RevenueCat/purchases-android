@@ -172,8 +172,10 @@ internal class SimulatedStoreBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         val message = buildString {
-            append("This is a test purchase and should only be used during development. In production, " +
-                "use a Google/Amazon API key from RevenueCat.\n\n")
+            append(
+                "This is a test purchase and should only be used during development. In production, " +
+                    "use a Google/Amazon API key from RevenueCat.\n\n",
+            )
             append("Product: ${product.id}\n")
             append("Price: ${product.price.formatted}\n")
             product.defaultOption?.let { option ->
