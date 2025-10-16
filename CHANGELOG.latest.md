@@ -5,14 +5,9 @@
 
 ## RevenueCat SDK
 ### ✨ New Features
-* Add support for the Test Store (#2710) via Toni Rico (@tonidero)
+* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
 
 ## RevenueCatUI SDK
 ### Customer Center
-#### ✨ New Features
-* Add Customer Center per-view listener for hybrids (#2713) via Facundo Menzella (@facumenzella)
-
-### 🔄 Other Changes
-* Add `TestStoreSimulatedPurchaseError` error code (#2716) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `3f7fffc` to `25c7fb8` (#2721) via dependabot[bot] (@dependabot[bot])
-* Disable offline entitlements in test store (#2718) via Toni Rico (@tonidero)
+#### 🐞 Bugfixes
+* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
