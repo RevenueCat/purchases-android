@@ -1273,7 +1273,6 @@ package com.revenuecat.purchases.models {
     method @Deprecated public java.util.List<java.lang.String> getSkus();
     method public String? getStoreUserID();
     method public String? getSubscriptionOptionId();
-    method public java.util.Map<java.lang.String,java.lang.String>? getSubscriptionOptionIdForProductIDs();
     method public com.revenuecat.purchases.ProductType getType();
     method public Boolean? isAutoRenewing();
     property public final Boolean? isAutoRenewing;
@@ -1292,7 +1291,6 @@ package com.revenuecat.purchases.models {
     property @Deprecated @kotlinx.parcelize.IgnoredOnParcel public final java.util.List<java.lang.String> skus;
     property public final String? storeUserID;
     property public final String? subscriptionOptionId;
-    property public final java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdForProductIDs;
     property public final com.revenuecat.purchases.ProductType type;
   }
 

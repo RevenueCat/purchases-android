@@ -105,7 +105,13 @@ class StoreTransaction(
      * Null in Google for restored transactions and purchases initiated outside of the app.
      * Null for Amazon purchases.
      */
+    // We've marked this with @get:JvmSynthetic because its synthesized
+    // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
+    // applied to it, and there doesn't appear to be a way to do so.
+    // We can remove this @get:JvmSynthetic annotation when we remove the experimental annotations from this
+    // property.
     @ExperimentalPreviewRevenueCatPurchasesAPI
+    @get:JvmSynthetic
     val subscriptionOptionIdForProductIDs: Map<String, String>?,
 
     /**
