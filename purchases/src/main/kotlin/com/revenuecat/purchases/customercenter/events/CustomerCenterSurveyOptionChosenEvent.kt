@@ -45,6 +45,8 @@ class CustomerCenterSurveyOptionChosenEvent(
         val url: String?, // URL if CUSTOM_URL
         val surveyOptionID: String,
         val additionalContext: String? = null, // null for now until we support
+        val internalPromoOfferID: String? = null, // Set if this survey option leads to a promo offer
+        val storePromoOfferID: String? = null, // Set if this survey option leads to a promo offer
 
         // isSandbox not available in Android
     ) {
