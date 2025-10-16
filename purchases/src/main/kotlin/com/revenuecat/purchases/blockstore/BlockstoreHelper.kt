@@ -26,7 +26,7 @@ internal class BlockstoreHelper
 constructor(
     applicationContext: Context,
     private val identityManager: IdentityManager,
-    private val blockstoreClient: BlockstoreClient = Blockstore.getClient(applicationContext),
+    private val blockstoreClient: BlockstoreClient? = initializeBlockstoreClient(applicationContext),
     private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1)),
     private val mainScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
 ) {
@@ -34,9 +34,21 @@ constructor(
     private companion object {
         const val BLOCKSTORE_USER_ID_KEY = "com.revenuecat.purchases.app_user_id"
         const val BLOCKSTORE_MAX_ENTRIES = 16
+
+        fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
+            return try {
+                Blockstore.getClient(applicationContext)
+            } catch (e: NoClassDefFoundError) {
+                // Doing this to protect against developers possibly excluding the entire
+                // `com.google.android.gms` group.
+                errorLog(e) { "Cannot find Blockstore at runtime. Disabling automatic backups." }
+                null
+            }
+        }
     }
 
     fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
+        if (blockstoreClient == null) return
         val currentUserId = identityManager.currentAppUserID
         if (
             !IdentityManager.isUserIDAnonymous(currentUserId) ||
@@ -102,6 +114,10 @@ constructor(
     }
 
     fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
+        val blockstoreClient = this.blockstoreClient ?: run {
+            callback()
+            return
+        }
         val request = DeleteBytesRequest.Builder()
             .setKeys(listOf(BLOCKSTORE_USER_ID_KEY))
             .build()
@@ -119,6 +135,7 @@ constructor(
     }
 
     private suspend fun getBlockstoreData(): Map<String, BlockstoreData> {
+        val blockstoreClient = this.blockstoreClient ?: return emptyMap()
         val retrieveRequest = RetrieveBytesRequest.Builder()
             .setRetrieveAll(true)
             .build()
@@ -134,6 +151,7 @@ constructor(
         blockstoreDataMap: Map<String, BlockstoreData>,
         userId: String,
     ) {
+        val blockstoreClient = this.blockstoreClient ?: return
         if (blockstoreDataMap[BLOCKSTORE_USER_ID_KEY] != null) {
             debugLog { "Block store: Not storing user id since there is one already present." }
             return
