@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -345,6 +346,7 @@ fun getAmazonPackageJSON(
         """.trimIndent(),
     )
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 fun stubStoreProductWithGoogleSubscriptionPurchaseData(
     productId: String = STUB_PRODUCT_IDENTIFIER,
     optionId: String = "optionId",

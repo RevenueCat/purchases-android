@@ -20,6 +20,7 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsResult
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -1706,6 +1707,7 @@ class BillingWrapperTest {
     // endregion findPurchaseInActivePurchases
 
     // region Multi-line subscriptions
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can make a multi-line subscription purchase`() {
         every {
@@ -1756,6 +1758,7 @@ class BillingWrapperTest {
         assertThat(subscriptionOptionIdForProductIDs[productId2]).isEqualTo("mock-base-plan-id:mock-offer-id")
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `properly sets billingFlowParams for subscription purchase with add-ons`() {
         mockkStatic(BillingFlowParams::class)

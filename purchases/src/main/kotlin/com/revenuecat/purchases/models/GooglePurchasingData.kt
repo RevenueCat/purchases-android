@@ -38,14 +38,14 @@ sealed class GooglePurchasingData : PurchasingData {
             productId: String,
             optionId: String,
             productDetails: ProductDetails,
-            token: String
+            token: String,
         ) : this(
             productId = productId,
             optionId = optionId,
             productDetails = productDetails,
             token = token,
             billingPeriod = null,
-            addOnProducts = null
+            addOnProducts = null,
         )
     }
 
