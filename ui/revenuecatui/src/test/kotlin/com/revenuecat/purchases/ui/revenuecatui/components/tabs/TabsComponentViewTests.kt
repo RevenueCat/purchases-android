@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -71,6 +72,7 @@ class TabsComponentViewTests {
     val composeTestRule = createComposeRule()
 
     private val defaultLocaleIdentifier = LocaleId("en_US")
+    private val testAssetBaseURL = URL("https://assets.pawwalls.com")
 
     @Test
     fun `Should properly update selected state of tab control button children`(): Unit = with(composeTestRule) {
@@ -98,6 +100,7 @@ class TabsComponentViewTests {
         ).mapIndexed { index, (unselectedKey, selectedKey) ->
             TabControlButtonComponent(
                 tabIndex = index,
+                tabId = "$index",
                 stack = StackComponent(
                     components = listOf(
                         TextComponent(
@@ -128,15 +131,18 @@ class TabsComponentViewTests {
 
         val tabsComponent = TabsComponent(
             // Mapping tabControlButtons to make sure we have as many tabs as tab control buttons.
-            tabs = tabControlButtons.map {
-                TabsComponent.Tab(StackComponent(components = listOf(TabControlComponent)))
+            tabs = tabControlButtons.mapIndexed { index, _ ->
+                TabsComponent.Tab(
+                    id = "$index",
+                    stack = StackComponent(components = listOf(TabControlComponent))
+                )
             },
             control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons))
         )
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -253,9 +259,10 @@ class TabsComponentViewTests {
             unselectedKeyTab0 to selectedKeyTab0,
             unselectedKeyTab1 to selectedKeyTab1,
             unselectedKeyTab2 to selectedKeyTab2,
-        ).map { (unselectedKey, selectedKey) ->
+        ).mapIndexed { index, (unselectedKey, selectedKey) ->
             TabsComponent.Tab(
-                StackComponent(
+                id = "$index",
+                stack = StackComponent(
                     components = listOf(
                         TabControlComponent,
                         TextComponent(
@@ -280,6 +287,7 @@ class TabsComponentViewTests {
         ).mapIndexed { index, tabControlKey ->
             TabControlButtonComponent(
                 tabIndex = index,
+                tabId = "$index",
                 stack = StackComponent(
                     components = listOf(
                         TextComponent(
@@ -312,7 +320,7 @@ class TabsComponentViewTests {
 
         val data = PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
@@ -551,7 +559,7 @@ class TabsComponentViewTests {
             0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne),
         ) +
             // Adding an extra tab without any packages
-            Tab(components = listOf())
+            Tab(id = "2", components = listOf())
         val tabControlButtonKeys = List(tabs.size) { index ->
             LocalizationKey("tab_control_button_$index")
         }
@@ -560,6 +568,7 @@ class TabsComponentViewTests {
             List(tabs.size) { index ->
                 TabControlButtonComponent(
                     tabIndex = index,
+                    tabId = "$index",
                     stack = StackComponent(
                         components = listOf(
                             TextComponent(
@@ -636,7 +645,7 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(components = listOf())
+                Tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
@@ -645,6 +654,7 @@ class TabsComponentViewTests {
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
                         tabIndex = index,
+                        tabId = "$index",
                         stack = StackComponent(
                             components = listOf(
                                 TextComponent(
@@ -761,7 +771,7 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(components = listOf())
+                Tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
@@ -770,6 +780,7 @@ class TabsComponentViewTests {
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
                         tabIndex = index,
+                        tabId = "$index",
                         stack = StackComponent(
                             components = listOf(
                                 TextComponent(
@@ -1071,9 +1082,10 @@ class TabsComponentViewTests {
         )
 
     private fun tabs(vararg tabsBySelectedByDefaultIndex: Pair<Int?, List<Package>>): List<TabsComponent.Tab> =
-        tabsBySelectedByDefaultIndex.map { (selectedByDefaultIndex, packagesOnThisTab) ->
+        tabsBySelectedByDefaultIndex.mapIndexed { index, (selectedByDefaultIndex, packagesOnThisTab) ->
             TabsComponent.Tab(
-                StackComponent(
+                id = "$index",
+                stack = StackComponent(
                     components = listOf(
                         TabControlComponent
                     ) + packagesOnThisTab.mapIndexed { index, pkg ->
@@ -1087,9 +1099,10 @@ class TabsComponentViewTests {
         }
 
     @Suppress("TestFunctionName")
-    private fun Tab(components: List<PaywallComponent>): TabsComponent.Tab =
+    private fun Tab(id: String, components: List<PaywallComponent>): TabsComponent.Tab =
         TabsComponent.Tab(
-            StackComponent(
+            id = id,
+            stack = StackComponent(
                 components = listOf(TabControlComponent) + components
             )
         )
@@ -1142,7 +1155,7 @@ class TabsComponentViewTests {
     ): PaywallComponentsData =
         PaywallComponentsData(
             templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
+            assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = rootStack,
@@ -1269,6 +1282,7 @@ class TabsComponentViewTests {
                 is ImageComponent,
                 is IconComponent,
                 is TextComponent,
+                is VideoComponent,
                     -> {
                     // These don't have child components.
                 }
@@ -1276,5 +1290,313 @@ class TabsComponentViewTests {
         }
 
         return matches
+    }
+
+    @Test
+    fun `Should use defaultTabId to select initial tab`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+
+        val tab0Key = LocalizationKey("tab0")
+        val tab1Key = LocalizationKey("tab1")
+        val tab2Key = LocalizationKey("tab2")
+        val tab0Text = LocalizationData.Text("Tab 0 content")
+        val tab1Text = LocalizationData.Text("Tab 1 content")
+        val tab2Text = LocalizationData.Text("Tab 2 content")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                tab0Key to tab0Text,
+                tab1Key to tab1Text,
+                tab2Key to tab2Text,
+            )
+        )
+
+        val tabsComponent = TabsComponent(
+            defaultTabId = "tab_one", // Should select the second tab (index 1) by default
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "tab_zero",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab0Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_one",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab1Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_two",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab2Key, color = textColor)
+                    ))
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = listOf(
+                    TabControlButtonComponent(
+                        tabIndex = 0,
+                        tabId = "tab_zero",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 1,
+                        tabId = "tab_one",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 2,
+                        tabId = "tab_two",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                ))
+            )
+        )
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = testAssetBaseURL,
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        // Act
+        setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+
+        // Assert - Tab 1 (index 1) should be selected by default due to defaultTabId = "tab_one"
+        onNodeWithText(tab1Text.value)
+            .assertIsDisplayed()
+        onNodeWithText(tab0Text.value)
+            .assertIsNotDisplayed()
+        onNodeWithText(tab2Text.value)
+            .assertIsNotDisplayed()
+
+        // Verify that the selected tab index in state is 1
+        assert(state.selectedTabIndex == 1) { "Expected selectedTabIndex to be 1, but was ${state.selectedTabIndex}" }
+    }
+
+    @Test
+    fun `Should fall back to first tab when defaultTabId is null`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+
+        val tab0Key = LocalizationKey("tab0")
+        val tab1Key = LocalizationKey("tab1")
+        val tab0Text = LocalizationData.Text("Tab 0 content")
+        val tab1Text = LocalizationData.Text("Tab 1 content")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                tab0Key to tab0Text,
+                tab1Key to tab1Text,
+            )
+        )
+
+        val tabsComponent = TabsComponent(
+            defaultTabId = null, // Should fall back to first tab
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "tab_zero",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab0Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_one",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab1Key, color = textColor)
+                    ))
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = listOf(
+                    TabControlButtonComponent(
+                        tabIndex = 0,
+                        tabId = "tab_zero",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 1,
+                        tabId = "tab_one",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                ))
+            )
+        )
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = testAssetBaseURL,
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        // Act
+        setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+
+        // Assert - Tab 0 (first tab) should be selected by default when defaultTabId is null
+        onNodeWithText(tab0Text.value)
+            .assertIsDisplayed()
+        onNodeWithText(tab1Text.value)
+            .assertIsNotDisplayed()
+
+        // Verify that the selected tab index in state is 0
+        assert(state.selectedTabIndex == 0) { "Expected selectedTabIndex to be 0, but was ${state.selectedTabIndex}" }
+    }
+
+    @Test
+    fun `Should fall back to first tab when defaultTabId is blank`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+
+        val tab0Key = LocalizationKey("tab0")
+        val tab1Key = LocalizationKey("tab1")
+        val tab0Text = LocalizationData.Text("Tab 0 content")
+        val tab1Text = LocalizationData.Text("Tab 1 content")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                tab0Key to tab0Text,
+                tab1Key to tab1Text,
+            )
+        )
+
+        val tabsComponent = TabsComponent(
+            defaultTabId = "", // Should fall back to first tab when blank
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "tab_zero",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab0Key, color = textColor)
+                    ))
+                ),
+                TabsComponent.Tab(
+                    id = "tab_one",
+                    stack = StackComponent(components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = tab1Key, color = textColor)
+                    ))
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = listOf(
+                    TabControlButtonComponent(
+                        tabIndex = 0,
+                        tabId = "tab_zero",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                    TabControlButtonComponent(
+                        tabIndex = 1,
+                        tabId = "tab_one",
+                        stack = StackComponent(components = emptyList())
+                    ),
+                ))
+            )
+        )
+
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = testAssetBaseURL,
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(
+                        tabsComponent,
+                        TestData.Components.monthlyPackageComponent,
+                    )),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        val styleFactory = StyleFactory(
+            localizations = localizations,
+            offering = offering,
+        )
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        // Act
+        setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+
+        // Assert - Tab 0 (first tab) should be selected by default when defaultTabId is blank
+        onNodeWithText(tab0Text.value)
+            .assertIsDisplayed()
+        onNodeWithText(tab1Text.value)
+            .assertIsNotDisplayed()
+
+        // Verify that the selected tab index in state is 0
+        assert(state.selectedTabIndex == 0) { "Expected selectedTabIndex to be 0, but was ${state.selectedTabIndex}" }
     }
 }

@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ColorAlias
@@ -21,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -30,6 +33,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
@@ -38,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -47,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.videoForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.getFontSpec
@@ -76,7 +82,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
+@Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
     private val colorAliases: Map<ColorAlias, ColorScheme>,
@@ -150,19 +157,19 @@ internal class StyleFactory(
             /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
-            private var stillLookingForHeaderImage = true
+            private var stillLookingForHeaderMedia = true
 
             /**
              * This will be called for every component in the tree, and will determine whether we have a header image
-             * that needs special top-window-insets treatment. A header image is found if the first non-container
-             * component is an image component with a Fill width and a ZLayer parent stack.
+             * or video that needs special top-window-insets treatment. A header image is found if the first
+             * non-container component is an image component with a Fill width and a ZLayer parent stack.
              */
-            fun handleHeaderImageWindowInsets(component: PaywallComponent) {
+            fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
-                    is StackComponent -> if (stillLookingForHeaderImage) {
+                    is StackComponent -> if (stillLookingForHeaderMedia) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderImage == true
+                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderMedia == true
                                 topWindowInsetsApplied
                             }
 
@@ -173,18 +180,37 @@ internal class StyleFactory(
                     }
 
                     is ImageComponent -> {
-                        if (stillLookingForHeaderImage) {
+                        if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
                         }
-                        stillLookingForHeaderImage = false
+                        stillLookingForHeaderMedia = false
                     }
 
-                    else -> stillLookingForHeaderImage = false
+                    is VideoComponent -> {
+                        if (stillLookingForHeaderMedia) {
+                            ignoreTopWindowInsets = component.isHeaderVideo
+                        }
+                        stillLookingForHeaderMedia = false
+                    }
+
+                    else -> stillLookingForHeaderMedia = false
                 }
             }
 
+            private val PaywallComponent.isHeaderMedia: Boolean
+                get() = isHeaderImage || isHeaderVideo
+
             private val PaywallComponent.isHeaderImage: Boolean
                 get() = this is ImageComponent &&
+                    when (size.width) {
+                        is SizeConstraint.Fill -> true
+                        is SizeConstraint.Fit,
+                        is SizeConstraint.Fixed,
+                        -> false
+                    }
+
+            private val PaywallComponent.isHeaderVideo: Boolean
+                get() = this is VideoComponent &&
                     when (size.width) {
                         is SizeConstraint.Fill -> true
                         is SizeConstraint.Fit,
@@ -302,7 +328,7 @@ internal class StyleFactory(
                 }
             }
 
-            windowInsetsState.handleHeaderImageWindowInsets(component)
+            windowInsetsState.handleHeaderMediaViewWindowInsets(component)
         }
 
         /**
@@ -344,6 +370,7 @@ internal class StyleFactory(
         }
     }
 
+    @Immutable
     class StyleResult(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
@@ -397,6 +424,7 @@ internal class StyleFactory(
             is TabControlToggleComponent -> createTabControlToggleComponentStyle(component)
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
+            is VideoComponent -> createVideoComponentStyle(component)
         }
     }
 
@@ -676,6 +704,60 @@ internal class StyleFactory(
         )
     }
 
+    private fun StyleFactoryScope.createVideoComponentStyle(
+        component: VideoComponent,
+    ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
+        second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
+        third = component.overrides?.toPresentedOverrides { videoPartial ->
+            videoPartial.source
+                ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
+                .orSuccessfullyNull()
+                .flatMap { sources ->
+                    PresentedVideoPartial(
+                        from = videoPartial,
+                        sources = sources,
+                        fallbackSources = videoPartial.fallbackSource
+                            ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
+                            ?.let {
+                                when (it) {
+                                    is Result.Success -> it.value
+                                    else -> null
+                                }
+                            },
+                        aliases = colorAliases,
+                    )
+                }
+        }
+            ?.mapError { nonEmptyListOf(it) }
+            .orSuccessfullyNull(),
+        fourth = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fifth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+        sixth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, fallbackSources, presentedOverrides, overlay, border, shadow ->
+        VideoComponentStyle(
+            sources = sources,
+            fallbackSources = fallbackSources,
+            overlay = overlay,
+            border = border,
+            shadow = shadow,
+            visible = component.visible ?: DEFAULT_VISIBILITY,
+            size = component.size,
+            padding = component.padding?.toPaddingValues() ?: PaddingValues(),
+            margin = component.margin?.toPaddingValues() ?: PaddingValues(),
+            rcPackage = rcPackage,
+            tabIndex = tabControlIndex,
+            overrides = presentedOverrides ?: emptyList(),
+            showControls = component.showControls,
+            autoplay = component.autoplay,
+            loop = component.loop,
+            muteAudio = component.muteAudio,
+            shape = component.maskShape?.toShape(),
+            contentScale = component.fitMode.toContentScale(),
+            ignoreTopWindowInsets = ignoreTopWindowInsets,
+        )
+    }
+
     private fun StyleFactoryScope.createIconComponentStyle(
         component: IconComponent,
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
@@ -835,6 +917,13 @@ internal class StyleFactory(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
         createTabsComponentStyleTabControl(component.control).flatMap { control ->
+            // Find the index of the defaultTabId.
+            component.defaultTabId
+                ?.takeUnless { it.isBlank() }
+                ?.let { defaultTabId -> component.tabs.indexOfFirst { it.id == defaultTabId } }
+                ?.takeUnless { it == -1 }
+                ?.also { defaultTabIndex = it }
+
             zipOrAccumulate(
                 first = component.overrides
                     .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
@@ -918,6 +1007,15 @@ internal class StyleFactory(
     ): Result<NonEmptyMap<LocaleId, ThemeImageUrls>, NonEmptyList<PaywallValidationError.MissingImageLocalization>> =
         overrideSourceLid
             ?.let { key -> localizations.imageForAllLocales(key) }
+            .orSuccessfullyNull()
+            // Ensure the default source keyed by the default locale is present in the result.
+            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+
+    private fun ThemeVideoUrls.withLocalizedOverrides(
+        overrideSourceLid: LocalizationKey?,
+    ): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
+        overrideSourceLid
+            ?.let { key -> localizations.videoForAllLocales(key) }
             .orSuccessfullyNull()
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }

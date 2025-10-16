@@ -210,7 +210,7 @@ private fun PaywallTemplateImageLoader(
                 val url = URI(chain.request.data as String)
                 // Create the resourcePath by dropping the TLD, reversing the host, and appending the path.
                 val resourcePath = parentFolder + "/" +
-                    url.host.split('.').dropLast(1).reversed().joinToString("/") +
+                    url.host.split('.').dropLast(1).reversedUsingJavaCollections().joinToString("/") +
                     url.path
                 val bitmap = BitmapFactory.decodeStream(getResourceStream(resourcePath))
 
@@ -222,6 +222,13 @@ private fun PaywallTemplateImageLoader(
             }
         }
         .build()
+}
+
+// To solve an issue with Kotlin's reversed() and compileSdkVersion 35
+// See https://issuetracker.google.com/issues/350432371
+private fun <T> List<T>.reversedUsingJavaCollections(): List<T> {
+    java.util.Collections.reverse(this)
+    return this.toMutableList()
 }
 
 /**

@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,18 +51,23 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
+import com.revenuecat.purchases.ui.revenuecatui.icons.ArrowBack
+import com.revenuecat.purchases.ui.revenuecatui.icons.Close
 import kotlinx.coroutines.launch
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
 internal fun InternalCustomerCenter(
@@ -149,6 +151,7 @@ internal fun InternalCustomerCenter(
                 }
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
+                is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
             }
         },
     )
@@ -181,11 +184,11 @@ private fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterState.Loading -> {
-                    CustomerCenterLoading()
+                    CustomerCenterLoadingView()
                 }
 
                 is CustomerCenterState.Error -> {
-                    CustomerCenterError(state)
+                    CustomerCenterErrorView(state)
                 }
 
                 is CustomerCenterState.Success -> {
@@ -347,24 +350,12 @@ private fun CustomerCenterNavigationIcon(
     }) {
         Icon(
             imageVector = when (navigationButtonType) {
-                CustomerCenterState.NavigationButtonType.BACK -> Icons.AutoMirrored.Filled.ArrowBack
-                CustomerCenterState.NavigationButtonType.CLOSE -> Icons.Default.Close
+                CustomerCenterState.NavigationButtonType.BACK -> ArrowBack
+                CustomerCenterState.NavigationButtonType.CLOSE -> Close
             },
             contentDescription = null,
         )
     }
-}
-
-@Composable
-private fun CustomerCenterLoading() {
-    // CustomerCenter WIP: Add proper loading UI
-    Text("Loading...")
-}
-
-@Composable
-private fun CustomerCenterError(state: CustomerCenterState.Error) {
-    // CustomerCenter WIP: Add proper error UI
-    Text("Error: ${state.error}")
 }
 
 @Composable
@@ -434,6 +425,13 @@ private fun CustomerCenterNavHost(
                     onAction = onAction,
                 )
             }
+
+            is CustomerCenterDestination.VirtualCurrencyBalances -> {
+                VirtualCurrencyBalancesScreen(
+                    appearance = customerCenterState.customerCenterConfigData.appearance,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                )
+            }
         }
     }
 
@@ -464,6 +462,8 @@ private fun MainScreenContent(
             RelevantPurchasesListView(
                 supportedPaths = state.mainScreenPaths,
                 contactEmail = configuration.support.email,
+                virtualCurrencies = state.virtualCurrencies,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
@@ -483,8 +483,10 @@ private fun MainScreenContent(
             NoActiveUserManagementView(
                 screen = noActiveScreen,
                 contactEmail = configuration.support.email,
+                appearance = configuration.appearance,
                 localization = configuration.localization,
-                offering = (state as? CustomerCenterState.Success)?.noActiveScreenOffering,
+                offering = state.noActiveScreenOffering,
+                virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
             )
         } ?: run {

@@ -45,8 +45,8 @@ android {
 
         buildConfigField(
             type = "boolean",
-            name = "ENABLE_SIMULATED_STORE",
-            value = (localProperties["ENABLE_SIMULATED_STORE"] as? String ?: "false").toString(),
+            name = "ENABLE_VIDEO_COMPONENT",
+            value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
         )
 
         packagingOptions.resources.excludes.addAll(
@@ -176,6 +176,7 @@ dependencies {
     androidTestImplementation(libs.mockk.agent)
 
     baselineProfile(project(":baselineprofile"))
+    testImplementation(kotlin("test"))
 }
 
 tasks.dokkaHtmlPartial.configure {

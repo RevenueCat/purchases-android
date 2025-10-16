@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,14 +32,18 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.Setti
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveButtonText
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
+import com.revenuecat.purchases.ui.revenuecatui.icons.Info
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 @Suppress("LongParameterList")
 @Composable
 internal fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
     contactEmail: String?,
+    appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
     offering: Offering?,
+    virtualCurrencies: VirtualCurrencies? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -67,6 +69,22 @@ internal fun NoActiveUserManagementView(
                     end = ManagementViewHorizontalPadding,
                 ),
             )
+        }
+
+        virtualCurrencies?.let {
+            if (virtualCurrencies.all.isNotEmpty()) {
+                VirtualCurrenciesListView(
+                    virtualCurrencies = virtualCurrencies,
+                    appearance = appearance,
+                    localization = localization,
+                    onAction = onAction,
+                    modifier = Modifier.padding(
+                        top = ManagementViewHorizontalPadding,
+                        start = ManagementViewHorizontalPadding,
+                        end = ManagementViewHorizontalPadding,
+                    ),
+                )
+            }
         }
 
         ManageSubscriptionsButtonsView(
@@ -101,7 +119,7 @@ private fun ContentUnavailableView(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
-                imageVector = Icons.Rounded.Info,
+                imageVector = Info,
                 contentDescription = null,
                 modifier = Modifier.size(ContentUnavailableIconSize),
             )
@@ -140,8 +158,41 @@ private fun NoActiveUserManagementView_Preview() {
             NoActiveUserManagementView(
                 screen = noActiveScreen,
                 contactEmail = "support@example.com",
+                appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
                 offering = null, // No offering in preview
+                onAction = { },
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "No Active Screen w/ Virtual Currencies (Light Mode)",
+    uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Preview(
+    name = "No Active Screen w/ Virtual Currencies (Dark Mode)",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Composable
+private fun NoActiveUserManagementView_WithVCs_Preview() {
+    val testData = CustomerCenterConfigTestData.customerCenterData()
+    val noActiveScreen =
+        testData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+    CustomerCenterPreviewTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            NoActiveUserManagementView(
+                screen = noActiveScreen,
+                contactEmail = "support@example.com",
+                appearance = CustomerCenterConfigTestData.standardAppearance,
+                localization = testData.localization,
+                offering = null, // No offering in preview
+                virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
                 onAction = { },
             )
         }

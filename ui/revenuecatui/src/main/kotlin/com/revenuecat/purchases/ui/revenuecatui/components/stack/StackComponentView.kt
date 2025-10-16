@@ -85,6 +85,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -515,7 +516,7 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
+                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
                                     windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
@@ -546,7 +547,7 @@ private fun MainStackComponent(
                                     // child, except when that child has `ignoreTopWindowInsets` set to true.
                                     stackState.applyTopWindowInsets &&
                                         index == 0 &&
-                                        !child.ignoreTopWindowInsets,
+                                        !child.shouldIgnoreTopWindowInsets,
                                 ) {
                                     windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
                                 }
@@ -574,7 +575,7 @@ private fun MainStackComponent(
                             state = state,
                             onClick = clickHandler,
                             modifier = Modifier
-                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
+                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
                                     windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
@@ -721,8 +722,12 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         -> false
     }
 
-private val ComponentStyle.ignoreTopWindowInsets: Boolean
-    get() = this is ImageComponentStyle && ignoreTopWindowInsets
+private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
+    get() = when (this) {
+        is ImageComponentStyle -> ignoreTopWindowInsets
+        is VideoComponentStyle -> ignoreTopWindowInsets
+        else -> false
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)

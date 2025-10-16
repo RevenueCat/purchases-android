@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
 import android.Manifest
@@ -6,7 +8,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -60,7 +61,6 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
-    private val isSimulatedStoreEnabled: () -> Boolean = { BuildConfig.ENABLE_SIMULATED_STORE },
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
@@ -77,9 +77,9 @@ internal class PurchasesFactory(
 
         with(configuration) {
             val finalStore = if (
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                Store.UNKNOWN_STORE // We should add a new store when we fully support the simulated store.
+                Store.TEST_STORE
             } else {
                 store
             }
@@ -205,7 +205,6 @@ internal class PurchasesFactory(
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
                 backend,
-                apiKeyValidationResult,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -293,7 +292,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore, apiKeyValidationResult)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
@@ -427,7 +426,7 @@ internal class PurchasesFactory(
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
 
             if (!isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE && isSimulatedStoreEnabled()
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 throw PurchasesException(
                     PurchasesError(

@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.Purchases.Companion.configure
+import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -19,6 +21,7 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -32,11 +35,13 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -104,6 +109,15 @@ class Purchases internal constructor(
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
 
     /**
+     * The storefront locale. **Note:** this locale only has a region set.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontLocale] or [awaitStorefrontLocale].
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val storefrontLocale: Locale?
+        get() = purchasesOrchestrator.storefrontLocale
+
+    /**
      * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
@@ -144,6 +158,14 @@ class Purchases internal constructor(
     val store: Store
         get() = purchasesOrchestrator.store
 
+    /**
+     * The currently configured FileRepository
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    val fileRepository: FileRepository
+        get() = purchasesOrchestrator.fileRepository
+
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
     override fun onAppBackgrounded() {
@@ -164,6 +186,15 @@ class Purchases internal constructor(
      */
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) locale.
+     * If there is any error, it will return null and log said error.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        purchasesOrchestrator.getStorefrontLocale(callback)
     }
 
     /**
@@ -742,6 +773,16 @@ class Purchases internal constructor(
      */
     fun setKochavaDeviceID(kochavaDeviceID: String?) {
         purchasesOrchestrator.setKochavaDeviceID(kochavaDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Airbridge Device ID for the user
+     * Recommended for the RevenueCat Airbridge integration
+     *
+     * @param airbridgeDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
     }
 
     // endregion

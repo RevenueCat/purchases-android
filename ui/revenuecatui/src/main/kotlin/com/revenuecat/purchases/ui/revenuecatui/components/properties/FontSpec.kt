@@ -1,8 +1,8 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
-import android.content.res.AssetManager
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -38,7 +38,7 @@ private val GoogleFontsProvider: GoogleFont.Provider = GoogleFont.Provider(
  */
 internal sealed interface FontSpec {
     data class Resource(@get:JvmSynthetic val fontFamily: FontFamily) : FontSpec
-    data class Asset(@get:JvmSynthetic val path: String) : FontSpec
+    data class Asset(@get:JvmSynthetic val fontFamily: FontFamily) : FontSpec
     data class Google(@get:JvmSynthetic val name: String) : FontSpec
     sealed interface Generic : FontSpec {
         object SansSerif : Generic
@@ -54,22 +54,29 @@ internal sealed interface FontSpec {
 internal fun Map<FontAlias, FontsConfig>.determineFontSpecs(
     resourceProvider: ResourceProvider,
 ): Map<FontAlias, FontSpec> {
-    val resourceFontFamilies = values
+    val fontInfosByFamily = values
         .toSet()
         .mapNotNull { fontsConfig ->
             val fontInfo = fontsConfig.android as? FontInfo.Name
             fontInfo?.family?.let { family -> family to fontInfo }
         }
         .groupBy({ (family, _) -> family }, { (_, fontInfo) -> fontInfo })
+    val resourceFontFamilies = fontInfosByFamily
         .mapNotNull { (family, fontInfos) ->
             fontInfos.toFontSpecResource(resourceProvider)?.let {
+                family to it
+            }
+        }.associateBy({ it.first }, { it.second })
+    val assetFontFamilies = fontInfosByFamily.filterNot { it.key in resourceFontFamilies }
+        .mapNotNull { (family, fontInfos) ->
+            fontInfos.toFontSpecAsset(resourceProvider)?.let {
                 family to it
             }
         }.associateBy({ it.first }, { it.second })
 
     // Get unique FontsConfigs, and determine their FontSpec.
     val configToSpec: Map<FontsConfig, FontSpec> = values.toSet().associateWith { fontsConfig ->
-        resourceProvider.determineFontSpec(fontsConfig, resourceFontFamilies)
+        resourceProvider.determineFontSpec(fontsConfig, resourceFontFamilies, assetFontFamilies)
     }
     // Create a map of FontAliases to FontSpecs.
     return mapValues { (_, fontsConfig) -> configToSpec.getValue(fontsConfig) }
@@ -95,6 +102,32 @@ private fun List<FontInfo.Name>.toFontSpecResource(
                         weight = resourceFont.second?.let { FontWeight(it) } ?: FontWeight.Normal,
                         style = resourceFont.third ?: FontStyle.Normal,
                     )
+                },
+            ),
+        )
+    }
+}
+
+private fun List<FontInfo.Name>.toFontSpecAsset(
+    resourceProvider: ResourceProvider,
+): FontSpec.Asset? {
+    val fontAssetPaths = resourceProvider.getAssetFontPaths(map { it.value })
+    val assetManager = resourceProvider.getAssetManager()
+    return if (fontAssetPaths == null || assetManager == null) {
+        null
+    } else {
+        FontSpec.Asset(
+            FontFamily(
+                mapNotNull { fontInfo ->
+                    val path = fontAssetPaths[fontInfo.value]
+                    if (path == null) { null } else {
+                        Font(
+                            path = path,
+                            assetManager = assetManager,
+                            weight = fontInfo.weight?.let { FontWeight(it) } ?: FontWeight.Normal,
+                            style = fontInfo.style?.toComposeFontStyle() ?: FontStyle.Normal,
+                        )
+                    }
                 },
             ),
         )
@@ -160,12 +193,11 @@ internal fun Result<FontSpec, PaywallValidationError>.recoverFromFontAliasError(
 
 @JvmSynthetic
 internal fun FontSpec.resolve(
-    assets: AssetManager,
     weight: FontWeight,
     style: FontStyle,
 ): FontFamily = when (this) {
     is FontSpec.Resource -> fontFamily
-    is FontSpec.Asset -> FontFamily(Font(path = path, assetManager = assets, weight = weight, style = style))
+    is FontSpec.Asset -> fontFamily
     is FontSpec.Google -> FontFamily(
         Font(googleFont = GoogleFont(name), fontProvider = GoogleFontsProvider, weight = weight, style = style),
     )
@@ -194,13 +226,12 @@ internal fun FontSpec.resolve(
 private fun ResourceProvider.determineFontSpec(
     fontsConfig: FontsConfig,
     resourceFontFamilies: Map<String, FontSpec.Resource>,
+    assetFontFamilies: Map<String, FontSpec.Asset>,
 ): FontSpec {
     return when (val fontInfo = fontsConfig.android) {
         is FontInfo.GoogleFonts -> FontSpec.Google(name = fontInfo.value)
         is FontInfo.Name -> getGenericFontSpec(fontInfo)
-            ?: fontInfo.family?.let { resourceFontFamilies[fontInfo.family] }
-            ?: getAssetFontPath(name = fontInfo.value)
-                ?.let { path -> FontSpec.Asset(path = path) }
+            ?: fontInfo.family?.let { resourceFontFamilies[fontInfo.family] ?: assetFontFamilies[fontInfo.family] }
             ?: getDownloadedFontSpec(fontInfo)
             ?: FontSpec.System(name = fontInfo.value).also {
                 Logger.d(

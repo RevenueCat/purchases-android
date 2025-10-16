@@ -477,7 +477,6 @@ internal open class BasePurchasesTest {
             fontLoader = mockFontLoader,
             localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = mockVirtualCurrencyManager,
-            isSimulatedStoreEnabled = { enableSimulatedStore },
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
         )

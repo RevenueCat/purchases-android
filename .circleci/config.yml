@@ -42,7 +42,7 @@ version: 2.1
 orbs:
   android: circleci/android@3.1.0
   gcp-cli: circleci/gcp-cli@3.3.1
-  revenuecat: revenuecat/sdks-common-config@3.0.0
+  revenuecat: revenuecat/sdks-common-config@3.8.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -394,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.24.0 s3://purchases-docs/android/8.24.0 --delete
+          command: aws s3 sync ~/project/docs/8.25.0 s3://purchases-docs/android/8.25.0 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -803,6 +803,41 @@ jobs:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
 
+  run-maestro-e2e-tests:
+    description: "Run Maestro tests for Paywall Tester app"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - run:
+          name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
+          working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
+          command: |
+            sed -i s/\"api_key_to_replace\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
+      - android/create_avd:
+          avd_name: test-e2e-tester
+          system_image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-e2e-tester
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug
+      - android/restore_gradle_cache
+      - run:
+          name: Install E2E Tester on emulator
+          command: |
+            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+      - revenuecat/install-maestro
+      - run:
+          name: Run Maestro tests
+          command: |
+            maestro test --format junit --output maestro/report.xml maestro/
+      - store_artifacts:
+          path: ~/.maestro/tests/
+      - store_test_results:
+          path: maestro/report.xml
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
@@ -933,6 +968,9 @@ workflows:
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
+      - run-maestro-e2e-tests:
+          requires:
+            - prepare-tests
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
@@ -957,6 +995,7 @@ workflows:
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
+            - run-maestro-e2e-tests
             - run-revenuecatui-ui-tests
             - run-firebase-tests
             - run-firebase-tests-purchases-integration-test
