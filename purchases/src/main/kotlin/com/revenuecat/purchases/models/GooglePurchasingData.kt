@@ -13,7 +13,7 @@ sealed class GooglePurchasingData : PurchasingData {
     ) : GooglePurchasingData()
 
     @Poko
-    class Subscription(
+    class Subscription @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
         override val productId: String,
         val optionId: String,
         val productDetails: ProductDetails,
@@ -24,13 +24,30 @@ sealed class GooglePurchasingData : PurchasingData {
         // applied to them, and there doesn't appear to be a way to do so.
         // We can remove the @get:JvmSynthetic annotation when we remove the experimental annotations from these
         // properties.
-        @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
         val billingPeriod: Period? = null,
-        @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
         val addOnProducts: List<GooglePurchasingData>? = null,
-    ) : GooglePurchasingData()
+    ) : GooglePurchasingData() {
+
+        // This recreates the constructor without billingPeriod and addOnProducts so that we have a copy
+        // that isn't marked with @ExperimentalPreviewRevenueCatPurchasesAPI. It can be removed when
+        // @ExperimentalPreviewRevenueCatPurchasesAPI is removed from the primary constructor.
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        constructor(
+            productId: String,
+            optionId: String,
+            productDetails: ProductDetails,
+            token: String
+        ) : this(
+            productId = productId,
+            optionId = optionId,
+            productDetails = productDetails,
+            token = token,
+            billingPeriod = null,
+            addOnProducts = null
+        )
+    }
 
     override val productType: ProductType
         get() = when (this) {

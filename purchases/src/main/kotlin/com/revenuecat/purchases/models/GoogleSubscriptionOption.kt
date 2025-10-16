@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
@@ -125,6 +126,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(
             productId,

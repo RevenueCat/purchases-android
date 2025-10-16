@@ -151,7 +151,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.EntitlementVerificationMode default;
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
   }
 
   public final class IntentExtensionsKt {
@@ -996,7 +996,8 @@ package com.revenuecat.purchases.models {
   }
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
-    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI com.revenuecat.purchases.models.Period? billingPeriod, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
+    ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
+    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional com.revenuecat.purchases.models.Period? billingPeriod, optional java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
