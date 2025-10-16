@@ -140,6 +140,9 @@ internal open class BasePurchasesTest {
             mockEventsManager.flushEvents()
         } just Runs
         every {
+            mockEventsManager.flushAdEvents()
+        } just Runs
+        every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
