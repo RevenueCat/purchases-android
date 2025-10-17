@@ -167,6 +167,9 @@ class Purchases internal constructor(
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
 
+    /**
+     * The AdTracker used to track ad attribution data.
+     */
     @InternalRevenueCatAPI
     val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker

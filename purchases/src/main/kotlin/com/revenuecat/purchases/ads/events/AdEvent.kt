@@ -14,14 +14,6 @@ internal enum class AdEventType(val value: String) {
     REVENUE("revenue"),
 }
 
-@InternalRevenueCatAPI
-object AdRevenuePrecision {
-    const val EXACT = "exact"
-    const val PUBLISHER_DEFINED = "publisher_defined"
-    const val ESTIMATED = "estimated"
-    const val UNKNOWN = "unknown"
-}
-
 internal sealed interface AdEvent : FeatureEvent {
     val id: String
     val eventVersion: Int

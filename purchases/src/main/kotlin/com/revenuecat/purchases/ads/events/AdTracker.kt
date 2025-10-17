@@ -3,11 +3,43 @@ package com.revenuecat.purchases.ads.events
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.events.EventsManager
 
+/**
+ * Common ad mediator names.
+ */
+@InternalRevenueCatAPI
+object AdMediatorName {
+    const val AD_MOB = "AdMob"
+    const val APP_LOVIN = "AppLovin"
+}
+
+/**
+ * Common ad revenue precision values.
+ */
+@InternalRevenueCatAPI
+object AdRevenuePrecision {
+    const val EXACT = "exact"
+    const val PUBLISHER_DEFINED = "publisher_defined"
+    const val ESTIMATED = "estimated"
+    const val UNKNOWN = "unknown"
+}
+
+/**
+ * Tracks ad-related events such as ad displays, opens, and revenue.
+ */
 @InternalRevenueCatAPI
 class AdTracker internal constructor(
     private val eventsManager: EventsManager?,
 ) {
 
+    /**
+     * Tracks an ad displayed event.
+     *
+     * @param networkName The name of the ad network.
+     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
+     * @param placement The placement of the ad, if available.
+     * @param adUnitId The ad unit ID.
+     * @param adInstanceId The ad instance ID.
+     */
     fun trackAdDisplayed(
         networkName: String,
         mediatorName: String,
@@ -26,6 +58,15 @@ class AdTracker internal constructor(
         )
     }
 
+    /**
+     * Tracks an ad opened event.
+     *
+     * @param networkName The name of the ad network.
+     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
+     * @param placement The placement of the ad, if available.
+     * @param adUnitId The ad unit ID.
+     * @param adInstanceId The ad instance ID.
+     */
     fun trackAdOpened(
         networkName: String,
         mediatorName: String,
@@ -44,6 +85,18 @@ class AdTracker internal constructor(
         )
     }
 
+    /**
+     * Tracks an ad revenue event.
+     *
+     * @param networkName The name of the ad network.
+     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
+     * @param placement The placement of the ad, if available.
+     * @param adUnitId The ad unit ID.
+     * @param adInstanceId The ad instance ID.
+     * @param revenueMicros The revenue generated from the ad in micros.
+     * @param currency The currency code for the revenue (e.g., "USD").
+     * @param precision The precision of the revenue value. Should normally be one of [AdRevenuePrecision].
+     */
     @Suppress("LongParameterList")
     fun trackAdRevenue(
         networkName: String,
