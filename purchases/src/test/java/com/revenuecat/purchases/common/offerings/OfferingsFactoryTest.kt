@@ -486,6 +486,34 @@ class OfferingsFactoryTest {
     }
 
     @Test
+    fun `createOfferings with invalid URL in WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        val invalidUrlWPL = oneOfferingWithWPL.apply {
+            val offering = getJSONArray("offerings").getJSONObject(0)
+            offering.put("web_checkout_url", "ht!tp:/invalid-url")
+            val pkg = offering.getJSONArray("packages").getJSONObject(0)
+            pkg.put("web_checkout_url", "ht!tp:/invalid-url")
+        }
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = invalidUrlWPL,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURL).isNull()
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURL).isNull()
+    }
+
+    @Test
     fun `copy offering can create a copy with a different presented offering context`() {
         val productIds = listOf(productId)
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
