@@ -213,8 +213,9 @@ internal class DefaultFileCache(
         if (fileName.isEmpty()) return null
 
         // Use checksum value as extension (like iOS), fallback to URL extension
-        val extension = (checksum?.value ?: "checksumNotFound") + remoteURL.path.substringAfterLast('.', "")
-        val fileWithExtension = if (extension.isNotEmpty()) "$fileName.$extension" else fileName
+        val extension = (checksum?.value ?: "") + remoteURL
+            .path.substringAfterLast('.', "")
+        val fileWithExtension = "$fileName.$extension"
 
         return File(cacheDir, fileWithExtension).toURI()
     }
