@@ -13,11 +13,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -107,7 +109,8 @@ private fun ContentUnavailableView(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
             modifier = Modifier
@@ -121,12 +124,14 @@ private fun ContentUnavailableView(
             Icon(
                 imageVector = Info,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(ContentUnavailableIconSize),
             )
 
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
             )
 
@@ -134,6 +139,7 @@ private fun ContentUnavailableView(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
                 )

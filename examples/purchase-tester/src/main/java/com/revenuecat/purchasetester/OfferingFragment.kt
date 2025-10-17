@@ -1,11 +1,13 @@
 package com.revenuecat.purchasetester
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -133,6 +135,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             isPlayStore,
         )
         binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
+        // binding.offeringDetailsPackagesRecycler.adapter =
+        //     PackageCardAdapter(
+        //         offering.availablePackages,
+        //         activeSubscriptions,
+        //         this,
+        //         isPlayStore,
+        //     )
+
+        binding.offeringDetailsOpenWplButton.setOnClickListener {
+            val webCheckoutUrl = offering.webCheckoutURL ?: return@setOnClickListener
+            val intent = Intent(Intent.ACTION_VIEW, webCheckoutUrl.toString().toUri())
+            startActivity(intent)
+        }
     }
 
     override fun onPurchasePackageClicked(

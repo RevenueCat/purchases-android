@@ -1,9 +1,11 @@
 package com.revenuecat.purchasetester
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
+import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -137,6 +139,12 @@ class PackageCardAdapter(
                 } else {
                     showErrorMessage(errorStartingPurchase)
                 }
+            }
+
+            binding.wplBuyButton.setOnClickListener {
+                val webCheckoutUrl = currentPackage.webCheckoutURL ?: return@setOnClickListener
+                val intent = Intent(Intent.ACTION_VIEW, webCheckoutUrl.toString().toUri())
+                binding.root.context.startActivity(intent)
             }
 
             binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
