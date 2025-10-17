@@ -245,6 +245,9 @@ internal class SimulatedStoreBillingWrapper(
             purchaseType = PurchaseType.GOOGLE_PURCHASE, // WIP: Specify a new purchase type for the simulated store
             marketplace = null,
             subscriptionOptionId = product.defaultOption?.id,
+            subscriptionOptionIdForProductIDs = product.defaultOption?.id?.let {
+                mapOf(product.id to it)
+            } ?: emptyMap(),
             replacementMode = null,
         )
 

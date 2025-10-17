@@ -40,6 +40,8 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
@@ -86,6 +88,7 @@ internal open class BasePurchasesTest {
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
+    internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
     private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -160,6 +163,8 @@ internal open class BasePurchasesTest {
         every { mockLifecycle.removeObserver(any()) } just Runs
 
         every { mockDateProvider.now } returns Date()
+
+        every { mockPurchaseParamsValidator.validate(any()) } returns Result.Success(Unit)
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -242,6 +247,7 @@ internal open class BasePurchasesTest {
                 postTransactionAndConsumeIfNeeded(
                     purchase = any(),
                     storeProduct = any(),
+                    subscriptionOptionForProductIDs = any(),
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
@@ -429,6 +435,7 @@ internal open class BasePurchasesTest {
         showInAppMessagesAutomatically: Boolean = false,
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
         enableSimulatedStore: Boolean = false,
+        store: Store = Store.PLAY_STORE,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -436,7 +443,7 @@ internal open class BasePurchasesTest {
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE,
+            store = store,
             isDebugBuild = false,
             apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
@@ -477,6 +484,7 @@ internal open class BasePurchasesTest {
             virtualCurrencyManager = mockVirtualCurrencyManager,
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
+            purchaseParamsValidator = mockPurchaseParamsValidator,
         )
 
         purchases = Purchases(
@@ -559,11 +567,17 @@ internal open class BasePurchasesTest {
             acknowledged = acknowledged
         )
 
+        val subscriptionOptionIdForProductIDs =
+            subscriptionOptionId
+                ?.takeIf { productType == ProductType.SUBS }
+                ?.let { mapOf(productId to it) }
+
         return listOf(
             p.toStoreTransaction(
                 productType,
                 presentedOfferingContext,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
+                if (productType == ProductType.SUBS) subscriptionOptionId else null,
+                subscriptionOptionIdForProductIDs
             )
         )
     }

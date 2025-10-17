@@ -30,6 +30,7 @@ internal fun Receipt.toStoreTransaction(
         purchaseType = PurchaseType.AMAZON_PURCHASE,
         marketplace = userData.marketplace,
         subscriptionOptionId = null,
+        subscriptionOptionIdForProductIDs = null,
         replacementMode = null,
     )
 }
