@@ -299,6 +299,27 @@ internal class PurchaseButtonComponentTests(
                 ),
             ),
             arrayOf(
+                "method - unknown",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "invalid_method"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.Unknown,
+                    )
+                ),
+            ),
+            arrayOf(
                 "empty stack",
                 Args(
                     json = """
