@@ -208,7 +208,7 @@ package com.revenuecat.purchases {
 
   @dev.drewhamilton.poko.Poko public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
-    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
+    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents, optional java.net.URL? webCheckoutURL);
     method public operator com.revenuecat.purchases.Package get(String s);
     method public com.revenuecat.purchases.Package? getAnnual();
     method public java.util.List<com.revenuecat.purchases.Package> getAvailablePackages();
@@ -224,6 +224,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.Package? getSixMonth();
     method public com.revenuecat.purchases.Package? getThreeMonth();
     method public com.revenuecat.purchases.Package? getTwoMonth();
+    method public java.net.URL? getWebCheckoutURL();
     method public com.revenuecat.purchases.Package? getWeekly();
     method public boolean hasPaywall();
     property public final com.revenuecat.purchases.Package? annual;
@@ -239,6 +240,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.Package? sixMonth;
     property public final com.revenuecat.purchases.Package? threeMonth;
     property public final com.revenuecat.purchases.Package? twoMonth;
+    property public final java.net.URL? webCheckoutURL;
     property public final com.revenuecat.purchases.Package? weekly;
   }
 
@@ -261,17 +263,20 @@ package com.revenuecat.purchases {
 
   @dev.drewhamilton.poko.Poko public final class Package {
     ctor public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
+    ctor public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext, optional java.net.URL? webCheckoutURL);
     ctor @Deprecated public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, String offering);
     method public String getIdentifier();
     method @Deprecated public String getOffering();
     method public com.revenuecat.purchases.PackageType getPackageType();
     method public com.revenuecat.purchases.PresentedOfferingContext getPresentedOfferingContext();
     method public com.revenuecat.purchases.models.StoreProduct getProduct();
+    method public java.net.URL? getWebCheckoutURL();
     property public final String identifier;
     property @Deprecated public final String offering;
     property public final com.revenuecat.purchases.PackageType packageType;
     property public final com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext;
     property public final com.revenuecat.purchases.models.StoreProduct product;
+    property public final java.net.URL? webCheckoutURL;
   }
 
   public enum PackageType {
