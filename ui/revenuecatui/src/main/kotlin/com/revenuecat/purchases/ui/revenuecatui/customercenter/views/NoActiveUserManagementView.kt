@@ -111,6 +111,7 @@ private fun ContentUnavailableView(
         modifier = modifier,
         shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
         color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
             modifier = Modifier
@@ -124,12 +125,14 @@ private fun ContentUnavailableView(
             Icon(
                 imageVector = Icons.Rounded.Info,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(ContentUnavailableIconSize),
             )
 
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
             )
 
@@ -137,6 +140,7 @@ private fun ContentUnavailableView(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
                 )

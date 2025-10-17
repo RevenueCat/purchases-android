@@ -63,6 +63,7 @@ internal fun PurchaseInformationCardView(
         modifier = modifier,
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
             modifier = Modifier
@@ -79,6 +80,7 @@ internal fun PurchaseInformationCardView(
                 Text(
                     text = purchaseInformation.title ?: purchaseInformation.product?.title ?: "",
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 when {
