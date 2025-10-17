@@ -1,8 +1,11 @@
 package com.revenuecat.apitester.java;
 
+import androidx.annotation.Nullable;
+
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +30,8 @@ final class OfferingAPI {
         final String metadataString = offering.getMetadataString("key", "default");
 
         final Boolean hasPaywall = offering.hasPaywall();
+
+        final @Nullable URL webCheckoutURL = offering.getWebCheckoutURL();
 
         new Offering(
                 identifier,

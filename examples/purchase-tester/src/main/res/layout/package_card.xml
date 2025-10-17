@@ -137,7 +137,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:barrierDirection="start"
-                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button" />
+                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button, wpl_buy_button" />
 
             <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/is_upgrade_checkbox"
@@ -190,6 +190,16 @@
                     android:visibility="@{isPlayStore ? View.VISIBLE : View.INVISIBLE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wpl_buy_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Buy WPL"
+                    android:visibility="@{currentPackage.webCheckoutURL == null ? View.GONE : View.VISIBLE}"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@id/option_buy_button"
+                    app:layout_constraintTop_toBottomOf="@+id/option_buy_button" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/package_details_container"

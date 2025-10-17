@@ -90,6 +90,7 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
             packageType = it.packageType,
             product = product,
             presentedOfferingContext = newContext,
+            webCheckoutURL = it.webCheckoutURL,
         )
     }
 
@@ -100,5 +101,6 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         availablePackages = updatedAvailablePackages,
         paywall = this.paywall,
         paywallComponents = this.paywallComponents,
+        webCheckoutURL = this.webCheckoutURL,
     )
 }
