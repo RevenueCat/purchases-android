@@ -414,6 +414,29 @@ class Purchases internal constructor(
     }
 
     /**
+     * Purchases multiple packages together in a single billing flow.
+     * This method is only supported for Google Play Store subscriptions.
+     *
+     * @param [activity] Current activity
+     * @param [packages] List of packages to purchase together
+     * @param [callback] The callback that will be called when the bundle purchase completes
+     * @param [activeSubId] Optional active subscription ID for addon purchases. When provided, the bundle purchase will be treated as an addon to the existing subscription.
+     */
+    fun purchaseBundle(
+        activity: Activity,
+        packages: List<Package>,
+        callback: PurchaseCallback,
+        activeSubId: String? = null,
+    ) {
+        purchasesOrchestrator.startBundlePurchase(
+            activity,
+            packages,
+            callback,
+            activeSubId,
+        )
+    }
+
+    /**
      * Restores purchases made with the current Play Store account for the current user.
      * This method will post all active subscriptions and non consumed one time purchases associated with the current
      * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
