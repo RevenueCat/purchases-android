@@ -67,6 +67,238 @@ internal class PurchaseButtonComponentTests(
                 ),
             ),
             arrayOf(
+                "action - in_app_checkout",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "action": "in_app_checkout"
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        action = PurchaseButtonComponent.Action.IN_APP_CHECKOUT
+                    )
+                ),
+            ),
+            arrayOf(
+                "action - web_checkout",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "action": "web_checkout"
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        action = PurchaseButtonComponent.Action.WEB_CHECKOUT
+                    )
+                ),
+            ),
+            arrayOf(
+                "action - web_product_selection",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "action": "web_product_selection"
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        action = PurchaseButtonComponent.Action.WEB_PRODUCT_SELECTION
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - in_app_checkout",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "in_app_checkout"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.InAppCheckout
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - web_checkout - no params",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "web_checkout"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.WebCheckout()
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - web_checkout - in_app_browser",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "web_checkout",
+                            "auto_dismiss": true,
+                            "open_method": "in_app_browser"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.WebCheckout(
+                            autoDismiss = true,
+                            openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - web_checkout - external_browser",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "web_checkout",
+                            "auto_dismiss": true,
+                            "open_method": "external_browser"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.WebCheckout(
+                            autoDismiss = true,
+                            openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - web_product_selection - no params",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "web_product_selection"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.WebProductSelection()
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - web_product_selection - in_app_browser",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "web_product_selection",
+                            "auto_dismiss": true,
+                            "open_method": "in_app_browser"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.WebProductSelection(
+                            autoDismiss = true,
+                            openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - custom_web_checkout",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "custom_web_checkout",
+                            "custom_url": {
+                               "url_lid": "123",
+                               "package_param": "rc_package" 
+                            },
+                            "auto_dismiss": true,
+                            "open_method": "in_app_browser"
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                            customUrl = PurchaseButtonComponent.CustomUrl(
+                                urlLid = LocalizationKey("123"),
+                                packageParam = "rc_package",
+                            ),
+                            autoDismiss = true,
+                            openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
                 "empty stack",
                 Args(
                     json = """
