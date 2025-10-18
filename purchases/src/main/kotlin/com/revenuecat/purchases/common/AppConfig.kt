@@ -29,6 +29,7 @@ internal class AppConfig(
     companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
         val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
+        val adEventsURL = URL("https://a.revenue.cat/")
     }
 
     // Should only be used for tests
