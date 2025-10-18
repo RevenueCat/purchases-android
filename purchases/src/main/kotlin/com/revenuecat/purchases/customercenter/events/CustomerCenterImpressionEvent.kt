@@ -30,6 +30,8 @@ class CustomerCenterImpressionEvent(
         val version: Int = 1,
         val revisionID: Int = 1,
         val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+        val internalPromoOfferID: String? = null, // Set if a promo offer is being displayed
+        val storePromoOfferID: String? = null, // Set if a promo offer is being displayed
         // isSandbox not available in Android
     ) {
         val type: CustomerCenterEventType = CustomerCenterEventType.IMPRESSION

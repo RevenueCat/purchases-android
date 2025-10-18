@@ -53,6 +53,17 @@ internal sealed class BackendEvent : Event {
         val url: String?,
         @SerialName("survey_option_id")
         val surveyOptionID: String?,
+
+        // only valid for promo offer events
+        @SerialName("internal_promo_offer_id")
+        val internalPromoOfferID: String?,
+        @SerialName("store_promo_offer_id")
+        val storePromoOfferID: String?,
+        @SerialName("product_id")
+        val productID: String?,
+        val error: String?,
+        @SerialName("transaction_id")
+        val transactionID: String?,
     ) : BackendEvent()
 
     /**
