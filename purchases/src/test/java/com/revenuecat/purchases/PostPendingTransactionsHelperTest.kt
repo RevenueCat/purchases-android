@@ -18,6 +18,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
@@ -121,7 +122,7 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `when updating pending purchases, if token has not been sent, send it`() {
+    fun `when updating pending purchases, if token has not been sent, send it`() = runTest {
         val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
@@ -394,15 +395,8 @@ class PostPendingTransactionsHelperTest {
         every { billing.isConnected() } returns isConnected
     }
 
-    private fun syncAndAssertResult(expectedSyncResult: SyncPendingPurchaseResult) {
-        var successCallCount = 0
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(
-            allowSharingPlayStoreAccount,
-            callback = { syncResult ->
-                assertThat(syncResult).isEqualTo(expectedSyncResult)
-                successCallCount++
-            },
-        )
-        assertThat(successCallCount).isEqualTo(1)
+    private fun syncAndAssertResult(expectedSyncResult: SyncPendingPurchaseResult) = runTest {
+        val syncResult = postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        assertThat(syncResult).isEqualTo(expectedSyncResult)
     }
 }
