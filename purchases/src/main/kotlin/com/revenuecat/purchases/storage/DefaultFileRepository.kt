@@ -209,12 +209,11 @@ internal class DefaultFileCache(
 
     override fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum?): URI? {
         val urlHash = md5Hex(remoteURL.toString().toByteArray())
-        val fileName = File(urlHash).name
+        // Use checksum value as part of the file name (like iOS)
+        val fileName = File(urlHash).name + (checksum?.value ?: "")
         if (fileName.isEmpty()) return null
 
-        // Use checksum value as extension (like iOS), fallback to URL extension
-        val extension = (checksum?.value ?: "") + remoteURL
-            .path.substringAfterLast('.', "")
+        val extension = remoteURL.path.substringAfterLast('.', "")
         val fileWithExtension = "$fileName.$extension"
 
         return File(cacheDir, fileWithExtension).toURI()
