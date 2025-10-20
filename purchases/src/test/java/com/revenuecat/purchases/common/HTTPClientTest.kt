@@ -26,6 +26,7 @@ import org.json.JSONException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -974,63 +975,68 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
     }
 
-    @Test
-    fun `performRequest retries with fallback URL when server returns non-JSON response with 200 status`() {
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetOfferings("test_user"), 200)
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetProductEntitlementMapping, 200)
-    }
+    // endregion Fallback API host
+}
 
-    @Test
-    fun `performRequest retries with fallback URL when server returns non-JSON response with 400 status`() {
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetOfferings("test_user"), 400)
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetProductEntitlementMapping, 400)
-    }
+// region Non-JSON response with fallback URLs
+@RunWith(ParameterizedRobolectricTestRunner::class)
+@AnnotationConfig(manifest = AnnotationConfig.NONE)
+internal class ParameterizNonJsonResponseBodyTest(
+    private val endpoint: Endpoint,
+    private val statusCode: Int,
+) : BaseHTTPClientTest() {
 
-    @Test
-    fun `performRequest retries with fallback URL when server returns non-JSON response with 500 status`() {
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetOfferings("test_user"), 500)
-        testNonJsonResponseWithFallbackUrl(Endpoint.GetProductEntitlementMapping, 500)
-    }
-
-    private fun testNonJsonResponseWithFallbackUrl(endpoint: Endpoint, statusCode: Int) {
-        // Verify endpoint supports fallback URLs
-        assert(endpoint.supportsFallbackBaseURLs) {
-            "Test endpoint ${endpoint.name} must support fallback URLs"
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}, statusCode={1}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user"), 200),
+                arrayOf(Endpoint.GetOfferings("test_user"), 400),
+                arrayOf(Endpoint.GetOfferings("test_user"), 500),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 200),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 400),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 500),
+            )
         }
+    }
 
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when server returns non-JSON response`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
         val fallbackServer = MockWebServer()
         val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
-
-        val nonJsonHtmlPayload = "<html><body>503 Service Unavailable</body></html>"
+        val invalidJsonPayload = "<html><body>504 Gateway Timeout</body></html>"
         val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
-
-        // Mock main server to return non-JSON HTML response directly
-        // Cannot use enqueue() helper because HTTPResult.createResult() would throw JSONException
         val mainResponse = MockResponse()
-            .setBody(nonJsonHtmlPayload)
+            .setBody(invalidJsonPayload)
             .setResponseCode(statusCode)
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
         server.enqueue(mainResponse)
-
-        // Mock ETagManager to return null for main server (non-JSON would cause JSONException)
+        fallbackServer.enqueue(fallbackResponse)
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 statusCode,
-                nonJsonHtmlPayload,
+                invalidJsonPayload,
                 eTagHeader = any(),
                 urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
-        } throws JSONException("Value <html><body>503 of type java.lang.String cannot be converted to JSONObject")
-
-        // Mock fallback server to return valid JSON
-        val fallbackResponse = MockResponse()
-            .setBody(validJsonPayload)
-            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
-        fallbackServer.enqueue(fallbackResponse)
-
-        // Mock ETagManager to return result for fallback server
+        } answers { HTTPResult.createResult(statusCode, invalidJsonPayload) }
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.SUCCESS,
@@ -1041,9 +1047,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
-        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+        } answers { HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload) }
 
-        // Attempt to make the request
+        // Act
         try {
             val result = client.performRequest(
                 baseURL,
@@ -1054,32 +1060,16 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 fallbackBaseURLs = listOf(fallbackBaseURL),
             )
 
-            // If we get here, fallback worked - verify both servers were called
-            assertThat(server.requestCount).`as`("main server was called").isEqualTo(1)
-            assertThat(fallbackServer.requestCount).`as`("fallback server was called").isEqualTo(1)
-
-            // Verify the result is valid JSON from fallback server
-            assertThat(result.responseCode).`as`("response code is 200").isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(result.payload).`as`("payload is valid JSON").isEqualTo(validJsonPayload)
-            assertThat(result.body.has("offerings")).`as`("response has offerings field").isTrue
-        } catch (e: JSONException) {
-            // Expected to fail: JSONException is thrown before fallback URL can be used
-            // This documents that the current implementation does NOT retry with fallback URLs on JSON parse errors
-            assertThat(server.requestCount).`as`("main server was called").isEqualTo(1)
-            assertThat(fallbackServer.requestCount).`as`("fallback server was NOT called (current behavior)").isEqualTo(0)
-            
-            // Re-throw to mark test as failing, documenting the gap in implementation
-            throw AssertionError(
-                "JSONException was thrown when parsing non-JSON response. " +
-                "Expected: fallback URL should be used. " +
-                "Actual: JSONException propagated without trying fallback. " +
-                "Status code: $statusCode, Endpoint: ${endpoint.name}",
-                e
-            )
+            // Assert
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
         } finally {
             fallbackServer.shutdown()
         }
     }
-
-    // endregion Fallback API host
 }
+
+// endregion Non-JSON response with fallback URLs
