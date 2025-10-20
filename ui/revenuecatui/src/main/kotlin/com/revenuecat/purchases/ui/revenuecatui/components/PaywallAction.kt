@@ -26,6 +26,17 @@ internal sealed interface PaywallAction {
         object RestorePurchases : External
         object NavigateBack : External
         data class PurchasePackage(val rcPackage: Package?) : External
+        data class LaunchWebCheckout(
+            val customUrl: String?,
+            val openMethod: ButtonComponent.UrlMethod,
+            val autoDismiss: Boolean,
+            val packageParamBehavior: PackageParamBehavior,
+        ) : External {
+            sealed interface PackageParamBehavior {
+                data class Append(val rcPackage: Package?, val packageParam: String?) : PackageParamBehavior
+                object DoNotAppend : PackageParamBehavior
+            }
+        }
 
         @Poko
         class NavigateTo(@get:JvmSynthetic val destination: Destination) : External {

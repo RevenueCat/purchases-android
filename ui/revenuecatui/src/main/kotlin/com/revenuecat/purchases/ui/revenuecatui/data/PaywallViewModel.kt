@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -38,14 +39,18 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 @Stable
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
@@ -58,6 +63,8 @@ internal interface PaywallViewModel {
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
     fun closePaywall()
+
+    fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
 
     /**
      * Purchase the selected package
@@ -165,6 +172,46 @@ internal class PaywallViewModelImpl(
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         options.dismissRequest()
+    }
+
+    @Suppress("ReturnCount")
+    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
+        val customUrl = launchWebCheckout.customUrl
+        val state = state.value as? PaywallState.Loaded.Components
+        if (state == null) {
+            Logger.e("Web checkout URL can only be constructed for loaded Components paywalls")
+            return null
+        }
+        val packageParamBehavior = launchWebCheckout.packageParamBehavior
+        val packageToUse = when (packageParamBehavior) {
+            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend -> null
+            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append ->
+                packageParamBehavior.rcPackage ?: state.selectedPackageInfo?.rcPackage
+        }
+        return if (customUrl != null) {
+            val url = try {
+                URL(customUrl)
+            } catch (e: MalformedURLException) {
+                Logger.e("Invalid custom URL: $customUrl", e)
+                return null
+            }
+            val finalUrl = when (packageParamBehavior) {
+                is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend -> url
+                is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append -> {
+                    if (packageParamBehavior.packageParam != null && packageToUse != null) {
+                        url.appendQueryParameter(
+                            packageParamBehavior.packageParam,
+                            packageToUse.identifier,
+                        )
+                    } else {
+                        url
+                    }
+                }
+            }
+            finalUrl.toString()
+        } else {
+            packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+        }
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
