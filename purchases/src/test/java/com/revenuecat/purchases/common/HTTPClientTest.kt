@@ -957,11 +957,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }
     }
-
-    // endregion Fallback API host
 }
 
-// region Non-JSON response with fallback URLs
 @RunWith(ParameterizedRobolectricTestRunner::class)
 internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
@@ -1054,9 +1051,6 @@ internal class ParameterizedNonJsonResponseBodyTest(
     }
 }
 
-// endregion Non-JSON response with fallback URLs
-
-// region Connection failure with fallback URLs
 @RunWith(ParameterizedRobolectricTestRunner::class)
 internal class ParameterizedConnectionFailureFallbackTest(
     private val endpoint: Endpoint,
@@ -1128,5 +1122,3 @@ internal class ParameterizedConnectionFailureFallbackTest(
         }
     }
 }
-
-// endregion Connection failure with fallback URLs
