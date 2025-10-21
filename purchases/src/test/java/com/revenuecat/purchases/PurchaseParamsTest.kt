@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
+import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
@@ -233,6 +234,23 @@ class PurchaseParamsTest {
             .build()
 
         assertThat(purchaseParams.containsAddOnItems).isFalse()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchaseParams with in app product sets containsAddOns to false`() {
+        val inAppProduct = stubINAPPStoreProduct(productId = "abc")
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), inAppProduct)
+            .build()
+
+        assertThat(purchaseParams.containsAddOnItems).isFalse()
+
+        val purchaseParams2 = PurchaseParams.Builder(mockk(), inAppProduct)
+            .addOnStoreProducts(listOf(inAppProduct))
+            .build()
+
+        assertThat(purchaseParams2.containsAddOnItems).isFalse()
     }
     // endregion Add-Ons
 }
