@@ -180,6 +180,52 @@ class PurchaseParamsValidatorTest {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
+    fun `purchaseParams flagged with add-ons but null add-on list passes validation`() {
+        // Shouldn't happen, but good to ensure that we don't crash
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val baseSubscriptionPurchasingData = baseProduct.purchasingData as GooglePurchasingData.Subscription
+        val subscriptionPurchasingData = GooglePurchasingData.Subscription(
+            productId = baseSubscriptionPurchasingData.productId,
+            optionId = baseSubscriptionPurchasingData.optionId,
+            productDetails = baseSubscriptionPurchasingData.productDetails,
+            token = baseSubscriptionPurchasingData.token,
+            billingPeriod = baseSubscriptionPurchasingData.billingPeriod,
+            addOnProducts = null
+        )
+
+        val purchaseParams = mockk<PurchaseParams>()
+        every { purchaseParams.purchasingData } returns subscriptionPurchasingData
+        every { purchaseParams.containsAddOnItems } returns true
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchaseParams flagged with add-ons but empty add-on list passes validation`() {
+        // Shouldn't happen, but good to ensure that we don't crash
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val baseSubscriptionPurchasingData = baseProduct.purchasingData as GooglePurchasingData.Subscription
+        val subscriptionPurchasingData = GooglePurchasingData.Subscription(
+            productId = baseSubscriptionPurchasingData.productId,
+            optionId = baseSubscriptionPurchasingData.optionId,
+            productDetails = baseSubscriptionPurchasingData.productDetails,
+            token = baseSubscriptionPurchasingData.token,
+            billingPeriod = baseSubscriptionPurchasingData.billingPeriod,
+            addOnProducts = emptyList()
+        )
+
+        val purchaseParams = mockk<PurchaseParams>()
+        every { purchaseParams.purchasingData } returns subscriptionPurchasingData
+        every { purchaseParams.containsAddOnItems } returns true
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
     fun `purchaseParams with Google Subscription base item and empty add-ons list passes validation`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
@@ -216,6 +262,22 @@ class PurchaseParamsValidatorTest {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
+    fun `purchaseParams with Google Subscription base item and 49 add-ons passes validation`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val addOns = (1..PurchaseParamsValidator.MAX_NUMBER_OF_ADD_ON_PRODUCTS).map {
+            stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_$it")
+        }
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = addOns)
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
     fun `purchaseParams with Google Subscription base item and more than 49 add-ons fails validation`() {
         val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
         val addOns = ArrayList<StoreProduct>()
@@ -237,6 +299,74 @@ class PurchaseParamsValidatorTest {
         } else {
             fail("Validation result should be error")
         }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchaseParams with null base billing period and add-ons with billing period passes validation`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val baseSubscriptionPurchasingData = baseProduct.purchasingData as GooglePurchasingData.Subscription
+        val addOnPurchasingData = (stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_product")
+            .purchasingData as GooglePurchasingData.Subscription)
+
+        val subscriptionPurchasingData = GooglePurchasingData.Subscription(
+            productId = baseSubscriptionPurchasingData.productId,
+            optionId = baseSubscriptionPurchasingData.optionId,
+            productDetails = baseSubscriptionPurchasingData.productDetails,
+            token = baseSubscriptionPurchasingData.token,
+            billingPeriod = null,
+            addOnProducts = listOf(
+                GooglePurchasingData.Subscription(
+                    productId = addOnPurchasingData.productId,
+                    optionId = addOnPurchasingData.optionId,
+                    productDetails = addOnPurchasingData.productDetails,
+                    token = addOnPurchasingData.token,
+                    billingPeriod = addOnPurchasingData.billingPeriod,
+                    addOnProducts = emptyList()
+                )
+            )
+        )
+
+        val purchaseParams = mockk<PurchaseParams>()
+        every { purchaseParams.purchasingData } returns subscriptionPurchasingData
+        every { purchaseParams.containsAddOnItems } returns true
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchaseParams with add-ons missing billing periods passes validation`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val baseSubscriptionPurchasingData = baseProduct.purchasingData as GooglePurchasingData.Subscription
+        val addOnPurchasingData = (stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_product")
+            .purchasingData as GooglePurchasingData.Subscription)
+
+        val subscriptionPurchasingData = GooglePurchasingData.Subscription(
+            productId = baseSubscriptionPurchasingData.productId,
+            optionId = baseSubscriptionPurchasingData.optionId,
+            productDetails = baseSubscriptionPurchasingData.productDetails,
+            token = baseSubscriptionPurchasingData.token,
+            billingPeriod = baseSubscriptionPurchasingData.billingPeriod,
+            addOnProducts = listOf(
+                GooglePurchasingData.Subscription(
+                    productId = addOnPurchasingData.productId,
+                    optionId = addOnPurchasingData.optionId,
+                    productDetails = addOnPurchasingData.productDetails,
+                    token = addOnPurchasingData.token,
+                    billingPeriod = null,
+                    addOnProducts = emptyList()
+                )
+            )
+        )
+
+        val purchaseParams = mockk<PurchaseParams>()
+        every { purchaseParams.purchasingData } returns subscriptionPurchasingData
+        every { purchaseParams.containsAddOnItems } returns true
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
