@@ -2,6 +2,7 @@ package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -216,6 +217,7 @@ internal class SimulatedStoreBillingWrapper(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun completePurchase(
         product: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,

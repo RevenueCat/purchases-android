@@ -18,7 +18,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class StoreTransaction(
+class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
@@ -122,6 +122,7 @@ class StoreTransaction(
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     constructor(
         orderId: String?,
         productIds: List<String>,
@@ -157,6 +158,7 @@ class StoreTransaction(
         replacementMode = replacementMode,
     )
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Deprecated("Use constructor with presentedOfferingContext instead")
     constructor(
         orderId: String?,
