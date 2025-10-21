@@ -202,13 +202,6 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        // Call onRestoreInitiated and wait for resume() to be called
-        suspendCancellableCoroutine { continuation ->
-            listener?.onRestoreInitiated {
-                continuation.resume(Unit)
-            }
-        }
-
         try {
             val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
                 purchaseLogic?.let { it::performRestore }

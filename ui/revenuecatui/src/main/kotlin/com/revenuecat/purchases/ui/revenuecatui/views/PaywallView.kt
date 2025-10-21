@@ -71,9 +71,6 @@ class PaywallView : CompatComposeView {
         override fun onPurchasePackageInitiated(packageId: String, resume: () -> Unit) {
             listener?.onPurchasePackageInitiated(packageId, resume)
         }
-        override fun onRestoreInitiated(resume: () -> Unit) {
-            listener?.onRestoreInitiated(resume)
-        }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)
