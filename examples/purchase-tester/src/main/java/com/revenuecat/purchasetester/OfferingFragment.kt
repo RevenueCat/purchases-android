@@ -135,13 +135,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             isPlayStore,
         )
         binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
-        // binding.offeringDetailsPackagesRecycler.adapter =
-        //     PackageCardAdapter(
-        //         offering.availablePackages,
-        //         activeSubscriptions,
-        //         this,
-        //         isPlayStore,
-        //     )
 
         binding.offeringDetailsOpenWplButton.setOnClickListener {
             val webCheckoutUrl = offering.webCheckoutURL ?: return@setOnClickListener
