@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseFlowType
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
@@ -42,9 +43,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.resume
 
 @Stable
 internal interface PaywallViewModel {
@@ -199,6 +202,15 @@ internal class PaywallViewModelImpl(
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
+
+        // Call onPurchaseFlowInitiated and wait for resume() to be called
+        val flowType = PurchaseFlowType.Restore
+        suspendCancellableCoroutine { continuation ->
+            listener?.onPurchaseFlowInitiated(flowType) {
+                continuation.resume(Unit)
+            }
+        }
+
         try {
             val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
                 purchaseLogic?.let { it::performRestore }
@@ -305,6 +317,14 @@ internal class PaywallViewModelImpl(
 
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+        // Call onPurchaseFlowInitiated and wait for resume() to be called
+        val flowType = PurchaseFlowType.Standard(packageToPurchase.identifier)
+        suspendCancellableCoroutine { continuation ->
+            listener?.onPurchaseFlowInitiated(flowType) {
+                continuation.resume(Unit)
+            }
+        }
+
         try {
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
