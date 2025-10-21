@@ -46,7 +46,7 @@ class PurchasesTransactionExceptionTest {
 
         val purchasesException = PurchasesTransactionException(purchasesError, userCancelled = false)
 
-        assertThat(purchasesError.message).isEqualTo("${purchasesException.message} Underlying error: $underlyingErrorMessage")
+        assertThat(purchasesException.message).isEqualTo("${purchasesError.message} Underlying error: $underlyingErrorMessage")
     }
 
     @Test
