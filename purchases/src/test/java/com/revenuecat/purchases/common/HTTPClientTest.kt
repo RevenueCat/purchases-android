@@ -963,7 +963,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
 // region Non-JSON response with fallback URLs
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@AnnotationConfig(manifest = AnnotationConfig.NONE)
 internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
     private val statusCode: Int,
@@ -1019,7 +1018,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
-        } answers { HTTPResult.createResult(statusCode, invalidJsonPayload) }
+        } returns HTTPResult.createResult(statusCode, invalidJsonPayload)
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.SUCCESS,
@@ -1030,7 +1029,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
-        } answers { HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload) }
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
         // Act
         try {
@@ -1056,3 +1055,78 @@ internal class ParameterizedNonJsonResponseBodyTest(
 }
 
 // endregion Non-JSON response with fallback URLs
+
+// region Connection failure with fallback URLs
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedConnectionFailureFallbackTest(
+    private val endpoint: Endpoint,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user")),
+                arrayOf(Endpoint.GetProductEntitlementMapping),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when connection fails`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        // Shut down main server to cause IOException when client tries to connect
+        server.shutdown()
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        fallbackServer.enqueue(fallbackResponse)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        // Act
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Assert
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
+}
+
+// endregion Connection failure with fallback URLs
