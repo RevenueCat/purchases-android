@@ -2,14 +2,12 @@ package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun Receipt.toStoreTransaction(
     productId: String,
     presentedOfferingContext: PresentedOfferingContext?,
@@ -32,7 +30,6 @@ internal fun Receipt.toStoreTransaction(
         purchaseType = PurchaseType.AMAZON_PURCHASE,
         marketplace = userData.marketplace,
         subscriptionOptionId = null,
-        subscriptionOptionIdForProductIDs = null,
         replacementMode = null,
     )
 }

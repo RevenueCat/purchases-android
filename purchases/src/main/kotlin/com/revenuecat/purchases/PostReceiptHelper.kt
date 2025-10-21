@@ -11,7 +11,6 @@ import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
@@ -83,7 +82,6 @@ internal class PostReceiptHelper(
     fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,
-        subscriptionOptionForProductIDs: Map<String, SubscriptionOption>?,
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
@@ -95,7 +93,6 @@ internal class PostReceiptHelper(
             presentedOfferingContext = purchase.presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
-            subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
             replacementMode = purchase.replacementMode,
         )
         postReceiptAndSubscriberAttributes(
@@ -107,8 +104,10 @@ internal class PostReceiptHelper(
             marketplace = purchase.marketplace,
             initiationSource = initiationSource,
             onSuccess = { postReceiptResponse ->
-                // Currently we only support a single token per postReceipt call but multiple product Ids
-                // (for multi-line subscriptions).
+                // Currently we only support a single token per postReceipt call but multiple product Ids.
+                // The backend would fail if given more than one product id (multiline purchases which are
+                // not supported) so it's safe to pickup the first one.
+                // We would need to refactor this if/when we support multiple tokens per call.
                 val shouldConsume = postReceiptResponse.productInfoByProductId
                     ?.filterKeys { it in purchase.productIds }
                     ?.values

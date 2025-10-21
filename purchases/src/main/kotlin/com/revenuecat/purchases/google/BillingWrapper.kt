@@ -13,14 +13,12 @@ import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
-import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -56,7 +54,6 @@ import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GooglePurchasingData.Subscription
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
@@ -231,7 +228,6 @@ internal class BillingWrapper(
         useCase.run()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod")
     override fun makePurchaseAsync(
         activity: Activity,
@@ -283,27 +279,11 @@ internal class BillingWrapper(
                 } else {
                     googlePurchasingData.productId
                 }
-
-            // Create a map that tells us which subscription option ID was purchased for a given product ID.
-            // This is required for multi-line subscriptions to set the platform_product_ids in the ReceiptInfo
-            // after the purchase has completed.
-            val subscriptionOptionIdForProductIDs = buildMap {
-                subscriptionOptionId?.let { optionId -> put(googlePurchasingData.productId, optionId) }
-
-                (googlePurchasingData as? GooglePurchasingData.Subscription)
-                    ?.addOnProducts
-                    ?.filterIsInstance<GooglePurchasingData.Subscription>()
-                    ?.forEach { addOnProduct ->
-                        put(addOnProduct.productId, addOnProduct.optionId)
-                    }
-            }
-
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
-                subscriptionOptionIdForProductIDs,
             )
         }
         executeRequestOnUIThread {
@@ -903,11 +883,14 @@ internal class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
+        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(purchaseInfo.token)
+            setProductDetails(purchaseInfo.productDetails)
+        }.build()
 
         return Result.Success(
             BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(productDetailsParamsList)
+                .setProductDetailsParamsList(listOf(productDetailsParamsList))
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
@@ -921,35 +904,6 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun buildSubscriptionProductDetailsParams(
-        purchaseInfo: GooglePurchasingData.Subscription,
-    ): List<BillingFlowParams.ProductDetailsParams> {
-        fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
-            return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-                setOfferToken(subscription.token)
-                setProductDetails(subscription.productDetails)
-            }.build()
-        }
-
-        val productDetailsParamsList: MutableList<ProductDetailsParams> = ArrayList()
-        productDetailsParamsList.add(buildProductDetailParams(subscription = purchaseInfo))
-
-        purchaseInfo.addOnProducts?.let { addOnProducts ->
-            val addOnSubscriptionProductDetailsParams = addOnProducts
-                .filterIsInstance<GooglePurchasingData.Subscription>()
-                .map { subscriptionPurchasingData ->
-                    buildProductDetailParams(
-                        subscription = subscriptionPurchasingData,
-                    )
-                }
-
-            productDetailsParamsList.addAll(addOnSubscriptionProductDetailsParams)
-        }
-
-        return productDetailsParamsList
     }
 
     @Synchronized

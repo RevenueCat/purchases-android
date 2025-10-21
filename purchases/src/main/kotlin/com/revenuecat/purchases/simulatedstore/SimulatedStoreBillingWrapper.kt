@@ -2,7 +2,6 @@ package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -217,7 +216,6 @@ internal class SimulatedStoreBillingWrapper(
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun completePurchase(
         product: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -247,9 +245,6 @@ internal class SimulatedStoreBillingWrapper(
             purchaseType = PurchaseType.GOOGLE_PURCHASE, // WIP: Specify a new purchase type for the simulated store
             marketplace = null,
             subscriptionOptionId = product.defaultOption?.id,
-            subscriptionOptionIdForProductIDs = product.defaultOption?.id?.let {
-                mapOf(product.id to it)
-            } ?: emptyMap(),
             replacementMode = null,
         )
 

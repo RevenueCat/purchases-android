@@ -140,7 +140,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.EntitlementVerificationMode default;
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
   }
 
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatAPI {
@@ -310,8 +310,6 @@ package com.revenuecat.purchases {
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.SubscriptionOption subscriptionOption);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnPackages(java.util.List<com.revenuecat.purchases.Package> addOnPackages);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
     method public com.revenuecat.purchases.PurchaseParams build();
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
@@ -894,7 +892,6 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
     ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
-    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI com.revenuecat.purchases.models.Period? billingPeriod, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
@@ -1154,7 +1151,6 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
     ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
-    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdForProductIDs, com.revenuecat.purchases.ReplacementMode? replacementMode);
     ctor @Deprecated public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, String? presentedOfferingIdentifier, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     method public String? getMarketplace();
     method public String? getOrderId();
