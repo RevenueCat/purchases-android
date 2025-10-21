@@ -496,13 +496,12 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createPurchaseButtonComponentStyle(
         component: PurchaseButtonComponent,
-    ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = createStackComponentStyle(component.stack),
-        second = convertPurchaseButtonMethod(component.method ?: component.action?.toMethod()),
-    ) { stack, action ->
+    ): Result<ButtonComponentStyle, NonEmptyList<PaywallValidationError>> = createStackComponentStyle(
+        component.stack,
+    ).map {
         ButtonComponentStyle(
-            stackComponentStyle = stack,
-            action = action,
+            stackComponentStyle = it,
+            action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
         )
     }
 
@@ -517,59 +516,6 @@ internal class StyleFactory(
                 .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Action.Unknown -> Result.Success(null)
-        }
-    }
-
-    private fun StyleFactoryScope.convertPurchaseButtonMethod(
-        method: PurchaseButtonComponent.Method?,
-    ): Result<ButtonComponentStyle.Action, NonEmptyList<PaywallValidationError>> {
-        if (method == null) {
-            return Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
-            )
-        }
-        return when (method) {
-            is PurchaseButtonComponent.Method.InAppCheckout -> Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
-            )
-
-            is PurchaseButtonComponent.Method.WebCheckout -> {
-                Result.Success(
-                    ButtonComponentStyle.Action.WebCheckout(
-                        rcPackage = rcPackage,
-                        autoDismiss = method.autoDismiss ?: true,
-                        openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-                    ),
-                )
-            }
-
-            is PurchaseButtonComponent.Method.WebProductSelection -> {
-                Result.Success(
-                    ButtonComponentStyle.Action.WebProductSelection(
-                        autoDismiss = method.autoDismiss ?: true,
-                        openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-                    ),
-                )
-            }
-
-            is PurchaseButtonComponent.Method.CustomWebCheckout -> localizations.stringForAllLocales(
-                method.customUrl.urlLid,
-            ).map { urls ->
-                ButtonComponentStyle.Action.CustomWebCheckout(
-                    urls = urls,
-                    autoDismiss = method.autoDismiss ?: true,
-                    openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-                    rcPackage = rcPackage,
-                    packageParam = method.customUrl.packageParam,
-                )
-            }
-
-            is PurchaseButtonComponent.Method.Unknown -> {
-                Logger.e("Unknown purchase button method. Defaulting to purchasing current/default package.")
-                Result.Success(
-                    ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
-                )
-            }
         }
     }
 

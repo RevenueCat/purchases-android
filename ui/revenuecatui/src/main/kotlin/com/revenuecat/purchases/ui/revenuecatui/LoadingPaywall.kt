@@ -20,7 +20,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
@@ -171,7 +170,6 @@ private object LoadingPaywallConstants {
     )
 }
 
-@Suppress("TooManyFunctions")
 private class LoadingViewModel(
     state: PaywallState,
     override val resourceProvider: ResourceProvider,
@@ -194,11 +192,6 @@ private class LoadingViewModel(
 
     override fun closePaywall() {
         // no-op
-    }
-
-    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
-        // no-op
-        return null
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
