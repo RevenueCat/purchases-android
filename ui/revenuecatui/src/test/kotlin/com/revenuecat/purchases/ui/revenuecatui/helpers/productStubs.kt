@@ -315,4 +315,3 @@ fun stubPricingPhase(
         priceCurrencyCodeValue,
     ),
 )
-
