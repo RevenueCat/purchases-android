@@ -312,7 +312,7 @@ internal class PaywallViewModelImpl(
         suspendCancellableCoroutine { continuation ->
             listener?.onPurchasePackageInitiated(packageToPurchase.identifier) {
                 continuation.resume(Unit)
-            }
+            } ?: continuation.resume(Unit)
         }
 
         try {
