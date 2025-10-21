@@ -245,7 +245,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `for the NL sotrefront and a en-US device locale the currency locale should be en-NL`() {
+    fun `for the NL storefront and a en-US device locale the currency locale should be en-NL`() {
         assertThat(purchases.storefrontCountryCode).isNull()
 
         val currencyLocale = purchases.currencyLocaleForStorefrontCountryCode(storefrontCountryCode = "NL", locale = Locale("en", "US"))

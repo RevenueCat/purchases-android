@@ -133,7 +133,7 @@ class Purchases internal constructor(
      * The `storefrontCountryCode` argument will be used instead of the cached `storefrontCountryCode` if provided
      * The `locale` argument is used as fallback in case no `storefrontCountryCode` is available or when there are no matching device locale's
      */
-    fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String? = null, locale: Locale): Locale {
+    fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String? = null, locale: Locale = Locale.getDefault()): Locale {
         val storefrontCountryCode = storefrontCountryCode ?: this.storefrontCountryCode;
         if (storefrontCountryCode.isNullOrBlank()) {
             return locale;
