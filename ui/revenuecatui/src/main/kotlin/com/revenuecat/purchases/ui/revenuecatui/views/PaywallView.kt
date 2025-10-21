@@ -16,7 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseFlowType
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
@@ -69,8 +68,11 @@ class PaywallView : CompatComposeView {
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
     private var internalListener: PaywallListener = object : PaywallListener {
-        override fun onPurchaseFlowInitiated(flowType: PurchaseFlowType, resume: () -> Unit) {
-            listener?.onPurchaseFlowInitiated(flowType, resume)
+        override fun onPurchasePackageInitiated(packageId: String, resume: () -> Unit) {
+            listener?.onPurchasePackageInitiated(packageId, resume)
+        }
+        override fun onRestoreInitiated(resume: () -> Unit) {
+            listener?.onRestoreInitiated(resume)
         }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {

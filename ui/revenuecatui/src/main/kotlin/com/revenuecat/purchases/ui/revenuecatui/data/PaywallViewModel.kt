@@ -23,7 +23,6 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseFlowType
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
@@ -203,10 +202,9 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        // Call onPurchaseFlowInitiated and wait for resume() to be called
-        val flowType = PurchaseFlowType.Restore
+        // Call onRestoreInitiated and wait for resume() to be called
         suspendCancellableCoroutine { continuation ->
-            listener?.onPurchaseFlowInitiated(flowType) {
+            listener?.onRestoreInitiated {
                 continuation.resume(Unit)
             }
         }
@@ -317,10 +315,9 @@ internal class PaywallViewModelImpl(
 
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
-        // Call onPurchaseFlowInitiated and wait for resume() to be called
-        val flowType = PurchaseFlowType.Standard(packageToPurchase.identifier)
+        // Call onPurchasePackageInitiated and wait for resume() to be called
         suspendCancellableCoroutine { continuation ->
-            listener?.onPurchaseFlowInitiated(flowType) {
+            listener?.onPurchasePackageInitiated(packageToPurchase.identifier) {
                 continuation.resume(Unit)
             }
         }
