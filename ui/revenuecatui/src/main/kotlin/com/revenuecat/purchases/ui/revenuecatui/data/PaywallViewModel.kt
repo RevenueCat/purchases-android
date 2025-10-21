@@ -182,36 +182,28 @@ internal class PaywallViewModelImpl(
             Logger.e("Web checkout URL can only be constructed for loaded Components paywalls")
             return null
         }
-        val packageParamBehavior = launchWebCheckout.packageParamBehavior
-        val packageToUse = when (packageParamBehavior) {
-            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend -> null
+        val behavior = launchWebCheckout.packageParamBehavior
+        val (packageToUse, packageParam) = when (behavior) {
             is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append ->
-                packageParamBehavior.rcPackage ?: state.selectedPackageInfo?.rcPackage
+                (behavior.rcPackage ?: state.selectedPackageInfo?.rcPackage) to behavior.packageParam
+            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
+                null to null
         }
-        return if (customUrl != null) {
+        if (customUrl != null) {
             val url = try {
                 URL(customUrl)
             } catch (e: MalformedURLException) {
                 Logger.e("Invalid custom URL: $customUrl", e)
                 return null
             }
-            val finalUrl = when (packageParamBehavior) {
-                is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend -> url
-                is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append -> {
-                    if (packageParamBehavior.packageParam != null && packageToUse != null) {
-                        url.appendQueryParameter(
-                            packageParamBehavior.packageParam,
-                            packageToUse.identifier,
-                        )
-                    } else {
-                        url
-                    }
-                }
+            val finalUrl = if (packageParam != null && packageToUse != null) {
+                url.appendQueryParameter(packageParam, packageToUse.identifier)
+            } else {
+                url
             }
-            finalUrl.toString()
-        } else {
-            packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+            return finalUrl.toString()
         }
+        return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
