@@ -9,5 +9,9 @@ open class PurchasesException(val error: PurchasesError) : Exception() {
         get() = error.underlyingErrorMessage
 
     override val message: String
-        get() = error.message
+        get() = error.message + if (error.underlyingErrorMessage != null) {
+            " Underlying error: ${error.underlyingErrorMessage}"
+        } else {
+            ""
+        }
 }

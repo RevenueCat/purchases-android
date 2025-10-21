@@ -432,7 +432,8 @@ internal class PurchasesFactory(
                     PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
                         underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
-                            "RevenueCat dashboard and use its corresponding API key before releasing.",
+                            "RevenueCat dashboard and use its corresponding API key before releasing. " +
+                            "The Test Store is not supported in production builds.",
                     ),
                 )
             }
