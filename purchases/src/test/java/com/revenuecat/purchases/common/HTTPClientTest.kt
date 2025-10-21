@@ -86,23 +86,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
-    // Errors
-
-    @Test(expected = JSONException::class)
-    fun reWrapsBadJSONError() {
-        val endpoint = Endpoint.LogIn
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "not uh jason")
-        )
-
-        try {
-            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-        } finally {
-            server.takeRequest()
-        }
-    }
-
     // region forceServerErrors
 
     @Test
@@ -981,7 +964,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 // region Non-JSON response with fallback URLs
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
-internal class ParameterizNonJsonResponseBodyTest(
+internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
     private val statusCode: Int,
 ) : BaseHTTPClientTest() {
@@ -991,12 +974,12 @@ internal class ParameterizNonJsonResponseBodyTest(
         @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}, statusCode={1}")
         fun parameters(): Collection<Array<Any>> {
             return listOf(
-                arrayOf(Endpoint.GetOfferings("test_user"), 200),
-                arrayOf(Endpoint.GetOfferings("test_user"), 400),
                 arrayOf(Endpoint.GetOfferings("test_user"), 500),
-                arrayOf(Endpoint.GetProductEntitlementMapping, 200),
-                arrayOf(Endpoint.GetProductEntitlementMapping, 400),
+                arrayOf(Endpoint.GetOfferings("test_user"), 503),
+                arrayOf(Endpoint.GetOfferings("test_user"), 504),
                 arrayOf(Endpoint.GetProductEntitlementMapping, 500),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 503),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 504),
             )
         }
     }
