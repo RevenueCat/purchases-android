@@ -201,7 +201,6 @@ internal class PaywallViewModelImpl(
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
-
         try {
             val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
                 purchaseLogic?.let { it::performRestore }
