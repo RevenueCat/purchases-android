@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.FileRepository
@@ -42,11 +43,17 @@ internal fun VideoComponentView(
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
     if (videoState.visible) {
+        val shouldFetchVideo = !LocalInspectionMode.current
         val overlay = videoState.overlay?.forCurrentTheme
         val borderStyle = videoState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = videoState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(videoState.shape) { derivedStateOf { videoState.shape ?: RectangleShape } }
-        val (videoUrl, fallbackImageViewStyle) = rememberVideoContentState(style, videoState.videoUrls, repository)
+        val (videoUrl, fallbackImageViewStyle) = rememberVideoContentState(
+            style = style,
+            videoUrls = videoState.videoUrls,
+            repository = repository,
+            shouldFetch = shouldFetchVideo,
+        )
 
         Box(
             modifier = modifier
@@ -85,6 +92,7 @@ private fun rememberVideoContentState(
     style: VideoComponentStyle,
     videoUrls: VideoUrls,
     repository: FileRepository,
+    shouldFetch: Boolean,
 ): Pair<URI?, ImageComponentStyle?> {
     var fallbackImageViewStyle: ImageComponentStyle? by remember(style.fallbackSources) {
         if (style.fallbackSources != null) {
@@ -111,8 +119,18 @@ private fun rememberVideoContentState(
         }
     }
 
-    var videoUrl by rememberSaveable(videoUrls.url) {
-        mutableStateOf(repository.getFile(videoUrls.url, videoUrls.checksum))
+    var videoUrl by rememberSaveable(videoUrls.url, shouldFetch) {
+        mutableStateOf(
+            if (shouldFetch) {
+                repository.getFile(videoUrls.url, videoUrls.checksum)
+            } else {
+                null
+            },
+        )
+    }
+
+    if (!shouldFetch) {
+        return videoUrl to fallbackImageViewStyle
     }
 
     suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
