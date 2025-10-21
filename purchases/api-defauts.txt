@@ -1002,7 +1002,7 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
     ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
-    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional com.revenuecat.purchases.models.Period? billingPeriod, optional java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
+    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI com.revenuecat.purchases.models.Period? billingPeriod, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();

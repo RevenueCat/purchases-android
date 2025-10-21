@@ -24,8 +24,10 @@ sealed class GooglePurchasingData : PurchasingData {
         // applied to them, and there doesn't appear to be a way to do so.
         // We can remove the @get:JvmSynthetic annotation when we remove the experimental annotations from these
         // properties.
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
         val billingPeriod: Period? = null,
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
         val addOnProducts: List<GooglePurchasingData>? = null,
     ) : GooglePurchasingData() {
