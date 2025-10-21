@@ -81,7 +81,6 @@ class PackageCardAdapter(
             binding.isAddOnMode = isAddOnMode
             binding.isSelected = isSelected
 
-            // Set the checkbox state and listener
             binding.buyOptionCheckbox.isChecked = isSelected
             binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
                 if (checked) {
@@ -93,7 +92,7 @@ class PackageCardAdapter(
             }
 
             val isBaseProduct = baseProduct == currentPackage
-            binding.baseProductCheckbox.setOnCheckedChangeListener(null) // Clear listener first
+            binding.baseProductCheckbox.setOnCheckedChangeListener(null)
             binding.baseProductCheckbox.isChecked = isBaseProduct
             binding.baseProductCheckbox.setOnCheckedChangeListener { _, checked ->
                 if (checked) {
