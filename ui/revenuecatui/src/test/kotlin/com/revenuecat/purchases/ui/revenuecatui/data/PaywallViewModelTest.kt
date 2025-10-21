@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -40,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
@@ -110,6 +112,67 @@ class PaywallViewModelTest {
             TestData.template1Offering.identifier to TestData.template1Offering,
             TestData.template2Offering.identifier to TestData.template2Offering
         ),
+    )
+
+    private val offeringWithWPL = Offering(
+        identifier = "offering-id",
+        serverDescription = "description",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        webCheckoutURL = URL("https://test-web-billing.revenuecat.com")
+    )
+
+    private val launchWebCheckoutWithCustomUrlAndPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = TestData.Packages.monthly,
+            packageParam = "rc_package",
+        ),
+    )
+    private val launchWebCheckoutWithCustomUrlNoPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = "rc_package",
+        ),
+    )
+    private val launchWebCheckoutWithCustomUrlNoPackageParam = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = TestData.Packages.monthly,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithNoPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithoutAppendingPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
     )
 
     @get:Rule
@@ -1288,6 +1351,72 @@ class PaywallViewModelTest {
     }
 
     // endregion events
+
+    // region getWebCheckoutUrl
+
+    @Test
+    fun `getWebCheckoutUrl returns expected state when no selected package`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage)
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage)
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam)
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `getWebCheckoutUrl returns expected state when selected package`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components ?: error("Expected to have loaded components state")
+        state.update(TestData.Packages.annual)
+
+        // Uses given package
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage)
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+
+        // If no selected package, uses URL without package param
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage)
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_annual")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam)
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_annual")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage)
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    // endregion getWebCheckoutUrl
 
     private fun create(
         offering: Offering? = null,
