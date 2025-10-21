@@ -96,18 +96,22 @@ internal class PurchaseParamsValidator {
         }
 
         val baseItemBillingPeriod = googleSubscriptionPurchasingData.billingPeriod?.iso8601
-        val addOnBillingPeriods = addOnProducts
-            .filterIsInstance<GooglePurchasingData.Subscription>()
-            .mapNotNull { it.billingPeriod } ?: emptyList()
+        // If the baseItemBillingPeriod is null, then we don't know what it is, so don't validate that all billing
+        // periods are the same in case they do match and we don't know.
+        baseItemBillingPeriod?.let {
+            val addOnBillingPeriods = addOnProducts
+                .filterIsInstance<GooglePurchasingData.Subscription>()
+                .mapNotNull { it.billingPeriod } ?: emptyList()
 
-        for (billingPeriod in addOnBillingPeriods) {
-            if (billingPeriod.iso8601 != baseItemBillingPeriod) {
-                val error = PurchasesError(
-                    PurchasesErrorCode.PurchaseInvalidError,
-                    "All items in a multi-line purchase must have the same billing period.",
-                ).also { errorLog(it) }
+            for (billingPeriod in addOnBillingPeriods) {
+                if (billingPeriod.iso8601 != baseItemBillingPeriod) {
+                    val error = PurchasesError(
+                        PurchasesErrorCode.PurchaseInvalidError,
+                        "All items in a multi-line purchase must have the same billing period.",
+                    ).also { errorLog(it) }
 
-                return Result.Error(error)
+                    return Result.Error(error)
+                }
             }
         }
 
