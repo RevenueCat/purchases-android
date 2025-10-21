@@ -39,14 +39,14 @@ class PurchasesTransactionExceptionTest {
     }
 
     @Test
-    fun `error message matches originating error`() {
+    fun `error message append underlying error`() {
         val errorCode = PurchasesErrorCode.ConfigurationError
         val underlyingErrorMessage = "Underlying error message"
         val purchasesError = PurchasesError(errorCode, underlyingErrorMessage)
 
         val purchasesException = PurchasesTransactionException(purchasesError, userCancelled = false)
 
-        assertThat(purchasesError.message).isEqualTo(purchasesException.message)
+        assertThat(purchasesError.message).isEqualTo("${purchasesException.message} Underlying error: $underlyingErrorMessage")
     }
 
     @Test
