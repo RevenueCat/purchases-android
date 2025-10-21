@@ -198,7 +198,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun startAddOnPurchase(selectedPackages: List<Package>) {
         toggleLoadingIndicator(true)
-        println(this.isAddOnPurchaseUpgrade)
         val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
         val addOnPackages = selectedPackages.filter { it != basePackage }
 
