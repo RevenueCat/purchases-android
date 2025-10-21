@@ -26,6 +26,10 @@ class PackageCardAdapter(
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
+    private var isAddOnMode = false
+    private val selectedPackages = mutableSetOf<Package>()
+    private var baseProduct: Package? = null
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
         val binding = PackageCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return PackageViewHolder(binding)
@@ -34,7 +38,32 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position], isPlayStore)
+        holder.bind(packages[position], isPlayStore, isAddOnMode, selectedPackages.contains(packages[position]))
+    }
+
+    fun setAddOnMode(enabled: Boolean) {
+        isAddOnMode = enabled
+        if (!enabled) {
+            selectedPackages.clear()
+            baseProduct = null
+        }
+        notifyDataSetChanged()
+        notifySelectionChanged()
+    }
+
+    fun getSelectedPackages(): List<Package> = selectedPackages.toList()
+
+    fun getBaseProduct(): Package? = baseProduct
+
+    private fun setBaseProduct(pkg: Package?) {
+        baseProduct = pkg
+    }
+
+    private fun notifySelectionChanged() {
+        val hasSelectedPackages = selectedPackages.isNotEmpty()
+        val hasBaseProduct = baseProduct != null
+        val baseProductIsSelected = baseProduct != null && selectedPackages.contains(baseProduct)
+        listener.onSelectionChanged(hasSelectedPackages, hasBaseProduct && baseProductIsSelected)
     }
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
@@ -42,12 +71,39 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package, isPlayStore: Boolean) {
+        @Suppress("LongMethod")
+        fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
+            binding.isAddOnMode = isAddOnMode
+            binding.isSelected = isSelected
+
+            binding.buyOptionCheckbox.isChecked = isSelected
+            binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    selectedPackages.add(currentPackage)
+                } else {
+                    selectedPackages.remove(currentPackage)
+                }
+                notifySelectionChanged()
+            }
+
+            val isBaseProduct = baseProduct == currentPackage
+            binding.baseProductCheckbox.setOnCheckedChangeListener(null)
+            binding.baseProductCheckbox.isChecked = isBaseProduct
+            binding.baseProductCheckbox.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    setBaseProduct(currentPackage)
+                    // Post a refresh to avoid recursion during binding
+                    binding.root.post { notifyDataSetChanged() }
+                } else if (isBaseProduct) {
+                    setBaseProduct(null)
+                }
+                notifySelectionChanged()
+            }
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
@@ -166,5 +222,7 @@ class PackageCardAdapter(
             isUpgrade: Boolean,
             isPersonalizedPrice: Boolean,
         )
+        fun onAddOnPurchaseClicked(selectedPackages: List<Package>)
+        fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean)
     }
 }
