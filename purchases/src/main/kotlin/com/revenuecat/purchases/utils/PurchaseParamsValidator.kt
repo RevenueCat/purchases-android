@@ -49,8 +49,8 @@ internal class PurchaseParamsValidator {
             return Result.Error(error)
         }
 
-        val googleSubscriptionPurchasingData = purchaseParams.purchasingData as GooglePurchasingData.Subscription
-        val addOnProducts = googleSubscriptionPurchasingData.addOnProducts ?: return Result.Success(Unit)
+        val googleSubscriptionPurchasingData = purchaseParams.purchasingData as? GooglePurchasingData.Subscription
+        val addOnProducts = googleSubscriptionPurchasingData?.addOnProducts ?: return Result.Success(Unit)
 
         if (addOnProducts.isEmpty()) {
             log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
