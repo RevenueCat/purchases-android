@@ -111,6 +111,26 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
+        fun canUseFallback(): Boolean =
+            endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
+
+        fun performRequestToFallbackURL(): HTTPResult {
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+            }
+            return performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
+            )
+        }
+
         if (appConfig.forceServerErrors) {
             warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
             return HTTPResult(
@@ -127,6 +147,9 @@ internal class HTTPClient(
         try {
             callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
+        } catch (e: IOException) {
+            // Handle connection failures with fallback URLs
+            if (canUseFallback()) callResult = performRequestToFallbackURL() else throw e
         } finally {
             trackHttpRequestPerformedIfNeeded(
                 baseURL,
@@ -149,25 +172,9 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex,
             )
-        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
-            endpoint.supportsFallbackBaseURLs &&
-            fallbackURLIndex in fallbackBaseURLs.indices
-        ) {
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
             // Handle server errors with fallback URLs
-            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
-            log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
-            }
-            callResult = performRequest(
-                fallbackBaseURL,
-                endpoint,
-                body,
-                postFieldsToSign,
-                requestHeaders,
-                refreshETag,
-                fallbackBaseURLs,
-                fallbackURLIndex + 1,
-            )
+            callResult = performRequestToFallbackURL()
         }
         return callResult
     }

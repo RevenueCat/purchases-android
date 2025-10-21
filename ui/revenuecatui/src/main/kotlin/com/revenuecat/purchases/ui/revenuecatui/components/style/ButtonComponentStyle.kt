@@ -29,6 +29,22 @@ internal data class ButtonComponentStyle(
          * package if this is null.
          */
         data class PurchasePackage(val rcPackage: Package?) : Action
+        data class WebCheckout(
+            val rcPackage: Package?,
+            val autoDismiss: Boolean,
+            val openMethod: ButtonComponent.UrlMethod,
+        ) : Action
+        data class WebProductSelection(
+            val autoDismiss: Boolean,
+            val openMethod: ButtonComponent.UrlMethod,
+        ) : Action
+        data class CustomWebCheckout(
+            val urls: NonEmptyMap<LocaleId, String>,
+            val autoDismiss: Boolean,
+            val openMethod: ButtonComponent.UrlMethod,
+            val rcPackage: Package?,
+            val packageParam: String?,
+        ) : Action
 
         @Poko
         class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action {

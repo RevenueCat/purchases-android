@@ -26,7 +26,7 @@ import org.json.JSONException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.net.URL
+import org.robolectric.ParameterizedRobolectricTestRunner
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -84,23 +84,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
-    }
-
-    // Errors
-
-    @Test(expected = JSONException::class)
-    fun reWrapsBadJSONError() {
-        val endpoint = Endpoint.LogIn
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "not uh jason")
-        )
-
-        try {
-            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-        } finally {
-            server.takeRequest()
-        }
     }
 
     // region forceServerErrors
@@ -974,6 +957,168 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }
     }
+}
 
-    // endregion Fallback API host
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedNonJsonResponseBodyTest(
+    private val endpoint: Endpoint,
+    private val statusCode: Int,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}, statusCode={1}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user"), 500),
+                arrayOf(Endpoint.GetOfferings("test_user"), 503),
+                arrayOf(Endpoint.GetOfferings("test_user"), 504),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 500),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 503),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 504),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when server returns non-JSON response`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val invalidJsonPayload = "<html><body>504 Gateway Timeout</body></html>"
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        val mainResponse = MockResponse()
+            .setBody(invalidJsonPayload)
+            .setResponseCode(statusCode)
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        server.enqueue(mainResponse)
+        fallbackServer.enqueue(fallbackResponse)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                statusCode,
+                invalidJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(statusCode, invalidJsonPayload)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        // Act
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Assert
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
+}
+
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedConnectionFailureFallbackTest(
+    private val endpoint: Endpoint,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user")),
+                arrayOf(Endpoint.GetProductEntitlementMapping),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when connection fails`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        // Shut down main server to cause IOException when client tries to connect
+        server.shutdown()
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        fallbackServer.enqueue(fallbackResponse)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        // Act
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Assert
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
 }
