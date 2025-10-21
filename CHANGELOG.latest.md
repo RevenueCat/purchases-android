@@ -5,9 +5,21 @@
 
 ## RevenueCat SDK
 ### ✨ New Features
-* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
+* Add webCheckoutURL property to Offering and Package (#2747) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Use the fallback endpoint in more failure scenarios (#2754) via JayShortway (@JayShortway)
+* Protect against developers excluding blockstore dependency (#2745) via Toni Rico (@tonidero)
 
 ## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add support for Web Purchase buttons in paywalls (#2751) via Toni Rico (@tonidero)
 ### Customer Center
 #### 🐞 Bugfixes
-* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
+* Add elevation to surfaces in Customer Center to fix default appearance (#2741) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Experimental]: Support Multi-Line Subscriptions (#2668) via Will Taylor (@fire-at-will)
+* Add PurchaseButtonComponent WPL field deserialization (#2749) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `25c7fb8` to `525d48c` (#2748) via dependabot[bot] (@dependabot[bot])
+* Add extra message test store dialog (#2746) via Toni Rico (@tonidero)
