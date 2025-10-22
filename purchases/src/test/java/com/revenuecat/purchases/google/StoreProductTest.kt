@@ -436,8 +436,9 @@ class StoreProductTest {
         every { mockPurchases.currencyLocaleForStorefrontCountryCode(null, any()) } returns Locale("es", "MX")
 
         // Create a product with MXN currency (Mexican storefront)
+        val period = Period.create("P1M")
         val product = createSubscriptionStoreProductWithPrice(
-            period = Period.create("P1M"),
+            period = period,
             price = Price(
                 formatted = "$1.00",
                 amountMicros = 1_000_000,
@@ -452,6 +453,20 @@ class StoreProductTest {
         // If we explicitly pass US for formatting the currency we expect MX$
         val formattedPrice2 = product.formattedPricePerMonth(Locale.US)
         assertThat(formattedPrice2).isEqualTo("MX$1.00")
+
+        val pricingPhase = product.subscriptionOptions?.basePlan?.pricingPhases?.last()
+
+        assertThat(pricingPhase?.pricePerDay()?.formatted).contains("$")
+        assertThat(pricingPhase?.pricePerDay()?.formatted).doesNotContain("MX$")
+
+        assertThat(pricingPhase?.pricePerWeek()?.formatted).contains("$")
+        assertThat(pricingPhase?.pricePerWeek()?.formatted).doesNotContain("MX$")
+
+        assertThat(pricingPhase?.pricePerMonth()?.formatted).contains("$")
+        assertThat(pricingPhase?.pricePerMonth()?.formatted).doesNotContain("MX$")
+
+        assertThat(pricingPhase?.pricePerYear()?.formatted).contains("$")
+        assertThat(pricingPhase?.pricePerYear()?.formatted).doesNotContain("MX$")
     }
 
     private fun createSubscriptionStoreProductWithPrice(

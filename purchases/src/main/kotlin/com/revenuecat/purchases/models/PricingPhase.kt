@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
@@ -66,7 +67,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerDay(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerDay(locale: Locale = defaultCurrencyLocale()): Price =
         price.pricePerDay(billingPeriod, locale)
 
     /**
@@ -76,7 +77,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerWeek(locale: Locale = defaultCurrencyLocale()): Price =
         price.pricePerWeek(billingPeriod, locale)
 
     /**
@@ -86,7 +87,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerMonth(locale: Locale = defaultCurrencyLocale()): Price =
         price.pricePerMonth(billingPeriod, locale)
 
     /**
@@ -96,7 +97,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerYear(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerYear(locale: Locale = defaultCurrencyLocale()): Price =
         price.pricePerYear(billingPeriod, locale)
 
     /**
@@ -116,7 +117,22 @@ class PricingPhase(
         replaceWith = ReplaceWith("pricePerMonth(locale).formatted"),
     )
     @JvmOverloads
-    fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
+    fun formattedPriceInMonths(locale: Locale = defaultCurrencyLocale()): String {
         return pricePerMonth(locale).formatted
+    }
+
+    companion object {
+        /**
+         * Returns the default currency locale for price formatting.
+         * If the Purchases singleton is configured, returns the locale for the storefront country code.
+         * Otherwise, returns the system default locale.
+         */
+        @JvmStatic
+        fun defaultCurrencyLocale(): Locale {
+            if (Purchases.isConfigured) {
+                return Purchases.sharedInstance.currencyLocaleForStorefrontCountryCode()
+            }
+            return Locale.getDefault()
+        }
     }
 }
