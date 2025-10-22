@@ -11,6 +11,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 
 /**
  * Mock implementation of [PurchasesType] for tests and previews
@@ -50,5 +51,10 @@ internal class MockPurchasesType(
     }
     override fun syncPurchases() {
         // No-op for mock
+    }
+
+    override fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String?, locale: Locale): Locale {
+        // Just return the current locale for mock
+        return locale
     }
 }
