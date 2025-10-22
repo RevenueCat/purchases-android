@@ -198,14 +198,11 @@ class Purchases internal constructor(
     }
 
     /**
-     * This method will send active subscriptions and unconsumed one time purchases to the RevenueCat backend.
-     * Call this when using your own implementation for subscriptions anytime a sync is needed, such as when migrating
-     * existing users to RevenueCat. The [SyncPurchasesCallback.onSuccess] callback will be called if all purchases
-     * have been synced successfully or there are no purchases.
-     * Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
+     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
+     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
+     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
      * [PurchasesError] indicating the first error found.
-     *
-     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
@@ -415,13 +412,11 @@ class Purchases internal constructor(
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all active subscriptions and non consumed one time purchases associated with the current
-     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
-     * being used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all purchases associated with the current Play Store account to
+     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+     * used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
-     *
-     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.

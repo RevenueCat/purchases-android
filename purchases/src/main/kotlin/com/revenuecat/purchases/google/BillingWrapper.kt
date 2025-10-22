@@ -19,8 +19,10 @@ import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -51,6 +53,8 @@ import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
@@ -346,16 +350,47 @@ internal class BillingWrapper(
         }
     }
 
+    fun queryPurchaseHistoryAsync(
+        @BillingClient.ProductType productType: String,
+        onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+    ) {
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
+        QueryPurchaseHistoryUseCase(
+            QueryPurchaseHistoryUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                productType,
+                appInBackground,
+            ),
+            onReceivePurchaseHistory,
+            onReceivePurchaseHistoryError,
+            ::withConnectedClient,
+            ::executeRequestOnUIThread,
+        ).run()
+    }
+
     override fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
-        queryPurchases(
-            appUserID,
-            { purchases ->
-                val storeTransactions = purchases.values.toList()
-                onReceivePurchaseHistory(storeTransactions)
+        queryPurchaseHistoryAsync(
+            BillingClient.ProductType.SUBS,
+            { subsPurchasesList ->
+                queryPurchaseHistoryAsync(
+                    BillingClient.ProductType.INAPP,
+                    { inAppPurchasesList ->
+                        onReceivePurchaseHistory(
+                            subsPurchasesList.map {
+                                it.toStoreTransaction(ProductType.SUBS)
+                            } + inAppPurchasesList.map {
+                                it.toStoreTransaction(ProductType.INAPP)
+                            },
+                        )
+                    },
+                    onReceivePurchaseHistoryError,
+                )
             },
             onReceivePurchaseHistoryError,
         )
@@ -470,7 +505,7 @@ internal class BillingWrapper(
         ).run()
     }
 
-    override fun findPurchaseInActivePurchases(
+    override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -479,19 +514,18 @@ internal class BillingWrapper(
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
         productType.toGoogleProductType()?.let { googleProductType ->
-            QueryPurchasesByTypeUseCase(
-                QueryPurchasesByTypeUseCaseParams(
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
                     dateProvider,
                     diagnosticsTrackerIfEnabled,
-                    appInBackground,
                     googleProductType,
+                    appInBackground,
                 ),
-                { purchasesByHashedToken ->
-                    val purchasesRecordWrapper = purchasesByHashedToken.values.firstOrNull {
-                        it.productIds.firstOrNull() == productId
-                    }
-                    if (purchasesRecordWrapper != null) {
-                        onCompletion(purchasesRecordWrapper)
+                { purchasesList ->
+                    val purchaseHistoryRecordWrapper =
+                        purchasesList.firstOrNull { it.products.contains(productId) }?.toStoreTransaction(productType)
+                    if (purchaseHistoryRecordWrapper != null) {
+                        onCompletion(purchaseHistoryRecordWrapper)
                     } else {
                         val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
@@ -569,14 +603,14 @@ internal class BillingWrapper(
             log(LogIntent.GOOGLE_ERROR) {
                 BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                     .format(billingResult.toHumanReadableDescription()) +
-                    (
+                    "${
                         notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
-                            " Purchases:" + purchase.joinToString(
+                            "Purchases:" + purchase.joinToString(
                                 ", ",
                                 transform = { it.toHumanReadableDescription() },
                             )
-                        } ?: " No purchases received"
-                        )
+                        }
+                    }"
             }
 
             var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
@@ -884,17 +918,21 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .setObfuscatedAccountId(appUserID.sha256())
-                .apply {
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -905,22 +943,26 @@ internal class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(productDetailsParamsList)
-                .apply {
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                    replaceProductInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .apply {
+                        // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                        // https://issuetracker.google.com/issues/155005449
+                        replaceProductInfo?.let {
+                            setUpgradeInfo(it)
+                        } ?: setObfuscatedAccountId(appUserID.sha256())
 
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

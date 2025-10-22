@@ -11,7 +11,6 @@ internal object OfferingStrings {
     const val CREATED_OFFERINGS = "Offerings object created with %d offerings"
     const val JSON_EXCEPTION_ERROR = "JSONException when building Offerings object. Message: %s"
     const val LIST_PRODUCTS = "%s - %s"
-    const val LIST_UNFETCHED_PRODUCTS = "Product not found: %s - Product Type: %s, Reason: %s, Serialized doc ID: %s"
     const val EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE = "BillingClient queryProductDetails has returned more than once, " +
         "with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts"
     const val EXTRA_QUERY_PURCHASES_RESPONSE = "BillingClient queryPurchases has returned more than once, " +
@@ -24,7 +23,6 @@ internal object OfferingStrings {
     const val OFFERINGS_STALE_UPDATING_IN_FOREGROUND = "Offerings cache is stale, updating from network in foreground"
     const val OFFERINGS_START_UPDATE_FROM_NETWORK = "Start Offerings update from network."
     const val RETRIEVED_PRODUCTS = "Retrieved productDetailsList: %s"
-    const val MISSING_PRODUCT_DETAILS = "Missing productDetails: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
     const val EMPTY_PRODUCT_ID_LIST = "productId list is empty, skipping queryProductDetailsAsync call"
     const val CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS = "There are no products registered in the RevenueCat " +

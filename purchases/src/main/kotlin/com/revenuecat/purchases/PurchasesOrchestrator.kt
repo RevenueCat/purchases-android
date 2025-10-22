@@ -17,7 +17,6 @@ import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -1499,7 +1498,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.findPurchaseInActivePurchases(
+        billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
             previousProductId,
@@ -1690,7 +1689,7 @@ internal class PurchasesOrchestrator(
             callback: Callback<Boolean>,
         ) {
             BillingClient.newBuilder(context)
-                .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+                .enablePendingPurchases()
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
