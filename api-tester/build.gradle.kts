@@ -13,6 +13,7 @@ android {
         create("defaults") {
             dimension = "apis"
             isDefault = true
+            missingDimensionStrategy("billingclient", "bc8")
         }
         create("customEntitlementComputation") {
             dimension = "apis"

@@ -17,6 +17,7 @@ android {
         versionName = project.properties["paywallTesterVersionName"] as String
 
         missingDimensionStrategy("apis", "defaults")
+        missingDimensionStrategy("billingclient", "bc8")
 
         vectorDrawables {
             useSupportLibrary = true

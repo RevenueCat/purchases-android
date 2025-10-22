@@ -21,6 +21,7 @@ android {
         // Library modules have a dimension used to separate different APIs.
         // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
+        missingDimensionStrategy("billingclient", "bc8")
 
         buildConfigField(
             "String",
