@@ -129,14 +129,18 @@ class Purchases internal constructor(
         }
 
     /**
-     * Determines the Locale used for formatting currencies based on the `storefrontCountryCode` and the device's available locale's
-     * The `storefrontCountryCode` argument will be used instead of the cached `storefrontCountryCode` if provided
-     * The `locale` argument is used as fallback in case no `storefrontCountryCode` is available or when there are no matching device locale's
+     * Determines the Locale used for formatting currencies based on the `storefrontCountryCode` and the device's
+     * available locale's. The `storefrontCountryCode` argument will be used instead of the cached
+     * `storefrontCountryCode` if provided. The `locale` argument is used as fallback in case no
+     * `storefrontCountryCode` is available or when there are no matching device locale's.
      */
-    fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String? = null, locale: Locale = Locale.getDefault()): Locale {
-        val storefrontCountryCode = storefrontCountryCode ?: this.storefrontCountryCode;
+    fun currencyLocaleForStorefrontCountryCode(
+        storefrontCountryCode: String? = null,
+        locale: Locale = Locale.getDefault(),
+    ): Locale {
+        val storefrontCountryCode = storefrontCountryCode ?: this.storefrontCountryCode
         if (storefrontCountryCode.isNullOrBlank()) {
-            return locale;
+            return locale
         }
 
         // We find all available device locales with the same country as the storefront country.

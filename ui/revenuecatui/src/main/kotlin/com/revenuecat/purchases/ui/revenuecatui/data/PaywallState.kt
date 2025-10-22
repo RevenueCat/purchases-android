@@ -15,7 +15,6 @@ import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
@@ -161,7 +160,7 @@ internal sealed interface PaywallState {
             val currencyLocale by derivedStateOf {
                 purchases.currencyLocaleForStorefrontCountryCode(
                     storefrontCountryCode = storefrontCountryCode,
-                    locale = locale.toJavaLocale()
+                    locale = locale.toJavaLocale(),
                 )
             }
 
