@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.models
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Purchases
@@ -207,6 +208,7 @@ interface StoreProduct {
          * If the Purchases singleton is configured, returns the locale for the storefront country code.
          * Otherwise, returns the system default locale.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         fun defaultCurrencyLocale(): Locale {
             if (Purchases.isConfigured) {

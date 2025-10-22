@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
@@ -127,6 +128,7 @@ class PricingPhase(
          * If the Purchases singleton is configured, returns the locale for the storefront country code.
          * Otherwise, returns the system default locale.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         fun defaultCurrencyLocale(): Locale {
             if (Purchases.isConfigured) {

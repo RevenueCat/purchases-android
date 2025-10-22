@@ -134,6 +134,7 @@ class Purchases internal constructor(
      * `storefrontCountryCode` if provided. The `locale` argument is used as fallback in case no
      * `storefrontCountryCode` is available or when there are no matching device locale's.
      */
+    @InternalRevenueCatAPI
     fun currencyLocaleForStorefrontCountryCode(
         storefrontCountryCode: String? = null,
         locale: Locale = Locale.getDefault(),
