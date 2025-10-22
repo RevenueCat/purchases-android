@@ -213,11 +213,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         var purchaseParamsBuilder = selectedSubscriptionOptionsForPackageID[basePackage.identifier]?.let { option ->
             PurchaseParams.Builder(
                 activity = requireActivity(),
-                subscriptionOption = option
+                subscriptionOption = option,
             )
         } ?: PurchaseParams.Builder(
             activity = requireActivity(),
-            packageToPurchase = basePackage
+            packageToPurchase = basePackage,
         )
 
         for (addOnPackage in addOnPackages) {
