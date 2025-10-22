@@ -285,10 +285,124 @@ class PurchaseParamsTest {
             .build()
 
         val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
         val addOnProducts = subscription.addOnProducts
         assertThat(addOnProducts).isNotNull
         assertThat(addOnProducts!!)
             .containsExactly(firstAddOnPurchasingData, secondAddOnPurchasingData)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `addOnPackages appends new add-ons to existing ones`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val firstAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_package_1")
+        val secondAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_package_2")
+        val firstPackage = Package(
+            identifier = "first_package",
+            packageType = PackageType.UNKNOWN,
+            product = firstAddOnProduct,
+            presentedOfferingContext = mockk(),
+        )
+        val secondPackage = Package(
+            identifier = "second_package",
+            packageType = PackageType.UNKNOWN,
+            product = secondAddOnProduct,
+            presentedOfferingContext = mockk(),
+        )
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnPackages(addOnPackages = listOf(firstPackage))
+            .addOnPackages(addOnPackages = listOf(secondPackage))
+            .build()
+
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        val addOnProducts = subscription.addOnProducts
+        assertThat(addOnProducts).isNotNull
+        assertThat(addOnProducts!!)
+            .containsExactly(
+                firstAddOnProduct.purchasingData as GooglePurchasingData,
+                secondAddOnProduct.purchasingData as GooglePurchasingData,
+            )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `addOnSubscriptionOptions appends new add-ons to existing ones`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val firstOption = GoogleSubscriptionOption(
+            productId = "productID1",
+            basePlanId = "basePlan1",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token1"
+        )
+        val secondOption = GoogleSubscriptionOption(
+            productId = "productID2",
+            basePlanId = "basePlan2",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token2"
+        )
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnSubscriptionOptions(addOnSubscriptionOptions = listOf(firstOption))
+            .addOnSubscriptionOptions(addOnSubscriptionOptions = listOf(secondOption))
+            .build()
+
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        val addOnProducts = subscription.addOnProducts
+        assertThat(addOnProducts).isNotNull
+        assertThat(addOnProducts!!)
+            .containsExactly(
+                firstOption.purchasingData as GooglePurchasingData,
+                secondOption.purchasingData as GooglePurchasingData,
+            )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `mixing addOnSubscriptionOptions, addOnPackages, and addOnStoreProducts appends add-ons in order`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val storeAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_store")
+        val packageAddOnProduct = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_package")
+        val packageAddOn = Package(
+            identifier = "addon_package_identifier",
+            packageType = PackageType.UNKNOWN,
+            product = packageAddOnProduct,
+            presentedOfferingContext = mockk(),
+        )
+        val subscriptionOption = GoogleSubscriptionOption(
+            productId = "productID1",
+            basePlanId = "basePlan1",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token1"
+        )
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnSubscriptionOptions(addOnSubscriptionOptions = listOf(subscriptionOption))
+            .addOnStoreProducts(addOnStoreProducts = listOf(storeAddOn))
+            .addOnPackages(addOnPackages = listOf(packageAddOn))
+            .build()
+
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        val addOnProducts = subscription.addOnProducts
+        assertThat(addOnProducts).isNotNull
+        val storePurchasingData = storeAddOn.purchasingData as GooglePurchasingData
+        val packagePurchasingData = packageAddOnProduct.purchasingData as GooglePurchasingData
+        val optionPurchasingData = subscriptionOption.purchasingData as GooglePurchasingData
+        assertThat(addOnProducts!!)
+            .containsExactly(optionPurchasingData, storePurchasingData, packagePurchasingData)
     }
 
     @Test
