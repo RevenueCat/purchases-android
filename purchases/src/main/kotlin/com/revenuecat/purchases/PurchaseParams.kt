@@ -137,7 +137,11 @@ class PurchaseParams(val builder: Builder) {
         /*
          * The [Package]s to add on to the base package passed in via the [PurchaseParams.Builder]'s constructor.
          * This will result in a multi-line purchase whose base product is the one passed in to the
-         * [PurchaseParams.Builder]'s constructor.
+         * [PurchaseParams.Builder]'s constructor. The [defaultOption] for each add-on will be purchased.
+         * [defaultOption] is selected via the following logic:
+         *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
+         *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+         *   - Falls back to use base plan
          *
          * The following restrictions apply to add-on purchases:
          * - Add-on purchases are currently only supported for subscriptions on the Play Store.
@@ -152,7 +156,11 @@ class PurchaseParams(val builder: Builder) {
         /*
          * The [StoreProduct]s to add on to the base product passed in via the [PurchaseParams.Builder]'s constructor.
          * This will result in a multi-line purchase whose base product is the one passed in to the
-         * [PurchaseParams.Builder]'s constructor.
+         * [PurchaseParams.Builder]'s constructor. The [defaultOption] for each add-on will be purchased.
+         * [defaultOption] is selected via the following logic:
+         *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
+         *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+         *   - Falls back to use base plan
          *
          * The following restrictions apply to add-on purchases:
          * - Add-on purchases are currently only supported for subscriptions on the Play Store.
@@ -161,14 +169,40 @@ class PurchaseParams(val builder: Builder) {
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
-            if (addOnStoreProducts.isEmpty()) {
+            val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
+                .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+            attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
+        }
+
+        /*
+         * The [SubscriptionOption]s to add on to the base product passed in via
+         * the [PurchaseParams.Builder]'s constructor. This will result in a multi-line purchase whose base product
+         * is the one passed in to the [PurchaseParams.Builder]'s constructor.
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on products must be the same and match the period of the base item.
+         * - No more than 49 add-ons products per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
+            val compatibleAddOnProducts: List<GooglePurchasingData> = addOnSubscriptionOptions
+                .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+            attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
+        }
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
+            if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
             }
 
             val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
             existingPurchasingData?.let {
-                val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
-                    .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+                val compatibleAddOnProducts: List<GooglePurchasingData> = addOns
+                    .mapNotNull { it as? GooglePurchasingData.Subscription }
 
                 val newPurchasingData = GooglePurchasingData.Subscription(
                     productId = existingPurchasingData.productId,
