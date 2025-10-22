@@ -118,7 +118,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 return@setOnClickListener
             }
 
-            onAddOnPurchaseClicked(selectedPackages)
+            val selectedSubscriptionOptionsForPackageID =
+                packageCardAdapter?.getSelectedSubscriptionOptionsForPackageID() ?: emptyMap()
+
+            onAddOnPurchaseClicked(selectedPackages, selectedSubscriptionOptionsForPackageID)
         }
     }
 
@@ -182,8 +185,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onAddOnPurchaseClicked(selectedPackages: List<Package>) {
-        startAddOnPurchase(selectedPackages)
+    override fun onAddOnPurchaseClicked(
+        selectedPackages: List<Package>,
+        selectedSubscriptionOptionsForPackageID: Map<String, SubscriptionOption>,
+    ) {
+        startAddOnPurchase(selectedPackages, selectedSubscriptionOptionsForPackageID)
     }
 
     override fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
@@ -196,16 +202,33 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun startAddOnPurchase(selectedPackages: List<Package>) {
+    private fun startAddOnPurchase(
+        selectedPackages: List<Package>,
+        selectedSubscriptionOptionsForPackageID: Map<String, SubscriptionOption>,
+    ) {
         toggleLoadingIndicator(true)
         val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
         val addOnPackages = selectedPackages.filter { it != basePackage }
 
-        val purchaseParamsBuilder = PurchaseParams.Builder(
+        var purchaseParamsBuilder = selectedSubscriptionOptionsForPackageID[basePackage.identifier]?.let { option ->
+            PurchaseParams.Builder(
+                activity = requireActivity(),
+                subscriptionOption = option
+            )
+        } ?: PurchaseParams.Builder(
             activity = requireActivity(),
-            packageToPurchase = basePackage,
+            packageToPurchase = basePackage
         )
-            .addOnPackages(addOnPackages = addOnPackages)
+
+        for (addOnPackage in addOnPackages) {
+            val option = selectedSubscriptionOptionsForPackageID[addOnPackage.identifier]
+
+            purchaseParamsBuilder = if (option != null) {
+                purchaseParamsBuilder.addOnSubscriptionOptions(listOf(option))
+            } else {
+                purchaseParamsBuilder.addOnPackages(listOf(addOnPackage))
+            }
+        }
 
         if (isAddOnPurchaseUpgrade) {
             promptForProductChangeInfo { oldProductId, replacementMode ->
