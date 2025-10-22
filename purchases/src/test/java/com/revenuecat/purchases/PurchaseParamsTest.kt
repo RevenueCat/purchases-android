@@ -6,11 +6,13 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOfferings
@@ -266,6 +268,27 @@ class PurchaseParamsTest {
             .build()
 
         assertThat(purchaseParamsWithStorePackages.containsAddOnItems).isTrue()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `addOnStoreProducts appends new add-ons to existing ones`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val firstAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_1")
+        val secondAddOn = stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "addon_2")
+        val firstAddOnPurchasingData = firstAddOn.purchasingData as GooglePurchasingData
+        val secondAddOnPurchasingData = secondAddOn.purchasingData as GooglePurchasingData
+
+        val purchaseParams = PurchaseParams.Builder(mockk(), baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = listOf(firstAddOn))
+            .addOnStoreProducts(addOnStoreProducts = listOf(secondAddOn))
+            .build()
+
+        val subscription = purchaseParams.purchasingData as GooglePurchasingData.Subscription
+        val addOnProducts = subscription.addOnProducts
+        assertThat(addOnProducts).isNotNull
+        assertThat(addOnProducts!!)
+            .containsExactly(firstAddOnPurchasingData, secondAddOnPurchasingData)
     }
 
     @Test

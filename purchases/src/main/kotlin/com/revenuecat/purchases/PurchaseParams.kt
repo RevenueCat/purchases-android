@@ -201,7 +201,7 @@ class PurchaseParams(val builder: Builder) {
 
             val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
             existingPurchasingData?.let {
-                val compatibleAddOnProducts: List<GooglePurchasingData> = addOns
+                val compatibleAddOnProducts: List<GooglePurchasingData.Subscription> = addOns
                     .mapNotNull { it as? GooglePurchasingData.Subscription }
 
                 val newPurchasingData = GooglePurchasingData.Subscription(
@@ -210,7 +210,7 @@ class PurchaseParams(val builder: Builder) {
                     productDetails = existingPurchasingData.productDetails,
                     token = existingPurchasingData.token,
                     billingPeriod = existingPurchasingData.billingPeriod,
-                    addOnProducts = compatibleAddOnProducts,
+                    addOnProducts = (existingPurchasingData.addOnProducts ?: emptyList()) + compatibleAddOnProducts,
                 )
 
                 this.purchasingData = newPurchasingData
