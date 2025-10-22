@@ -139,30 +139,7 @@ class Purchases internal constructor(
         storefrontCountryCode: String? = null,
         locale: Locale = Locale.getDefault(),
     ): Locale {
-        val storefrontCountryCode = storefrontCountryCode ?: this.storefrontCountryCode
-        if (storefrontCountryCode.isNullOrBlank()) {
-            return locale
-        }
-
-        // We find all available device locales with the same country as the storefront country.
-        val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> = buildMap {
-            Locale.getAvailableLocales().forEach { availableLocale ->
-                if (availableLocale.country.equals(storefrontCountryCode, ignoreCase = true)) {
-                    put(availableLocale.language.lowercase(), availableLocale)
-                }
-            }
-        }
-
-        val deviceLanguageCode = locale.language.lowercase()
-
-        // We pick the one with the same language as the device if available. If not, we just pick the
-        // first. If the list is empty, we use the device locale with the storefront country.
-        return availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
-            ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
-            ?: Locale.Builder()
-                .setLocale(locale)
-                .setRegion(storefrontCountryCode.uppercase())
-                .build()
+        return purchasesOrchestrator.currencyLocaleForStorefrontCountryCode(storefrontCountryCode, locale)
     }
 
     /**

@@ -190,6 +190,20 @@ class Purchases internal constructor(
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
     }
+
+    /**
+     * Determines the Locale used for formatting currencies based on the `storefrontCountryCode` and the device's
+     * available locale's. The `storefrontCountryCode` argument will be used instead of the cached
+     * `storefrontCountryCode` if provided. The `locale` argument is used as fallback in case no
+     * `storefrontCountryCode` is available or when there are no matching device locale's.
+     */
+    @InternalRevenueCatAPI
+    fun currencyLocaleForStorefrontCountryCode(
+        storefrontCountryCode: String? = null,
+        locale: Locale = Locale.getDefault(),
+    ): Locale {
+        return purchasesOrchestrator.currencyLocaleForStorefrontCountryCode(storefrontCountryCode, locale)
+    }
     //endregion
 
     /**
