@@ -11,7 +11,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-import java.util.Locale
 
 /**
  * Mock implementation of [PurchasesType] for tests and previews
