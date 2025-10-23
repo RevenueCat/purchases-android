@@ -433,11 +433,12 @@ internal class PurchasesFactory(
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 throw PurchasesException(
-                    PurchasesError(
+                    error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
-                            "RevenueCat dashboard and use its corresponding API key before releasing.",
                     ),
+                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
+                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
+                        "Test Store is not supported in production builds.",
                 )
             }
 
