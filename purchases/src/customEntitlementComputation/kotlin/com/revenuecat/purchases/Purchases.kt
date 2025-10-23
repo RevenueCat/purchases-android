@@ -22,6 +22,7 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -342,6 +343,17 @@ class Purchases internal constructor(
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
             }
+        }
+
+        /**
+         * Returns the default currency locale for price formatting.
+         * If the Purchases singleton is configured, returns the best matching locale
+         * for the storefront country code and the device's preferred locale's
+         * Otherwise, returns the system default locale.
+         */
+        @JvmStatic
+        fun getDefaultCurrencyLocale(): Locale {
+            return PurchasesOrchestrator.getDefaultCurrencyLocale()
         }
 
         /**

@@ -27,6 +27,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.CurrencyLocaleResolver
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -231,6 +232,58 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion storefrontCountryCode
+
+    // region currencyLocaleForStorefrontCountryCode
+
+    @Test
+    fun `for the US storefront and a en-US device locale the currency locale should also be en-US `() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = "US", locale = Locale("en", "US"))
+
+        assertThat(currencyLocale.language).isEqualTo("en")
+        assertThat(currencyLocale.country).isEqualTo("US")
+    }
+
+    @Test
+    fun `for the NL storefront and a en-US device locale the currency locale should be en-NL`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = "NL", locale = Locale("en", "US"))
+
+        assertThat(currencyLocale.language).isEqualTo("en")
+        assertThat(currencyLocale.country).isEqualTo("NL")
+    }
+
+    @Test
+    fun `when no storefrontCountryCode is passed and no storefrontCountryCode cached the fallback locale should be used`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = null, locale = Locale("nl", "NL"))
+
+        assertThat(currencyLocale.language).isEqualTo("nl")
+        assertThat(currencyLocale.country).isEqualTo("NL")
+    }
+
+    @Test
+    fun `when no storefrontCountryCode is passed and the storefrontCountryCode is cached the cached storefrontCountryCode should be used`() {
+        assertThat(purchases.storefrontCountryCode).isNull()
+
+        every { mockBillingAbstract.getStorefront(captureLambda(), any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke("DE")
+        }
+
+        purchases.getStorefrontCountryCodeWith {  }
+
+        assertThat(purchases.storefrontCountryCode).isEqualTo("DE")
+
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = purchases.storefrontCountryCode, locale = Locale("en", "US"))
+
+        assertThat(currencyLocale.language).isEqualTo("en")
+        assertThat(currencyLocale.country).isEqualTo("DE")
+    }
+
+    // endregion currencyLocaleForStorefrontCountryCode
 
     // region purchasing
 

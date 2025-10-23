@@ -373,6 +373,7 @@ package com.revenuecat.purchases {
     method public void getCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method public void getCustomerInfo(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method @Deprecated public static boolean getDebugLogsEnabled();
+    method public static java.util.Locale getDefaultCurrencyLocale();
     method @Deprecated @kotlin.jvm.Synchronized public boolean getFinishTransactions();
     method public static String getFrameworkVersion();
     method @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();
@@ -484,6 +485,7 @@ package com.revenuecat.purchases {
     method public void canMakePayments(android.content.Context context, optional java.util.List<? extends com.revenuecat.purchases.models.BillingFeature> features, com.revenuecat.purchases.interfaces.Callback<java.lang.Boolean> callback);
     method public com.revenuecat.purchases.Purchases configure(com.revenuecat.purchases.PurchasesConfiguration configuration);
     method @Deprecated public boolean getDebugLogsEnabled();
+    method public java.util.Locale getDefaultCurrencyLocale();
     method public String getFrameworkVersion();
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.LogHandler getLogHandler();
     method public com.revenuecat.purchases.LogLevel getLogLevel();

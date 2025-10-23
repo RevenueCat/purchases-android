@@ -2,6 +2,7 @@ package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -10,10 +11,16 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.mockProductDetails
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
+import kotlin.text.Typography.nbsp
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
@@ -21,6 +28,13 @@ class StoreProductTest {
     private val productId = "product-id"
     private val basePlanId = "base-plan-id"
     private val offerToken = "mock-token"
+    private val originalLocale = Locale.US
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+        Locale.setDefault(originalLocale)
+    }
 
     @Test
     fun `Two StoreProducts with the same properties are equal`() {
@@ -409,6 +423,172 @@ class StoreProductTest {
             period = period,
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1, subscriptionOption2)),
             defaultOption = subscriptionOption1,
+            productDetails = productDetails,
+            presentedOfferingIdentifier = "originalOfferingId"
+        )
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses storefront country locale when Purchases is configured`() {
+
+        // Mock Purchases singleton to return Mexican storefront country code
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.storefrontCountryCode } returns "MX"
+
+        // Create a product with MXN currency (Mexican storefront)
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "$1.00",
+                amountMicros = 1_000_000,
+                currencyCode = "MXN"
+            )
+        )
+
+        // The formatted price should contain just the $ symbol. Since our default currency locale is MX as well (based on the storefront)
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("$1.00")
+
+        // If we explicitly pass US for formatting the currency we expect MX$
+        val formattedPrice2 = product.formattedPricePerMonth(Locale.US)
+        assertThat(formattedPrice2).isEqualTo("MX$1.00")
+
+        val pricingPhase = product.subscriptionOptions?.basePlan?.pricingPhases?.last()
+
+        // All prices should be formatted in MX locale (no "MX$" prefix since we're in Mexico)
+        // Monthly price is $1.00, so daily/weekly/yearly are calculated from that
+        assertThat(pricingPhase?.pricePerDay()?.formatted).isEqualTo("$0.03")
+        assertThat(pricingPhase?.pricePerWeek()?.formatted).isEqualTo("$0.23")
+        assertThat(pricingPhase?.pricePerMonth()?.formatted).isEqualTo("$1.00")
+        assertThat(pricingPhase?.pricePerYear()?.formatted).isEqualTo("$12.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses device locale when Purchases is not configured`() {
+        // Set device locale to US
+        Locale.setDefault(Locale.US)
+
+        // Mock Purchases to not be configured
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns false
+
+        // Create a product with USD currency
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "$1.00",
+                amountMicros = 1_000_000,
+                currencyCode = "USD"
+            )
+        )
+
+        // Since Purchases is not configured, should fall back to device locale (US)
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("$1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses device locale when storefront country is null`() {
+        // Set device locale to US
+        Locale.setDefault(Locale.US)
+
+        // Mock Purchases singleton with null storefront country
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.storefrontCountryCode } returns null
+
+        // Create a product with EUR currency
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "€1.00",
+                amountMicros = 1_000_000,
+                currencyCode = "EUR"
+            )
+        )
+
+        // When storefront country is null, should use device locale (US)
+        // EUR formatted in US locale shows the currency code
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("€1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses storefront country when it differs from device locale country`() {
+        // Set up: Device locale is US, but storefront is in the Netherlands
+        Locale.setDefault(Locale.US)
+
+        // Mock Purchases singleton to return Netherlands storefront
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.storefrontCountryCode } returns "NL"
+
+        // Create a product with EUR currency (Netherlands uses EUR)
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "€ 1,00",
+                amountMicros = 1_000_000,
+                currencyCode = "EUR"
+            )
+        )
+
+        // Should use storefront country (NL) which formats EUR with comma
+        // Note: NL locale uses a non-breaking space between € and amount
+        val pricePerMonth = product.pricePerMonth()
+        assertThat(pricePerMonth?.currencyCode).isEqualTo("EUR")
+        // The exact formatted output with non-breaking space
+        assertThat(pricePerMonth?.formatted).isEqualTo("€${nbsp}1,00")
+
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("€${nbsp}1,00")
+    }
+
+    private fun createSubscriptionStoreProductWithPrice(
+        period: Period,
+        price: Price
+    ): GoogleStoreProduct {
+        val productDetails = mockProductDetails()
+
+        val regularPricingPhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = 0,
+            price = price
+        )
+
+        val subscriptionOption = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase),
+            tags = emptyList(),
+            productDetails,
+            offerToken
+        )
+
+        return GoogleStoreProduct(
+            productId = "product_id",
+            basePlanId = "base_plan_id",
+            type = ProductType.SUBS,
+            price = price,
+            name = "TITLE",
+            title = "TITLE (App name)",
+            description = "DESCRIPTION",
+            period = period,
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption)),
+            defaultOption = subscriptionOption,
             productDetails = productDetails,
             presentedOfferingIdentifier = "originalOfferingId"
         )

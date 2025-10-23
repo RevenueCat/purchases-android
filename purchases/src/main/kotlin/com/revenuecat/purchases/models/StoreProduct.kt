@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
@@ -141,9 +142,10 @@ interface StoreProduct {
      * It uses a currency formatter to format the price in the given locale.
      * Note that this value may be an approximation.
      * For Google subscriptions, this value will use the basePlan to calculate the value.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     * @param locale Locale to use for formatting the price. The default is the best matching locale for the
+     * current storefront country and configured device locale, with a fallback to system default locale.
      */
-    fun pricePerDay(locale: Locale = Locale.getDefault()): Price? {
+    fun pricePerDay(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price? {
         return period?.let { price.pricePerDay(it, locale) }
     }
 
@@ -153,9 +155,10 @@ interface StoreProduct {
      * It uses a currency formatter to format the price in the given locale.
      * Note that this value may be an approximation.
      * For Google subscriptions, this value will use the basePlan to calculate the value.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     * @param locale Locale to use for formatting the price. The default is the best matching locale for the
+     * current storefront country and configured device locale, with a fallback to system default locale.
      */
-    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price? {
+    fun pricePerWeek(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price? {
         return period?.let { price.pricePerWeek(it, locale) }
     }
 
@@ -165,9 +168,10 @@ interface StoreProduct {
      * It uses a currency formatter to format the price in the given locale.
      * Note that this value may be an approximation.
      * For Google subscriptions, this value will use the basePlan to calculate the value.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     * @param locale Locale to use for formatting the price. The default is the best matching locale for the
+     * current storefront country and configured device locale, with a fallback to system default locale.
      */
-    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price? {
+    fun pricePerMonth(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price? {
         return period?.let { price.pricePerMonth(it, locale) }
     }
 
@@ -177,9 +181,10 @@ interface StoreProduct {
      * It uses a currency formatter to format the price in the given locale.
      * Note that this value may be an approximation.
      * For Google subscriptions, this value will use the basePlan to calculate the value.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     * @param locale Locale to use for formatting the price. The default is the best matching locale for the
+     * current storefront country and configured device locale, with a fallback to system default locale.
      */
-    fun pricePerYear(locale: Locale = Locale.getDefault()): Price? {
+    fun pricePerYear(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price? {
         return period?.let { price.pricePerYear(it, locale) }
     }
 
@@ -189,9 +194,10 @@ interface StoreProduct {
      * It uses a currency formatter to format the price in the given locale.
      * Note that this value may be an approximation.
      * For Google subscriptions, this value will use the basePlan to calculate the value.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     * @param locale Locale to use for formatting the price. The default is the best matching locale for the
+     * current storefront country and configured device locale, with a fallback to system default locale.
      */
-    fun formattedPricePerMonth(locale: Locale = Locale.getDefault()): String? {
+    fun formattedPricePerMonth(locale: Locale = Purchases.getDefaultCurrencyLocale()): String? {
         return pricePerMonth(locale)?.formatted
     }
 }

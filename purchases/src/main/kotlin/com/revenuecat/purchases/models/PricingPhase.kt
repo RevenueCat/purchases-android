@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
@@ -66,7 +67,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerDay(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerDay(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price =
         price.pricePerDay(billingPeriod, locale)
 
     /**
@@ -76,7 +77,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerWeek(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price =
         price.pricePerWeek(billingPeriod, locale)
 
     /**
@@ -86,7 +87,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerMonth(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price =
         price.pricePerMonth(billingPeriod, locale)
 
     /**
@@ -96,7 +97,7 @@ class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerYear(locale: Locale = Locale.getDefault()): Price =
+    fun pricePerYear(locale: Locale = Purchases.getDefaultCurrencyLocale()): Price =
         price.pricePerYear(billingPeriod, locale)
 
     /**
@@ -116,7 +117,7 @@ class PricingPhase(
         replaceWith = ReplaceWith("pricePerMonth(locale).formatted"),
     )
     @JvmOverloads
-    fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
+    fun formattedPriceInMonths(locale: Locale = Purchases.getDefaultCurrencyLocale()): String {
         return pricePerMonth(locale).formatted
     }
 }

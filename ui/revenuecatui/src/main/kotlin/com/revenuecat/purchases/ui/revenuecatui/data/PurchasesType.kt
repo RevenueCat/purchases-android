@@ -21,10 +21,11 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-
+import java.util.Locale
 /**
  * Abstraction over [Purchases] that can be mocked.
  */
+@Suppress("TooManyFunctions")
 internal interface PurchasesType {
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
@@ -56,8 +57,11 @@ internal interface PurchasesType {
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
+
+    fun getDefaultCurrencyLocale(): Locale
 }
 
+@Suppress("TooManyFunctions")
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         return purchases.awaitPurchase(purchaseParams.build())
@@ -118,4 +122,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
+
+    override fun getDefaultCurrencyLocale(): Locale {
+        return Purchases.getDefaultCurrencyLocale()
+    }
 }
