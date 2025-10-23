@@ -20,6 +20,7 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
+import kotlin.text.Typography.nbsp
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
@@ -27,10 +28,12 @@ class StoreProductTest {
     private val productId = "product-id"
     private val basePlanId = "base-plan-id"
     private val offerToken = "mock-token"
+    private val originalLocale = Locale.US
 
     @After
     fun tearDown() {
         unmockkAll()
+        Locale.setDefault(originalLocale)
     }
 
     @Test
@@ -456,17 +459,100 @@ class StoreProductTest {
 
         val pricingPhase = product.subscriptionOptions?.basePlan?.pricingPhases?.last()
 
-        assertThat(pricingPhase?.pricePerDay()?.formatted).contains("$")
-        assertThat(pricingPhase?.pricePerDay()?.formatted).doesNotContain("MX$")
+        // All prices should be formatted in MX locale (no "MX$" prefix since we're in Mexico)
+        // Monthly price is $1.00, so daily/weekly/yearly are calculated from that
+        assertThat(pricingPhase?.pricePerDay()?.formatted).isEqualTo("$0.03")
+        assertThat(pricingPhase?.pricePerWeek()?.formatted).isEqualTo("$0.23")
+        assertThat(pricingPhase?.pricePerMonth()?.formatted).isEqualTo("$1.00")
+        assertThat(pricingPhase?.pricePerYear()?.formatted).isEqualTo("$12.00")
+    }
 
-        assertThat(pricingPhase?.pricePerWeek()?.formatted).contains("$")
-        assertThat(pricingPhase?.pricePerWeek()?.formatted).doesNotContain("MX$")
+    @Test
+    fun `formattedPricePerMonth uses device locale when Purchases is not configured`() {
+        // Set device locale to US
+        Locale.setDefault(Locale.US)
 
-        assertThat(pricingPhase?.pricePerMonth()?.formatted).contains("$")
-        assertThat(pricingPhase?.pricePerMonth()?.formatted).doesNotContain("MX$")
+        // Mock Purchases to not be configured
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns false
 
-        assertThat(pricingPhase?.pricePerYear()?.formatted).contains("$")
-        assertThat(pricingPhase?.pricePerYear()?.formatted).doesNotContain("MX$")
+        // Create a product with USD currency
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "$1.00",
+                amountMicros = 1_000_000,
+                currencyCode = "USD"
+            )
+        )
+
+        // Since Purchases is not configured, should fall back to device locale (US)
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("$1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses device locale when storefront country is null`() {
+        // Set device locale to US
+        Locale.setDefault(Locale.US)
+
+        // Mock Purchases singleton with null storefront country
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.storefrontCountryCode } returns null
+
+        // Create a product with EUR currency
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "€1.00",
+                amountMicros = 1_000_000,
+                currencyCode = "EUR"
+            )
+        )
+
+        // When storefront country is null, should use device locale (US)
+        // EUR formatted in US locale shows the currency code
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("€1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth uses storefront country when it differs from device locale country`() {
+        // Set up: Device locale is US, but storefront is in the Netherlands
+        Locale.setDefault(Locale.US)
+
+        // Mock Purchases singleton to return Netherlands storefront
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.storefrontCountryCode } returns "NL"
+
+        // Create a product with EUR currency (Netherlands uses EUR)
+        val period = Period.create("P1M")
+        val product = createSubscriptionStoreProductWithPrice(
+            period = period,
+            price = Price(
+                formatted = "€ 1,00",
+                amountMicros = 1_000_000,
+                currencyCode = "EUR"
+            )
+        )
+
+        // Should use storefront country (NL) which formats EUR with comma
+        // Note: NL locale uses a non-breaking space between € and amount
+        val pricePerMonth = product.pricePerMonth()
+        assertThat(pricePerMonth?.currencyCode).isEqualTo("EUR")
+        // The exact formatted output with non-breaking space
+        assertThat(pricePerMonth?.formatted).isEqualTo("€${nbsp}1,00")
+
+        val formattedPrice = product.formattedPricePerMonth()
+        assertThat(formattedPrice).isEqualTo("€${nbsp}1,00")
     }
 
     private fun createSubscriptionStoreProductWithPrice(
