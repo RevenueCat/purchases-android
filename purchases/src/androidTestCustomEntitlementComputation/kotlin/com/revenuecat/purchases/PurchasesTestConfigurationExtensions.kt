@@ -9,7 +9,7 @@ internal fun Purchases.Companion.configureSdk(
     appUserID: String,
     billingAbstract: BillingAbstract,
     entitlementVerificationMode: EntitlementVerificationMode? = null,
-    forceServerErrors: Boolean = false,
+    forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     forceSigningErrors: Boolean = false,
 ) {
     Purchases.configure(
@@ -23,7 +23,7 @@ internal fun Purchases.Companion.configureSdk(
             }
             .build(),
         billingAbstract,
-        forceServerErrors,
+        forceServerErrorStrategy,
         forceSigningErrors,
     )
 }
