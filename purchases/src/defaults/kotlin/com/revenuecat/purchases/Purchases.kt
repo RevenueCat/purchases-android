@@ -1113,6 +1113,17 @@ class Purchases internal constructor(
         }
 
         /**
+         * Returns the default currency locale for price formatting.
+         * If the Purchases singleton is configured, returns the best matching locale
+         * for the storefront country code and the device's preferred locale's
+         * Otherwise, returns the system default locale.
+         */
+        @JvmStatic
+        fun getDefaultCurrencyLocale(): Locale {
+            return PurchasesOrchestrator.getDefaultCurrencyLocale()
+        }
+
+        /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
          * Calling from an Amazon-configured app will return true.
          *

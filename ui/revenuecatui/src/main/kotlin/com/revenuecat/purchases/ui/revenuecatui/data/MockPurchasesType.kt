@@ -11,11 +11,12 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-
+import java.util.Locale
 /**
  * Mock implementation of [PurchasesType] for previews and test data
  * NOTE: This is only used for UI previews and test data, not for actual testing
  */
+@Suppress("TooManyFunctions")
 internal class MockPurchasesType(
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
@@ -52,5 +53,8 @@ internal class MockPurchasesType(
     }
     override fun syncPurchases() {
         // No-op for mock
+    }
+    override fun getDefaultCurrencyLocale(): Locale {
+        return Locale.getDefault()
     }
 }

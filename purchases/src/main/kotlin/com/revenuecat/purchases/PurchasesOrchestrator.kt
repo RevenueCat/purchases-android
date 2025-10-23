@@ -93,6 +93,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.CurrencyLocaleResolver
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
@@ -1670,6 +1671,25 @@ internal class PurchasesOrchestrator(
             } else {
                 currentImageLoader
             }
+        }
+
+        /**
+         * Returns the default currency locale for price formatting.
+         * If the Purchases singleton is configured, returns the locale for the storefront country code.
+         * Otherwise, returns the system default locale.
+         */
+        @OptIn(InternalRevenueCatAPI::class)
+        @JvmStatic
+        fun getDefaultCurrencyLocale(): Locale {
+            val storefrontCountryCode = if (Purchases.isConfigured) {
+                Purchases.sharedInstance.storefrontCountryCode
+            } else {
+                null
+            }
+            return CurrencyLocaleResolver.resolve(
+                storefrontCountryCode = storefrontCountryCode,
+                locale = Locale.getDefault(),
+            )
         }
 
         /**

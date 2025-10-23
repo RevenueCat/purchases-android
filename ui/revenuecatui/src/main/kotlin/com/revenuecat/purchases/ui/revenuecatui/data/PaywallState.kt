@@ -160,7 +160,7 @@ internal sealed interface PaywallState {
              */
             val currencyLocale by derivedStateOf {
                 CurrencyLocaleResolver.resolve(
-                    storefrontCountryCode = storefrontCountryCode,
+                    storefrontCountryCode,
                     locale = locale.toJavaLocale(),
                 )
             }
