@@ -197,6 +197,7 @@ class PurchaseParams(val builder: Builder) {
         private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
             if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
+                return@apply
             }
 
             val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
