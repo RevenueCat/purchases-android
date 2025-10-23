@@ -110,6 +110,7 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        shouldForceServerFailureDelegate: () -> Boolean = { appConfig.forceServerErrors },
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -128,10 +129,11 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                shouldForceServerFailureDelegate = { false },
             )
         }
 
-        val finalEndpoint = if (appConfig.forceServerErrors) {
+        val finalEndpoint = if (shouldForceServerFailureDelegate()) {
             warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
             Endpoint.TestForceServerFailure(endpoint)
         } else {

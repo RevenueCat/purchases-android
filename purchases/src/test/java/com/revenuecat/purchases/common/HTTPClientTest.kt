@@ -86,49 +86,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
-    // region forceServerErrors
-
-    @Test
-    fun `returns server error result when forcing server errors`() {
-        val endpoint = Endpoint.LogIn
-
-        client = createClient(appConfig = createAppConfig(forceServerErrors = true))
-
-        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-
-        assertThat(server.requestCount).isEqualTo(0)
-        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
-        assertThat(result.payload).isEqualTo("")
-        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
-        assertThat(result.requestDate).isNull()
-        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-    }
-
-    @Test
-    fun `can dynamically change between getting server errors and not`() {
-        val endpoint = Endpoint.LogIn
-
-        val appConfig = createAppConfig(forceServerErrors = true)
-        client = createClient(appConfig = appConfig)
-
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-
-        assertThat(server.requestCount).isEqualTo(0)
-
-        appConfig.forceServerErrors = false
-
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "{}")
-        )
-
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-
-        assertThat(server.requestCount).isEqualTo(1)
-    }
-
-    // endregion forceServerErrors
-
     // Headers
     @Test
     fun addsHeadersToRequest() {

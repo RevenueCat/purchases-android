@@ -197,6 +197,7 @@ class BackendGetCustomerCenterConfigTest {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false
             every { fallbackBaseURLs } returns emptyList()
+            every { forceServerErrors } returns false
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -277,7 +278,8 @@ class BackendGetCustomerCenterConfigTest {
                 Endpoint.GetCustomerCenterConfig("test-user-id"),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                requestHeaders = any(),
+                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -294,6 +296,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
+                shouldForceServerFailureDelegate = any(),
             )
         } answers {
             if (delayMs != null) {
