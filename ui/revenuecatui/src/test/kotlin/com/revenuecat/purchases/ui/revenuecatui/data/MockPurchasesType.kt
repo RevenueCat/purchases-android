@@ -52,9 +52,4 @@ internal class MockPurchasesType(
     override fun syncPurchases() {
         // No-op for mock
     }
-
-    override fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String?, locale: Locale): Locale {
-        // Just return the current locale for mock
-        return locale
-    }
 }

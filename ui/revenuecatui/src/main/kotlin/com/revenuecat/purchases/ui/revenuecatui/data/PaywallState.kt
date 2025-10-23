@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import com.revenuecat.purchases.utils.CurrencyLocaleResolver
 import java.util.Date
 import android.os.LocaleList as FrameworkLocaleList
 
@@ -158,7 +159,7 @@ internal sealed interface PaywallState {
              * avoid discrepancies between calculated prices (per period) and the price coming directly from the store.
              */
             val currencyLocale by derivedStateOf {
-                purchases.currencyLocaleForStorefrontCountryCode(
+                CurrencyLocaleResolver.resolve(
                     storefrontCountryCode = storefrontCountryCode,
                     locale = locale.toJavaLocale(),
                 )

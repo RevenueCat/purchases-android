@@ -21,7 +21,6 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
-import java.util.Locale
 
 /**
  * Abstraction over [Purchases] that can be mocked.
@@ -54,8 +53,6 @@ internal interface PurchasesType {
     fun syncPurchases()
 
     val storefrontCountryCode: String?
-
-    fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String? = null, locale: Locale): Locale
 
     val customerCenterListener: CustomerCenterListener?
 
@@ -123,8 +120,4 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
-
-    override fun currencyLocaleForStorefrontCountryCode(storefrontCountryCode: String?, locale: Locale): Locale {
-        return purchases.currencyLocaleForStorefrontCountryCode(storefrontCountryCode, locale)
-    }
 }

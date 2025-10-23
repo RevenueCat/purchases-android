@@ -428,12 +428,12 @@ class StoreProductTest {
     @Test
     fun `formattedPricePerMonth uses storefront country locale when Purchases is configured`() {
 
-        // Mock Purchases singleton to return Dutch locale for storefront country
+        // Mock Purchases singleton to return Mexican storefront country code
         val mockPurchases = mockk<Purchases>(relaxed = true)
         mockkObject(Purchases)
         every { Purchases.isConfigured } returns true
         every { Purchases.sharedInstance } returns mockPurchases
-        every { mockPurchases.currencyLocaleForStorefrontCountryCode(null, any()) } returns Locale("es", "MX")
+        every { mockPurchases.storefrontCountryCode } returns "MX"
 
         // Create a product with MXN currency (Mexican storefront)
         val period = Period.create("P1M")

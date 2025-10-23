@@ -3,6 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.utils.CurrencyLocaleResolver
 import com.revenuecat.purchases.utils.pricePerDay
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
@@ -131,10 +132,15 @@ class PricingPhase(
         @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         fun defaultCurrencyLocale(): Locale {
-            if (Purchases.isConfigured) {
-                return Purchases.sharedInstance.currencyLocaleForStorefrontCountryCode()
+            val storefrontCountryCode = if (Purchases.isConfigured) {
+                Purchases.sharedInstance.storefrontCountryCode
+            } else {
+                null
             }
-            return Locale.getDefault()
+            return CurrencyLocaleResolver.resolve(
+                storefrontCountryCode = storefrontCountryCode,
+                locale = Locale.getDefault(),
+            )
         }
     }
 }

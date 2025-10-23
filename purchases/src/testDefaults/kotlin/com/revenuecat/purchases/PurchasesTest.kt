@@ -27,6 +27,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.CurrencyLocaleResolver
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -238,7 +239,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `for the US storefront and a en-US device locale the currency locale should also be en-US `() {
         assertThat(purchases.storefrontCountryCode).isNull()
 
-        val currencyLocale = purchases.currencyLocaleForStorefrontCountryCode(storefrontCountryCode = "US", locale = Locale("en", "US"))
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = "US", locale = Locale("en", "US"))
 
         assertThat(currencyLocale.language).isEqualTo("en")
         assertThat(currencyLocale.country).isEqualTo("US")
@@ -248,7 +249,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `for the NL storefront and a en-US device locale the currency locale should be en-NL`() {
         assertThat(purchases.storefrontCountryCode).isNull()
 
-        val currencyLocale = purchases.currencyLocaleForStorefrontCountryCode(storefrontCountryCode = "NL", locale = Locale("en", "US"))
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = "NL", locale = Locale("en", "US"))
 
         assertThat(currencyLocale.language).isEqualTo("en")
         assertThat(currencyLocale.country).isEqualTo("NL")
@@ -258,7 +259,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `when no storefrontCountryCode is passed and no storefrontCountryCode cached the fallback locale should be used`() {
         assertThat(purchases.storefrontCountryCode).isNull()
 
-        val currencyLocale = purchases.currencyLocaleForStorefrontCountryCode(locale = Locale("nl", "NL"))
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = null, locale = Locale("nl", "NL"))
 
         assertThat(currencyLocale.language).isEqualTo("nl")
         assertThat(currencyLocale.country).isEqualTo("NL")
@@ -276,7 +277,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(purchases.storefrontCountryCode).isEqualTo("DE")
 
-        val currencyLocale = purchases.currencyLocaleForStorefrontCountryCode(locale = Locale("en", "US"))
+        val currencyLocale = CurrencyLocaleResolver.resolve(storefrontCountryCode = purchases.storefrontCountryCode, locale = Locale("en", "US"))
 
         assertThat(currencyLocale.language).isEqualTo("en")
         assertThat(currencyLocale.country).isEqualTo("DE")
