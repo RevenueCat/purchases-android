@@ -91,7 +91,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     // region forceServerErrors
 
     @Test
-    fun `when forceServerErrorsStrategy returns true, expected url is used`() {
+    fun `when forceServerErrorsStrategy returns true, error url is used`() {
         val client = createClient(
             forceServerErrorStrategy = object : ForceServerErrorStrategy {
                 override val serverErrorURL: String
@@ -116,6 +116,34 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         assertThat(result.responseCode).isEqualTo(502)
         assertThat(result.payload).isEqualTo("Some error xml")
+    }
+
+    @Test
+    fun `when forceServerErrorsStrategy returns false, original url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return false
+                }
+            },
+        )
+
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
+        )
+
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}v1/subscribers/identify")
+
+        assertThat(result.responseCode).isEqualTo(223)
+        assertThat(result.payload).isEqualTo("{'response': 'OK'}")
     }
 
     // endregion forceServerErrors
