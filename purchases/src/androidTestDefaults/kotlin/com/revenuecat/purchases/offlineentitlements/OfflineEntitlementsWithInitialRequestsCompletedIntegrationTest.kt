@@ -3,6 +3,7 @@ package com.revenuecat.purchases.offlineentitlements
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.MainActivity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
@@ -81,7 +82,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
     @Test
     fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             Purchases.sharedInstance.invalidateCustomerInfoCache()
 
@@ -101,7 +102,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
     @Test
     fun entersOfflineEntitlementsModeIfCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             Purchases.sharedInstance.getCustomerInfoWith(
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
@@ -124,7 +125,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
     @Test
     fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             Purchases.sharedInstance.getCustomerInfoWith(
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
@@ -153,7 +154,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             val receivedCustomerInfosInListener = mutableListOf<CustomerInfo>()
             Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
@@ -187,7 +188,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         )
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             mockPurchaseResult(activePurchases = mapOf(inAppTransaction.purchaseToken.sha1() to inAppTransaction))
             mockBillingAbstract.mockQueryProductDetails(
@@ -212,7 +213,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             mockPurchaseResult()
             mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -244,7 +245,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             mockPurchaseResult()
             mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -257,7 +258,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo)
                     assertAcknowledgePurchaseDidNotHappen()
 
-                    forceServerErrors = false
+                    forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
                     mockActivePurchases(initialActivePurchases)
 
                     Purchases.sharedInstance.onAppForegrounded()
@@ -274,7 +275,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             mockPurchaseResult()
             mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -304,7 +305,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            forceServerErrors = true
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
             mockPurchaseResult()
             mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -317,7 +318,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo1)
                     assertAcknowledgePurchaseDidNotHappen()
 
-                    forceServerErrors = false
+                    forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
 
                     Purchases.sharedInstance.restorePurchasesWith(
                         onError = {

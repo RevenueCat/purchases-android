@@ -146,7 +146,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             )
         }
 
-        simulateSdkRestart(activity, forceServerErrors = true)
+        simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getOfferingsWith(

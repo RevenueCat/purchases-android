@@ -7,11 +7,13 @@ import java.net.URL
 internal interface ForceServerErrorStrategy {
     companion object {
         const val serverErrorURL = "https://api.revenuecat.com/force-server-failure"
+        val doNotFail = object : ForceServerErrorStrategy {
+            override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                return false
+            }
+        }
         val failAll = object : ForceServerErrorStrategy {
-            override fun shouldForceServerError(
-                baseURL: URL,
-                endpoint: Endpoint,
-            ): Boolean {
+            override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
                 return true
             }
         }
