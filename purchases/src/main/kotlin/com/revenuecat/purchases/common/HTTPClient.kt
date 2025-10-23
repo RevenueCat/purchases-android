@@ -193,7 +193,7 @@ internal class HTTPClient(
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
                 warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-                URL(ForceServerErrorStrategy.serverErrorURL)
+                URL(forceServerErrorStrategy.serverErrorURL)
             } else {
                 URL(baseURL, path)
             }

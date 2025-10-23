@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -27,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -85,6 +87,38 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
+
+    // region forceServerErrors
+
+    @Test
+    fun `when forceServerErrorsStrategy returns true, expected url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return true
+                }
+            },
+        )
+
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+
+        assertThat(result.responseCode).isEqualTo(502)
+        assertThat(result.payload).isEqualTo("Some error xml")
+    }
+
+    // endregion forceServerErrors
 
     // Headers
     @Test
