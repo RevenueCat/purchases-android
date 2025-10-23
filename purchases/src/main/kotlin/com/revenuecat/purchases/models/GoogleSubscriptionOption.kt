@@ -145,13 +145,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
         get() {
             val infiniteRecurringPricingPhase = pricingPhases
                 .firstOrNull { it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING }
-
-            if (infiniteRecurringPricingPhase == null) {
-                log(LogIntent.WARNING) {
-                    OfferingStrings.GOOGLE_PRODUCT_MISSING_INFINITELY_RECURRING_BILLING_PHASE.format(this.productId)
-                }
-            }
-
+            
             return infiniteRecurringPricingPhase ?: pricingPhases.lastOrNull()
         }
 }
