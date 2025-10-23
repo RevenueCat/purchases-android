@@ -16,7 +16,6 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  * Mock implementation of [PurchasesType] for previews and test data
  * NOTE: This is only used for UI previews and test data, not for actual testing
  */
-@Suppress("TooManyFunctions")
 internal class MockPurchasesType(
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,

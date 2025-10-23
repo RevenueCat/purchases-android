@@ -25,7 +25,6 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 /**
  * Abstraction over [Purchases] that can be mocked.
  */
-@Suppress("TooManyFunctions")
 internal interface PurchasesType {
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
@@ -59,7 +58,6 @@ internal interface PurchasesType {
     val preferredUILocaleOverride: String?
 }
 
-@Suppress("TooManyFunctions")
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         return purchases.awaitPurchase(purchaseParams.build())
