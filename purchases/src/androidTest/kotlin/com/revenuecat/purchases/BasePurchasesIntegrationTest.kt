@@ -20,7 +20,6 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
@@ -65,13 +64,10 @@ open class BasePurchasesIntegrationTest {
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
 
-    internal var forceServerErrors: Boolean
-        get() = forceServerErrorsAtomic.get()
-        set(value) = forceServerErrorsAtomic.set(value)
-    private val forceServerErrorsAtomic: AtomicBoolean = AtomicBoolean(false)
+    internal var forceServerErrors: Boolean = false
     internal var forceServerErrorStrategy: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
         override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
-            return forceServerErrorsAtomic.get()
+            return forceServerErrors
         }
     }
 

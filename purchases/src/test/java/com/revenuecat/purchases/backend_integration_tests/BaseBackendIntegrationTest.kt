@@ -86,6 +86,7 @@ internal abstract class BaseBackendIntegrationTest {
             every { forceSigningErrors } returns false
             every { isAppBackgrounded } returns false
             every { fallbackBaseURLs } returns emptyList()
+            every { runningTests } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
