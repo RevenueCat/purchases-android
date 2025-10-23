@@ -131,21 +131,18 @@ internal class HTTPClient(
             )
         }
 
-        if (appConfig.forceServerErrors) {
+        val finalEndpoint = if (appConfig.forceServerErrors) {
             warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-            return HTTPResult(
-                RCHTTPStatusCodes.ERROR,
-                payload = "",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                VerificationResult.NOT_REQUESTED,
-            )
+            Endpoint.TestForceServerFailure(endpoint)
+        } else {
+            endpoint
         }
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(baseURL, finalEndpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
         } catch (e: IOException) {
             // Handle connection failures with fallback URLs
@@ -153,7 +150,7 @@ internal class HTTPClient(
         } finally {
             trackHttpRequestPerformedIfNeeded(
                 baseURL,
-                endpoint,
+                finalEndpoint,
                 requestStartTime,
                 callSuccessful,
                 callResult,
@@ -164,7 +161,7 @@ internal class HTTPClient(
             log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
             callResult = performRequest(
                 baseURL,
-                endpoint,
+                finalEndpoint,
                 body,
                 postFieldsToSign,
                 requestHeaders,

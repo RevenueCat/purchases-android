@@ -66,6 +66,12 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             return pathTemplate.format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
         }
     }
+    data class TestForceServerFailure(val originalEndpoint: Endpoint) : Endpoint(
+        pathTemplate = "/force-server-failure",
+        name = "test_force_server_failure",
+    ) {
+        override fun getPath() = pathTemplate
+    }
 
     val supportsSignatureVerification: Boolean
         get() = when (this) {
@@ -85,6 +91,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerCenterConfig,
             is WebBillingGetProducts,
             is AliasUsers,
+            is TestForceServerFailure,
             ->
                 false
         }
@@ -107,6 +114,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerCenterConfig,
             is WebBillingGetProducts,
             is AliasUsers,
+            is TestForceServerFailure,
             ->
                 false
         }
@@ -117,7 +125,8 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             GetProductEntitlementMapping,
             ->
                 true
-
+            is TestForceServerFailure,
+            -> originalEndpoint.supportsFallbackBaseURLs
             is LogIn,
             PostReceipt,
             PostRedeemWebPurchase,
