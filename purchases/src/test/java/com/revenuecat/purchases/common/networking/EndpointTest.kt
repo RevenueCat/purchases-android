@@ -19,7 +19,7 @@ class EndpointTest {
         Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
         Endpoint.PostAttributes("test-user-id"),
         Endpoint.PostDiagnostics,
-        Endpoint.PostPaywallEvents,
+        Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
         Endpoint.AliasUsers("test-user-id")
@@ -62,7 +62,7 @@ class EndpointTest {
 
     @Test
     fun `Paywall events has correct path`() {
-        val endpoint = Endpoint.PostPaywallEvents
+        val endpoint = Endpoint.PostEvents
         val expectedPath = "/v1/events"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
@@ -153,7 +153,7 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.PostPaywallEvents,
+            Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
         )
@@ -199,7 +199,7 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.PostPaywallEvents,
+            Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
         )

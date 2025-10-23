@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -71,6 +72,7 @@ class EventsManagerTest {
     private var appSessionID = UUID.randomUUID()
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
     private lateinit var fileHelper: EventsFileHelper<BackendStoredEvent>
+    private lateinit var adFileHelper: EventsFileHelper<BackendStoredEvent.Ad>
 
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
@@ -107,6 +109,7 @@ class EventsManagerTest {
                 postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
@@ -207,6 +210,7 @@ class EventsManagerTest {
                 expectedRequest,
                 any(),
                 any(),
+                any(),
             )
         }
     }
@@ -215,7 +219,7 @@ class EventsManagerTest {
     fun `flushEvents without events, does not call backend`() {
         eventsManager.flushEvents()
         verify(exactly = 0) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any())
         }
     }
 
@@ -255,7 +259,7 @@ class EventsManagerTest {
     @Test
     fun `flushEvents multiple times only executes once`() {
         every {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -263,7 +267,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any())
         }
     }
 
@@ -271,7 +275,7 @@ class EventsManagerTest {
     fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
         val successSlot = slot<() -> Unit>()
         every {
-            backend.postEvents(any(), capture(successSlot), any())
+            backend.postEvents(any(), any(), capture(successSlot), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -279,7 +283,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -289,7 +293,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -352,7 +356,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             if (success) {
                 successSlot.captured.invoke()
@@ -369,6 +373,7 @@ class EventsManagerTest {
         verify(exactly = 1) {
             backend.postEvents(
                 expectedRequest,
+                any(),
                 any(),
                 any(),
             )
