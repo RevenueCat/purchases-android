@@ -309,7 +309,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -391,7 +390,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -446,7 +444,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -502,7 +499,6 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -783,7 +779,6 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -855,7 +850,6 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
         verify(exactly = 2) {
@@ -865,7 +859,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -961,7 +954,6 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1024,7 +1016,6 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1075,7 +1066,6 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1125,7 +1115,6 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1192,7 +1181,6 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1384,7 +1372,6 @@ class BackendTest {
                 any(),
                 expectedPostFieldsToSign,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1573,7 +1560,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1604,7 +1590,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
         verify(exactly = 1) {
@@ -1614,7 +1599,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1669,7 +1653,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1708,7 +1691,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1745,7 +1727,6 @@ class BackendTest {
                 body,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1896,7 +1877,6 @@ class BackendTest {
                 requestBody,
                 expectedPostFieldsToSign,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -1948,7 +1928,6 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2000,7 +1979,6 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2052,7 +2030,6 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2070,7 +2047,6 @@ class BackendTest {
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2100,7 +2076,6 @@ class BackendTest {
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2132,7 +2107,6 @@ class BackendTest {
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2293,7 +2267,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2321,7 +2294,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2354,7 +2326,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2494,7 +2465,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2605,7 +2575,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2660,7 +2629,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2763,7 +2731,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2899,7 +2866,6 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -2920,7 +2886,6 @@ class BackendTest {
                 body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -3008,7 +2973,6 @@ class BackendTest {
                 body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
                 postFieldsToSign = null,
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -3042,7 +3006,6 @@ class BackendTest {
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
                 capture(headersSlot),
-                shouldForceServerFailureDelegate = any(),
             )
         }
 
@@ -3260,7 +3223,6 @@ class BackendTest {
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
                 capture(headersSlot),
-                shouldForceServerFailureDelegate = any(),
             )
         }
 
@@ -3295,7 +3257,6 @@ class BackendTest {
                 null,
                 any(),
                 capture(headersSlot),
-                shouldForceServerFailureDelegate = any(),
             )
         }
 
@@ -3328,7 +3289,6 @@ class BackendTest {
                 body,
                 any(),
                 capture(headersSlot),
-                shouldForceServerFailureDelegate = any(),
             )
         }
 

@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -47,6 +48,7 @@ internal class HTTPClient(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
+    private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -110,7 +112,6 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
-        shouldForceServerFailureDelegate: () -> Boolean = { appConfig.forceServerErrors },
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -129,22 +130,14 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
-                shouldForceServerFailureDelegate = { false },
             )
-        }
-
-        val finalEndpoint = if (shouldForceServerFailureDelegate()) {
-            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-            Endpoint.TestForceServerFailure(endpoint)
-        } else {
-            endpoint
         }
 
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, finalEndpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
         } catch (e: IOException) {
             // Handle connection failures with fallback URLs
@@ -152,7 +145,7 @@ internal class HTTPClient(
         } finally {
             trackHttpRequestPerformedIfNeeded(
                 baseURL,
-                finalEndpoint,
+                endpoint,
                 requestStartTime,
                 callSuccessful,
                 callResult,
@@ -163,7 +156,7 @@ internal class HTTPClient(
             log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
             callResult = performRequest(
                 baseURL,
-                finalEndpoint,
+                endpoint,
                 body,
                 postFieldsToSign,
                 requestHeaders,
@@ -194,8 +187,16 @@ internal class HTTPClient(
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+
         try {
-            val fullURL = URL(baseURL, path)
+            val fullURL = if (appConfig.runningTests &&
+                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
+            ) {
+                warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
+                URL(ForceServerErrorStrategy.serverErrorURL)
+            } else {
+                URL(baseURL, path)
+            }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {

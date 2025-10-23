@@ -100,7 +100,6 @@ internal abstract class BaseHTTPClientTest {
             apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
-            forceServerErrors = forceServerErrors,
             forceSigningErrors = forceSigningErrors,
         )
     }

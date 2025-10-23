@@ -22,18 +22,16 @@ internal class AppConfig(
     val apiKeyValidationResult: APIKeyValidator.ValidationResult,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
-    private val runningTests: Boolean = false,
-    forceServerErrors: Boolean = false,
+    val runningTests: Boolean = false,
     forceSigningErrors: Boolean = false,
 ) {
     companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
         val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
+        val fallbackURL = URL("https://api-production.8-lives-cat.io/")
     }
 
     // Should only be used for tests
-    var forceServerErrors: Boolean = forceServerErrors
-        get() = runningTests && field
     var forceSigningErrors: Boolean = forceSigningErrors
         get() = runningTests && field
 
@@ -55,7 +53,7 @@ internal class AppConfig(
     val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
         emptyList()
     } else {
-        listOf(URL("https://api-production.8-lives-cat.io/"))
+        listOf(fallbackURL)
     }
     val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
@@ -78,7 +76,6 @@ internal class AppConfig(
         if (versionName != other.versionName) return false
         if (packageName != other.packageName) return false
         if (finishTransactions != other.finishTransactions) return false
-        if (forceServerErrors != other.forceServerErrors) return false
         if (forceSigningErrors != other.forceSigningErrors) return false
         if (baseURL != other.baseURL) return false
         if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
@@ -97,7 +94,6 @@ internal class AppConfig(
         result = 31 * result + versionName.hashCode()
         result = 31 * result + packageName.hashCode()
         result = 31 * result + finishTransactions.hashCode()
-        result = 31 * result + forceServerErrors.hashCode()
         result = 31 * result + forceSigningErrors.hashCode()
         result = 31 * result + baseURL.hashCode()
         result = 31 * result + showInAppMessagesAutomatically.hashCode()

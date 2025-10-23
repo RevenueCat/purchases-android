@@ -70,7 +70,7 @@ internal class PurchasesFactory(
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
     ): Purchases {
@@ -97,7 +97,6 @@ internal class PurchasesFactory(
                 apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
-                forceServerErrors,
                 forceSigningError,
             )
 
@@ -183,6 +182,7 @@ internal class PurchasesFactory(
                 signingManager,
                 cache,
                 localeProvider = localeProvider,
+                forceServerErrorStrategy = forceServerErrorStrategy,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(

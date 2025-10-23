@@ -5,6 +5,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
@@ -19,6 +20,7 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
@@ -63,6 +65,16 @@ open class BasePurchasesIntegrationTest {
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
 
+    internal var forceServerErrors: Boolean
+        get() = forceServerErrorsAtomic.get()
+        set(value) = forceServerErrorsAtomic.set(value)
+    private val forceServerErrorsAtomic: AtomicBoolean = AtomicBoolean(false)
+    internal var forceServerErrorStrategy: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+            return forceServerErrorsAtomic.get()
+        }
+    }
+
     protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
@@ -88,6 +100,7 @@ open class BasePurchasesIntegrationTest {
     ) {
         latestPurchasesUpdatedListener = null
         latestStateListener = null
+        this.forceServerErrors = forceServerErrors
 
         onActivityReady {
             _activity = it
@@ -110,7 +123,7 @@ open class BasePurchasesIntegrationTest {
                 appUserID ?: testUserId,
                 mockBillingAbstract,
                 entitlementVerificationMode,
-                forceServerErrors,
+                forceServerErrorStrategy,
                 forceSigningErrors,
             )
 
@@ -127,8 +140,15 @@ open class BasePurchasesIntegrationTest {
         entitlementVerificationMode: EntitlementVerificationMode? = null,
         forceServerErrors: Boolean = false,
     ) {
+        this.forceServerErrors = forceServerErrors
         Purchases.resetSingleton()
-        Purchases.configureSdk(context, testUserId, mockBillingAbstract, entitlementVerificationMode, forceServerErrors)
+        Purchases.configureSdk(
+            context,
+            testUserId,
+            mockBillingAbstract,
+            entitlementVerificationMode,
+            forceServerErrorStrategy,
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {

@@ -47,7 +47,6 @@ class AmazonBackendTest {
         mockAppConfig = mockk<AppConfig>().apply {
             every { baseURL } returns this@AmazonBackendTest.baseURL
             every { fallbackBaseURLs } returns emptyList()
-            every { forceServerErrors } returns false
         }
         dispatcher = SyncDispatcher()
         backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
@@ -108,7 +107,6 @@ class AmazonBackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         } returns successfulResult
 
@@ -131,7 +129,6 @@ class AmazonBackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         } returns unsuccessfulResult
 
@@ -155,7 +152,6 @@ class AmazonBackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         } throws IOException()
 
@@ -179,7 +175,6 @@ class AmazonBackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         } returns successfulResult
 
@@ -197,7 +192,6 @@ class AmazonBackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }

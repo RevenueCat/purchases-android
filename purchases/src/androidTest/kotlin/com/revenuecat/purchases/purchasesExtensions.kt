@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 internal fun Purchases.Companion.configure(
     configuration: PurchasesConfiguration,
     overrideBillingAbstract: BillingAbstract,
-    forceServerErrors: Boolean = false,
+    forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     forceSigningErrors: Boolean = false,
 ): Purchases {
     return PurchasesFactory(isDebugBuild = { true }).createPurchases(
@@ -14,7 +14,7 @@ internal fun Purchases.Companion.configure(
         platformInfo,
         proxyURL,
         overrideBillingAbstract,
-        forceServerErrors,
+        forceServerErrorStrategy,
         forceSigningErrors,
         runningIntegrationTests = true,
     ).also {
@@ -27,12 +27,6 @@ fun Purchases.Companion.resetSingleton() {
     backingFieldSharedInstance?.close()
     backingFieldSharedInstance = null
 }
-
-var Purchases.forceServerErrors: Boolean
-    get() = purchasesOrchestrator.appConfig.forceServerErrors
-    set(value) {
-        purchasesOrchestrator.appConfig.forceServerErrors = value
-    }
 
 var Purchases.forceSigningErrors: Boolean
     get() = purchasesOrchestrator.appConfig.forceSigningErrors

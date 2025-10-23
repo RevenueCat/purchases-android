@@ -259,7 +259,6 @@ class BackendPaywallEventTest {
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -274,7 +273,6 @@ class BackendPaywallEventTest {
                 body = expectedBody,
                 postFieldsToSign = null,
                 requestHeaders = any(),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -291,7 +289,6 @@ class BackendPaywallEventTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
-                shouldForceServerFailureDelegate = any(),
             )
         } answers {
             if (delayMs != null) {
@@ -315,7 +312,6 @@ class BackendPaywallEventTest {
                 any(),
                 any(),
                 any(),
-                shouldForceServerFailureDelegate = any(),
             )
         } throws IOException("Test exception")
     }

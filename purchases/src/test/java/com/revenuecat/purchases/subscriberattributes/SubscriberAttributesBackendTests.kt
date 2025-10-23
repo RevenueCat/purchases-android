@@ -165,7 +165,6 @@ class SubscriberAttributesPosterTests {
                 any(),
                 postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
     }
@@ -481,7 +480,6 @@ class SubscriberAttributesPosterTests {
                 (expectedBody ?: any()),
                 postFieldsToSign = null,
                 mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         }
 
@@ -506,7 +504,6 @@ class SubscriberAttributesPosterTests {
                 capture(actualPostReceiptBodySlot),
                 any(),
                 mapOf("Authorization" to "Bearer $API_KEY"),
-                shouldForceServerFailureDelegate = any(),
             )
         } answers {
             createResult(responseCode, responseBody).also {
