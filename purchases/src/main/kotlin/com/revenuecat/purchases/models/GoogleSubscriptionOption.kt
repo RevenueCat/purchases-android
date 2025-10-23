@@ -3,9 +3,6 @@ package com.revenuecat.purchases.models
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.strings.OfferingStrings
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -145,7 +142,7 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
         get() {
             val infiniteRecurringPricingPhase = pricingPhases
                 .firstOrNull { it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING }
-            
+
             return infiniteRecurringPricingPhase ?: pricingPhases.lastOrNull()
         }
 }
