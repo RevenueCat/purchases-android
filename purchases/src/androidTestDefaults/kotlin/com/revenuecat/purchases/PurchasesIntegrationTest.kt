@@ -463,7 +463,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             every { customEntitlementComputation } returns false
             every { isDebugBuild } returns true
             every { isAppBackgrounded } returns false
-            every { runningTests } returns false
+            every { runningTests } returns true
         }
         return HTTPClient(
             appConfig = appConfig,
