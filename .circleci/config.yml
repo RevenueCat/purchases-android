@@ -697,6 +697,8 @@ jobs:
           command: |
             bundle exec fastlane android run_backend_integration_tests
       - android/save_build_cache
+      - store_test_results: 
+          path: purchases/build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
