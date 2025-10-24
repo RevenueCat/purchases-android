@@ -1,14 +1,17 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import io.mockk.every
 import io.mockk.mockk
@@ -285,13 +288,89 @@ class PurchasedProductsFetcherTest {
         )
     }
 
+    @Test
+    fun `multi-line subscription purchase returns purchased products for base product and add-ons`() {
+        val baseProductIdentifier = "base_product"
+        val basePlanId = "base_plan"
+        val addOnProductIdentifier = "addon_product"
+        val addOnBasePlanId = "addon_plan"
+        val entitlementsByProduct = mapOf(
+            baseProductIdentifier to listOf("base_entitlement"),
+            addOnProductIdentifier to listOf("addon_entitlement"),
+        )
+        val mapping = ProductEntitlementMapping(
+            mapOf(
+                "$baseProductIdentifier:$basePlanId" to ProductEntitlementMapping.Mapping(
+                    baseProductIdentifier,
+                    basePlanId,
+                    entitlementsByProduct[baseProductIdentifier]!!,
+                ),
+                "$addOnProductIdentifier:$addOnBasePlanId" to ProductEntitlementMapping.Mapping(
+                    addOnProductIdentifier,
+                    addOnBasePlanId,
+                    entitlementsByProduct[addOnProductIdentifier]!!,
+                ),
+            ),
+        )
+        every {
+            deviceCache.getProductEntitlementMapping()
+        } returns mapping
+
+        val subscriptionOptionIds = mapOf(
+            baseProductIdentifier to basePlanId,
+            addOnProductIdentifier to addOnBasePlanId,
+        )
+        val multilinePurchase = stubGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+            purchaseToken = "multi-line-token",
+        )
+        val storeTransaction = multilinePurchase.toStoreTransaction(
+            productType = ProductType.SUBS,
+            subscriptionOptionId = basePlanId,
+            subscriptionOptionIdForProductIDs = subscriptionOptionIds,
+        )
+        mockActivePurchases(listOf(storeTransaction))
+
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
+        val baseProduct =
+            receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        assertThat(baseProduct.basePlanId).isEqualTo(basePlanId)
+        assertPurchasedProduct(
+            baseProduct,
+            storeTransaction,
+            entitlementsByProduct,
+        )
+
+        val addOnProduct =
+            receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        assertThat(addOnProduct.basePlanId).isEqualTo(addOnBasePlanId)
+        assertPurchasedProduct(
+            addOnProduct,
+            storeTransaction,
+            entitlementsByProduct,
+            purchasedProductIndex = 1
+        )
+    }
+
     // region helpers
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
         productIdentifierToEntitlements: Map<String, List<String>>,
+        purchasedProductIndex: Int = 0,
     ) {
-        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[0])
+        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[purchasedProductIndex])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
         assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]!!.size)
         assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
