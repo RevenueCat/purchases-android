@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -24,9 +25,11 @@ import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -36,6 +39,7 @@ import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.stubOfferings
+import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
 import io.mockk.every
@@ -2011,6 +2015,83 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(capturedAddOns?.first()?.productType).isEqualTo(ProductType.SUBS)
         assertThat(capturedAddOns?.last()?.productId).isEqualTo("xyz789")
         assertThat(capturedAddOns?.last()?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with add-on SubscriptionOption starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val subOption1 = GoogleSubscriptionOption(
+            productId = "productID1",
+            basePlanId = "basePlan1",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token"
+        )
+
+        val subOption2 = GoogleSubscriptionOption(
+            productId = "productID2",
+            basePlanId = "basePlan2",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token"
+        )
+
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnSubscriptionOptions(addOnSubscriptionOptions = listOf(subOption1, subOption2))
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        val capturedAddOns = subscription.addOnProducts
+        assertThat(capturedAddOns?.size).isEqualTo(2)
+
+        fun validateAddOnMatchesSubscriptionOption(
+            addOn: GooglePurchasingData,
+            expectedSubscriptionOption: GoogleSubscriptionOption
+        ) {
+            assertThat(addOn.productId).isEqualTo(expectedSubscriptionOption.platformProductId()!!.productId)
+            assertThat((addOn as? GooglePurchasingData.Subscription)!!.optionId).isEqualTo(expectedSubscriptionOption.basePlanId)
+            assertThat(addOn.productType).isEqualTo(ProductType.SUBS)
+        }
+        validateAddOnMatchesSubscriptionOption(addOn = capturedAddOns!!.first(), expectedSubscriptionOption = subOption1)
+        validateAddOnMatchesSubscriptionOption(addOn = capturedAddOns.last(), expectedSubscriptionOption = subOption2)
+
         assertThat(capturedError).isNull()
     }
 

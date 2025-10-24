@@ -122,8 +122,8 @@ class PurchasesFactoryTest {
             fail("Expected error")
         } catch (e: PurchasesException) {
             assertThat(e.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-            assertThat(e.underlyingErrorMessage).isEqualTo(
-                "Please configure the Play Store/Amazon store app on the RevenueCat dashboard and use its corresponding API key before releasing."
+            assertThat(e.message).isEqualTo(
+                "Please configure the Play Store/Amazon store app on the RevenueCat dashboard and use its corresponding API key before releasing. Test Store is not supported in production builds."
             )
         }
     }

@@ -28,6 +28,7 @@ class PackageCardAdapter(
 
     private var isAddOnMode = false
     private val selectedPackages = mutableSetOf<Package>()
+    private val selectedSubscriptionOptionsForPackageID = mutableMapOf<String, SubscriptionOption>()
     private var baseProduct: Package? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
@@ -45,6 +46,7 @@ class PackageCardAdapter(
         isAddOnMode = enabled
         if (!enabled) {
             selectedPackages.clear()
+            selectedSubscriptionOptionsForPackageID.clear()
             baseProduct = null
         }
         notifyDataSetChanged()
@@ -52,6 +54,13 @@ class PackageCardAdapter(
     }
 
     fun getSelectedPackages(): List<Package> = selectedPackages.toList()
+
+    fun getSelectedSubscriptionOptionsForPackageID(): Map<String, SubscriptionOption> =
+        selectedPackages
+            .mapNotNull { pkg ->
+                selectedSubscriptionOptionsForPackageID[pkg.identifier]?.let { pkg.identifier to it }
+            }
+            .toMap()
 
     fun getBaseProduct(): Package? = baseProduct
 
@@ -87,6 +96,7 @@ class PackageCardAdapter(
                     selectedPackages.add(currentPackage)
                 } else {
                     selectedPackages.remove(currentPackage)
+                    selectedSubscriptionOptionsForPackageID.remove(currentPackage.identifier)
                 }
                 notifySelectionChanged()
             }
@@ -155,7 +165,7 @@ class PackageCardAdapter(
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
                 ?: product.amazonProduct?.originalProductJSON.toString()
 
-            bindSubscriptionOptions(product)
+            bindSubscriptionOptions(currentPackage)
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
@@ -164,7 +174,9 @@ class PackageCardAdapter(
             }
         }
 
-        private fun bindSubscriptionOptions(product: StoreProduct) {
+        private fun bindSubscriptionOptions(currentPackage: Package) {
+            val product = currentPackage.product
+            binding.packageSubscriptionOptionGroup.setOnCheckedChangeListener(null)
             binding.packageSubscriptionOptionGroup.removeAllViews()
             val numberOfSubscriptionOptions = product.subscriptionOptions?.size ?: 0
             val defaultOption = product.defaultOption
@@ -174,7 +186,38 @@ class PackageCardAdapter(
                     tag = subscriptionOption
                 }
                 binding.packageSubscriptionOptionGroup.addView(radioButton)
-                if (numberOfSubscriptionOptions == 1) binding.packageSubscriptionOptionGroup.check(radioButton.id)
+            }
+
+            val existingSelection = selectedSubscriptionOptionsForPackageID[currentPackage.identifier]
+            val optionToSelect = existingSelection ?: if (numberOfSubscriptionOptions == 1) {
+                product.subscriptionOptions?.firstOrNull()
+            } else {
+                null
+            }
+
+            optionToSelect?.let { subscriptionOption ->
+                val radioButton = binding.packageSubscriptionOptionGroup.children
+                    .mapNotNull { it as? RadioButton }
+                    .firstOrNull { (it.tag as? SubscriptionOption) == subscriptionOption }
+                radioButton?.let {
+                    it.isChecked = true
+                    selectedSubscriptionOptionsForPackageID[currentPackage.identifier] = subscriptionOption
+                }
+            } ?: run {
+                if (numberOfSubscriptionOptions == 0) {
+                    selectedSubscriptionOptionsForPackageID.remove(currentPackage.identifier)
+                }
+            }
+
+            binding.packageSubscriptionOptionGroup.setOnCheckedChangeListener { _, checkedId ->
+                val selectedButton = binding.packageSubscriptionOptionGroup.children
+                    .firstOrNull { it.id == checkedId } as? RadioButton
+                val subscriptionOption = selectedButton?.tag as? SubscriptionOption
+                if (subscriptionOption != null) {
+                    selectedSubscriptionOptionsForPackageID[currentPackage.identifier] = subscriptionOption
+                } else {
+                    selectedSubscriptionOptionsForPackageID.remove(currentPackage.identifier)
+                }
             }
         }
 
@@ -222,7 +265,10 @@ class PackageCardAdapter(
             isUpgrade: Boolean,
             isPersonalizedPrice: Boolean,
         )
-        fun onAddOnPurchaseClicked(selectedPackages: List<Package>)
+        fun onAddOnPurchaseClicked(
+            selectedPackages: List<Package>,
+            selectedSubscriptionOptionsForPackageID: Map<String, SubscriptionOption>,
+        )
         fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean)
     }
 }
