@@ -10,9 +10,11 @@ import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -20,6 +22,7 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
@@ -213,5 +216,45 @@ open class BasePurchasesIntegrationTest {
         editor.commit()
     }
 
+    protected fun waitForProductEntitlementMappingToUpdate(completion: () -> Unit) {
+        Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+            .updateProductEntitlementMappingCacheIfStale {
+                if (it != null) {
+                    fail("Expected to get product entitlement mapping but got error: $it")
+                } else {
+                    completion()
+                }
+            }
+    }
+
+    protected fun waitForInitialRequestsToEnd(completion: () -> Unit) {
+        waitForProductEntitlementMappingToUpdate {
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { customerInfoError ->
+                    fail("Expected to succeed getting customer info. Got $customerInfoError")
+                },
+                onSuccess = {
+                    completion()
+                },
+            )
+        }
+    }
+
     // endregion
+
+    // region assertions
+
+    protected fun assertAcknowledgePurchaseDidNotHappen() {
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    protected fun assertAcknowledgePurchaseDidHappen(timeout: Duration = testTimeout) {
+        verify(timeout = timeout.inWholeMilliseconds) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    // endregion assertions
 }
