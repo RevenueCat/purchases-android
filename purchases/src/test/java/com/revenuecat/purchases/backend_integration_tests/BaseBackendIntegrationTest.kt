@@ -83,10 +83,10 @@ internal abstract class BaseBackendIntegrationTest {
             every { packageName } returns "com.revenuecat.purchases.backend_tests"
             every { customEntitlementComputation } returns false
             every { finishTransactions } returns true
-            every { forceServerErrors } returns false
             every { forceSigningErrors } returns false
             every { isAppBackgrounded } returns false
             every { fallbackBaseURLs } returns emptyList()
+            every { runningTests } returns true
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)

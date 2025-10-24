@@ -277,7 +277,7 @@ class BackendGetCustomerCenterConfigTest {
                 Endpoint.GetCustomerCenterConfig("test-user-id"),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                requestHeaders = any(),
             )
         }
     }

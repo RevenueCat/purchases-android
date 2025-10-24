@@ -117,7 +117,6 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             GetProductEntitlementMapping,
             ->
                 true
-
             is LogIn,
             PostReceipt,
             PostRedeemWebPurchase,

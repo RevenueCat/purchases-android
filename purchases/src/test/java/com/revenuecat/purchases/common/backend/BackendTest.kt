@@ -308,7 +308,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -389,7 +389,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -443,7 +443,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -498,7 +498,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -778,7 +778,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -849,7 +849,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
         verify(exactly = 2) {
@@ -858,7 +858,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -953,7 +953,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1015,7 +1015,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1065,7 +1065,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1114,7 +1114,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1180,7 +1180,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1371,7 +1371,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 expectedPostFieldsToSign,
-                any()
+                any(),
             )
         }
     }
@@ -1559,7 +1559,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1589,7 +1589,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
         verify(exactly = 1) {
@@ -1598,7 +1598,7 @@ class BackendTest {
                 Endpoint.GetOfferings("anotherUser"),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1652,7 +1652,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1690,7 +1690,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1726,7 +1726,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 body,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1876,7 +1876,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 expectedPostFieldsToSign,
-                any()
+                any(),
             )
         }
     }
@@ -1927,7 +1927,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1978,7 +1978,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -2029,7 +2029,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -2046,7 +2046,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2075,7 +2075,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2106,7 +2106,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2266,7 +2266,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2293,7 +2293,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2325,7 +2325,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2464,7 +2464,7 @@ class BackendTest {
                 endpoint = Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2574,7 +2574,7 @@ class BackendTest {
                 Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2628,7 +2628,7 @@ class BackendTest {
                 Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2730,7 +2730,7 @@ class BackendTest {
                 endpoint = Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2865,7 +2865,7 @@ class BackendTest {
                 Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2885,7 +2885,7 @@ class BackendTest {
                 endpoint = Endpoint.AliasUsers("test-old-app-user-id"),
                 body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2972,7 +2972,7 @@ class BackendTest {
                 Endpoint.AliasUsers(appUserID),
                 body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -3005,7 +3005,7 @@ class BackendTest {
                 eq(endpoint),
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3222,7 +3222,7 @@ class BackendTest {
                 eq(endpoint),
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3256,7 +3256,7 @@ class BackendTest {
                 eq(endpoint),
                 null,
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3288,7 +3288,7 @@ class BackendTest {
                 eq(endpoint),
                 body,
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 

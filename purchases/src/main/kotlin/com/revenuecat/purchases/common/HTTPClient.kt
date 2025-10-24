@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -47,6 +48,7 @@ internal class HTTPClient(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
+    private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -131,16 +133,6 @@ internal class HTTPClient(
             )
         }
 
-        if (appConfig.forceServerErrors) {
-            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-            return HTTPResult(
-                RCHTTPStatusCodes.ERROR,
-                payload = "",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                VerificationResult.NOT_REQUESTED,
-            )
-        }
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
@@ -195,8 +187,16 @@ internal class HTTPClient(
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+
         try {
-            val fullURL = URL(baseURL, path)
+            val fullURL = if (appConfig.runningTests &&
+                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
+            ) {
+                warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
+                URL(forceServerErrorStrategy.serverErrorURL)
+            } else {
+                URL(baseURL, path)
+            }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {

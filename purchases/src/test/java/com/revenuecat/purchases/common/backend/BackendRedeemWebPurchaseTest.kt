@@ -159,7 +159,7 @@ class BackendRedeemWebPurchaseTest {
                 Endpoint.PostRedeemWebPurchase,
                 body = mapOf("redemption_token" to "test-redemption-token", "app_user_id" to "test-user-id"),
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
