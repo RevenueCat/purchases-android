@@ -5,6 +5,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
@@ -41,7 +42,6 @@ open class BasePurchasesIntegrationTest {
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
-    protected open val initialForceServerErrors: Boolean = false
     protected open val initialForceSigningErrors: Boolean = false
 
     protected val testTimeout = 10.seconds
@@ -63,6 +63,13 @@ open class BasePurchasesIntegrationTest {
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
 
+    internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
+    internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+            return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
+        }
+    }
+
     protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
@@ -81,7 +88,6 @@ open class BasePurchasesIntegrationTest {
         initialSharedPreferences: Map<String, String> = emptyMap(),
         entitlementVerificationMode: EntitlementVerificationMode? = null,
         initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
-        forceServerErrors: Boolean = initialForceServerErrors,
         forceSigningErrors: Boolean = initialForceSigningErrors,
         appUserID: String? = null,
         postSetupTestCallback: (MainActivity) -> Unit = {},
@@ -110,7 +116,7 @@ open class BasePurchasesIntegrationTest {
                 appUserID ?: testUserId,
                 mockBillingAbstract,
                 entitlementVerificationMode,
-                forceServerErrors,
+                forceServerErrorStrategyDelegate,
                 forceSigningErrors,
             )
 
@@ -122,13 +128,20 @@ open class BasePurchasesIntegrationTest {
         activityScenarioRule.scenario.onActivity(block)
     }
 
-    protected fun simulateSdkRestart(
+    internal fun simulateSdkRestart(
         context: Context,
         entitlementVerificationMode: EntitlementVerificationMode? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorsStrategy: ForceServerErrorStrategy? = null,
     ) {
+        this.forceServerErrorsStrategy = forceServerErrorsStrategy
         Purchases.resetSingleton()
-        Purchases.configureSdk(context, testUserId, mockBillingAbstract, entitlementVerificationMode, forceServerErrors)
+        Purchases.configureSdk(
+            context,
+            testUserId,
+            mockBillingAbstract,
+            entitlementVerificationMode,
+            forceServerErrorStrategyDelegate,
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {

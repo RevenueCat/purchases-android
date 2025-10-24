@@ -146,7 +146,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             )
         }
 
-        simulateSdkRestart(activity, forceServerErrors = true)
+        simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getOfferingsWith(
@@ -454,7 +454,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     private fun createHttpClient(context: Context): HTTPClient {
         val appConfig = mockk<AppConfig>().apply {
-            every { forceServerErrors } returns false
             every { store } returns Store.PLAY_STORE
             every { platformInfo } returns PlatformInfo("native", "3.2.0")
             every { languageTag } returns "en"
@@ -464,6 +463,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             every { customEntitlementComputation } returns false
             every { isDebugBuild } returns true
             every { isAppBackgrounded } returns false
+            every { runningTests } returns true
         }
         return HTTPClient(
             appConfig = appConfig,

@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -27,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -89,42 +91,59 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     // region forceServerErrors
 
     @Test
-    fun `returns server error result when forcing server errors`() {
-        val endpoint = Endpoint.LogIn
+    fun `when forceServerErrorsStrategy returns true, error url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return true
+                }
+            },
+        )
 
-        client = createClient(appConfig = createAppConfig(forceServerErrors = true))
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
 
         val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
-        assertThat(server.requestCount).isEqualTo(0)
-        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
-        assertThat(result.payload).isEqualTo("")
-        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
-        assertThat(result.requestDate).isNull()
-        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+
+        assertThat(result.responseCode).isEqualTo(502)
+        assertThat(result.payload).isEqualTo("Some error xml")
     }
 
     @Test
-    fun `can dynamically change between getting server errors and not`() {
-        val endpoint = Endpoint.LogIn
-
-        val appConfig = createAppConfig(forceServerErrors = true)
-        client = createClient(appConfig = appConfig)
-
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-
-        assertThat(server.requestCount).isEqualTo(0)
-
-        appConfig.forceServerErrors = false
-
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "{}")
+    fun `when forceServerErrorsStrategy returns false, original url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return false
+                }
+            },
         )
 
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
+        )
 
-        assertThat(server.requestCount).isEqualTo(1)
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}v1/subscribers/identify")
+
+        assertThat(result.responseCode).isEqualTo(223)
+        assertThat(result.payload).isEqualTo("{'response': 'OK'}")
     }
 
     // endregion forceServerErrors

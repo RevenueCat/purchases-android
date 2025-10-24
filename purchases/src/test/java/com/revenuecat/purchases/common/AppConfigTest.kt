@@ -222,21 +222,6 @@ class AppConfigTest {
     }
 
     @Test
-    fun `default forceServerErrors is correct`() {
-        val appConfig = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-        )
-        assertThat(appConfig.forceServerErrors).isFalse
-    }
-
-    @Test
     fun `default forceSigningErrors is correct`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
