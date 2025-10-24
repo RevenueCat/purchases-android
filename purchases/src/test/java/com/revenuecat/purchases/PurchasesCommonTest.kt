@@ -31,6 +31,7 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.Runs
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -1875,8 +1876,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `on billing wrapper connected, sync pending purchases`() {
         mockGetStorefront()
         capturedBillingWrapperStateListener.captured.onConnected()
-        verify(exactly = 1) {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
+        coVerify(exactly = 1) {
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 
@@ -1885,8 +1886,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.onAppForegrounded()
-        verify(exactly = 1) {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
+        coVerify(exactly = 1) {
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 

@@ -42,6 +42,7 @@ import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -505,7 +506,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `login with the same appUserID as the current, fetches customerInfo and calls onError if failed`() {
         val appUserID = "myUser"
-        every { mockCache.getCachedCustomerInfo(appUserID) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserID) } returns null
         every { mockCache.isCustomerInfoCacheStale(appUserID, any()) } returns true
         every { mockCache.setCustomerInfoCacheTimestampToNow(appUserID) } just Runs
         every { mockCache.clearCustomerInfoCacheTimestamp(appUserID) } just Runs

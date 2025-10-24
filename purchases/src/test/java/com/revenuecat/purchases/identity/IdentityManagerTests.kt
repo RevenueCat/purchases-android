@@ -18,6 +18,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.CapturingSlot
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -62,7 +63,7 @@ class IdentityManagerTests {
                 mockEditor
             }
             every { cleanupOldAttributionData() } just Runs
-            every { getCachedCustomerInfo(any()) } returns null
+            coEvery { getCachedCustomerInfo(any()) } returns null
             every { startEditing() } returns mockEditor
         }
         mockSubscriberAttributesCache = mockk<SubscriberAttributesCache>().apply {
@@ -597,7 +598,7 @@ class IdentityManagerTests {
     @Test
     fun `we don't invalidate customer info and etag caches if no customer info cached`() {
         val userId = "test-app-user-id"
-        every { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
+        coEvery { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
         every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk())
         identityManager = createIdentityManager()
         identityManager.configure(userId)
@@ -730,7 +731,7 @@ class IdentityManagerTests {
                  every { verification } returns verificationResult
             }
         }
-        every { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo
+        coEvery { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo
         if (shouldClearCustomerInfoAndETagCaches) {
             every { mockDeviceCache.clearCustomerInfoCache(userId, mockEditor) } just Runs
             every { mockBackend.clearCaches() } just Runs

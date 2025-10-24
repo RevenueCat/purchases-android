@@ -51,6 +51,7 @@ import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -283,7 +284,7 @@ internal open class BasePurchasesTest {
             every {
                 getCachedAppUserID()
             } returns null
-            every {
+            coEvery {
                 getCachedCustomerInfo(any())
             } returns mockInfo
             every {
@@ -519,9 +520,9 @@ internal open class BasePurchasesTest {
     }
 
     protected fun mockPostPendingTransactionsHelper() {
-        every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
-        } just Runs
+        coEvery {
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
+        } returns mockk()
     }
 
     protected fun getPurchaseParams(
