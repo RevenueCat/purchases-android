@@ -156,6 +156,57 @@ class OfflineCustomerInfoCalculatorTest {
     }
 
     @Test
+    fun `add-on subscription entitlements are unlocked`() {
+        val baseProductIdentifier = "base_product"
+        val basePlanIdentifier = "base_plan"
+        val baseEntitlementId = "base_entitlement"
+        val addOnProductIdentifier = "addon_product"
+        val addOnPlanIdentifier = "addon_plan"
+        val addOnEntitlementId = "addon_entitlement"
+
+        val purchasedProducts = mockActiveProducts(
+            entitlementMap = ProductEntitlementMapping(
+                mapOf(
+                    baseProductIdentifier to ProductEntitlementMapping.Mapping(
+                        baseProductIdentifier,
+                        basePlanIdentifier,
+                        listOf(baseEntitlementId),
+                    ),
+                    addOnProductIdentifier to ProductEntitlementMapping.Mapping(
+                        addOnProductIdentifier,
+                        addOnPlanIdentifier,
+                        listOf(addOnEntitlementId),
+                    ),
+                ),
+            ),
+            expirationDates = mapOf(
+                baseProductIdentifier to oneDayFromNow,
+                addOnProductIdentifier to oneDayFromNow,
+            ),
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.activeSubscriptions).containsExactlyInAnyOrder(
+            "${baseProductIdentifier}:${basePlanIdentifier}",
+            "${addOnProductIdentifier}:${addOnPlanIdentifier}",
+        )
+        verifyEntitlement(receivedCustomerInfo, baseEntitlementId, purchasedProducts.first { it.productIdentifier == baseProductIdentifier })
+        verifyEntitlement(receivedCustomerInfo, addOnEntitlementId, purchasedProducts.first { it.productIdentifier == addOnProductIdentifier })
+    }
+
+    // TODO: Write tests for these scenarios:
+    // Ensure that for a product with 2 base plans, and each plan has a different entitlement:
+    //    - For a user that has purchased both base plans, both entitlements are unlocked
+    //    - For a user that has purchased only one base plan, only the one entitlement is unlocked
+
+    @Test
     fun `product with different entitlement per base plan`() {
         // Due to an issue with the way the backend returns the data, we are going to be using
         // the wrong original_purchase_date for the first entitlement
