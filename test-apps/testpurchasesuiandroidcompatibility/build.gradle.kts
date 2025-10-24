@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.emerge)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -33,14 +34,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.8"
     }
     packaging {
         resources {
@@ -49,20 +44,36 @@ android {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    }
+}
+
 emerge {
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
-        sha.set(System.getenv("CIRCLE_SHA1"))
-        val prUrl = System.getenv("CIRCLE_PULL_REQUEST")
-        if (!prUrl.isNullOrEmpty()) {
-            val prNum = prUrl.split("/").lastOrNull()
-            if (!prNum.isNullOrEmpty()) {
-                prNumber.set(prNum)
-            }
-            // baseSha will be set automatically by Emerge gradle plugin for PRs
+        sha.set(Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "HEAD")).inputReader().readText().trim())
+        branchName.set(
+            Runtime.getRuntime()
+                .exec(arrayOf("git", "rev-parse", "--abbrev-ref", "HEAD"))
+                .inputReader().readText().trim(),
+        )
+        val prNum = System.getenv("CIRCLE_PULL_REQUEST")
+            .takeUnless { prUrl -> prUrl.isNullOrEmpty() }
+            ?.takeIf { prUrl -> prUrl.contains('/') }
+            ?.split('/')
+            ?.lastOrNull()
+            // Extract the PR number from the merge queue branch name.
+            ?: "^gh-readonly-queue\\/([^/]+)\\/pr-(\\d+)-([0-9a-f]+)\$".toRegex(RegexOption.MULTILINE)
+                .matchEntire(branchName.get())
+                ?.groupValues
+                ?.get(2)
+
+        if (prNum != null) {
+            prNumber.set(prNum)
         } else {
-            // Explicitly skip baseSha setting for main branch as it could trigger unexpected main branch comparison.
             baseSha.set("")
         }
         gitHub {
@@ -78,7 +89,6 @@ dependencies {
 
     androidTestImplementation(libs.emerge.snapshots)
 
-    implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)

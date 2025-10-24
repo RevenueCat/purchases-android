@@ -3,9 +3,11 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,24 +20,35 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.parcelize.Parcelize
 
 /**
  * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
  * It receives the [PaywallActivityArgs] as an extra and returns the [PaywallResult] as a result.
  */
+@Suppress("TooManyFunctions")
 internal class PaywallActivity : ComponentActivity(), PaywallListener {
     companion object {
         const val ARGS_EXTRA = "paywall_args"
+        const val SDK_CONFIG_EXTRA = "sdk_config_args"
 
         const val RESULT_EXTRA = "paywall_result"
     }
@@ -47,6 +60,24 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra(ARGS_EXTRA)
         }
+    }
+
+    @Parcelize
+    private data class SdkConfigArgs(
+        val apiKey: String,
+        val appUserId: String?,
+        val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+        val showInAppMessagesAutomatically: Boolean,
+        val store: Store,
+        val diagnosticsEnabled: Boolean,
+        val verificationMode: EntitlementVerificationMode,
+        val dangerousSettings: DangerousSettings,
+        val pendingTransactionsForPrepaidPlansEnabled: Boolean,
+    ) : Parcelable
+
+    private fun getSdkConfigArgs(savedInstanceState: Bundle): SdkConfigArgs? {
+        @Suppress("DEPRECATION")
+        return savedInstanceState.getParcelable(SDK_CONFIG_EXTRA)
     }
 
     private fun getFontProvider(): FontProvider? {
@@ -79,9 +110,16 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
+        if (!Purchases.isConfigured && savedInstanceState != null) {
+            configureSdkWithSavedData(savedInstanceState)
+        }
         val args = getArgs()
+        val edgeToEdge = args?.edgeToEdge == true
+        if (edgeToEdge) {
+            enableEdgeToEdge()
+        }
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
-            .setOfferingId(args?.offeringId)
+            .setOfferingIdAndPresentedOfferingContext(args?.offeringIdAndPresentedOfferingContext)
             .setFontProvider(getFontProvider())
             .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
             .setListener(this)
@@ -89,12 +127,39 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setContent {
             MaterialTheme {
                 Scaffold { paddingValues ->
-                    Box(Modifier.fillMaxSize().padding(paddingValues)) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .conditional(!edgeToEdge) {
+                                padding(paddingValues)
+                            },
+                    ) {
                         Paywall(paywallOptions)
                     }
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        if (Purchases.isConfigured) {
+            val configuration = Purchases.sharedInstance.currentConfiguration
+            outState.putParcelable(
+                SDK_CONFIG_EXTRA,
+                SdkConfigArgs(
+                    configuration.apiKey,
+                    configuration.appUserID,
+                    configuration.purchasesAreCompletedBy,
+                    configuration.showInAppMessagesAutomatically,
+                    configuration.store,
+                    configuration.diagnosticsEnabled,
+                    configuration.verificationMode,
+                    configuration.dangerousSettings,
+                    configuration.pendingTransactionsForPrepaidPlansEnabled,
+                ),
+            )
+        }
+        super.onSaveInstanceState(outState)
     }
 
     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
@@ -121,6 +186,26 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     override fun onRestoreError(error: PurchasesError) {
         setResult(RESULT_OK, createResultIntent(PaywallResult.Error(error)))
+    }
+
+    private fun configureSdkWithSavedData(savedInstanceState: Bundle) {
+        val sdkConfigArgs = getSdkConfigArgs(savedInstanceState)
+        if (sdkConfigArgs == null) {
+            Logger.e("Missing SDK configuration arguments while restoring PaywallActivity")
+            return
+        }
+        Purchases.configure(
+            PurchasesConfiguration.Builder(this, sdkConfigArgs.apiKey)
+                .appUserID(sdkConfigArgs.appUserId)
+                .purchasesAreCompletedBy(sdkConfigArgs.purchasesAreCompletedBy)
+                .showInAppMessagesAutomatically(sdkConfigArgs.showInAppMessagesAutomatically)
+                .store(sdkConfigArgs.store)
+                .diagnosticsEnabled(sdkConfigArgs.diagnosticsEnabled)
+                .entitlementVerificationMode(sdkConfigArgs.verificationMode)
+                .dangerousSettings(sdkConfigArgs.dangerousSettings)
+                .pendingTransactionsForPrepaidPlansEnabled(sdkConfigArgs.pendingTransactionsForPrepaidPlansEnabled)
+                .build(),
+        )
     }
 
     private fun createResultIntent(result: PaywallResult): Intent {

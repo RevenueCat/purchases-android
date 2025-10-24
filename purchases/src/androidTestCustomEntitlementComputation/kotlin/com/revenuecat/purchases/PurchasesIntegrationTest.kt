@@ -73,7 +73,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         assertThat(offerings.current?.availablePackages?.get(0)?.product?.sku)
             .isEqualTo(Constants.productIdToPurchase)
 
-        simulateSdkRestart(activity, forceServerErrors = true)
+        simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         val newOfferings = Purchases.sharedInstance.awaitOfferings()
 

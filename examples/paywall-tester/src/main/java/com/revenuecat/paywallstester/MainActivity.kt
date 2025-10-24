@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.revenuecat.paywallstester
 
 import android.content.Intent
@@ -5,10 +7,14 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -22,8 +28,13 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         super.onCreate(savedInstanceState)
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
         setContent {
-            PaywallTesterAndroidTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            PaywallTesterAndroidTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .semantics { testTagsAsResourceId = true }
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                ) {
                     PaywallTesterApp()
                 }
             }
@@ -35,8 +46,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         Log.e("PaywallsTester", "LAUNCH PAYWALL RESULT: $result")
     }
 
-    fun launchPaywall(offering: Offering? = null) {
-        paywallActivityLauncher.launch(offering)
+    fun launchPaywall(offering: Offering? = null, edgeToEdge: Boolean = false) {
+        paywallActivityLauncher.launch(offering, edgeToEdge = edgeToEdge)
     }
 
     fun launchPaywallFooterViewAsActivity(offering: Offering? = null) {

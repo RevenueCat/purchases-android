@@ -6,6 +6,7 @@ internal object NetworkStrings {
     const val HTTP_RESPONSE_PAYLOAD_NULL = "HTTP Response payload is null"
     const val ETAG_RETRYING_CALL = "We were expecting to be able to return a cached response, but we can't find it. " +
         "Retrying call with a new ETag"
+    const val RETRYING_CALL_WITH_FALLBACK_URL = "Retrying request %s using fallback URL %s"
     const val ETAG_CALL_ALREADY_RETRIED = "We can't find the cached response, but call has already been retried. " +
         "Returning result from backend: %s"
     const val SAME_CALL_SCHEDULED_WITHOUT_JITTER = "Request already scheduled without jitter delay, adding " +

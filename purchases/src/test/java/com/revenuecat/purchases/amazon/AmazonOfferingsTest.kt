@@ -40,7 +40,9 @@ class AmazonOfferingsTest {
     private val storeProductMonthly = stubStoreProductForAmazon(monthlyTermSku, period = monthlyPeriod)
     private  val storeProductAnnual = stubStoreProductForAmazon(annualTermSku, period = annualPeriod)
 
-    private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.AMAZON)
+    private val offeringsParser = OfferingParserFactory.createOfferingParser(
+        Store.AMAZON,
+    )
 
     @Test
     fun `createPackage returns null if packageJson productIdentifier doesnt match any sub StoreProduct id`() {
@@ -165,7 +167,7 @@ class AmazonOfferingsTest {
         val products = mapOf(productId to listOf(storeProductAnnual))
 
         val offeringWithOneMonthlyPackageJson = getAmazonOfferingJSON()
-        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products)
+        val offering = offeringsParser.createOffering(offeringWithOneMonthlyPackageJson, products, null)
         Assertions.assertThat(offering).isNull()
     }
 
@@ -193,7 +195,7 @@ class AmazonOfferingsTest {
             packagesJSON = listOf(monthlyPackageJSON, annualPackageJSON)
         )
 
-        val offering = offeringsParser.createOffering(offeringJSON, products)
+        val offering = offeringsParser.createOffering(offeringJSON, products, null)
         Assertions.assertThat(offering).isNotNull
         Assertions.assertThat(offering!!.identifier).isEqualTo(offeringId)
 

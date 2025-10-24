@@ -1,26 +1,33 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
 import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import androidx.core.os.UserManagerCompat
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -33,39 +40,51 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.FontLoader
+import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
-import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
-import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 
 internal class PurchasesFactory(
+    private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @Suppress("LongMethod", "LongParameterList")
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
     ): Purchases {
-        validateConfiguration(configuration)
+        val apiKeyValidationResult = validateConfiguration(configuration)
 
         with(configuration) {
+            val finalStore = if (
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+            ) {
+                Store.TEST_STORE
+            } else {
+                store
+            }
+
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
@@ -73,16 +92,47 @@ internal class PurchasesFactory(
                 showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,
-                store,
+                finalStore,
+                isDebugBuild(),
+                apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
-                forceServerErrors,
                 forceSigningError,
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+            val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
+                @Suppress("MaxLineLength")
+                debugLog {
+                    "${Emojis.DOUBLE_EXCLAMATION} Using device-protected storage. Make sure to *always* configure " +
+                        "Purchases with a Context object created using `createDeviceProtectedStorageContext()` to " +
+                        "avoid undefined behavior.\nSee " +
+                        "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                        "for more info."
+                }
+                context
+            } else {
+                application
+            }
 
-            val eTagManager = ETagManager(context)
+            val prefs = try {
+                SharedPreferencesManager(contextForStorage).getSharedPreferences()
+            } catch (e: IllegalStateException) {
+                @Suppress("MaxLineLength")
+                if (!UserManagerCompat.isUserUnlocked(context)) {
+                    throw IllegalStateException(
+                        "Trying to configure Purchases while the device is locked. If you need to support this " +
+                            "scenario, ensure you *always* configure Purchases with a Context created with " +
+                            "`createDeviceProtectedStorageContext()` to avoid undefined behavior.\nSee " +
+                            "https://developer.android.com/reference/android/content/Context#createDeviceProtectedStorageContext() " +
+                            "for more info.",
+                        e,
+                    )
+                } else {
+                    throw e
+                }
+            }
+
+            val eTagManager = ETagManager(contextForStorage)
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
             val backendDispatcher = Dispatcher(
@@ -98,8 +148,8 @@ internal class PurchasesFactory(
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled && isAndroidNOrNewer()) {
-                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
-                diagnosticsHelper = DiagnosticsHelper(context, diagnosticsFileHelper)
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
+                diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
@@ -107,17 +157,33 @@ internal class PurchasesFactory(
                     eventsDispatcher,
                 )
             } else if (diagnosticsEnabled) {
-                warnLog("Diagnostics are only supported on Android N or newer.")
+                warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
-            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
-                verificationMode,
-            )
+            val signatureVerificationMode = try {
+                SignatureVerificationMode.fromEntitlementVerificationMode(
+                    verificationMode,
+                )
+            } catch (e: IllegalStateException) {
+                // If we're not able to create the signature verifier, we should disable signature verification
+                // instead of crashing
+                errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
+                SignatureVerificationMode.Disabled
+            }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
+            val localeProvider = DefaultLocaleProvider()
+            val httpClient = HTTPClient(
+                appConfig,
+                eTagManager,
+                diagnosticsTracker,
+                signingManager,
+                cache,
+                localeProvider = localeProvider,
+                forceServerErrorStrategy = forceServerErrorStrategy,
+            )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -131,7 +197,7 @@ internal class PurchasesFactory(
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
-                store,
+                finalStore,
                 application,
                 backendHelper,
                 cache,
@@ -139,6 +205,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                backend,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -151,6 +218,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
+                automaticDeviceIdentifierCollectionEnabled,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
@@ -167,7 +235,10 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val offeringsCache = OfferingsCache(cache)
+            val offeringsCache = OfferingsCache(
+                deviceCache = cache,
+                localeProvider = localeProvider,
+            )
 
             val identityManager = IdentityManager(
                 cache,
@@ -220,8 +291,9 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
+                diagnosticsTracker,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(store)
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
@@ -237,6 +309,7 @@ internal class PurchasesFactory(
                     backend,
                     eventsDispatcher,
                 )
+                diagnosticsTracker.listener = diagnosticsSynchronizer
             }
 
             val syncPurchasesHelper = SyncPurchasesHelper(
@@ -244,6 +317,16 @@ internal class PurchasesFactory(
                 identityManager,
                 customerInfoHelper,
                 postReceiptHelper,
+                diagnosticsTracker,
+            )
+
+            val fontLoader = FontLoader(
+                context = contextForStorage,
+            )
+
+            val offeringFontPreDownloader = OfferingFontPreDownloader(
+                context = contextForStorage,
+                fontLoader = fontLoader,
             )
 
             val offeringsManager = OfferingsManager(
@@ -251,16 +334,26 @@ internal class PurchasesFactory(
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                diagnosticsTracker,
+                offeringFontPreDownloader = offeringFontPreDownloader,
             )
 
-            log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
-            log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion))
-            log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
-            log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID))
-            log(
-                LogIntent.DEBUG,
-                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name),
+            log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
+            log(LogIntent.DEBUG) { ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion) }
+            log(LogIntent.DEBUG) { ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName) }
+            log(LogIntent.USER) { ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID) }
+            log(LogIntent.DEBUG) {
+                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name)
+            }
+
+            val virtualCurrencyManager = VirtualCurrencyManager(
+                identityManager = identityManager,
+                deviceCache = cache,
+                backend = backend,
+                appConfig = appConfig,
             )
+
+            val purchaseParamsValidator = PurchaseParamsValidator()
 
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
@@ -274,50 +367,59 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 customerInfoUpdateHandler,
                 diagnosticsSynchronizer,
-                offlineEntitlementsManager,
-                postReceiptHelper,
-                postTransactionWithProductDetailsHelper,
-                postPendingTransactionsHelper,
-                syncPurchasesHelper,
-                offeringsManager,
-                createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
-                paywallPresentedCache,
-                purchasesStateProvider,
+                diagnosticsTracker,
+                offlineEntitlementsManager = offlineEntitlementsManager,
+                postReceiptHelper = postReceiptHelper,
+                postTransactionWithProductDetailsHelper = postTransactionWithProductDetailsHelper,
+                postPendingTransactionsHelper = postPendingTransactionsHelper,
+                syncPurchasesHelper = syncPurchasesHelper,
+                offeringsManager = offeringsManager,
+                eventsManager = createEventsManager(application, identityManager, eventsDispatcher, backend),
+                paywallPresentedCache = paywallPresentedCache,
+                purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
+                initialConfiguration = configuration,
+                fontLoader = fontLoader,
+                localeProvider = localeProvider,
+                virtualCurrencyManager = virtualCurrencyManager,
+                purchaseParamsValidator = purchaseParamsValidator,
             )
 
             return Purchases(purchasesOrchestrator)
         }
     }
 
-    private fun createPaywallEventsManager(
+    private fun createEventsManager(
         context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
         backend: Backend,
-    ): PaywallEventsManager? {
+    ): EventsManager? {
         // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
         // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
         // older versions.
         return if (isAndroidNOrNewer()) {
-            PaywallEventsManager(
-                EventsFileHelper(
-                    FileHelper(context),
-                    PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
-                    PaywallStoredEvent::fromString,
-                ),
-                identityManager,
-                eventsDispatcher,
-                backend,
+            EventsManager(
+                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
+                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
+                identityManager = identityManager,
+                eventsDispatcher = eventsDispatcher,
+                postEvents = { request, onSuccess, onError ->
+                    backend.postEvents(
+                        paywallEventRequest = request,
+                        onSuccessHandler = onSuccess,
+                        onErrorHandler = onError,
+                    )
+                },
             )
         } else {
-            debugLog("Paywall events are only supported on Android N or newer.")
+            debugLog { "Paywall events are only supported on Android N or newer." }
             null
         }
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun validateConfiguration(configuration: PurchasesConfiguration) {
+    fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
             require(context.hasPermission(Manifest.permission.INTERNET)) {
                 "Purchases requires INTERNET permission."
@@ -325,9 +427,24 @@ internal class PurchasesFactory(
 
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
+            val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
+
+            if (!isDebugBuild() &&
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+            ) {
+                throw PurchasesException(
+                    error = PurchasesError(
+                        code = PurchasesErrorCode.ConfigurationError,
+                    ),
+                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
+                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
+                        "Test Store is not supported in production builds.",
+                )
+            }
+
             require(context.applicationContext is Application) { "Needs an application context." }
 
-            apiKeyValidator.validateAndLog(apiKey, store)
+            return apiKeyValidationResult
         }
     }
 

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.DateHelper
+import com.revenuecat.purchases.utils.EntitlementInfoHelper
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
@@ -52,22 +53,13 @@ internal fun JSONObject.buildEntitlementInfos(
     )
 }
 
-internal fun JSONObject.getStore(name: String) = when (getString(name)) {
-    "app_store" -> Store.APP_STORE
-    "mac_app_store" -> Store.MAC_APP_STORE
-    "play_store" -> Store.PLAY_STORE
-    "stripe" -> Store.STRIPE
-    "promotional" -> Store.PROMOTIONAL
-    "amazon" -> Store.AMAZON
-    "rc_billing" -> Store.RC_BILLING
-    "external" -> Store.EXTERNAL
-    else -> Store.UNKNOWN_STORE
-}
+internal fun JSONObject.getStore(name: String) = Store.fromString(getString(name))
 
 internal fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     "normal" -> PeriodType.NORMAL
     "intro" -> PeriodType.INTRO
     "trial" -> PeriodType.TRIAL
+    "prepaid" -> PeriodType.PREPAID
     else -> PeriodType.NORMAL
 }
 
@@ -86,19 +78,20 @@ internal fun JSONObject.buildEntitlementInfo(
     val expirationDate = optDate(EntitlementsResponseJsonKeys.EXPIRES_DATE)
     val unsubscribeDetectedAt = productData.optDate(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT)
     val billingIssueDetectedAt = productData.optDate(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT)
-
+    val periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE)
     val store = productData.getStore(ProductResponseJsonKeys.STORE)
 
     return EntitlementInfo(
         identifier = identifier,
         isActive = isDateActive(identifier, expirationDate, requestDate),
-        willRenew = getWillRenew(
+        willRenew = EntitlementInfoHelper.getWillRenew(
             store,
             expirationDate,
             unsubscribeDetectedAt,
             billingIssueDetectedAt,
+            periodType,
         ),
-        periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE),
+        periodType = periodType,
         latestPurchaseDate = getDate(ProductResponseJsonKeys.PURCHASE_DATE),
         originalPurchaseDate = productData.getDate(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE),
         expirationDate = expirationDate,
@@ -121,22 +114,9 @@ private fun isDateActive(
 ): Boolean {
     val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
     if (!dateActive.isActive && !dateActive.inGracePeriod) {
-        warnLog(
-            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate),
-        )
+        warnLog {
+            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
+        }
     }
     return dateActive.isActive
-}
-
-private fun getWillRenew(
-    store: Store,
-    expirationDate: Date?,
-    unsubscribeDetectedAt: Date?,
-    billingIssueDetectedAt: Date?,
-): Boolean {
-    val isPromo = store == Store.PROMOTIONAL
-    val isLifetime = expirationDate == null
-    val hasUnsubscribed = unsubscribeDetectedAt != null
-    val hasBillingIssues = billingIssueDetectedAt != null
-    return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues)
 }

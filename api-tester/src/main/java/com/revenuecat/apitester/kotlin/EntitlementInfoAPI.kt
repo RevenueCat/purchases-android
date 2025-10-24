@@ -96,6 +96,8 @@ private class EntitlementInfoAPI {
             Store.AMAZON,
             Store.RC_BILLING,
             Store.EXTERNAL,
+            Store.PADDLE,
+            Store.TEST_STORE,
             -> {}
         }.exhaustive
     }
@@ -105,6 +107,7 @@ private class EntitlementInfoAPI {
             PeriodType.NORMAL,
             PeriodType.INTRO,
             PeriodType.TRIAL,
+            PeriodType.PREPAID,
             -> {}
         }.exhaustive
     }

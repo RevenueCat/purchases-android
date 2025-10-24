@@ -3,14 +3,12 @@ package com.revenuecat.purchases.amazon.helpers
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.internal.model.ReceiptBuilder
 import com.amazon.device.iap.internal.model.UserDataBuilder
-import com.amazon.device.iap.model.LWAConsentStatus
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchasingData
@@ -48,7 +46,7 @@ fun dummyAmazonProduct(
 fun stubStoreProductForAmazon(
     productId: String,
     type: com.revenuecat.purchases.ProductType = com.revenuecat.purchases.ProductType.SUBS,
-    price: Price = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD"),
+    price: Price = Price("\$1.00", MICRO_MULTIPLIER.toLong(), "USD"),
     period: Period = Period(1, Period.Unit.MONTH, "P1M"),
     presentedOfferingContext: PresentedOfferingContext? = null,
 ): StoreProduct = object : StoreProduct {

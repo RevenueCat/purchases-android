@@ -5,7 +5,7 @@ android {
         minSdkVersion obtainMinSdkVersion()
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "8.8.0-SNAPSHOT"
+        versionName "9.13.0-SNAPSHOT"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
@@ -22,6 +22,8 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+        languageVersion = libs.versions.kotlinLanguage.get()
+        apiVersion = libs.versions.kotlinLanguage.get()
     }
 }
 

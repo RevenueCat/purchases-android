@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration.Builder
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import java.util.concurrent.ExecutorService
 
 /**
@@ -34,9 +35,16 @@ open class PurchasesConfiguration(builder: Builder) {
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    val automaticDeviceIdentifierCollectionEnabled: Boolean
+    val preferredUILocaleOverride: String?
 
     init {
-        this.context = builder.context
+        this.context =
+            if (builder.context.isDeviceProtectedStorageCompat) {
+                builder.context
+            } else {
+                builder.context.applicationContext
+            }
         this.apiKey = builder.apiKey.trim()
         this.appUserID = builder.appUserID
         this.purchasesAreCompletedBy = builder.purchasesAreCompletedBy
@@ -47,6 +55,32 @@ open class PurchasesConfiguration(builder: Builder) {
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
+        this.automaticDeviceIdentifierCollectionEnabled =
+            builder.automaticDeviceIdentifierCollectionEnabled
+        this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+    }
+
+    internal fun copy(
+        appUserID: String? = this.appUserID,
+        service: ExecutorService? = this.service,
+    ): PurchasesConfiguration {
+        var builder = Builder(context, apiKey)
+            .appUserID(appUserID)
+            .purchasesAreCompletedBy(purchasesAreCompletedBy)
+            .store(store)
+            .diagnosticsEnabled(diagnosticsEnabled)
+            .entitlementVerificationMode(verificationMode)
+            .dangerousSettings(dangerousSettings)
+            .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
+            .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+            .automaticDeviceIdentifierCollectionEnabled(
+                automaticDeviceIdentifierCollectionEnabled,
+            )
+            .preferredUILocaleOverride(preferredUILocaleOverride)
+        if (service != null) {
+            builder = builder.service(service)
+        }
+        return builder.build()
     }
 
     @SuppressWarnings("TooManyFunctions")
@@ -81,6 +115,12 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var pendingTransactionsForPrepaidPlansEnabled: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var automaticDeviceIdentifierCollectionEnabled: Boolean = true
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var preferredUILocaleOverride: String? = null
 
         /**
          * A unique id for identifying the user
@@ -117,7 +157,9 @@ open class PurchasesConfiguration(builder: Builder) {
             purchasesAreCompletedBy(
                 if (observerMode) {
                     PurchasesAreCompletedBy.MY_APP
-                } else PurchasesAreCompletedBy.REVENUECAT,
+                } else {
+                    PurchasesAreCompletedBy.REVENUECAT
+                },
             )
         }
 
@@ -159,8 +201,6 @@ open class PurchasesConfiguration(builder: Builder) {
          * Examples of this information include response times, cache hits or error codes.
          * No personal identifiable information will be collected.
          * The default value is false.
-         *
-         * Diagnostics is only available in Android API 24+
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
@@ -232,10 +272,75 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Enable this setting to allow the collection of identifiers when setting the identifier for an
+         * attribution network. For example, when calling [Purchases.setAdjustID] or [Purchases.setAppsflyerID],
+         * the SDK would collect the Android advertising ID, IP and device versions, if available, and send them
+         * to RevenueCat. This is required by some attribution networks to attribute installs and re-installs.
+         *
+         * Enabling this setting does NOT mean we will always collect the identifiers. We will only do so when
+         * setting an attribution network ID AND the user has not limited ad tracking on their device.
+         *
+         * Default is enabled.
+         */
+        fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean) = apply {
+            this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
+        }
+
+        /**
+         * Sets the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+         * This allows you to override the system locale and display the UI in a specific language.
+         *
+         * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+         *                     Pass null to use the system default locale.
+         *
+         * **Note:** This only affects UI components from the RevenueCatUI module and requires
+         * importing RevenueCatUI in your project.
+         */
+        fun preferredUILocaleOverride(localeString: String?) = apply {
+            this.preferredUILocaleOverride = localeString
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         open fun build(): PurchasesConfiguration {
             return PurchasesConfiguration(this)
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PurchasesConfiguration
+
+        if (apiKey != other.apiKey) return false
+        if (appUserID != other.appUserID) return false
+        if (purchasesAreCompletedBy != other.purchasesAreCompletedBy) return false
+        if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
+        if (store != other.store) return false
+        if (diagnosticsEnabled != other.diagnosticsEnabled) return false
+        if (dangerousSettings != other.dangerousSettings) return false
+        if (verificationMode != other.verificationMode) return false
+        if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
+        if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
+        if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = apiKey.hashCode()
+        result = 31 * result + (appUserID?.hashCode() ?: 0)
+        result = 31 * result + purchasesAreCompletedBy.hashCode()
+        result = 31 * result + showInAppMessagesAutomatically.hashCode()
+        result = 31 * result + store.hashCode()
+        result = 31 * result + diagnosticsEnabled.hashCode()
+        result = 31 * result + dangerousSettings.hashCode()
+        result = 31 * result + verificationMode.hashCode()
+        result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
+        result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
+        result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+        return result
     }
 }

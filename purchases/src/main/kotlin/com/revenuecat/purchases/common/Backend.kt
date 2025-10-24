@@ -5,26 +5,34 @@
 
 package com.revenuecat.purchases.common
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterRoot
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
@@ -59,6 +67,9 @@ internal typealias PostReceiptDataErrorCallback = (
 internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
+internal typealias AliasCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+
+/** @suppress */
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
@@ -67,12 +78,22 @@ internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boo
 /** @suppress */
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
+
+internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
+
+internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
+
+internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
+
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
     SHOULD_NOT_CONSUME,
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,
@@ -81,10 +102,15 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
-    private companion object {
-        const val APP_USER_ID = "app_user_id"
-        const val FETCH_TOKEN = "fetch_token"
-        const val NEW_APP_USER_ID = "new_app_user_id"
+    companion object {
+        private const val APP_USER_ID = "app_user_id"
+        private const val FETCH_TOKEN = "fetch_token"
+        private const val NEW_APP_USER_ID = "new_app_user_id"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal val json = Json {
+            ignoreUnknownKeys = true
+        }
     }
 
     val verificationMode: SignatureVerificationMode
@@ -103,6 +129,9 @@ internal class Backend(
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
     @get:Synchronized @set:Synchronized
+    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
+
+    @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
 
     @get:Synchronized @set:Synchronized
@@ -110,6 +139,19 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var virtualCurrenciesCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -143,6 +185,7 @@ internal class Backend(
                     body = null,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -249,6 +292,7 @@ internal class Backend(
                     body,
                     postFieldsToSign,
                     backendHelper.authenticationHeaders + extraHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -315,6 +359,7 @@ internal class Backend(
                     body = null,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -379,6 +424,7 @@ internal class Backend(
                     body,
                     postFieldsToSign,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -416,6 +462,57 @@ internal class Backend(
         }
     }
 
+    fun aliasUsers(
+        oldAppUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val cacheKey = listOfNotNull(
+            oldAppUserID,
+            newAppUserID,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                val body = mapOf(
+                    APP_USER_ID to oldAppUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    Endpoint.AliasUsers(oldAppUserID),
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    aliasCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (result.isSuccessful()) {
+                    synchronized(this@Backend) {
+                        aliasCallbacks.remove(cacheKey)
+                    }?.forEach { (onSuccessHandler, _) ->
+                        onSuccessHandler()
+                    }
+                } else {
+                    onError(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            aliasCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
+    }
+
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
@@ -432,6 +529,7 @@ internal class Backend(
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -469,13 +567,12 @@ internal class Backend(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    fun postPaywallEvents(
-        paywallEventRequest: PaywallEventRequest,
+    fun postEvents(
+        paywallEventRequest: EventsRequest,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = PaywallEventRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = JsonProvider.defaultJson.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
             onErrorHandler(
                 PurchasesError(
@@ -494,6 +591,7 @@ internal class Backend(
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -501,7 +599,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     paywallEventsCallbacks.remove(paywallEventRequest.cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error, true)
+                    onErrorHandler(error, false)
                 }
             }
 
@@ -542,6 +640,7 @@ internal class Backend(
                     body = null,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
             }
 
@@ -580,6 +679,266 @@ internal class Backend(
         }
     }
 
+    fun getCustomerCenterConfig(
+        appUserID: String,
+        onSuccessHandler: (CustomerCenterConfigData) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetCustomerCenterConfig(appUserID)
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    customerCenterCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    customerCenterCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
+                                result.payload,
+                            )
+                            onSuccessHandler(customerCenterRoot.customerCenter)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            customerCenterCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    @Suppress("NestedBlockDepth")
+    fun postRedeemWebPurchase(
+        appUserID: String,
+        redemptionToken: String,
+        onResultHandler: (RedeemWebPurchaseListener.Result) -> Unit,
+    ) {
+        val endpoint = Endpoint.PostRedeemWebPurchase
+        val path = endpoint.getPath()
+        val body = mapOf("redemption_token" to redemptionToken, APP_USER_ID to appUserID)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    redeemWebPurchaseCallbacks.remove(path)
+                }?.forEach { callback ->
+                    callback(RedeemWebPurchaseListener.Result.Error(error))
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    redeemWebPurchaseCallbacks.remove(path)
+                }?.forEach { callback ->
+                    if (result.isSuccessful()) {
+                        callback(
+                            RedeemWebPurchaseListener.Result.Success(CustomerInfoFactory.buildCustomerInfo(result)),
+                        )
+                    } else {
+                        when (result.backendErrorCode) {
+                            BackendErrorCode.BackendInvalidWebRedemptionToken.value -> {
+                                callback(RedeemWebPurchaseListener.Result.InvalidToken)
+                            }
+                            BackendErrorCode.BackendExpiredWebRedemptionToken.value -> {
+                                val resultBody = result.body
+                                val redemptionError = resultBody.optJSONObject("purchase_redemption_error_info")
+                                val obfuscatedEmail = redemptionError?.optString("obfuscated_email")
+                                if (obfuscatedEmail == null) {
+                                    errorLog { "Error parsing expired redemption token response: $resultBody" }
+                                    callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
+                                } else {
+                                    callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail))
+                                }
+                            }
+                            BackendErrorCode.BackendPurchaseBelongsToOtherUser.value -> {
+                                callback(RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
+                            }
+                            else -> {
+                                callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            redeemWebPurchaseCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onResultHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun getVirtualCurrencies(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (VirtualCurrencies) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
+                                httpResult = result,
+                            )
+                            onSuccessHandler(virtualCurrencies)
+                        } catch (e: JSONException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            virtualCurrenciesCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWebBillingProducts(
+        appUserID: String,
+        productIds: Set<String>,
+        onSuccess: (WebBillingProductsResponse) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.WebBillingGetProducts(appUserID, productIds)
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
+                                result.payload,
+                            )
+                            onSuccessHandler(productsResponse)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            webBillingProductsCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccess to onError,
+                Delay.NONE,
+            )
+        }
+    }
+
     fun clearCaches() {
         httpClient.clearCaches()
     }
@@ -606,7 +965,7 @@ internal class Backend(
         val foregroundCacheKey = cacheKey.copy(appInBackground = false)
         val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         val cacheKeyToUse = if (cacheKey.appInBackground && foregroundCallAlreadyInPlace) {
-            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey))
+            debugLog { NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey) }
             foregroundCacheKey
         } else {
             cacheKey
@@ -617,7 +976,7 @@ internal class Backend(
         val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
         val backgroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         if (!cacheKey.appInBackground && backgroundCallAlreadyInPlace) {
-            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey))
+            debugLog { NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey) }
             remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
                 if (containsKey(cacheKey)) {
                     this[cacheKey]?.addAll(backgroundedCallbacks)
@@ -628,18 +987,18 @@ internal class Backend(
         }
     }
 
-    private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
+    private fun <K, F> MutableMap<K, MutableList<F>>.addCallback(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
         cacheKey: K,
-        functions: Pair<S, E>,
+        functions: F,
         delay: Delay = Delay.NONE,
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
             backendHelper.enqueue(call, dispatcher, delay)
         } else {
-            debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
+            debugLog { String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey) }
             this[cacheKey]!!.add(functions)
         }
     }

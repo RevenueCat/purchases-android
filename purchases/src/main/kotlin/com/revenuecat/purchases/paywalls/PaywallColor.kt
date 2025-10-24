@@ -4,6 +4,8 @@ import android.graphics.Color
 import android.os.Build
 import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -18,7 +20,9 @@ private const val COLOR_WHITE_HEX = 0xFFFFFF
 /**
  * Represents a color to be used by `RevenueCatUI`.
  */
-data class PaywallColor(
+@InternalRevenueCatAPI
+@Poko
+class PaywallColor(
     /**
      * The original Hex representation for this color.
      */
@@ -67,23 +71,4 @@ data class PaywallColor(
             null
         },
     )
-
-    companion object {
-        private val rgbaColorRegex = Regex("^#([A-Fa-f0-9]{8})$")
-
-        @Suppress("MagicNumber")
-        @ColorInt
-        private fun parseRGBAColor(stringRepresentation: String): Int {
-            return if (stringRepresentation.matches(rgbaColorRegex)) {
-                val radix = 16
-                val r = stringRepresentation.substring(1, 3).toInt(radix)
-                val g = stringRepresentation.substring(3, 5).toInt(radix)
-                val b = stringRepresentation.substring(5, 7).toInt(radix)
-                val a = stringRepresentation.substring(7, 9).toInt(radix)
-                Color.argb(a, r, g, b)
-            } else {
-                Color.parseColor(stringRepresentation)
-            }
-        }
-    }
 }

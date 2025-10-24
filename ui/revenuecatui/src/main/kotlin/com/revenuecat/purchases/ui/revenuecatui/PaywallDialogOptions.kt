@@ -1,11 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
+import dev.drewhamilton.poko.Poko
 
-data class PaywallDialogOptions internal constructor(
+@Immutable
+@Poko
+class PaywallDialogOptions internal constructor(
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     val dismissRequest: (() -> Unit)?,
     val offering: Offering?,
@@ -72,12 +76,17 @@ data class PaywallDialogOptions internal constructor(
         }
 
         /**
-         * Sets whether to display a close button on the paywall screen. Defaults to true.
+         * Sets whether to display a close button on the paywall screen. Only available for original template paywalls.
+         * Ignored for v2 Paywalls. Defaults to true.
          */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
+        /**
+         * Sets a font provider to provide the paywall with your custom fonts.
+         * Only available for original template paywalls. Ignored for v2 Paywalls.
+         */
         fun setFontProvider(fontProvider: FontProvider?) = apply {
             this.fontProvider = fontProvider
         }

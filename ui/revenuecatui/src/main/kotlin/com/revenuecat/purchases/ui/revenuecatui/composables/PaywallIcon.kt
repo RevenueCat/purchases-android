@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +15,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.R
-import kotlin.random.Random
 
 @Composable
 internal fun PaywallIcon(
@@ -151,18 +151,9 @@ internal enum class PaywallIconName {
 internal fun PaywallIconPreview() {
     val icons = PaywallIconName.values()
 
-    @Suppress("MagicNumber")
-    fun randomColor(): Color {
-        return Color(
-            red = Random.nextInt(0, 256),
-            green = Random.nextInt(0, 256),
-            blue = Random.nextInt(0, 256),
-        )
-    }
-
     LazyVerticalGrid(columns = GridCells.Adaptive(40.dp)) {
         items(icons.size) {
-            Box(modifier = Modifier.background(randomColor())) {
+            Box(modifier = Modifier.background(Color.White).border(1.dp, Color.Black)) {
                 PaywallIcon(icon = icons[it], tintColor = Color.Black)
             }
         }

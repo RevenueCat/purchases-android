@@ -1,13 +1,16 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -17,16 +20,14 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
+import io.mockk.mockk
 import org.json.JSONObject
-import java.util.Locale
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
     override val productId: String,
-) : PurchasingData {
-    override val productType: ProductType
-        get() = ProductType.SUBS
-}
+    override val productType: ProductType = ProductType.SUBS
+) : PurchasingData
 
 const val STUB_OFFERING_IDENTIFIER = "offering_a"
 const val STUB_PRODUCT_IDENTIFIER = "monthly_freetrial"
@@ -153,7 +154,7 @@ fun stubINAPPStoreProduct(
     override val type: ProductType
         get() = ProductType.INAPP
     override val price: Price
-        get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
+        get() = Price("\$1.00", MICRO_MULTIPLIER.toLong(), "USD")
     override val name: String
         get() = ""
     override val title: String
@@ -168,7 +169,7 @@ fun stubINAPPStoreProduct(
         get() = null
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
-            productId = productId,
+            productId = productId, productType = ProductType.INAPP
         )
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
@@ -184,7 +185,7 @@ fun stubINAPPStoreProduct(
             override val type: ProductType
                 get() = ProductType.INAPP
             override val price: Price
-                get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
+                get() = Price("\$1.00", MICRO_MULTIPLIER.toLong(), "USD")
             override val name: String
                 get() = ""
             override val title: String
@@ -268,7 +269,7 @@ fun stubPricingPhase(
     billingCycleCount,
     Price(
         if (price == 0.0) "Free" else "${'$'}$price",
-        price.times(MICROS_MULTIPLIER).toLong(),
+        price.times(MICRO_MULTIPLIER).toLong(),
         priceCurrencyCodeValue,
     ),
 )
@@ -344,3 +345,31 @@ fun getAmazonPackageJSON(
                 }
         """.trimIndent(),
     )
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun stubStoreProductWithGoogleSubscriptionPurchaseData(
+    productId: String = STUB_PRODUCT_IDENTIFIER,
+    optionId: String = "optionId",
+    token: String = "token",
+    period: Period = Period(1, Period.Unit.MONTH, "P1M"),
+    subscriptionOptions: List<SubscriptionOption> = listOf(
+        stubSubscriptionOption("p1m", productId, period)
+    )
+): StoreProduct {
+    val productDetails: ProductDetails = mockk()
+
+    return object : StoreProduct by stubStoreProduct(productId, subscriptionOptions=subscriptionOptions) {
+        override val purchasingData: PurchasingData
+            get() = GooglePurchasingData.Subscription(
+                productId = productId,
+                optionId = optionId,
+                productDetails = productDetails,
+                token = token,
+                billingPeriod = period,
+                addOnProducts = emptyList()
+            )
+        val storeProduct: GoogleStoreProduct?
+            get() = mockk()
+
+    }
+}

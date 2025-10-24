@@ -1,31 +1,48 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Purchases.Companion.sharedInstance
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.awaitRestoreResult
+import com.revenuecat.purchases.awaitStorefrontLocale
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getStorefrontLocaleWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
@@ -33,13 +50,19 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
+        webPurchaseRedemption: WebPurchaseRedemption,
+        redeemWebPurchaseListener: RedeemWebPurchaseListener,
+        intent: Intent,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
@@ -59,6 +82,16 @@ private class PurchasesAPI {
         }
         val getAmazonLWAConsentStatusCallback = object : GetAmazonLWAConsentStatusCallback {
             override fun onSuccess(status: AmazonLWAConsentStatus) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val getVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
+            override fun onReceived(virtualCurrencies: VirtualCurrencies) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val getStorefrontLocaleCallback = object : GetStorefrontLocaleCallback {
+            override fun onReceived(storefrontLocale: Locale) {}
             override fun onError(error: PurchasesError) {}
         }
 
@@ -87,9 +120,21 @@ private class PurchasesAPI {
 
         val store: Store = purchases.store
 
-        val countryCode = purchases.storefrontCountryCode
+        val configuration: PurchasesConfiguration = purchases.currentConfiguration
+
+        purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
+        val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
+        val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
+
+        purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
+        purchases.invalidateVirtualCurrenciesCache()
+        val cachedVirtualCurrencies: VirtualCurrencies? = purchases.cachedVirtualCurrencies
+
+        val locale: Locale? = purchases.storefrontLocale
+        purchases.getStorefrontLocale(getStorefrontLocaleCallback)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
@@ -130,8 +175,17 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )
+        purchases.getVirtualCurrenciesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: VirtualCurrencies -> },
+        )
+        purchases.getStorefrontLocaleWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: Locale -> },
+        )
     }
 
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
@@ -139,12 +193,15 @@ private class PurchasesAPI {
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
         val logInResult: LogInResult = purchases.awaitLogIn("appUserID")
-        val (customerInfo2: CustomerInfo, created: Boolean) = purchases.awaitLogIn("appUserID")
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
+        val customerInfo6: Result<CustomerInfo> = purchases.awaitRestoreResult()
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
+        var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+        val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
+        val storefrontLocale: Locale = purchases.awaitStorefrontLocale()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -164,9 +221,13 @@ private class PurchasesAPI {
             setAirshipChannelID("")
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
+            setTenjinAnalyticsInstallationID("")
+            setPostHogUserId("")
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")
+            setKochavaDeviceID("")
+            setAirbridgeDeviceID("")
             setAdGroup("")
             setAd("")
             setKeyword("")
@@ -215,5 +276,42 @@ private class PurchasesAPI {
     fun checkAmazonConfigurationDiagnostics(context: Context, executorService: ExecutorService) {
         val builder: PurchasesConfiguration.Builder = AmazonConfiguration.Builder(context, "")
             .informationalVerificationModeAndDiagnosticsEnabled(true)
+    }
+
+    fun checkCustomerCenter() {
+        val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreStarted() {
+            }
+        }
+        val customerInfoListener2: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+            }
+
+            override fun onShowingManageSubscriptions() {
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            }
+
+            override fun onRestoreFailed(error: PurchasesError) {
+            }
+
+            override fun onRestoreStarted() {
+            }
+
+            override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+                when (action) {
+                    CustomerCenterManagementOption.MissingPurchase -> {
+                    }
+                    CustomerCenterManagementOption.Cancel -> {
+                    }
+                    is CustomerCenterManagementOption.CustomUrl -> {
+                        val uri: Uri = action.uri
+                    }
+                }
+            }
+        }
+        sharedInstance.customerCenterListener = object : CustomerCenterListener {}
+        sharedInstance.customerCenterListener = customerInfoListener
     }
 }

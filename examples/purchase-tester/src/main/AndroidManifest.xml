@@ -6,20 +6,28 @@
 
     <application
             android:name="com.revenuecat.purchasetester.MainApplication"
-            android:allowBackup="true"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
+            android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
             android:supportsRtl="true"
             android:usesCleartextTraffic="true"
             android:theme="@style/AppTheme">
         <activity
                 android:name="com.revenuecat.purchasetester.MainActivity"
+                android:launchMode="singleTop"
                 android:label="@string/app_name"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="revenuecatbilling" />
+                <data android:scheme="rc-43e41a79a1" />
             </intent-filter>
         </activity>
     </application>

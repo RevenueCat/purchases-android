@@ -31,18 +31,40 @@ suspend fun Purchases.awaitOfferings(): Offerings {
 }
 
 /**
+ * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+ * products via RevenueCat and greatly simplifies management. See
+ * [the guide](https://docs.revenuecat.com/offerings) for more info.
+ *
+ * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
+ * your prices are loaded for your purchase flow. Time is money.
+ *
+ * Coroutine friendly version of [Purchases.getOfferings].
+ *
+ * @return A [Result] containing [Offerings] available to the user if the execution succeeds,
+ * or a [Result] containing [PurchasesException] if it fails.
+ */
+@JvmSynthetic
+suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
+    suspendCoroutine { continuation ->
+        getOfferingsWith(
+            onSuccess = { continuation.resume(Result.success(it)) },
+            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
+        )
+    }
+
+/**
  * Initiate a purchase with the given [PurchaseParams].
  * Initialized with an [Activity] either a [Package], [StoreProduct], or [SubscriptionOption].
  *
  * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [StoreProduct.defaultOption] will
  * be purchased.
  * [StoreProduct.defaultOption] is selected via the following logic:
- *   - Filters out offers with "rc-ignore-offer" tag
+ *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
  *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
  *   - Falls back to use base plan
  *
  * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
- * @throws [PurchasesTransactionException] with a [PurchasesTransactionException] if there's an error when purchasing
+ * @throws [PurchasesTransactionException] with a [PurchasesError] if there's an error when purchasing
  * and a userCancelled boolean that indicates if the user cancelled the purchase flow.
  * @return The [StoreTransaction] for this purchase and the updated [CustomerInfo] for this user.
  */
@@ -58,6 +80,39 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
                 },
                 onError = { purchasesError, userCancelled ->
                     continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
+                },
+            ),
+        )
+    }
+}
+
+/**
+ * Initiate a purchase with the given [PurchaseParams].
+ * Initialized with an [Activity] either a [Package], [StoreProduct], or [SubscriptionOption].
+ *
+ * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [StoreProduct.defaultOption] will
+ * be purchased.
+ * [StoreProduct.defaultOption] is selected via the following logic:
+ *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
+ *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+ *   - Falls back to use base plan
+ *
+ * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
+ * @return The [Result] of [PurchaseResult] contains [StoreTransaction] for this purchase and the updated,
+ * [CustomerInfo] for this user if the execution succeeds, or a [Result] containing
+ * [PurchasesException] if it fails.
+ */
+@JvmSynthetic
+suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
+    return suspendCoroutine { continuation ->
+        purchase(
+            purchaseParams = purchaseParams,
+            callback = purchaseCompletedCallback(
+                onSuccess = { storeTransaction, customerInfo ->
+                    continuation.resume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
+                },
+                onError = { purchasesError, userCancelled ->
+                    continuation.resume(Result.failure(PurchasesTransactionException(purchasesError, userCancelled)))
                 },
             ),
         )
@@ -95,6 +150,37 @@ suspend fun Purchases.awaitGetProducts(
 }
 
 /**
+ * Gets the StoreProduct(s) for the given list of product ids of type [type], or for all types if no type is specified.
+ *
+ * Coroutine friendly version of [Purchases.getProducts].
+ *
+ * @param [productIds] List of productIds
+ * @param [type] A product type to filter by
+ *
+ * @return A [Result] of list of [StoreProduct] with the products that have been able to be fetched from the
+ * store successfully, or a [Result] containing  [PurchasesException] if it fails.
+ * Not found products will be ignored.
+ */
+@JvmSynthetic
+suspend fun Purchases.awaitGetProductsResult(
+    productIds: List<String>,
+    type: ProductType? = null,
+): Result<List<StoreProduct>> {
+    return suspendCoroutine { continuation ->
+        getProductsWith(
+            productIds,
+            type,
+            onGetStoreProducts = { storeProducts ->
+                continuation.resume(Result.success(storeProducts))
+            },
+            onError = {
+                continuation.resume(Result.failure(PurchasesException(it)))
+            },
+        )
+    }
+}
+
+/**
  * Restores purchases made with the current Play Store account for the current user.
  * This method will post all purchases associated with the current Play Store account to
  * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
@@ -116,6 +202,53 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Restores purchases made with the current Play Store account for the current user.
+ * This method will post all purchases associated with the current Play Store account to
+ * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+ * used by an existing user, the current `appUserID` will be aliased together with the
+ * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+ * the same user.
+ *
+ * You shouldn't use this method if you have your own account system. In that case
+ * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+ *
+ * Coroutine friendly version of [Purchases.restorePurchases].
+ *
+ * @return The [Result] of [CustomerInfo] with the restored purchases if the execution succeeds,
+ * or a [Result] containing [PurchasesException] if it fails.
+ */
+@JvmSynthetic
+suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
+    return suspendCoroutine { continuation ->
+        restorePurchasesWith(
+            onSuccess = { customerInfo ->
+                continuation.resume(Result.success(customerInfo))
+            },
+            onError = {
+                continuation.resume(Result.failure(PurchasesException(it)))
+            },
+        )
+    }
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+ * If there is any error, it will return null and log said error.
+ * Coroutine friendly version of [Purchases.getStorefrontCountryCode].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
+ * @return The Store country code in ISO-3166-1 alpha2.
+ */
+suspend fun Purchases.awaitStorefrontCountryCode(): String {
+    return suspendCoroutine { continuation ->
+        getStorefrontCountryCodeWith(
+            onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }

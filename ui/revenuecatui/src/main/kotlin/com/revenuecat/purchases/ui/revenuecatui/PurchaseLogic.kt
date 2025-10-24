@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
+import dev.drewhamilton.poko.Poko
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -120,6 +121,7 @@ sealed interface PurchaseLogicResult {
      *
      * @property error Details of the error that occurred. If provided, an error dialog will be shown to the user.
      */
-    data class Error(val errorDetails: PurchasesError? = null) :
+    @Poko
+    class Error(val errorDetails: PurchasesError? = null) :
         PurchaseLogicResult
 }

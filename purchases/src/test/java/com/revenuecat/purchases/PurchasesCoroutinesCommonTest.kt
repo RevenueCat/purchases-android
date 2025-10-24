@@ -104,7 +104,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
                 )
             }
         }
-        val (storeTransaction, customerInfo) = purchases.awaitPurchase(purchaseOptionParams)
+        val result = purchases.awaitPurchase(purchaseOptionParams)
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(
@@ -117,8 +117,8 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             )
         }
 
-        assertThat(storeTransaction).isNotNull
-        assertThat(customerInfo).isNotNull
+        assertThat(result.storeTransaction).isNotNull
+        assertThat(result.customerInfo).isNotNull
     }
 
     @Test
@@ -268,6 +268,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = storeTransaction,
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = PostReceiptInitiationSource.RESTORE,

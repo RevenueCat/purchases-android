@@ -1,28 +1,34 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.transform.Transformation
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 @SuppressWarnings("LongParameterList")
@@ -34,41 +40,57 @@ internal fun LocalImage(
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    colorFilter: ColorFilter? = null,
 ) {
     Image(
         source = ImageSource.Local(resource),
+        placeholderSource = null,
         modifier = modifier,
         contentScale = contentScale,
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        colorFilter = colorFilter,
     )
 }
 
+/**
+ * @param supportImagePreview: set to false to not show any image in previews and just a colored box. This is to avoid
+ * modifying Paywalls V1 previews.
+ */
 @SuppressWarnings("LongParameterList")
 @Composable
 internal fun RemoteImage(
     urlString: String,
     modifier: Modifier = Modifier,
+    placeholderUrlString: String? = null,
     contentScale: ContentScale = ContentScale.Fit,
     contentDescription: String? = null,
     transformation: Transformation? = null,
     alpha: Float = 1f,
+    colorFilter: ColorFilter? = null,
 ) {
     Image(
         source = ImageSource.Remote(urlString),
+        placeholderSource = placeholderUrlString?.let { ImageSource.Remote(it) },
         modifier = modifier,
         contentScale = contentScale,
         contentDescription = contentDescription,
         transformation = transformation,
         alpha = alpha,
+        colorFilter = colorFilter,
     )
 }
 
+@Stable
 private sealed class ImageSource {
+
+    @Immutable
     data class Local(@DrawableRes val resource: Int) : ImageSource() {
         override val data: Any = resource
     }
+
+    @Immutable
     data class Remote(val urlString: String) : ImageSource() {
         override val data: Any = urlString
     }
@@ -80,41 +102,60 @@ private sealed class ImageSource {
 @Composable
 private fun Image(
     source: ImageSource,
+    placeholderSource: ImageSource?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale,
     contentDescription: String?,
     transformation: Transformation?,
     alpha: Float,
+    colorFilter: ColorFilter?,
 ) {
     // Previews don't support images
-    if (isInPreviewMode()) {
+    val previewImageLoader = LocalPreviewImageLoader.current
+    val isInPreviewMode = isInPreviewMode()
+    if (isInPreviewMode && previewImageLoader == null) {
         return ImageForPreviews(modifier)
     }
 
-    var useCache by remember { mutableStateOf(true) }
+    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = remember(useCache) {
-        applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
+    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
+        Purchases.getImageLoaderTyped(applicationContext)
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(source.data)
         .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
         .transformations(listOfNotNull(transformation))
+        .diskCachePolicy(cachePolicy)
+        .memoryCachePolicy(cachePolicy)
         .build()
 
-    if (useCache) {
+    val previewPlaceholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null
+    val placeholder = placeholderSource?.let {
+        rememberAsyncImagePainter(
+            model = it.data,
+            placeholder = previewPlaceholder,
+            imageLoader = imageLoader,
+            contentScale = contentScale,
+            onError = { errorState -> Logger.e("Error loading placeholder image", errorState.result.throwable) },
+        )
+    } ?: previewPlaceholder
+
+    if (cachePolicy == CachePolicy.ENABLED) {
         AsyncImage(
             source = source,
             imageRequest = imageRequest,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
             modifier = modifier,
+            placeholder = placeholder,
             contentScale = contentScale,
             alpha = alpha,
+            colorFilter = colorFilter,
             onError = {
                 Logger.w("Image failed to load. Will try again disabling cache")
-                useCache = false
+                cachePolicy = CachePolicy.WRITE_ONLY
             },
         )
     } else {
@@ -124,8 +165,10 @@ private fun Image(
             contentDescription = contentDescription,
             imageLoader = imageLoader,
             modifier = modifier,
+            placeholder = placeholder,
             contentScale = contentScale,
             alpha = alpha,
+            colorFilter = colorFilter,
         )
     }
 }
@@ -137,31 +180,30 @@ private fun AsyncImage(
     imageRequest: ImageRequest,
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
+    placeholder: Painter? = null,
     contentScale: ContentScale,
     contentDescription: String?,
     alpha: Float,
+    colorFilter: ColorFilter? = null,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
     AsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
+        placeholder = placeholder,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
         alpha = alpha,
-        onState = {
-            when (it) {
-                is AsyncImagePainter.State.Error -> {
-                    val error = when (source) {
-                        is ImageSource.Local -> "Error loading local image: '${source.resource}'"
-                        is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
-                    }
-
-                    Logger.e(error, it.result.throwable)
-                    onError?.invoke(it)
-                }
-                else -> {}
+        colorFilter = colorFilter,
+        onError = {
+            val error = when (source) {
+                is ImageSource.Local -> "Error loading local image: '${source.resource}'"
+                is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
             }
+
+            Logger.e(error, it.result.throwable)
+            onError?.invoke(it)
         },
     )
 }
@@ -171,33 +213,4 @@ private fun ImageForPreviews(modifier: Modifier) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
-}
-
-// Note: these values have to match those in CoilImageDownloader
-private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
-private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
-
-/**
- * This downloads paywall images in a specific cache for RevenueCat.
- * If you update this, make sure the version in the [CoilImageDownloader] class is also updated.
- *
- * @param readCache: set to false to ignore cache for reading, but allow overwriting with updated image.
- */
-private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader {
-    val cachePolicy = if (readCache) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY
-
-    return ImageLoader.Builder(this)
-        .diskCache {
-            DiskCache.Builder()
-                .directory(cacheDir.resolve(PAYWALL_IMAGE_CACHE_FOLDER))
-                .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
-                .build()
-        }
-        .memoryCache(
-            MemoryCache.Builder(this)
-                .build(),
-        )
-        .diskCachePolicy(cachePolicy)
-        .memoryCachePolicy(cachePolicy)
-        .build()
 }

@@ -1,0 +1,149 @@
+{
+  "customer_center":{
+    "appearance":{
+      "dark":{
+        "accent_color":"#F4A900",
+        "background_color":"#000000",
+        "button_background_color":"#ffffff",
+        "button_text_color":"#000000",
+        "text_color":"#ffffff"
+      },
+      "light":{
+        "accent_color":"#a28339",
+        "background_color":"#ffffff",
+        "button_background_color":"#000000",
+        "button_text_color":"#ffffff",
+        "text_color":"#000000"
+      }
+    },
+    "localization":{
+      "locale":"en",
+      "localized_strings":{
+        "amazon_subscription_manage":"You can manage your subscription in the Amazon Appstore app on an Amazon device.",
+        "done": "Done"
+      }
+    },
+    "screens":{
+      "MANAGEMENT":{
+        "paths":[
+          {
+            "id":"ownmsldfow",
+            "title":"Didn't receive purchase",
+            "type":"MISSING_PURCHASE"
+          },
+          {
+            "id":"nwodkdnfaoeb",
+            "promotional_offer":{
+              "eligible":true,
+              "android_offer_id":"rc-refund-offer",
+              "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+              "title":"Wait!",
+              "product_mapping":{
+                "monthly_subscription":"rc-refund-offer"
+              },
+              "cross_product_promotions": {
+                "monthly_subscription": {
+                  "target_product_id": "yearly_subscription",
+                  "store_offer_identifier": "rc-refund-offer"
+                }
+              }
+            },
+            "title":"Request a refund",
+            "type":"REFUND_REQUEST"
+          },
+          {
+            "id":"nfoaiodifj9",
+            "title":"Change plans",
+            "type":"CHANGE_PLANS"
+          },
+          {
+            "feedback_survey":{
+              "options":[
+                {
+                  "id":"cancel_survey_too_expensive",
+                  "promotional_offer":{
+                    "eligible":true,
+                    "android_offer_id":"rc-cancel-offer",
+                    "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+                    "title":"Wait!",
+                    "product_mapping":{
+                      "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
+                    }
+                  },
+                  "title":"Too expensive"
+                },
+                {
+                  "id":"cancel_survey_usage",
+                  "promotional_offer":{
+                    "eligible":true,
+                    "android_offer_id":"rc-cancel-offer",
+                    "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+                    "title":"Wait!",
+                    "product_mapping":{
+                      "monthly_subscription":"rc-cancel-offer"
+                    },
+                    "cross_product_promotions": {
+                      "monthly_subscription": {
+                        "target_product_id": "yearly_subscription",
+                        "store_offer_identifier": "rc-cancel-offer"
+                      }
+                    }
+                  },
+                  "title":"Don't use the app"
+                },
+                {
+                  "id":"cancel_survey_mistake",
+                  "title":"Bought by mistake"
+                }
+              ],
+              "title":"Why are you cancelling?"
+            },
+            "id":"jnkasldfhas",
+            "title":"Cancel subscription",
+            "type":"CANCEL"
+          },
+          {
+            "id": "path_ZD-yiHSBN",
+            "open_method": "EXTERNAL",
+            "title": "RevenueCat",
+            "type": "CUSTOM_URL",
+            "url": "https://revenuecat.com"
+          }
+        ],
+        "title":"How can we help?",
+        "type":"MANAGEMENT"
+      },
+      "NO_ACTIVE":{
+        "paths":[
+          {
+            "id":"9q9719171o",
+            "title":"Check purchases",
+            "type":"MISSING_PURCHASE"
+          },
+          {
+            "id": "path_ZD-yiHSDN",
+            "open_method": "EXTERNAL",
+            "title": "RevenueCat",
+            "type": "CUSTOM_URL",
+            "url": "https://revenuecat.com"
+          }
+        ],
+        "subtitle":"You currently have no active subscriptions",
+        "title":"No subscriptions found",
+        "type":"NO_ACTIVE"
+      }
+    },
+    "support":{
+      "email":"support@revenuecat.com",
+      "should_warn_customer_to_update": true
+    }
+  },
+  "itunes_track_id":null,
+  "last_published_app_version":null
+}

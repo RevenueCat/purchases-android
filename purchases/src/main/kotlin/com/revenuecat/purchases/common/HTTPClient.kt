@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -46,6 +47,8 @@ internal class HTTPClient(
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
+    private val localeProvider: LocaleProvider,
+    private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -75,7 +78,7 @@ internal class HTTPClient(
                 is IllegalArgumentException,
                 is IOException,
                 -> {
-                    log(LogIntent.WARNING, NetworkStrings.PROBLEM_CONNECTING.format(e.message))
+                    log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
                     connection.errorStream
                 }
                 else -> throw e
@@ -98,7 +101,7 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
@@ -107,29 +110,63 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
+        fallbackBaseURLs: List<URL> = emptyList(),
+        fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        if (appConfig.forceServerErrors) {
-            warnLog("Forcing server error for request to ${endpoint.getPath()}")
-            return HTTPResult(
-                RCHTTPStatusCodes.ERROR,
-                payload = "",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+        fun canUseFallback(): Boolean =
+            endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
+
+        fun performRequestToFallbackURL(): HTTPResult {
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+            }
+            return performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
             )
         }
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
             callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
+        } catch (e: IOException) {
+            // Handle connection failures with fallback URLs
+            if (canUseFallback()) callResult = performRequestToFallbackURL() else throw e
         } finally {
-            trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
+            trackHttpRequestPerformedIfNeeded(
+                baseURL,
+                endpoint,
+                requestStartTime,
+                callSuccessful,
+                callResult,
+                isRetry = refreshETag,
+            )
         }
         if (callResult == null) {
-            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
+            log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
+            callResult = performRequest(
+                baseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag = true,
+                fallbackBaseURLs,
+                fallbackURLIndex,
+            )
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
+            // Handle server errors with fallback URLs
+            callResult = performRequestToFallbackURL()
         }
         return callResult
     }
@@ -145,14 +182,21 @@ internal class HTTPClient(
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath()
-        val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+
         try {
-            val fullURL = URL(baseURL, urlPathWithVersion)
+            val fullURL = if (appConfig.runningTests &&
+                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
+            ) {
+                warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
+                URL(forceServerErrorStrategy.serverErrorURL)
+            } else {
+                URL(baseURL, path)
+            }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
@@ -160,7 +204,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
-                urlPathWithVersion,
+                path,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -179,7 +223,7 @@ internal class HTTPClient(
         val payload: String?
         val responseCode: Int
         try {
-            debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -187,7 +231,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
@@ -195,7 +239,7 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(urlPathWithVersion, connection, payload, nonce, postFieldsToSignHeader)
+            verifyResponse(path, connection, payload, nonce, postFieldsToSignHeader)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -210,7 +254,7 @@ internal class HTTPClient(
             responseCode,
             payload,
             getETagHeader(connection),
-            urlPathWithVersion,
+            path,
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
@@ -218,10 +262,12 @@ internal class HTTPClient(
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
+        baseURL: URL,
         endpoint: Endpoint,
         requestStartTime: Date,
         callSuccessful: Boolean,
         callResult: HTTPResult?,
+        isRetry: Boolean,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
@@ -236,6 +282,7 @@ internal class HTTPClient(
             val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             tracker.trackHttpRequestPerformed(
+                baseURL.host,
                 endpoint,
                 responseTime,
                 requestWasError,
@@ -243,6 +290,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
+                isRetry,
             )
         }
     }
@@ -266,7 +314,10 @@ internal class HTTPClient(
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
             "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
+            "X-Platform-Device" to Build.MODEL,
+            "X-Platform-Brand" to Build.BRAND,
             "X-Version" to Config.frameworkVersion,
+            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags.replace(oldChar = '-', newChar = '_'),
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
@@ -275,6 +326,9 @@ internal class HTTPClient(
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
+            "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
+            "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
+            "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

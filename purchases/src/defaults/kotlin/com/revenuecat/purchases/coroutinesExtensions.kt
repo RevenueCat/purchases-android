@@ -1,7 +1,11 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -103,7 +107,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
  *
  * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
- * For more offerings information, see [getOfferings]
+ * For more offerings information, see [Purchases.getOfferings]
  *
  * Coroutine friendly version of [Purchases.syncAttributesAndOfferingsIfNeeded].
  *
@@ -142,6 +146,70 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
 suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Gets the current user's [CustomerCenterConfigData]. Used by RevenueCatUI to present the customer center.
+ *
+ * @throws [PurchasesException] with the first [PurchasesError] if there's an error getting the customer center
+ * config data.
+ * @returns The [CustomerCenterConfigData] for the current user.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+@InternalRevenueCatAPI
+suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
+    return suspendCoroutine { continuation ->
+        getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+                continuation.resume(customerCenterConfig)
+            }
+
+            override fun onError(error: PurchasesError) {
+                continuation.resumeWithException(PurchasesException(error))
+            }
+        })
+    }
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.getVirtualCurrencies].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
+ * the virtual currencies.
+ *
+ * @return The [VirtualCurrencies] with the subscriber's virtual currencies.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
+    return suspendCoroutine { continuation ->
+        getVirtualCurrenciesWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
+ * If there is any error, it will return null and log said error.
+ * Coroutine friendly version of [Purchases.getStorefrontLocale].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
+ * @return The Store locale. **Note:** this locale only has a region set.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitStorefrontLocale(): Locale {
+    return suspendCoroutine { continuation ->
+        getStorefrontLocaleWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )

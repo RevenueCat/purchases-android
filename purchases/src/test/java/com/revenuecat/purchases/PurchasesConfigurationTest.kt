@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -17,12 +19,16 @@ class PurchasesConfigurationTest {
     private val apiKey = "test-api-key"
 
     private lateinit var context: Context
+    private lateinit var applicationContext: Context
 
     private lateinit var builder: PurchasesConfiguration.Builder
 
     @Before
     fun setup() {
         context = mockk()
+        applicationContext = mockk()
+        every { context.applicationContext } returns applicationContext
+        every { context.isDeviceProtectedStorage } returns false
 
         builder = PurchasesConfiguration.Builder(context, apiKey)
     }
@@ -31,17 +37,19 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration has expected default parameters`() {
         val purchasesConfiguration = builder.build()
         assertThat(purchasesConfiguration.apiKey).isEqualTo(apiKey)
-        assertThat(purchasesConfiguration.context).isEqualTo(context)
+        assertThat(purchasesConfiguration.context).isEqualTo(applicationContext)
         assertThat(purchasesConfiguration.appUserID).isNull()
         assertThat(purchasesConfiguration.observerMode).isFalse
         assertThat(purchasesConfiguration.purchasesAreCompletedBy).isEqualTo(REVENUECAT)
         assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
-        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
+        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.INFORMATIONAL)
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
@@ -112,8 +120,43 @@ class PurchasesConfigurationTest {
     }
 
     @Test
+    fun `PurchasesConfiguration sets automaticDeviceIdentifierCollectionEnabled correctly`() {
+        val purchasesConfiguration = builder.automaticDeviceIdentifierCollectionEnabled(false).build()
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isFalse
+    }
+
+    @Test
     fun `PurchasesConfiguration trims api key`() {
         val purchasesConfiguration = PurchasesConfiguration.Builder(context, "  test-api-key  ").build()
         assertThat(purchasesConfiguration.apiKey).isEqualTo("test-api-key")
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets preferredUILocaleOverride correctly`() {
+        val localeOverride = "de_DE"
+        val purchasesConfiguration = builder.preferredUILocaleOverride(localeOverride).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+    }
+
+    @Test
+    fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
+        val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
+    }
+
+    @Test
+    fun `PurchasesConfiguration does not use application context if provided with device-protected storage context`() {
+        // Arrange
+        every { context.applicationContext } returns applicationContext
+        every { context.isDeviceProtectedStorage } returns true
+        builder = PurchasesConfiguration.Builder(context, apiKey)
+
+        // Act
+        val purchasesConfiguration = builder.build()
+
+        // Assert
+        assertThat(purchasesConfiguration.context.isDeviceProtectedStorageCompat).isTrue()
+        assertThat(purchasesConfiguration.context).isEqualTo(context)
+        assertThat(purchasesConfiguration.context).isNotEqualTo(applicationContext)
     }
 }

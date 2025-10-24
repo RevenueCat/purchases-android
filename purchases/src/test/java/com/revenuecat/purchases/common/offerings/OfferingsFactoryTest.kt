@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -28,138 +29,200 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class OfferingsFactoryTest {
 
-    private val oneOfferingWithNoProductsResponse = JSONObject("{'offerings': [" +
-        "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-        "'description': 'This is the base offering', " +
-        "'packages': []}]," +
-        "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}")
+    // language=JSON
+    private val oneOfferingWithNoProductsResponse = JSONObject(
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": []
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+        }
+        """.trimIndent()
+    )
+    // language=JSON
     private val oneOfferingWithInvalidPaywallResponse = JSONObject(
-        "" +
-            "{" +
-            "'offerings': [" +
-            "{" +
-            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-            "'description': 'This is the base offering', " +
-            "'packages': [" +
-            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
-            "]," +
-            "'paywall': 'not a paywall'" +
-            "}" +
-            "]," +
-            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'" +
-            "}"
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ],
+                    "paywall": "not a paywall"
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+        }
+        """.trimIndent()
     )
+    // language=JSON
     private val oneOfferingWithPaywall = JSONObject(
-        "" +
-            "{" +
-            "'offerings': [" +
-            "{" +
-            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-            "'description': 'This is the base offering', " +
-            "'packages': [" +
-            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
-            "]," +
-            "'paywall': {\n" +
-            "    \"template_name\": \"1\",\n" +
-            "    \"localized_strings\": {\n" +
-            "        \"en_US\": {\n" +
-            "            \"title\": \"Paywall\",\n" +
-            "            \"call_to_action\": \"Purchase\",\n" +
-            "            \"subtitle\": \"Description\"\n" +
-            "        }\n" +
-            "    },\n" +
-            "    \"config\": {\n" +
-            "        \"packages\": [\"\$rc_monthly\"],\n" +
-            "        \"default_package\": \"\$rc_monthly\",\n" +
-            "        \"images\": {},\n" +
-            "        \"colors\": {\n" +
-            "            \"light\": {\n" +
-            "                \"background\": \"#FF00AA\",\n" +
-            "                \"text_1\": \"#FF00AA22\",\n" +
-            "                \"call_to_action_background\": \"#FF00AACC\",\n" +
-            "                \"call_to_action_foreground\": \"#FF00AA\"\n" +
-            "            }\n" +
-            "        }\n" +
-            "    },\n" +
-            "    \"asset_base_url\": \"https://rc-paywalls.s3.amazonaws.com\",\n" +
-            "    \"zero_decimal_place_countries\": {\n" +
-            "        \"apple\": [\"TWA\", \"THA\", \"PHL\", \"MEX\", \"KAZ\"],\n" +
-            "        \"google\": [\"PH\", \"KZ\", \"TW\", \"MX\", \"TH\"]\n" +
-            "    },\n" +
-            "    \"revision\": 7\n" +
-            "}" +
-            "}" +
-            "]," +
-            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'" +
-            "}"
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ],
+                    "paywall": {
+                        "template_name": "1",
+                        "localized_strings": {
+                            "en_US": {
+                                "title": "Paywall",
+                                "call_to_action": "Purchase",
+                                "subtitle": "Description"
+                            }
+                        },
+                        "config": {
+                            "packages": ["${'$'}rc_monthly"],
+                            "default_package": "${'$'}rc_monthly",
+                            "images": {},
+                            "colors": {
+                                "light": {
+                                    "background": "#FF00AA",
+                                    "text_1": "#FF00AA22",
+                                    "call_to_action_background": "#FF00AACC",
+                                    "call_to_action_foreground": "#FF00AA"
+                                }
+                            }
+                        },
+                        "asset_base_url": "https://rc-paywalls.s3.amazonaws.com",
+                        "zero_decimal_place_countries": {
+                            "apple": ["TWA", "THA", "PHL", "MEX", "KAZ"],
+                            "google": ["PH", "KZ", "TW", "MX", "TH"]
+                        },
+                        "revision": 7
+                    }
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+        }
+        """.trimIndent()
     )
+    // language=JSON
     private val oneOfferingWithPlacement = JSONObject(
-        "" +
-            "{" +
-            "'offerings': [" +
-            "{" +
-            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-            "'description': 'This is the base offering', " +
-            "'packages': [" +
-            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
-            "]" +
-            "}" +
-            "]," +
-            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
-            "'placements': {\n" +
-            "    \"fallback_offering_id\": \"standard\",\n" +
-            "    \"offering_ids_by_placement\": {\n" +
-            "        \"onboarding\": null,\n" +
-            "        \"gate\": \"big_feature\"\n" +
-            "    }\n" +
-            "}" +
-            "}"
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ]
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "placements": {
+                "fallback_offering_id": "standard",
+                "offering_ids_by_placement": {
+                    "onboarding": null,
+                    "gate": "big_feature"
+                }
+            }
+        }
+        """.trimIndent()
     )
+    // language=JSON
     private val oneOfferingWithPlacementWithNullFallback = JSONObject(
-        "" +
-            "{" +
-            "'offerings': [" +
-            "{" +
-            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-            "'description': 'This is the base offering', " +
-            "'packages': [" +
-            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
-            "]" +
-            "}" +
-            "]," +
-            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
-            "'placements': {\n" +
-            "    \"fallback_offering_id\": null,\n" +
-            "    \"offering_ids_by_placement\": {\n" +
-            "        \"onboarding\": null,\n" +
-            "        \"gate\": \"big_feature\"\n" +
-            "    }\n" +
-            "}" +
-            "}"
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ]
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "placements": {
+                "fallback_offering_id": null,
+                "offering_ids_by_placement": {
+                    "onboarding": null,
+                    "gate": "big_feature"
+                }
+            }
+        }
+        """.trimIndent()
     )
+    // language=JSON
     private val oneOfferingWithTargeting = JSONObject(
-        "" +
-            "{" +
-            "'offerings': [" +
-            "{" +
-            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-            "'description': 'This is the base offering', " +
-            "'packages': [" +
-            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
-            "]" +
-            "}" +
-            "]," +
-            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
-            "'targeting': {\n" +
-            "    \"revision\": 1,\n" +
-            "    \"rule_id\": \"abc123\"\n" +
-            "}" +
-            "}"
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ]
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "targeting": {
+                "revision": 1,
+                "rule_id": "abc123"
+            }
+        }
+        """.trimIndent()
+    )
+    // language=JSON
+    private val oneOfferingWithWPL = JSONObject(
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER",
+                            "web_checkout_url": "http://revenuecat.com?package_id=${'$'}rc_monthly"
+                        }
+                    ],
+                    "web_checkout_url": "http://revenuecat.com"
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "targeting": {
+                "revision": 1,
+                "rule_id": "abc123"
+            }
+        }
+        """.trimIndent()
     )
 
     private val oneOfferingResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
@@ -240,7 +303,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             onError = { fail("Expected success. Got error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -258,7 +321,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
             onError = { fail("Expected success. Got error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -276,7 +339,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -294,7 +357,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -312,7 +375,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -335,7 +398,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -358,7 +421,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
             onError = { fail("Error: $it") },
-            onSuccess = { offerings = it }
+            onSuccess = { offerings = it.offerings }
         )
 
         assertThat(offerings).isNotNull
@@ -379,6 +442,112 @@ class OfferingsFactoryTest {
         assertThat(
             offerings!!.all.values.first().availablePackages.first().presentedOfferingContext.targetingContext
         ).isNull()
+    }
+
+    @Test
+    fun `createOfferings without WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURL).isNull()
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURL).isNull()
+    }
+
+    @Test
+    fun `createOfferings with WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithWPL,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURL).isEqualTo(URL("http://revenuecat.com"))
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURL).isEqualTo(URL("http://revenuecat.com?package_id=\$rc_monthly"))
+    }
+
+    @Test
+    fun `createOfferings with invalid URL in WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        val invalidUrlWPL = oneOfferingWithWPL.apply {
+            val offering = getJSONArray("offerings").getJSONObject(0)
+            offering.put("web_checkout_url", "ht!tp:/invalid-url")
+            val pkg = offering.getJSONArray("packages").getJSONObject(0)
+            pkg.put("web_checkout_url", "ht!tp:/invalid-url")
+        }
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = invalidUrlWPL,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURL).isNull()
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURL).isNull()
+    }
+
+    @Test
+    fun `copy offering can create a copy with a different presented offering context`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.all.size).isEqualTo(1)
+
+        val offering = offerings!![STUB_OFFERING_IDENTIFIER]!!
+        val originalPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = STUB_OFFERING_IDENTIFIER,
+            placementIdentifier = null,
+            targetingContext = null
+        )
+        assertThat(offering.availablePackages).allMatch {
+            it.presentedOfferingContext == originalPresentedOfferingContext &&
+                it.product.presentedOfferingContext == originalPresentedOfferingContext
+        }
+        val newPresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = STUB_OFFERING_IDENTIFIER,
+            placementIdentifier = "new_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(1, "new_rule")
+        )
+        val modifiedOffering = offering.copy(newPresentedOfferingContext)
+        assertThat(modifiedOffering.availablePackages).allMatch {
+            it.presentedOfferingContext == newPresentedOfferingContext &&
+                it.product.presentedOfferingContext == newPresentedOfferingContext
+        }
     }
 
     // region helpers

@@ -1,8 +1,9 @@
 package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Product
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -12,7 +13,7 @@ import java.util.regex.Pattern
 
 internal fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
-        log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
+        log(LogIntent.AMAZON_ERROR) { AmazonStrings.PRODUCT_PRICE_MISSING.format(sku) }
         return null
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
@@ -67,9 +68,10 @@ internal fun String.createPeriod(): Period? {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 internal fun String.createPrice(marketplace: String): Price {
     val priceNumeric = this.parsePriceUsingRegex() ?: BigDecimal.ZERO
-    val priceAmountMicros = (priceNumeric * BigDecimal(MICROS_MULTIPLIER)).toLong()
+    val priceAmountMicros = (priceNumeric * BigDecimal(MICRO_MULTIPLIER)).toLong()
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(this, priceAmountMicros, currencyCode)

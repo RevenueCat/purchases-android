@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
@@ -37,7 +38,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -55,7 +58,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -76,7 +81,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -96,7 +103,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -117,7 +126,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.packageName).isEqualTo(expected)
     }
@@ -130,7 +141,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.showInAppMessagesAutomatically).isFalse
         val appConfig2 = AppConfig(
@@ -139,7 +152,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig2.showInAppMessagesAutomatically).isTrue
     }
@@ -152,7 +167,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -165,7 +182,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -179,7 +198,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -193,22 +214,11 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
-    }
-
-    @Test
-    fun `default forceServerErrors is correct`() {
-        val appConfig = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE
-        )
-        assertThat(appConfig.forceServerErrors).isFalse
     }
 
     @Test
@@ -219,9 +229,43 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.forceSigningErrors).isFalse
+    }
+
+    @Test
+    fun `default isAppBackgrounded is correct`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig.isAppBackgrounded).isTrue
+    }
+
+    @Test
+    fun `isAppBackgrounded can be modified correctly`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig.isAppBackgrounded).isTrue
+        appConfig.isAppBackgrounded = false
+        assertThat(appConfig.isAppBackgrounded).isFalse
     }
 
     @Test
@@ -233,6 +277,8 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = true)
         )
         assertThat(appConfig.customEntitlementComputation).isTrue
@@ -243,6 +289,8 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = false)
         )
         assertThat(appConfig2.customEntitlementComputation).isFalse
@@ -256,7 +304,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -264,7 +314,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isEqualTo(y)
@@ -278,7 +330,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
@@ -286,7 +340,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -297,7 +353,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -308,7 +366,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -320,7 +380,22 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(autoSyncPurchases = false)
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = true,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -334,7 +409,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -342,7 +419,9 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
@@ -355,18 +434,56 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(x.toString()).isEqualTo(
             "AppConfig(" +
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
+                "isDebugBuild=false, " +
                 "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
                 "finishTransactions=true, " +
                 "showInAppMessagesAutomatically=false, " +
+                "apiKeyValidationResult=VALID, " +
                 "baseURL=https://api.revenuecat.com/)")
     }
+
+    // region Fallback API host
+
+    @Test
+    fun `appConfig returns expected fallback URLs list when no proxy URL is set`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig.fallbackBaseURLs).isEqualTo(listOf(URL("https://api-production.8-lives-cat.io/")))
+    }
+
+    @Test
+    fun `appConfig returns empty fallback URLs list when a proxy URL is set`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = URL("https://proxy.com"),
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig.fallbackBaseURLs).isEmpty()
+    }
+
+    // endregion Fallback API host
 }

@@ -122,22 +122,22 @@ internal class SigningManager(
         postFieldsToSignHeader: String?,
     ): VerificationResult {
         if (appConfig.forceSigningErrors) {
-            warnLog("Forcing signing error for request with path: $urlPath")
+            warnLog { "Forcing signing error for request with path: $urlPath" }
             return VerificationResult.FAILED
         }
         val intermediateSignatureHelper = signatureVerificationMode.intermediateSignatureHelper
             ?: return VerificationResult.NOT_REQUESTED
 
         if (signatureString == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath))
+            errorLog { NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath) }
             return VerificationResult.FAILED
         }
         if (requestTime == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath))
+            errorLog { NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath) }
             return VerificationResult.FAILED
         }
         if (body == null && eTag == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath))
+            errorLog { NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath) }
             return VerificationResult.FAILED
         }
 
@@ -145,18 +145,18 @@ internal class SigningManager(
         try {
             signature = Signature.fromString(signatureString)
         } catch (e: InvalidSignatureSizeException) {
-            errorLog(NetworkStrings.VERIFICATION_INVALID_SIZE.format(urlPath, e.message))
+            errorLog { NetworkStrings.VERIFICATION_INVALID_SIZE.format(urlPath, e.message) }
             return VerificationResult.FAILED
         }
 
         when (val result = intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(signature)) {
             is Result.Error -> {
-                errorLog(
+                errorLog {
                     NetworkStrings.VERIFICATION_INTERMEDIATE_KEY_FAILED.format(
                         urlPath,
                         result.value.underlyingErrorMessage,
-                    ),
-                )
+                    )
+                }
                 return VerificationResult.FAILED
             }
             is Result.Success -> {
@@ -177,10 +177,10 @@ internal class SigningManager(
                 )
 
                 return if (verificationResult) {
-                    verboseLog(NetworkStrings.VERIFICATION_SUCCESS.format(urlPath))
+                    verboseLog { NetworkStrings.VERIFICATION_SUCCESS.format(urlPath) }
                     VerificationResult.VERIFIED
                 } else {
-                    errorLog(NetworkStrings.VERIFICATION_ERROR.format(urlPath))
+                    errorLog { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
                     VerificationResult.FAILED
                 }
             }

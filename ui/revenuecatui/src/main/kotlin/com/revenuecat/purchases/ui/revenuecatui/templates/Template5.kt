@@ -88,7 +88,7 @@ private object Template5UIConstants {
 
 @Composable
 internal fun Template5(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     var packageSelectorVisible by remember {
@@ -115,7 +115,7 @@ internal fun Template5(
 @Suppress("LongMethod")
 @Composable
 private fun ColumnScope.Template5PortraitContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
 ) {
@@ -171,7 +171,7 @@ private fun ColumnScope.Template5PortraitContent(
 
 @Composable
 private fun ColumnScope.Template5LandscapeContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     val leftScrollState = rememberScrollState()
@@ -239,7 +239,7 @@ private fun HeaderImage(uri: Uri?) {
 
 @Composable
 private fun ColumnScope.Title(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
 ) {
     Markdown(
         style = MaterialTheme.typography.headlineMedium,
@@ -247,6 +247,8 @@ private fun ColumnScope.Title(
         textAlign = TextAlign.Start,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
+        textFillMaxWidth = true,
+        applyFontSizeToParagraph = false,
         modifier = Modifier
             .fillMaxWidth(),
     )
@@ -254,7 +256,7 @@ private fun ColumnScope.Title(
 
 @Composable
 private fun Features(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
 
@@ -301,6 +303,8 @@ private fun Feature(
                 textAlign = TextAlign.Start,
                 text = feature.title,
                 color = colors.text1,
+                textFillMaxWidth = true,
+                applyFontSizeToParagraph = false,
             )
             feature.content?.let { content ->
                 Markdown(
@@ -309,6 +313,8 @@ private fun Feature(
                     textAlign = TextAlign.Start,
                     text = content,
                     color = colors.text2,
+                    textFillMaxWidth = true,
+                    applyFontSizeToParagraph = false,
                 )
             }
         }
@@ -317,7 +323,7 @@ private fun Feature(
 
 @Composable
 private fun AnimatedPackages(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean = true,
 ) {
@@ -359,7 +365,7 @@ private fun AnimatedPackages(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.SelectPackageButton(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
 ) {
@@ -445,7 +451,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 
 @Composable
 private fun RowScope.DiscountBanner(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
 ) {
     val text = packageInfo.localization.offerBadge?.uppercase() ?: return

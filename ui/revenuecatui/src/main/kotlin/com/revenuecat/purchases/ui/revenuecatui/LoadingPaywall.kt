@@ -20,6 +20,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
@@ -33,7 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,13 +63,11 @@ internal fun LoadingPaywall(
         paywall = paywallData,
     )
 
-    val state = offering.toPaywallState(
+    val state = offering.toLegacyPaywallState(
         variableDataProvider = VariableDataProvider(
             resourceProvider,
             isInPreviewMode(),
         ),
-        activelySubscribedProductIdentifiers = setOf(),
-        nonSubscriptionProductIdentifiers = setOf(),
         mode = mode,
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,
@@ -81,15 +80,16 @@ internal fun LoadingPaywall(
         // and snapshots ensure that these 2 states are impossible.
         is PaywallState.Error,
         is PaywallState.Loading,
+        is PaywallState.Loaded.Components,
         -> Box {}
 
-        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
+        is PaywallState.Loaded.Legacy -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
     }
 }
 
 @Composable
 private fun LoadingPaywall(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     onDismiss: () -> Unit,
 ) {
@@ -171,6 +171,7 @@ private object LoadingPaywallConstants {
     )
 }
 
+@Suppress("TooManyFunctions")
 private class LoadingViewModel(
     state: PaywallState,
     override val resourceProvider: ResourceProvider,
@@ -195,11 +196,24 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
+        // no-op
+        return null
+    }
+
     override fun purchaseSelectedPackage(activity: Activity?) {
         // no-op
     }
 
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+        // no-op
+    }
+
     override fun restorePurchases() {
+        // no-op
+    }
+
+    override suspend fun handleRestorePurchases() {
         // no-op
     }
 

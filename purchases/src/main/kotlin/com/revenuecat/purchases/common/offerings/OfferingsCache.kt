@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offerings
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
@@ -14,12 +15,16 @@ internal class OfferingsCache(
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
         dateProvider = dateProvider,
     ),
+    private val localeProvider: LocaleProvider,
 ) {
+
+    private var cachedLanguageTags: String? = null
 
     @Synchronized
     fun clearCache() {
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
+        cachedLanguageTags = null
     }
 
     @Synchronized
@@ -27,6 +32,7 @@ internal class OfferingsCache(
         offeringsCachedObject.cacheInstance(offerings)
         deviceCache.cacheOfferingsResponse(offeringsResponse)
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
+        cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }
 
     // region Offerings cache
@@ -36,13 +42,16 @@ internal class OfferingsCache(
         get() = offeringsCachedObject.cachedInstance
 
     @Synchronized
-    fun isOfferingsCacheStale(appInBackground: Boolean): Boolean {
-        return offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
-    }
+    fun isOfferingsCacheStale(appInBackground: Boolean): Boolean =
+        // Time-based staleness, or
+        offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
+            // Locale-based staleness
+            cachedLanguageTags != localeProvider.currentLocalesLanguageTags
 
     @Synchronized
-    fun clearOfferingsCacheTimestamp() {
+    fun forceCacheStale() {
         offeringsCachedObject.clearCacheTimestamp()
+        cachedLanguageTags = null
     }
 
     // endregion Offerings cache

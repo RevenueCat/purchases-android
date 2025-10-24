@@ -3,28 +3,45 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.Purchases.Companion.configure
+import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -37,6 +54,11 @@ import java.net.URL
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+    /**
+     * The current configuration parameters of the Purchases SDK.
+     */
+    val currentConfiguration: PurchasesConfiguration
+        get() = purchasesOrchestrator.currentConfiguration
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -61,7 +83,9 @@ class Purchases internal constructor(
         @Synchronized get() =
             if (purchasesOrchestrator.finishTransactions) {
                 PurchasesAreCompletedBy.REVENUECAT
-            } else PurchasesAreCompletedBy.MY_APP
+            } else {
+                PurchasesAreCompletedBy.MY_APP
+            }
 
         @Synchronized set(value) {
             purchasesOrchestrator.finishTransactions = when (value) {
@@ -76,8 +100,22 @@ class Purchases internal constructor(
     val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
+    /**
+     * The storefront country code in ISO-3166-1 alpha2.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     */
     val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
+
+    /**
+     * The storefront locale. **Note:** this locale only has a region set.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontLocale] or [awaitStorefrontLocale].
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val storefrontLocale: Locale?
+        get() = purchasesOrchestrator.storefrontLocale
 
     /**
      * The listener is responsible for handling changes to customer information.
@@ -91,6 +129,24 @@ class Purchases internal constructor(
         }
 
     /**
+     * Listener that receives callbacks for Customer Center events such as restore initiated,
+     * subscription cancellations, and customer feedback submission.
+     *
+     * The Customer Center is a self-service UI component that helps users manage their subscriptions
+     * and provides support features. This listener allows your app to respond to various user
+     * actions taken within the Customer Center.
+     *
+     * Take a look at [our docs] (https://rev.cat/customer-center) for more information.
+     *
+     * @important To prevent memory leaks, always set this property to null when the listener's
+     * lifecycle ends (e.g., in Activity.onDestroy() or Fragment.onDestroyView()).
+     *
+     * @note To use the Customer Center functionality, you need to include the RevenueCat UI SDK
+     * by adding the 'purchases-ui' dependency to your app's build.gradle file.
+     */
+    var customerCenterListener: CustomerCenterListener? by purchasesOrchestrator::customerCenterListener
+
+    /**
      * If the `appUserID` has been generated by RevenueCat
      */
     val isAnonymous: Boolean
@@ -101,6 +157,14 @@ class Purchases internal constructor(
      */
     val store: Store
         get() = purchasesOrchestrator.store
+
+    /**
+     * The currently configured FileRepository
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    val fileRepository: FileRepository
+        get() = purchasesOrchestrator.fileRepository
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
@@ -117,11 +181,31 @@ class Purchases internal constructor(
     // region Public Methods
 
     /**
-     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
-     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
-     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+     * If there is any error, it will return null and log said error.
+     */
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+        purchasesOrchestrator.getStorefrontCountryCode(callback)
+    }
+
+    /**
+     * This method will try to obtain the Store (Google/Amazon) locale.
+     * If there is any error, it will return null and log said error.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        purchasesOrchestrator.getStorefrontLocale(callback)
+    }
+
+    /**
+     * This method will send active subscriptions and unconsumed one time purchases to the RevenueCat backend.
+     * Call this when using your own implementation for subscriptions anytime a sync is needed, such as when migrating
+     * existing users to RevenueCat. The [SyncPurchasesCallback.onSuccess] callback will be called if all purchases
+     * have been synced successfully or there are no purchases.
+     * Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
      * [PurchasesError] indicating the first error found.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
@@ -267,7 +351,7 @@ class Purchases internal constructor(
      * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [StoreProduct.defaultOption] will
      * be purchased.
      * [StoreProduct.defaultOption] is selected via the following logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -285,7 +369,7 @@ class Purchases internal constructor(
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -302,20 +386,14 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            storeProduct.purchasingData,
-            null,
-            null,
-            callback,
-        )
+        purchase(PurchaseParams.Builder(activity, storeProduct).build(), callback)
     }
 
     /**
      * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" and "rc-customer-center" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -332,22 +410,18 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            packageToPurchase.product.purchasingData,
-            packageToPurchase.presentedOfferingContext,
-            null,
-            listener,
-        )
+        purchase(PurchaseParams.Builder(activity, packageToPurchase).build(), listener)
     }
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all active subscriptions and non consumed one time purchases associated with the current
+     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
+     * being used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
@@ -398,7 +472,7 @@ class Purchases internal constructor(
     fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), callback)
+        purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), true, callback)
     }
 
     /**
@@ -411,8 +485,43 @@ class Purchases internal constructor(
         fetchPolicy: CacheFetchPolicy,
         callback: ReceiveCustomerInfoCallback,
     ) {
-        purchasesOrchestrator.getCustomerInfo(fetchPolicy, callback)
+        purchasesOrchestrator.getCustomerInfo(fetchPolicy, true, callback)
     }
+
+    /**
+     * Fetches the virtual currencies for the current subscriber.
+     *
+     * @param callback A listener called when the virtual currencies are available.
+     */
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.getVirtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Invalidates the cache for virtual currencies.
+     *
+     * This is useful for cases where a virtual currency's balance might have been updated
+     * outside of the app, like if you decreased a user's balance from the user spending a virtual currency,
+     * or if you increased the balance from your backend using the server APIs.
+     *
+     * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
+     */
+    fun invalidateVirtualCurrenciesCache() {
+        purchasesOrchestrator.invalidateVirtualCurrenciesCache()
+    }
+
+    /**
+     * The currently cached [VirtualCurrencies] if one is available.
+     * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
+     * right away without waiting for a callback. This value will remain null until virtual currencies
+     * have been fetched at least once with [Purchases.getVirtualCurrencies] or an equivalent function.
+     *
+     * This allows initializing state to ensure that UI can be loaded from the very first frame.
+     */
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = purchasesOrchestrator.cachedVirtualCurrencies
 
     /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
@@ -454,12 +563,19 @@ class Purchases internal constructor(
     }
 
     /**
-     * Used by `RevenueCatUI` to keep track of [PaywallEvent]s.
+     * Used by `RevenueCatUI` to keep track of [FeatureEvent]s.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @InternalRevenueCatAPI
     @JvmSynthetic
-    fun track(paywallEvent: PaywallEvent) {
-        purchasesOrchestrator.track(paywallEvent)
+    fun track(event: FeatureEvent) {
+        purchasesOrchestrator.track(event)
+    }
+
+    // Kept internal since it's not meant for public usage.
+    internal fun getCustomerCenterConfigData(
+        callback: GetCustomerCenterConfigCallback,
+    ) {
+        purchasesOrchestrator.getCustomerCenterConfig(callback)
     }
 
     // region Subscriber Attributes
@@ -567,6 +683,26 @@ class Purchases internal constructor(
         purchasesOrchestrator.setFirebaseAppInstanceID(firebaseAppInstanceID)
     }
 
+    /**
+     * Subscriber attribute associated with the Tenjin Analytics installation ID for the user
+     * Required for the RevenueCat Tenjin integration
+     *
+     * @param tenjinAnalyticsInstallationID null or an empty string will delete the subscriber attribute.
+     */
+    fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
+        purchasesOrchestrator.setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID)
+    }
+
+    /**
+     * Subscriber attribute associated with the PostHog User ID for the user
+     * Required for the RevenueCat PostHog integration
+     *
+     * @param postHogUserId null or an empty string will delete the subscriber attribute
+     */
+    fun setPostHogUserId(postHogUserId: String?) {
+        purchasesOrchestrator.setPostHogUserId(postHogUserId)
+    }
+
     // endregion
     // region Attribution IDs
 
@@ -578,7 +714,7 @@ class Purchases internal constructor(
      * you should not be calling this function if your app targets children.
      *
      * @warning You must declare the [AD_ID Permission](https://rev.cat/google-advertising-id) when your app targets
-     * Android 13 or above. Apps that don’t declare the permission will get a string of zeros.
+     * Android 13 or above. Apps that don't declare the permission will get a string of zeros.
      */
     fun collectDeviceIdentifiers() {
         purchasesOrchestrator.collectDeviceIdentifiers()
@@ -632,6 +768,26 @@ class Purchases internal constructor(
      */
     fun setCleverTapID(cleverTapID: String?) {
         purchasesOrchestrator.setCleverTapID(cleverTapID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Kochava Device ID for the user
+     * Recommended for the RevenueCat Kochava integration
+     *
+     * @param kochavaDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setKochavaDeviceID(kochavaDeviceID: String?) {
+        purchasesOrchestrator.setKochavaDeviceID(kochavaDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Airbridge Device ID for the user
+     * Recommended for the RevenueCat Airbridge integration
+     *
+     * @param airbridgeDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
     }
 
     // endregion
@@ -695,6 +851,17 @@ class Purchases internal constructor(
     //endregion
     //endregion
 
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall Fonts
+
     // region Deprecated
 
     /**
@@ -712,6 +879,28 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             purchasesOrchestrator.allowSharingPlayStoreAccount = value
         }
+
+    /**
+     * The preferred UI locale override for RevenueCat UI components.
+     * This affects both API requests and UI rendering.
+     *
+     * @return The preferred UI locale override, or null if using system default
+     */
+    val preferredUILocaleOverride: String?
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     * This affects both API requests and UI rendering.
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations.
+     *
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     */
+    fun overridePreferredUILocale(localeString: String?): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    }
 
     /**
      * Gets the StoreProduct for the given list of subscription products.
@@ -762,8 +951,48 @@ class Purchases internal constructor(
     }
     // endregion
 
+    /**
+     * Redeem a web purchase using a [WebPurchaseRedemption] object obtained
+     * through [Intent.asWebPurchaseRedemption] or [Purchases.parseAsWebPurchaseRedemption].
+     */
+    fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
+        purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
+    }
+
     // region Static
     companion object {
+
+        @InternalRevenueCatAPI
+        fun getImageLoader(context: Context): Any {
+            return PurchasesOrchestrator.getImageLoader(context)
+        }
+
+        /**
+         * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can
+         * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
+         * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
+         */
+        @JvmStatic
+        fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
+            val intentData = intent.data ?: return null
+            return DeepLinkParser.parseWebPurchaseRedemption(intentData)
+        }
+
+        /**
+         * Given a url string, parses the link and returns a [WebPurchaseRedemption], which can
+         * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
+         * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
+         */
+        @JvmStatic
+        fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
+            try {
+                val uri = Uri.parse(string)
+                return DeepLinkParser.parseWebPurchaseRedemption(uri)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog(e) { "Error parsing URL: $string" }
+                return null
+            }
+        }
 
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
@@ -864,9 +1093,16 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG }
+                    return sharedInstance
+                } else {
+                    infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
+                }
             }
-            return PurchasesFactory().createPurchases(
+            return PurchasesFactory(
+                isDebugBuild = DefaultIsDebugBuildProvider(configuration.context),
+            ).createPurchases(
                 configuration,
                 platformInfo,
                 proxyURL,
@@ -897,7 +1133,7 @@ class Purchases internal constructor(
         ) {
             val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
-                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                log(LogIntent.RC_ERROR) { BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS }
                 callback.onReceived(true)
                 return
             }

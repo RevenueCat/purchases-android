@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -31,7 +32,7 @@ internal class OfflineEntitlementsManager(
     @Synchronized
     fun resetOfflineCustomerInfoCache() {
         if (_offlineCustomerInfo != null) {
-            debugLog(OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE)
+            debugLog { OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE }
             _offlineCustomerInfo = null
         }
     }
@@ -67,7 +68,7 @@ internal class OfflineEntitlementsManager(
             val callbacks = offlineCustomerInfoCallbackCache[appUserId] ?: emptyList()
             offlineCustomerInfoCallbackCache[appUserId] = callbacks + listOf(onSuccess to onError)
             if (alreadyProcessing) {
-                debugLog(OfflineEntitlementsStrings.ALREADY_CALCULATING_OFFLINE_CUSTOMER_INFO.format(appUserId))
+                debugLog { OfflineEntitlementsStrings.ALREADY_CALCULATING_OFFLINE_CUSTOMER_INFO.format(appUserId) }
                 return
             }
         }
@@ -75,7 +76,7 @@ internal class OfflineEntitlementsManager(
             appUserId,
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
-                    warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)
+                    warnLog { OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO }
                     diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
                     _offlineCustomerInfo = customerInfo
                     deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
@@ -98,15 +99,15 @@ internal class OfflineEntitlementsManager(
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
-            debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING)
+            debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
                     deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
-                    debugLog(OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS)
+                    debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
                     completion?.invoke(null)
                 },
                 onErrorHandler = { e ->
-                    errorLog(OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e))
+                    errorLog { OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e) }
                     completion?.invoke(e)
                 },
             )
@@ -116,10 +117,12 @@ internal class OfflineEntitlementsManager(
     }
 
     // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
-    // provide any value and simplifies operations in that mode.
+    // provide any value and simplifies operations in that mode. Also on test store, since we don't have a store
+    // to store purchases in the client.
     private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&
         appConfig.enableOfflineEntitlements &&
-        !appConfig.customEntitlementComputation
+        !appConfig.customEntitlementComputation &&
+        appConfig.store != Store.TEST_STORE
 }
 
 private typealias OfflineCustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>

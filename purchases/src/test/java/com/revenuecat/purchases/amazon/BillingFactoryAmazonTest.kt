@@ -6,6 +6,7 @@ import com.revenuecat.purchases.BillingFactory
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -22,6 +23,7 @@ class BillingFactoryAmazonTest {
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -32,6 +34,7 @@ class BillingFactoryAmazonTest {
             mockDiagnosticsTracker,
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            backend = mockBackend,
         )
     }
 
@@ -40,6 +43,7 @@ class BillingFactoryAmazonTest {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -50,6 +54,7 @@ class BillingFactoryAmazonTest {
             diagnosticsTrackerIfEnabled = null,
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            backend = mockBackend,
         )
     }
 }

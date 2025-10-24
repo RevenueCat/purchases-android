@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -20,11 +21,14 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
+import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -84,62 +88,62 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
-    // Errors
-
-    @Test(expected = JSONException::class)
-    fun reWrapsBadJSONError() {
-        val endpoint = Endpoint.LogIn
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "not uh jason")
-        )
-
-        try {
-            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-        } finally {
-            server.takeRequest()
-        }
-    }
-
     // region forceServerErrors
 
     @Test
-    fun `returns server error result when forcing server errors`() {
-        val endpoint = Endpoint.LogIn
+    fun `when forceServerErrorsStrategy returns true, error url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return true
+                }
+            },
+        )
 
-        client = createClient(appConfig = createAppConfig(forceServerErrors = true))
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
 
         val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
-        assertThat(server.requestCount).isEqualTo(0)
-        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
-        assertThat(result.payload).isEqualTo("")
-        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
-        assertThat(result.requestDate).isNull()
-        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+
+        assertThat(result.responseCode).isEqualTo(502)
+        assertThat(result.payload).isEqualTo("Some error xml")
     }
 
     @Test
-    fun `can dynamically change between getting server errors and not`() {
-        val endpoint = Endpoint.LogIn
-
-        val appConfig = createAppConfig(forceServerErrors = true)
-        client = createClient(appConfig = appConfig)
-
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
-
-        assertThat(server.requestCount).isEqualTo(0)
-
-        appConfig.forceServerErrors = false
-
-        enqueue(
-            endpoint,
-            expectedResult = HTTPResult.createResult(payload = "{}")
+    fun `when forceServerErrorsStrategy returns false, original url is used`() {
+        val client = createClient(
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return false
+                }
+            },
         )
 
-        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
+        )
 
-        assertThat(server.requestCount).isEqualTo(1)
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}v1/subscribers/identify")
+
+        assertThat(result.responseCode).isEqualTo(223)
+        assertThat(result.payload).isEqualTo("{'response': 'OK'}")
     }
 
     // endregion forceServerErrors
@@ -166,6 +170,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun addsDefaultHeadersToRequest() {
+        client = createClient(
+            localeProvider = FakeLocaleProvider("en-US", "ja-JP"),
+        )
+        val expectedPreferredLocales = "en_US, ja_JP"
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
@@ -180,14 +188,20 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
+        assertThat(request.getHeader("X-Platform-Device")).isEqualTo(Build.MODEL)
+        assertThat(request.getHeader("X-Platform-Brand")).isEqualTo(Build.BRAND)
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
+        assertThat(request.getHeader("X-Preferred-Locales")).isEqualTo(expectedPreferredLocales)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo("en-US")
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
         assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
+        assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
+        assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
+        assertThat(request.getHeader("X-Is-Backgrounded")).isEqualTo("true")
     }
 
     @Test
@@ -356,6 +370,22 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `correctly sets debug header`() {
+        val appConfig = createAppConfig(isDebugBuild = true)
+        client = createClient(appConfig = appConfig)
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            HTTPResult.createResult()
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("true")
+    }
+
+    @Test
     fun `clearing caches clears etags`() {
         every {
             mockETagManager.clearCaches()
@@ -498,7 +528,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -519,7 +549,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
+            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -527,7 +557,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -549,7 +579,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
+            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
         }
     }
 
@@ -557,7 +587,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -569,7 +599,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 RCHTTPStatusCodes.BAD_REQUEST,
                 "not uh json",
                 eTagHeader = any(),
-                "/v1${endpoint.getPath()}",
+                urlPath = endpoint.getPath(),
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -582,12 +612,532 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED)
+                diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED, false)
             }
             return
         }
         error("Expected exception")
     }
 
+    @Test
+    fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        val response =
+            MockResponse()
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anetag")
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
+
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse)
+        val secondResponse =
+            MockResponse()
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
+                .setResponseCode(expectedResult.responseCode)
+                .setBody(expectedResult.payload)
+
+        server.enqueue(response)
+        server.enqueue(secondResponse)
+
+        val endpoint = Endpoint.LogIn
+        val urlPathWithVersion = "/v1/subscribers/identify"
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.NOT_MODIFIED,
+                payload = "",
+                eTagHeader = any(),
+                urlPathWithVersion,
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns null
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                payload = expectedResult.payload,
+                eTagHeader = any(),
+                urlPathWithVersion,
+                refreshETag = true,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns expectedResult
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        server.takeRequest()
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = true
+            )
+        }
+    }
+
     // endregion
+
+    // region Fallback API host
+
+    @Test
+    fun `performRequest retries call with fallback API host if server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request0 = server.takeRequest()
+        assertThat(request0.method).isEqualTo("GET")
+        assertThat(request0.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+
+        assertThat(server.requestCount).isEqualTo(1)
+
+        val request1 = fallbackServer.takeRequest()
+        assertThat(request1.method).isEqualTo("GET")
+        assertThat(request1.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+    }
+
+    @Test
+    fun `performRequest does not retry call with fallback API host if server returns non-500 error`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.NOT_FOUND
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `performRequest does not retry call with fallback API host if endpoint does not support fallback base URLs`() {
+        // This test requires an endpoint that does not support fallback host URLs
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `performRequest returns failed response of fallback request if main server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.NOT_FOUND),
+            server = fallbackServer,
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(result.responseCode).`as`("response code is 404").isEqualTo(404)
+    }
+
+    @Test
+    fun `performRequest returns failed response (500) if both the main server and fallback server return 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode),
+            server = fallbackServer,
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(1)
+        assertThat(result.responseCode).`as`("response code is 500").isEqualTo(500)
+    }
+
+    @Test
+    fun `performRequest returns successful response of fallback request if main server returns 500`() {
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetProductEntitlementMapping
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}"),
+            server = fallbackServer
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        assertThat(result.responseCode).`as`("responsecode is 223").isEqualTo(223)
+        assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
+    }
+
+    @Test
+    fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        // This test requires an endpoint that supports fallback host URLs
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val serverDownResponseCode = RCHTTPStatusCodes.ERROR
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
+        )
+
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.SUCCESS),
+            server = fallbackServer,
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                any(),
+                false,
+                RCHTTPStatusCodes.ERROR,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                fallbackServer.hostName,
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false
+            )
+        }
+    }
+}
+
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedNonJsonResponseBodyTest(
+    private val endpoint: Endpoint,
+    private val statusCode: Int,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}, statusCode={1}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user"), 500),
+                arrayOf(Endpoint.GetOfferings("test_user"), 503),
+                arrayOf(Endpoint.GetOfferings("test_user"), 504),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 500),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 503),
+                arrayOf(Endpoint.GetProductEntitlementMapping, 504),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when server returns non-JSON response`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val invalidJsonPayload = "<html><body>504 Gateway Timeout</body></html>"
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        val mainResponse = MockResponse()
+            .setBody(invalidJsonPayload)
+            .setResponseCode(statusCode)
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        server.enqueue(mainResponse)
+        fallbackServer.enqueue(fallbackResponse)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                statusCode,
+                invalidJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(statusCode, invalidJsonPayload)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        // Act
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Assert
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
+}
+
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedConnectionFailureFallbackTest(
+    private val endpoint: Endpoint,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Endpoint.GetOfferings("test_user")),
+                arrayOf(Endpoint.GetProductEntitlementMapping),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient()
+    }
+
+    @Test
+    fun `performRequest should retry with fallback URL when connection fails`() {
+        // Arrange
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test is only meant to test endpoints supporting fallback URLs."
+        }
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        // Shut down main server to cause IOException when client tries to connect
+        server.shutdown()
+        val fallbackResponse = MockResponse()
+            .setBody(validJsonPayload)
+            .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        fallbackServer.enqueue(fallbackResponse)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlPath = endpoint.getPath(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        // Act
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Assert
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.body.has("offerings")).isTrue
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
 }

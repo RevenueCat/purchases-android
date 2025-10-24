@@ -29,8 +29,6 @@ files_to_update_on_latest_stable_releases = {
 }
 
 repo_name = 'purchases-android'
-revenuecatui_snapshots_location = 'ui/revenuecatui/src/test/snapshots/images'
-snapshots_repo_name = 'purchases-android-snapshots'
 changelog_latest_path = './CHANGELOG.latest.md'
 changelog_path = './CHANGELOG.md'
 
@@ -53,16 +51,6 @@ platform :android do
         sh("ln -s -f ../../scripts/pre-commit.sh .git/hooks/pre-commit")
       end
     end
-  end
-
-  desc "Verify snapshot tests for the debug view library"
-  lane :verify_debug_view_snapshot_tests do
-    gradle(task: "ui:debugview:verifyPaparazziDebug")
-  end
-
-  desc "Record/Update snapshots for tests in the debug view library"
-  lane :record_debug_view_snapshot_tests do
-    gradle(task: "ui:debugview:recordPaparazziDebug")
   end
 
   desc "Emerge snapshot tests"
@@ -124,8 +112,8 @@ platform :android do
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-      "mavenCentralUsername" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
-      "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
+      "mavenCentralUsername" => ENV['MAVEN_CENTRAL_PORTAL_USERNAME'],
+      "mavenCentralPassword" => ENV['MAVEN_CENTRAL_PORTAL_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
     UI.verbose("Deploying #{version}")
@@ -286,7 +274,8 @@ platform :android do
         google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
         product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
         base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
-        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
+        is_load_shedder_integration_tests: true
       )
 
       run_firebase_integration_tests(app_name)
@@ -325,7 +314,7 @@ platform :android do
           --app ../purchases/test_artifacts/#{app_name}-app.apk \
           --test ../purchases/test_artifacts/#{app_name}-test.apk \
           --timeout 2m \
-          --device model=panther,version=33,locale=en,orientation=portrait \
+          --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
           --results-bucket cloud-test-#{google_project_id}"
 
     dir_path = File.join(Dir.home, 'gsutil')
@@ -336,7 +325,8 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults')
+                                        proxy_url: nil, build_type: 'release', flavor: 'defaults', 
+                                        is_load_shedder_integration_tests: false)
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -364,6 +354,19 @@ platform :android do
       allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
+    if is_load_shedder_integration_tests
+      replace_text_in_files(
+        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
+        new_text: "true",
+        paths_of_files_to_update: [constants_path]
+      )
+    else
+      replace_text_in_files(
+        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
+        new_text: "false",
+        paths_of_files_to_update: [constants_path]
+      )
+    end
     unless proxy_url.nil?
       replace_text_in_files(
         previous_text: "NO_PROXY_URL",
@@ -382,30 +385,32 @@ platform :android do
     build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "#{app_name}-test", build_type, flavor)
   end
 
-  desc "Publish to test track in Play Console"
-  lane :publish_to_test_track do |options|
+  desc "Publish to Google Play"
+  lane :publish_to_track do |options|
     package_name = options[:package_name] || UI.user_error!("Missing package_name parameter.")
+    track = options[:track] || UI.user_error!("Missing track parameter. Provide one of 'production', 'beta', 'alpha', or 'internal'")
     json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish #{package_name}.")
     aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
     
     upload_to_play_store(
       package_name: package_name,
-      track: 'alpha',
+      track: track,
       json_key_data: json_key_data,
       aab: aab_path
     )
   end
-  
+
   desc "Publish purchase tester to test track in Play Console"
   lane :publish_purchase_tester do |options|
     options[:package_name] = 'com.revenuecat.purchases_sample'
-    publish_to_test_track(options)
+    options[:track] = 'alpha'
+    publish_to_track(options)
   end
   
-  desc "Publish paywall tester to test track in Play Console"
+  desc "Publish paywall tester to the specified track on Google Play"
   lane :publish_paywall_tester do |options|
     options[:package_name] = 'com.revenuecat.paywall_tester'
-    publish_to_test_track(options)
+    publish_to_track(options)
   end
 
   desc "Builds a Magic Weather Compose APK"
@@ -592,79 +597,31 @@ DESC
     )
   end
 
-  desc "Clones or updates snapshots repo"
-  lane :fetch_snapshots do
-    Dir.chdir("..") do
-      clone_snapshots_repo_if_needed(snapshots_repo_name)
+  desc "Updates paywall-preview-resources submodule and creates/updates PR"
+  lane :update_paywall_preview_resources_submodule do |options|
+    branch_name = "pw2-update-paywall-preview-resources-submodule"
+    submodule_dir = "../upstream/paywall-preview-resources"
 
-      commit = current_snapshots_commit
-      UI.message("Updating snapshots repo to #{commit}")
-      Dir.chdir(snapshots_repo_name) do
-        sh "git", "fetch", "origin"
-        sh "git", "checkout", commit
-      end
+    # Ensure we're starting from an up-to-date main.
+    sh("git", "fetch", "origin")
+
+    create_or_checkout_branch(branch_name: branch_name)
+
+    Dir.chdir(submodule_dir) do
+      sh("git", "fetch")
+      sh("git", "checkout", "main")
+      sh("git", "pull")
     end
-  end
 
-  desc "Verify RevenueCat UI snapshots"
-  lane :verify_revenuecatui_snapshots do
-    fetch_snapshots
-    Dir.chdir("..") do
-      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
-      sh "cp -rf #{snapshots_repo_name}/revenuecatui/** #{revenuecatui_snapshots_location}/"
-    end
-    gradle(task: "ui:revenuecatui:verifyPaparazziDebug")
-  end
-
-  desc "Record RevenueCat UI snapshots"
-  lane :record_revenuecatui_snapshots do
-    fetch_snapshots
-    Dir.chdir("..") do
-      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
-      sh "rm", "-rf", "#{snapshots_repo_name}/revenuecatui/*"
-    end
-    gradle(task: "ui:revenuecatui:recordPaparazziDebug")
-    Dir.chdir("..") do
-      sh "cp -rf #{revenuecatui_snapshots_location}/** #{snapshots_repo_name}/revenuecatui"
-    end
-  end
-
-  desc "Creates a new PR on purchases-ios-snapshots after new snapshot files were generated"
-  lane :create_snapshots_repo_pr do |options|
-    Dir.chdir("../#{snapshots_repo_name}") { |dir|
-      push_snapshot_pr(
-        repo: "revenuecat/#{snapshots_repo_name}",
-        base_branch: "main",
-        files_to_add: "."
-      )
-    }
-  end
-
-  desc "Trigger CircleCI job to generate snapshots for RevenueCatUI"
-  lane :generate_snapshots_RCUI do
-    generate_snapshots(
-      action: "generate_revenuecatui_snapshots"
+    commit_push_and_create_pr_if_necessary(
+      repo: repo_name,
+      branch_name: branch_name,
+      commit_message: "[Automated] Updates paywall-preview-resources submodule.",
+      title: "[AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule",
+      body: "This is an automatic update of the paywall-preview-resources submodule.",
+      labels: ["pr:other"],
+      team_reviewers: ["coresdk", "monetization"]
     )
-  end
-
-  desc "Updates purchases-android-snapshots-commit to point to latest commit on main"
-  lane :update_snapshots_repo do
-    new_hash = ""
-
-    Dir.chdir("..") do
-      clone_snapshots_repo_if_needed(snapshots_repo_name)
-    end
-
-    Dir.chdir("../#{snapshots_repo_name}") do
-      sh "git", "checkout", "main"
-      sh "git", "pull", "--rebase", "origin"
-      new_hash = sh("git", "rev-parse", "HEAD")
-    end
-
-    UI.important("Updating snapshot commit to #{new_hash}")
-    Dir.chdir("..") do
-      update_snapshots_commit(new_hash)
-    end
   end
 
   desc "Trigger bump"
@@ -672,65 +629,192 @@ DESC
     trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
   end
 
-  private_lane :generate_snapshots do |options|
-    require 'rest-client'
+  desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
+  lane :record_and_push_paywall_template_screenshots do |options|
+    UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.") unless options[:target_repository_path]
 
-    # Get CircleCI token
-    circle_token = ENV["CIRCLE_TOKEN"]
-    UI.user_error! "Please set the CIRCLE_TOKEN environment variable" unless circle_token
+    this_commit_hash = sh("git", "rev-parse", "HEAD").strip
 
-    # Prompt branch
-    default_branch = git_branch
-    branch = UI.input("Branch (defaults to #{default_branch}): ")
-    branch = default_branch if branch == ""
+    target_repository_path = Dir.chdir("..") do
+      File.expand_path(options[:target_repository_path])
+    end
+    target_repository_branch = "update-android-template-screenshots"
+    target_repository_name = nil
+    tmp_dir = ".tmp-paywall-template-screenshots"
 
-    # Make request
-    headers = {"Circle-Token": circle_token, "Content-Type": "application/json", "Accept": "application/json"}
-    data = {parameters: {:action => options[:action]}, branch: branch}
-    url = "https://circleci.com/api/v2/project/github/RevenueCat/#{repo_name}/pipeline"
+    # Update the target repository and create a new branch
+    Dir.chdir(target_repository_path) do
+      UI.user_error!("Target repository (#{target_repository_path}) is not clean.") unless sh("git", "status", "--porcelain").empty?
+      sh("git", "fetch")
+      sh("git", "checkout", "main")
+      sh("git", "pull")
+      create_or_checkout_branch(branch_name: target_repository_branch)
+      target_repository_name = sh("basename -s .git \"$(git config --get remote.origin.url)\"").strip
+    end
+    UI.user_error!("Failed to determine target repository name") if target_repository_name.nil? || target_repository_name.empty?
 
-    resp = RestClient.post url, data.to_json, headers
+    # Prepare the tmp directory
+    sh("rm -rf #{tmp_dir}")
+    sh("mkdir -p #{tmp_dir}")
 
-    # Print workflow url
-    number = JSON.parse(resp.body)["number"]
-    workflow_url = "https://app.circleci.com/pipelines/github/RevenueCat/#{repo_name}/#{number}"
+    begin
+      record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
+      # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
+      sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
+        if file_path =~ /\>\>(.*?)\<\</
+          offering_id = $1
+          target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
+          sh("mkdir -p \"#{target_dir}\"")
+          sh("mv \"#{file_path}\" \"#{target_dir}/android.png\"")
+        else
+          UI.user_error!("No offering ID found in file: #{File.basename(file_path)}")
+        end
+      end
+    ensure
+      sh("rm -rf #{tmp_dir}")
+    end
 
-    UI.important "Workflow: #{workflow_url}"
-  end
-
-  private_lane :push_snapshot_pr do |options|
-    base_branch = options[:base_branch]
-    build_id = ENV["CIRCLE_BUILD_NUM"] || Time.now.utc.strftime("%Y%m%d%H%M%S")
-
-    branch_name = "generated_snapshots/#{base_branch}-#{build_id}"
-
-    sh("git", "checkout", "-b", branch_name)
-    sh("git", "add", options[:files_to_add])
-
-    file_count = sh("git diff --cached --numstat | wc -l").strip.to_i
-
-    if file_count == 0
-      UI.important("No files to be committed")
-    else
-      sh("git", "commit", "-m", "[skip ci] Generating new test snapshots")
-      sh("git", "push", "origin", branch_name)
-
-      circle_user = ENV["CIRCLE_USERNAME"]
-      username = circle_user.nil? ? "local user" : "@#{circle_user}"
-      branch_link = "https://github.com/RevenueCat/#{repo_name}/tree/#{base_branch}"
-      body = "Requested by #{username} for [#{base_branch}](#{branch_link})"
-
-      create_pull_request(
-        repo: options[:repo],
-        title: "Generating new test snapshots for `#{base_branch}`",
-        body: body,
-        base: base_branch,
-        api_token: ENV["GITHUB_TOKEN"],
-        head: branch_name,
-        labels: ["test"]
+    # Commit, push, and create a PR in the target repository
+    Dir.chdir(target_repository_path) do
+      commit_push_and_create_pr_if_necessary(
+        repo: target_repository_name,
+        branch_name: target_repository_branch,
+        commit_message: "[Automated] Updates Android template screenshots (commit #{this_commit_hash})",
+        title: "[AUTOMATIC] Updates Android template screenshots",
+        body: "This is an automatic update of the Android template screenshots.",
+        team_reviewers: ["coresdk", "monetization", "bab-s"]
       )
     end
   end
+
+  desc "Records Paparazzi screenshots for a given gradle_module"
+  lane :record_paparazzi_screenshots do |options|
+    gradle_module = options[:gradle_module] || UI.user_error!("No gradle_module provided")
+    paparazzi_output_dir = "../" + "#{gradle_module.start_with?(":") ? gradle_module[1..-1] : gradle_module}".gsub(":", "/") + "/src/test/snapshots/images"
+
+    sh("rm -rf #{paparazzi_output_dir}")
+    gradle_args = {
+      task: "#{gradle_module}:recordPaparazziDebug",
+    }
+    gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
+    # This is not yet supported in the Paparazzi version we're using.
+    # gradle_args[:system_properties] = { "paparazzi.snapshot.dir" => options[:output_dir] } if options[:output_dir]
+    gradle(gradle_args)
+
+    # Copy the output to the output_dir
+    if options[:output_dir] && options[:output_dir].length > 0
+      sh("cp -r #{paparazzi_output_dir}/ #{options[:output_dir]}")
+    end
+  end
+
+  private_lane :create_or_checkout_branch do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
+
+    # Check if branch exists locally or remotely
+    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
+    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
+
+    if branch_exists_locally || branch_exists_remotely
+      UI.message("Branch #{branch_name} already exists, checking it out")
+      sh("git", "checkout", branch_name)
+      if branch_exists_remotely
+        sh("git", "pull", "origin", branch_name)
+      end
+    else
+      UI.message("Creating new branch #{branch_name}")
+      sh("git", "checkout", "-b", branch_name)
+    end
+  end
+
+  private_lane :commit_and_push do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+
+    # Check if there are any changes to commit
+    if sh("git", "status", "--porcelain").empty?
+      UI.message("No changes to commit")
+    else
+      # Commit changes
+      if File.basename(Dir.pwd) == "fastlane"
+        Dir.chdir("..") do
+          sh("git", "add", ".")
+          sh("git", "commit", "-m", commit_message)
+          sh("git", "push", "-u", "origin", branch_name)
+        end
+      else
+        sh("git", "add", ".")
+        sh("git", "commit", "-m", commit_message)
+        sh("git", "push", "-u", "origin", branch_name)
+      end
+    end
+  end
+
+  private_lane :create_pr_if_necessary do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    title = options[:title] || UI.user_error!("No title provided")
+    body = options[:body] || UI.user_error!("No body provided")
+    repo = options[:repo] || repo_name
+    repo_with_owner = "RevenueCat/#{repo}"
+    base = options[:base] || "main"
+    labels = options[:labels] || []
+    team_reviewers = options[:team_reviewers] || []
+
+    existing_pr = github_api(
+      api_token: ENV["GITHUB_TOKEN"],
+      path: "/repos/#{repo_with_owner}/pulls?head=RevenueCat:#{branch_name}&state=open"
+    )
+
+    if existing_pr[:json].length == 0
+      pr_url = create_pull_request(
+        repo: repo_with_owner,
+        title: title,
+        body: body,
+        base: base,
+        head: branch_name,
+        api_token: ENV["GITHUB_TOKEN"],
+        labels: labels,
+        team_reviewers: team_reviewers
+      )
+      
+      if pr_url.nil?
+        UI.user_error!("Failed to create pull request.")
+      end
+    else
+      UI.message("PR already exists.")
+    end
+  end
+
+
+  private_lane :commit_push_and_create_pr_if_necessary do |options|
+    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
+    commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
+    title = options[:title] || commit_message
+    body = options[:body] || commit_message
+    repo = options[:repo] || repo_name
+    labels = options[:labels] || []
+    team_reviewers = options[:team_reviewers] || []
+    
+    has_changes = !sh("git", "status", "--porcelain").empty?
+    if has_changes
+      commit_and_push(
+        branch_name: branch_name,
+        commit_message: commit_message
+      )
+
+      create_pr_if_necessary(
+        repo: repo,
+        branch_name: branch_name,
+        title: title,
+        body: body,
+        labels: labels,
+        team_reviewers: team_reviewers
+      )
+    else
+      UI.message("No changes detected. Skipping commit, push, and PR creation.")
+    end
+    
+  end
+
 end
 
 def is_snapshot_version?(version_name)
@@ -765,26 +849,4 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
     artifacts: ['purchases/build/**/*.apk'],
     fail_on_missing: true
   )
-end
-
-# Snapshots
-
-def snapshots_commit_file
-  File.join(Dir.pwd, 'fastlane', '.purchases-android-snapshots-commit')
-end
-
-def current_snapshots_commit
-  File.read(snapshots_commit_file).strip
-end
-
-def update_snapshots_commit(hash)
-  File.write(snapshots_commit_file, hash)
-end
-
-def clone_snapshots_repo_if_needed(repo_name)
-  if !File.directory?(repo_name)
-    UI.important("Cloning snapshots repo")
-
-    sh "git", "clone", "git@github.com:RevenueCat/#{repo_name}.git"
-  end
 end

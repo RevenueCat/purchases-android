@@ -13,13 +13,14 @@ import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -50,13 +51,12 @@ import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
-import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
-import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GooglePurchasingData.Subscription
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
@@ -86,6 +86,13 @@ internal class BillingWrapper(
     purchasesStateProvider: PurchasesStateProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
+
+    private companion object {
+        /**
+         * The maximum number of pending requests we report to diagnostics.
+         */
+        private const val MAX_PENDING_REQUEST_COUNT_REPORTED = 100
+    }
 
     @get:Synchronized
     @set:Synchronized
@@ -157,14 +164,14 @@ internal class BillingWrapper(
 
             billingClient?.let {
                 if (!it.isReady) {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                    log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(it) }
+                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
                     try {
                         it.startConnection(this)
                     } catch (e: IllegalStateException) {
-                        log(
-                            LogIntent.GOOGLE_ERROR,
-                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
-                        )
+                        log(LogIntent.GOOGLE_ERROR) {
+                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
+                        }
                         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
                         sendErrorsToAllPendingRequests(error)
                     }
@@ -177,7 +184,7 @@ internal class BillingWrapper(
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_ENDING.format(it))
+                    log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_ENDING.format(it) }
                     it.endConnection()
                 }
                 billingClient = null
@@ -207,7 +214,7 @@ internal class BillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
+        log(LogIntent.DEBUG) { OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()) }
         val useCase = QueryProductDetailsUseCase(
             QueryProductDetailsUseCaseParams(
                 dateProvider,
@@ -224,6 +231,8 @@ internal class BillingWrapper(
         useCase.run()
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Suppress("LongMethod")
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -257,13 +266,12 @@ internal class BillingWrapper(
         }
 
         if (replaceProductInfo != null) {
-            log(
-                LogIntent.PURCHASE,
+            log(LogIntent.PURCHASE) {
                 PurchaseStrings.UPGRADING_SKU
-                    .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchasingData.productId),
-            )
+                    .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchasingData.productId)
+            }
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(googlePurchasingData.productId))
+            log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(googlePurchasingData.productId) }
         }
 
         synchronized(this@BillingWrapper) {
@@ -272,12 +280,30 @@ internal class BillingWrapper(
             val productId =
                 if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
                     replaceProductInfo.oldPurchase.productIds.first()
-                } else googlePurchasingData.productId
+                } else {
+                    googlePurchasingData.productId
+                }
+
+            // Create a map that tells us which subscription option ID was purchased for a given product ID.
+            // This is required for multi-line subscriptions to set the platform_product_ids in the ReceiptInfo
+            // after the purchase has completed.
+            val subscriptionOptionIdForProductIDs = buildMap {
+                subscriptionOptionId?.let { optionId -> put(googlePurchasingData.productId, optionId) }
+
+                (googlePurchasingData as? GooglePurchasingData.Subscription)
+                    ?.addOnProducts
+                    ?.filterIsInstance<GooglePurchasingData.Subscription>()
+                    ?.forEach { addOnProduct ->
+                        put(addOnProduct.productId, addOnProduct.optionId)
+                    }
+            }
+
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
+                subscriptionOptionIdForProductIDs,
             )
         }
         executeRequestOnUIThread {
@@ -288,7 +314,13 @@ internal class BillingWrapper(
                 isPersonalizedPrice,
             )
             when (result) {
-                is Result.Success -> launchBillingFlow(activity, result.value)
+                is Result.Success -> {
+                    trackPurchaseStartIfNeeded(
+                        googlePurchasingData,
+                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
+                    )
+                    launchBillingFlow(activity, result.value)
+                }
                 is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
         }
@@ -300,39 +332,18 @@ internal class BillingWrapper(
         params: BillingFlowParams,
     ) {
         if (activity.intent == null) {
-            log(LogIntent.WARNING, BillingStrings.NULL_ACTIVITY_INTENT)
+            log(LogIntent.WARNING) { BillingStrings.NULL_ACTIVITY_INTENT }
         }
         withConnectedClient {
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
-                    log(
-                        LogIntent.GOOGLE_ERROR,
+                    log(LogIntent.GOOGLE_ERROR) {
                         BillingStrings.BILLING_INTENT_FAILED
-                            .format(billingResult.toHumanReadableDescription()),
-                    )
+                            .format(billingResult.toHumanReadableDescription())
+                    }
                 }
         }
-    }
-
-    fun queryPurchaseHistoryAsync(
-        @BillingClient.ProductType productType: String,
-        onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
-        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
-    ) {
-        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType))
-        QueryPurchaseHistoryUseCase(
-            QueryPurchaseHistoryUseCaseParams(
-                dateProvider,
-                diagnosticsTrackerIfEnabled,
-                productType,
-                appInBackground,
-            ),
-            onReceivePurchaseHistory,
-            onReceivePurchaseHistoryError,
-            ::withConnectedClient,
-            ::executeRequestOnUIThread,
-        ).run()
     }
 
     override fun queryAllPurchases(
@@ -340,22 +351,11 @@ internal class BillingWrapper(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
-        queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            { subsPurchasesList ->
-                queryPurchaseHistoryAsync(
-                    BillingClient.ProductType.INAPP,
-                    { inAppPurchasesList ->
-                        onReceivePurchaseHistory(
-                            subsPurchasesList.map {
-                                it.toStoreTransaction(ProductType.SUBS)
-                            } + inAppPurchasesList.map {
-                                it.toStoreTransaction(ProductType.INAPP)
-                            },
-                        )
-                    },
-                    onReceivePurchaseHistoryError,
-                )
+        queryPurchases(
+            appUserID,
+            { purchases ->
+                val storeTransactions = purchases.values.toList()
+                onReceivePurchaseHistory(storeTransactions)
             },
             onReceivePurchaseHistoryError,
         )
@@ -386,7 +386,7 @@ internal class BillingWrapper(
                     onConsumed = deviceCache::addSuccessfullyPostedToken,
                 )
             } else if (finishTransactions && !alreadyAcknowledged) {
-                log(LogIntent.PURCHASE, PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND)
+                log(LogIntent.PURCHASE) { PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND }
                 acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
@@ -413,7 +413,7 @@ internal class BillingWrapper(
         initiationSource: PostReceiptInitiationSource,
         onConsumed: (purchaseToken: String) -> Unit,
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
+        log(LogIntent.PURCHASE) { PurchaseStrings.CONSUMING_PURCHASE.format(token) }
         ConsumePurchaseUseCase(
             ConsumePurchaseUseCaseParams(
                 token,
@@ -434,7 +434,7 @@ internal class BillingWrapper(
         initiationSource: PostReceiptInitiationSource,
         onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
+        log(LogIntent.PURCHASE) { PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token) }
         AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 token,
@@ -456,7 +456,7 @@ internal class BillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE }
         QueryPurchasesUseCase(
             QueryPurchasesUseCaseParams(
                 dateProvider,
@@ -470,27 +470,28 @@ internal class BillingWrapper(
         ).run()
     }
 
-    override fun findPurchaseInPurchaseHistory(
+    override fun findPurchaseInActivePurchases(
         appUserID: String,
         productType: ProductType,
         productId: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
         productType.toGoogleProductType()?.let { googleProductType ->
-            QueryPurchaseHistoryUseCase(
-                QueryPurchaseHistoryUseCaseParams(
+            QueryPurchasesByTypeUseCase(
+                QueryPurchasesByTypeUseCaseParams(
                     dateProvider,
                     diagnosticsTrackerIfEnabled,
-                    googleProductType,
                     appInBackground,
+                    googleProductType,
                 ),
-                { purchasesList ->
-                    val purchaseHistoryRecordWrapper =
-                        purchasesList.firstOrNull { it.products.contains(productId) }?.toStoreTransaction(productType)
-                    if (purchaseHistoryRecordWrapper != null) {
-                        onCompletion(purchaseHistoryRecordWrapper)
+                { purchasesByHashedToken ->
+                    val purchasesRecordWrapper = purchasesByHashedToken.values.firstOrNull {
+                        it.productIds.firstOrNull() == productId
+                    }
+                    if (purchasesRecordWrapper != null) {
+                        onCompletion(purchasesRecordWrapper)
                     } else {
                         val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
@@ -552,6 +553,7 @@ internal class BillingWrapper(
         billingResult: BillingResult,
         purchases: List<Purchase>?,
     ) {
+        trackPurchaseUpdateReceivedIfNeeded(billingResult, purchases)
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             val storeTransactions = mutableListOf<StoreTransaction>()
@@ -564,19 +566,18 @@ internal class BillingWrapper(
                 }
             }
         } else {
-            log(
-                LogIntent.GOOGLE_ERROR,
+            log(LogIntent.GOOGLE_ERROR) {
                 BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                     .format(billingResult.toHumanReadableDescription()) +
-                    "${
+                    (
                         notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
-                            "Purchases:" + purchase.joinToString(
+                            " Purchases:" + purchase.joinToString(
                                 ", ",
                                 transform = { it.toHumanReadableDescription() },
                             )
-                        }
-                    }",
-            )
+                        } ?: " No purchases received"
+                        )
+            }
 
             var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
             var responseCode = billingResult.responseCode
@@ -597,14 +598,19 @@ internal class BillingWrapper(
 
     @Suppress("LongMethod")
     override fun onBillingSetupFinished(billingResult: BillingResult) {
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
+            responseCode = billingResult.responseCode,
+            debugMessage = billingResult.debugMessage,
+            // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
+            pendingRequestCount = serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count(),
+        )
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
-                    log(
-                        LogIntent.DEBUG,
+                    log(LogIntent.DEBUG) {
                         BillingStrings.BILLING_SERVICE_SETUP_FINISHED
-                            .format(billingClient?.toString()),
-                    )
+                            .format(billingClient?.toString())
+                    }
                     stateListener?.onConnected()
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -650,11 +656,10 @@ internal class BillingWrapper(
                 BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
                 BillingClient.BillingResponseCode.NETWORK_ERROR,
                 -> {
-                    log(
-                        LogIntent.GOOGLE_WARNING,
+                    log(LogIntent.GOOGLE_WARNING) {
                         BillingStrings.BILLING_CLIENT_ERROR
-                            .format(billingResult.toHumanReadableDescription()),
-                    )
+                            .format(billingResult.toHumanReadableDescription())
+                    }
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
 
@@ -662,11 +667,10 @@ internal class BillingWrapper(
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
                 -> {
-                    log(
-                        LogIntent.GOOGLE_WARNING,
+                    log(LogIntent.GOOGLE_WARNING) {
                         BillingStrings.BILLING_CLIENT_ERROR
-                            .format(billingResult.toHumanReadableDescription()),
-                    )
+                            .format(billingResult.toHumanReadableDescription())
+                    }
                 }
 
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
@@ -677,7 +681,10 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
+        log(LogIntent.WARNING) {
+            BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString())
+        }
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingServiceDisconnected()
     }
 
     /**
@@ -688,9 +695,9 @@ internal class BillingWrapper(
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
         if (reconnectionAlreadyScheduled) {
-            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED)
+            log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED }
         } else {
-            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
+            log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
             reconnectionAlreadyScheduled = true
             startConnectionOnMainThread(reconnectMilliseconds)
             reconnectMilliseconds = min(
@@ -708,7 +715,7 @@ internal class BillingWrapper(
         subscriptionStatusChange: () -> Unit,
     ) {
         if (inAppMessageTypes.isEmpty()) {
-            errorLog(BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES)
+            errorLog { BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES }
             return
         }
 
@@ -721,26 +728,26 @@ internal class BillingWrapper(
 
         executeRequestOnUIThread { error ->
             if (error != null) {
-                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_INAPP_MESSAGES.format(error))
+                errorLog { BillingStrings.BILLING_CONNECTION_ERROR_INAPP_MESSAGES.format(error) }
                 return@executeRequestOnUIThread
             }
             withConnectedClient {
                 val activity = weakActivity.get() ?: run {
-                    debugLog("Activity is null, not showing Google Play in-app message.")
+                    debugLog { "Activity is null, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
                 showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
                     when (val responseCode = inAppMessageResult.responseCode) {
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
-                            verboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE)
+                            verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
                         }
 
                         InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
-                            debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
+                            debugLog { BillingStrings.BILLING_INAPP_MESSAGE_UPDATE }
                             subscriptionStatusChange()
                         }
 
-                        else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
+                        else -> errorLog { BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode) }
                     }
                 }
             }
@@ -751,7 +758,7 @@ internal class BillingWrapper(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
-        verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
+        verboseLog { BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE }
         GetBillingConfigUseCase(
             GetBillingConfigUseCaseParams(appInBackground),
             deviceCache = deviceCache,
@@ -765,7 +772,7 @@ internal class BillingWrapper(
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
-        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
+        } ?: log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
     }
 
     private fun getStackTrace(): String {
@@ -779,11 +786,10 @@ internal class BillingWrapper(
         purchase: Purchase,
         completion: (storeTxn: StoreTransaction) -> Unit,
     ) {
-        log(
-            LogIntent.DEBUG,
+        log(LogIntent.DEBUG) {
             BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
-                .format(purchase.toHumanReadableDescription()),
-        )
+                .format(purchase.toHumanReadableDescription())
+        }
 
         synchronized(this@BillingWrapper) {
             val context = purchaseContext[purchase.firstProductId]
@@ -814,6 +820,42 @@ internal class BillingWrapper(
                 billingResult.debugMessage,
             )
         }
+    }
+
+    private fun trackPurchaseStartIfNeeded(
+        googlePurchasingData: GooglePurchasingData,
+        oldProductId: String?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val subscriptionPurchasingData = googlePurchasingData as? GooglePurchasingData.Subscription
+        val subscriptionOfferChosenPricingPhaseList = subscriptionPurchasingData
+            ?.productDetails
+            ?.subscriptionOfferDetails
+            ?.first {
+                it.offerToken == subscriptionPurchasingData.token
+            }
+            ?.pricingPhases
+            ?.pricingPhaseList
+        val hasIntroTrial = subscriptionOfferChosenPricingPhaseList?.any { it.priceAmountMicros == 0L }
+        val hasIntroPrice = subscriptionOfferChosenPricingPhaseList
+            ?.dropLast(1) // drop the last pricing phase, which is the base price
+            ?.any { it.priceAmountMicros > 0L }
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseStarted(
+            productId = googlePurchasingData.productId,
+            oldProductId = oldProductId,
+            hasIntroTrial = hasIntroTrial,
+            hasIntroPrice = hasIntroPrice,
+        )
+    }
+
+    private fun trackPurchaseUpdateReceivedIfNeeded(billingResult: BillingResult, purchases: List<Purchase>?) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        diagnosticsTrackerIfEnabled.trackGooglePurchaseUpdateReceived(
+            productIds = purchases?.flatMap { it.products },
+            purchaseStatuses = purchases?.map { it.purchaseState.toRevenueCatPurchaseState().name },
+            billingResponseCode = billingResult.responseCode,
+            billingDebugMessage = billingResult.debugMessage,
+        )
     }
 
     private fun buildPurchaseParams(
@@ -861,14 +903,11 @@ internal class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(purchaseInfo.token)
-            setProductDetails(purchaseInfo.productDetails)
-        }.build()
+        val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
         return Result.Success(
             BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .setProductDetailsParamsList(productDetailsParamsList)
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
@@ -882,6 +921,35 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private fun buildSubscriptionProductDetailsParams(
+        purchaseInfo: GooglePurchasingData.Subscription,
+    ): List<BillingFlowParams.ProductDetailsParams> {
+        fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
+            return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                setOfferToken(subscription.token)
+                setProductDetails(subscription.productDetails)
+            }.build()
+        }
+
+        val productDetailsParamsList: MutableList<ProductDetailsParams> = ArrayList()
+        productDetailsParamsList.add(buildProductDetailParams(subscription = purchaseInfo))
+
+        purchaseInfo.addOnProducts?.let { addOnProducts ->
+            val addOnSubscriptionProductDetailsParams = addOnProducts
+                .filterIsInstance<GooglePurchasingData.Subscription>()
+                .map { subscriptionPurchasingData ->
+                    buildProductDetailParams(
+                        subscription = subscriptionPurchasingData,
+                    )
+                }
+
+            productDetailsParamsList.addAll(addOnSubscriptionProductDetailsParams)
+        }
+
+        return productDetailsParamsList
     }
 
     @Synchronized

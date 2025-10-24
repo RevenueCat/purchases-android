@@ -3,9 +3,13 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.json.JSONObject
 import java.util.Date
 
@@ -38,7 +42,8 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class EntitlementInfo(
+@Poko
+class EntitlementInfo(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
@@ -173,6 +178,7 @@ data class EntitlementInfo(
 /**
  * Enum of supported stores
  */
+@Serializable(with = StoreSerializer::class)
 enum class Store {
     /**
      * For entitlements granted via Apple App Store.
@@ -210,7 +216,7 @@ enum class Store {
     AMAZON,
 
     /**
-     * For entitlements granted via RC Billing.
+     * For entitlements granted via RevenueCat's Web Billing.
      */
     RC_BILLING,
 
@@ -218,44 +224,108 @@ enum class Store {
      * For entitlements granted via RevenueCat's External Purchases API.
      */
     EXTERNAL,
+
+    /**
+     * For entitlements granted via Paddle.
+     */
+    PADDLE,
+
+    /**
+     * For entitlements granted via RevenueCat's Test Store.
+     */
+    TEST_STORE,
+    ;
+
+    internal val stringValue: String
+        get() = when (this) {
+            APP_STORE -> "app_store"
+            MAC_APP_STORE -> "mac_app_store"
+            PLAY_STORE -> "play_store"
+            STRIPE -> "stripe"
+            PROMOTIONAL -> "promotional"
+            UNKNOWN_STORE -> "unknown"
+            AMAZON -> "amazon"
+            RC_BILLING -> "rc_billing"
+            EXTERNAL -> "external"
+            PADDLE -> "paddle"
+            TEST_STORE -> "test_store"
+        }
+
+    internal companion object {
+        @JvmSynthetic
+        fun fromString(text: String): Store {
+            return when (text) {
+                "app_store" -> APP_STORE
+                "mac_app_store" -> MAC_APP_STORE
+                "play_store" -> PLAY_STORE
+                "stripe" -> STRIPE
+                "promotional" -> PROMOTIONAL
+                "amazon" -> AMAZON
+                "rc_billing" -> RC_BILLING
+                "external" -> EXTERNAL
+                "paddle" -> PADDLE
+                "test_store" -> TEST_STORE
+                else -> UNKNOWN_STORE
+            }
+        }
+    }
 }
+
+internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
+    defaultValue = Store.UNKNOWN_STORE,
+    typeForValue = { value -> value.stringValue },
+)
 
 /**
  * Enum of supported period types for an entitlement.
  */
+@Serializable
 enum class PeriodType {
     /**
      * If the entitlement is not under an introductory or trial period.
      */
+    @SerialName("normal")
     NORMAL,
 
     /**
      * If the entitlement is under a introductory price period.
      */
+    @SerialName("intro")
     INTRO,
 
     /**
      * If the entitlement is under a trial period.
      */
+    @SerialName("trial")
     TRIAL,
+
+    /**
+     * If the entitlement is under a prepaid period.
+     */
+    @SerialName("prepaid")
+    PREPAID,
 }
 
 /**
  * Enum of supported ownership types for an entitlement.
  */
+@Serializable
 enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
      */
+    @SerialName("PURCHASED")
     PURCHASED,
 
     /**
      * The purchase has been shared to this user by a family member.
      */
+    @SerialName("FAMILY_SHARED")
     FAMILY_SHARED,
 
     /**
      * The purchase has no or an unknown ownership type.
      */
+    @SerialName("UNKNOWN")
     UNKNOWN,
 }

@@ -25,30 +25,30 @@ aliases:
 
   android-executor: &android-executor
     executor:
-      name: android/android-docker
-      resource-class: large
-      tag: 2024.04.1
+      name: android/android_docker
+      resource_class: xlarge
+      tag: 2025.04.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
   android-machine-emulator: &android-machine-emulator
     executor:
-      name: android/android-machine
-      resource-class: large
-      tag: 2024.04.1
+      name: android/android_machine
+      resource_class: xlarge
+      tag: 2024.11.1
 
 version: 2.1
 orbs:
-  android: circleci/android@2.5.0
-  gcp-cli: circleci/gcp-cli@2.1.0
-  revenuecat: revenuecat/sdks-common-config@3.0.0
+  android: circleci/android@3.1.0
+  gcp-cli: circleci/gcp-cli@3.3.1
+  revenuecat: revenuecat/sdks-common-config@3.8.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates]
     default: default
 
 commands:
@@ -73,11 +73,11 @@ commands:
 
   android-dependencies:
     steps:
-      - android/restore-gradle-cache
+      - android/restore_gradle_cache
       - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies
-      - android/save-gradle-cache
+      - android/save_gradle_cache
 
   prepare-signing-key:
     steps:
@@ -105,17 +105,17 @@ commands:
       test_apk_path:
         type: string
     steps:
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
       - run:
           name: Test with Firebase Test Lab
           command: >
             gcloud firebase test android run --type instrumentation \
               --app <<parameters.app_apk_path>> \
               --test <<parameters.test_apk_path>> \
-              --device model=panther,version=33,locale=en,orientation=portrait \
+              --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
               --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
@@ -129,6 +129,67 @@ commands:
       - store_test_results:
           path: ~/gsutil/
 
+  build-paywall-tester:
+    steps:
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/paywall-tester
+          command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Replace API_KEY
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i 's/"API_KEY_A_LABEL"/"Paywalls V2 Alpha"/' Constants.kt
+            sed -i s/\"API_KEY_A\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
+            sed -i 's/"API_KEY_B_LABEL"/"Official Paywalls V2 Template Repo"/' Constants.kt
+            sed -i s/\"API_KEY_B\"/\"$PAYWALLS_V2_TEMPLATE_REPO_API_KEY\"/ Constants.kt
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_paywall_tester_bundle
+      - store_artifacts:
+          path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save_gradle_cache
+      - android/save_build_cache
+
+  install-ruby:
+    description: "Installs the provided version of Ruby using RVM."
+    parameters:
+      version:
+        type: string
+    steps:
+      - run:
+          name: Install RVM and Ruby << parameters.version >>
+          command: |
+            # Import GPG keys first
+            command curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+            command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+            # Install RVM and Ruby
+            \curl -sSL https://get.rvm.io | bash -s stable
+            source ~/.rvm/scripts/rvm
+            rvm install << parameters.version >>
+            rvm use << parameters.version >>
+            echo 'source ~/.rvm/scripts/rvm' >> $BASH_ENV
+            echo 'rvm use << parameters.version >>' >> $BASH_ENV
+            source $BASH_ENV
+            ruby -v
+  
+  checkout-submodule:
+    description: "Checks out a git submodule."
+    parameters:
+      path:
+        type: string
+        default: ""
+    steps:
+      - run: 
+          name: Check out submodule << parameters.path >>
+          command: |
+            git submodule init << parameters.path >>
+            git submodule update << parameters.path >>
+
 jobs:
 
   assemble-magic-weather-compose-sample-app:
@@ -139,13 +200,13 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept-licenses
+      - android/accept_licenses
       - android-dependencies
-      - android/restore-build-cache
+      - android/restore_build_cache
       - run:
           name: Build sample app
           command: bundle exec fastlane android build_magic_weather_compose
-      - android/save-build-cache
+      - android/save_build_cache
 
   assemble-custom-entitlement-computation-sample-app:
     <<: *android-executor
@@ -155,56 +216,139 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept-licenses
+      - android/accept_licenses
       - android-dependencies
-      - android/restore-build-cache
+      - android/restore_build_cache
       - run:
           name: Build sample app
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
-      - android/save-build-cache
+      - android/save_build_cache
 
-  test:
+  prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
-      - android/accept-licenses
-      - android-dependencies
-      - android/restore-build-cache
+      - android/accept_licenses
+      - android/restore_gradle_cache
       - run:
-          name: Verify purchases-android target SDK compatibility (currently 33)
-          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+          name: Assemble all variants (warms Gradle cache once)
+          command: ./gradlew testClasses --parallel --no-daemon
+      - android/save_gradle_cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  test_defaults_debug:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
-          name: Verify purchases-ui target SDK compatibility (currently 34)
-          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+          name: Run Defaults Debug Tests
+          command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
       - run:
-          name: Run Tests
-          command: ./gradlew lint test
-      - run:
-          name: Consolidate artifacts
+          name: Collect JUnit XMLs
           command: |
-              mkdir -p build/test-results/
-              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+            mkdir -p build/test-results-defaults-debug
+            find . -path ./build/test-results-defaults-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-debug/ \;
+      - store_test_results:
+          path: build/test-results-defaults-debug
+      - store_artifacts:
+          path: build/reports
+
+  test_defaults_release:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
-          name: Kover HTML
+          name: Run Defaults Release Tests
+          command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Generate Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
       - run:
-          name: Kover XML
+          name: Generate Kover XML
           command: ./gradlew purchases:koverXmlReportDefaultsRelease
       - codecov/upload:
           file: purchases/build/reports/kover/reportDefaultsRelease.xml
-      - android/save-build-cache
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results-defaults-release
+            find . -path ./build/test-results-defaults-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-release/ \;
+      - store_test_results:
+          path: build/test-results-defaults-release
       - store_artifacts:
           path: build/reports
+
+  test_cec_debug:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
       - run:
-          name: Save test results
+          name: Run CEC Debug Tests
+          command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
+            mkdir -p build/test-results-cec-debug
+            find . -path ./build/test-results-cec-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-debug/ \;
       - store_test_results:
-          path: build/test-results
+          path: build/test-results-cec-debug
+      - store_artifacts:
+          path: build/reports
+
+  test_cec_release:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run CEC Release Tests
+          command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            mkdir -p build/test-results-cec-release
+            find . -path ./build/test-results-cec-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-release/ \;
+      - store_test_results:
+          path: build/test-results-cec-release
+      - store_artifacts:
+          path: build/reports
+
+  test_dokka_hide_internal:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run dokka-hide-internal Tests
+          command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
+      - store_test_results:
+          path: dokka-hide-internal/build/test-results/test
+      - store_artifacts:
+          path: build/reports
 
   detekt:
     <<: *android-executor
@@ -212,24 +356,36 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - android/restore-gradle-cache
+      - android/restore_gradle_cache
       - run:
           name: Detekt
           command: ./gradlew detektAll
-      - android/save-gradle-cache
+      - android/save_gradle_cache
+
+  metalava:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - android/restore_gradle_cache
+      - run:
+          name: Validate binary compatibility
+          command: ./scripts/api-check.sh
+      - android/save_gradle_cache
 
   docs-deploy:
     <<: *android-executor
     steps:
       - checkout
       - install-sdkman
-      - android/restore-gradle-cache
-      - android/restore-build-cache
+      - android/restore_gradle_cache
+      - android/restore_build_cache
       - run:
           name: Dokka
           command: ./gradlew dokkaHtmlMultiModule
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - android/save_gradle_cache
+      - android/save_build_cache
       - run:
           name: Install pip
           command: sudo apt update && sudo apt install python3-pip
@@ -238,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.8.0-SNAPSHOT s3://purchases-docs/android/8.8.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -256,14 +412,14 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - prepare-signing-key
-      - android/restore-gradle-cache
-      - android/restore-build-cache
+      - android/restore_gradle_cache
+      - android/restore_build_cache
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - android/save_gradle_cache
+      - android/save_build_cache
 
   prepare-next-version:
     <<: *android-executor
@@ -285,28 +441,28 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore-gradle-cache:
-          cache-prefix: v1a
-      - android/restore-build-cache:
-          cache-prefix: v1a
+      - android/restore_gradle_cache:
+          cache_prefix: v1a
+      - android/restore_build_cache:
+          cache_prefix: v1a
       - prepare-signing-key
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy_snapshot
-      - android/save-gradle-cache:
-          cache-prefix: v1a
-      - android/save-build-cache:
-          cache-prefix: v1a
+      - android/save_gradle_cache:
+          cache_prefix: v1a
+      - android/save_build_cache:
+          cache_prefix: v1a
 
   assemble-purchase-tester:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
-      - android/accept-licenses
-      - android/restore-gradle-cache
-      - android/restore-build-cache
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - android/restore_build_cache
       - run:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
@@ -322,8 +478,8 @@ jobs:
           path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/debug/purchase-tester-debug.apk
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - android/save_gradle_cache
+      - android/save_build_cache
 
   publish-purchase-tester-release:
     <<: *android-executor
@@ -332,9 +488,9 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept-licenses
-      - android/restore-gradle-cache
-      - android/restore-build-cache
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
       - run:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
@@ -345,44 +501,37 @@ jobs:
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - android/save_gradle_cache
+      - android/save_build_cache
       - run:
             name: Publish aab
             command: |
               bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
-  publish-paywall-tester-release:
+  assemble-paywall-tester-release:
     <<: *android-executor
     steps:
       - checkout
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept-licenses
-      - android/restore-gradle-cache
-      - android/restore-build-cache
-      - run:
-          name: Prepare Keystore
-          working_directory: examples/paywall-tester
-          command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
-      - run:
-          name: Replace API_KEY
-          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
-          command: |
-            sed -i s/\"API_KEY\"/\"$PAYWALL_TESTER_API_KEY\"/ Constants.kt
-      - run:
-          name: Create app bundle
-          command: |
-            bundle exec fastlane android build_paywall_tester_bundle
-      - store_artifacts:
-          path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
-      - android/save-gradle-cache
-      - android/save-build-cache
+      - build-paywall-tester
+
+  publish-paywall-tester-release:
+    <<: *android-executor
+    parameters:
+      track:
+        type: string
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-paywall-tester
       - run:
             name: Publish aab
             command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
+              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -394,7 +543,7 @@ jobs:
           working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
           command: |
             sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
-      - android/restore-build-cache
+      - android/restore_build_cache
       - run:
           name: Prepare Keystore
           working_directory: integration-tests
@@ -413,7 +562,7 @@ jobs:
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
-      - android/save-build-cache
+      - android/save_build_cache
       - persist_to_workspace:
           root: .
           paths:
@@ -427,12 +576,12 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore-build-cache
+      - android/restore_build_cache
       - run:
           name: Create purchases integration tests apks
           command: |
             bundle exec fastlane android build_default_purchases_integration_tests
-      - android/save-build-cache
+      - android/save_build_cache
       - persist_to_workspace:
           root: .
           paths:
@@ -459,16 +608,16 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
-      - android/restore-build-cache
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
+      - android/restore_build_cache
       - run:
           name: Build and run load shedder integration tests
           command: |
             bundle exec fastlane android run_load_shedder_purchases_integration_tests
-      - android/save-build-cache
+      - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
@@ -483,50 +632,43 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
-      - android/restore-build-cache
+      - gcp-cli/setup:
+          gcloud_service_key: GCLOUD_SERVICE_KEY
+          google_compute_zone: GOOGLE_COMPUTE_ZONE
+          google_project_id: GOOGLE_PROJECT_ID
+      - android/restore_build_cache
       - run:
           name: Build and run custom entitlement computation integration tests
           command: |
             bundle exec fastlane android run_custom_entitlement_computation_integration_tests
-      - android/save-build-cache
+      - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
           path: ~/gsutil/
-
-  verify_debug_view_snapshot_tests:
-    description: "Verify debug view snapshot tests"
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore-build-cache
-      - run:
-          name: Build and run debugview snapshot tests
-          command: |
-            bundle exec fastlane android verify_debug_view_snapshot_tests
-      - android/save-build-cache
 
   emerge_purchases_ui_snapshot_tests:
     description: "Emerge purchases ui snapshot tests"
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore-build-cache
+      - android/restore_build_cache
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
           command: |
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
-      - android/save-build-cache
+      - android/save_build_cache
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
@@ -544,112 +686,292 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore-build-cache
+      - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
-      - android/save-build-cache
-      - run:
-          name: Save test results
-          command: |
-            mkdir -p build/test-results
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
-          when: always
-      - store_test_results:
-          path: build/test-results
+      - android/save_build_cache
+      - store_test_results: 
+          path: purchases/build/test-results
 
-  verify-revenuecatui-snapshots:
-    description: "Verify RevenueCatUI snapshots"
+  record-and-upload-paparazzi-revenuecatui-snapshots:
+    description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
     <<: *android-executor
     steps:
       - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - attach_workspace:
+          at: .
       - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore-build-cache
+      # Required by Emerge CLI
+      - install-ruby:
+          version: 3.2.0
       - run:
-          name: Build and run RevenueCat UI snapshot tests
-          command: |
-            bundle exec fastlane android verify_revenuecatui_snapshots
-      - android/save-build-cache
-
-  record-revenuecatui-snapshots:
-    description: "Record new RevenueCatUI snapshots"
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
+          name: Install Emerge CLI
+          command: gem install emerge
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore-build-cache
+      - android/restore_gradle_cache
       - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
-          command: |
-            bundle exec fastlane android record_revenuecatui_snapshots
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
       - run:
+          name: Records new debug view snapshots to become the new golden
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:debugview
+      - run:
+          name: Upload snapshots to Emerge
           command: |
-            bundle exec fastlane android create_snapshots_repo_pr
-      - android/save-build-cache
+            # Take the last path segment of the CIRCLE_PULL_REQUEST url if it exists.
+            PR_NUM=""
+            if [ -n "$CIRCLE_PULL_REQUEST" ] && [[ "$CIRCLE_PULL_REQUEST" == */* ]]; then
+              PR_NUM=$(echo "$CIRCLE_PULL_REQUEST" | rev | cut -d'/' -f1 | rev)
+            fi
+            # If PR_NUM is still empty, try to parse it from the branch name.
+            if [ -z "$PR_NUM" ]; then
+              branch=$(git rev-parse --abbrev-ref HEAD)
+              # The branch name must follow this format:
+              #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
+              PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
+            fi
+            # Set base-sha to empty string if no PR number is found.
+            PR_ARG=""
+            if [ -n "$PR_NUM" ]; then
+              PR_ARG="--pr-number $PR_NUM"
+            else
+              PR_ARG="--base-sha \"\""
+            fi
+
+            emerge upload snapshots \
+              --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
+              --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
+              --repo-name "RevenueCat/purchases-android" \
+              --debug \
+              --client-library paparazzi \
+              $PR_ARG \
+              --project-root .
+      - android/save_build_cache
+
+  record-and-push-paywall-template-screenshots:
+    description: "Record new paywall template screenshots with Paparazzi and push them to the paywall-rendering-validation repository"
+    <<: *android-executor
+    steps:
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - run:
+          name: Clone paywall-rendering-validation repository
+          command: git clone git@github.com:RevenueCat/paywall-rendering-validation.git ../paywall-rendering-validation
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_build_cache
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Set GitHub token environment variable
+          command: |
+            echo "export GITHUB_TOKEN=$GH_TOKEN_PAYWALL_RENDERING_VALIDATION_PR_RW" >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Record and push new paywall template screenshots
+          command: bundle exec fastlane android record_and_push_paywall_template_screenshots target_repository_path:../paywall-rendering-validation
+      - android/save_build_cache
 
   run-revenuecatui-ui-tests:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
-      - android/create-avd:
-          avd-name: test-revenuecat-ui
-          system-image: system-images;android-32;google_apis;x86_64
+      - android/create_avd:
+          avd_name: test-revenuecat-ui
+          system_image: system-images;android-32;google_apis;x86_64
           install: true
-      - android/start-emulator:
-          avd-name: test-revenuecat-ui
-          post-emulator-launch-assemble-command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+      - android/start_emulator:
+          avd_name: test-revenuecat-ui
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+      - android/restore_gradle_cache
       - run:
+          name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+
+  run-maestro-e2e-tests:
+    description: "Run Maestro tests for Paywall Tester app"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - run:
+          name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
+          working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
+          command: |
+            sed -i s/\"api_key_to_replace\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
+      - android/create_avd:
+          avd_name: test-e2e-tester
+          system_image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-e2e-tester
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug
+      - android/restore_gradle_cache
+      - run:
+          name: Install E2E Tester on emulator
+          command: |
+            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+      - revenuecat/install-maestro
+      - run:
+          name: Run Maestro tests
+          command: |
+            maestro test --format junit --output maestro/report.xml maestro/
+      - store_artifacts:
+          path: ~/.maestro/tests/
+      - store_test_results:
+          path: maestro/report.xml
+
+  update-paywall-preview-resources-submodule:
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - checkout-submodule:
+          path: upstream/paywall-preview-resources
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - run:
+          name: Update paywall templates
+          command: bundle exec fastlane android update_paywall_preview_resources_submodule
+
+  lint:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Android Lint
+          command: ./gradlew lint --parallel --no-daemon
+      - store_artifacts:
+          path: build/reports
+
+  verify-compatibility:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Verify purchases-android target SDK (33)
+          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug --no-daemon --parallel
+      - run:
+          name: Verify purchases-ui target SDK (34)
+          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
 workflows:
   version: 2
   danger:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger
 
+  snapshot-deploy-manual:
+    when:
+      equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
+    jobs:
+      - deploy-snapshot:
+          context: maven-central-publishing
+
   snapshot-deploy-sample-app-tests:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - deploy-snapshot: *only-main-branch
+      - deploy-snapshot:
+          context: maven-central-publishing
       - assemble-magic-weather-compose-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
       - assemble-custom-entitlement-computation-sample-app:
-          <<: *only-main-branch
           requires:
             - deploy-snapshot
 
   build-test-deploy:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - test
-      - detekt
-      - assemble-purchase-tester
-      - run-backend-integration-tests
-      - verify-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-      - emerge_purchases_ui_snapshot_tests
-      - verify_debug_view_snapshot_tests: *release-branches
+      - prepare-tests
+      - test_defaults_debug:
+          requires:
+            - prepare-tests
+      - test_defaults_release:
+          requires:
+            - prepare-tests
+      - test_cec_debug:
+          requires:
+            - prepare-tests
+      - test_cec_release:
+          requires:
+            - prepare-tests
+      - verify-compatibility:
+          requires:
+            - prepare-tests
+      - lint:
+          requires:
+            - prepare-tests
+      - detekt:
+          requires:
+            - prepare-tests
+      - metalava:
+          requires:
+            - prepare-tests
+      - assemble-purchase-tester:
+          requires:
+            - prepare-tests
+      - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - test_dokka_hide_internal:
+          requires:
+            - prepare-tests
+      - run-backend-integration-tests:
+          requires:
+            - prepare-tests
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - prepare-tests
+      - run-revenuecatui-ui-tests:
+          requires:
+            - prepare-tests
+      - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
+      - run-maestro-e2e-tests:
+          requires:
+            - prepare-tests
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
@@ -667,20 +989,28 @@ workflows:
       - hold:
           type: approval
           requires:
-            - test
+            - test_defaults_debug
+            - test_defaults_release
+            - test_cec_debug
+            - test_cec_release
             - assemble-purchase-tester
+            - assemble-paywall-tester-release
             - run-backend-integration-tests
+            - run-maestro-e2e-tests
             - run-revenuecatui-ui-tests
             - run-firebase-tests
             - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+            - verify-compatibility
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
             - hold
           <<: *release-branches
-      - deploy: *release-tags
+      - deploy:
+          <<: *release-tags
+          context: maven-central-publishing
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
@@ -688,17 +1018,26 @@ workflows:
             - docs-deploy
           <<: *release-tags
       - publish-paywall-tester-release:
+          track: "alpha"
           requires:
               - deploy
               - docs-deploy
           <<: *release-tags
 
-  snapshot-bump:
+  on-main-branch:
     when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - prepare-next-version: *only-main-branch
+      - prepare-next-version
+      - publish-paywall-tester-release:
+          track: "internal"
+      - record-and-push-paywall-template-screenshots:
+          context:
+            - paywall-rendering-validation-pr-rw
 
   daily-load-shedder-integration-tests:
     when:
@@ -728,10 +1067,11 @@ workflows:
     when:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
-        - publish-paywall-tester-release
+        - publish-paywall-tester-release:
+            track: "alpha"
 
-  record-revenuecatui-snapshots:
+  update-paywall-templates:
     when:
-      equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
+      equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
-      - record-revenuecatui-snapshots
+      - update-paywall-preview-resources-submodule

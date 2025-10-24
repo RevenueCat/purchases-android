@@ -1,29 +1,48 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.os.Parcelable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import dev.drewhamilton.poko.Poko
+import kotlinx.parcelize.Parcelize
 
+@Stable
 internal sealed class OfferingSelection {
+
+    @Immutable
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
-    data class OfferingId(val offeringId: String) : OfferingSelection()
+
+    @Parcelize
+    @Immutable
+    data class IdAndPresentedOfferingContext(
+        val offeringId: String,
+        val presentedOfferingContext: PresentedOfferingContext?,
+    ) : Parcelable, OfferingSelection()
+
+    @Immutable
     object None : OfferingSelection()
 
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
-            is OfferingId -> null
+            is IdAndPresentedOfferingContext -> null
             None -> null
         }
 
     val offeringIdentifier: String?
         get() = when (this) {
             is OfferingType -> offeringType.identifier
-            is OfferingId -> offeringId
+            is IdAndPresentedOfferingContext -> offeringId
             None -> null
         }
 }
 
-data class PaywallOptions internal constructor(
+@Poko
+@Immutable
+class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
@@ -32,6 +51,9 @@ data class PaywallOptions internal constructor(
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
 ) {
+    companion object {
+        private const val hashMultiplier = 31
+    }
 
     constructor(builder: Builder) : this(
         offeringSelection = builder.offeringSelection,
@@ -41,6 +63,49 @@ data class PaywallOptions internal constructor(
         purchaseLogic = builder.purchaseLogic,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
+    )
+
+    // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
+    // Fields like fontProvider, listener, purchaseLogic, and dismissRequest are excluded because
+    // they don't influence visual/structural uniqueness and may not be reliably hashable.
+    override fun hashCode(): Int {
+        var result = offeringSelection.offeringIdentifier.hashCode()
+        result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
+        result = hashMultiplier * result + mode.hashCode()
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PaywallOptions) return false
+
+        return when {
+            this.offeringSelection != other.offeringSelection -> false
+            this.shouldDisplayDismissButton != other.shouldDisplayDismissButton -> false
+            this.fontProvider != other.fontProvider -> false
+            this.listener != other.listener -> false
+            this.purchaseLogic != other.purchaseLogic -> false
+            this.mode != other.mode -> false
+            else -> this.dismissRequest == other.dismissRequest
+        }
+    }
+
+    internal fun copy(
+        offeringSelection: OfferingSelection = this.offeringSelection,
+        shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
+        fontProvider: FontProvider? = this.fontProvider,
+        listener: PaywallListener? = this.listener,
+        purchaseLogic: PurchaseLogic? = this.purchaseLogic,
+        mode: PaywallMode = this.mode,
+        dismissRequest: () -> Unit = this.dismissRequest,
+    ): PaywallOptions = PaywallOptions(
+        offeringSelection = offeringSelection,
+        shouldDisplayDismissButton = shouldDisplayDismissButton,
+        fontProvider = fontProvider,
+        listener = listener,
+        purchaseLogic = purchaseLogic,
+        mode = mode,
+        dismissRequest = dismissRequest,
     )
 
     class Builder(
@@ -58,19 +123,25 @@ data class PaywallOptions internal constructor(
                 ?: OfferingSelection.None
         }
 
-        internal fun setOfferingId(offeringId: String?) = apply {
-            this.offeringSelection = offeringId?.let { OfferingSelection.OfferingId(it) }
-                ?: OfferingSelection.None
+        internal fun setOfferingIdAndPresentedOfferingContext(
+            idAndPresentedOfferingContext: OfferingSelection.IdAndPresentedOfferingContext?,
+        ) = apply {
+            this.offeringSelection = idAndPresentedOfferingContext ?: OfferingSelection.None
         }
 
         /**
          * Sets whether to display a close button on the paywall screen. Only available when using
-         * [Paywall]. Ignored when using [PaywallFooter]. Defaults to false.
+         * [Paywall] and original template paywalls. Ignored when using [OriginalTemplatePaywallFooter] or
+         * using v2 Paywalls. Defaults to false.
          */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
+        /**
+         * Sets a font provider to provide the paywall with your custom fonts.
+         * Only available for original template paywalls. Ignored for v2 Paywalls.
+         */
         fun setFontProvider(fontProvider: FontProvider?) = apply {
             this.fontProvider = fontProvider
         }

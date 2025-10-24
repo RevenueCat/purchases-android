@@ -1,7 +1,11 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -9,6 +13,8 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -68,6 +74,33 @@ internal fun getAmazonLWAConsentStatusListener(
 ) = object : GetAmazonLWAConsentStatusCallback {
     override fun onSuccess(consentStatus: AmazonLWAConsentStatus) {
         onSuccess(consentStatus)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+internal fun getVirtualCurrenciesCallback(
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : GetVirtualCurrenciesCallback {
+    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+        onSuccess(virtualCurrencies)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+internal fun getCustomerCenterConfigDataListener(
+    onSuccess: (CustomerCenterConfigData) -> Unit,
+    onError: (PurchasesError) -> Unit,
+) = object : GetCustomerCenterConfigCallback {
+    override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+        onSuccess(customerCenterConfig)
     }
 
     override fun onError(error: PurchasesError) {
@@ -205,7 +238,7 @@ fun Purchases.syncPurchasesWith(
  * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
  *
  * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
- * For more offerings information, see [getOfferings]
+ * For more offerings information, see [Purchases.getOfferings]
  *
  * @param [onError] Called when there was an error syncing attributes or fetching offerings. Will return the first error
  * found syncing the purchases.
@@ -238,6 +271,45 @@ fun Purchases.getAmazonLWAConsentStatusWith(
     onSuccess: (AmazonLWAConsentStatus) -> Unit,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * @param [onSuccess] Will be called after the call has completed successfully
+ * with a [VirtualCurrencies] object.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+fun Purchases.getVirtualCurrenciesWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+) {
+    getVirtualCurrencies(
+        callback = getVirtualCurrenciesCallback(onSuccess, onError),
+    )
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
+ * If there is any error, it will return null and log said error.
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+fun Purchases.getStorefrontLocaleWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (storefrontLocale: Locale) -> Unit,
+) {
+    getStorefrontLocale(object : GetStorefrontLocaleCallback {
+        override fun onReceived(storefrontLocale: Locale) {
+            onSuccess(storefrontLocale)
+        }
+
+        override fun onError(error: PurchasesError) {
+            onError(error)
+        }
+    })
 }
 
 // region Deprecated

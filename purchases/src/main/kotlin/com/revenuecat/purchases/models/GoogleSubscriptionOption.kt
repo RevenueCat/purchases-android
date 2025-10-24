@@ -1,12 +1,15 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import dev.drewhamilton.poko.Poko
 
 /**
  * Defines an option for purchasing a Google subscription
  */
-data class GoogleSubscriptionOption @JvmOverloads constructor(
+@Poko
+class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
@@ -120,11 +123,26 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(
             productId,
             id,
             productDetails,
             offerToken,
+            primaryPricingPhase?.billingPeriod,
+            addOnProducts = emptyList(),
         )
+
+    /**
+     * The "primary" pricing phase for the description, defined by either the first infinitely recurring phase,
+     * or if no infinitely recurring phase is found, then the last one.
+     */
+    private val primaryPricingPhase: PricingPhase?
+        get() {
+            val infiniteRecurringPricingPhase = pricingPhases
+                .firstOrNull { it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING }
+
+            return infiniteRecurringPricingPhase ?: pricingPhases.lastOrNull()
+        }
 }

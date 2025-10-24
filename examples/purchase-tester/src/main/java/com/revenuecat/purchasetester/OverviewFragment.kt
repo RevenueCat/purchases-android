@@ -29,6 +29,7 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -110,6 +111,36 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     })
                 }
             }.collect()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val activity = requireActivity() as MainActivity
+        val webPurchaseRedemption = activity.webPurchaseRedemption ?: return
+        activity.clearWebPurchaseRedemption()
+        Purchases.sharedInstance.redeemWebPurchase(webPurchaseRedemption) { result ->
+            when (result) {
+                is RedeemWebPurchaseListener.Result.Success -> {
+                    showToast("Successfully redeemed web purchase. Updating customer info.")
+                }
+                is RedeemWebPurchaseListener.Result.Error -> {
+                    showUserError(requireActivity(), result.error)
+                }
+                RedeemWebPurchaseListener.Result.InvalidToken -> {
+                    showToast("Invalid web redemption token. Please check your link.")
+                }
+                RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser -> {
+                    showToast("Web purchase belongs to a different user. Ignoring.")
+                }
+                is RedeemWebPurchaseListener.Result.Expired -> {
+                    showToast(
+                        "Web purchase redemption token expired. " +
+                            "An email with a new one was sent to ${result.obfuscatedEmail}.",
+                    )
+                }
+            }
         }
     }
 

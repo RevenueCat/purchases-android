@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
@@ -75,14 +76,17 @@ internal abstract class BaseBackendIntegrationTest {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns URL("https://api.revenuecat.com")
             every { store } returns Store.PLAY_STORE
+            every { isDebugBuild } returns true
             every { platformInfo } returns PlatformInfo("test-flavor", version = null)
             every { languageTag } returns "en-US"
             every { versionName } returns "test-version-name"
             every { packageName } returns "com.revenuecat.purchases.backend_tests"
             every { customEntitlementComputation } returns false
             every { finishTransactions } returns true
-            every { forceServerErrors } returns false
             every { forceSigningErrors } returns false
+            every { isAppBackgrounded } returns false
+            every { fallbackBaseURLs } returns emptyList()
+            every { runningTests } returns true
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
@@ -97,7 +101,7 @@ internal abstract class BaseBackendIntegrationTest {
         eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())
-        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache)
+        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache, localeProvider = DefaultLocaleProvider())
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }

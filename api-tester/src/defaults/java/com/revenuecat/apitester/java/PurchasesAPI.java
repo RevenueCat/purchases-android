@@ -1,6 +1,8 @@
 package com.revenuecat.apitester.java;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 
@@ -14,12 +16,18 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
+import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
+import com.revenuecat.purchases.customercenter.CustomerCenterListener;
+import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +36,12 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
-    static void check(final Purchases purchases) {
+    static void check(
+            final Purchases purchases,
+            final WebPurchaseRedemption webPurchaseRedemption,
+            final RedeemWebPurchaseListener redeemWebPurchaseListener,
+            final Intent intent
+            ) {
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override
             public void onReceived(@NonNull CustomerInfo customerInfo) {
@@ -85,6 +98,7 @@ final class PurchasesAPI {
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
         purchases.getAmazonLWAConsentStatus(getAmazonLWAContentStatusCallback);
+        purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener);
 
         purchases.restorePurchases(receiveCustomerInfoListener);
         purchases.invalidateCustomerInfoCache();
@@ -99,7 +113,22 @@ final class PurchasesAPI {
 
         final Store store = purchases.getStore();
 
-        final String storefrontCountryCode = purchases.getStorefrontCountryCode();
+        final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
+
+        final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
+        final WebPurchaseRedemption webPurchaseRedemption2 = Purchases.parseAsWebPurchaseRedemption("");
+
+        final GetVirtualCurrenciesCallback getVirtualCurrenciesCallback = new GetVirtualCurrenciesCallback() {
+            @Override
+            public void onReceived(@NonNull VirtualCurrencies virtualCurrencies) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
+        purchases.invalidateVirtualCurrenciesCache();
+        VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
@@ -119,6 +148,10 @@ final class PurchasesAPI {
         purchases.setMediaSource("");
         purchases.setCampaign("");
         purchases.setCleverTapID("");
+        purchases.setKochavaDeviceID("");
+        purchases.setAirbridgeDeviceID("");
+        purchases.setTenjinAnalyticsInstallationID("");
+        purchases.setPostHogUserId("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");
@@ -148,5 +181,47 @@ final class PurchasesAPI {
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .showInAppMessagesAutomatically(true)
                 .build();
+    }
+
+    static void checkCustomerCenter() {
+        CustomerCenterListener customerInfoListener = new CustomerCenterListener() {
+            @Override
+            public void onRestoreStarted() {
+            }
+        };
+        CustomerCenterListener customerInfoListener2 = new CustomerCenterListener() {
+            @Override
+            public void onFeedbackSurveyCompleted(@NonNull String feedbackSurveyOptionId) {
+            }
+
+            @Override
+            public void onShowingManageSubscriptions() {
+            }
+
+            @Override
+            public void onRestoreCompleted(@NonNull CustomerInfo customerInfo) {
+            }
+
+            @Override
+            public void onRestoreFailed(@NonNull PurchasesError error) {
+            }
+
+            @Override
+            public void onRestoreStarted() {
+            }
+            @Override
+            public void onManagementOptionSelected(@NonNull CustomerCenterManagementOption action) {
+                //noinspection StatementWithEmptyBody
+                if (action instanceof CustomerCenterManagementOption.MissingPurchase) {
+                } else //noinspection StatementWithEmptyBody
+                    if (action instanceof CustomerCenterManagementOption.Cancel) {
+                } else if (action instanceof CustomerCenterManagementOption.CustomUrl) {
+                    CustomerCenterManagementOption.CustomUrl customUrl = (CustomerCenterManagementOption.CustomUrl) action;
+                    Uri uri = customUrl.getUri();
+                }
+            }
+        };
+        Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});
+        Purchases.getSharedInstance().setCustomerCenterListener(customerInfoListener);
     }
 }

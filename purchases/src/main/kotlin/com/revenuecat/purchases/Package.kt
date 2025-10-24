@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.models.StoreProduct
+import dev.drewhamilton.poko.Poko
+import java.net.URL
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
@@ -9,12 +11,16 @@ import com.revenuecat.purchases.models.StoreProduct
  * @property product [StoreProduct] assigned to this package.
  * @property offering offering Id this package was returned from.
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
+ * @property webCheckoutURL If the Offering has an associated Web Purchase Link with a product in this package,
+ * this will be the URL for it linking directly to purchase this package.
  */
-data class Package(
+@Poko
+class Package @JvmOverloads constructor(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
     val presentedOfferingContext: PresentedOfferingContext,
+    val webCheckoutURL: URL? = null,
 ) {
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
@@ -33,6 +39,7 @@ data class Package(
         packageType,
         product,
         PresentedOfferingContext(offeringIdentifier = offering),
+        webCheckoutURL = null,
     )
 
     @Deprecated(
@@ -41,6 +48,16 @@ data class Package(
     )
     val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
+
+    internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
+        return Package(
+            identifier = this.identifier,
+            packageType = this.packageType,
+            product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
+            presentedOfferingContext = presentedOfferingContext,
+            webCheckoutURL = this.webCheckoutURL,
+        )
+    }
 }
 
 /**

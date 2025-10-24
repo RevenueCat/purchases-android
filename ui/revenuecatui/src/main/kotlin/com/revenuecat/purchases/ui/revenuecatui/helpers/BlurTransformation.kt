@@ -5,6 +5,7 @@ import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import androidx.annotation.VisibleForTesting
+import androidx.core.graphics.createBitmap
 import coil.size.Size
 import coil.transform.Transformation
 import kotlin.math.min
@@ -56,7 +57,7 @@ internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = t
     script.setInput(input)
     script.forEach(output)
 
-    val blurredBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, config)
+    val blurredBitmap = config?.let { createBitmap(bitmap.width, bitmap.height, it) }
     output.copyTo(blurredBitmap)
 
     input.destroy()
@@ -64,7 +65,7 @@ internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = t
     script.destroy()
     rs.destroy()
 
-    return blurredBitmap
+    return blurredBitmap ?: bitmap
 }
 
 private fun Bitmap.scaledDown(): Bitmap {

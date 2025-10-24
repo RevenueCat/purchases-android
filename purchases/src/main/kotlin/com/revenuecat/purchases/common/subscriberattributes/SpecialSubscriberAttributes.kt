@@ -15,6 +15,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     IDFA("\$idfa"),
     IDFV("\$idfv"),
     IP("\$ip"),
+    DEVICE_VERSION("\$deviceVersion"),
     GPS_AD_ID("\$gpsAdId"),
     AMAZON_AD_ID("\$amazonAdId"),
 
@@ -29,12 +30,16 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     ONESIGNAL_USER_ID("\$onesignalUserId"),
     AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
     CLEVER_TAP_ID("\$clevertapId"),
+    KOCHAVA_DEVICE_ID("\$kochavaDeviceId"),
+    AIRBRIDGE_DEVICE_ID("\$airbridgeDeviceId"),
 
     /**
      * Integration IDs
      */
     MIXPANEL_DISTINCT_ID("\$mixpanelDistinctId"),
     FIREBASE_APP_INSTANCE_ID("\$firebaseAppInstanceId"),
+    TENJIN_ANALYTICS_INSTALLATION_ID("\$tenjinId"),
+    POSTHOG_USER_ID("\$posthogUserId"),
 
     /**
      * Optional campaign parameters
@@ -58,6 +63,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
     sealed class DeviceIdentifiers {
         object GPSAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.GPS_AD_ID.value)
         object IP : SubscriberAttributeKey(ReservedSubscriberAttribute.IP.value)
+        object DeviceVersion : SubscriberAttributeKey(ReservedSubscriberAttribute.DEVICE_VERSION.value)
         object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
@@ -67,6 +73,8 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
+        object Kochava : AttributionIds(ReservedSubscriberAttribute.KOCHAVA_DEVICE_ID)
+        object Airbridge : AttributionIds(ReservedSubscriberAttribute.AIRBRIDGE_DEVICE_ID)
     }
 
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
@@ -75,6 +83,10 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)
         object Airship : IntegrationIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
         object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
+        object TenjinAnalyticsInstallationId : IntegrationIds(
+            ReservedSubscriberAttribute.TENJIN_ANALYTICS_INSTALLATION_ID,
+        )
+        object PostHogUserId : IntegrationIds(ReservedSubscriberAttribute.POSTHOG_USER_ID)
     }
 
     sealed class CampaignParameters(

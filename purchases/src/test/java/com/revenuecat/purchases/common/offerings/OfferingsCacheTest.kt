@@ -3,6 +3,8 @@ package com.revenuecat.purchases.common.offerings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultLocaleProvider
+import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
 import io.mockk.Runs
@@ -40,7 +42,7 @@ class OfferingsCacheTest {
                 get() = currentDate
         }
 
-        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider)
+        offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = DefaultLocaleProvider())
     }
 
     @Test
@@ -52,6 +54,8 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearCache()
         assertThat(offeringsCache.cachedOfferings).isNull()
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
         verify(exactly = 1) { deviceCache.clearOfferingsResponseCache() }
     }
 
@@ -95,14 +99,99 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `cache is stale if cached value removes update time`() {
+    fun `cache is stale if forced to be stale`() {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk(), mockk())
-        offeringsCache.clearOfferingsCacheTimestamp()
+        offeringsCache.forceCacheStale()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
 
     // endregion offerings cache
+
+    // region locale cache tests
+
+    @Test
+    fun `cache is not stale when locales remain the same`() {
+        // Arrange
+        val localeProvider = FakeLocaleProvider("en-US", "es-ES")
+        val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
+        mockDeviceCacheOfferingResponse()
+
+        // Act
+        offeringsCache.cacheOfferings(mockk(), mockk())
+
+        // Assert
+        assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
+    }
+
+    @Test
+    fun `cache is stale when locales change after caching`() {
+        // Arrange
+        val localeProvider = FakeLocaleProvider("en-US", "es-ES")
+        val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
+        mockDeviceCacheOfferingResponse()
+
+        // Act
+        offeringsCache.cacheOfferings(mockk(), mockk())
+        localeProvider.languageTags = listOf("fr-FR", "de-DE")
+
+        // Assert
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
+    }
+
+    @Test
+    fun `cache is stale when a single locale changes`() {
+        // Arrange
+        val localeProvider = FakeLocaleProvider("en-US")
+        val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
+        mockDeviceCacheOfferingResponse()
+
+        // Act
+        offeringsCache.cacheOfferings(mockk(), mockk())
+        localeProvider.languageTags = listOf("fr-FR")
+
+        // Assert
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
+    }
+
+    @Test
+    fun `cache is stale when locale order changes`() {
+        // Arrange
+        val localeProvider = FakeLocaleProvider("en-US", "es-ES")
+        val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
+        mockDeviceCacheOfferingResponse()
+
+        // Act
+        offeringsCache.cacheOfferings(mockk(), mockk())
+        localeProvider.languageTags = listOf("es-ES", "en-US")
+
+        // Assert
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
+    }
+
+    @Test
+    fun `clear cache also clears cached locales`() {
+        // Arrange
+        val localeProvider = FakeLocaleProvider("en-US")
+        val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
+        mockDeviceCacheOfferingResponse()
+        every { deviceCache.clearOfferingsResponseCache() } just Runs
+
+        // Act
+        offeringsCache.cacheOfferings(mockk(), mockk())
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse
+        offeringsCache.clearCache()
+        
+        // Assert
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
+    }
+
+    // endregion locale cache tests
 
     // region offerings response cache
 

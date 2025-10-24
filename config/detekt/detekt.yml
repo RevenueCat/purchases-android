@@ -3,6 +3,9 @@ naming:
     active: true
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ignoreAnnotated: [ 'Composable' ]
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
 formatting:
   TrailingCommaOnCallSite:
     active: true
@@ -16,3 +19,23 @@ style:
   UnusedPrivateMember:
     active: true
     ignoreAnnotated: [ 'Preview' ]
+complexity:
+  LongMethod:
+    ignoreAnnotated: [ 'Preview' ]
+  LongParameterList:
+    ignoreAnnotated: [ 'Poko' ]
+  TooManyFunctions:
+    ignoreAnnotatedFunctions: [ 'Preview' ]
+libraries:
+  active: true
+  ForbiddenPublicDataClass:
+    excludes: [ '**/examples/**' ]
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  LibraryEntitiesShouldNotBePublic:
+    active: false
+    excludes: [ '**/examples/**' ]
+  LibraryCodeMustSpecifyReturnType:
+    excludes: [ '**/examples/**' ]
+Compose:
+  CompositionLocalAllowlist:
+    allowedCompositionLocals: LocalPreviewImageLoader

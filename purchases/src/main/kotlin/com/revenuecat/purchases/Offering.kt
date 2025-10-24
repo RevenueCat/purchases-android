@@ -6,6 +6,9 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import dev.drewhamilton.poko.Poko
+import java.net.URL
 
 /**
  * An offering is a collection of [Package] available for the user to purchase.
@@ -14,14 +17,53 @@ import com.revenuecat.purchases.paywalls.PaywallData
  * @property serverDescription Offering description defined in RevenueCat dashboard.
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
+ * @property webCheckoutURL If the Offering has an associated Web Purchase Link, this will be the URL for it.
  */
-data class Offering @JvmOverloads constructor(
+@Suppress("UnsafeOptInUsageError")
+@Poko
+class Offering
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val identifier: String,
     val serverDescription: String,
     val metadata: Map<String, Any>,
     val availablePackages: List<Package>,
+    @InternalRevenueCatAPI
     val paywall: PaywallData? = null,
+    @InternalRevenueCatAPI
+    val paywallComponents: PaywallComponents? = null,
+    val webCheckoutURL: URL? = null,
 ) {
+    @OptIn(InternalRevenueCatAPI::class)
+    constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = null,
+        paywallComponents = null,
+        webCheckoutURL = null,
+    )
+
+    @InternalRevenueCatAPI
+    @Poko
+    class PaywallComponents(
+        val uiConfig: UiConfig,
+        val data: PaywallComponentsData,
+    )
+
+    /**
+     * Whether the offering contains a paywall.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @get:JvmName("hasPaywall")
+    val hasPaywall: Boolean
+        get() = paywall != null || paywallComponents != null
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
@@ -83,5 +125,18 @@ data class Offering @JvmOverloads constructor(
      */
     fun getMetadataString(key: String, default: String): String {
         return this.metadata[key] as? String ?: default
+    }
+
+    @InternalRevenueCatAPI
+    fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
+        return Offering(
+            identifier = this.identifier,
+            serverDescription = this.serverDescription,
+            metadata = this.metadata,
+            availablePackages = this.availablePackages.map { it.copy(presentedOfferingContext) },
+            paywall = this.paywall,
+            paywallComponents = this.paywallComponents,
+            webCheckoutURL = this.webCheckoutURL,
+        )
     }
 }

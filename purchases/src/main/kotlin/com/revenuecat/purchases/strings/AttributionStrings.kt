@@ -16,6 +16,8 @@ internal object AttributionStrings {
         "identifier. Message: %s"
     const val NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "NullPointerException when getting advertising " +
         "identifier. Message: %s"
+    const val NO_SUCH_METHOD_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "NoSuchMethodError when getting advertising " +
+        "identifier. com.google.android.gms.ads library is not available."
     const val MARKING_ATTRIBUTES_SYNCED = "Marking the following attributes as synced for App User ID: %s"
     const val METHOD_CALLED = "%s called"
     const val NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE = "No subscriber attributes to synchronize."

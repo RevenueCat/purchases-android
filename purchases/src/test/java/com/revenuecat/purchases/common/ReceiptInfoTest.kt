@@ -107,6 +107,25 @@ class ReceiptInfoTest {
         assertThat(receiptInfo.pricingPhases).isNull()
     }
 
+    @Test
+    fun `platformProductIDs maintains the same order as productIDs`() {
+        val product1 = "product1"
+        val product2 = "product2"
+        val product3 = "product3"
+        val productIDs = listOf(product1, product2, product3)
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs
+        )
+
+        val platformProductIDs = receiptInfo.platformProductIds
+        assertThat(platformProductIDs).isNotNull
+        assertThat(platformProductIDs!!.size).isEqualTo(3)
+        assertThat(platformProductIDs[0].productId).isEqualTo(product1)
+        assertThat(platformProductIDs[1].productId).isEqualTo(product2)
+        assertThat(platformProductIDs[2].productId).isEqualTo(product3)
+    }
+
     private fun makeMockStoreTransaction(purchaseState: PurchaseState, subscriptionOptionId: String?): StoreTransaction {
         return StoreTransaction(
             orderId = mockGooglePurchase.orderId,

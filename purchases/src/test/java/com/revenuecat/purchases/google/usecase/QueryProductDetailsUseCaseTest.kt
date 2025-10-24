@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -16,7 +17,10 @@ import com.revenuecat.purchases.utils.mockProductDetails
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -33,14 +37,16 @@ import java.util.concurrent.atomic.AtomicInteger
 @Config(manifest = Config.NONE)
 internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
-    private lateinit var mockDetailsList: List<ProductDetails>
+    private val emptyResponseResult = QueryProductDetailsResult.create(emptyList(), emptyList())
+
+    private lateinit var mockProductDetailsResult: QueryProductDetailsResult
 
     private var storeProducts: List<StoreProduct>? = null
 
     @Before
     override fun setup() {
         super.setup()
-        mockDetailsList = listOf(mockProductDetails())
+        mockProductDetailsResult = QueryProductDetailsResult.create(listOf(mockProductDetails()), emptyList())
     }
 
     @Test
@@ -163,8 +169,8 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
         }
 
         wrapper.queryProductDetailsAsync(
@@ -195,12 +201,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
             )
         } answers {
             Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
                 lock.countDown()
             }.start()
 
             Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
                 lock.countDown()
             }.start()
         }
@@ -262,12 +268,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     if (timesExecutedInMainThread == 1) {
                         slot.captured.onProductDetailsResponse(
                             billingClientDisconnectedResult,
-                            emptyList()
+                            emptyResponseResult
                         )
                     } else {
                         slot.captured.onProductDetailsResponse(
                             billingClientOKResult,
-                            mockDetailsList
+                            mockProductDetailsResult
                         )
                     }
                 }
@@ -317,7 +323,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
-                        emptyList()
+                        emptyResponseResult,
                     )
                 }
 
@@ -366,7 +372,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        emptyList()
+                        emptyResponseResult,
                     )
                 }
 
@@ -418,7 +424,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        emptyList()
+                        emptyResponseResult,
                     )
                 }
 
@@ -469,7 +475,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
-                        emptyList()
+                        emptyResponseResult,
                     )
                 }
 
@@ -518,7 +524,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
-                        emptyList()
+                        emptyResponseResult,
                     )
                 }
 
@@ -535,6 +541,51 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
     // endregion retries
 
+    @Test
+    fun `If ExceptionInInitializerError is thrown when building QueryProductDetailsParams, returns StoreProblemError`() {
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+
+        // Mock QueryProductDetailsParams.Builder to throw ExceptionInInitializerError when setProductList is called
+        val mockBuilder = mockk<QueryProductDetailsParams.Builder>()
+        every { mockBuilder.setProductList(any()) } throws ExceptionInInitializerError(
+            RuntimeException("Simulated ExceptionInInitializerError")
+        )
+
+        mockkStatic(QueryProductDetailsParams::class)
+        every { QueryProductDetailsParams.newBuilder() } returns mockBuilder
+
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+                appInBackground = false
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { _, request ->
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        unmockkStatic(QueryProductDetailsParams::class)
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError!!.underlyingErrorMessage).isEqualTo("Error while building QueryProductDetailsParams in Billing client: Simulated ExceptionInInitializerError")
+    }
+
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
         every {
@@ -543,7 +594,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 capture(slot)
             )
         } answers {
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyResponseResult)
         }
     }
 

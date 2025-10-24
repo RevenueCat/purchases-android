@@ -31,29 +31,13 @@ Runs all the tests
 
 Setup development environment
 
-### android verify_debug_view_snapshot_tests
-
-```sh
-[bundle exec] fastlane android verify_debug_view_snapshot_tests
-```
-
-Verify snapshot tests for the debug view library
-
-### android record_debug_view_snapshot_tests
-
-```sh
-[bundle exec] fastlane android record_debug_view_snapshot_tests
-```
-
-Record/Update snapshots for tests in the debug view library
-
 ### android emerge_purchases_ui_snapshot_tests
 
 ```sh
 [bundle exec] fastlane android emerge_purchases_ui_snapshot_tests
 ```
 
-Run snapshot tests for the purchases UI library
+Emerge snapshot tests
 
 ### android bump
 
@@ -171,13 +155,13 @@ Build and run purchases module custom entitlement computation integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
-### android publish_to_test_track
+### android publish_to_track
 
 ```sh
-[bundle exec] fastlane android publish_to_test_track
+[bundle exec] fastlane android publish_to_track
 ```
 
-Publish to test track in Play Console
+Publish to Google Play
 
 ### android publish_purchase_tester
 
@@ -193,7 +177,7 @@ Publish purchase tester to test track in Play Console
 [bundle exec] fastlane android publish_paywall_tester
 ```
 
-Publish paywall tester to test track in Play Console
+Publish paywall tester to the specified track on Google Play
 
 ### android build_magic_weather_compose
 
@@ -247,53 +231,13 @@ Builds a Purchase Tester APK and prompts for:
 
 
 
-### android fetch_snapshots
+### android update_paywall_preview_resources_submodule
 
 ```sh
-[bundle exec] fastlane android fetch_snapshots
+[bundle exec] fastlane android update_paywall_preview_resources_submodule
 ```
 
-Clones or updates snapshots repo
-
-### android verify_revenuecatui_snapshots
-
-```sh
-[bundle exec] fastlane android verify_revenuecatui_snapshots
-```
-
-Verify RevenueCat UI snapshots
-
-### android record_revenuecatui_snapshots
-
-```sh
-[bundle exec] fastlane android record_revenuecatui_snapshots
-```
-
-Record RevenueCat UI snapshots
-
-### android create_snapshots_repo_pr
-
-```sh
-[bundle exec] fastlane android create_snapshots_repo_pr
-```
-
-Creates a new PR on purchases-ios-snapshots after new snapshot files were generated
-
-### android generate_snapshots_RCUI
-
-```sh
-[bundle exec] fastlane android generate_snapshots_RCUI
-```
-
-Trigger CircleCI job to generate snapshots for RevenueCatUI
-
-### android update_snapshots_repo
-
-```sh
-[bundle exec] fastlane android update_snapshots_repo
-```
-
-Updates purchases-android-snapshots-commit to point to latest commit on main
+Updates paywall-preview-resources submodule and creates/updates PR
 
 ### android trigger_bump
 
@@ -302,6 +246,22 @@ Updates purchases-android-snapshots-commit to point to latest commit on main
 ```
 
 Trigger bump
+
+### android record_and_push_paywall_template_screenshots
+
+```sh
+[bundle exec] fastlane android record_and_push_paywall_template_screenshots
+```
+
+Records Paywall template screenshots and pushes them to the repository at target_repository_path
+
+### android record_paparazzi_screenshots
+
+```sh
+[bundle exec] fastlane android record_paparazzi_screenshots
+```
+
+Records Paparazzi screenshots for a given gradle_module
 
 ----
 

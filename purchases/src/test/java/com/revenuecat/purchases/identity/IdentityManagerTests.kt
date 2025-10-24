@@ -4,9 +4,9 @@ import android.content.SharedPreferences.Editor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -23,7 +23,9 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,6 +82,14 @@ class IdentityManagerTests {
             every { resetOfflineCustomerInfoCache() } just Runs
         }
         identityManager = createIdentityManager()
+    }
+
+    @Test
+    fun testIsUserIdAnonymousWorksAsExpected() {
+        assertThat(IdentityManager.isUserIDAnonymous(stubAnonymousID)).isTrue()
+        assertThat(IdentityManager.isUserIDAnonymous("")).isFalse()
+        assertThat(IdentityManager.isUserIDAnonymous("test-user-id")).isFalse()
+        assertThat(IdentityManager.isUserIDAnonymous("\$RCAnonymousID:12345678901234567890123456789012")).isTrue()
     }
 
     @Test
@@ -513,7 +523,7 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `we invalidate customer info and etag caches if verification is informational and cached customer info is not requested`() {
+    fun `we invalidate etag caches if verification is informational and cached customer info is not requested`() {
         val userId = "test-app-user-id"
         setupCustomerInfoCacheInvalidationTest(
             userId,
@@ -522,7 +532,7 @@ class IdentityManagerTests {
             true
         )
         identityManager.configure(userId)
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
         }
         verify(exactly = 1) {
@@ -531,7 +541,7 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `we invalidate customer info and etag caches if verification is enforced and cached customer info is not requested`() {
+    fun `we invalidate etag caches if verification is enforced and cached customer info is not requested`() {
         val userId = "test-app-user-id"
         setupCustomerInfoCacheInvalidationTest(
             userId,
@@ -540,7 +550,7 @@ class IdentityManagerTests {
             true
         )
         identityManager.configure(userId)
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
         }
         verify(exactly = 1) {
@@ -630,6 +640,82 @@ class IdentityManagerTests {
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
     }
     // endregion
+
+    // region aliasCurrentUserIdTo
+
+    @Test
+    fun `aliasCurrentUserIdTo finishes successfully and clears proper caches`() = runTest {
+        val oldAppUserID = "test-old-app-user-id"
+        val newAppUserId = "test-new-app-user-id"
+
+        mockIdentifiedUser(newAppUserId)
+
+        every { mockDeviceCache.clearCustomerInfoCache(newAppUserId) } just Runs
+        every {
+            mockBackend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserId,
+                onSuccessHandler = captureLambda(),
+                onErrorHandler = any(),
+            )
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        identityManager.aliasCurrentUserIdTo(oldAppUserID)
+
+        verify(exactly = 1) {
+            mockBackend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserId,
+                onSuccessHandler = any(),
+                onErrorHandler = any(),
+            )
+        }
+        verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
+        verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+    }
+
+    @Test
+    fun `aliasCurrentUserIdTo finishes with errors`() = runTest {
+        val oldAppUserID = "test-old-app-user-id"
+        val newAppUserId = "test-new-app-user-id"
+
+        mockIdentifiedUser(newAppUserId)
+
+        every {
+            mockBackend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserId,
+                onSuccessHandler = any(),
+                onErrorHandler = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+        }
+
+        try {
+            identityManager.aliasCurrentUserIdTo(oldAppUserID)
+            fail("Expected an error")
+        } catch (e: PurchasesException) {
+            assertThat(e.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        }
+
+        verify(exactly = 1) {
+            mockBackend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserId,
+                onSuccessHandler = any(),
+                onErrorHandler = any(),
+            )
+        }
+        verify(exactly = 0) { mockOfferingsCache.clearCache() }
+        verify(exactly = 0) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
+        verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+    }
+
+    // endregion aliasCurrentUserIdTo
 
     // region helper functions
 

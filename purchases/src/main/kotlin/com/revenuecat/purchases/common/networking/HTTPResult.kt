@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
@@ -50,7 +52,17 @@ internal data class HTTPResult(
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payload.takeIf { it.isNotBlank() }?.let { JSONObject(it) } ?: JSONObject()
+    val body: JSONObject = payload
+        .takeIf { it.isNotBlank() }
+        ?.let {
+            try {
+                JSONObject(it)
+            } catch (e: JSONException) {
+                errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
+                null
+            }
+        }
+        ?: JSONObject()
 
     val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
     val backendErrorMessage: String? = if (!isSuccessful()) {

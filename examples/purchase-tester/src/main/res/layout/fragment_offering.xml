@@ -6,9 +6,19 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
                 name="offering"
                 type="com.revenuecat.purchases.Offering" />
+
+        <variable
+                name="isAddOnPurchaseMode"
+                type="Boolean" />
+
+        <variable
+                name="isPurchaseButtonEnabled"
+                type="Boolean" />
 
     </data>
 
@@ -52,6 +62,48 @@
                         bind:detail="@{offering.serverDescription}"
                         bind:header="@{`Description:`}" />
 
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/add_on_purchase_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Make Add-On Purchase"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/is_add_on_purchase_upgrade_checkbox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_large"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="Is Product Change"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/add_on_purchase_checkbox" />
+
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/purchase_all_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="Purchase Selected"
+                        android:enabled="@{isPurchaseButtonEnabled}"
+                        android:visibility="@{isAddOnPurchaseMode ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/is_add_on_purchase_upgrade_checkbox" />
+
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/offering_details_open_wpl_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Buy Web Purchase Link"
+                        android:visibility="@{offering.webCheckoutURL == null ? View.GONE : View.VISIBLE}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchase_all_button" />
+
+
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/offering_details_packages_header"
                         android:layout_width="match_parent"
@@ -60,8 +112,8 @@
                         android:layout_marginTop="@dimen/padding_small"
                         android:text="Packages"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_open_wpl_button" />
 
                 <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/offering__details_packages_recycler"

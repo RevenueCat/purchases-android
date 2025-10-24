@@ -17,6 +17,7 @@ internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
+    private val automaticDeviceIdentifierCollectionEnabled: Boolean,
 ) {
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
@@ -64,7 +65,7 @@ internal class SubscriberAttributesManager(
             val unsyncedStoredAttributesForAllUsers =
                 deviceCache.getUnsyncedSubscriberAttributes().filterKeys { it.isNotBlank() }
             if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
-                log(LogIntent.DEBUG, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
+                log(LogIntent.DEBUG) { AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE }
                 if (completion != null) {
                     completion()
                 }
@@ -80,7 +81,9 @@ internal class SubscriberAttributesManager(
                     syncingAppUserID,
                     {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
-                        log(LogIntent.RC_SUCCESS, AttributionStrings.ATTRIBUTES_SYNC_SUCCESS.format(syncingAppUserID))
+                        log(LogIntent.RC_SUCCESS) {
+                            AttributionStrings.ATTRIBUTES_SYNC_SUCCESS.format(syncingAppUserID)
+                        }
                         if (currentAppUserID != syncingAppUserID) {
                             deviceCache.clearSubscriberAttributesIfSyncedForSubscriber(syncingAppUserID)
                         }
@@ -93,10 +96,9 @@ internal class SubscriberAttributesManager(
                         if (didBackendGetAttributes) {
                             markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                         }
-                        log(
-                            LogIntent.RC_ERROR,
-                            AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error),
-                        )
+                        log(LogIntent.RC_ERROR) {
+                            AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error)
+                        }
                         currentSyncedAttributeCount++
                         if (completion != null && currentSyncedAttributeCount == unsyncedStoredAttributesCount) {
                             completion()
@@ -113,7 +115,7 @@ internal class SubscriberAttributesManager(
         if (unsyncedAttributesPreviousUser.isEmpty()) {
             return
         }
-        infoLog(AttributionStrings.COPYING_ATTRIBUTES_FROM_TO_USER.format(originalAppUserId, newAppUserID))
+        infoLog { AttributionStrings.COPYING_ATTRIBUTES_FROM_TO_USER.format(originalAppUserId, newAppUserID) }
         deviceCache.setAttributes(newAppUserID, unsyncedAttributesPreviousUser)
         deviceCache.clearAllSubscriberAttributesFromUser(originalAppUserId)
     }
@@ -132,16 +134,15 @@ internal class SubscriberAttributesManager(
         attributeErrors: List<SubscriberAttributeError>,
     ) {
         if (attributeErrors.isNotEmpty()) {
-            log(LogIntent.RC_ERROR, AttributionStrings.SUBSCRIBER_ATTRIBUTES_ERROR.format(attributeErrors))
+            log(LogIntent.RC_ERROR) { AttributionStrings.SUBSCRIBER_ATTRIBUTES_ERROR.format(attributeErrors) }
         }
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        log(
-            LogIntent.INFO,
+        log(LogIntent.INFO) {
             AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
-                attributesToMarkAsSynced.values.joinToString("\n"),
-        )
+                attributesToMarkAsSynced.values.joinToString("\n")
+        }
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
         attributesToMarkAsSynced.forEach { (key, subscriberAttribute) ->
@@ -178,9 +179,16 @@ internal class SubscriberAttributesManager(
         appUserID: String,
         applicationContext: Application,
     ) {
-        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+        val setAttributes: (deviceIdentifiers: Map<String, String?>) -> Unit = { deviceIdentifiers ->
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
+        }
+        if (automaticDeviceIdentifierCollectionEnabled) {
+            getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+                setAttributes(deviceIdentifiers)
+            }
+        } else {
+            setAttributes(emptyMap())
         }
     }
 
@@ -231,7 +239,9 @@ internal class SubscriberAttributesManager(
         fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) {
                 completion()
-            } else listeners.add { completion() }
+            } else {
+                listeners.add { completion() }
+            }
         }
     }
 }

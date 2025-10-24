@@ -752,6 +752,31 @@ class EntitlementInfosTests {
         )
 
         verifyStore(Store.EXTERNAL)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("pro", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "paddle")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            }
+        )
+
+        verifyStore(Store.PADDLE)
     }
 
     @Test
@@ -935,6 +960,36 @@ class EntitlementInfosTests {
         )
 
         verifyStore(Store.UNKNOWN_STORE)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "lifetime")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            nonSubscriptions = JSONObject().apply {
+                put("lifetime", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("id", "5b9ba226bc")
+                        put("is_sandbox", false)
+                        put("original_purchase_date", "2019-07-26T22:10:27Z")
+                        put("purchase_date", "2019-07-26T22:10:27Z")
+                        put("store", "app_store")
+                    })
+                    put(JSONObject().apply {
+                        put("id", "ea820afcc4")
+                        put("is_sandbox", false)
+                        put("original_purchase_date", "2019-07-26T23:45:40Z")
+                        put("purchase_date", "2019-07-26T23:45:40Z")
+                        put("store", "paddle")
+                    })
+                })
+            }
+        )
+
+        verifyStore(Store.PADDLE)
     }
 
     @Test
@@ -1015,7 +1070,31 @@ class EntitlementInfosTests {
             }
         )
 
-        verifyPeriodType(PeriodType.TRIAL)
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("pro", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "prepaid")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "play_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
+                })
+            }
+        )
+
+        verifyPeriodType(PeriodType.PREPAID)
 
         stubResponse(
             entitlements = JSONObject().apply {
@@ -1121,6 +1200,37 @@ class EntitlementInfosTests {
 
         verifyRenewal(willRenew = false)
     }
+
+
+    @Test
+    fun `prepaid won't renew`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("pro", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "prepaid")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "play_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
+                })
+            }
+        )
+
+        verifyRenewal(willRenew = false)
+    }
+
 
     @Test
     fun `ownershipType from subscription`() {

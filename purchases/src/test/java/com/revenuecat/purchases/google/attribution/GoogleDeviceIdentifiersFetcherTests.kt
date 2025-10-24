@@ -5,6 +5,7 @@ import android.content.Context
 import android.provider.Settings
 import android.util.Log
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -41,7 +42,7 @@ class GoogleDeviceIdentifiersFetcherTests {
     }
 
     @Test
-    fun `getDeviceIdentifiers`() {
+    fun getDeviceIdentifiers() {
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,
@@ -60,6 +61,8 @@ class GoogleDeviceIdentifiersFetcherTests {
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
+
+            assertContainsDeviceVersion(identifiers)
         }
 
         assertThat(completionCalled).isTrue()
@@ -72,7 +75,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            expectedException = GooglePlayServicesRepairableException(1, "error", mockk())
+            expectedException = GooglePlayServicesNotAvailableException(1)
         )
 
         var completionCalled = false
@@ -86,6 +89,8 @@ class GoogleDeviceIdentifiersFetcherTests {
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
+
+            assertContainsDeviceVersion(identifiers)
         }
 
         assertThat(completionCalled).isTrue()
@@ -282,5 +287,9 @@ class GoogleDeviceIdentifiersFetcherTests {
         assertThat(identifiers.containsKey("\$androidId")).isFalse()
         // This value is set by mockAdvertisingInfo(). 
         assertThat(identifiers.containsValue("androidid")).isFalse()
+    }
+
+    private fun assertContainsDeviceVersion(identifiers: Map<String, String>) {
+        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.DeviceVersion.backendKey]).isEqualTo("true")
     }
 }

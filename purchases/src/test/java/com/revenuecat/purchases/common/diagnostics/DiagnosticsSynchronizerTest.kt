@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
-import java.util.stream.Stream
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -69,6 +68,32 @@ class DiagnosticsSynchronizerTest {
 
         verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded does not do anything if diagnostics file is already syncing`() {
+        val successCallbackSlot = slot<(JSONObject) -> Unit>()
+        val errorCallbackSlot = slot<(PurchasesError, Boolean) -> Unit>()
+
+        every { backend.postDiagnostics(
+            testDiagnosticsEntryJSONs,
+            capture(successCallbackSlot),
+            capture(errorCallbackSlot)
+        ) } just Runs
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 1) { backend.postDiagnostics(any(), any(), any()) }
+
+        successCallbackSlot.captured(JSONObject())
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 2) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 2) { backend.postDiagnostics(any(), any(), any()) }
     }
 
     @Test
@@ -226,6 +251,27 @@ class DiagnosticsSynchronizerTest {
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
     }
 
+    @Test
+    fun `onEventTracked syncs diagnostics file if file is big enough to sync`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync() } returns true
+        mockBackendResponse(testDiagnosticsEntryJSONs)
+
+        diagnosticsSynchronizer.onEventTracked()
+
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 1) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `onEventTracked does not sync diagnostics file if file is not big enough to sync`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync() } returns false
+
+        diagnosticsSynchronizer.onEventTracked()
+
+        verify(exactly = 0) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
     // endregion
 
     private fun mockSharedPreferences() {
@@ -272,9 +318,9 @@ class DiagnosticsSynchronizerTest {
     }
 
     private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
-        val slot = slot<((Stream<JSONObject>) -> Unit)>()
+        val slot = slot<((Sequence<JSONObject>) -> Unit)>()
         every { diagnosticsFileHelper.readFileAsJson(capture(slot)) } answers {
-            slot.captured(jsons.stream())
+            slot.captured(jsons.asSequence())
         }
     }
 }

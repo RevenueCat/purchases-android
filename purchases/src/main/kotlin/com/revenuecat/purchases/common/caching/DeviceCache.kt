@@ -23,6 +23,11 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -62,6 +67,14 @@ internal open class DeviceCache(
         "$apiKeyPrefix.purchaserInfoLastUpdated"
     }
 
+    private val virtualCurrenciesCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrencies"
+    }
+
+    private val virtualCurrenciesLastUpdatedCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrenciesLastUpdated"
+    }
+
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
     fun startEditing(): SharedPreferences.Editor {
@@ -95,6 +108,8 @@ internal open class DeviceCache(
             .clearCustomerInfo()
             .clearAppUserID()
             .clearCustomerInfoCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCache(appUserID)
             .apply()
     }
 
@@ -134,7 +149,9 @@ internal open class DeviceCache(
                     val schemaVersion = cachedJSONObject.optInt(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
                     val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)) {
                         cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
-                    } else VerificationResult.NOT_REQUESTED.name
+                    } else {
+                        VerificationResult.NOT_REQUESTED.name
+                    }
                     val requestDate = cachedJSONObject.optLong(CUSTOMER_INFO_REQUEST_DATE_KEY).takeIf { it > 0 }?.let {
                         Date(it)
                     }
@@ -205,7 +222,7 @@ internal open class DeviceCache(
 
     @Synchronized
     fun setStorefront(countryCode: String) {
-        verboseLog(BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode))
+        verboseLog { BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode) }
         preferences.edit().putString(storefrontCacheKey, countryCode).apply()
     }
 
@@ -213,7 +230,7 @@ internal open class DeviceCache(
     override fun getStorefront(): String? {
         val storefront = preferences.getString(storefrontCacheKey, null)
         if (storefront == null) {
-            debugLog(BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE)
+            debugLog { BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE }
         }
         return storefront
     }
@@ -223,6 +240,113 @@ internal open class DeviceCache(
         return Date(preferences.getLong(customerInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
+    // endregion
+
+    // region virtual currencies
+    fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+
+    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+
+    @Suppress("SwallowedException", "ForbiddenComment")
+    @Synchronized
+    fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
+        return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
+            ?.let { json ->
+                try {
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = json)
+                } catch (error: JSONException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: SerializationException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: IllegalArgumentException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                }
+            }
+    }
+
+    @Synchronized
+    fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+        val virtualCurrenciesJSONString = Json.Default.encodeToString(VirtualCurrencies.serializer(), virtualCurrencies)
+
+        preferences.edit()
+            .putString(
+                virtualCurrenciesCacheKey(appUserID),
+                virtualCurrenciesJSONString,
+            ).apply()
+
+        setVirtualCurrenciesCacheTimestampToNow(appUserID)
+    }
+
+    @Synchronized
+    fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
+        getVirtualCurrenciesCacheLastUpdated(appUserID)
+            .isCacheStale(appInBackground, dateProvider)
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(appUserID: String) {
+        val editor = preferences.edit()
+        clearVirtualCurrenciesCache(appUserID, editor)
+        editor.apply()
+    }
+
+    @Synchronized
+    fun clearVirtualCurrenciesCache(
+        appUserID: String,
+        editor: SharedPreferences.Editor,
+    ) {
+        editor.clearVirtualCurrenciesCacheTimestamp(appUserID = appUserID)
+        editor.clearVirtualCurrenciesCache(appUserID = appUserID)
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
+        setVirtualCurrenciesCacheTimestamp(appUserID, dateProvider.now)
+    }
+
+    @Synchronized
+    fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    private fun getVirtualCurrenciesCacheLastUpdated(appUserID: String): Date {
+        return Date(preferences.getLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), 0))
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(
+        appUserID: String,
+    ): SharedPreferences.Editor {
+        remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCache(appUserID: String): SharedPreferences.Editor {
+        remove(virtualCurrenciesCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        return this
+    }
     // endregion
 
     // region attribution data
@@ -246,7 +370,7 @@ internal open class DeviceCache(
     fun getPreviouslySentHashedTokens(): Set<String> {
         return try {
             (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-                log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
             }
         } catch (e: ClassCastException) {
             emptySet()
@@ -255,16 +379,16 @@ internal open class DeviceCache(
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()) }
         getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
+            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(it) }
             setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
         }
     }
 
     @Synchronized
     private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(newSet) }
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
@@ -276,7 +400,7 @@ internal open class DeviceCache(
     fun cleanPreviouslySentTokens(
         hashedTokens: Set<String>,
     ) {
-        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
+        log(LogIntent.DEBUG) { ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN }
         setSavedTokenHashes(
             hashedTokens.intersect(getPreviouslySentHashedTokens()),
         )
@@ -358,7 +482,7 @@ internal open class DeviceCache(
             return try {
                 ProductEntitlementMapping.fromJson(JSONObject(jsonString))
             } catch (e: JSONException) {
-                errorLog(OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString), e)
+                errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
                 preferences.edit().remove(productEntitlementMappingCacheKey).apply()
                 null
             }
