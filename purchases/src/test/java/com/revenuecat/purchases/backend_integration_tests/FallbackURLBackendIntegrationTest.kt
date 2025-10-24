@@ -79,8 +79,8 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
                     assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
                     latch.countDown()
                 },
-                onError = { _, _ ->
-                    fail("Expected success")
+                onError = { purchasesError, _ ->
+                    fail("Expected success. Got error: $purchasesError")
                 }
             )
         }

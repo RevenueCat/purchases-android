@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -87,7 +88,7 @@ internal abstract class BaseBackendIntegrationTest {
             every { finishTransactions } returns true
             every { forceSigningErrors } returns false
             every { isAppBackgrounded } returns false
-            every { fallbackBaseURLs } returns emptyList()
+            every { fallbackBaseURLs } returns listOf(AppConfig.fallbackURL)
             every { runningTests } returns true
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
