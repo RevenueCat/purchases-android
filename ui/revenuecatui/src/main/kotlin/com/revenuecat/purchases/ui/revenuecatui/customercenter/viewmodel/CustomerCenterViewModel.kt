@@ -91,6 +91,8 @@ internal interface CustomerCenterViewModel {
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
+
+    @Suppress("LongParameterList")
     suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
@@ -669,7 +671,7 @@ internal class CustomerCenterViewModelImpl(
         _actionError.value = null
     }
 
-    @SuppressWarnings("ReturnCount")
+    @Suppress("LongParameterList", "ReturnCount")
     override suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
@@ -739,11 +741,13 @@ internal class CustomerCenterViewModelImpl(
         return loaded
     }
 
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
         // Extract promo offer data from current state before attempting purchase
         val currentState = _state.value as? CustomerCenterState.Success
-        val promoData = (currentState?.currentDestination as? CustomerCenterDestination.PromotionalOffer)?.data
-        val purchaseInfo = (currentState?.currentDestination as? CustomerCenterDestination.PromotionalOffer)?.purchaseInformation
+        val promoDestination = currentState?.currentDestination as? CustomerCenterDestination.PromotionalOffer
+        val promoData = promoDestination?.data
+        val purchaseInfo = promoDestination?.purchaseInformation
 
         if (activity == null) {
             Logger.e("Activity is null when accepting promotional offer")
@@ -1200,6 +1204,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun handlePromotionalOffer(
         context: Context,
         product: StoreProduct?,
