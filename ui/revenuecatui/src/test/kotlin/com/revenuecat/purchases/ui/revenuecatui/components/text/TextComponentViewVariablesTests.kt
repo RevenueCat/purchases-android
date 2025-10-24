@@ -642,6 +642,17 @@ internal class TextComponentViewVariablesTests(
                     "83%"
                 )
 
+                Variable.PRODUCT_ABSOLUTE_DISCOUNT -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    "$0.83"
+                )
+
                 Variable.PRODUCT_STORE_PRODUCT_NAME -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(

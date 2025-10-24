@@ -213,6 +213,10 @@ internal object PackageConfigurationFactory {
                 it.product.pricePerMonth(),
                 mostExpensivePricePerMonth,
             )
+            val absoluteDiscountMicros = productAbsoluteDiscountMicros(
+                it.product.pricePerMonth(),
+                mostExpensivePricePerMonth,
+            )
 
             val shouldRound = if (storefrontCountryCode != null) {
                 paywallData.zeroDecimalPlaceCountries.contains(
@@ -226,7 +230,11 @@ internal object PackageConfigurationFactory {
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(
                     variableDataProvider = variableDataProvider,
-                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth, shouldRound),
+                    context = VariableProcessor.PackageContext(
+                        discountRelativeToMostExpensivePerMonth,
+                        absoluteDiscountMicros,
+                        shouldRound,
+                    ),
                     localizedConfiguration = localization,
                     rcPackage = it,
                     locale = locale,
@@ -257,6 +265,10 @@ internal object PackageConfigurationFactory {
                     pricePerMonth = it.product.pricePerMonth(),
                     mostExpensive = mostExpensivePricePerMonth,
                 )
+                val absoluteDiscountMicros = productAbsoluteDiscountMicros(
+                    pricePerMonth = it.product.pricePerMonth(),
+                    mostExpensive = mostExpensivePricePerMonth,
+                )
 
                 val shouldRound = if (storefrontCountryCode != null) {
                     zeroDecimalPlaceCountries.contains(
@@ -270,7 +282,11 @@ internal object PackageConfigurationFactory {
                     rcPackage = it,
                     localization = ProcessedLocalizedConfiguration.create(
                         variableDataProvider = variableDataProvider,
-                        context = VariableProcessor.PackageContext(discount, shouldRound),
+                        context = VariableProcessor.PackageContext(
+                            discount,
+                            absoluteDiscountMicros,
+                            shouldRound,
+                        ),
                         localizedConfiguration = localization,
                         rcPackage = it,
                         locale = locale,
@@ -296,5 +312,12 @@ internal object PackageConfigurationFactory {
                 }
             }
         }
+    }
+
+    private fun productAbsoluteDiscountMicros(pricePerMonth: Price?, mostExpensive: Price?): Long? {
+        val price = pricePerMonth?.amountMicros ?: return null
+        val expensive = mostExpensive?.amountMicros ?: return null
+        if (price >= expensive) return null
+        return (expensive - price)
     }
 }
