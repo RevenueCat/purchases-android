@@ -268,13 +268,13 @@ class DefaultFileCacheTest {
     }
 
     @Test
-    fun `generateLocalFilesystemURI uses checksum as extension`() {
+    fun `generateLocalFilesystemURI uses checksum as part of the filename and retains the file extension`() {
         val url = URL("https://example.com/video.mp4")
         val checksum = Checksum(Checksum.Algorithm.SHA256, "abc123def456")
 
         val uri = cache.generateLocalFilesystemURI(url, checksum)
 
-        assertThat(uri.toString()).endsWith(".abc123def456")
+        assertThat(uri.toString()).endsWith("abc123def456.mp4")
     }
 
     @Test
