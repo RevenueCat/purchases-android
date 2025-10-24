@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
@@ -313,7 +314,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings error is called if server error and no cached response`() {
+    fun `get offerings error is called if behavior should fallback and no cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -340,7 +341,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings success is called if server error and cached response`() {
+    fun `get offerings success is called if behavior should fallback and cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -375,7 +376,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings error is called if cached response but not a server error`() {
+    fun `get offerings error is called if cached response but behavior should not fallback`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -384,7 +385,10 @@ class OfferingsManagerTest {
         } just Runs
 
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
@@ -576,7 +580,10 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings tracks result event on error with NOT_FOUND cache`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
         every { cache.cachedOfferings } returns null
         every { cache.cachedOfferingsResponse } returns null
         mockDeviceCache(wasSuccessful = false)
@@ -634,7 +641,10 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings with fetchCurrent tracks result event on error`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
         every { cache.cachedOfferings } returns null
         mockDeviceCache(wasSuccessful = false)
 
@@ -768,12 +778,12 @@ class OfferingsManagerTest {
 
     private fun mockBackendResponseError(
         error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError),
-        isServerError: Boolean = true,
+        errorBehavior: GetOfferingsErrorHandlingBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
     ) {
         every {
             backend.getOfferings(any(), any(), any(), captureLambda())
         } answers {
-            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(error, isServerError)
+            lambda<(PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit>().captured.invoke(error, errorBehavior)
         }
     }
 

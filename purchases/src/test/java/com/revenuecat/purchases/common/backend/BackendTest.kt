@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
@@ -171,6 +172,7 @@ class BackendTest {
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
+    private var receivedGetOfferingsErrorHandlingBehavior: GetOfferingsErrorHandlingBehavior? = null
     private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
@@ -201,9 +203,10 @@ class BackendTest {
         this@BackendTest.receivedOfferingsJSON = offeringsJSON
     }
 
-    private val onReceiveOfferingsErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
+    private val onReceiveOfferingsErrorHandler: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit =
+        { error, errorBehavior ->
         this@BackendTest.receivedError = error
-        this@BackendTest.receivedIsServerError = isServerError
+        this@BackendTest.receivedGetOfferingsErrorHandlingBehavior = errorBehavior
     }
 
     private val onLoginSuccessHandler: (CustomerInfo, Boolean) -> Unit = { customerInfo, created ->
@@ -1505,7 +1508,7 @@ class BackendTest {
     }
 
     @Test
-    fun `given a server error, correct callback values are given`() {
+    fun `given a 5xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
 
         backend.getOfferings(
@@ -1516,11 +1519,11 @@ class BackendTest {
         )
 
         assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isTrue
+        assertThat(receivedGetOfferingsErrorHandlingBehavior).isEqualTo(GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS)
     }
 
     @Test
-    fun `given a non server error, correct callback values are given`() {
+    fun `given a 4xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.BAD_REQUEST, null, null)
 
         backend.getOfferings(
@@ -1531,7 +1534,7 @@ class BackendTest {
         )
 
         assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isFalse
+        assertThat(receivedGetOfferingsErrorHandlingBehavior).isEqualTo(GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
     }
 
     @Test
