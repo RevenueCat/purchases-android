@@ -97,6 +97,7 @@ internal interface CustomerCenterViewModel {
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer,
         originalPath: HelpPath,
         purchaseInformation: PurchaseInformation? = null,
+        surveyOptionID: String? = null,
     ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
@@ -213,6 +214,7 @@ internal class CustomerCenterViewModelImpl(
                                 it.promotionalOffer,
                                 path,
                                 purchaseInformation,
+                                it.id,
                             )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
@@ -674,6 +676,7 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer,
         originalPath: HelpPath,
         purchaseInformation: PurchaseInformation?,
+        surveyOptionID: String?,
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
@@ -698,6 +701,7 @@ internal class CustomerCenterViewModelImpl(
                         subscriptionOption,
                         originalPath,
                         pricingPhasesDescription,
+                        surveyOptionID,
                     ),
                     purchaseInformation = purchaseInformation,
                 )
@@ -724,7 +728,7 @@ internal class CustomerCenterViewModelImpl(
                     eventType = CustomerCenterEventType.PROMO_OFFER_IMPRESSION,
                     path = originalPath.type,
                     url = originalPath.url,
-                    surveyOptionID = null,
+                    surveyOptionID = surveyOptionID,
                     storeOfferID = storeOfferId,
                     productID = originProductId,
                     targetProductID = targetProductId,
@@ -763,7 +767,7 @@ internal class CustomerCenterViewModelImpl(
                         eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
                         path = data.originalPath.type,
                         url = data.originalPath.url,
-                        surveyOptionID = null,
+                        surveyOptionID = data.surveyOptionID,
                         storeOfferID = storeOfferId,
                         productID = originProductId,
                         targetProductID = targetProductId,
@@ -793,11 +797,11 @@ internal class CustomerCenterViewModelImpl(
                         eventType = CustomerCenterEventType.PROMO_OFFER_SUCCESS,
                         path = data.originalPath.type,
                         url = data.originalPath.url,
-                        surveyOptionID = null,
+                        surveyOptionID = data.surveyOptionID,
                         storeOfferID = storeOfferId,
                         productID = originProductId,
                         targetProductID = targetProductId,
-                        transactionID = result.customerInfo.originalAppUserId,
+                        transactionID = result.storeTransaction.orderId,
                     )
                 }
             }
@@ -822,7 +826,7 @@ internal class CustomerCenterViewModelImpl(
                             eventType = CustomerCenterEventType.PROMO_OFFER_CANCEL,
                             path = data.originalPath.type,
                             url = data.originalPath.url,
-                            surveyOptionID = null,
+                            surveyOptionID = data.surveyOptionID,
                             storeOfferID = storeOfferId,
                             productID = originProductId,
                             targetProductID = targetProductId,
@@ -845,7 +849,7 @@ internal class CustomerCenterViewModelImpl(
                             eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
                             path = data.originalPath.type,
                             url = data.originalPath.url,
-                            surveyOptionID = null,
+                            surveyOptionID = data.surveyOptionID,
                             storeOfferID = storeOfferId,
                             productID = originProductId,
                             targetProductID = targetProductId,
@@ -886,7 +890,7 @@ internal class CustomerCenterViewModelImpl(
                     eventType = CustomerCenterEventType.PROMO_OFFER_DISMISSED,
                     path = data.originalPath.type,
                     url = data.originalPath.url,
-                    surveyOptionID = null,
+                    surveyOptionID = data.surveyOptionID,
                     storeOfferID = storeOfferId,
                     productID = originProductId,
                     targetProductID = targetProductId,
@@ -1202,6 +1206,7 @@ internal class CustomerCenterViewModelImpl(
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer?,
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
+        surveyOptionID: String? = null,
     ): Boolean {
         if (product != null && promotionalOffer != null) {
             return loadAndDisplayPromotionalOffer(
@@ -1210,6 +1215,7 @@ internal class CustomerCenterViewModelImpl(
                 promotionalOffer,
                 path,
                 purchaseInformation,
+                surveyOptionID,
             )
         } else {
             return false
