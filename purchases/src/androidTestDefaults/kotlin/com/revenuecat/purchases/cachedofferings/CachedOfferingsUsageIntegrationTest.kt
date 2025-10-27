@@ -81,7 +81,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
                     return false
                 }
 
-                override fun shouldFakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+                override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
                     if (endpoint is Endpoint.GetOfferings) {
                         return HTTPResult(
                             responseCode = 401,

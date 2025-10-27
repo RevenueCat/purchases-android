@@ -189,7 +189,7 @@ internal class HTTPClient(
         val postFieldsToSignHeader: String?
 
         if (appConfig.runningTests) {
-            forceServerErrorStrategy?.shouldFakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
                 warnLog { "Faking response for request to ${endpoint.getPath()}" }
                 return it
             }

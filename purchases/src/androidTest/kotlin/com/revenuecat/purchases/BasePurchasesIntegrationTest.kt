@@ -71,8 +71,8 @@ open class BasePurchasesIntegrationTest {
         override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
             return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
         }
-        override fun shouldFakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
-            return forceServerErrorsStrategy?.shouldFakeResponseWithoutPerformingRequest(baseURL, endpoint)
+        override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+            return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
         }
     }
 
