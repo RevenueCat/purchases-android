@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Localization
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 
@@ -155,7 +155,7 @@ private fun PurchasesNotFoundDialog(
 }
 
 @Preview(showBackground = true)
-@IgnoreEmergeSnapshot
+@EmergeSnapshotConfig(ignore = true)
 @Composable
 private fun RestorePurchasesDialogRestoringPreview() {
     RestorePurchasesDialog(
@@ -168,7 +168,7 @@ private fun RestorePurchasesDialogRestoringPreview() {
 }
 
 @Preview(showBackground = true)
-@IgnoreEmergeSnapshot
+@EmergeSnapshotConfig(ignore = true)
 @Composable
 private fun RestorePurchasesDialogRecoveredPreview() {
     RestorePurchasesDialog(
@@ -181,7 +181,7 @@ private fun RestorePurchasesDialogRecoveredPreview() {
 }
 
 @Preview(showBackground = true)
-@IgnoreEmergeSnapshot
+@EmergeSnapshotConfig(ignore = true)
 @Composable
 private fun RestorePurchasesDialogNotFoundPreview() {
     RestorePurchasesDialog(
