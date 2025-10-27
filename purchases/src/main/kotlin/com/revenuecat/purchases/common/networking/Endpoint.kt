@@ -1,8 +1,15 @@
 package com.revenuecat.purchases.common.networking
 
 import android.net.Uri
+import com.revenuecat.purchases.common.AppConfig
+import java.net.URI
+import java.net.URL
 
-internal sealed class Endpoint(val pathTemplate: String, val name: String) {
+internal sealed class Endpoint(
+    val pathTemplate: String,
+    val name: String,
+    private val fallbackBaseUrlToPathMap: Map<URI, String>? = null,
+) {
     abstract fun getPath(): String
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
@@ -10,7 +17,11 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
         override fun getPath() = pathTemplate
     }
-    data class GetOfferings(val userId: String) : Endpoint("/v1/subscribers/%s/offerings", "get_offerings") {
+    data class GetOfferings(val userId: String) : Endpoint(
+        "/v1/subscribers/%s/offerings",
+        "get_offerings",
+        fallbackBaseUrlToPathMap = mapOf(AppConfig.fallbackURL.toURI() to "v1/offerings"),
+    ) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
@@ -37,6 +48,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     object GetProductEntitlementMapping : Endpoint(
         "/v1/product_entitlement_mapping",
         "get_product_entitlement_mapping",
+        fallbackBaseUrlToPathMap = mapOf(AppConfig.fallbackURL.toURI() to "v1/product_entitlement_mapping"),
     ) {
         override fun getPath() = pathTemplate
     }
@@ -111,25 +123,9 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
                 false
         }
 
-    val supportsFallbackBaseURLs: Boolean
-        get() = when (this) {
-            is GetOfferings,
-            GetProductEntitlementMapping,
-            ->
-                true
-            is LogIn,
-            PostReceipt,
-            PostRedeemWebPurchase,
-            is GetAmazonReceipt,
-            is PostAttributes,
-            PostDiagnostics,
-            PostPaywallEvents,
-            is GetCustomerInfo,
-            is GetCustomerCenterConfig,
-            is GetVirtualCurrencies,
-            is WebBillingGetProducts,
-            is AliasUsers,
-            ->
-                false
-        }
+    private fun getPathForFallbackBaseURL(baseURL: URL): String? = fallbackBaseUrlToPathMap?.get(baseURL.toURI())
+
+    fun getPathForBaseURL(baseURL: URL): String = getPathForFallbackBaseURL(baseURL) ?: getPath()
+
+    fun supportsFallbackForBaseURL(baseURL: URL): Boolean = getPathForFallbackBaseURL(baseURL) != null
 }
