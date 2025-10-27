@@ -289,77 +289,104 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
-    fun `multi-line subscription purchase returns purchased products for base product and add-ons`() {
+    fun `subscription with add-on returns only base when add-on has no entitlements`() {
         val baseProductIdentifier = "base_product"
-        val basePlanId = "base_plan"
         val addOnProductIdentifier = "addon_product"
-        val addOnBasePlanId = "addon_plan"
         val entitlementsByProduct = mapOf(
             baseProductIdentifier to listOf("base_entitlement"),
-            addOnProductIdentifier to listOf("addon_entitlement"),
         )
-        val mapping = ProductEntitlementMapping(
-            mapOf(
-                "$baseProductIdentifier:$basePlanId" to ProductEntitlementMapping.Mapping(
-                    baseProductIdentifier,
-                    basePlanId,
-                    entitlementsByProduct[baseProductIdentifier]!!,
-                ),
-                "$addOnProductIdentifier:$addOnBasePlanId" to ProductEntitlementMapping.Mapping(
-                    addOnProductIdentifier,
-                    addOnBasePlanId,
-                    entitlementsByProduct[addOnProductIdentifier]!!,
-                ),
-            ),
-        )
-        every {
-            deviceCache.getProductEntitlementMapping()
-        } returns mapping
-
-        val subscriptionOptionIds = mapOf(
-            baseProductIdentifier to basePlanId,
-            addOnProductIdentifier to addOnBasePlanId,
-        )
-        val multilinePurchase = stubGooglePurchase(
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
             purchaseTime = testDate.time,
-            purchaseToken = "multi-line-token",
         )
-        val storeTransaction = multilinePurchase.toStoreTransaction(
-            productType = ProductType.SUBS,
-            subscriptionOptionId = basePlanId,
-            subscriptionOptionIdForProductIDs = subscriptionOptionIds,
-        )
-        mockActivePurchases(listOf(storeTransaction))
-
+        mockActivePurchases(listOf(multilineTransaction))
         var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
 
         fetcher.queryActiveProducts(
             appUserID = appUserID,
-            onSuccess = {
-                receivedListOfPurchasedProducts = it
-            },
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        val baseProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        assertPurchasedProduct(
+            baseProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+        )
+    }
+
+    @Test
+    fun `subscription with add-on returns only add-on when base has no entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val entitlementsByProduct = mapOf(
+            addOnProductIdentifier to listOf("addon_entitlement"),
+        )
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(multilineTransaction))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        val addOnProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        assertPurchasedProduct(
+            addOnProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+            purchasedProductIndex = 1,
+        )
+    }
+
+    @Test
+    fun `subscription with add-on returns both when both have entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val entitlementsByProduct = mapOf(
+            baseProductIdentifier to listOf("base_entitlement"),
+            addOnProductIdentifier to listOf("addon_entitlement"),
+        )
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(multilineTransaction))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
             unexpectedOnError,
         )
 
         assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
         val baseProduct =
             receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
-        assertThat(baseProduct.basePlanId).isEqualTo(basePlanId)
         assertPurchasedProduct(
             baseProduct,
-            storeTransaction,
+            multilineTransaction,
             entitlementsByProduct,
         )
 
         val addOnProduct =
             receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
-        assertThat(addOnProduct.basePlanId).isEqualTo(addOnBasePlanId)
         assertPurchasedProduct(
             addOnProduct,
-            storeTransaction,
+            multilineTransaction,
             entitlementsByProduct,
-            purchasedProductIndex = 1
+            purchasedProductIndex = 1,
         )
     }
 
