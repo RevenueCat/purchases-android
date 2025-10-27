@@ -51,16 +51,19 @@ internal class PurchasedProductsFetcher(
         productEntitlementMapping: ProductEntitlementMapping,
     ): List<PurchasedProduct> {
         val expirationDate = getExpirationDate(transaction)
-        return transaction.productIds.mapNotNull { productIdentifier ->
-            val mapping = productEntitlementMapping.mappings[productIdentifier] ?: return@mapNotNull null
-            PurchasedProduct(
-                productIdentifier,
-                mapping.basePlanId,
-                transaction,
-                mapping.entitlements,
-                expirationDate,
-            )
-        }
+
+        return transaction.productIds
+            .filter { productIdentifier -> productEntitlementMapping.mappings.containsKey(productIdentifier) }
+            .map { productIdentifier ->
+                val mapping = productEntitlementMapping.mappings.getValue(productIdentifier)
+                PurchasedProduct(
+                    productIdentifier,
+                    mapping.basePlanId,
+                    transaction,
+                    mapping.entitlements,
+                    expirationDate,
+                )
+            }
     }
 
     private fun getExpirationDate(
