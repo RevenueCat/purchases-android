@@ -7,7 +7,7 @@ internal sealed class Endpoint(
     val name: String,
     val fallbackPath: String? = null,
 ) {
-    abstract fun getPath(useFallback: Boolean): String
+    abstract fun getPath(useFallback: Boolean = false): String
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
