@@ -3,7 +3,6 @@ package com.revenuecat.purchases.backend_integration_tests
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -25,7 +24,10 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Rule
+import org.junit.rules.TestName
 import org.junit.runner.RunWith
+import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -39,6 +41,7 @@ internal abstract class BaseBackendIntegrationTest {
 
     companion object {
         private val TIMEOUT = 10.seconds
+        private val GOLDEN_FILES_BASE_DIR = File("src/test/resources/backend_integration_tests_golden")
 
         @BeforeClass
         @JvmStatic
@@ -52,6 +55,9 @@ internal abstract class BaseBackendIntegrationTest {
             && Constants.loadShedderApiKey != "LOAD_SHEDDER_API_KEY"
     }
 
+    @get:Rule
+    val testName = TestName()
+
     lateinit var appConfig: AppConfig
     lateinit var dispatcher: Dispatcher
     lateinit var diagnosticsDispatcher: Dispatcher
@@ -62,11 +68,17 @@ internal abstract class BaseBackendIntegrationTest {
     lateinit var httpClient: HTTPClient
     lateinit var backendHelper: BackendHelper
     lateinit var deviceCache: DeviceCache
+    lateinit var goldenFileRecorder: GoldenFileRecorder
 
     lateinit var backend: Backend
 
     @Before
     fun setUp() {
+        goldenFileRecorder = GoldenFileRecorder(
+            className = this::class.simpleName ?: "UnknownClass",
+            testName = testName.methodName,
+            baseDirectory = GOLDEN_FILES_BASE_DIR
+        )
         setupTest()
     }
 
@@ -104,7 +116,16 @@ internal abstract class BaseBackendIntegrationTest {
         eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())
-        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache, localeProvider = DefaultLocaleProvider(), forceServerErrorStrategy = forceServerErrorStrategy)
+        httpClient = HTTPClient(
+            appConfig,
+            eTagManager,
+            diagnosticsTrackerIfEnabled = null,
+            signingManager,
+            deviceCache,
+            localeProvider = DefaultLocaleProvider(),
+            forceServerErrorStrategy = forceServerErrorStrategy,
+            requestResponseListener = goldenFileRecorder
+        )
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }
