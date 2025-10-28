@@ -199,6 +199,7 @@ internal class HTTPClient(
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+        val fullURL: URL
 
         if (appConfig.runningTests) {
             forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
@@ -206,8 +207,9 @@ internal class HTTPClient(
                 return it
             }
         }
+
         try {
-            val fullURL = if (appConfig.runningTests &&
+            fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
@@ -222,6 +224,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
+                fullURL,
                 path,
                 refreshETag,
                 nonce,
@@ -272,7 +275,7 @@ internal class HTTPClient(
             responseCode,
             payload,
             getETagHeader(connection),
-            path,
+            fullURL.toString(),
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
@@ -320,6 +323,7 @@ internal class HTTPClient(
     @Suppress("LongParameterList")
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
+        fullURL: URL,
         urlPath: String,
         refreshETag: Boolean,
         nonce: String?,
@@ -349,7 +353,7 @@ internal class HTTPClient(
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
+            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 
