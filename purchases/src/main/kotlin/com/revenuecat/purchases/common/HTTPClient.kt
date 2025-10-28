@@ -113,17 +113,13 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        fun canUseFallback(): Boolean = fallbackBaseURLs.getOrNull(fallbackURLIndex)?.let {
-            endpoint.supportsFallbackForBaseURL(it)
-        } ?: false
+        fun canUseFallback(): Boolean =
+            endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
         fun performRequestToFallbackURL(): HTTPResult {
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
-                    endpoint.getPathForBaseURL(fallbackBaseURL),
-                    fallbackBaseURL
-                )
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(useFallback = true), fallbackBaseURL)
             }
             return performRequest(
                 fallbackBaseURL,
@@ -141,7 +137,15 @@ internal class HTTPClient(
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(
+                baseURL,
+                fallbackURLIndex > 0,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag
+            )
             callSuccessful = true
         } catch (e: IOException) {
             // Handle connection failures with fallback URLs
@@ -178,6 +182,7 @@ internal class HTTPClient(
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod")
     private fun performCall(
         baseURL: URL,
+        isFallbackURL: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -185,7 +190,7 @@ internal class HTTPClient(
         refreshETag: Boolean,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPathForBaseURL(baseURL)
+        val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
@@ -196,7 +201,7 @@ internal class HTTPClient(
             val fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
-                warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
+                warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
                 URL(baseURL, path)
