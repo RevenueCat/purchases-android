@@ -107,7 +107,7 @@ internal abstract class BaseHTTPClientTest {
     }
 
     protected fun enqueue(
-        endpoint: Endpoint,
+        urlPath: String,
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
         requestDateHeader: Date? = null,
@@ -118,7 +118,7 @@ internal abstract class BaseHTTPClientTest {
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlPath = urlPath,
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult
