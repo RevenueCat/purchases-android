@@ -156,12 +156,13 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         mockSigningResult(VerificationResult.VERIFIED)
 
+        val urlString = server.url(endpoint.getPath()).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = Date(1234567890L),
                 verificationResult = VerificationResult.VERIFIED

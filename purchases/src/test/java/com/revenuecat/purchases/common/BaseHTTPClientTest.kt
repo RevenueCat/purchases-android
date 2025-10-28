@@ -113,12 +113,13 @@ internal abstract class BaseHTTPClientTest {
         requestDateHeader: Date? = null,
         server: MockWebServer = this.server,
     ) {
+        val urlString = server.url(urlPath).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = urlPath,
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult

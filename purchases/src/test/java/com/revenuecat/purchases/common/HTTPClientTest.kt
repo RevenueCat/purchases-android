@@ -107,6 +107,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
         )
+        enqueue(
+            "force-server-error",
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
 
         val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
@@ -417,12 +421,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         val urlPathWithVersion = "/v1/subscribers/identify"
+        val urlString = server.url(urlPathWithVersion).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -434,7 +439,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 expectedResult.responseCode,
                 payload = expectedResult.payload,
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -599,7 +604,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 RCHTTPStatusCodes.BAD_REQUEST,
                 "not uh json",
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -642,12 +647,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         val urlPathWithVersion = "/v1/subscribers/identify"
+        val urlString = server.url(urlPathWithVersion).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -659,7 +665,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 expectedResult.responseCode,
                 payload = expectedResult.payload,
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -1029,7 +1035,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 statusCode,
                 invalidJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -1040,7 +1046,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 RCHTTPStatusCodes.SUCCESS,
                 validJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -1113,7 +1119,19 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 RCHTTPStatusCodes.SUCCESS,
                 validJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
