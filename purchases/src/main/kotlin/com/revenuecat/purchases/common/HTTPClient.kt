@@ -119,7 +119,10 @@ internal class HTTPClient(
         fun performRequestToFallbackURL(): HTTPResult {
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(useFallback = true), fallbackBaseURL)
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
+                    endpoint.getPath(useFallback = true),
+                    fallbackBaseURL,
+                )
             }
             return performRequest(
                 fallbackBaseURL,
@@ -144,7 +147,7 @@ internal class HTTPClient(
                 body,
                 postFieldsToSign,
                 requestHeaders,
-                refreshETag
+                refreshETag,
             )
             callSuccessful = true
         } catch (e: IOException) {
