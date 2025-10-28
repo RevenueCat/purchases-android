@@ -138,6 +138,33 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
+    fun `returns an active purchased product without an entitlement`() {
+        val productIdentifier = "monthly"
+        mockEntitlementMapping(emptyMap())
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = "appUserID",
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts[0],
+            activePurchase,
+            emptyMap(),
+        )
+    }
+
+    @Test
     fun `one active purchased product with single entitlement`() {
         val productIdentifier = "monthly"
         val productIdentifierToEntitlements = mapOf(productIdentifier to listOf("pro"))
@@ -289,7 +316,7 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
-    fun `subscription with add-on returns only base when add-on has no entitlements`() {
+    fun `subscription with add-on returns all purchased products when add-on has no entitlements`() {
         val baseProductIdentifier = "base_product"
         val addOnProductIdentifier = "addon_product"
         val entitlementsByProduct = mapOf(
@@ -309,7 +336,7 @@ class PurchasedProductsFetcherTest {
             unexpectedOnError,
         )
 
-        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
         val baseProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
         assertPurchasedProduct(
             baseProduct,
@@ -319,7 +346,7 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
-    fun `subscription with add-on returns only add-on when base has no entitlements`() {
+    fun `subscription with add-on returns all purchased products when add-on when base has no entitlements`() {
         val baseProductIdentifier = "base_product"
         val addOnProductIdentifier = "addon_product"
         val entitlementsByProduct = mapOf(
@@ -339,7 +366,7 @@ class PurchasedProductsFetcherTest {
             unexpectedOnError,
         )
 
-        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
         val addOnProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
         assertPurchasedProduct(
             addOnProduct,
@@ -399,8 +426,11 @@ class PurchasedProductsFetcherTest {
     ) {
         assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[purchasedProductIndex])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
-        assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]!!.size)
-        assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
+        assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]?.size ?: 0)
+        if (purchasedProduct.entitlements.isNotEmpty()) {
+            assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
+        }
+
         val expiresDate = testDatePlusOneDay
         assertThat(purchasedProduct.expiresDate)
             .withFailMessage("Expires date should be $expiresDate, but it was ${purchasedProduct.expiresDate}")
