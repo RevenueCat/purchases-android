@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPResult
 import java.net.URL
 
 internal fun interface ForceServerErrorStrategy {
@@ -16,4 +17,7 @@ internal fun interface ForceServerErrorStrategy {
         get() = "https://api.revenuecat.com/force-server-failure"
 
     fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean
+    fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+        return null
+    }
 }
