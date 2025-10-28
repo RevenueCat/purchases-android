@@ -17,7 +17,7 @@ internal sealed class Endpoint(
     data class GetOfferings(val userId: String) : Endpoint(
         "/v1/subscribers/%s/offerings",
         "get_offerings",
-        fallbackPath = "v1/offerings",
+        fallbackPath = "/v1/offerings",
     ) {
         override fun getPath(useFallback: Boolean): String {
             return if (useFallback && fallbackPath != null) {
@@ -51,7 +51,7 @@ internal sealed class Endpoint(
     object GetProductEntitlementMapping : Endpoint(
         "/v1/product_entitlement_mapping",
         "get_product_entitlement_mapping",
-        fallbackPath = "v1/product_entitlement_mapping",
+        fallbackPath = "/v1/product_entitlement_mapping",
     ) {
         override fun getPath(useFallback: Boolean): String {
             return if (useFallback && fallbackPath != null) {
