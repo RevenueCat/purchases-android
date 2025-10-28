@@ -18,24 +18,15 @@ data class RecordedRequest(
         return JSONObject().apply {
             put("url", url)
             put("method", method)
-            put("headers", JSONObject(headers))
-            put("body", body)
-        }
-    }
+            put("headers", sortJsonObject(JSONObject(headers)))
 
-    companion object {
-        fun fromJSON(json: JSONObject): RecordedRequest {
-            val headers = json.getJSONObject("headers")
-            val headerMap = mutableMapOf<String, String>()
-            headers.keys().forEach { key ->
-                headerMap[key] = headers.getString(key)
+            // Try to parse body as JSON, otherwise store null
+            if (body != null) {
+                val jsonObject = sortJsonObject(JSONObject(body))
+                put("body", jsonObject)
+            } else {
+                put("body", JSONObject.NULL)
             }
-            return RecordedRequest(
-                url = json.getString("url"),
-                method = json.getString("method"),
-                headers = headerMap,
-                body = if (json.has("body") && !json.isNull("body")) json.getString("body") else null
-            )
         }
     }
 }
@@ -51,54 +42,34 @@ data class RecordedResponse(
     fun toJSON(): JSONObject {
         return JSONObject().apply {
             put("statusCode", statusCode)
-            put("headers", JSONObject(headers))
+            put("headers", sortJsonObject(JSONObject(headers)))
 
             // Try to parse body as JSON, otherwise store null
             if (body != null) {
                 try {
                     // Try to parse as JSONObject first
-                    val jsonObject = JSONObject(body)
+                    val jsonObject = sortJsonObject(JSONObject(body))
                     put("body", jsonObject)
-                } catch (e: Exception) {
-                    try {
-                        // Try to parse as JSONArray
-                        val jsonArray = JSONArray(body)
-                        put("body", jsonArray)
-                    } catch (e2: Exception) {
-                        // Not valid JSON, store null
-                        put("body", JSONObject.NULL)
-                    }
+                } catch (_: Exception) {
+                    // Not valid JSON, store null
+                    put("body", JSONObject.NULL)
                 }
             } else {
                 put("body", JSONObject.NULL)
             }
         }
     }
+}
 
-    companion object {
-        fun fromJSON(json: JSONObject): RecordedResponse {
-            val headers = json.getJSONObject("headers")
-            val headerMap = mutableMapOf<String, String>()
-            headers.keys().forEach { key ->
-                headerMap[key] = headers.getString(key)
-            }
-
-            val body = if (json.has("body") && !json.isNull("body")) {
-                val bodyValue = json.get("body")
-                when (bodyValue) {
-                    is JSONObject -> bodyValue.toString(2)
-                    is JSONArray -> bodyValue.toString(2)
-                    else -> bodyValue.toString()
-                }
-            } else {
-                null
-            }
-
-            return RecordedResponse(
-                statusCode = json.getInt("statusCode"),
-                headers = headerMap,
-                body = body
-            )
+/**
+ * Sorts the keys of a JSONObject alphabetically.
+ * Returns a new JSONObject with keys in alphabetical order.
+ */
+private fun sortJsonObject(json: JSONObject): JSONObject {
+    val sortedKeys = json.keys().asSequence().toList().sorted()
+    return JSONObject().apply {
+        sortedKeys.forEach { key ->
+            put(key, json.get(key))
         }
     }
 }
@@ -112,7 +83,8 @@ class GoldenFileRecorder(
     private val className: String,
     private val testName: String,
     private val baseDirectory: File,
-    private val headersToIgnore: Set<String> = DEFAULT_HEADERS_TO_IGNORE
+    headersToIgnore: Set<String> = DEFAULT_HEADERS_TO_IGNORE,
+    private val bodyFieldsToIgnore: Set<String> = DEFAULT_BODY_FIELDS_TO_IGNORE
 ) : RequestResponseListener {
 
     companion object {
@@ -138,6 +110,30 @@ class GoldenFileRecorder(
             "X-Revenuecat-Etag",
             "Last-Modified",
             "CF-Ray",
+            "x-envoy-upstream-service-time",
+            "Age",
+            "x-revenuecat-data-source",
+            "CF-Cache-Status",
+            "Cache-Control",
+            "Vary",
+        )
+
+        /**
+         * Default body fields to ignore during recording as they contain dynamic values.
+         * Supports path syntax for nested fields and array elements:
+         * - "field_name" - top-level field
+         * - "parent > child" - nested field
+         * - "array > \[fieldName\]" - field within each array element
+         */
+        val DEFAULT_BODY_FIELDS_TO_IGNORE = setOf(
+            "request_date",
+            "request_date_ms",
+            "events > [id]",
+            "events > [app_user_id]",
+            "events > [session_id]",
+            "events > [app_session_id]",
+            "events > [offering_id]",
+            "events > [timestamp]",
         )
     }
 
@@ -166,12 +162,12 @@ class GoldenFileRecorder(
             url = url,
             method = method,
             headers = filterHeaders(requestHeaders),
-            body = requestBody
+            body = filterBody(requestBody)
         )
         val response = RecordedResponse(
             statusCode = responseCode,
             headers = filterHeaders(responseHeaders),
-            body = responseBody
+            body = filterBody(responseBody)
         )
 
         recordGoldenFile(sequenceNumber, request, response)
@@ -184,18 +180,74 @@ class GoldenFileRecorder(
         }
     }
 
+    private fun filterBody(body: String?): String? {
+        if (body == null || bodyFieldsToIgnore.isEmpty()) {
+            return body
+        }
+
+        return try {
+            val jsonObject = JSONObject(body)
+            bodyFieldsToIgnore.forEach { pathSpec ->
+                applyFieldFilter(jsonObject, pathSpec)
+            }
+            jsonObject.toString()
+        } catch (@Suppress("SwallowedException") _: Exception) {
+            // Not a JSON object or parsing failed, return as-is
+            body
+        }
+    }
+
+    /**
+     * Applies filtering to a field specified by a path.
+     * Path syntax:
+     * - "field" - top-level field
+     * - "parent > child" - nested field
+     * - "parent > \[field\]" - field in each element of parent array
+     */
+    private fun applyFieldFilter(jsonObject: JSONObject, pathSpec: String) {
+        val parts = pathSpec.split(">").map { it.trim() }
+        navigateAndFilter(jsonObject, parts, 0)
+    }
+
+    private fun navigateAndFilter(current: Any, parts: List<String>, index: Int) {
+        if (index >= parts.size) return
+
+        val part = parts[index]
+        val isLast = index == parts.size - 1
+
+        // Check if this part is an array field accessor like "[fieldName]"
+        if (part.startsWith("[") && part.endsWith("]")) {
+            val fieldName = part.substring(1, part.length - 1)
+            if (current is JSONArray) {
+                // Apply to each element in the array
+                for (i in 0 until current.length()) {
+                    val element = current.get(i)
+                    if (element is JSONObject && element.has(fieldName)) {
+                        if (isLast) {
+                            element.put(fieldName, "TEST_STATIC_VALUE")
+                        } else {
+                            navigateAndFilter(element.get(fieldName), parts, index + 1)
+                        }
+                    }
+                }
+            }
+        } else {
+            // Regular field access
+            if (current is JSONObject && current.has(part)) {
+                if (isLast) {
+                    current.put(part, "TEST_STATIC_VALUE")
+                } else {
+                    navigateAndFilter(current.get(part), parts, index + 1)
+                }
+            }
+        }
+    }
+
     private fun recordGoldenFile(sequenceNumber: String, request: RecordedRequest, response: RecordedResponse) {
         val requestFile = File(testDirectory, "request_$sequenceNumber.json")
         val responseFile = File(testDirectory, "response_$sequenceNumber.json")
 
         requestFile.writeText(request.toJSON().toString(2))
         responseFile.writeText(response.toJSON().toString(2))
-    }
-
-    /**
-     * Resets the request counter. Should be called at the start of each test.
-     */
-    fun reset() {
-        requestCounter = 0
     }
 }
