@@ -235,7 +235,7 @@ open class BasePurchasesIntegrationTest {
                 .updateProductEntitlementMappingCacheIfStale {
                     if (it != null) {
                         continuation.resumeWithException(
-                            AssertionError("Expected to get product entitlement mapping but got error: $it")
+                            AssertionError("Expected to get product entitlement mapping but got error: $it"),
                         )
                     } else {
                         continuation.resume(Unit)
