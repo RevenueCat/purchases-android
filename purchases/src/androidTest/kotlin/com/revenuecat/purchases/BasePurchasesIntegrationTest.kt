@@ -233,19 +233,6 @@ open class BasePurchasesIntegrationTest {
             }
     }
 
-    protected fun waitForInitialRequestsToEnd(completion: () -> Unit) {
-        waitForProductEntitlementMappingToUpdate {
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { customerInfoError ->
-                    fail("Expected to succeed getting customer info. Got $customerInfoError")
-                },
-                onSuccess = {
-                    completion()
-                },
-            )
-        }
-    }
-
     // endregion
 
     // region assertions
