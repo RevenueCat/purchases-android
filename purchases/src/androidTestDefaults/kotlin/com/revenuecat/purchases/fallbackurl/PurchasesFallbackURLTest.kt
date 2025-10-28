@@ -36,13 +36,18 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun customerInfoCannotBeFetchedFromFallbackURL() {
+    fun customerInfoCannotBeFetchedFromFallbackURLSoUsesAnOfflineCalculatedOne() {
+        ensureBlockFinishes { latch -> waitForProductEntitlementMappingToUpdate { latch.countDown() } }
+
+        val appUserID = Purchases.sharedInstance.appUserID
+
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getCustomerInfoWith({
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
-                latch.countDown()
+                fail("Should be success but got error: $it")
             }) {
-                fail("should be error")
+                assertThat(it.entitlements.active).isEmpty()
+                assertThat(it.originalAppUserId).isEqualTo(appUserID)
+                latch.countDown()
             }
         }
     }
