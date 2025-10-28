@@ -225,7 +225,6 @@ internal class HTTPClient(
             val headers = getHeaders(
                 requestHeaders,
                 fullURL,
-                path,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -324,7 +323,6 @@ internal class HTTPClient(
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
         fullURL: URL,
-        urlPath: String,
         refreshETag: Boolean,
         nonce: String?,
         shouldSignResponse: Boolean,
