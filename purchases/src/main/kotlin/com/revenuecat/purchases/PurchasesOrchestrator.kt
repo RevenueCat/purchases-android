@@ -100,6 +100,8 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -134,7 +136,7 @@ internal class PurchasesOrchestrator(
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
     private val fontLoader: FontLoader,
@@ -234,18 +236,20 @@ internal class PurchasesOrchestrator(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(
-                    allowSharingPlayStoreAccount,
-                )
-                billing.getStorefront(
-                    onSuccess = { countryCode ->
-                        storefrontCountryCode = countryCode
-                        debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
-                    },
-                    onError = { error ->
-                        errorLog(error)
-                    },
-                )
+                GlobalScope.launch {
+                    postPendingTransactionsHelper.syncPendingPurchaseQueue(
+                        allowSharingPlayStoreAccount,
+                    )
+                    billing.getStorefront(
+                        onSuccess = { countryCode ->
+                            storefrontCountryCode = countryCode
+                            debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
+                        },
+                        onError = { error ->
+                            errorLog(error)
+                        },
+                    )
+                }
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -284,7 +288,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_FOREGROUNDED }
         appConfig.isAppBackgrounded = false
 
-        enqueue {
+        GlobalScope.launch {
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(

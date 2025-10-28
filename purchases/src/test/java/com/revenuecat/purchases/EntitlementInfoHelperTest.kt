@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -85,7 +87,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
             trackDiagnostics = false,
         )
-        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
     }
 
     @Test
@@ -98,7 +100,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
             callback = callbackMock,
         )
-        verify(exactly = 1) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 1) { mockCache.getCachedCustomerInfo(any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
         verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
         verify(exactly = 0) { mockCache.cacheCustomerInfo(any(), any()) }
@@ -107,7 +109,7 @@ class EntitlementInfoHelperTest {
     @Test
     fun `retrieving customer info from CACHE_ONLY fails if cant be found in cache`() {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         customerInfoHelper.retrieveCustomerInfo(
             appUserId,
             CacheFetchPolicy.CACHE_ONLY,
@@ -121,7 +123,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving customer info from CACHE_ONLY does not update listener`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -150,7 +152,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
             callback = callbackMock,
         )
-        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo2) }
         verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
         verify(exactly = 0) { mockCache.cacheCustomerInfo(any(), any()) }
@@ -221,7 +223,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving customer info with FETCH_CURRENT does not call cache and notify listener if error`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
@@ -314,7 +316,7 @@ class EntitlementInfoHelperTest {
     fun `retrieving customer info from backend does not calculate offline entitlements if shouldnt`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error, isServerError = false)
-        every {
+        coEvery {
             mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                 isServerError = false,
                 appUserId = appUserId
@@ -394,7 +396,7 @@ class EntitlementInfoHelperTest {
     fun `retrieving customer info from backend calls error if error calculating offline customer info`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error, isServerError = true)
-        every {
+        coEvery {
             mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                 isServerError = true,
                 appUserId = appUserId
@@ -441,10 +443,9 @@ class EntitlementInfoHelperTest {
             callback = callbackMock,
         )
 
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                callback = any(),
             )
         }
         verify(exactly = 1) { callbackMock.onReceived(syncPendingPurchasesCustomerInfo) }
@@ -465,10 +466,9 @@ class EntitlementInfoHelperTest {
             callback = callbackMock,
         )
 
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                callback = any(),
             )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
@@ -490,10 +490,9 @@ class EntitlementInfoHelperTest {
             callback = callbackMock,
         )
 
-        verify(exactly = 1) {
+        coVerify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                callback = any(),
             )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
@@ -560,7 +559,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving info with CACHED_OR_FETCHED and no cache sets cache timestamp to now`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         customerInfoHelper.retrieveCustomerInfo(
             appUserId,
@@ -575,7 +574,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving info with CACHED_OR_FETCHED and no cache calls success callback if successful`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -591,7 +590,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving info with CACHED_OR_FETCHED and no cache calls error callback if error`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -608,7 +607,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving info with CACHED_OR_FETCHED and no cache and error backend request clears cache`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
         customerInfoHelper.retrieveCustomerInfo(
@@ -622,7 +621,7 @@ class EntitlementInfoHelperTest {
 
     @Test
     fun `retrieving info with CACHED_OR_FETCHED and no cache fetch success does not clear cache timestamp`() {
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         customerInfoHelper.retrieveCustomerInfo(
             appUserId,
@@ -647,7 +646,7 @@ class EntitlementInfoHelperTest {
             appInBackground,
             allowSharingPlayStoreAccount,
         )
-        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
     }
 
     @Test
@@ -663,7 +662,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
             callback = callbackMock,
         )
-        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
         verify(exactly = 1) { callbackMock.onError(error) }
         verify(exactly = 1) { mockCache.clearCustomerInfoCacheTimestamp(appUserId) }
     }
@@ -695,7 +694,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
             callback = callbackMock,
         )
-        verify(exactly = 1) { mockCache.getCachedCustomerInfo(any()) }
+        coVerify(exactly = 1) { mockCache.getCachedCustomerInfo(any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
         verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
     }
@@ -766,7 +765,7 @@ class EntitlementInfoHelperTest {
     fun `retrieveCustomerInfo tracks get customer info when CACHE_ONLY but no cached customer info`() {
         val startTime = Date()
         every { mockDateProvider.now } returns startTime
-        every { mockCache.getCachedCustomerInfo(any()) } returns null
+        coEvery { mockCache.getCachedCustomerInfo(any()) } returns null
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
@@ -904,7 +903,7 @@ class EntitlementInfoHelperTest {
                 } answers {
                     lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(errorGettingCustomerInfo, isServerError)
                 }
-                every {
+                coEvery {
                     mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                         isServerError,
                         appUserId
@@ -924,7 +923,7 @@ class EntitlementInfoHelperTest {
     }
 
     private fun setupOfflineEntitlementsTest() {
-        every {
+        coEvery {
             mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                 isServerError = true,
                 appUserId = appUserId
@@ -947,7 +946,7 @@ class EntitlementInfoHelperTest {
     private fun setupCacheMock() {
         every { mockCache.setCustomerInfoCacheTimestampToNow(appUserId) } just runs
         every { mockCache.clearCustomerInfoCacheTimestamp(appUserId) } just runs
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
+        coEvery { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
     }
 
     private fun setupMockInfo(verificationResult: VerificationResult = VerificationResult.VERIFIED) {
@@ -971,14 +970,11 @@ class EntitlementInfoHelperTest {
     }
 
     private fun setupPostPendingTransactionsHelper(result: SyncPendingPurchaseResult) {
-        every {
+        coEvery {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = any(),
-                callback = captureLambda(),
             )
-        } answers {
-            lambda<(SyncPendingPurchaseResult) -> Unit>().captured.invoke(result)
-        }
+        } returns result
     }
 
     private fun setupHandlerMock() {

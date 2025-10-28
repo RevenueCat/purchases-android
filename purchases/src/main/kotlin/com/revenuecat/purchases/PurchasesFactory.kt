@@ -54,6 +54,7 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.Dispatchers
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -172,7 +173,7 @@ internal class PurchasesFactory(
             }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
-            val cache = DeviceCache(prefs, apiKey)
+            val cache = DeviceCache(prefs, apiKey, Dispatchers.IO)
 
             val localeProvider = DefaultLocaleProvider()
             val httpClient = HTTPClient(
