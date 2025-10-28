@@ -6,6 +6,7 @@ import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
@@ -68,8 +69,13 @@ open class BasePurchasesIntegrationTest {
 
     internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
     internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = forceServerErrorsStrategy?.serverErrorURL ?: super.serverErrorURL
         override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
             return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
+        }
+        override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+            return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
         }
     }
 

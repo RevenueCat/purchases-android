@@ -171,7 +171,7 @@ internal class HTTPClient(
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
     private fun performCall(
         baseURL: URL,
         endpoint: Endpoint,
@@ -188,6 +188,12 @@ internal class HTTPClient(
         val nonce: String?
         val postFieldsToSignHeader: String?
 
+        if (appConfig.runningTests) {
+            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+                warnLog { "Faking response for request to ${endpoint.getPath()}" }
+                return it
+            }
+        }
         try {
             val fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
