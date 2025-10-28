@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
 import android.net.Uri
-import com.revenuecat.purchases.common.AppConfig
-import java.net.URI
-import java.net.URL
 
 internal sealed class Endpoint(
     val pathTemplate: String,
