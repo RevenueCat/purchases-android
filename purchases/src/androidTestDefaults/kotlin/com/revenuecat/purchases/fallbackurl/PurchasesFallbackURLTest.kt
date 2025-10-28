@@ -1,29 +1,33 @@
 package com.revenuecat.purchases.fallbackurl
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
+import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreTransactionFactory
-import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
-import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls
+
+    @get:Rule
+    var instantExecutorRule = InstantTaskExecutorRule()
 
     @Before
     fun setup() {
@@ -35,50 +39,36 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun customerInfoCannotBeFetchedFromFallbackURLSoUsesAnOfflineCalculatedOne() {
-        ensureBlockFinishes { latch -> waitForProductEntitlementMappingToUpdate { latch.countDown() } }
+    fun customerInfoCannotBeFetchedFromFallbackURLSoUsesAnOfflineCalculatedOne() = runTest {
+        waitForProductEntitlementMappingToUpdate()
 
         val appUserID = Purchases.sharedInstance.appUserID
 
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith({
-                fail("Should be success but got error: $it")
-            }) {
-                assertThat(it.entitlements.active).isEmpty()
-                assertThat(it.originalAppUserId).isEqualTo(appUserID)
-                latch.countDown()
-            }
-        }
+        val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        assertThat(customerInfo.entitlements.active).isEmpty()
+        assertThat(customerInfo.originalAppUserId).isEqualTo(appUserID)
     }
 
     @Test
-    fun offeringsCanBeFetchedFromFallbackURL() {
+    fun offeringsCanBeFetchedFromFallbackURL() = runTest {
         mockBillingAbstract.mockQueryProductDetails()
 
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getOfferingsWith({
-                fail("should be success. Error: $it")
-            }) {
-                assertThat(it.all).isNotEmpty
-                latch.countDown()
-            }
-        }
+        val offerings = Purchases.sharedInstance.awaitOfferings()
+        assertThat(offerings.all).isNotEmpty
     }
 
     @Test
-    fun productEntitlementMappingCanBeFetchedFromFallbackURL() {
-        ensureBlockFinishes { latch ->
-            waitForProductEntitlementMappingToUpdate { latch.countDown() }
-        }
+    fun productEntitlementMappingCanBeFetchedFromFallbackURL() = runTest {
+        waitForProductEntitlementMappingToUpdate()
     }
 
     @Test
-    fun canMakePurchasesFromFallbackURLUsingOfflineEntitlements() {
+    fun canMakePurchasesFromFallbackURLUsingOfflineEntitlements() = runTest {
         performPurchase()
     }
 
     @Test
-    fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() {
+    fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() = runTest {
         performPurchase()
 
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
@@ -89,60 +79,52 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() {
-        performPurchase()
+    fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() = runTest {
+        val activePurchases = performPurchase()
 
+        // Should have entitlements using offline entitlement
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
 
-        simulateSdkRestart(activity, forceServerErrorsStrategy = null)
+        // Restart and recover connectivity to main server
+        simulateSdkRestart(
+            activity,
+            forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail,
+            initialActivePurchases = activePurchases,
+        )
 
+        // Restore purchases since purchase won't be moved to new user when syncing unsynced purchases.
+        Purchases.sharedInstance.awaitRestore()
+
+        // Check that active purchases are synced.
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
     }
 
     // region Helpers
 
-    private fun verifyGetCustomerInfo(
+    private suspend fun verifyGetCustomerInfo(
         shouldHaveAcknowledgedPurchase: Boolean,
     ) {
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { fail("Expected success, got error: $it") },
-                onSuccess = { customerInfo ->
-                    assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-                        entitlementsToVerify,
-                    )
-                    if (shouldHaveAcknowledgedPurchase) {
-                        assertAcknowledgePurchaseDidHappen()
-                    } else {
-                        assertAcknowledgePurchaseDidNotHappen()
-                    }
-
-                    latch.countDown()
-                },
-            )
+        val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+            entitlementsToVerify,
+        )
+        if (shouldHaveAcknowledgedPurchase) {
+            assertAcknowledgePurchaseDidHappen()
+        } else {
+            assertAcknowledgePurchaseDidNotHappen()
         }
     }
 
-    private fun performPurchase(
+    private suspend fun performPurchase(
         shouldHaveAcknowledgedPurchase: Boolean = false,
-    ) {
+    ): Map<String, StoreTransaction> {
         mockBillingAbstract.mockQueryProductDetails()
 
-        var offerings: Offerings? = null
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getOfferingsWith(
-                onError = { fail("should be success. Error fetching offerings: $it") },
-                onSuccess = {
-                    offerings = it
-                    latch.countDown()
-                },
-            )
-        }
-        ensureBlockFinishes { latch ->
-            waitForProductEntitlementMappingToUpdate { latch.countDown() }
-        }
+        val offerings = Purchases.sharedInstance.awaitOfferings()
 
-        val packageToPurchase = offerings?.current?.availablePackages?.first()
+        waitForProductEntitlementMappingToUpdate()
+
+        val packageToPurchase = offerings.current?.availablePackages?.first()
             ?: fail("Couldn't get package to purchase")
 
         val activeTransaction = StoreTransactionFactory.createStoreTransaction(
@@ -159,27 +141,17 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
             latestPurchasesUpdatedListener!!.onPurchasesUpdated(activePurchases.values.toList())
         }
 
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.purchaseWith(
-                purchaseParams = PurchaseParams.Builder(activity, packageToPurchase).build(),
-                onError = { purchasesError, userCancelled ->
-                    fail(
-                        "Should be success. Error purchasing: $purchasesError",
-                    )
-                },
-                onSuccess = { transaction, customerInfo ->
-                    assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-                        entitlementsToVerify,
-                    )
-                    if (shouldHaveAcknowledgedPurchase) {
-                        assertAcknowledgePurchaseDidHappen()
-                    } else {
-                        assertAcknowledgePurchaseDidNotHappen()
-                    }
-                    latch.countDown()
-                },
-            )
+        val result = Purchases.sharedInstance.awaitPurchase(PurchaseParams.Builder(activity, packageToPurchase).build())
+        assertThat(result.customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+            entitlementsToVerify,
+        )
+        if (shouldHaveAcknowledgedPurchase) {
+            assertAcknowledgePurchaseDidHappen()
+        } else {
+            assertAcknowledgePurchaseDidNotHappen()
         }
+
+        return activePurchases
     }
 
     // endregion Helpers

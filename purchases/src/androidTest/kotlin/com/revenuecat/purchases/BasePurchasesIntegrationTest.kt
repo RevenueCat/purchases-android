@@ -23,6 +23,9 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -141,7 +144,11 @@ open class BasePurchasesIntegrationTest {
         context: Context,
         entitlementVerificationMode: EntitlementVerificationMode? = null,
         forceServerErrorsStrategy: ForceServerErrorStrategy? = null,
+        initialActivePurchases: Map<String, StoreTransaction>? = null,
     ) {
+        initialActivePurchases?.let {
+            mockActivePurchases(initialActivePurchases)
+        }
         this.forceServerErrorsStrategy = forceServerErrorsStrategy
         Purchases.resetSingleton()
         Purchases.configureSdk(
@@ -220,6 +227,21 @@ open class BasePurchasesIntegrationTest {
             editor.putString(key, value)
         }
         editor.commit()
+    }
+
+    protected suspend fun waitForProductEntitlementMappingToUpdate() {
+        suspendCoroutine { continuation ->
+            Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+                .updateProductEntitlementMappingCacheIfStale {
+                    if (it != null) {
+                        continuation.resumeWithException(
+                            AssertionError("Expected to get product entitlement mapping but got error: $it")
+                        )
+                    } else {
+                        continuation.resume(Unit)
+                    }
+                }
+        }
     }
 
     protected fun waitForProductEntitlementMappingToUpdate(completion: () -> Unit) {
