@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
@@ -47,6 +48,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
         assertThat(customerInfo.entitlements.active).isEmpty()
         assertThat(customerInfo.originalAppUserId).isEqualTo(appUserID)
+        assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED_ON_DEVICE)
     }
 
     @Test
