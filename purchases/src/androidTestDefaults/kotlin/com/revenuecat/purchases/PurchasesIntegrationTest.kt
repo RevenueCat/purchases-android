@@ -62,6 +62,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetched() {
+        if (isRunningLoadShedderIntegrationTests()) {
+            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
+            return
+        }
+
         val lock = CountDownLatch(1)
 
         onActivityReady {
@@ -77,6 +82,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
+        if (isRunningLoadShedderIntegrationTests()) {
+            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
+            return
+        }
+
         val lock = CountDownLatch(1)
 
         activityScenarioRule.scenario.onActivity {
