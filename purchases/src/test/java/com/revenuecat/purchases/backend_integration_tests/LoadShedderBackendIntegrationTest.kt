@@ -8,6 +8,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
+import java.net.URL
 
 internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
@@ -128,9 +129,10 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.GetOfferings("test-user-id").getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
