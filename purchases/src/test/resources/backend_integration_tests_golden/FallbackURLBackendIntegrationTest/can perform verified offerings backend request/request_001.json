@@ -2,7 +2,6 @@
   "url": "https:\/\/api.revenuecat.com\/v1\/subscribers\/test-user-id\/offerings",
   "method": "GET",
   "headers": {
-    "Authorization": "Bearer goog_sYbWGEsEMZlICxluJXzqnhtjNjd",
     "Content-Type": "application\/json",
     "X-Client-Bundle-ID": "com.revenuecat.purchases.backend_tests",
     "X-Client-Locale": "en-US",
