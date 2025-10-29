@@ -245,8 +245,7 @@ internal sealed interface PaywallState {
                         ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg?.also {
                             Logger.w(
                                 "Could not find default package for tab $selectedTabIndex. " +
-                                    "Using first package instead. This could be caused by a package that " +
-                                    "isn't marked as selected by default in the tab configuration.",
+                                    "Using first package instead. This could be caused by not having any package marked as selected by default.",
                             )
                         }
                 }
