@@ -292,7 +292,7 @@ internal class HTTPClient(
                     method = connection.requestMethod,
                     requestHeaders = getHeaders(
                         requestHeaders,
-                        path,
+                        fullURL,
                         refreshETag,
                         nonce,
                         shouldSignResponse,
