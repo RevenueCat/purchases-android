@@ -131,6 +131,9 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.metadata).isNotNull
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
 
+                    assertThat(offerings.current?.paywall).isNull()
+                    assertThat(offerings.current?.paywallComponents).isNotNull
+
                     lock.countDown()
                 },
             )
