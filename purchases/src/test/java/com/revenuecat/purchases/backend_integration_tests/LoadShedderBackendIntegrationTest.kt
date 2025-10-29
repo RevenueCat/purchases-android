@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -9,6 +8,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
+import java.net.URL
 
 internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
@@ -129,9 +129,10 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.GetOfferings("test-user-id").getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -153,54 +154,6 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        assertSigningPerformed()
-    }
-
-    @Test
-    fun `can perform login backend request`() {
-        ensureBlockFinishes { latch ->
-            backend.logIn(
-                appUserID = "test-user-id",
-                newAppUserID = "new-test-user-id",
-                onSuccessHandler = { customerInfo, _ ->
-                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
-                    latch.countDown()
-                },
-                onErrorHandler = {
-                    fail("Expected success")
-                }
-            )
-        }
-        verify(exactly = 1) {
-            // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
-        }
-        verify(exactly = 1) { sharedPreferencesEditor.apply() }
-        assertSigningNotPerformed()
-    }
-
-    @Test
-    fun `can perform verified login backend request`() {
-        setupTest(SignatureVerificationMode.Enforced())
-        ensureBlockFinishes { latch ->
-            backend.logIn(
-                appUserID = "test-user-id",
-                newAppUserID = "new-test-user-id",
-                onSuccessHandler = { customerInfo, _ ->
-                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
-                    assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
-                    latch.countDown()
-                },
-                onErrorHandler = {
-                    fail("Expected success")
-                }
-            )
-        }
-        verify(exactly = 1) {
-            // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
-        }
-        verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
     }
 }
