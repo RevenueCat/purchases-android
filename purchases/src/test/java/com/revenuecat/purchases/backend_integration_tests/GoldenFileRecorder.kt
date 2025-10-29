@@ -115,7 +115,7 @@ class GoldenFileRecorder(
             "x-revenuecat-data-source",
             "CF-Cache-Status",
             "Cache-Control",
-            // To revert: "Vary",
+            "Vary",
         )
 
         /**
