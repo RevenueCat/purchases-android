@@ -51,6 +51,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -69,7 +70,7 @@ internal class PurchasesFactory(
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
     ): Purchases {
@@ -96,7 +97,6 @@ internal class PurchasesFactory(
                 apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
-                forceServerErrors,
                 forceSigningError,
             )
 
@@ -182,6 +182,7 @@ internal class PurchasesFactory(
                 signingManager,
                 cache,
                 localeProvider = localeProvider,
+                forceServerErrorStrategy = forceServerErrorStrategy,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -352,6 +353,8 @@ internal class PurchasesFactory(
                 appConfig = appConfig,
             )
 
+            val purchaseParamsValidator = PurchaseParamsValidator()
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -379,6 +382,7 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
                 localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
+                purchaseParamsValidator = purchaseParamsValidator,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -429,11 +433,12 @@ internal class PurchasesFactory(
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 throw PurchasesException(
-                    PurchasesError(
+                    error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
-                            "RevenueCat dashboard and use its corresponding API key before releasing.",
                     ),
+                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
+                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
+                        "Test Store is not supported in production builds.",
                 )
             }
 

@@ -394,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.12.0-SNAPSHOT s3://purchases-docs/android/9.12.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -697,6 +697,8 @@ jobs:
           command: |
             bundle exec fastlane android run_backend_integration_tests
       - android/save_build_cache
+      - store_test_results: 
+          path: purchases/build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
@@ -739,12 +741,10 @@ jobs:
               #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
               PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
             fi
-            # Set base-sha to empty string if no PR number is found.
+            # Do not set base-sha if no PR number is found.
             PR_ARG=""
             if [ -n "$PR_NUM" ]; then
               PR_ARG="--pr-number $PR_NUM"
-            else
-              PR_ARG="--base-sha \"\""
             fi
 
             emerge upload snapshots \

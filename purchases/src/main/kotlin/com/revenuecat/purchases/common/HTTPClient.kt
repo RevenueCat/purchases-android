@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -47,6 +48,7 @@ internal class HTTPClient(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
+    private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -111,22 +113,46 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        if (appConfig.forceServerErrors) {
-            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-            return HTTPResult(
-                RCHTTPStatusCodes.ERROR,
-                payload = "",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+        fun canUseFallback(): Boolean =
+            endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
+
+        fun performRequestToFallbackURL(): HTTPResult {
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
+                    endpoint.getPath(useFallback = true),
+                    fallbackBaseURL,
+                )
+            }
+            return performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
             )
         }
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(
+                baseURL,
+                fallbackURLIndex > 0,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+            )
             callSuccessful = true
+        } catch (e: IOException) {
+            // Handle connection failures with fallback URLs
+            if (canUseFallback()) callResult = performRequestToFallbackURL() else throw e
         } finally {
             trackHttpRequestPerformedIfNeeded(
                 baseURL,
@@ -149,32 +175,17 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex,
             )
-        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
-            endpoint.supportsFallbackBaseURLs &&
-            fallbackURLIndex in fallbackBaseURLs.indices
-        ) {
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
             // Handle server errors with fallback URLs
-            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
-            log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
-            }
-            callResult = performRequest(
-                fallbackBaseURL,
-                endpoint,
-                body,
-                postFieldsToSign,
-                requestHeaders,
-                refreshETag,
-                fallbackBaseURLs,
-                fallbackURLIndex + 1,
-            )
+            callResult = performRequestToFallbackURL()
         }
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
     private fun performCall(
         baseURL: URL,
+        isFallbackURL: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -182,14 +193,30 @@ internal class HTTPClient(
         refreshETag: Boolean,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath()
+        val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+        val fullURL: URL
+
+        if (appConfig.runningTests) {
+            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+                warnLog { "Faking response for request to ${endpoint.getPath()}" }
+                return it
+            }
+        }
+
         try {
-            val fullURL = URL(baseURL, path)
+            fullURL = if (appConfig.runningTests &&
+                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
+            ) {
+                warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
+                URL(forceServerErrorStrategy.serverErrorURL)
+            } else {
+                URL(baseURL, path)
+            }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
@@ -197,7 +224,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
-                path,
+                fullURL,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -247,7 +274,7 @@ internal class HTTPClient(
             responseCode,
             payload,
             getETagHeader(connection),
-            path,
+            fullURL.toString(),
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
@@ -295,7 +322,7 @@ internal class HTTPClient(
     @Suppress("LongParameterList")
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
-        urlPath: String,
+        fullURL: URL,
         refreshETag: Boolean,
         nonce: String?,
         shouldSignResponse: Boolean,
@@ -324,7 +351,7 @@ internal class HTTPClient(
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
+            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 

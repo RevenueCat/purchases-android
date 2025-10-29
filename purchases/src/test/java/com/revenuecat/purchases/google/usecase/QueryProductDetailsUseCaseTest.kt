@@ -17,7 +17,10 @@ import com.revenuecat.purchases.utils.mockProductDetails
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -537,6 +540,51 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     // endregion retries
+
+    @Test
+    fun `If ExceptionInInitializerError is thrown when building QueryProductDetailsParams, returns StoreProblemError`() {
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+
+        // Mock QueryProductDetailsParams.Builder to throw ExceptionInInitializerError when setProductList is called
+        val mockBuilder = mockk<QueryProductDetailsParams.Builder>()
+        every { mockBuilder.setProductList(any()) } throws ExceptionInInitializerError(
+            RuntimeException("Simulated ExceptionInInitializerError")
+        )
+
+        mockkStatic(QueryProductDetailsParams::class)
+        every { QueryProductDetailsParams.newBuilder() } returns mockBuilder
+
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+                appInBackground = false
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { _, request ->
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        unmockkStatic(QueryProductDetailsParams::class)
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError!!.underlyingErrorMessage).isEqualTo("Error while building QueryProductDetailsParams in Billing client: Simulated ExceptionInInitializerError")
+    }
 
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()

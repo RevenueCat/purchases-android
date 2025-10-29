@@ -78,6 +78,7 @@ class PaywallActionTests {
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
 
+                is PaywallAction.External.LaunchWebCheckout,
                 is PaywallAction.External.PurchasePackage -> PurchaseButtonComponent(
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
@@ -126,6 +127,9 @@ class PaywallActionTests {
             is PaywallAction.External.RestorePurchases -> ButtonComponent.Action.RestorePurchases
             is PaywallAction.External.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
+            )
+            is PaywallAction.External.LaunchWebCheckout -> error(
+                "LaunchWebCheckout is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
         }
 
