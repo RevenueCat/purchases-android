@@ -201,7 +201,7 @@ internal class HTTPClient(
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
     private fun performCall(
         baseURL: URL,
         isFallbackURL: Boolean,
@@ -276,36 +276,38 @@ internal class HTTPClient(
         }
 
         // Notify listener if present
-        requestResponseListener?.let {
-            val responseHeaders = mutableMapOf<String, String>()
-            connection.headerFields.forEach { (key, values) ->
-                // Skip null keys (status line) and collect all headers
-                if (key != null && values.isNotEmpty()) {
-                    responseHeaders[key] = values.joinToString(", ")
+        if (appConfig.runningTests) {
+            requestResponseListener?.let {
+                val responseHeaders = mutableMapOf<String, String>()
+                connection.headerFields.forEach { (key, values) ->
+                    // Skip null keys (status line) and collect all headers
+                    if (key != null && values.isNotEmpty()) {
+                        responseHeaders[key] = values.joinToString(", ")
+                    }
                 }
-            }
 
-            try {
-                val fullURL = URL(baseURL, path)
-                it.onRequestResponse(
-                    url = fullURL.toString(),
-                    method = connection.requestMethod,
-                    requestHeaders = getHeaders(
-                        requestHeaders,
-                        fullURL,
-                        refreshETag,
-                        nonce,
-                        shouldSignResponse,
-                        postFieldsToSignHeader,
-                    ),
-                    requestBody = jsonBody?.toString(),
-                    responseCode = responseCode,
-                    responseHeaders = responseHeaders,
-                    responseBody = payload,
-                )
-            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                // Don't let listener errors break the request
-                warnLog { "RequestResponseListener error: ${e.message}" }
+                try {
+                    val fullURL = URL(baseURL, path)
+                    it.onRequestResponse(
+                        url = fullURL.toString(),
+                        method = connection.requestMethod,
+                        requestHeaders = getHeaders(
+                            requestHeaders,
+                            fullURL,
+                            refreshETag,
+                            nonce,
+                            shouldSignResponse,
+                            postFieldsToSignHeader,
+                        ),
+                        requestBody = jsonBody?.toString(),
+                        responseCode = responseCode,
+                        responseHeaders = responseHeaders,
+                        responseBody = payload,
+                    )
+                } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                    // Don't let listener errors break the request
+                    warnLog { "RequestResponseListener error: ${e.message}" }
+                }
             }
         }
 
