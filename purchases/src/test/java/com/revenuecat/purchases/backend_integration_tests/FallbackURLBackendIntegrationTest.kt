@@ -39,36 +39,38 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertThat(error).isNull()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetProductEntitlementMapping.getPath(), any())
+            sharedPreferencesEditor.putString(
+                "https://api-production.8-lives-cat.io/v1/product_entitlement_mapping",
+                any(),
+            )
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
     }
 
-//    Commenting out test until we fix signing in fallback URL. See Linear SDK-4152
-//    @Test
-//    fun `can perform verified product entitlement mapping backend request`() {
-//        setupTest(SignatureVerificationMode.Enforced())
-//        ensureBlockFinishes { latch ->
-//            backend.getProductEntitlementMapping(
-//                onSuccessHandler = { productEntitlementMapping ->
-//                    assertThat(productEntitlementMapping.mappings.size).isEqualTo(2)
-//                    assertThat(productEntitlementMapping.mappings["cheapest_subs"]).isEqualTo(
-//                        ProductEntitlementMapping.Mapping(
-//                            productIdentifier = "cheapest_subs",
-//                            basePlanId = "annual",
-//                            entitlements = listOf("pro_cat")
-//                        )
-//                    )
-//                    latch.countDown()
-//                },
-//                onErrorHandler = {
-//                    fail("Expected success but got error: $it")
-//                }
-//            )
-//        }
-//        assertSigningPerformed()
-//    }
+    @Test
+    fun `can perform verified product entitlement mapping backend request`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        ensureBlockFinishes { latch ->
+            backend.getProductEntitlementMapping(
+                onSuccessHandler = { productEntitlementMapping ->
+                    assertThat(productEntitlementMapping.mappings.size).isEqualTo(2)
+                    assertThat(productEntitlementMapping.mappings["cheapest_subs"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "cheapest_subs",
+                            basePlanId = "annual",
+                            entitlements = listOf("pro_cat")
+                        )
+                    )
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success but got error: $it")
+                }
+            )
+        }
+        assertSigningPerformed()
+    }
 
     @Test
     fun `can perform offerings backend request`() {
@@ -87,29 +89,31 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
+            sharedPreferencesEditor.putString(
+                "https://api-production.8-lives-cat.io/v1/offerings",
+                any(),
+            )
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
     }
 
-//    Commenting out test until we fix signing in fallback URL. See Linear SDK-4152
-//    @Test
-//    fun `can perform verified offerings backend request`() {
-//        setupTest(SignatureVerificationMode.Enforced())
-//        ensureBlockFinishes { latch ->
-//            backend.getOfferings(
-//                appUserID = "test-user-id",
-//                appInBackground = false,
-//                onSuccess = { offeringsResponse ->
-//                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
-//                    latch.countDown()
-//                },
-//                onError = { error, _ ->
-//                    fail("Expected success. Got error: $error")
-//                }
-//            )
-//        }
-//        assertSigningPerformed()
-//    }
+    @Test
+    fun `can perform verified offerings backend request`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        ensureBlockFinishes { latch ->
+            backend.getOfferings(
+                appUserID = "test-user-id",
+                appInBackground = false,
+                onSuccess = { offeringsResponse ->
+                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
+                    latch.countDown()
+                },
+                onError = { error, _ ->
+                    fail("Expected success. Got error: $error")
+                }
+            )
+        }
+        assertSigningPerformed()
+    }
 }
