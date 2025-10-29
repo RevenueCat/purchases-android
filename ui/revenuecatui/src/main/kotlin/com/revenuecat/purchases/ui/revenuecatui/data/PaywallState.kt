@@ -240,7 +240,9 @@ internal sealed interface PaywallState {
                     // package when the tab changes.
                     if (packagesOutsideTabs.contains(selectedPackage)) return
 
-                    selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
+                    selectedPackage = selectedPackageByTab[selectedTabIndex]
+                        ?: initialSelectedPackageOutsideTabs
+                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
