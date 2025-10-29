@@ -13,6 +13,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -65,6 +66,7 @@ internal interface PaywallViewModel {
     fun closePaywall()
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
+    fun invalidateCustomerInfoCache()
 
     /**
      * Purchase the selected package
@@ -204,6 +206,10 @@ internal class PaywallViewModelImpl(
             return finalUrl.toString()
         }
         return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+    }
+
+    override fun invalidateCustomerInfoCache() {
+        purchases.invalidateVirtualCurrenciesCache()
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
