@@ -65,6 +65,7 @@ internal interface PaywallViewModel {
     fun closePaywall()
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
+    fun invalidateCustomerInfoCache()
 
     /**
      * Purchase the selected package
@@ -204,6 +205,10 @@ internal class PaywallViewModelImpl(
             return finalUrl.toString()
         }
         return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+    }
+
+    override fun invalidateCustomerInfoCache() {
+        purchases.invalidateVirtualCurrenciesCache()
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
