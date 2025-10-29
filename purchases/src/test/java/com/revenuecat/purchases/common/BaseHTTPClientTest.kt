@@ -107,18 +107,19 @@ internal abstract class BaseHTTPClientTest {
     }
 
     protected fun enqueue(
-        endpoint: Endpoint,
+        urlPath: String,
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
         requestDateHeader: Date? = null,
         server: MockWebServer = this.server,
     ) {
+        val urlString = server.url(urlPath).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = requestDateHeader,
                 verificationResult = verificationResult

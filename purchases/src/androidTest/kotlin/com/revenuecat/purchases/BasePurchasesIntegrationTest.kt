@@ -6,13 +6,16 @@ import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -20,6 +23,10 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
@@ -65,8 +72,13 @@ open class BasePurchasesIntegrationTest {
 
     internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
     internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = forceServerErrorsStrategy?.serverErrorURL ?: super.serverErrorURL
         override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
             return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
+        }
+        override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+            return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
         }
     }
 
@@ -132,7 +144,11 @@ open class BasePurchasesIntegrationTest {
         context: Context,
         entitlementVerificationMode: EntitlementVerificationMode? = null,
         forceServerErrorsStrategy: ForceServerErrorStrategy? = null,
+        initialActivePurchases: Map<String, StoreTransaction>? = null,
     ) {
+        initialActivePurchases?.let {
+            mockActivePurchases(initialActivePurchases)
+        }
         this.forceServerErrorsStrategy = forceServerErrorsStrategy
         Purchases.resetSingleton()
         Purchases.configureSdk(
@@ -213,5 +229,47 @@ open class BasePurchasesIntegrationTest {
         editor.commit()
     }
 
+    protected suspend fun waitForProductEntitlementMappingToUpdate() {
+        suspendCoroutine { continuation ->
+            Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+                .updateProductEntitlementMappingCacheIfStale {
+                    if (it != null) {
+                        continuation.resumeWithException(
+                            AssertionError("Expected to get product entitlement mapping but got error: $it"),
+                        )
+                    } else {
+                        continuation.resume(Unit)
+                    }
+                }
+        }
+    }
+
+    protected fun waitForProductEntitlementMappingToUpdate(completion: () -> Unit) {
+        Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+            .updateProductEntitlementMappingCacheIfStale {
+                if (it != null) {
+                    fail("Expected to get product entitlement mapping but got error: $it")
+                } else {
+                    completion()
+                }
+            }
+    }
+
     // endregion
+
+    // region assertions
+
+    protected fun assertAcknowledgePurchaseDidNotHappen() {
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    protected fun assertAcknowledgePurchaseDidHappen(timeout: Duration = testTimeout) {
+        verify(timeout = timeout.inWholeMilliseconds) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    // endregion assertions
 }

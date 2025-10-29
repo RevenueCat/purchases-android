@@ -47,7 +47,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun canPerformASimpleGet() {
         enqueue(
-            Endpoint.LogIn,
+            Endpoint.LogIn.getPath(),
             expectedResult = HTTPResult.createResult()
         )
 
@@ -62,7 +62,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun forwardsTheResponseCode() {
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = 223)
         )
 
@@ -77,7 +77,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun parsesTheBody() {
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
         )
 
@@ -104,7 +104,11 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+        enqueue(
+            "force-server-error",
             expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
         )
 
@@ -132,7 +136,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
         )
 
@@ -154,7 +158,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -177,7 +181,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -209,7 +213,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -226,7 +230,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -243,7 +247,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -269,7 +273,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -296,7 +300,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -315,7 +319,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -332,7 +336,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -358,7 +362,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult
         )
 
@@ -375,7 +379,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig)
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             HTTPResult.createResult()
         )
 
@@ -417,12 +421,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         val urlPathWithVersion = "/v1/subscribers/identify"
+        val urlString = server.url(urlPathWithVersion).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -434,7 +439,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 expectedResult.responseCode,
                 payload = expectedResult.payload,
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -460,7 +465,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest does not add nonce header to request if verification mode disabled`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.VERIFIED)
         )
 
@@ -480,7 +485,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest uses request time header if present when getting result from etag cache`() {
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(),
             requestDateHeader = Date(1234567890)
         )
@@ -511,7 +516,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `payload is returned with trailing new lines`() {
         enqueue(
-            Endpoint.LogIn,
+            Endpoint.LogIn.getPath(),
             expectedResult = HTTPResult.createResult(payload = "{}\n")
         )
 
@@ -539,7 +544,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val responseTime = (requestEndTime - requestStartTime).milliseconds
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult()
         )
 
@@ -569,7 +574,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val backendErrorCode = 1234
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = responseCode, payload = "{\"code\":$backendErrorCode}")
         )
 
@@ -599,7 +604,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 RCHTTPStatusCodes.BAD_REQUEST,
                 "not uh json",
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -642,12 +647,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val endpoint = Endpoint.LogIn
         val urlPathWithVersion = "/v1/subscribers/identify"
+        val urlString = server.url(urlPathWithVersion).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -659,7 +665,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 expectedResult.responseCode,
                 payload = expectedResult.payload,
                 eTagHeader = any(),
-                urlPathWithVersion,
+                urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -702,12 +708,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(),
             server = fallbackServer,
         )
@@ -729,7 +735,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val request1 = fallbackServer.takeRequest()
         assertThat(request1.method).isEqualTo("GET")
-        assertThat(request1.path).isEqualTo("/v1/subscribers/test_user_id/offerings")
+        assertThat(request1.path).isEqualTo("/v1/offerings")
     }
 
     @Test
@@ -744,12 +750,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.NOT_FOUND
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(),
             server = fallbackServer,
         )
@@ -782,12 +788,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(),
             server = fallbackServer,
         )
@@ -820,12 +826,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.NOT_FOUND),
             server = fallbackServer,
         )
@@ -854,12 +860,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode),
             server = fallbackServer,
         )
@@ -890,12 +896,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}"),
             server = fallbackServer
         )
@@ -929,12 +935,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val serverDownResponseCode = RCHTTPStatusCodes.ERROR
 
         enqueue(
-            endpoint,
+            endpoint.getPath(),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode)
         )
 
         enqueue(
-            endpoint,
+            endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.SUCCESS),
             server = fallbackServer,
         )
@@ -1029,7 +1035,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 statusCode,
                 invalidJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -1040,7 +1046,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 RCHTTPStatusCodes.SUCCESS,
                 validJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED
@@ -1113,7 +1119,19 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 RCHTTPStatusCodes.SUCCESS,
                 validJsonPayload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = server.url(endpoint.getPath()).toString(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED

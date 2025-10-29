@@ -53,21 +53,16 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
     }
 
     private fun waitForInitialRequestsToEnd(completion: () -> Unit) {
-        Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
-            .updateProductEntitlementMappingCacheIfStale {
-                if (it != null) {
-                    fail("Expected to get product entitlement mapping but got error: $it")
-                } else {
-                    Purchases.sharedInstance.getCustomerInfoWith(
-                        onError = { customerInfoError ->
-                            fail("Expected to succeed getting customer info. Got $customerInfoError")
-                        },
-                        onSuccess = {
-                            completion()
-                        },
-                    )
-                }
-            }
+        waitForProductEntitlementMappingToUpdate {
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { customerInfoError ->
+                    fail("Expected to succeed getting customer info. Got $customerInfoError")
+                },
+                onSuccess = {
+                    completion()
+                },
+            )
+        }
     }
 
     // endregion helpers

@@ -170,11 +170,13 @@ dependencies {
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)
+    androidTestImplementation(libs.androidx.core.testing)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
 
