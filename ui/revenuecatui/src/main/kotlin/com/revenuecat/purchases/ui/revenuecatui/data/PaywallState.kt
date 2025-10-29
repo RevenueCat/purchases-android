@@ -242,7 +242,13 @@ internal sealed interface PaywallState {
 
                     selectedPackage = selectedPackageByTab[selectedTabIndex]
                         ?: initialSelectedPackageOutsideTabs
-                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg
+                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg?.also {
+                            Logger.w(
+                                "Could not find default package for tab $selectedTabIndex. " +
+                                    "Using first package instead. This could be caused by a package that " +
+                                    "isn't marked as selected by default in the tab configuration.",
+                            )
+                        }
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
