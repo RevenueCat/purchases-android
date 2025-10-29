@@ -119,7 +119,10 @@ internal class HTTPClient(
         fun performRequestToFallbackURL(): HTTPResult {
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
+                    endpoint.getPath(useFallback = true),
+                    fallbackBaseURL,
+                )
             }
             return performRequest(
                 fallbackBaseURL,
@@ -137,7 +140,15 @@ internal class HTTPClient(
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(
+                baseURL,
+                fallbackURLIndex > 0,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+            )
             callSuccessful = true
         } catch (e: IOException) {
             // Handle connection failures with fallback URLs
@@ -174,6 +185,7 @@ internal class HTTPClient(
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
     private fun performCall(
         baseURL: URL,
+        isFallbackURL: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -181,12 +193,13 @@ internal class HTTPClient(
         refreshETag: Boolean,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath()
+        val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+        val fullURL: URL
 
         if (appConfig.runningTests) {
             forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
@@ -194,11 +207,12 @@ internal class HTTPClient(
                 return it
             }
         }
+
         try {
-            val fullURL = if (appConfig.runningTests &&
+            fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
-                warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
+                warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
                 URL(baseURL, path)
@@ -210,7 +224,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
-                path,
+                fullURL,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -260,7 +274,7 @@ internal class HTTPClient(
             responseCode,
             payload,
             getETagHeader(connection),
-            path,
+            fullURL.toString(),
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
@@ -308,7 +322,7 @@ internal class HTTPClient(
     @Suppress("LongParameterList")
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
-        urlPath: String,
+        fullURL: URL,
         refreshETag: Boolean,
         nonce: String?,
         shouldSignResponse: Boolean,
@@ -337,7 +351,7 @@ internal class HTTPClient(
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
+            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 
