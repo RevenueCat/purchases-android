@@ -1,5 +1,5 @@
 {
-  "url": "https:\/\/api-production.8-lives-cat.io\/v1\/offerings",
+  "url": "https:\/\/api.revenuecat.com\/v1\/product_entitlement_mapping",
   "method": "GET",
   "headers": {
     "Authorization": "Bearer goog_sYbWGEsEMZlICxluJXzqnhtjNjd",

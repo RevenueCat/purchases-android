@@ -701,8 +701,8 @@ jobs:
           command: |
             if ! git diff --quiet purchases/src/test/resources/backend_integration_tests_golden/; then
               echo "ERROR: Golden test files have been modified!"
-              echo "The following files have changes:"
-              git diff --name-only purchases/src/test/resources/backend_integration_tests_golden/
+              echo "The following changes have been found:"
+              git diff purchases/src/test/resources/backend_integration_tests_golden/
               echo ""
               echo "Golden test files should not be modified during test execution."
               echo "If you need to update the golden files, commit the changes explicitly."
