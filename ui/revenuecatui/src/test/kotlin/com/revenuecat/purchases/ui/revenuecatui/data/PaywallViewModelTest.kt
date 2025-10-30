@@ -16,10 +16,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -70,9 +67,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
-import java.util.Date
-import java.util.UUID
 
+@Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
@@ -186,7 +182,12 @@ class PaywallViewModelTest {
         activity = mockk()
         context = mockk()
 
-        listener = mockk()
+        listener = mockk {
+            every { onPurchasePackageInitiated(any(), any()) } answers {
+                val resume = secondArg<() -> Unit>()
+                resume()
+            }
+        }
 
         dismissInvoked = false
 
@@ -635,7 +636,8 @@ class PaywallViewModelTest {
             return
         }
 
-        assertThat(state.errorMessage).isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
+        assertThat(state.errorMessage)
+            .isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
     }
 
     @Test
