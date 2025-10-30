@@ -69,7 +69,7 @@ class PaywallView : CompatComposeView {
     private var shouldDisplayDismissButton: Boolean? = null
     private var internalListener: PaywallListener = object : PaywallListener {
         override fun onPurchasePackageInitiated(packageId: String, resume: () -> Unit) {
-            listener?.onPurchasePackageInitiated(packageId, resume)
+            listener?.onPurchasePackageInitiated(packageId, resume) ?: resume()
         }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
