@@ -4,26 +4,25 @@
 
 
 ## RevenueCat SDK
-### ✨ New Features
-* Add webCheckoutURL property to Offering and Package (#2747) via Toni Rico (@tonidero)
 ### 🐞 Bugfixes
-* Use the fallback endpoint in more failure scenarios (#2754) via JayShortway (@JayShortway)
-* Protect against developers excluding blockstore dependency (#2745) via Toni Rico (@tonidero)
+* Remove GOOGLE_PRODUCT_MISSING_INFINITELY_RECURRING_BILLING_PHASE log message (#2767) via Will Taylor (@fire-at-will)
 
 ## RevenueCatUI SDK
 ### Paywallv2
-#### ✨ New Features
-* Add support for Web Purchase buttons in paywalls (#2751) via Toni Rico (@tonidero)
-### Customer Center
 #### 🐞 Bugfixes
-* Add elevation to surfaces in Customer Center to fix default appearance (#2741) via Cesar de la Vega (@vegaro)
+* Invalidate CustomerInfo cache when opening a WPB in paywalls (#2785) via Toni Rico (@tonidero)
+* FIX: Video component - felt slow on first appearance (#2784) via Jacob Rakidzich (@JZDesign)
+* Add package fallback to tab selection when there's no default selected (#2782) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [CAT-2067 EXPERIMENTAL]: Add-On Subscription Options (#2763) via Will Taylor (@fire-at-will)
-* Avoids the `PaywallComponentsTemplate_Preview` from being rendered by Emerge (#2761) via JayShortway (@JayShortway)
-* Handle error building `QueryProductDetailsParams` in some devices (#2764) via Toni Rico (@tonidero)
-* Add more proper error message when using test store API key in release builds (#2762) via Toni Rico (@tonidero)
-* [Experimental]: Support Multi-Line Subscriptions (#2668) via Will Taylor (@fire-at-will)
-* Add PurchaseButtonComponent WPL field deserialization (#2749) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `25c7fb8` to `525d48c` (#2748) via dependabot[bot] (@dependabot[bot])
-* Add extra message test store dialog (#2746) via Toni Rico (@tonidero)
+* Add golden tests for requests and responses in backend integration tests (#2781) via Toni Rico (@tonidero)
+* Unlock entitlements from add-ons in offline entitlements mode (#2776) via Will Taylor (@fire-at-will)
+* Add fallback URL integration tests (#2769) via Toni Rico (@tonidero)
+* [SDK-4152] Use static fallback urls (#2780) via Antonio Pallares (@ajpallares)
+* Skip tests not supported in fortress (#2783) via Toni Rico (@tonidero)
+* Keep cache logic similar to iOS + ensure path extension is on file (#2750) via Jacob Rakidzich (@JZDesign)
+* Use cached offerings on network errors (#2772) via Toni Rico (@tonidero)
+* [EXTERNAL] Update Emerge snapshots to best/latest practices (#2777) by @rbro112 (#2779) via Toni Rico (@tonidero)
+* Change ForceServerErrorStrategy to be a `fun interface` to simplify instantiation (#2773) via Toni Rico (@tonidero)
+* Stores backend integration test result on CircleCI (#2771) via JayShortway (@JayShortway)
+* Change test server down mechanism to use new server down endpoint (#2765) via Toni Rico (@tonidero)

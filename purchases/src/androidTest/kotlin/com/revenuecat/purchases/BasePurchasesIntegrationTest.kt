@@ -17,6 +17,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.BeforeClass
 import org.junit.Rule
 import java.net.URL
@@ -90,6 +91,7 @@ open class BasePurchasesIntegrationTest {
     @After
     fun tearDown() {
         _activity = null
+        forceServerErrorsStrategy = null
         Purchases.resetSingleton()
     }
 
@@ -253,6 +255,20 @@ open class BasePurchasesIntegrationTest {
                     completion()
                 }
             }
+    }
+
+    protected fun confirmRunningLoadShedderTests() {
+        assumeTrue(
+            "Test will only run when running load shedder integration test",
+            Constants.isRunningLoadShedderIntegrationTests == "true",
+        )
+    }
+
+    protected fun confirmNotRunningLoadShedderTests() {
+        assumeTrue(
+            "Test will not run when running load shedder integration test",
+            Constants.isRunningLoadShedderIntegrationTests == "false",
+        )
     }
 
     // endregion
