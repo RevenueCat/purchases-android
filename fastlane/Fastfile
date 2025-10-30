@@ -622,11 +622,7 @@ DESC
         "Android purchases integration tests (#{suite}) failed"
       end
 
-    slack_url = if suite == 'loadshedder'
-      ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
-    else # production
-      ENV["SLACK_URL_PURCHASES_INTEGRATION_TESTS"]
-    end
+    slack_url = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
 
     # Only send Slack notification if webhook URL is configured
     if slack_url && slack_url.length > 0
