@@ -201,10 +201,6 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
-    protected fun isRunningLoadShedderIntegrationTests(): Boolean {
-        return Constants.isRunningLoadShedderIntegrationTests.toBoolean()
-    }
-
     private fun clearAllSharedPreferences(context: Context) {
         context.getSharedPreferences(
             RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
@@ -257,17 +253,14 @@ open class BasePurchasesIntegrationTest {
             }
     }
 
-    protected fun confirmRunningLoadShedderTests() {
-        assumeTrue(
-            "Test will only run when running load shedder integration test",
-            Constants.isRunningLoadShedderIntegrationTests == "true",
-        )
+    protected fun confirmProductionTestSuite() {
+        confirmSupportedTestSuites(setOf(Constants.TestSuite.PRODUCTION))
     }
 
-    protected fun confirmNotRunningLoadShedderTests() {
+    protected fun confirmSupportedTestSuites(testSuites: Set<Constants.TestSuite>) {
         assumeTrue(
-            "Test will not run when running load shedder integration test",
-            Constants.isRunningLoadShedderIntegrationTests == "false",
+            "Test will not run in this test. Supported test suites for this test: $testSuites. Got: ${Constants.testSuite}",
+            Constants.testSuite in testSuites,
         )
     }
 
