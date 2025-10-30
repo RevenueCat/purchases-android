@@ -696,8 +696,21 @@ jobs:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
+      - run:
+          name: Verify no changes to golden test files
+          command: |
+            if ! git diff --quiet purchases/src/test/resources/backend_integration_tests_golden/; then
+              echo "ERROR: Golden test files have been modified!"
+              echo "The following changes have been found:"
+              git diff purchases/src/test/resources/backend_integration_tests_golden/
+              echo ""
+              echo "Golden test files should not be modified during test execution."
+              echo "If you need to update the golden files, commit the changes explicitly."
+              exit 1
+            fi
+            echo "Golden test files verification passed - no changes detected"
       - android/save_build_cache
-      - store_test_results: 
+      - store_test_results:
           path: purchases/build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:

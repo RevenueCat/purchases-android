@@ -38,6 +38,24 @@ import java.net.URLConnection
 import java.util.Date
 import kotlin.time.Duration
 
+/**
+ * Listener interface for observing HTTP requests and responses.
+ * Useful for testing and recording network interactions.
+ */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+internal interface RequestResponseListener {
+    @Suppress("LongParameterList")
+    fun onRequestResponse(
+        url: String,
+        method: String,
+        requestHeaders: Map<String, String>,
+        requestBody: String?,
+        responseCode: Int,
+        responseHeaders: Map<String, String>,
+        responseBody: String,
+    )
+}
+
 @Suppress("LongParameterList")
 internal class HTTPClient(
     private val appConfig: AppConfig,
@@ -49,6 +67,7 @@ internal class HTTPClient(
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
+    private val requestResponseListener: RequestResponseListener? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -182,7 +201,7 @@ internal class HTTPClient(
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
     private fun performCall(
         baseURL: URL,
         isFallbackURL: Boolean,
@@ -254,6 +273,42 @@ internal class HTTPClient(
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
+        }
+
+        // Notify listener if present
+        if (appConfig.runningTests) {
+            requestResponseListener?.let {
+                val responseHeaders = mutableMapOf<String, String>()
+                connection.headerFields.forEach { (key, values) ->
+                    // Skip null keys (status line) and collect all headers
+                    if (key != null && values.isNotEmpty()) {
+                        responseHeaders[key] = values.joinToString(", ")
+                    }
+                }
+
+                try {
+                    val fullURL = URL(baseURL, path)
+                    it.onRequestResponse(
+                        url = fullURL.toString(),
+                        method = connection.requestMethod,
+                        requestHeaders = getHeaders(
+                            requestHeaders,
+                            fullURL,
+                            refreshETag,
+                            nonce,
+                            shouldSignResponse,
+                            postFieldsToSignHeader,
+                        ),
+                        requestBody = jsonBody?.toString(),
+                        responseCode = responseCode,
+                        responseHeaders = responseHeaders,
+                        responseBody = payload,
+                    )
+                } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                    // Don't let listener errors break the request
+                    warnLog { "RequestResponseListener error: ${e.message}" }
+                }
+            }
         }
 
         val verificationResult = if (shouldSignResponse &&
