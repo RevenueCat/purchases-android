@@ -132,7 +132,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
 
                     assertThat(offerings.current?.paywall).isNull()
-                    assertThat(offerings.current?.paywallComponents).isNotNull
+                    // Uncomment once load shedder starts returning ui_config
+                    // assertThat(offerings.current?.paywallComponents).isNotNull
 
                     lock.countDown()
                 },

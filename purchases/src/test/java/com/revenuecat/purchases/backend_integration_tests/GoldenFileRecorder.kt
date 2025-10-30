@@ -117,6 +117,7 @@ class GoldenFileRecorder(
             "Cache-Control",
             "Vary",
             "Authorization",
+            "X-Version",
         )
 
         /**

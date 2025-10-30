@@ -15,8 +15,7 @@
     "X-Platform-Device": "robolectric",
     "X-Platform-Flavor": "test-flavor",
     "X-Platform-Version": "35",
-    "X-Preferred-Locales": "en_US",
-    "X-Version": "9.13.0-SNAPSHOT"
+    "X-Preferred-Locales": "en_US"
   },
   "body": {
     "events": [
