@@ -73,6 +73,7 @@ internal class PurchasesFactory(
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString,
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -98,6 +99,7 @@ internal class PurchasesFactory(
                 dangerousSettings,
                 runningIntegrationTests,
                 forceSigningError,
+                baseUrlString = baseUrlString,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {

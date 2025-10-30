@@ -594,7 +594,7 @@ jobs:
     parameters:
       suite:
         type: enum
-        enum: ["production", "loadshedder"]
+        enum: ["production", "loadshedder", "loadshedder-us-east-2"]
     steps:
       - checkout
       - install-sdkman
@@ -985,7 +985,7 @@ workflows:
             - slack-secrets
           matrix:
             parameters:
-              suite: ["production", "loadshedder"]
+              suite: ["production", "loadshedder", "loadshedder-us-east-2"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -1049,6 +1049,10 @@ workflows:
     jobs:
       - run-firebase-tests-purchases-integration-tests:
           suite: "loadshedder"
+          context:
+            - slack-secrets
+      - run-firebase-tests-purchases-integration-tests:
+          suite: "loadshedder-us-east-2"
           context:
             - slack-secrets
 

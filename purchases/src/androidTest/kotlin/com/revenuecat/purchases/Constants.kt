@@ -16,12 +16,14 @@ object Constants {
     enum class TestSuite {
         PRODUCTION,
         LOAD_SHEDDER,
+        LOAD_SHEDDER_US_EAST_2,
         ;
 
         companion object {
             fun valueForString(testSuiteString: String): TestSuite {
                 return when (testSuiteString) {
                     "loadshedder" -> LOAD_SHEDDER
+                    "loadshedder-us-east-2" -> LOAD_SHEDDER_US_EAST_2
                     "production" -> PRODUCTION
                     else -> error("Expected valid test suite value. Got $testSuiteString")
                 }

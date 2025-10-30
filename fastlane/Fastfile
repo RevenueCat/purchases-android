@@ -265,12 +265,12 @@ platform :android do
 
   desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  desc "Accepts a suite parameter: 'production' or 'loadshedder'"
+  desc "Accepts a suite parameter: 'production', 'loadshedder', 'loadshedder-us-east-2'"
   lane :run_purchases_integration_tests do |options|
-    suite = options[:suite] || UI.user_error!("Missing suite parameter. Provide 'production' or 'loadshedder'")
+    suite = options[:suite] || UI.user_error!("Missing suite parameter. Provide 'production', 'loadshedder' or 'loadshedder-us-east-2'")
     
-    unless ['production', 'loadshedder'].include?(suite)
-      UI.user_error!("Invalid suite parameter. Must be 'production' or 'loadshedder'")
+    unless ['production', 'loadshedder', 'loadshedder-us-east-2'].include?(suite)
+      UI.user_error!("Invalid suite parameter. Must be 'production', 'loadshedder' or 'loadshedder-us-east-2'")
     end
 
     if suite == 'production'
@@ -307,12 +307,6 @@ platform :android do
     else
       send_slack_purchases_integration_test(suite: suite, success: true)
     end
-  end
-
-  desc "Build and run purchases module load shedder integration tests"
-  desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_load_shedder_purchases_integration_tests do |options|
-    run_purchases_integration_tests(suite: 'loadshedder')
   end
 
   desc "Build and run purchases module custom entitlement computation integration tests"
