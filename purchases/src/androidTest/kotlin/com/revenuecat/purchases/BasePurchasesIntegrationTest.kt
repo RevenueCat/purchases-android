@@ -259,7 +259,8 @@ open class BasePurchasesIntegrationTest {
 
     protected fun confirmSupportedTestSuites(testSuites: Set<Constants.TestSuite>) {
         assumeTrue(
-            "Test will not run in this test. Supported test suites for this test: $testSuites. Got: ${Constants.testSuite}",
+            "Test will not run in this test. " +
+                "Supported test suites for this test: $testSuites. Got: ${Constants.testSuite}",
             Constants.testSuite in testSuites,
         )
     }

@@ -10,5 +10,22 @@ object Constants {
     // comma separated list of active entitlements to verify
     const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
 
-    const val isRunningLoadShedderIntegrationTests = "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS"
+    private const val testSuiteString = "TEST_SUITE_INTEGRATION_TESTS"
+    val testSuite: TestSuite = TestSuite.valueForString(testSuiteString)
+
+    enum class TestSuite {
+        PRODUCTION,
+        LOAD_SHEDDER,
+        ;
+
+        companion object {
+            fun valueForString(testSuiteString: String): TestSuite {
+                return when (testSuiteString) {
+                    "loadshedder" -> LOAD_SHEDDER
+                    "production" -> PRODUCTION
+                    else -> error("Expected valid test suite value. Got $testSuiteString")
+                }
+            }
+        }
+    }
 }
