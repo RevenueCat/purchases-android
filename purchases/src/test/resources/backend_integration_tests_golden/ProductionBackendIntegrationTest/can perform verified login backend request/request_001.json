@@ -16,8 +16,7 @@
     "X-Platform-Flavor": "test-flavor",
     "X-Platform-Version": "35",
     "X-Post-Params-Hash": "app_user_id,new_app_user_id:sha256:cd708bc07b717be0663a15494254d72bd8a22093c5ff2cdd2bb44c624dedb464",
-    "X-Preferred-Locales": "en_US",
-    "X-Version": "9.13.0-SNAPSHOT"
+    "X-Preferred-Locales": "en_US"
   },
   "body": {
     "app_user_id": "test-user-id",
