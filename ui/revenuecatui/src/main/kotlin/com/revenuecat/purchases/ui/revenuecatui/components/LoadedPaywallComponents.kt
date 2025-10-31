@@ -576,7 +576,7 @@ internal fun WithOptionalVideoBackground(
     background: BackgroundStyle?,
     modifier: Modifier = Modifier,
     shape: androidx.compose.ui.graphics.Shape = RectangleShape,
-    content: @Composable (Modifier) -> Unit
+    content: @Composable () -> Unit
 ) {
     if (background is BackgroundStyle.Video) {
         ViewWithVideoBackground(
@@ -585,11 +585,9 @@ internal fun WithOptionalVideoBackground(
             modifier = modifier,
             shape = shape,
         ) {
-            // if the container uses the modifier, we don't want to forward it down to the content
-            content(Modifier)
+            content()
         }
     } else {
-        // if there is no container, the content should be able to take the modifier and use it.
-        content(modifier)
+        content()
     }
 }

@@ -73,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -617,14 +618,33 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        WithOptionalVideoBackground(
-            state = state,
-            background = backgroundStyle,
-            // we somehow need to determine the size and ensure that it's passed into the video component view
-            modifier = outerShapeModifier.then(borderModifier),
-        ) { mod ->
+        if (backgroundStyle is BackgroundStyle.Video) {
+            // Video backgrounds require a Box wrapper with explicit sizing
+            Box(
+                modifier = modifier
+                    .size(stackState.size)
+                    .then(outerShapeModifier)
+                    .clip(composeShape)
+                    .then(borderModifier),
+            ) {
+                WithOptionalVideoBackground(
+                    state = state,
+                    background = backgroundStyle,
+                    modifier = Modifier.matchParentSize(),
+                    shape = composeShape,
+                ) {
+                    stack(
+                        Modifier
+                            .then(innerShapeModifier)
+                            .conditional(stackState.applyBottomWindowInsets) {
+                                windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                            },
+                    )
+                }
+            }
+        } else {
             stack(
-                mod.then(
+                outerShapeModifier.then(borderModifier).then(
                     innerShapeModifier
                         .conditional(stackState.applyBottomWindowInsets) {
                             windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
