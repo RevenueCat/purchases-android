@@ -642,8 +642,8 @@ DESC
         ],
         fields: [
           {
-            title: "Test suite",
-            value: ENV["CIRCLE_JOB"],
+            title: "SDK",
+            value: ENV["CIRCLE_PROJECT_REPONAME"],
             short: true
           },
           {
@@ -652,8 +652,8 @@ DESC
             short: true
           },
           {
-            title: "SDK",
-            value: ENV["CIRCLE_PROJECT_REPONAME"],
+            title: "Test suite",
+            value: ENV["CIRCLE_JOB"],
             short: true
           },
         ]
