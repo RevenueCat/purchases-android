@@ -73,6 +73,7 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+        const val ENABLE_EXTRA_REQUEST_LOGGING = false
     }
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -252,6 +253,10 @@ internal class HTTPClient(
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
+            if (ENABLE_EXTRA_REQUEST_LOGGING) {
+                verboseLog { "Request extra logging. Will perform request with curl: ${toCurlRequest(httpRequest)}" }
+            }
+
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
@@ -265,6 +270,14 @@ internal class HTTPClient(
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
+            if (ENABLE_EXTRA_REQUEST_LOGGING) {
+                verboseLog { "Request extra logging. Response code: $responseCode. Body: $payload" }
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            if (ENABLE_EXTRA_REQUEST_LOGGING) {
+                verboseLog { "Request extra logging. Exception thrown: $e" }
+            }
+            throw e
         } finally {
             inputStream?.close()
             connection.disconnect()
@@ -334,6 +347,26 @@ internal class HTTPClient(
             getRequestDateHeader(connection),
             verificationResult,
         )
+    }
+
+    private fun toCurlRequest(httpRequest: HTTPRequest): String {
+        val builder = StringBuilder("curl -v ")
+
+        val method = if (httpRequest.body == null) { "GET" } else { "POST" }
+
+        builder.append("-X ").append(method).append(" \\\n  ")
+
+        for (entry in httpRequest.headers) {
+            builder.append("-H \"").append(entry.key).append(":")
+            builder.append(entry.value)
+            builder.append("\" \\\n  ")
+        }
+
+        if (httpRequest.body != null) builder.append("-d '").append(httpRequest.body.toString()).append("' \\\n  ")
+
+        builder.append("\"").append(httpRequest.fullURL).append("\"")
+
+        return builder.toString()
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
