@@ -624,7 +624,7 @@ DESC
     message_binary_solo =
       if !success
         # TODO Add @oncall-product @oncall-infra before merging
-        "@oncall-sdk Android purchases integration tests (#{suite}) failed"
+        "<!subteam^S0939BTV0SY|oncall-sdk> Android purchases integration tests (#{suite}) failed"
       else
         nil
       end
