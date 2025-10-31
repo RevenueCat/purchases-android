@@ -60,7 +60,6 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.ViewWithVideoBackground
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalVideoBackground
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
@@ -74,7 +73,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -619,23 +617,20 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        Box(outerShapeModifier.then(borderModifier)) {
-            WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
-                stack(
+        WithOptionalVideoBackground(
+            state = state,
+            background = backgroundStyle,
+            // we somehow need to determine the size and ensure that it's passed into the video component view
+            modifier = outerShapeModifier.then(borderModifier),
+        ) { mod ->
+            stack(
+                mod.then(
                     innerShapeModifier
                         .conditional(stackState.applyBottomWindowInsets) {
                             windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
                         },
-                )
-            }
-
-            ViewWithVideoBackground(
-                state = state,
-                background = backgroundStyle,
-                modifier = Modifier.matchParentSize(),
-                shape = composeShape,
-            ) {
-            }
+                ),
+            )
         }
     } else if (nestedBadge != null) {
         Box(
@@ -644,6 +639,8 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
+            // The video component must have a calculated size to render the video. The matchParentSize modifier
+            // is only used for the video component if it's in the background
             WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
                 stack(Modifier.then(innerShapeModifier))
             }
@@ -662,6 +659,8 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
+            // The video component must have a calculated size to render the video. The matchParentSize modifier
+            // is only used for the video component if it's in the background
             WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
                 stack(borderModifier.then(innerShapeModifier))
             }
