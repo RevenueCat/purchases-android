@@ -74,6 +74,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -536,12 +537,43 @@ internal class PurchasesOrchestrator(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
+        val productIdsQueriedWithoutBasePlan = productIds
+            .filter { !it.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR) }
+            .toSet()
+
+        val requestedBasePlansByProductId = mutableMapOf<String, MutableSet<String>>()
+        val normalizedProductIds = productIds.map { productId ->
+            if (productId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                val normalizedId = productId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                val basePlanId = productId.substringAfter(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                if (normalizedId !in productIdsQueriedWithoutBasePlan) {
+                    requestedBasePlansByProductId.getOrPut(normalizedId) { mutableSetOf() }.add(basePlanId)
+                }
+                normalizedId
+            } else {
+                productId
+            }
+        }.toSet()
+
         getProductsOfTypes(
-            productIds.toSet(),
+            normalizedProductIds,
             types,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
-                    callback.onReceived(storeProducts)
+                    val filteredProducts = if (requestedBasePlansByProductId.isEmpty()) {
+                        storeProducts
+                    } else {
+                        storeProducts.filter { storeProduct ->
+                            val productId = storeProduct.purchasingData.productId
+                            val requestedBasePlans = requestedBasePlansByProductId[productId]
+                            if (requestedBasePlans != null) {
+                                (storeProduct as? GoogleStoreProduct)?.basePlanId in requestedBasePlans
+                            } else {
+                                true
+                            }
+                        }
+                    }
+                    callback.onReceived(filteredProducts)
                 }
 
                 override fun onError(error: PurchasesError) {

@@ -72,6 +72,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             navigateToProxyFragment()
         }
 
+        binding.getProductsButton.setOnClickListener {
+            showGetProductsDialog()
+        }
+
         binding.purchaseProductIdButton.setOnClickListener {
             showPurchaseProductIdDialog()
         }
@@ -225,6 +229,59 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                                 }
                             },
                         )
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        showError(error)
+                    }
+                },
+            )
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            dialog.cancel()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun showGetProductsDialog() {
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        builder.setTitle("Enter Product ID(s) to fetch (comma-separated):")
+        val input = EditText(context)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        input.hint = "e.g., connect or connect:connect-monthly"
+        builder.setView(input)
+        builder.setPositiveButton("Get Products") { dialog, which ->
+            val productIdsString = input.text.toString()
+            if (productIdsString.isBlank()) {
+                showToast("Please enter at least one product ID")
+                return@setPositiveButton
+            }
+            val productIds = productIdsString.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+            Purchases.sharedInstance.getProducts(
+                productIds,
+                object : GetStoreProductsCallback {
+                    override fun onReceived(storeProducts: List<StoreProduct>) {
+                        if (storeProducts.isEmpty()) {
+                            showToast("No products found for IDs: ${productIds.joinToString()}")
+                            return
+                        }
+                        val productInfo = storeProducts.joinToString("\n\n") { product ->
+                            val basePlanInfo = (product as? GoogleStoreProduct)?.basePlanId?.let {
+                                "\nBase Plan ID: $it"
+                            } ?: ""
+                            "Product ID: ${product.id}\n" +
+                                "Name: ${product.name}\n" +
+                                "Price: ${product.price.formatted}\n" +
+                                "Type: ${product.type}" +
+                                basePlanInfo
+                        }
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Found ${storeProducts.size} product(s)")
+                            .setMessage(productInfo)
+                            .setPositiveButton("OK", null)
+                            .show()
                     }
 
                     override fun onError(error: PurchasesError) {
