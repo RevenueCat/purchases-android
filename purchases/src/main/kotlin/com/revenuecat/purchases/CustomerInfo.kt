@@ -91,9 +91,35 @@ class CustomerInfo internal constructor(
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
     private val jsonObject: JSONObject,
-    internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.MAIN,
+    internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
     internal val source: CustomerInfoSource = CustomerInfoSource.CACHE,
 ) : Parcelable, RawDataContainer<JSONObject> {
+
+    constructor(
+        entitlements: EntitlementInfos,
+        allExpirationDatesByProduct: Map<String, Date?>,
+        allPurchaseDatesByProduct: Map<String, Date?>,
+        requestDate: Date,
+        schemaVersion: Int,
+        firstSeen: Date,
+        originalAppUserId: String,
+        managementURL: Uri?,
+        originalPurchaseDate: Date?,
+        jsonObject: JSONObject,
+    ): this(
+        entitlements = entitlements,
+        allExpirationDatesByProduct = allExpirationDatesByProduct,
+        allPurchaseDatesByProduct = allPurchaseDatesByProduct,
+        requestDate = requestDate,
+        schemaVersion = schemaVersion,
+        firstSeen = firstSeen,
+        originalAppUserId = originalAppUserId,
+        managementURL = managementURL,
+        originalPurchaseDate = originalPurchaseDate,
+        jsonObject = jsonObject,
+        originalSource = CustomerInfoOriginalSource.DEFAULT,
+        source = CustomerInfoSource.CACHE,
+    )
 
     /**
      * @return Set of active subscription productIds
