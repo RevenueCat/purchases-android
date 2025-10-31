@@ -48,6 +48,11 @@ android {
             name = "ENABLE_VIDEO_COMPONENT",
             value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
         )
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_EXTRA_REQUEST_LOGGING",
+            value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
+        )
 
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
