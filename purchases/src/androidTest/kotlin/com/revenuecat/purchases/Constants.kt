@@ -10,20 +10,20 @@ object Constants {
     // comma separated list of active entitlements to verify
     const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
 
-    private const val testSuiteString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
-    val testBackendEnvironment: TestBackendEnvironment = TestBackendEnvironment.valueForString(testSuiteString)
+    private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
+    val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
 
-    enum class TestBackendEnvironment {
+    enum class BackendEnvironment {
         PRODUCTION,
         LOAD_SHEDDER,
         ;
 
         companion object {
-            fun valueForString(testBackendEnvironmentString: String): TestBackendEnvironment {
-                return when (testBackendEnvironmentString) {
+            fun valueForString(backendEnvironmentString: String): BackendEnvironment {
+                return when (backendEnvironmentString) {
                     "loadshedder" -> LOAD_SHEDDER
                     "production" -> PRODUCTION
-                    else -> error("Expected valid test backend_environment value. Got $testBackendEnvironmentString")
+                    else -> error("Expected valid backend_environment value. Got $backendEnvironmentString")
                 }
             }
         }

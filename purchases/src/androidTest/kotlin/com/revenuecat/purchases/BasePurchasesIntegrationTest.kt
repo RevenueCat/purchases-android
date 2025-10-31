@@ -254,14 +254,14 @@ open class BasePurchasesIntegrationTest {
     }
 
     protected fun confirmProductionBackendEnvironment() {
-        confirmSupportedBackendEnvironment(setOf(Constants.TestBackendEnvironment.PRODUCTION))
+        confirmSupportedBackendEnvironment(setOf(Constants.BackendEnvironment.PRODUCTION))
     }
 
-    protected fun confirmSupportedBackendEnvironment(backendEnvironments: Set<Constants.TestBackendEnvironment>) {
+    protected fun confirmSupportedBackendEnvironment(backendEnvironments: Set<Constants.BackendEnvironment>) {
         assumeTrue(
-            "Test will not run in ${Constants.testBackendEnvironment} environment. " +
+            "Test will not run in ${Constants.backendEnvironment} environment. " +
                 "It will only run in these environments: ${backendEnvironments.joinToString()}.",
-            Constants.testBackendEnvironment in backendEnvironments,
+            Constants.backendEnvironment in backendEnvironments,
         )
     }
 
