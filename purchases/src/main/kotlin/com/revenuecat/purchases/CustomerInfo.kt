@@ -106,7 +106,7 @@ class CustomerInfo internal constructor(
         managementURL: Uri?,
         originalPurchaseDate: Date?,
         jsonObject: JSONObject,
-    ): this(
+    ) : this(
         entitlements = entitlements,
         allExpirationDatesByProduct = allExpirationDatesByProduct,
         allPurchaseDatesByProduct = allPurchaseDatesByProduct,
