@@ -60,7 +60,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.ViewWithBackground
+import com.revenuecat.purchases.ui.revenuecatui.components.ViewWithVideoBackground
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -491,7 +491,7 @@ private fun MainStackComponent(
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
-        ViewWithBackground(
+        ViewWithVideoBackground(
             state = state,
             background = backgroundStyle,
             shape = composeShape,
@@ -602,10 +602,11 @@ private fun MainStackComponent(
         null
     }
 
-    val outerShapeModifier = remember(shadowStyle) {
+    val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
         Modifier
             .padding(stackState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
+            .applyIfNotNull(backgroundStyle) { background(it, composeShape) }
     }
 
     val borderModifier = remember(stackState, borderStyle) {
