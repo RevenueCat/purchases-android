@@ -3,7 +3,7 @@
   "headers": {
     "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "8455",
+    "Content-Length": "8777",
     "Content-Type": "application\/json",
     "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
@@ -227,7 +227,24 @@
         "email": "",
         "should_warn_customer_to_update": true,
         "support_tickets": {
-          "allow_creation": false
+          "allow_creation": false,
+          "customer_details": {
+            "active_entitlements": false,
+            "app_user_id": false,
+            "att_consent": false,
+            "country": false,
+            "device_version": false,
+            "email": false,
+            "facebook_anon_id": false,
+            "idfa": false,
+            "idfv": false,
+            "ip": false,
+            "last_opened": false,
+            "last_seen_app_version": false,
+            "total_spent": false,
+            "user_since": false
+          },
+          "customer_type": "not_active"
         }
       }
     },
