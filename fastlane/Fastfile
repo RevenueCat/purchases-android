@@ -637,11 +637,6 @@ DESC
     end
   end
 
-  lane :send_slack_load_shedder_integration_test do |options|
-    # Keep for backward compatibility, delegates to unified method
-    send_slack_purchases_integration_test(suite: 'loadshedder', success: options[:success] || false)
-  end
-
   desc "Updates paywall-preview-resources submodule and creates/updates PR"
   lane :update_paywall_preview_resources_submodule do |options|
     branch_name = "pw2-update-paywall-preview-resources-submodule"
