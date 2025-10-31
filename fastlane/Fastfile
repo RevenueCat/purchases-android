@@ -629,39 +629,7 @@ DESC
         nil
       end
 
-    if message_binary_solo
-      slack(
-        message: message_binary_solo,
-        slack_url: slack_url_feed, # TODO Change to slack_url_binary_solo before merging
-        success: success,
-        default_payloads: [:git_branch],
-        attachment_properties: {
-          actions: [
-            {
-              type: "button",
-              text: "View CircleCI logs",
-              url: ENV["CIRCLE_BUILD_URL"]
-            }
-          ],
-          fields: [
-            {
-              title: "Environment",
-              value: suite,
-              short: true
-            },
-            {
-              title: "SDK",
-              value: ENV["CIRCLE_PROJECT_REPONAME"],
-              short: true
-            },
-          ]
-        }
-      )
-    end
-
-    slack(
-      message: message_feed,
-      slack_url: slack_url_feed,
+    slack_options = {
       success: success,
       default_payloads: [:git_branch],
       attachment_properties: {
@@ -685,6 +653,22 @@ DESC
           },
         ]
       }
+    }
+
+    if message_binary_solo
+      slack(
+        slack_options.merge(
+          message: message_binary_solo,
+          slack_url: slack_url_feed # TODO Change to slack_url_binary_solo before merging
+        )
+      )
+    end
+
+    slack(
+      slack_options.merge(
+        message: message_feed,
+        slack_url: slack_url_feed
+      )
     )
   end
 
