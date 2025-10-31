@@ -3,14 +3,21 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,13 +50,17 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentView
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -58,10 +69,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
+@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -75,29 +88,30 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
-
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
-        Column {
-            ComponentView(
-                style = style,
-                state = state,
-                onClick = onClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-            )
-            footerComponentStyle?.let {
+        ViewWithBackground(state, background, modifier) {
+            Column {
                 ComponentView(
-                    style = it,
+                    style = style,
                     state = state,
                     onClick = onClick,
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
                 )
+                footerComponentStyle?.let {
+                    ComponentView(
+                        style = it,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -113,7 +127,13 @@ private suspend fun handleClick(
         is PaywallAction.Internal -> when (action) {
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
                 is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
-                    state.sheet.show(action.destination.sheet, state) { handleClick(it, state, externalClickHandler) }
+                    state.sheet.show(action.destination.sheet, state) {
+                        handleClick(
+                            it,
+                            state,
+                            externalClickHandler,
+                        )
+                    }
             }
         }
     }
@@ -494,3 +514,54 @@ private fun previewBottomSheet(
     )
 
 private const val MILLIS_2025_01_25 = 1737763200000
+
+
+@Composable
+internal fun ViewWithBackground(
+    state: PaywallState.Loaded.Components,
+    background: BackgroundStyle?,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RectangleShape,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(modifier = modifier.applyIfNotNull(background) { background(it, shape) }) {
+        when (val background = background) {
+            is BackgroundStyle.Video -> {
+                val videoComponent = VideoComponentStyle(
+                    sources = nonEmptyMapOf(state.locale.platformLocale.toLocaleId() to background.sources),
+                    fallbackSources = nonEmptyMapOf(
+                        state.locale.platformLocale.toLocaleId() to background.fallbackImage,
+                    ),
+                    visible = true,
+                    showControls = false,
+                    autoplay = true,
+                    loop = background.loop,
+                    muteAudio = background.muteAudio,
+                    size = Size(width = Fill, height = Fill),
+                    shape = null,
+                    overlay = background.colorOverlay,
+                    contentScale = background.contentScale,
+                    rcPackage = null,
+                    tabIndex = null,
+                    ignoreTopWindowInsets = true,
+                    overrides = emptyList(),
+                    padding = PaddingValues(),
+                    margin = PaddingValues(),
+                    border = null,
+                    shadow = null,
+                )
+
+                VideoComponentView(
+                    style = videoComponent,
+                    state = state,
+                    modifier = modifier,
+//                        .windowInsetsPadding(WindowInsets(0, 0, 0, 0))
+//                        .fillMaxSize(),
+                )
+            }
+
+            else -> {}
+        }
+        content()
+    }
+}

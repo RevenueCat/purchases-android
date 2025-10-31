@@ -64,7 +64,7 @@ internal sealed interface BackgroundStyle {
         @get:JvmSynthetic val loop: Boolean,
         @get:JvmSynthetic val muteAudio: Boolean,
         @get:JvmSynthetic val contentScale: ContentScale,
-        @get:JvmSynthetic val colorOverlay: ColorStyle?,
+        @get:JvmSynthetic val colorOverlay: ColorStyles?,
     ) : BackgroundStyle
 }
 
@@ -161,15 +161,14 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
             }
         }
         is BackgroundStyles.Video -> {
-            val colorOverlay = background.colorOverlay?.forCurrentTheme
-            remember(background, colorOverlay) {
+            remember(background) {
                 BackgroundStyle.Video(
                     sources = background.sources,
                     fallbackImage = background.fallbackImage,
                     loop = background.loop,
                     muteAudio = background.muteAudio,
                     contentScale = background.contentScale,
-                    colorOverlay = colorOverlay,
+                    colorOverlay = background.colorOverlay,
                 )
             }
         }
