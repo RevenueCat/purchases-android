@@ -302,10 +302,10 @@ platform :android do
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      slack_backend_integration_test_results(suite: suite, success: false)
+      slack_backend_integration_test_results(environment: suite, success: false)
       raise
     else
-      slack_backend_integration_test_results(suite: suite, success: true)
+      slack_backend_integration_test_results(environment: suite, success: true)
     end
   end
 
@@ -607,7 +607,7 @@ DESC
       # return TODO enable this before merging
     end
 
-    suite = options[:suite] || UI.user_error!("Missing suite parameter")
+    environment = options[:environment] || UI.user_error!("Missing environment parameter")
     success = options[:success] || false
     slack_url_feed = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"] ||
       UI.user_error!("Missing required SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS environment variable. Make sure to provide the slack-secrets CircleCI context.")
@@ -643,7 +643,7 @@ DESC
         fields: [
           {
             title: "Environment",
-            value: suite,
+            value: environment,
             short: true
           },
           {
