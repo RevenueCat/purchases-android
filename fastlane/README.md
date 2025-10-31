@@ -235,10 +235,10 @@ Builds a Purchase Tester APK and prompts for:
 * Amazon pem path (optional)
 
 
-### android send_slack_purchases_integration_test
+### android slack_backend_integration_test_results
 
 ```sh
-[bundle exec] fastlane android send_slack_purchases_integration_test
+[bundle exec] fastlane android slack_backend_integration_test_results
 ```
 
 

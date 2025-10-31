@@ -302,10 +302,10 @@ platform :android do
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_purchases_integration_test(suite: suite, success: false)
+      slack_backend_integration_test_results(suite: suite, success: false)
       raise
     else
-      send_slack_purchases_integration_test(suite: suite, success: true)
+      slack_backend_integration_test_results(suite: suite, success: true)
     end
   end
 
@@ -601,7 +601,7 @@ DESC
     end
   end
 
-  lane :send_slack_purchases_integration_test do |options|
+  lane :slack_backend_integration_test_results do |options|
     if ENV["CI"] != "true"
       UI.message("Not running in CI environment, skipping slack notification.")
       # return TODO enable this before merging
@@ -648,7 +648,7 @@ DESC
 
   lane :send_slack_load_shedder_integration_test do |options|
     # Keep for backward compatibility, delegates to unified method
-    send_slack_purchases_integration_test(suite: 'loadshedder', success: options[:success] || false)
+    slack_backend_integration_test_results(suite: 'loadshedder', success: options[:success] || false)
   end
 
   desc "Updates paywall-preview-resources submodule and creates/updates PR"
