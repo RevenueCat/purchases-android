@@ -44,8 +44,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {
-        Purchases.logLevel = LogLevel.VERBOSE
-
         ensureBlockFinishes { latch ->
             setUpTest {
                 latch.countDown()
