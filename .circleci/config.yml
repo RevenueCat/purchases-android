@@ -1043,9 +1043,11 @@ workflows:
 
   daily-load-shedder-integration-tests:
     when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+      or:
+        - and:
+            - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+            - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+        - equal: [ "better-slack-alerts", << pipeline.git.branch >> ]
     jobs:
       - run-firebase-tests-purchases-integration-tests:
           suite: "loadshedder"
