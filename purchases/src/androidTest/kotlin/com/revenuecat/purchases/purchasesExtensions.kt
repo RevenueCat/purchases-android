@@ -21,7 +21,7 @@ internal fun Purchases.Companion.configure(
         baseUrlString = if (Constants.testSuite != Constants.TestSuite.LOAD_SHEDDER_US_EAST_2) {
             AppConfig.baseUrlString
         } else {
-            "https://fortress2.revenuecat.com/"
+            "https://fortress-us-east-2.revenuecat.com/"
         },
     ).also {
         @SuppressLint("RestrictedApi")

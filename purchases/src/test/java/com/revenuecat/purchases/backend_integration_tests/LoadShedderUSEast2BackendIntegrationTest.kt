@@ -7,6 +7,6 @@ import java.net.URL
 internal class LoadShedderUSEast2BackendIntegrationTest: LoadShedderBackendIntegrationTest() {
     @Before
     fun setup() {
-        every { appConfig.baseURL } returns URL("https://fortress2.revenuecat.com")
+        every { appConfig.baseURL } returns URL("https://fortress-us-east-2.revenuecat.com/")
     }
 }
