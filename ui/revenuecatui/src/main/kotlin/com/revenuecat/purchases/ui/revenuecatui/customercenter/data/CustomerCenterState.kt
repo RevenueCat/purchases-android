@@ -38,6 +38,7 @@ internal sealed class CustomerCenterState(
         ),
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
         @get:JvmSynthetic val virtualCurrencies: VirtualCurrencies? = null,
+        @get:JvmSynthetic val purchasesWithActions: Set<PurchaseInformation> = emptySet(),
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination

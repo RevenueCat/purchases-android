@@ -83,16 +83,14 @@ internal fun PurchaseInformationCardView(
                     modifier = Modifier.weight(1f),
                 )
                 when {
-                    !purchaseInformation.isSubscription && !isDetailedView -> {
+                    onCardClick != null && !isDetailedView -> {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(
                                 CustomerCenterConstants.Card.BADGE_HORIZONTAL_PADDING,
                             ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            if (purchaseInformation.isLifetime) {
-                                PurchaseStatusBadge(purchaseInformation, localization)
-                            }
+                            PurchaseStatusBadge(purchaseInformation, localization)
                             Icon(
                                 imageVector = KeyboardArrowRight,
                                 contentDescription = null,
