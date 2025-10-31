@@ -642,6 +642,11 @@ DESC
         ],
         fields: [
           {
+            title: "Test suite",
+            value: ENV["CIRCLE_JOB"],
+            short: true
+          },
+          {
             title: "Environment",
             value: environment,
             short: true
