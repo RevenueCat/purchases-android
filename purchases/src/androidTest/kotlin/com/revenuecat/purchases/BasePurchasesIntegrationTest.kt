@@ -253,15 +253,15 @@ open class BasePurchasesIntegrationTest {
             }
     }
 
-    protected fun confirmProductionTestSuite() {
-        confirmSupportedTestSuites(setOf(Constants.TestSuite.PRODUCTION))
+    protected fun confirmProductionBackendEnvironment() {
+        confirmSupportedBackendEnvironment(setOf(Constants.TestBackendEnvironment.PRODUCTION))
     }
 
-    protected fun confirmSupportedTestSuites(testSuites: Set<Constants.TestSuite>) {
+    protected fun confirmSupportedBackendEnvironment(backendEnvironments: Set<Constants.TestBackendEnvironment>) {
         assumeTrue(
-            "Test will not run in this test. " +
-                "Supported test suites for this test: $testSuites. Got: ${Constants.testSuite}",
-            Constants.testSuite in testSuites,
+            "Test will not run in ${Constants.testBackendEnvironment} environment. " +
+                "It will only run in these environments: ${backendEnvironments.joinToString()}.",
+            Constants.testBackendEnvironment in backendEnvironments,
         )
     }
 

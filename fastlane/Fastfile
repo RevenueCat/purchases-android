@@ -265,15 +265,15 @@ platform :android do
 
   desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  desc "Accepts a suite parameter: 'production' or 'loadshedder'"
+  desc "Accepts a backend_environment parameter: 'production' or 'loadshedder'"
   lane :run_purchases_integration_tests do |options|
-    suite = options[:suite] || UI.user_error!("Missing suite parameter. Provide 'production' or 'loadshedder'")
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production' or 'loadshedder'")
     
-    unless ['production', 'loadshedder'].include?(suite)
-      UI.user_error!("Invalid suite parameter. Must be 'production' or 'loadshedder'")
+    unless ['production', 'loadshedder'].include?(backend_environment)
+      UI.user_error!("Invalid backend_environment parameter. Must be 'production' or 'loadshedder'")
     end
 
-    if suite == 'production'
+    if backend_environment == 'production'
       app_name = 'integrationTest'
       api_key = ENV['REVENUECAT_API_KEY']
       google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
@@ -297,22 +297,22 @@ platform :android do
         product_id_to_purchase: product_id_to_purchase,
         base_plan_id_to_purchase: base_plan_id_to_purchase,
         active_entitlements_to_verify: active_entitlements_to_verify,
-        suite: suite
+        backend_environment: backend_environment
       )
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_purchases_integration_test(suite: suite, success: false)
+      send_slack_purchases_integration_test(backend_environment: backend_environment, success: false)
       raise
     else
-      send_slack_purchases_integration_test(suite: suite, success: true)
+      send_slack_purchases_integration_test(backend_environment: backend_environment, success: true)
     end
   end
 
   desc "Build and run purchases module load shedder integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
   lane :run_load_shedder_purchases_integration_tests do |options|
-    run_purchases_integration_tests(suite: 'loadshedder')
+    run_purchases_integration_tests(backend_environment: 'loadshedder')
   end
 
   desc "Build and run purchases module custom entitlement computation integration tests"
@@ -354,7 +354,7 @@ platform :android do
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
                                         proxy_url: nil, build_type: 'release', flavor: 'defaults', 
-                                        suite: 'production')
+                                        backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -383,8 +383,8 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     replace_text_in_files(
-      previous_text: "TEST_SUITE_INTEGRATION_TESTS",
-      new_text: suite,
+      previous_text: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS",
+      new_text: backend_environment,
       paths_of_files_to_update: [constants_path]
     )
     unless proxy_url.nil?
@@ -602,14 +602,14 @@ DESC
   end
 
   lane :send_slack_purchases_integration_test do |options|
-    suite = options[:suite] || UI.user_error!("Missing suite parameter")
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter")
     success = options[:success] || false
     
     message =
       if success
-        "Android purchases integration tests (#{suite}) finished successfully"
+        "Android purchases integration tests (#{backend_environment}) finished successfully"
       else
-        "Android purchases integration tests (#{suite}) failed"
+        "Android purchases integration tests (#{backend_environment}) failed"
       end
 
     slack_url = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
@@ -623,13 +623,8 @@ DESC
         default_payloads: [:git_branch]
       )
     else
-      UI.message("Skipping Slack notification for #{suite} suite - no webhook URL configured")
+      UI.message("Skipping Slack notification for #{backend_environment} backend environment - no webhook URL configured")
     end
-  end
-
-  lane :send_slack_load_shedder_integration_test do |options|
-    # Keep for backward compatibility, delegates to unified method
-    send_slack_purchases_integration_test(suite: 'loadshedder', success: options[:success] || false)
   end
 
   desc "Updates paywall-preview-resources submodule and creates/updates PR"

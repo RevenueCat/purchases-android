@@ -62,7 +62,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetched() {
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
 
@@ -79,7 +79,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
 
@@ -196,7 +196,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
         val lock = CountDownLatch(1)
@@ -227,7 +227,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
@@ -258,7 +258,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
         val lock = CountDownLatch(1)
@@ -289,7 +289,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testCachedVirtualCurrencies() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)

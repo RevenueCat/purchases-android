@@ -589,10 +589,10 @@ jobs:
             - purchases/test_artifacts/integrationTest-test.apk
 
   run-firebase-tests-purchases-integration-tests:
-    description: "Run purchases module integration tests for Android in Firebase. Accepts suite parameter: 'production' or 'loadshedder'"
+    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'loadshedder'"
     <<: *android-executor
     parameters:
-      suite:
+      backend_environment:
         type: enum
         enum: ["production", "loadshedder"]
     steps:
@@ -609,7 +609,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests suite:'<< parameters.suite >>'
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
       - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
@@ -985,7 +985,7 @@ workflows:
             - slack-secrets
           matrix:
             parameters:
-              suite: ["production", "loadshedder"]
+              backend_environment: ["production", "loadshedder"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -1048,7 +1048,7 @@ workflows:
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
       - run-firebase-tests-purchases-integration-tests:
-          suite: "loadshedder"
+          backend_environment: "loadshedder"
           context:
             - slack-secrets
 
