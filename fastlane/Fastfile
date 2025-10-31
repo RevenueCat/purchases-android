@@ -280,7 +280,6 @@ platform :android do
       product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
       base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
       active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
-      is_load_shedder_integration_tests = false
     else # loadshedder
       app_name = 'loadShedderIntegrationTest'
       api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
@@ -288,7 +287,6 @@ platform :android do
       product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
       base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
       active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
-      is_load_shedder_integration_tests = true
     end
 
     begin
@@ -299,7 +297,7 @@ platform :android do
         product_id_to_purchase: product_id_to_purchase,
         base_plan_id_to_purchase: base_plan_id_to_purchase,
         active_entitlements_to_verify: active_entitlements_to_verify,
-        is_load_shedder_integration_tests: is_load_shedder_integration_tests
+        suite: suite
       )
 
       run_firebase_integration_tests(app_name)
@@ -356,7 +354,7 @@ platform :android do
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
                                         proxy_url: nil, build_type: 'release', flavor: 'defaults', 
-                                        is_load_shedder_integration_tests: false)
+                                        suite: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -384,19 +382,11 @@ platform :android do
       allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
-    if is_load_shedder_integration_tests
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "true",
-        paths_of_files_to_update: [constants_path]
-      )
-    else
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "false",
-        paths_of_files_to_update: [constants_path]
-      )
-    end
+    replace_text_in_files(
+      previous_text: "TEST_SUITE_INTEGRATION_TESTS",
+      new_text: suite,
+      paths_of_files_to_update: [constants_path]
+    )
     unless proxy_url.nil?
       replace_text_in_files(
         previous_text: "NO_PROXY_URL",

@@ -135,6 +135,18 @@ Build purchases module integration tests pointing to production
 
 Build purchases module integration tests pointing to production
 
+### android run_purchases_integration_tests
+
+```sh
+[bundle exec] fastlane android run_purchases_integration_tests
+```
+
+Build and run purchases module integration tests
+
+This requires the google cloud cli to be installed and initialized.
+
+Accepts a suite parameter: 'production' or 'loadshedder'
+
 ### android run_load_shedder_purchases_integration_tests
 
 ```sh
@@ -221,6 +233,14 @@ Builds a Purchase Tester APK and prompts for:
 * Version name
 * Min SDK Version
 * Amazon pem path (optional)
+
+
+### android send_slack_purchases_integration_test
+
+```sh
+[bundle exec] fastlane android send_slack_purchases_integration_test
+```
+
 
 
 ### android send_slack_load_shedder_integration_test
