@@ -208,6 +208,7 @@ private fun progressColorFor(backgroundStyles: BackgroundStyles?): Color {
     return when (backgroundStyles) {
         is BackgroundStyles.Color -> progressColorFor(backgroundStyles.color.forCurrentTheme)
         is BackgroundStyles.Image -> Color.White
+        is BackgroundStyles.Video -> Color.White
     }
 }
 

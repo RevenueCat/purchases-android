@@ -1,3 +1,4 @@
+
 @file:JvmSynthetic
 
 package com.revenuecat.purchases.ui.revenuecatui.components.modifier
@@ -39,4 +40,9 @@ internal fun Modifier.background(
                     contentScale = background.contentScale,
                 )
                 .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
+        is BackgroundStyle.Video ->
+            // Video backgrounds are handled specially - they need to be rendered
+            // in a Box behind the content, so we just clip the shape here
+            // TODO…………
+            this.clip(shape)
     }
