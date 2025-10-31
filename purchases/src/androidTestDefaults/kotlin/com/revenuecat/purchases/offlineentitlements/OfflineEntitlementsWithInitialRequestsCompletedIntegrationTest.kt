@@ -121,7 +121,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
     fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         // It would fail in load shedder, since it fails to try to cache an initial CustomerInfo
         // without making a purchase
-        confirmProductionTestSuite()
+        confirmProductionBackendEnvironment()
 
         ensureBlockFinishes { latch ->
             forceServerErrorsStrategy = ForceServerErrorStrategy.failAll

@@ -394,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.12.1 s3://purchases-docs/android/9.12.1 --delete
+          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -589,10 +589,10 @@ jobs:
             - purchases/test_artifacts/integrationTest-test.apk
 
   run-firebase-tests-purchases-integration-tests:
-    description: "Run purchases module integration tests for Android in Firebase. Accepts suite parameter: 'production' or 'loadshedder'"
+    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'loadshedder'"
     <<: *android-executor
     parameters:
-      suite:
+      backend_environment:
         type: enum
         enum: ["production", "loadshedder", "loadshedder-us-east-2"]
     steps:
@@ -609,7 +609,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests suite:'<< parameters.suite >>'
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
       - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
@@ -980,12 +980,11 @@ workflows:
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches
       - run-firebase-tests-purchases-integration-tests:
-          <<: *release-branches
           context:
             - slack-secrets
           matrix:
             parameters:
-              suite: ["production", "loadshedder", "loadshedder-us-east-2"]
+              backend_environment: ["production", "loadshedder", "loadshedder-us-east-2"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -1048,11 +1047,11 @@ workflows:
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
       - run-firebase-tests-purchases-integration-tests:
-          suite: "loadshedder"
+          backend_environment: "loadshedder"
           context:
             - slack-secrets
       - run-firebase-tests-purchases-integration-tests:
-          suite: "loadshedder-us-east-2"
+          backend_environment: "loadshedder-us-east-2"
           context:
             - slack-secrets
 
