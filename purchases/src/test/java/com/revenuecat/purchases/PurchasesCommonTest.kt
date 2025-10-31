@@ -218,8 +218,59 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val normalizedProductId = "connect"
         val productIds = listOf(productIdWithBasePlan)
 
-        val subStoreProducts = mockStoreProduct(listOf(normalizedProductId), listOf(normalizedProductId), ProductType.SUBS)
-        mockStoreProduct(listOf(normalizedProductId), emptyList(), ProductType.INAPP)
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(emptyList())
+        }
 
         purchases.getProducts(
             productIds,
@@ -234,9 +285,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             }
         )
 
-        assertThat(receivedProducts).isEqualTo(subStoreProducts)
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct))
         assertThat(receivedProducts?.size).isEqualTo(1)
-        assertThat(receivedProducts?.first()?.id).isEqualTo(normalizedProductId)
+        assertThat(receivedProducts?.first()?.id).isEqualTo("connect:connect-monthly")
     }
 
     @Test
@@ -245,7 +296,48 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val normalizedProductId = "connect"
         val productIds = listOf(productIdWithBasePlan)
 
-        val storeProducts = mockStoreProduct(listOf(normalizedProductId), listOf(normalizedProductId), ProductType.SUBS)
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
 
         purchases.getProducts(
             productIds,
@@ -261,9 +353,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             }
         )
 
-        assertThat(receivedProducts).isEqualTo(storeProducts)
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct))
         assertThat(receivedProducts?.size).isEqualTo(1)
-        assertThat(receivedProducts?.first()?.id).isEqualTo(normalizedProductId)
+        assertThat(receivedProducts?.first()?.id).isEqualTo("connect:connect-monthly")
     }
 
     @Test
@@ -271,11 +363,63 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productIdWithBasePlan = "connect:connect-monthly"
         val productIdWithoutBasePlan = "normal_purchase"
         val productIds = listOf(productIdWithBasePlan, productIdWithoutBasePlan)
-        val normalizedProductIds = setOf("connect", productIdWithoutBasePlan)
+        val normalizedProductId = "connect"
 
-        val subStoreProducts = mockStoreProduct(normalizedProductIds.toList(), listOf("connect"), ProductType.SUBS)
-        val inappStoreProducts = mockStoreProduct(normalizedProductIds.toList(), listOf(productIdWithoutBasePlan), ProductType.INAPP)
-        val storeProducts = subStoreProducts + inappStoreProducts
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        val inappProduct = createMockOneTimeProductDetails(productIdWithoutBasePlan).toInAppStoreProduct()!!
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId, productIdWithoutBasePlan),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId, productIdWithoutBasePlan),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(inappProduct))
+        }
 
         purchases.getProducts(
             productIds,
@@ -290,7 +434,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             }
         )
 
-        assertThat(receivedProducts).isEqualTo(storeProducts)
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct, inappProduct))
         assertThat(receivedProducts?.size).isEqualTo(2)
     }
 
