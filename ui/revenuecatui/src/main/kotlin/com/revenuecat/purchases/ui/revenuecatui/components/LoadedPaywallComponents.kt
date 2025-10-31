@@ -538,7 +538,7 @@ internal fun ViewWithBackground(
                     loop = background.loop,
                     muteAudio = background.muteAudio,
                     size = Size(width = Fill, height = Fill),
-                    shape = null,
+                    shape = shape,
                     overlay = background.colorOverlay,
                     contentScale = background.contentScale,
                     rcPackage = null,
