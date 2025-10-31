@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 import java.net.URL
 
-internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
+internal open class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
 
     @Test
