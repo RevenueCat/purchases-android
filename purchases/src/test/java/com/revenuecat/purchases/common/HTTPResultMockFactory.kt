@@ -10,5 +10,6 @@ internal fun HTTPResult.Companion.createResult(
     payload: String = "{}",
     origin: HTTPResult.Origin = HTTPResult.Origin.BACKEND,
     requestDate: Date? = null,
-    verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
-) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult)
+    verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+    isFortressResponse: Boolean? = null,
+) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isFortressResponse)

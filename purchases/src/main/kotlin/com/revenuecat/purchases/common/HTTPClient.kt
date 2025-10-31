@@ -325,6 +325,7 @@ internal class HTTPClient(
             throw SignatureVerificationException(path)
         }
 
+        val isFortressResponse = getFortressHeader(connection)
         return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
@@ -333,6 +334,7 @@ internal class HTTPClient(
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
+            isFortressResponse,
         )
     }
 
@@ -454,6 +456,14 @@ internal class HTTPClient(
     private fun getRequestDateHeader(connection: URLConnection): Date? {
         return getRequestTimeHeader(connection)?.toLong()?.let {
             Date(it)
+        }
+    }
+    private fun getFortressHeader(connection: URLConnection): Boolean? {
+        val fortressHeader = connection.getHeaderField(HTTPResult.FORTRESS_HEADER_NAME)
+        return if (fortressHeader?.lowercase() == "true") {
+            true
+        } else {
+            null
         }
     }
 }

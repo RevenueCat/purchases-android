@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common
 
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.CustomerInfoSource
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
@@ -27,7 +29,18 @@ internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
-        return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
+        val originalSource = if (httpResult.isFortressResponse == true) {
+            CustomerInfoOriginalSource.LOAD_SHEDDER
+        } else {
+            CustomerInfoOriginalSource.MAIN
+        }
+        return buildCustomerInfo(
+            httpResult.body,
+            httpResult.requestDate,
+            httpResult.verificationResult,
+            originalSource,
+            originalSource.toCustomerInfoSource(),
+        )
     }
 
     @Throws(JSONException::class)
@@ -35,6 +48,8 @@ internal object CustomerInfoFactory {
         body: JSONObject,
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,
+        originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.MAIN,
+        source: CustomerInfoSource = originalSource.toCustomerInfoSource(),
     ): CustomerInfo {
         val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
@@ -90,6 +105,8 @@ internal object CustomerInfoFactory {
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
+            originalSource = originalSource,
+            source = source,
         )
     }
 
@@ -151,5 +168,16 @@ internal object CustomerInfoFactory {
         }
 
         return expirationDates
+    }
+
+    /**
+     * Converts CustomerInfoOriginalSource to CustomerInfoSource.
+     */
+    private fun CustomerInfoOriginalSource.toCustomerInfoSource(): CustomerInfoSource {
+        return when (this) {
+            CustomerInfoOriginalSource.MAIN -> CustomerInfoSource.MAIN
+            CustomerInfoOriginalSource.LOAD_SHEDDER -> CustomerInfoSource.LOAD_SHEDDER
+            CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS -> CustomerInfoSource.OFFLINE_ENTITLEMENTS
+        }
     }
 }
