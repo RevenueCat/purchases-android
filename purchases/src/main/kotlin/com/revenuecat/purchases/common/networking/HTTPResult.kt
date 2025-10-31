@@ -12,7 +12,7 @@ private const val SERIALIZATION_NAME_PAYLOAD = "payload"
 private const val SERIALIZATION_NAME_ORIGIN = "origin"
 private const val SERIALIZATION_NAME_REQUEST_DATE = "requestDate"
 private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
-private const val SERIALIZATION_NAME_IS_FORTRESS_RESPONSE = "isFortressResponse"
+private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 
 internal data class HTTPResult(
     val responseCode: Int,
@@ -20,13 +20,13 @@ internal data class HTTPResult(
     val origin: Origin,
     val requestDate: Date?,
     val verificationResult: VerificationResult,
-    val isFortressResponse: Boolean? = null,
+    val isLoadShedderResponse: Boolean? = null,
 ) {
     companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         const val SIGNATURE_HEADER_NAME = "X-Signature"
         const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
-        const val FORTRESS_HEADER_NAME = "x-revenuecat-fortress"
+        const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
 
         fun deserialize(serialized: String): HTTPResult {
             val jsonObject = JSONObject(serialized)
@@ -47,12 +47,12 @@ internal data class HTTPResult(
             } else {
                 VerificationResult.NOT_REQUESTED
             }
-            val isFortressResponse: Boolean? = if (jsonObject.has(SERIALIZATION_NAME_IS_FORTRESS_RESPONSE)) {
-                jsonObject.getBoolean(SERIALIZATION_NAME_IS_FORTRESS_RESPONSE)
+            val isLoadShedderResponse: Boolean? = if (jsonObject.has(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)) {
+                jsonObject.getBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)
             } else {
                 null
             }
-            return HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isFortressResponse)
+            return HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isLoadShedderResponse)
         }
     }
 
@@ -88,7 +88,7 @@ internal data class HTTPResult(
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
             put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
-            isFortressResponse?.let { put(SERIALIZATION_NAME_IS_FORTRESS_RESPONSE, it) }
+            isLoadShedderResponse?.let { put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, it) }
         }
         return jsonObject.toString()
     }

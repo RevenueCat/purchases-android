@@ -76,7 +76,7 @@ internal class ETagManager(
         refreshETag: Boolean,
         requestDate: Date?,
         verificationResult: VerificationResult,
-        isFortressResponse: Boolean? = null,
+        isLoadShedderResponse: Boolean? = null,
     ): HTTPResult? {
         val resultFromBackend = HTTPResult(
             responseCode,
@@ -84,7 +84,7 @@ internal class ETagManager(
             HTTPResult.Origin.BACKEND,
             requestDate,
             verificationResult,
-            isFortressResponse,
+            isLoadShedderResponse,
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {

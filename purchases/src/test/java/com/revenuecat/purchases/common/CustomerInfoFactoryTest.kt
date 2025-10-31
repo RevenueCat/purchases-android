@@ -72,7 +72,7 @@ class CustomerInfoFactoryTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.NOT_REQUESTED,
-            isFortressResponse = false,
+            isLoadShedderResponse = false,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
@@ -87,7 +87,7 @@ class CustomerInfoFactoryTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.NOT_REQUESTED,
-            isFortressResponse = true,
+            isLoadShedderResponse = true,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.LOAD_SHEDDER)
@@ -102,7 +102,7 @@ class CustomerInfoFactoryTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.NOT_REQUESTED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)

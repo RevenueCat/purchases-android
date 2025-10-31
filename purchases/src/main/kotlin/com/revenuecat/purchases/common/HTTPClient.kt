@@ -325,7 +325,7 @@ internal class HTTPClient(
             throw SignatureVerificationException(path)
         }
 
-        val isFortressResponse = getFortressHeader(connection)
+        val isLoadShedderResponse = getLoadShedderHeader(connection)
         return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
@@ -334,7 +334,7 @@ internal class HTTPClient(
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
-            isFortressResponse,
+            isLoadShedderResponse,
         )
     }
 
@@ -458,9 +458,9 @@ internal class HTTPClient(
             Date(it)
         }
     }
-    private fun getFortressHeader(connection: URLConnection): Boolean? {
-        val fortressHeader = connection.getHeaderField(HTTPResult.FORTRESS_HEADER_NAME)
-        return if (fortressHeader?.lowercase() == "true") {
+    private fun getLoadShedderHeader(connection: URLConnection): Boolean? {
+        val loadShedderHeader = connection.getHeaderField(HTTPResult.LOAD_SHEDDER_HEADER_NAME)
+        return if (loadShedderHeader?.lowercase() == "true") {
             true
         } else {
             null

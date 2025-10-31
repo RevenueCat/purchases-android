@@ -29,7 +29,7 @@ internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
-        val originalSource = if (httpResult.isFortressResponse == true) {
+        val originalSource = if (httpResult.isLoadShedderResponse == true) {
             CustomerInfoOriginalSource.LOAD_SHEDDER
         } else {
             CustomerInfoOriginalSource.MAIN

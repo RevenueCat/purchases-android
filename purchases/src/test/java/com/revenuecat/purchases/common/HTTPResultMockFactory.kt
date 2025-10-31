@@ -11,5 +11,5 @@ internal fun HTTPResult.Companion.createResult(
     origin: HTTPResult.Origin = HTTPResult.Origin.BACKEND,
     requestDate: Date? = null,
     verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
-    isFortressResponse: Boolean? = null,
-) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isFortressResponse)
+    isLoadShedderResponse: Boolean? = null,
+) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isLoadShedderResponse)

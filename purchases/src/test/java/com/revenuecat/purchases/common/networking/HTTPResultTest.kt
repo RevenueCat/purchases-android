@@ -20,7 +20,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000), // Tuesday, March 7, 2023 9:16:57 AM GMT,
             VerificationResult.VERIFIED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
@@ -39,7 +39,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.VERIFIED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
@@ -57,7 +57,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.FAILED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -76,7 +76,7 @@ class HTTPResultTest {
             HTTPResult.Origin.CACHE,
             null,
             VerificationResult.NOT_REQUESTED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -85,29 +85,29 @@ class HTTPResultTest {
     }
 
     @Test
-    fun `result with fortress header is serialized correctly`() {
+    fun `result with load shedder header is serialized correctly`() {
         val result = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isFortressResponse = true,
+            isLoadShedderResponse = true,
         )
         val serialized = result.serialize()
-        assertThat(serialized).contains("\"isFortressResponse\":true")
+        assertThat(serialized).contains("\"isLoadShedderResponse\":true")
         assertThat(serialized).contains("\"responseCode\":200")
     }
 
     @Test
-    fun `result with fortress header is deserialized correctly`() {
+    fun `result with load shedder header is deserialized correctly`() {
         val expectedResult = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isFortressResponse = true,
+            isLoadShedderResponse = true,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -115,21 +115,21 @@ class HTTPResultTest {
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
             "\"verificationResult\":\"VERIFIED\"," +
-            "\"isFortressResponse\":true}")
+            "\"isLoadShedderResponse\":true}")
         assertThat(result).isEqualTo(expectedResult)
     }
 
     @Test
-    fun `result with null fortress header does not serialize it`() {
+    fun `result with null load shedder header does not serialize it`() {
         val result = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isFortressResponse = null,
+            isLoadShedderResponse = null,
         )
         val serialized = result.serialize()
-        assertThat(serialized).doesNotContain("isFortressResponse")
+        assertThat(serialized).doesNotContain("isLoadShedderResponse")
     }
 }
