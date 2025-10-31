@@ -536,8 +536,21 @@ internal class PurchasesOrchestrator(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
+        val normalizedProductIds = productIds.map { productId ->
+            if (productId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                val normalizedId = productId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                warnLog {
+                    "Product ID '$productId' contains base plan ID. The productId should not contain the " +
+                        "basePlanId when calling getProducts. Using productId: '$normalizedId' for query."
+                }
+                normalizedId
+            } else {
+                productId
+            }
+        }.toSet()
+
         getProductsOfTypes(
-            productIds.toSet(),
+            normalizedProductIds,
             types,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
