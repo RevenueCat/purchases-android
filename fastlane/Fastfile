@@ -616,15 +616,15 @@ DESC
 
     message_feed =
       if success
-        "Android purchases integration tests (#{suite}) finished successfully"
+        "Android backend integration tests finished successfully"
       else
-        "Android purchases integration tests (#{suite}) failed"
+        "Android backend integration tests failed"
       end
 
     message_binary_solo =
       if !success
         # TODO Add @oncall-product @oncall-infra before merging
-        "<!subteam^S0939BTV0SY|oncall-sdk> Android purchases integration tests (#{suite}) failed"
+        "<!subteam^S0939BTV0SY|oncall-sdk> Android backend integration tests failed"
       else
         nil
       end
@@ -634,7 +634,28 @@ DESC
         message: message_binary_solo,
         slack_url: slack_url_feed, # TODO Change to slack_url_binary_solo before merging
         success: success,
-        default_payloads: [:git_branch]
+        default_payloads: [:git_branch],
+        attachment_properties: {
+          actions: [
+            {
+              type: "button",
+              text: "View CircleCI logs",
+              url: ENV["CIRCLE_BUILD_URL"]
+            }
+          ],
+          fields: [
+            {
+              title: "Environment",
+              value: suite,
+              short: true
+            },
+            {
+              title: "SDK",
+              value: ENV["CIRCLE_PROJECT_REPONAME"],
+              short: true
+            },
+          ]
+        }
       )
     end
 
@@ -642,7 +663,28 @@ DESC
       message: message_feed,
       slack_url: slack_url_feed,
       success: success,
-      default_payloads: [:git_branch]
+      default_payloads: [:git_branch],
+      attachment_properties: {
+        actions: [
+          {
+            type: "button",
+            text: "View CircleCI logs",
+            url: ENV["CIRCLE_BUILD_URL"]
+          }
+        ],
+        fields: [
+          {
+            title: "Environment",
+            value: suite,
+            short: true
+          },
+          {
+            title: "SDK",
+            value: ENV["CIRCLE_PROJECT_REPONAME"],
+            short: true
+          },
+        ]
+      }
     )
   end
 
