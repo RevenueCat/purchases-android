@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.currentCompositionLocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -93,7 +98,7 @@ internal fun LoadedPaywallComponents(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
-        ViewWithVideoBackground(state, background) {
+        WithOptionalVideoBackground(state, background) {
             Column {
                 ComponentView(
                     style = style,
@@ -561,6 +566,28 @@ internal fun ViewWithVideoBackground(
 
             else -> {}
         }
+        content()
+    }
+}
+
+@Composable
+internal fun WithOptionalVideoBackground(
+    state: PaywallState.Loaded.Components,
+    background: BackgroundStyle?,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RectangleShape,
+    content: @Composable () -> Unit
+) {
+    if (background is BackgroundStyle.Video) {
+        ViewWithVideoBackground(
+            state = state,
+            background = background,
+            modifier = modifier,
+            shape = shape,
+        ) {
+            content()
+        }
+    } else {
         content()
     }
 }

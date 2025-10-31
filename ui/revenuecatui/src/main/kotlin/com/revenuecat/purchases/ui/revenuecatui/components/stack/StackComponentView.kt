@@ -61,6 +61,7 @@ import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ViewWithVideoBackground
+import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalVideoBackground
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -73,6 +74,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -484,117 +486,111 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val systemBarInsets = WindowInsets.systemBars
-    val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
-        ViewWithVideoBackground(
-            state = state,
-            background = backgroundStyle,
-            shape = composeShape,
-        ) {
-            // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
-            // to draw "boxes" using whatever stack they please, for instance to create dividers.
-            if (stackState.children.isEmpty()) {
-                Box(
+        // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
+        // to draw "boxes" using whatever stack they please, for instance to create dividers.
+        if (stackState.children.isEmpty()) {
+            Box(
+                modifier = modifier
+                    .size(stackState.size)
+                    .then(rootModifier),
+            )
+        } else {
+            when (val dimension = stackState.dimension) {
+                is Dimension.Horizontal -> HorizontalStack(
+                    size = stackState.size,
+                    dimension = dimension,
+                    spacing = stackState.spacing,
                     modifier = modifier
-                        .size(stackState.size)
+                        .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
+                        }
                         .then(rootModifier),
-                )
-            } else {
-                when (val dimension = stackState.dimension) {
-                    is Dimension.Horizontal -> HorizontalStack(
-                        size = stackState.size,
-                        dimension = dimension,
-                        spacing = stackState.spacing,
-                        modifier = modifier
-                            .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
-                            }
-                            .then(rootModifier),
-                    ) {
-                        items(stackState.children) { _, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                modifier = Modifier
-                                    .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                    .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .alpha(contentAlpha),
-                            )
-                        }
+                ) {
+                    items(stackState.children) { _, child ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.width == Fill) { Modifier.weight(1f) }
+                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
+                                .alpha(contentAlpha),
+                        )
                     }
+                }
 
-                    is Dimension.Vertical -> VerticalStack(
-                        size = stackState.size,
-                        dimension = dimension,
-                        spacing = stackState.spacing,
-                        modifier = modifier
-                            .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
-                            }
-                            .then(rootModifier),
-                    ) {
-                        items(stackState.children) { index, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                modifier = Modifier
-                                    .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                    .conditional(
-                                        // In a Vertical container, we only want to apply topSystemBarsPadding to the first
-                                        // child, except when that child has `ignoreTopWindowInsets` set to true.
-                                        stackState.applyTopWindowInsets &&
-                                            index == 0 &&
-                                            !child.shouldIgnoreTopWindowInsets,
-                                    ) {
-                                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .alpha(contentAlpha),
-                            )
+                is Dimension.Vertical -> VerticalStack(
+                    size = stackState.size,
+                    dimension = dimension,
+                    spacing = stackState.spacing,
+                    modifier = modifier
+                        .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
                         }
+                        .then(rootModifier),
+                ) {
+                    items(stackState.children) { index, child ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(child.size.height == Fill) { Modifier.weight(1f) }
+                                .conditional(
+                                    // In a Vertical container, we only want to apply topSystemBarsPadding to the first
+                                    // child, except when that child has `ignoreTopWindowInsets` set to true.
+                                    stackState.applyTopWindowInsets &&
+                                        index == 0 &&
+                                        !child.shouldIgnoreTopWindowInsets,
+                                ) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
+                                .alpha(contentAlpha),
+                        )
                     }
+                }
 
-                    is Dimension.ZLayer -> Box(
-                        modifier = modifier
-                            .size(
-                                size = stackState.size,
-                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                            )
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
-                            }
-                            .then(rootModifier),
-                        contentAlignment = dimension.alignment.toAlignment(),
-                    ) {
-                        stackState.children.forEach { child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                modifier = Modifier
-                                    .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .alpha(contentAlpha),
-                            )
+                is Dimension.ZLayer -> Box(
+                    modifier = modifier
+                        .size(
+                            size = stackState.size,
+                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                        )
+                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            scrollable(state, orientation)
                         }
+                        .then(rootModifier),
+                    contentAlignment = dimension.alignment.toAlignment(),
+                ) {
+                    stackState.children.forEach { child ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            modifier = Modifier
+                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
+                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                }
+                                .alpha(contentAlpha),
+                        )
                     }
                 }
             }
         }
     }
 
+    val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = if (shouldApplyShadow) {
         stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -623,14 +619,24 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        stack(
-            outerShapeModifier
-                .then(borderModifier)
-                .then(innerShapeModifier)
-                .conditional(stackState.applyBottomWindowInsets) {
-                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
-                },
-        )
+        Box(outerShapeModifier.then(borderModifier)) {
+            WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
+                stack(
+                    innerShapeModifier
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                        },
+                )
+            }
+
+            ViewWithVideoBackground(
+                state = state,
+                background = backgroundStyle,
+                modifier = Modifier.matchParentSize(),
+                shape = composeShape,
+            ) {
+            }
+        }
     } else if (nestedBadge != null) {
         Box(
             modifier = modifier
@@ -638,7 +644,10 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            stack(Modifier.then(innerShapeModifier))
+            WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
+                stack(Modifier.then(innerShapeModifier))
+            }
+
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
@@ -653,7 +662,9 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(borderModifier.then(innerShapeModifier))
+            WithOptionalVideoBackground(state, backgroundStyle, Modifier.matchParentSize()) {
+                stack(borderModifier.then(innerShapeModifier))
+            }
             overlay()
         }
     }
@@ -1557,7 +1568,10 @@ private fun StackComponentView_Preview_HorizontalDivider() {
                 children = emptyList(),
                 visible = true,
                 size = Size(width = Fill, height = Fixed(1u)),
-                dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.LEADING,
+                    FlexDistribution.SPACE_BETWEEN,
+                ),
                 spacing = 0.dp,
                 // Explicitly applying vertical margin to make sure it doesn't "eat up" the divider.
                 margin = PaddingValues(vertical = 40.dp),
