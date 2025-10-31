@@ -537,12 +537,18 @@ internal class PurchasesOrchestrator(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
+        val productIdsQueriedWithoutBasePlan = productIds
+            .filter { !it.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR) }
+            .toSet()
+
         val requestedBasePlansByProductId = mutableMapOf<String, MutableSet<String>>()
         val normalizedProductIds = productIds.map { productId ->
             if (productId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
                 val normalizedId = productId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
                 val basePlanId = productId.substringAfter(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
-                requestedBasePlansByProductId.getOrPut(normalizedId) { mutableSetOf() }.add(basePlanId)
+                if (normalizedId !in productIdsQueriedWithoutBasePlan) {
+                    requestedBasePlansByProductId.getOrPut(normalizedId) { mutableSetOf() }.add(basePlanId)
+                }
                 normalizedId
             } else {
                 productId
