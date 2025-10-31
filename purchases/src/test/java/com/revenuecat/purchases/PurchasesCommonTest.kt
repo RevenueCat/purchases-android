@@ -204,6 +204,115 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(receivedProducts?.size).isEqualTo(inappStoreProducts.size)
     }
 
+    @Test
+    fun `getProducts normalizes product IDs with base plan`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val normalizedProductId = "connect"
+        val productIds = listOf(productIdWithBasePlan)
+
+        val subStoreProducts = mockStoreProduct(listOf(normalizedProductId), listOf(normalizedProductId), ProductType.SUBS)
+        mockStoreProduct(listOf(normalizedProductId), emptyList(), ProductType.INAPP)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(subStoreProducts)
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat(receivedProducts?.first()?.id).isEqualTo(normalizedProductId)
+    }
+
+    @Test
+    fun `getProducts normalizes product IDs with base plan for specific product type`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val normalizedProductId = "connect"
+        val productIds = listOf(productIdWithBasePlan)
+
+        val storeProducts = mockStoreProduct(listOf(normalizedProductId), listOf(normalizedProductId), ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(storeProducts)
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat(receivedProducts?.first()?.id).isEqualTo(normalizedProductId)
+    }
+
+    @Test
+    fun `getProducts handles mixed product IDs with and without base plans`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val productIdWithoutBasePlan = "normal_purchase"
+        val productIds = listOf(productIdWithBasePlan, productIdWithoutBasePlan)
+        val normalizedProductIds = setOf("connect", productIdWithoutBasePlan)
+
+        val subStoreProducts = mockStoreProduct(normalizedProductIds.toList(), listOf("connect"), ProductType.SUBS)
+        val inappStoreProducts = mockStoreProduct(normalizedProductIds.toList(), listOf(productIdWithoutBasePlan), ProductType.INAPP)
+        val storeProducts = subStoreProducts + inappStoreProducts
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(storeProducts)
+        assertThat(receivedProducts?.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `getProducts deduplicates normalized product IDs`() {
+        val productIdWithBasePlan1 = "connect:connect-monthly"
+        val productIdWithBasePlan2 = "connect:connect-annual"
+        val productIds = listOf(productIdWithBasePlan1, productIdWithBasePlan2)
+        val normalizedProductId = "connect"
+
+        val storeProducts = mockStoreProduct(listOf(normalizedProductId), listOf(normalizedProductId), ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(storeProducts)
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat(receivedProducts?.first()?.id).isEqualTo(normalizedProductId)
+    }
+
     // endregion
 
     // region purchasing
