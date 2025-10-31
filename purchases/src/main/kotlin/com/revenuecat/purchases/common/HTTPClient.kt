@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -73,8 +74,9 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
-        const val ENABLE_EXTRA_REQUEST_LOGGING = false
     }
+
+    private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
 
     private fun buffer(inputStream: InputStream): BufferedReader {
         return BufferedReader(InputStreamReader(inputStream))
@@ -253,8 +255,8 @@ internal class HTTPClient(
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
-            if (ENABLE_EXTRA_REQUEST_LOGGING) {
-                verboseLog { "Request extra logging. Will perform request with curl: ${toCurlRequest(httpRequest)}" }
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
             }
 
             connection = getConnection(httpRequest)
@@ -270,12 +272,12 @@ internal class HTTPClient(
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
-            if (ENABLE_EXTRA_REQUEST_LOGGING) {
-                verboseLog { "Request extra logging. Response code: $responseCode. Body: $payload" }
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            if (ENABLE_EXTRA_REQUEST_LOGGING) {
-                verboseLog { "Request extra logging. Exception thrown: $e" }
+            if (enableExtraRequestLogging) {
+                errorLog(e) { "HTTP request failed" }
             }
             throw e
         } finally {
