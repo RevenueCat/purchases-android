@@ -34,7 +34,9 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterPromoOfferEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -89,12 +91,15 @@ internal interface CustomerCenterViewModel {
     suspend fun dismissRestoreDialog()
     suspend fun restorePurchases()
     fun contactSupport(context: Context, supportEmail: String)
+
+    @Suppress("LongParameterList")
     suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer,
         originalPath: HelpPath,
         purchaseInformation: PurchaseInformation? = null,
+        surveyOptionID: String? = null,
     ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
@@ -211,6 +216,7 @@ internal class CustomerCenterViewModelImpl(
                                 it.promotionalOffer,
                                 path,
                                 purchaseInformation,
+                                it.id,
                             )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
@@ -665,13 +671,14 @@ internal class CustomerCenterViewModelImpl(
         _actionError.value = null
     }
 
-    @SuppressWarnings("ReturnCount")
+    @Suppress("LongParameterList", "ReturnCount")
     override suspend fun loadAndDisplayPromotionalOffer(
         context: Context,
         product: StoreProduct,
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer,
         originalPath: HelpPath,
         purchaseInformation: PurchaseInformation?,
+        surveyOptionID: String?,
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
@@ -696,12 +703,9 @@ internal class CustomerCenterViewModelImpl(
                         subscriptionOption,
                         originalPath,
                         pricingPhasesDescription,
+                        surveyOptionID,
                     ),
                     purchaseInformation = purchaseInformation,
-                )
-                currentState.copy(
-                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
@@ -712,27 +716,152 @@ internal class CustomerCenterViewModelImpl(
             }
         }
 
+        // Track impression event when promo offer is shown
+        if (loaded) {
+            val googleOption = subscriptionOption as? GoogleSubscriptionOption
+            val storeOfferId = googleOption?.offerId
+            val originProductId = purchaseInformation?.product?.id
+            val targetProductId = googleOption?.let {
+                "${it.productDetails.productId}:${it.basePlanId}"
+            }
+
+            if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                trackPromoOfferEvent(
+                    eventType = CustomerCenterEventType.PROMO_OFFER_IMPRESSION,
+                    path = originalPath.type,
+                    url = originalPath.url,
+                    surveyOptionID = surveyOptionID,
+                    storeOfferID = storeOfferId,
+                    productID = originProductId,
+                    targetProductID = targetProductId,
+                )
+            }
+        }
+
         return loaded
     }
 
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
     override suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?) {
+        // Extract promo offer data from current state before attempting purchase
+        val currentState = _state.value as? CustomerCenterState.Success
+        val promoDestination = currentState?.currentDestination as? CustomerCenterDestination.PromotionalOffer
+        val promoData = promoDestination?.data
+        val purchaseInfo = promoDestination?.purchaseInformation
+
         if (activity == null) {
             Logger.e("Activity is null when accepting promotional offer")
             _actionError.value = PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,
                 "Couldn't perform purchase",
             )
+
+            // Track error event if we have promo data
+            promoData?.let { data ->
+                val googleOption = subscriptionOption as? GoogleSubscriptionOption
+                val storeOfferId = googleOption?.offerId
+                val originProductId = purchaseInfo?.product?.id
+                // Construct full product ID with base plan: {productId}:{basePlanId}
+                val targetProductId = googleOption?.let {
+                    "${it.productDetails.productId}:${it.basePlanId}"
+                }
+
+                if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                    trackPromoOfferEvent(
+                        eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
+                        path = data.originalPath.type,
+                        url = data.originalPath.url,
+                        surveyOptionID = data.surveyOptionID,
+                        storeOfferID = storeOfferId,
+                        productID = originProductId,
+                        targetProductID = targetProductId,
+                        error = "Activity is null when accepting promotional offer",
+                    )
+                }
+            }
             return
         }
+
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
-            purchases.awaitPurchase(purchaseParams)
+            val result = purchases.awaitPurchase(purchaseParams)
+
+            // Track success event
+            promoData?.let { data ->
+                val googleOption = subscriptionOption as? GoogleSubscriptionOption
+                val storeOfferId = googleOption?.offerId
+                val originProductId = purchaseInfo?.product?.id
+                // Construct full product ID with base plan: {productId}:{basePlanId}
+                val targetProductId = googleOption?.let {
+                    "${it.productDetails.productId}:${it.basePlanId}"
+                }
+
+                if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                    trackPromoOfferEvent(
+                        eventType = CustomerCenterEventType.PROMO_OFFER_SUCCESS,
+                        path = data.originalPath.type,
+                        url = data.originalPath.url,
+                        surveyOptionID = data.surveyOptionID,
+                        storeOfferID = storeOfferId,
+                        productID = originProductId,
+                        targetProductID = targetProductId,
+                        transactionID = result.storeTransaction.orderId,
+                    )
+                }
+            }
 
             // Reload customer center data to refresh the UI with the latest subscription information
             // It will also go back to main screen
             loadCustomerCenter()
         } catch (e: PurchasesException) {
-            if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
+            if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
+                // Track cancel event
+                promoData?.let { data ->
+                    val googleOption = subscriptionOption as? GoogleSubscriptionOption
+                    val storeOfferId = googleOption?.offerId
+                    val originProductId = purchaseInfo?.product?.id
+                    // Construct full product ID with base plan: {productId}:{basePlanId}
+                    val targetProductId = googleOption?.let {
+                        "${it.productDetails.productId}:${it.basePlanId}"
+                    }
+
+                    if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                        trackPromoOfferEvent(
+                            eventType = CustomerCenterEventType.PROMO_OFFER_CANCEL,
+                            path = data.originalPath.type,
+                            url = data.originalPath.url,
+                            surveyOptionID = data.surveyOptionID,
+                            storeOfferID = storeOfferId,
+                            productID = originProductId,
+                            targetProductID = targetProductId,
+                        )
+                    }
+                }
+            } else {
+                // Track error event
+                promoData?.let { data ->
+                    val googleOption = subscriptionOption as? GoogleSubscriptionOption
+                    val storeOfferId = googleOption?.offerId
+                    val originProductId = purchaseInfo?.product?.id
+                    // Construct full product ID with base plan: {productId}:{basePlanId}
+                    val targetProductId = googleOption?.let {
+                        "${it.productDetails.productId}:${it.basePlanId}"
+                    }
+
+                    if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                        trackPromoOfferEvent(
+                            eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
+                            path = data.originalPath.type,
+                            url = data.originalPath.url,
+                            surveyOptionID = data.surveyOptionID,
+                            storeOfferID = storeOfferId,
+                            productID = originProductId,
+                            targetProductID = targetProductId,
+                            error = e.message,
+                        )
+                    }
+                }
+
                 _actionError.value = e.error
                 goBackToMain()
             }
@@ -743,10 +872,33 @@ internal class CustomerCenterViewModelImpl(
         context: Context,
         originalPath: HelpPath,
     ) {
-        val purchaseInfo = (_state.value as? CustomerCenterState.Success).let { currentState ->
-            when (val destination = currentState?.currentDestination) {
-                is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
-                else -> null
+        // Extract promo offer data from current state before dismissing
+        val currentState = _state.value as? CustomerCenterState.Success
+        val promoDestination = currentState?.currentDestination as? CustomerCenterDestination.PromotionalOffer
+        val promoData = promoDestination?.data
+        val purchaseInfo = promoDestination?.purchaseInformation
+
+        // Track dismissed event (user closed promo offer without engaging)
+        promoData?.let { data ->
+            val subscriptionOption = data.subscriptionOption
+            val googleOption = subscriptionOption as? GoogleSubscriptionOption
+            val storeOfferId = googleOption?.offerId
+            val originProductId = purchaseInfo?.product?.id
+            // Construct full product ID with base plan: {productId}:{basePlanId}
+            val targetProductId = googleOption?.let {
+                "${it.productDetails.productId}:${it.basePlanId}"
+            }
+
+            if (storeOfferId != null && originProductId != null && targetProductId != null) {
+                trackPromoOfferEvent(
+                    eventType = CustomerCenterEventType.PROMO_OFFER_DISMISSED,
+                    path = data.originalPath.type,
+                    url = data.originalPath.url,
+                    surveyOptionID = data.surveyOptionID,
+                    storeOfferID = storeOfferId,
+                    productID = originProductId,
+                    targetProductID = targetProductId,
+                )
             }
         }
 
@@ -909,6 +1061,38 @@ internal class CustomerCenterViewModelImpl(
         purchases.track(event)
     }
 
+    @SuppressWarnings("LongParameterList")
+    private fun trackPromoOfferEvent(
+        eventType: CustomerCenterEventType,
+        path: HelpPath.PathType,
+        url: String?,
+        surveyOptionID: String?,
+        storeOfferID: String,
+        productID: String,
+        targetProductID: String,
+        error: String? = null,
+        transactionID: String? = null,
+    ) {
+        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+        val event = CustomerCenterPromoOfferEvent(
+            data = CustomerCenterPromoOfferEvent.Data(
+                type = eventType,
+                timestamp = Date(),
+                darkMode = isDarkMode,
+                locale = locale.toString(),
+                path = path,
+                url = url,
+                surveyOptionID = surveyOptionID,
+                storeOfferID = storeOfferID,
+                productID = productID,
+                targetProductID = targetProductID,
+                error = error,
+                transactionID = transactionID,
+            ),
+        )
+        purchases.track(event)
+    }
+
     private fun getCurrentLocaleList(): LocaleListCompat {
         val preferredLocale = purchases.preferredUILocaleOverride
         if (preferredLocale == null) {
@@ -1020,12 +1204,14 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun handlePromotionalOffer(
         context: Context,
         product: StoreProduct?,
         promotionalOffer: HelpPath.PathDetail.PromotionalOffer?,
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
+        surveyOptionID: String? = null,
     ): Boolean {
         if (product != null && promotionalOffer != null) {
             return loadAndDisplayPromotionalOffer(
@@ -1034,6 +1220,7 @@ internal class CustomerCenterViewModelImpl(
                 promotionalOffer,
                 path,
                 purchaseInformation,
+                surveyOptionID,
             )
         } else {
             return false
