@@ -18,7 +18,7 @@ internal fun Purchases.Companion.configure(
         forceServerErrorStrategy,
         forceSigningErrors,
         runningIntegrationTests = true,
-        baseUrlString = if (Constants.testSuite != Constants.TestSuite.LOAD_SHEDDER_US_EAST_2) {
+        baseUrlString = if (Constants.backendEnvironment != Constants.BackendEnvironment.LOAD_SHEDDER_US_EAST_2) {
             AppConfig.baseUrlString
         } else {
             "https://fortress-us-east-2.revenuecat.com/"
