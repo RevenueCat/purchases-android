@@ -830,6 +830,13 @@ class BillingWrapperTest {
 
             override val installmentsInfo: InstallmentsInfo?
                 get() = null
+
+            override fun copyWithPresentedOfferingContext(
+                presentedOfferingContext: PresentedOfferingContext?
+            ): SubscriptionOption {
+                // Stub for testing
+                return this
+            }
         }
 
         wrapper.makePurchaseAsync(
@@ -890,6 +897,12 @@ class BillingWrapperTest {
                         get() = purchasingData
                     override val installmentsInfo: InstallmentsInfo?
                         get() = null
+                    override fun copyWithPresentedOfferingContext(
+                        presentedOfferingContext: PresentedOfferingContext?
+                    ): SubscriptionOption {
+                        // Stub for testing
+                        return this
+                    }
                 }
             override val purchasingData: PurchasingData
                 get() = purchasingData

@@ -100,4 +100,11 @@ interface SubscriptionOption {
      * Installment plans are only available for Google Play subscriptions.
      */
     val installmentsInfo: InstallmentsInfo?
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `SubscriptionOption` with the specified `presentedOfferingContext` set.
+     */
+    fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): SubscriptionOption
 }

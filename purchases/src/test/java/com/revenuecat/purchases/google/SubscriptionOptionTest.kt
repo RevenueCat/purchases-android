@@ -1,12 +1,13 @@
 package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.GoogleInstallmentsInfo
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
-import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
@@ -165,5 +166,60 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.introPhase).isEqualTo(introPhase)
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
         assertThat(subscriptionOption.isPrepaid).isFalse
+    }
+
+    @Test
+    fun `copyWithPresentedOfferingContext returns new option with updated presented offering context`() {
+        val productDetails = mockProductDetails()
+        val originalContext = PresentedOfferingContext(
+            offeringIdentifier = "original-offering",
+            placementIdentifier = "original-placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(
+                revision = 3,
+                ruleId = "rule-original",
+            ),
+        )
+        val recurringPhase = PricingPhase(
+            billingPeriod = Period.create("P1M"),
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = 0,
+            price = Price(
+                formatted = "$9.00",
+                amountMicros = 9000000,
+                currencyCode = "USD",
+            )
+        )
+        val installmentsInfo = GoogleInstallmentsInfo(
+            commitmentPaymentsCount = 6,
+            renewalCommitmentPaymentsCount = 3,
+        )
+        val subscriptionOption = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = "offer-id",
+            pricingPhases = listOf(recurringPhase),
+            tags = listOf("tag"),
+            productDetails = productDetails,
+            offerToken = offerToken,
+            presentedOfferingContext = originalContext,
+            installmentsInfo = installmentsInfo,
+        )
+        val newContext = PresentedOfferingContext(
+            offeringIdentifier = "new-offering",
+            placementIdentifier = "new-placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(
+                revision = 9,
+                ruleId = "rule-new",
+            ),
+        )
+
+        val copiedOption = subscriptionOption.copyWithPresentedOfferingContext(newContext) as GoogleSubscriptionOption
+
+        assertThat(copiedOption).isNotSameAs(subscriptionOption)
+        assertThat(copiedOption.presentedOfferingContext).isEqualTo(newContext)
+        assertThat(copiedOption.installmentsInfo).isEqualTo(subscriptionOption.installmentsInfo)
+        assertThat(copiedOption.productId).isEqualTo(subscriptionOption.productId)
+        assertThat(copiedOption.offerToken).isEqualTo(subscriptionOption.offerToken)
+        assertThat(subscriptionOption.presentedOfferingContext).isEqualTo(originalContext)
     }
 }

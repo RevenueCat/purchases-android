@@ -244,6 +244,12 @@ fun stubSubscriptionOption(
         )
     override val installmentsInfo: InstallmentsInfo?
         get() = installmentsInfo
+    override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?
+    ): SubscriptionOption {
+        // Stub for testing
+        return this
+    }
 }
 
 fun stubFreeTrialPricingPhase(

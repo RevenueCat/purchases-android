@@ -135,6 +135,27 @@ class GoogleSubscriptionOption @JvmOverloads constructor(
         )
 
     /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `GoogleSubscriptionOption` with the specified `presentedOfferingContext` set on itself.
+     */
+    override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): SubscriptionOption {
+        return GoogleSubscriptionOption(
+            productId = this.productId,
+            basePlanId = this.basePlanId,
+            offerId = this.offerId,
+            pricingPhases = this.pricingPhases,
+            tags = this.tags,
+            productDetails = this.productDetails,
+            offerToken = this.offerToken,
+            presentedOfferingContext = presentedOfferingContext,
+            installmentsInfo = this.installmentsInfo,
+        )
+    }
+
+    /**
      * The "primary" pricing phase for the description, defined by either the first infinitely recurring phase,
      * or if no infinitely recurring phase is found, then the last one.
      */

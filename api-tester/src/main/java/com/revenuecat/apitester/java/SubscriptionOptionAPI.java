@@ -7,6 +7,7 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption;
 import com.revenuecat.purchases.models.InstallmentsInfo;
 import com.revenuecat.purchases.models.PricingPhase;
 import com.revenuecat.purchases.models.PurchasingData;
+import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.SubscriptionOption;
 
 import java.util.List;
@@ -24,6 +25,9 @@ final class SubscriptionOptionAPI {
         String id = subscriptionOption.getId();
         Boolean isPrepaid = subscriptionOption.isPrepaid();
         InstallmentsInfo installmentsInfo = subscriptionOption.getInstallmentsInfo();
+        SubscriptionOption copyWithContext = subscriptionOption.copyWithPresentedOfferingContext(
+                new PresentedOfferingContext("offeringId")
+        );
     }
 
     static void checkGoogleSubscriptionOption(GoogleSubscriptionOption googleSubscriptionOption) {
@@ -77,6 +81,10 @@ final class SubscriptionOptionAPI {
                 offerToken,
                 googleSubscriptionOption.getPresentedOfferingContext(),
                 installmentsInfo
+        );
+
+        SubscriptionOption copyWithContext = googleSubscriptionOption.copyWithPresentedOfferingContext(
+                new PresentedOfferingContext("offeringId")
         );
     }
 

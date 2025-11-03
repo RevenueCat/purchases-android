@@ -17,6 +17,9 @@ private class SubscriptionOptionAPI {
         val presentedOfferingContext: PresentedOfferingContext? = subscriptionOption.presentedOfferingContext
         val isPrepaid: Boolean = subscriptionOption.isPrepaid
         val installmentsInfo: InstallmentsInfo? = subscriptionOption.installmentsInfo
+        val subscriptionOptionCopy: SubscriptionOption = subscriptionOption.copyWithPresentedOfferingContext(
+            PresentedOfferingContext(offeringIdentifier = "abc"),
+        )
     }
 
     fun checkGoogleSubscriptionOption(googleSubscriptionOption: GoogleSubscriptionOption) {
@@ -81,6 +84,10 @@ private class SubscriptionOptionAPI {
             offerToken,
             presentedOfferingContext = null,
             installmentsInfo,
+        )
+
+        val subscriptionOptionCopy: SubscriptionOption = googleSubscriptionOption.copyWithPresentedOfferingContext(
+            PresentedOfferingContext(offeringIdentifier = "abc"),
         )
     }
 }

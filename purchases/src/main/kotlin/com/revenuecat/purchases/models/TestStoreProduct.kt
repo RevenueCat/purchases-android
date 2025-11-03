@@ -169,4 +169,24 @@ private class TestSubscriptionOption(
 
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext.offeringIdentifier
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `TestSubscriptionOption` with the specified `presentedOfferingContext` set.
+     * Unlike other implementations of `SubscriptionOption.copyWithPresentedOfferingContext`, this one
+     * ignores the provided value if it is null.
+     */
+    override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): SubscriptionOption {
+        return TestSubscriptionOption(
+            pricingPhases = this.pricingPhases,
+            basePlanId = this.basePlanId,
+            tags = this.tags,
+            presentedOfferingContext = presentedOfferingContext ?: this.presentedOfferingContext,
+            installmentsInfo = this.installmentsInfo,
+            purchasingData = this.purchasingData,
+        )
+    }
 }
