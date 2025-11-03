@@ -44,13 +44,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions")
 @Stable
@@ -347,7 +347,7 @@ internal class PaywallViewModelImpl(
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
-        suspendCancellableCoroutine { continuation ->
+        suspendCoroutine { continuation ->
             listener?.onPurchasePackageInitiated(packageToPurchase.identifier) {
                 continuation.resume(Unit)
             } ?: continuation.resume(Unit)
