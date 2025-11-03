@@ -34,6 +34,8 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
 
     @Test
     fun initialCustomerInfoIsVerified() = runTestActivityLifecycleScope {
+        confirmNotRunningLoadShedderTests()
+
         val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
 
         assertThat(receivedCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
@@ -68,6 +70,8 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
 
     @Test
     fun verificationChangesAfterSuccessIsNotified() = runTestActivityLifecycleScope {
+        confirmNotRunningLoadShedderTests()
+
         val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
         assertThat(receivedCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
         Purchases.sharedInstance.forceSigningErrors = true
@@ -79,6 +83,8 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
 
     @Test
     fun initialCustomerInfoFailsToVerify() = runTestActivityLifecycleScope {
+        confirmNotRunningLoadShedderTests()
+
         Purchases.sharedInstance.forceSigningErrors = true
         val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
 

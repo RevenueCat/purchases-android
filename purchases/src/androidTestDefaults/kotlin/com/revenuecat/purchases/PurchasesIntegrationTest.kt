@@ -62,6 +62,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetched() {
+        if (isRunningLoadShedderIntegrationTests()) {
+            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
+            return
+        }
+
         val lock = CountDownLatch(1)
 
         onActivityReady {
@@ -77,6 +82,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
+        if (isRunningLoadShedderIntegrationTests()) {
+            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
+            return
+        }
+
         val lock = CountDownLatch(1)
 
         activityScenarioRule.scenario.onActivity {
@@ -120,6 +130,10 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
                     assertThat(offerings.current?.metadata).isNotNull
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
+
+                    assertThat(offerings.current?.paywall).isNull()
+                    // Uncomment once load shedder starts returning ui_config
+                    // assertThat(offerings.current?.paywallComponents).isNotNull
 
                     lock.countDown()
                 },
@@ -165,47 +179,21 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun canPurchaseSubsProduct() {
-        val lock = CountDownLatch(1)
+        performPurchase()
+    }
 
-        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
-        val storeTransaction = StoreTransactionFactory.createStoreTransaction()
-        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+    @Test
+    fun canPurchaseSubsProductAndThenFetchCustomerInfo() {
+        performPurchase()
 
-        onActivityReady { activity ->
-            Purchases.sharedInstance.purchaseWith(
-                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
-                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
-                onSuccess = { transaction, customerInfo ->
-                    assertThat(transaction).isEqualTo(storeTransaction)
-                    assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
-                    val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
-                    val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
-                    assertThat(productId).isEqualTo(expectedProductId)
-                    assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
-                    entitlementsToVerify.onEach { entitlementId ->
-                        assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
-                    }
-                    lock.countDown()
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getCustomerInfoWith(
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                onError = { fail("Expected success. Got error: $it") },
+                onSuccess = { customerInfo ->
+                    verifyCustomerInfoHasPurchase(customerInfo)
+                    latch.countDown()
                 },
-            )
-            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
-        }
-        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
-        assertThat(lock.count).isZero
-
-        verify(exactly = 1) {
-            mockBillingAbstract.makePurchaseAsync(
-                any(),
-                testUserId,
-                match {
-                    it is GooglePurchasingData.Subscription &&
-                        storeProduct is GoogleStoreProduct &&
-                        it.productId == storeProduct.productId &&
-                        it.optionId == storeProduct.basePlanId
-                },
-                replaceProductInfo = null,
-                presentedOfferingContext = null,
-                isPersonalizedPrice = null,
             )
         }
     }
@@ -348,6 +336,56 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
+    }
+
+    private fun performPurchase() {
+        val lock = CountDownLatch(1)
+
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        val storeTransaction = StoreTransactionFactory.createStoreTransaction()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+
+        onActivityReady { activity ->
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
+                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
+                onSuccess = { transaction, customerInfo ->
+                    assertThat(transaction).isEqualTo(storeTransaction)
+                    verifyCustomerInfoHasPurchase(customerInfo)
+                    lock.countDown()
+                },
+            )
+            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
+        }
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                testUserId,
+                match {
+                    it is GooglePurchasingData.Subscription &&
+                        storeProduct is GoogleStoreProduct &&
+                        it.productId == storeProduct.productId &&
+                        it.optionId == storeProduct.basePlanId
+                },
+                replaceProductInfo = null,
+                presentedOfferingContext = null,
+                isPersonalizedPrice = null,
+            )
+        }
+    }
+
+    private fun verifyCustomerInfoHasPurchase(customerInfo: CustomerInfo) {
+        assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
+        val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
+        val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+        assertThat(productId).isEqualTo(expectedProductId)
+        assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
+        entitlementsToVerify.onEach { entitlementId ->
+            assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
+        }
     }
 
     private fun validateAllZeroBalances(virtualCurrencies: VirtualCurrencies?) {

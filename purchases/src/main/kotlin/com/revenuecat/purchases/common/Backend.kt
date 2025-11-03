@@ -51,7 +51,10 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
-internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
+internal typealias OfferingsCallback = Pair<
+    (JSONObject) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
+    >
 
 /** @suppress */
 internal typealias PostReceiptDataSuccessCallback = (PostReceiptResponse) -> Unit
@@ -91,6 +94,11 @@ internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
     SHOULD_NOT_CONSUME,
+}
+
+internal enum class GetOfferingsErrorHandlingBehavior {
+    SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+    SHOULD_NOT_FALLBACK,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -346,7 +354,7 @@ internal class Backend(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError, isServerError: Boolean) -> Unit,
+        onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
@@ -364,11 +372,10 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                val isServerError = false
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
-                    onError(error, isServerError)
+                    onError(error, GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS)
                 }
             }
 
@@ -380,13 +387,18 @@ internal class Backend(
                         try {
                             onSuccess(result.body)
                         } catch (e: JSONException) {
-                            val isServerError = false
-                            onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
+                            val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
+                            onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
                         }
                     } else {
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
+                        } else {
+                            GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
                         onError(
                             result.toPurchasesError().also { errorLog(it) },
-                            RCHTTPStatusCodes.isServerError(result.responseCode),
+                            errorBehavior,
                         )
                     }
                 }
