@@ -6,6 +6,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.Setti
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Locale
+import java.util.Locale.getDefault
 
 @RunWith(AndroidJUnit4::class)
 class PathUtilsTest {
@@ -14,14 +16,13 @@ class PathUtilsTest {
     fun `filterSubscriptionSpecificPaths includes CANCEL paths`() {
         val paths = listOf(
             createHelpPath("cancel", CustomerCenterConfigData.HelpPath.PathType.CANCEL),
-            createHelpPath("refund", CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST),
-            createHelpPath("custom_url", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL),
+            createHelpPath("missing", CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE),
         )
 
         val result = PathUtils.filterSubscriptionSpecificPaths(paths)
 
-        assertThat(result).hasSize(2)
-        assertThat(result.map { it.id }).containsExactlyInAnyOrder("cancel", "refund")
+        assertThat(result).hasSize(1)
+        assertThat(result.first().id).isEqualTo("cancel")
     }
 
     @Test
@@ -54,14 +55,13 @@ class PathUtilsTest {
     fun `filterSubscriptionSpecificPaths includes CUSTOM_ACTION paths`() {
         val paths = listOf(
             createHelpPath("custom_action", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION),
-            createHelpPath("cancel", CustomerCenterConfigData.HelpPath.PathType.CANCEL),
-            createHelpPath("custom_url", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL),
+            createHelpPath("missing", CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE),
         )
 
         val result = PathUtils.filterSubscriptionSpecificPaths(paths)
 
-        assertThat(result).hasSize(2)
-        assertThat(result.map { it.id }).containsExactlyInAnyOrder("custom_action", "cancel")
+        assertThat(result).hasSize(1)
+        assertThat(result.first().id).isEqualTo("custom_action")
     }
 
     @Test
@@ -80,14 +80,14 @@ class PathUtilsTest {
     @Test
     fun `filterSubscriptionSpecificPaths includes CUSTOM_URL paths`() {
         val paths = listOf(
-            createHelpPath("refund", CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST),
             createHelpPath("custom_url", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL),
+            createHelpPath("missing", CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE),
         )
 
         val result = PathUtils.filterSubscriptionSpecificPaths(paths)
 
-        assertThat(result).hasSize(2)
-        assertThat(result.map { it.id }).containsExactlyInAnyOrder("refund", "custom_url")
+        assertThat(result).hasSize(1)
+        assertThat(result.first().id).isEqualTo("custom_url")
     }
 
     @Test
@@ -145,15 +145,15 @@ class PathUtilsTest {
     @Test
     fun `filterGeneralPaths includes CUSTOM_ACTION paths`() {
         val paths = listOf(
-            createHelpPath("custom_url", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL),
             createHelpPath("custom_action", CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION),
             createHelpPath("cancel", CustomerCenterConfigData.HelpPath.PathType.CANCEL),
+            createHelpPath("refund", CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST),
         )
 
         val result = PathUtils.filterGeneralPaths(paths)
 
-        assertThat(result).hasSize(2)
-        assertThat(result.map { it.id }).containsExactlyInAnyOrder("custom_url", "custom_action")
+        assertThat(result).hasSize(1)
+        assertThat(result.first().id).isEqualTo("custom_action")
     }
 
     @Test
@@ -307,11 +307,16 @@ class PathUtilsTest {
         assertThat(result).hasSize(7)
         // First 5 should be FILLED (subscription-specific)
         assertThat(result.take(5).map { it.id }).containsExactlyInAnyOrder(
-            "cancel", "change", "refund", "custom_action", "custom_url"
+            "cancel",
+            "change",
+            "refund",
+            "custom_action",
+            "custom_url",
         )
         // Last 2 should be OUTLINED (general)
         assertThat(result.takeLast(2).map { it.id }).containsExactlyInAnyOrder(
-            "unknown", "missing"
+            "unknown",
+            "missing",
         )
     }
 
@@ -319,9 +324,10 @@ class PathUtilsTest {
         id: String,
         type: CustomerCenterConfigData.HelpPath.PathType,
     ): CustomerCenterConfigData.HelpPath {
+        id.replace("_", " ")
         return CustomerCenterConfigData.HelpPath(
             id = id,
-            title = id.replace("_", " ").capitalize(),
+            title = id.replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() },
             type = type,
         )
     }
