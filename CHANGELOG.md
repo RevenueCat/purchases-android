@@ -27,6 +27,10 @@
 * Change ForceServerErrorStrategy to be a `fun interface` to simplify instantiation (#2773) via Toni Rico (@tonidero)
 * Stores backend integration test result on CircleCI (#2771) via JayShortway (@JayShortway)
 * Change test server down mechanism to use new server down endpoint (#2765) via Toni Rico (@tonidero)
+* [CAT-2067 EXPERIMENTAL]: Add-On Subscription Options (#2763) via Will Taylor (@fire-at-will)
+* Avoids the `PaywallComponentsTemplate_Preview` from being rendered by Emerge (#2761) via JayShortway (@JayShortway)
+* Handle error building `QueryProductDetailsParams` in some devices (#2764) via Toni Rico (@tonidero)
+* Add more proper error message when using test store API key in release builds (#2762) via Toni Rico (@tonidero)
 
 ## 9.12.0
 > [!WARNING]  
@@ -50,10 +54,6 @@
 * Add elevation to surfaces in Customer Center to fix default appearance (#2741) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [CAT-2067 EXPERIMENTAL]: Add-On Subscription Options (#2763) via Will Taylor (@fire-at-will)
-* Avoids the `PaywallComponentsTemplate_Preview` from being rendered by Emerge (#2761) via JayShortway (@JayShortway)
-* Handle error building `QueryProductDetailsParams` in some devices (#2764) via Toni Rico (@tonidero)
-* Add more proper error message when using test store API key in release builds (#2762) via Toni Rico (@tonidero)
 * [Experimental]: Support Multi-Line Subscriptions (#2668) via Will Taylor (@fire-at-will)
 * Add PurchaseButtonComponent WPL field deserialization (#2749) via Toni Rico (@tonidero)
 * Bump fastlane-plugin-revenuecat_internal from `25c7fb8` to `525d48c` (#2748) via dependabot[bot] (@dependabot[bot])
