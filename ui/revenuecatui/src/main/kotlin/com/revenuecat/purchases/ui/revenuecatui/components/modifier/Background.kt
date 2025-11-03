@@ -43,6 +43,5 @@ internal fun Modifier.background(
         is BackgroundStyle.Video ->
             // Video backgrounds are handled specially - they need to be rendered
             // in a Box behind the content, so we just clip the shape here
-            // TODO…………
             this.clip(shape)
     }
