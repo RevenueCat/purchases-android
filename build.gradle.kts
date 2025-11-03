@@ -83,23 +83,23 @@ tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaHtmlMultiModu
 tasks.register("listPublications") {
     description = "Lists all Maven publications with their coordinates (groupId:artifactId:version)"
     group = "publishing"
-    
+
     // Ensure all subprojects are evaluated before running
     dependsOn(subprojects.map { "${it.path}:tasks" })
-    
+
     doLast {
         val groupId = project.findProperty("GROUP") as String? ?: "com.revenuecat.purchases"
         val version = project.findProperty("VERSION_NAME") as String? ?: project.version.toString()
         val pomArtifactId = project.findProperty("POM_ARTIFACT_ID") as String?
-        
+
         subprojects.forEach { subproject ->
             // Check if maven publish plugin is applied
             val hasMavenPublish = subproject.plugins.hasPlugin("com.vanniktech.maven.publish")
-            
+
             if (hasMavenPublish) {
                 // Get the publishing extension
                 val publishing = subproject.extensions.findByType<org.gradle.api.publish.PublishingExtension>()
-                
+
                 if (publishing != null) {
                     publishing.publications.forEach { publication ->
                         if (publication is org.gradle.api.publish.maven.MavenPublication) {
@@ -107,7 +107,7 @@ tasks.register("listPublications") {
                             val artifactId = pomArtifactId ?: publication.artifactId
                             val pubGroupId = publication.groupId ?: groupId
                             val pubVersion = publication.version ?: version
-                            
+
                             // Output in format: groupId:artifactId:version
                             println("$pubGroupId:$artifactId:$pubVersion")
                         }
