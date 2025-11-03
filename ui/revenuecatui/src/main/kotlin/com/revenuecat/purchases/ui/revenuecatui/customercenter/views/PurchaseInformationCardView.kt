@@ -126,6 +126,11 @@ private fun getSubtitle(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
 ): String? {
+    // Lifetime purchases should not show expiration dates
+    if (purchaseInformation.isLifetime) {
+        return getPrice(purchaseInformation, localization)
+    }
+
     return when (purchaseInformation.expirationOrRenewal) {
         is ExpirationOrRenewal.Expiration ->
             purchaseInformation.expirationString(purchaseInformation.expirationOrRenewal.date, localization)
@@ -182,6 +187,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
         CustomerCenterConfigTestData.purchaseInformationFreeTrial,
         CustomerCenterConfigTestData.purchaseInformationPromotional,
+        CustomerCenterConfigTestData.purchaseInformationPromotionalLifetime,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
             title = "Monthly long subscription name that overflows",
