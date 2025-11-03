@@ -232,10 +232,10 @@ platform :android do
           UI.important("Artifact #{group_id}:#{artifact_id}:#{version} already exists in Maven Central")
         elsif http_code != "404"
           # If we get an unexpected status code, warn but don't fail
-          UI.important("Unexpected HTTP status #{http_code} when checking #{url}")
+          UI.user_error!("Unexpected HTTP status #{http_code} when checking #{url}")
         end
       rescue => e
-        UI.important("Failed to check #{url}: #{e.message}")
+        UI.user_error!("Failed to check #{url}: #{e.message}")
         # Continue checking other artifacts even if one fails
         next
       end
