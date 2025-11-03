@@ -63,6 +63,14 @@ Automatically bumps version, replaces version numbers, updates changelog and cre
 
 Creates github release
 
+### android validate_version_not_in_maven_central
+
+```sh
+[bundle exec] fastlane android validate_version_not_in_maven_central
+```
+
+Check if version already exists in Maven Central
+
 ### android deploy
 
 ```sh
