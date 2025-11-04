@@ -89,7 +89,9 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                 },
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
-                    assertThat(receivedCustomerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(
+                        receivedCustomerInfo.originalSource,
+                    ).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
                     assertThat(receivedCustomerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
@@ -109,7 +111,9 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                 },
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
-                    assertThat(receivedCustomerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(
+                        receivedCustomerInfo.originalSource,
+                    ).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
                     assertThat(receivedCustomerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
@@ -242,7 +246,9 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                         },
                         onSuccess = {
                             assertCustomerInfoHasExpectedPurchaseData(it)
-                            assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                            assertThat(
+                                customerInfo.originalSource,
+                            ).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
                             assertThat(customerInfo.loadedFromCache).isFalse
                             latch.countDown()
                         },
