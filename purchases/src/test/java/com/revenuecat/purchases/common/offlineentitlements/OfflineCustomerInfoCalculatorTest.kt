@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.CustomerInfoSource
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
@@ -774,7 +773,7 @@ class OfflineCustomerInfoCalculatorTest {
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
-        assertThat(receivedCustomerInfo?.source).isEqualTo(CustomerInfoSource.OFFLINE_ENTITLEMENTS)
+        assertThat(receivedCustomerInfo?.loadedFromCache).isFalse
     }
     // endregion
 }
