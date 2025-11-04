@@ -74,6 +74,24 @@ class Offerings internal constructor(
         val fallbackOfferingId: String?,
         val offeringIdsByPlacement: Map<String, String?>,
     )
+
+    internal fun copy(
+        current: Offering? = this.current,
+        all: Map<String, Offering> = this.all,
+        placements: Placements? = this.placements,
+        targeting: Targeting? = this.targeting,
+        originalSource: OriginalDataSource = this.originalSource,
+        source: DataSource = this.source,
+    ): Offerings {
+        return Offerings(
+            current = current,
+            all = all,
+            placements = placements,
+            targeting = targeting,
+            originalSource = originalSource,
+            source = source,
+        )
+    }
 }
 
 @OptIn(InternalRevenueCatAPI::class)

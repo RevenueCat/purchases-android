@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
@@ -46,7 +47,11 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        assertThat(cachedOfferings).isEqualTo(networkOfferings)
+        val networkOfferingsWithCacheOrigin = networkOfferings.copy(
+            source = DataSource.CACHE,
+        )
+
+        assertThat(cachedOfferings).isEqualTo(networkOfferingsWithCacheOrigin)
     }
 
     @Test
@@ -67,7 +72,11 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        assertThat(cachedOfferings).isEqualTo(networkOfferings)
+        val networkOfferingsWithCacheOrigin = networkOfferings.copy(
+            source = DataSource.CACHE,
+        )
+
+        assertThat(cachedOfferings).isEqualTo(networkOfferingsWithCacheOrigin)
     }
 
     @Test
