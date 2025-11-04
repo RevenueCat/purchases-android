@@ -233,6 +233,14 @@ Builds a Purchase Tester APK and prompts for:
 
 
 
+### android send_slack_load_shedder_integration_test
+
+```sh
+[bundle exec] fastlane android send_slack_purchases_integration_test
+```
+
+
+
 ### android update_paywall_preview_resources_submodule
 
 ```sh
