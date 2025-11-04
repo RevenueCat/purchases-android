@@ -347,10 +347,15 @@ internal class PaywallViewModelImpl(
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
-        suspendCoroutine { continuation ->
-            listener?.onPurchasePackageInitiated(packageToPurchase.identifier) {
-                continuation.resume(Unit)
-            } ?: continuation.resume(Unit)
+
+        val shouldResume = suspendCoroutine { continuation ->
+            listener?.onPurchasePackageInitiated(packageToPurchase.identifier) { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+
+        if (!shouldResume) {
+            return
         }
 
         try {

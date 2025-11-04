@@ -4,7 +4,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.utils.Invokable
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 interface PaywallListener {
     /**
@@ -15,7 +15,7 @@ interface PaywallListener {
      * @param resume A callback that must be invoked to continue with the purchase flow.
      *               If not called, the purchase flow will not proceed.
      */
-    fun onPurchasePackageInitiated(packageId: String, resume: Invokable) {
+    fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {
         // Default implementation immediately resumes
         resume()
     }
