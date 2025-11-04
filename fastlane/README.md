@@ -145,7 +145,7 @@ Build and run purchases module integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
-Accepts a suite parameter: 'production' or 'loadshedder'
+Accepts a backend_environment parameter: 'production' or 'loadshedder'
 
 ### android run_load_shedder_purchases_integration_tests
 
@@ -236,14 +236,6 @@ Builds a Purchase Tester APK and prompts for:
 
 
 ### android send_slack_purchases_integration_test
-
-```sh
-[bundle exec] fastlane android send_slack_purchases_integration_test
-```
-
-
-
-### android send_slack_load_shedder_integration_test
 
 ```sh
 [bundle exec] fastlane android send_slack_purchases_integration_test

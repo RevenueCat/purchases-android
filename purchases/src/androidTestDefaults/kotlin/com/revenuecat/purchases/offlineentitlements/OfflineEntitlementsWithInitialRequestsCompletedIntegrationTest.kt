@@ -3,6 +3,7 @@ package com.revenuecat.purchases.offlineentitlements
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.MainActivity
 import com.revenuecat.purchases.ProductType
@@ -88,6 +89,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                 },
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
+                    assertThat(receivedCustomerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(receivedCustomerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
             )
@@ -106,6 +109,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                 },
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
+                    assertThat(receivedCustomerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(receivedCustomerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
             )
@@ -137,6 +142,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                         },
                         onSuccess = {
                             assertCustomerInfoDoesNotHavePurchaseData(it)
+                            assertThat(it.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+                            assertThat(it.loadedFromCache).isTrue
                             latch.countDown()
                         },
                     )
@@ -172,6 +179,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertCustomerInfoDoesNotHavePurchaseData(receivedCustomerInfosInListener.first())
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfosInListener.last())
                     assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
             )
@@ -224,6 +233,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 onSuccess = { _, customerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo)
                     assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(customerInfo.loadedFromCache).isFalse
 
                     Purchases.sharedInstance.getCustomerInfoWith(
                         onError = {
@@ -231,6 +242,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                         },
                         onSuccess = {
                             assertCustomerInfoHasExpectedPurchaseData(it)
+                            assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                            assertThat(customerInfo.loadedFromCache).isFalse
                             latch.countDown()
                         },
                     )
@@ -256,6 +269,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 onSuccess = { _, customerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo)
                     assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(customerInfo.loadedFromCache).isFalse
 
                     forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
                     mockActivePurchases(initialActivePurchases)
@@ -286,6 +301,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 onSuccess = { _, customerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo)
                     assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(customerInfo.loadedFromCache).isFalse
 
                     Purchases.resetSingleton()
                     mockActivePurchases(initialActivePurchases)
@@ -316,6 +333,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 onSuccess = { _, customerInfo1 ->
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo1)
                     assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(customerInfo1.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(customerInfo1.loadedFromCache).isFalse
 
                     forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
 
@@ -328,6 +347,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                                 entitlementsToVerify,
                             )
                             assertAcknowledgePurchaseDidHappen()
+                            assertThat(it.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                            assertThat(it.loadedFromCache).isFalse
 
                             latch.countDown()
                         },

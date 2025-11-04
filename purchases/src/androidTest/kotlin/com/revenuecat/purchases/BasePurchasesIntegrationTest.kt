@@ -59,6 +59,12 @@ open class BasePurchasesIntegrationTest {
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 
+    internal val expectedCustomerInfoOriginalSource = if (Constants.backendEnvironment == Constants.BackendEnvironment.PRODUCTION) {
+        CustomerInfoOriginalSource.MAIN
+    } else {
+        CustomerInfoOriginalSource.LOAD_SHEDDER
+    }
+
     internal var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     private var latestStateListener: BillingAbstract.StateListener? = null
 
