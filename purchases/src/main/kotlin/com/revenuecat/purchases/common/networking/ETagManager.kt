@@ -77,6 +77,7 @@ internal class ETagManager(
         requestDate: Date?,
         verificationResult: VerificationResult,
         isLoadShedderResponse: Boolean? = null,
+        isFallbackURL: Boolean? = null,
     ): HTTPResult? {
         val resultFromBackend = HTTPResult(
             responseCode,
@@ -85,6 +86,7 @@ internal class ETagManager(
             requestDate,
             verificationResult,
             isLoadShedderResponse,
+            isFallbackURL,
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
@@ -94,6 +96,8 @@ internal class ETagManager(
                         // when enabling verification.
                         verificationResult = verificationResult,
                         requestDate = requestDate ?: storedResult.requestDate,
+                        // Preserve fallback flag from stored result
+                        isFallbackURL = storedResult.isFallbackURL,
                     )
                 }
                 return storedResult

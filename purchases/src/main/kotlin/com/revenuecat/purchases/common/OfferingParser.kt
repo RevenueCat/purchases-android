@@ -34,7 +34,13 @@ internal abstract class OfferingParser {
      * Note: this may return an empty Offerings.
      */
     @OptIn(InternalRevenueCatAPI::class)
-    fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
+    @JvmOverloads
+    fun createOfferings(
+        offeringsJson: JSONObject,
+        productsById: Map<String, List<StoreProduct>>,
+        originalSource: OriginalDataSource = OriginalDataSource.MAIN,
+        source: DataSource = DataSource.MAIN,
+    ): Offerings {
         log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
         val jsonOfferings = offeringsJson.getJSONArray("offerings")
@@ -97,6 +103,8 @@ internal abstract class OfferingParser {
             all = offerings,
             placements = placements,
             targeting = targeting,
+            originalSource = originalSource,
+            source = source,
         )
     }
 

@@ -132,4 +132,72 @@ class HTTPResultTest {
         val serialized = result.serialize()
         assertThat(serialized).doesNotContain("isLoadShedderResponse")
     }
+
+    @Test
+    fun `result with fallback URL is serialized correctly`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = null,
+            isFallbackURL = true,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).contains("\"isFallbackURL\":true")
+        assertThat(serialized).contains("\"responseCode\":200")
+    }
+
+    @Test
+    fun `result with fallback URL is deserialized correctly`() {
+        val expectedResult = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = null,
+            isFallbackURL = true,
+        )
+        val result = HTTPResult.deserialize("{" +
+            "\"responseCode\":200," +
+            "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
+            "\"origin\":\"BACKEND\"," +
+            "\"requestDate\":1678180617000," +
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isFallbackURL\":true}")
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `result with null fallback URL does not serialize it`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = null,
+            isFallbackURL = null,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).doesNotContain("isFallbackURL")
+    }
+
+    @Test
+    fun `result with both load shedder and fallback flags serialized correctly`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = true,
+            isFallbackURL = true,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).contains("\"isLoadShedderResponse\":true")
+        assertThat(serialized).contains("\"isFallbackURL\":true")
+    }
 }

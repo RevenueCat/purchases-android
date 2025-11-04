@@ -7,9 +7,11 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE
@@ -252,6 +254,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -267,6 +271,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -283,6 +289,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -302,6 +310,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -320,6 +330,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -338,6 +350,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -356,6 +370,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -374,6 +390,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -397,6 +415,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -420,6 +440,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -452,6 +474,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -473,6 +497,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithWPL,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -501,6 +527,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = invalidUrlWPL,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -521,6 +549,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = OriginalDataSource.MAIN,
+            dataSource = DataSource.MAIN,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )

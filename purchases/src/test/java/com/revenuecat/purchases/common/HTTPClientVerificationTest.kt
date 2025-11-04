@@ -165,7 +165,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = Date(1234567890L),
-                verificationResult = VerificationResult.VERIFIED
+                verificationResult = VerificationResult.VERIFIED,
+                isFallbackURL = false,
             )
         } returns expectedResult
         val response = MockResponse()

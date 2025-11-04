@@ -1,19 +1,30 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.common.DataSource
+import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.originalDataSource
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
 internal data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
+    internal val originalSource: OriginalDataSource = OriginalDataSource.MAIN,
+    internal val source: DataSource = DataSource.MAIN,
 ) {
     companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
         private const val PRODUCT_ID_KEY = "product_identifier"
         private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
+        private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
 
-        fun fromJson(json: JSONObject): ProductEntitlementMapping {
+        fun fromJson(
+            json: JSONObject,
+            originalSource: OriginalDataSource = OriginalDataSource.MAIN,
+            source: DataSource = DataSource.MAIN,
+        ): ProductEntitlementMapping {
             val productsObject = json.getJSONObject(PRODUCT_ENTITLEMENT_MAPPING_KEY)
             val mappings = mutableMapOf<String, Mapping>()
             for (mappingIdentifier in productsObject.keys()) {
@@ -27,7 +38,13 @@ internal data class ProductEntitlementMapping(
                 }
                 mappings[mappingIdentifier] = Mapping(productIdentifier, basePlanId, entitlements)
             }
-            return ProductEntitlementMapping(mappings)
+            return ProductEntitlementMapping(mappings, originalSource, source)
+        }
+
+        fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
+            val originalSource = httpResult.originalDataSource
+            val source = originalSource.asDataSource()
+            return fromJson(json, originalSource, source)
         }
     }
 
@@ -46,5 +63,6 @@ internal data class ProductEntitlementMapping(
             }
         }
         put(PRODUCT_ENTITLEMENT_MAPPING_KEY, JSONObject(mappingsObjects))
+        put(ORIGINAL_SOURCE_KEY, originalSource.name)
     }
 }

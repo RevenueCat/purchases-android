@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
@@ -47,6 +48,7 @@ internal abstract class BaseHTTPClientTest {
 
     @After
     fun teardown() {
+        clearAllMocks()
         server.shutdown()
     }
 
@@ -122,7 +124,8 @@ internal abstract class BaseHTTPClientTest {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = requestDateHeader,
-                verificationResult = verificationResult
+                verificationResult = verificationResult,
+                isFallbackURL = any(),
             )
         } returns expectedResult
         val response = MockResponse()

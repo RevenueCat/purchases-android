@@ -17,6 +17,9 @@ internal class OfferingsCache(
     ),
     private val localeProvider: LocaleProvider,
 ) {
+    companion object {
+        const val ORIGINAL_SOURCE_KEY = "rc_original_source"
+    }
 
     private var cachedLanguageTags: String? = null
 
@@ -29,8 +32,11 @@ internal class OfferingsCache(
 
     @Synchronized
     fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
+        val finalJsonToCache = offeringsResponse.apply {
+            put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
+        }
         offeringsCachedObject.cacheInstance(offerings)
-        deviceCache.cacheOfferingsResponse(offeringsResponse)
+        deviceCache.cacheOfferingsResponse(finalJsonToCache)
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
         cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -120,8 +121,9 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onError = { _, _ ->
@@ -145,8 +147,9 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onError = { error, _ ->

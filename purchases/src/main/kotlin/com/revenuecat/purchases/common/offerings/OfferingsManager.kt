@@ -6,17 +6,21 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
@@ -117,8 +121,14 @@ internal class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            {
-                createAndCacheOfferings(it, onError, onSuccess)
+            { body, originalDataSource ->
+                createAndCacheOfferings(
+                    offeringsJSON = body,
+                    originalDataSource = originalDataSource,
+                    dataSource = originalDataSource.asDataSource(),
+                    onError,
+                    onSuccess,
+                )
             },
             { backendError, errorBehavior ->
                 when (errorBehavior) {
@@ -128,7 +138,23 @@ internal class OfferingsManager(
                             handleErrorFetchingOfferings(backendError, onError)
                         } else {
                             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
-                            createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
+                            val originalDataSource = cachedOfferingsResponse.optNullableString(
+                                OfferingsCache.ORIGINAL_SOURCE_KEY,
+                            )?.let {
+                                try {
+                                    OriginalDataSource.valueOf(it)
+                                } catch (e: IllegalArgumentException) {
+                                    errorLog(e) { "Invalid original data source for cached offerings" }
+                                    null
+                                }
+                            } ?: OriginalDataSource.MAIN
+                            createAndCacheOfferings(
+                                offeringsJSON = cachedOfferingsResponse,
+                                originalDataSource = originalDataSource,
+                                dataSource = DataSource.CACHE,
+                                onError,
+                                onSuccess,
+                            )
                         }
                     }
                     GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
@@ -141,11 +167,15 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
+        originalDataSource: OriginalDataSource,
+        dataSource: DataSource,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
+            originalDataSource,
+            dataSource,
             onError = { error ->
                 handleErrorFetchingOfferings(error, onError)
             },

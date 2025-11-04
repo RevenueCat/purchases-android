@@ -52,7 +52,7 @@ internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
 internal typealias OfferingsCallback = Pair<
-    (JSONObject) -> Unit,
+    (JSONObject, OriginalDataSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
     >
 
@@ -353,7 +353,7 @@ internal class Backend(
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (JSONObject) -> Unit,
+        onSuccess: (JSONObject, OriginalDataSource) -> Unit,
         onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
@@ -385,7 +385,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body)
+                            onSuccess(result.body, result.originalDataSource)
                         } catch (e: JSONException) {
                             val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
                             onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
@@ -670,7 +670,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(ProductEntitlementMapping.fromJson(result.body))
+                            onSuccess(ProductEntitlementMapping.fromNetwork(result.body, result))
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
                         }

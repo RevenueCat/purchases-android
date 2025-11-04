@@ -335,6 +335,7 @@ internal class HTTPClient(
             getRequestDateHeader(connection),
             verificationResult,
             isLoadShedderResponse,
+            isFallbackURL,
         )
     }
 

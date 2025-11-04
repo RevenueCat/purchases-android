@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -78,8 +79,9 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
+                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { purchasesError, _ ->
@@ -105,8 +107,9 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
+                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { error, _ ->

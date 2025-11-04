@@ -11,9 +11,11 @@ import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.CustomerInfoSource
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
@@ -51,6 +53,7 @@ internal open class DeviceCache(
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
         private const val CUSTOMER_INFO_ORIGINAL_SOURCE_KEY = "customer_info_original_source"
+        private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
@@ -465,11 +468,15 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+        val jsonWithSource = productEntitlementMapping.toJson().apply {
+            put(ORIGINAL_SOURCE_KEY, productEntitlementMapping.originalSource.name)
+        }
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString(),
-            ).apply()
+                jsonWithSource.toString(),
+            )
+            .apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
     }
@@ -491,14 +498,27 @@ internal open class DeviceCache(
         )
     }
 
+    @Suppress("NestedBlockDepth")
     @Synchronized
     fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
-                ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+                val jsonObject = JSONObject(jsonString)
+                val cachedOriginalSource = jsonObject.optNullableString(ORIGINAL_SOURCE_KEY)?.let {
+                    try {
+                        OriginalDataSource.valueOf(it)
+                    } catch (e: IllegalArgumentException) {
+                        errorLog(e) { "Invalid original data source in cached product entitlement mappings." }
+                        null
+                    }
+                } ?: OriginalDataSource.MAIN
+                val source = DataSource.CACHE
+                ProductEntitlementMapping.fromJson(jsonObject, cachedOriginalSource, source)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
-                preferences.edit().remove(productEntitlementMappingCacheKey).apply()
+                preferences.edit()
+                    .remove(productEntitlementMappingCacheKey)
+                    .apply()
                 null
             }
         }

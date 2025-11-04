@@ -4,9 +4,11 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.StoreProduct
@@ -24,6 +26,8 @@ internal class OfferingsFactory(
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
+        originalDataSource: OriginalDataSource,
+        dataSource: DataSource,
         onError: (PurchasesError) -> Unit,
         onSuccess: (OfferingsResultData) -> Unit,
     ) {
@@ -53,7 +57,12 @@ internal class OfferingsFactory(
                                     }
                                 }
 
-                            val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
+                            val offerings = offeringParser.createOfferings(
+                                offeringsJSON,
+                                productsById,
+                                originalDataSource,
+                                dataSource,
+                            )
                             if (offerings.all.isEmpty()) {
                                 onError(
                                     PurchasesError(
