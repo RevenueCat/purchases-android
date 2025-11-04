@@ -22,8 +22,8 @@ object Constants {
         companion object {
             fun valueForString(backendEnvironmentString: String): BackendEnvironment {
                 return when (backendEnvironmentString) {
-                    "loadshedder" -> LOAD_SHEDDER
-                    "loadshedder-us-east-2" -> LOAD_SHEDDER_US_EAST_2
+                    "load_shedder_us_east_1" -> LOAD_SHEDDER
+                    "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2
                     "production" -> PRODUCTION
                     else -> error("Expected valid backend_environment value. Got $backendEnvironmentString")
                 }

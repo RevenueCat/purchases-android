@@ -145,7 +145,7 @@ Build and run purchases module integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
-Accepts a backend_environment parameter: 'production', 'loadshedder', 'loadshedder-us-east-2'
+Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'
 
 ### android run_custom_entitlement_computation_integration_tests
 

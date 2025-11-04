@@ -265,12 +265,12 @@ platform :android do
 
   desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  desc "Accepts a backend_environment parameter: 'production', 'loadshedder', 'loadshedder-us-east-2'"
+  desc "Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'"
   lane :run_purchases_integration_tests do |options|
-    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'loadshedder', or 'loadshedder-us-east-2'")
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'load_shedder_us_east_1', or 'load_shedder_us_east_2'")
     
-    unless ['production', 'loadshedder', 'loadshedder-us-east-2'].include?(backend_environment)
-      UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'loadshedder' or 'loadshedder-us-east-2'")
+    unless ['production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'].include?(backend_environment)
+      UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
     end
 
     if backend_environment == 'production'

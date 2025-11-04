@@ -589,12 +589,12 @@ jobs:
             - purchases/test_artifacts/integrationTest-test.apk
 
   run-firebase-tests-purchases-integration-tests:
-    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'loadshedder'"
+    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
     <<: *android-executor
     parameters:
       backend_environment:
         type: enum
-        enum: ["production", "loadshedder", "loadshedder-us-east-2"]
+        enum: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
     steps:
       - checkout
       - install-sdkman
@@ -985,7 +985,7 @@ workflows:
             - slack-secrets
           matrix:
             parameters:
-              backend_environment: ["production", "loadshedder", "loadshedder-us-east-2"]
+              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -1048,11 +1048,11 @@ workflows:
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
       - run-firebase-tests-purchases-integration-tests:
-          backend_environment: "loadshedder"
+          backend_environment: "load_shedder_us_east_1"
           context:
             - slack-secrets
       - run-firebase-tests-purchases-integration-tests:
-          backend_environment: "loadshedder-us-east-2"
+          backend_environment: "load_shedder_us_east_2"
           context:
             - slack-secrets
 
