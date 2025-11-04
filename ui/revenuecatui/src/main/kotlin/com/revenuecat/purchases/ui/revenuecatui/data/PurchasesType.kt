@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
@@ -56,6 +57,9 @@ internal interface PurchasesType {
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitCreateSupportTicket(email: String, description: String)
 }
 
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
@@ -118,4 +122,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitCreateSupportTicket(email: String, description: String) {
+        return purchases.awaitCreateSupportTicket(email, description)
+    }
 }

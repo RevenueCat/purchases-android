@@ -45,7 +45,7 @@ internal fun ManageSubscriptionsButtonsView(
         }
         if (addContactButton && contactEmail != null) {
             SettingsButton(
-                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
+                onClick = { onAction(CustomerCenterAction.ShowSupportTicketCreation) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),

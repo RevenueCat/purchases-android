@@ -57,3 +57,8 @@ internal data class PromotionalOfferData(
     @get:JvmSynthetic val originalPath: CustomerCenterConfigData.HelpPath,
     @get:JvmSynthetic val localizedPricingPhasesDescription: String,
 )
+
+internal data class CreateSupportTicketData(
+    @get:JvmSynthetic val onSubmit: (subject: String, description: String) -> Unit,
+    @get:JvmSynthetic val onCancel: () -> Unit,
+)

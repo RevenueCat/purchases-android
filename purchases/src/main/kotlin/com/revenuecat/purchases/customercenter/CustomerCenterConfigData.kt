@@ -548,7 +548,46 @@ data class CustomerCenterConfigData(
         val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
         val displayVirtualCurrencies: Boolean? = null,
-    )
+        @SerialName("support_tickets")
+        val supportTickets: SupportTickets? = null,
+    ) {
+        @Serializable
+        data class SupportTickets(
+            @SerialName("allow_creation")
+            val allowCreation: Boolean = false,
+            @SerialName("customer_details")
+            val customerDetails: CustomerDetails = CustomerDetails(),
+            @SerialName("customer_type")
+            val customerType: String = "not_active",
+        ) {
+            @Serializable
+            data class CustomerDetails(
+                @SerialName("active_entitlements")
+                val activeEntitlements: Boolean = false,
+                @SerialName("app_user_id")
+                val appUserId: Boolean = false,
+                @SerialName("att_consent")
+                val attConsent: Boolean = false,
+                val country: Boolean = false,
+                @SerialName("device_version")
+                val deviceVersion: Boolean = false,
+                val email: Boolean = false,
+                @SerialName("facebook_anon_id")
+                val facebookAnonId: Boolean = false,
+                val idfa: Boolean = false,
+                val idfv: Boolean = false,
+                val ip: Boolean = false,
+                @SerialName("last_opened")
+                val lastOpened: Boolean = false,
+                @SerialName("last_seen_app_version")
+                val lastSeenAppVersion: Boolean = false,
+                @SerialName("total_spent")
+                val totalSpent: Boolean = false,
+                @SerialName("user_since")
+                val userSince: Boolean = false,
+            )
+        }
+    }
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]

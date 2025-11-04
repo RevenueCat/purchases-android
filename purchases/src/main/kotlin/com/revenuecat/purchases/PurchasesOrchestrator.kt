@@ -812,6 +812,21 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        backend.postCreateSupportTicket(
+            identityManager.currentAppUserID,
+            email,
+            description,
+            onSuccessHandler = onSuccess,
+            onErrorHandler = onError,
+        )
+    }
+
     // region Subscriber Attributes
     // region Special Attributes
 

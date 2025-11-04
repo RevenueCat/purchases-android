@@ -215,3 +215,25 @@ suspend fun Purchases.awaitStorefrontLocale(): Locale {
         )
     }
 }
+
+/**
+ * Creates a support ticket for the current user.
+ * Coroutine friendly version of [Purchases.createSupportTicket].
+ *
+ * @param email The user's email address for the support ticket.
+ * @param description The description of the support request.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error creating the support ticket.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+@InternalRevenueCatAPI
+suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String) {
+    return suspendCoroutine { continuation ->
+        createSupportTicket(
+            email = email,
+            description = description,
+            onSuccess = { continuation.resume(Unit) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}

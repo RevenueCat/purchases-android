@@ -51,4 +51,7 @@ internal class MockPurchasesType(
     override fun syncPurchases() {
         // No-op for mock
     }
+    override suspend fun awaitCreateSupportTicket(email: String, description: String) {
+        // No-op for mock
+    }
 }

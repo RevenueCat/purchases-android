@@ -81,6 +81,8 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
+internal typealias CreateSupportTicketCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
 internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
@@ -143,6 +145,8 @@ internal class Backend(
     @get:Synchronized @set:Synchronized
     @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
+    @get:Synchronized @set:Synchronized
+    @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
@@ -729,6 +733,69 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             customerCenterCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun postCreateSupportTicket(
+        appUserID: String,
+        email: String,
+        description: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val path = endpoint.getPath()
+        val body = mapOf(
+            APP_USER_ID to appUserID,
+            "customer_email" to email,
+            "issue_description" to description,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler()
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            createSupportTicketCallbacks.addCallback(
                 call,
                 dispatcher,
                 path,

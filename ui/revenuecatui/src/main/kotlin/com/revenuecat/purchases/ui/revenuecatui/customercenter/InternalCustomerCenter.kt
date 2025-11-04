@@ -51,6 +51,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CreateSupportTicketView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
@@ -152,6 +153,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
                 is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
+                is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
             }
         },
     )
@@ -432,6 +434,12 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
+
+            is CustomerCenterDestination.CreateSupportTicket -> {
+                CreateSupportTicketView(
+                    data = destination.data,
+                )
+            }
         }
     }
 
@@ -465,6 +473,7 @@ private fun MainScreenContent(
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTicket = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
                     if (state.purchases.size > 1) {
@@ -485,6 +494,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTicket = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,

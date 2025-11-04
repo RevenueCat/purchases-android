@@ -21,4 +21,5 @@ internal sealed class CustomerCenterAction {
     object NavigationButtonPressed : CustomerCenterAction()
     object ShowPaywall : CustomerCenterAction()
     object ShowVirtualCurrencyBalances : CustomerCenterAction()
+    object ShowSupportTicketCreation : CustomerCenterAction()
 }

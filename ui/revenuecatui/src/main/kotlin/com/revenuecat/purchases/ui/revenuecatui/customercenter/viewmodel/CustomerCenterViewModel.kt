@@ -46,6 +46,7 @@ import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -123,6 +124,8 @@ internal interface CustomerCenterViewModel {
     fun showPaywall(context: Context)
 
     fun showVirtualCurrencyBalances()
+
+    fun showCreateSupportTicket()
 }
 
 @Stable
@@ -298,6 +301,51 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 currentState
+            }
+        }
+    }
+
+    override fun showCreateSupportTicket() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val createSupportTicketDestination = CustomerCenterDestination.CreateSupportTicket(
+                    data = CreateSupportTicketData(
+                        onSubmit = { email, description ->
+                            handleSupportTicketSubmit(email, description)
+                        },
+                        onCancel = {
+                            goBackToMain()
+                        },
+                    ),
+                    title = "Create Support Ticket", // TODO: Use localized string
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(createSupportTicketDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun handleSupportTicketSubmit(email: String, description: String) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        viewModelScope.launch {
+            try {
+                Logger.d("Creating support ticket - email: $email, Description: $description")
+                purchases.awaitCreateSupportTicket(email, description)
+                Logger.d("Support ticket created successfully")
+                goBackToMain()
+            } catch (e: PurchasesException) {
+                Logger.e("Error creating support ticket", e)
+                _actionError.value = e.error
+                goBackToMain()
             }
         }
     }
