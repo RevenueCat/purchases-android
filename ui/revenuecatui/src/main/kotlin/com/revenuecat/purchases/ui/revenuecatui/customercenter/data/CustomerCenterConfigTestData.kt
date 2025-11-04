@@ -127,7 +127,7 @@ internal object CustomerCenterConfigTestData {
                         totalSpent = false,
                         userSince = false,
                     ),
-                    customerType = "not_active",
+                    customerType = CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE,
                 ),
             ),
         )

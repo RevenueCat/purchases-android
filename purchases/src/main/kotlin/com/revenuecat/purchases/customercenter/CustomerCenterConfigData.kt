@@ -558,8 +558,20 @@ data class CustomerCenterConfigData(
             @SerialName("customer_details")
             val customerDetails: CustomerDetails = CustomerDetails(),
             @SerialName("customer_type")
-            val customerType: String = "not_active",
+            val customerType: CustomerType = CustomerType.NOT_ACTIVE,
         ) {
+            @Serializable
+            enum class CustomerType {
+                @SerialName("not_active")
+                NOT_ACTIVE,
+                @SerialName("none")
+                NONE,
+                @SerialName("all")
+                ALL,
+                @SerialName("active")
+                ACTIVE,
+            }
+
             @Serializable
             data class CustomerDetails(
                 @SerialName("active_entitlements")

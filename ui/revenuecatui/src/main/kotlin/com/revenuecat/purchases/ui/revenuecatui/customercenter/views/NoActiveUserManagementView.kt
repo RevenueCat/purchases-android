@@ -95,7 +95,8 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
-            addContactButton = supportTicket?.customerType == "all" || supportTicket?.customerType == "not_active",
+            addContactButton = supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE,
             onAction = onAction,
         )
     }
