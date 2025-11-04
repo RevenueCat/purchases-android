@@ -16,7 +16,7 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -172,7 +172,7 @@ class BackendTest {
     private var receivedWebBillingProductsResponse: WebBillingProductsResponse? = null
     private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
-    private var receivedOriginalDataSource: OriginalDataSource? = null
+    private var receivedOriginalDataSource: HTTPResponseOriginalSource? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedGetOfferingsErrorHandlingBehavior: GetOfferingsErrorHandlingBehavior? = null
@@ -202,7 +202,7 @@ class BackendTest {
         this@BackendTest.receivedIsServerError = isServerError
     }
 
-    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, OriginalDataSource) -> Unit = { offeringsJSON, originalDataSource ->
+    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource) -> Unit = { offeringsJSON, originalDataSource ->
         this@BackendTest.receivedOfferingsJSON = offeringsJSON
         this@BackendTest.receivedOriginalDataSource = originalDataSource
     }

@@ -1,8 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.GoogleOfferingParser
@@ -53,11 +52,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(offerings.source).isEqualTo(DataSource.MAIN)
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.loadedFromCache).isFalse
     }
 
     @Test
@@ -74,11 +73,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
-        assertThat(offerings.source).isEqualTo(DataSource.LOAD_SHEDDER)
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+        assertThat(offerings.loadedFromCache).isFalse
     }
 
     @Test
@@ -95,32 +94,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-        assertThat(offerings.source).isEqualTo(DataSource.FALLBACK)
-    }
-
-    @Test
-    fun `offerings created with CACHE source when origin is CACHE`() {
-        val httpResult = HTTPResult.createResult(
-            origin = HTTPResult.Origin.CACHE,
-            isLoadShedderResponse = null,
-            isFallbackURL = null,
-        )
-        val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
-        val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
-
-        val offerings = offeringParser.createOfferings(
-            offeringsJson,
-            productsById,
-            httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
-        )
-
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(offerings.source).isEqualTo(DataSource.MAIN)
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(offerings.loadedFromCache).isFalse
     }
 
     @Test
@@ -138,7 +116,7 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
         // Cache the offerings
@@ -166,13 +144,13 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
         // Mock cached response with originalSource in JSON
         val cachedJsonWithSource = JSONObject(ONE_OFFERINGS_RESPONSE).apply {
-            put(OfferingsCache.ORIGINAL_SOURCE_KEY, OriginalDataSource.FALLBACK.name)
+            put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
         }
         every { deviceCache.getOfferingsResponseCache() } returns cachedJsonWithSource
         offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
@@ -181,8 +159,8 @@ class OfferingsSourceTest {
         val cachedOfferings = offeringsCache.cachedOfferings
 
         assertThat(cachedOfferings).isNotNull
-        assertThat(cachedOfferings!!.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-        assertThat(cachedOfferings.source).isEqualTo(DataSource.FALLBACK)
+        assertThat(cachedOfferings!!.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(cachedOfferings.loadedFromCache).isFalse
     }
 
     @Test
@@ -193,8 +171,8 @@ class OfferingsSourceTest {
         // Create offerings without specifying source (should default to MAIN)
         val offerings = offeringParser.createOfferings(offeringsJson, productsById)
 
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(offerings.source).isEqualTo(DataSource.MAIN)
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.loadedFromCache).isFalse
     }
 
     @Test
@@ -206,8 +184,8 @@ class OfferingsSourceTest {
         val originalOfferings = offeringParser.createOfferings(
             offeringsJson,
             productsById,
-            OriginalDataSource.MAIN,
-            DataSource.MAIN,
+            HTTPResponseOriginalSource.MAIN,
+            loadedFromCache = true,
         )
 
         // Cache without storing originalSource (simulating old cache)
@@ -220,12 +198,12 @@ class OfferingsSourceTest {
         val cachedOfferings = offeringsCache.cachedOfferings
 
         assertThat(cachedOfferings).isNotNull
-        assertThat(cachedOfferings!!.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(cachedOfferings.source).isEqualTo(DataSource.MAIN)
+        assertThat(cachedOfferings!!.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(cachedOfferings.loadedFromCache).isTrue
     }
 
     @Test
-    fun `LOAD_SHEDDER takes precedence over FALLBACK when both are set`() {
+    fun `FALLBACK takes precedence over LOAD_SHEDDER when both are set`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
@@ -238,11 +216,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            httpResult.originalDataSource.asDataSource(),
+            loadedFromCache = false,
         )
 
         // LOAD_SHEDDER should take precedence
-        assertThat(offerings.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
-        assertThat(offerings.source).isEqualTo(DataSource.LOAD_SHEDDER)
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(offerings.loadedFromCache).isFalse
     }
 }

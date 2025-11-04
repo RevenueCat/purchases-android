@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 
 internal fun createProductEntitlementMapping(
     mappings: Map<String, ProductEntitlementMapping.Mapping> = mapOf(
@@ -10,6 +9,6 @@ internal fun createProductEntitlementMapping(
         "com.revenuecat.foo_1" to ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_1")),
         "com.revenuecat.foo_2" to ProductEntitlementMapping.Mapping("com.revenuecat.foo_2", null, listOf("pro_3")),
     ),
-    originalSource: OriginalDataSource = OriginalDataSource.MAIN,
-    dataSource: DataSource = DataSource.MAIN,
-) = ProductEntitlementMapping(mappings, originalSource, dataSource)
+    originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    loadedFromCache: Boolean = false,
+) = ProductEntitlementMapping(mappings, originalSource, loadedFromCache)

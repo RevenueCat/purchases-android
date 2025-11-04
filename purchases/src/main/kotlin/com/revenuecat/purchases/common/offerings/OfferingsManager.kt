@@ -6,12 +6,11 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
@@ -125,7 +124,7 @@ internal class OfferingsManager(
                 createAndCacheOfferings(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
-                    dataSource = originalDataSource.asDataSource(),
+                    loadedFromCache = false,
                     onError,
                     onSuccess,
                 )
@@ -142,16 +141,16 @@ internal class OfferingsManager(
                                 OfferingsCache.ORIGINAL_SOURCE_KEY,
                             )?.let {
                                 try {
-                                    OriginalDataSource.valueOf(it)
+                                    HTTPResponseOriginalSource.valueOf(it)
                                 } catch (e: IllegalArgumentException) {
                                     errorLog(e) { "Invalid original data source for cached offerings" }
                                     null
                                 }
-                            } ?: OriginalDataSource.MAIN
+                            } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
-                                dataSource = DataSource.CACHE,
+                                loadedFromCache = true,
                                 onError,
                                 onSuccess,
                             )
@@ -167,15 +166,15 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
-        originalDataSource: OriginalDataSource,
-        dataSource: DataSource,
+        originalDataSource: HTTPResponseOriginalSource,
+        loadedFromCache: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
             originalDataSource,
-            dataSource,
+            loadedFromCache,
             onError = { error ->
                 handleErrorFetchingOfferings(error, onError)
             },

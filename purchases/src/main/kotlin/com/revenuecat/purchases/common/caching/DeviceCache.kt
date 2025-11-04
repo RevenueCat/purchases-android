@@ -10,11 +10,10 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
-import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
@@ -505,14 +504,13 @@ internal open class DeviceCache(
                 val jsonObject = JSONObject(jsonString)
                 val cachedOriginalSource = jsonObject.optNullableString(ORIGINAL_SOURCE_KEY)?.let {
                     try {
-                        OriginalDataSource.valueOf(it)
+                        HTTPResponseOriginalSource.valueOf(it)
                     } catch (e: IllegalArgumentException) {
                         errorLog(e) { "Invalid original data source in cached product entitlement mappings." }
                         null
                     }
-                } ?: OriginalDataSource.MAIN
-                val source = DataSource.CACHE
-                ProductEntitlementMapping.fromJson(jsonObject, cachedOriginalSource, source)
+                } ?: HTTPResponseOriginalSource.MAIN
+                ProductEntitlementMapping.fromJson(jsonObject, cachedOriginalSource, loadedFromCache = true)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
                 preferences.edit()

@@ -38,8 +38,8 @@ internal abstract class OfferingParser {
     fun createOfferings(
         offeringsJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
-        originalSource: OriginalDataSource = OriginalDataSource.MAIN,
-        source: DataSource = DataSource.MAIN,
+        originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+        loadedFromCache: Boolean = false,
     ): Offerings {
         log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
@@ -104,7 +104,7 @@ internal abstract class OfferingParser {
             placements = placements,
             targeting = targeting,
             originalSource = originalSource,
-            source = source,
+            loadedFromCache = loadedFromCache,
         )
     }
 

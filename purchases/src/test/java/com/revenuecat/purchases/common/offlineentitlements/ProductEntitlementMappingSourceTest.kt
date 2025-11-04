@@ -1,8 +1,7 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -51,8 +50,8 @@ class ProductEntitlementMappingSourceTest {
 
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
 
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(mapping.source).isEqualTo(DataSource.MAIN)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 
     @Test
@@ -65,8 +64,8 @@ class ProductEntitlementMappingSourceTest {
 
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
 
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
-        assertThat(mapping.source).isEqualTo(DataSource.LOAD_SHEDDER)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 
     @Test
@@ -79,8 +78,8 @@ class ProductEntitlementMappingSourceTest {
 
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
 
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-        assertThat(mapping.source).isEqualTo(DataSource.FALLBACK)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 
     @Test
@@ -101,7 +100,7 @@ class ProductEntitlementMappingSourceTest {
 
         // Verify mapping was cached with correct source
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(originalMapping) }
-        assertThat(originalMapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
+        assertThat(originalMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
     }
 
     @Test
@@ -122,16 +121,16 @@ class ProductEntitlementMappingSourceTest {
         // Mock retrieval with preserved originalSource
         every { deviceCache.getProductEntitlementMapping() } returns ProductEntitlementMapping.fromJson(
             sampleResponseJson,
-            OriginalDataSource.FALLBACK,
-            DataSource.CACHE,
+            HTTPResponseOriginalSource.FALLBACK,
+            loadedFromCache = true,
         )
 
         // Retrieve from cache - originalSource should be preserved
         val cachedMapping = deviceCache.getProductEntitlementMapping()
 
         assertThat(cachedMapping).isNotNull
-        assertThat(cachedMapping!!.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-        assertThat(cachedMapping.source).isEqualTo(DataSource.CACHE)
+        assertThat(cachedMapping!!.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(cachedMapping.loadedFromCache).isTrue
     }
 
     @Test
@@ -139,24 +138,24 @@ class ProductEntitlementMappingSourceTest {
         // Create mapping without specifying source (should default to MAIN)
         val mapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
 
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.MAIN)
-        assertThat(mapping.source).isEqualTo(DataSource.MAIN)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 
     @Test
     fun `productEntitlementMapping fromJson accepts explicit source parameters`() {
         val mapping = ProductEntitlementMapping.fromJson(
             sampleResponseJson,
-            OriginalDataSource.LOAD_SHEDDER,
-            DataSource.LOAD_SHEDDER,
+            HTTPResponseOriginalSource.LOAD_SHEDDER,
+            loadedFromCache = false,
         )
 
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
-        assertThat(mapping.source).isEqualTo(DataSource.LOAD_SHEDDER)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 
     @Test
-    fun `LOAD_SHEDDER takes precedence over FALLBACK when both are set`() {
+    fun `FALLBACK takes precedence over LOAD_SHEDDER when both are set`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
@@ -166,7 +165,7 @@ class ProductEntitlementMappingSourceTest {
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
 
         // LOAD_SHEDDER should take precedence
-        assertThat(mapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
-        assertThat(mapping.source).isEqualTo(DataSource.LOAD_SHEDDER)
+        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+        assertThat(mapping.loadedFromCache).isFalse
     }
 }

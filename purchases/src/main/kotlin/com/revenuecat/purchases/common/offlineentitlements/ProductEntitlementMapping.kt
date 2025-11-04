@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.originalDataSource
 import com.revenuecat.purchases.utils.optNullableString
@@ -10,8 +9,8 @@ import org.json.JSONObject
 
 internal data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    internal val originalSource: OriginalDataSource = OriginalDataSource.MAIN,
-    internal val source: DataSource = DataSource.MAIN,
+    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val loadedFromCache: Boolean = false,
 ) {
     companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
@@ -22,8 +21,8 @@ internal data class ProductEntitlementMapping(
 
         fun fromJson(
             json: JSONObject,
-            originalSource: OriginalDataSource = OriginalDataSource.MAIN,
-            source: DataSource = DataSource.MAIN,
+            originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromCache: Boolean = false,
         ): ProductEntitlementMapping {
             val productsObject = json.getJSONObject(PRODUCT_ENTITLEMENT_MAPPING_KEY)
             val mappings = mutableMapOf<String, Mapping>()
@@ -38,13 +37,12 @@ internal data class ProductEntitlementMapping(
                 }
                 mappings[mappingIdentifier] = Mapping(productIdentifier, basePlanId, entitlements)
             }
-            return ProductEntitlementMapping(mappings, originalSource, source)
+            return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
         }
 
         fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
             val originalSource = httpResult.originalDataSource
-            val source = originalSource.asDataSource()
-            return fromJson(json, originalSource, source)
+            return fromJson(json, originalSource, loadedFromCache = false)
         }
     }
 

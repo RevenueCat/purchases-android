@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -16,8 +15,8 @@ class Offerings internal constructor(
     val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
-    internal val originalSource: OriginalDataSource = OriginalDataSource.MAIN,
-    internal val source: DataSource = DataSource.MAIN,
+    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    internal val loadedFromCache: Boolean = false,
 ) {
     constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
@@ -80,8 +79,8 @@ class Offerings internal constructor(
         all: Map<String, Offering> = this.all,
         placements: Placements? = this.placements,
         targeting: Targeting? = this.targeting,
-        originalSource: OriginalDataSource = this.originalSource,
-        source: DataSource = this.source,
+        originalSource: HTTPResponseOriginalSource = this.originalSource,
+        loadedFromCache: Boolean = this.loadedFromCache,
     ): Offerings {
         return Offerings(
             current = current,
@@ -89,7 +88,7 @@ class Offerings internal constructor(
             placements = placements,
             targeting = targeting,
             originalSource = originalSource,
-            source = source,
+            loadedFromCache = loadedFromCache,
         )
     }
 }

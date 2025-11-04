@@ -686,7 +686,7 @@ class DeviceCacheTest {
         every {
             mockPrefs.getString(productEntitlementMappingCacheKey, null)
         } returns expectedMappings.toJson().toString()
-        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings.copy(source = DataSource.CACHE))
+        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings.copy(loadedFromCache = true))
     }
 
     // endregion

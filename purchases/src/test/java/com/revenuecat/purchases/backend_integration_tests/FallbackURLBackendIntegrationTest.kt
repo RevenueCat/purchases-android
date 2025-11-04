@@ -2,9 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.common.DataSource
-import com.revenuecat.purchases.common.OriginalDataSource
-import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import io.mockk.verify
@@ -30,8 +28,8 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
-                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.FALLBACK)
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -66,8 +64,8 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
-                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.FALLBACK)
-                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.FALLBACK)
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -86,7 +84,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
                 appInBackground = false,
                 onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
-                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.FALLBACK)
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { purchasesError, _ ->
@@ -114,7 +112,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
                 appInBackground = false,
                 onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
-                    assertThat(originalDataSource).isEqualTo(OriginalDataSource.FALLBACK)
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { error, _ ->

@@ -5,7 +5,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.FakeLocaleProvider
-import com.revenuecat.purchases.common.OriginalDataSource
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
 import io.mockk.Runs
@@ -52,7 +52,7 @@ class OfferingsCacheTest {
         every { deviceCache.clearOfferingsResponseCache() } just Runs
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, offeringsResponse)
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearCache()
@@ -65,7 +65,7 @@ class OfferingsCacheTest {
     @Test
     fun `caching offerings works`() {
         val offerings = mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }
         val offeringsResponse = JSONObject()
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
@@ -92,7 +92,7 @@ class OfferingsCacheTest {
     fun `cache is not stale right after caching value`() {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
     }
@@ -101,7 +101,7 @@ class OfferingsCacheTest {
     fun `cache is stale if cached value is stale`() {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         currentDate = currentDate.add(6.minutes)
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
@@ -111,7 +111,7 @@ class OfferingsCacheTest {
     fun `cache is stale if forced to be stale`() {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         offeringsCache.forceCacheStale()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
@@ -130,7 +130,7 @@ class OfferingsCacheTest {
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
 
         // Assert
@@ -146,7 +146,7 @@ class OfferingsCacheTest {
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         localeProvider.languageTags = listOf("fr-FR", "de-DE")
 
@@ -164,7 +164,7 @@ class OfferingsCacheTest {
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         localeProvider.languageTags = listOf("fr-FR")
 
@@ -182,7 +182,7 @@ class OfferingsCacheTest {
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         localeProvider.languageTags = listOf("es-ES", "en-US")
 
@@ -201,7 +201,7 @@ class OfferingsCacheTest {
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns OriginalDataSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, JSONObject())
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse

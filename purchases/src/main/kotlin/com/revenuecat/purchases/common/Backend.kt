@@ -52,7 +52,7 @@ internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
 internal typealias OfferingsCallback = Pair<
-    (JSONObject, OriginalDataSource) -> Unit,
+    (JSONObject, HTTPResponseOriginalSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
     >
 
@@ -353,7 +353,7 @@ internal class Backend(
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (JSONObject, OriginalDataSource) -> Unit,
+        onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
         onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
