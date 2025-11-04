@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
@@ -54,6 +55,8 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("premium", "pro")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
+                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -105,6 +108,8 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("premium", "pro")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.LOAD_SHEDDER)
+                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onErrorHandler = {

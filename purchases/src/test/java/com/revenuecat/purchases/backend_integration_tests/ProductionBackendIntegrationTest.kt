@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.DataSource
 import com.revenuecat.purchases.common.OriginalDataSource
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
@@ -36,6 +37,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.MAIN)
+                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.MAIN)
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -68,6 +71,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(OriginalDataSource.MAIN)
+                    assertThat(productEntitlementMapping.source).isEqualTo(DataSource.MAIN)
                     latch.countDown()
                 },
                 onErrorHandler = {
