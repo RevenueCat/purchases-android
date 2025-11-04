@@ -20,7 +20,6 @@ internal enum class HTTPResponseOriginalSource {
      * Original data came from a fallback base URL when the main request failed.
      */
     FALLBACK,
-    ;
 }
 
 /**
