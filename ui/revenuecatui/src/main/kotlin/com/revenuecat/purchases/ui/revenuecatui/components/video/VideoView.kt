@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.Surface
@@ -31,6 +32,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.parcelize.Parcelize
 
 @Suppress("LongParameterList")
 @Composable
@@ -494,8 +496,9 @@ private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? =
  * @property positionMs Current playback position in milliseconds
  * @property playWhenReady Whether the video should be playing (true) or paused (false)
  */
+@Parcelize
 @Stable
 internal data class VideoPlaybackState(
     val positionMs: Int,
     val playWhenReady: Boolean,
-)
+) : Parcelable
