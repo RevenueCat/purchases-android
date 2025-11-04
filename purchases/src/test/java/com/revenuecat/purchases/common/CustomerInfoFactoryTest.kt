@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.CustomerInfoSource
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -76,7 +75,7 @@ class CustomerInfoFactoryTest {
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
-        assertThat(customerInfo.source).isEqualTo(CustomerInfoSource.MAIN)
+        assertThat(customerInfo.loadedFromCache).isFalse
     }
 
     @Test
@@ -91,7 +90,7 @@ class CustomerInfoFactoryTest {
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.LOAD_SHEDDER)
-        assertThat(customerInfo.source).isEqualTo(CustomerInfoSource.LOAD_SHEDDER)
+        assertThat(customerInfo.loadedFromCache).isFalse
     }
 
     @Test
@@ -106,7 +105,7 @@ class CustomerInfoFactoryTest {
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
-        assertThat(customerInfo.source).isEqualTo(CustomerInfoSource.MAIN)
+        assertThat(customerInfo.loadedFromCache).isFalse
     }
 
     @Test
@@ -116,9 +115,9 @@ class CustomerInfoFactoryTest {
             overrideRequestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED,
             originalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
-            source = CustomerInfoSource.OFFLINE_ENTITLEMENTS,
+            loadedFromCache = false,
         )
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
-        assertThat(customerInfo.source).isEqualTo(CustomerInfoSource.OFFLINE_ENTITLEMENTS)
+        assertThat(customerInfo.loadedFromCache).isFalse
     }
 }

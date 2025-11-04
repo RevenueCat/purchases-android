@@ -59,6 +59,12 @@ open class BasePurchasesIntegrationTest {
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 
+    internal val expectedCustomerInfoOriginalSource = if (Constants.backendEnvironment == Constants.BackendEnvironment.PRODUCTION) {
+        CustomerInfoOriginalSource.MAIN
+    } else {
+        CustomerInfoOriginalSource.LOAD_SHEDDER
+    }
+
     internal var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     private var latestStateListener: BillingAbstract.StateListener? = null
 
@@ -201,10 +207,6 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
-    protected fun isRunningLoadShedderIntegrationTests(): Boolean {
-        return Constants.isRunningLoadShedderIntegrationTests.toBoolean()
-    }
-
     private fun clearAllSharedPreferences(context: Context) {
         context.getSharedPreferences(
             RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
@@ -257,17 +259,15 @@ open class BasePurchasesIntegrationTest {
             }
     }
 
-    protected fun confirmRunningLoadShedderTests() {
-        assumeTrue(
-            "Test will only run when running load shedder integration test",
-            Constants.isRunningLoadShedderIntegrationTests == "true",
-        )
+    protected fun confirmProductionBackendEnvironment() {
+        confirmSupportedBackendEnvironment(setOf(Constants.BackendEnvironment.PRODUCTION))
     }
 
-    protected fun confirmNotRunningLoadShedderTests() {
+    protected fun confirmSupportedBackendEnvironment(backendEnvironments: Set<Constants.BackendEnvironment>) {
         assumeTrue(
-            "Test will not run when running load shedder integration test",
-            Constants.isRunningLoadShedderIntegrationTests == "false",
+            "Test will not run in ${Constants.backendEnvironment} environment. " +
+                "It will only run in these environments: ${backendEnvironments.joinToString()}.",
+            Constants.backendEnvironment in backendEnvironments,
         )
     }
 

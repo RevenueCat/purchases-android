@@ -8,8 +8,6 @@ package com.revenuecat.purchases.common
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.CustomerInfoSource
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -18,18 +16,17 @@ import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlem
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.subtract
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import io.mockk.every
-import kotlinx.serialization.SerializationException
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
-import io.mockk.unmockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
@@ -294,13 +291,12 @@ class DeviceCacheTest {
             put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
             put("verification_result", VerificationResult.VERIFIED.name)
             put("customer_info_original_source", CustomerInfoOriginalSource.LOAD_SHEDDER.name)
-            put("customer_info_source", CustomerInfoSource.CACHE.name)
         }.toString()
         mockString(cache.customerInfoCacheKey(appUserID), cachedInfoWithSource)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
         assertThat(info?.originalSource).isEqualTo(CustomerInfoOriginalSource.LOAD_SHEDDER)
-        assertThat(info?.source).isEqualTo(CustomerInfoSource.CACHE)
+        assertThat(info?.loadedFromCache).isTrue
     }
 
     @Test
@@ -309,7 +305,7 @@ class DeviceCacheTest {
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
         assertThat(info?.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
-        assertThat(info?.source).isEqualTo(CustomerInfoSource.CACHE)
+        assertThat(info?.loadedFromCache).isTrue
     }
 
     @Test

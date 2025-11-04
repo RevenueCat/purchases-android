@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.CustomerInfoSource
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
@@ -39,7 +38,7 @@ internal object CustomerInfoFactory {
             httpResult.requestDate,
             httpResult.verificationResult,
             originalSource,
-            originalSource.toCustomerInfoSource(),
+            loadedFromCache = false,
         )
     }
 
@@ -49,7 +48,7 @@ internal object CustomerInfoFactory {
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,
         originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.MAIN,
-        source: CustomerInfoSource = originalSource.toCustomerInfoSource(),
+        loadedFromCache: Boolean = false,
     ): CustomerInfo {
         val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
@@ -106,7 +105,7 @@ internal object CustomerInfoFactory {
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
             originalSource = originalSource,
-            source = source,
+            loadedFromCache = loadedFromCache,
         )
     }
 
@@ -168,16 +167,5 @@ internal object CustomerInfoFactory {
         }
 
         return expirationDates
-    }
-
-    /**
-     * Converts CustomerInfoOriginalSource to CustomerInfoSource.
-     */
-    private fun CustomerInfoOriginalSource.toCustomerInfoSource(): CustomerInfoSource {
-        return when (this) {
-            CustomerInfoOriginalSource.MAIN -> CustomerInfoSource.MAIN
-            CustomerInfoOriginalSource.LOAD_SHEDDER -> CustomerInfoSource.LOAD_SHEDDER
-            CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS -> CustomerInfoSource.OFFLINE_ENTITLEMENTS
-        }
     }
 }

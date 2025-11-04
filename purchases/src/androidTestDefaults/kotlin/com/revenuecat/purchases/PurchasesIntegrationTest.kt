@@ -62,10 +62,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetched() {
-        if (isRunningLoadShedderIntegrationTests()) {
-            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
 
@@ -82,10 +79,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
-        if (isRunningLoadShedderIntegrationTests()) {
-            // Test won't work correctly in load shedder since we can only fetch customer info once a purchase happens
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
 
@@ -96,6 +90,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     fail("fetching from backend should be success. Error: ${it.message}")
                 },
                 onSuccess = { fetchedCustomerInfo ->
+                    assertThat(fetchedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(fetchedCustomerInfo.loadedFromCache).isFalse
                     Purchases.sharedInstance.getCustomerInfoWith(
                         CacheFetchPolicy.CACHE_ONLY,
                         onError = {
@@ -103,6 +99,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         },
                         onSuccess = { cachedCustomerInfo ->
                             assertThat(cachedCustomerInfo).isEqualTo(fetchedCustomerInfo)
+                            assertThat(cachedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                            assertThat(cachedCustomerInfo.loadedFromCache).isTrue
                             lock.countDown()
                         },
                     )
@@ -192,6 +190,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onError = { fail("Expected success. Got error: $it") },
                 onSuccess = { customerInfo ->
                     verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
             )
@@ -202,9 +202,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
         val lock = CountDownLatch(1)
@@ -235,9 +233,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
@@ -268,9 +264,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
         val lock = CountDownLatch(1)
@@ -301,9 +295,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testCachedVirtualCurrencies() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
@@ -352,6 +344,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
                     verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     lock.countDown()
                 },
             )

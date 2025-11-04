@@ -48,16 +48,6 @@ internal enum class CustomerInfoOriginalSource {
 }
 
 /**
- * Internal enum representing the current source of CustomerInfo.
- */
-internal enum class CustomerInfoSource {
-    MAIN,
-    LOAD_SHEDDER,
-    OFFLINE_ENTITLEMENTS,
-    CACHE,
-}
-
-/**
  * Class containing all information regarding the customer
  * @property entitlements Entitlements attached to this customer info
  * @property allExpirationDatesByProduct Map of productIds to expiration dates
@@ -92,7 +82,7 @@ class CustomerInfo internal constructor(
     val originalPurchaseDate: Date?,
     private val jsonObject: JSONObject,
     internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
-    internal val source: CustomerInfoSource = CustomerInfoSource.CACHE,
+    internal val loadedFromCache: Boolean = false,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     constructor(
@@ -118,7 +108,7 @@ class CustomerInfo internal constructor(
         originalPurchaseDate = originalPurchaseDate,
         jsonObject = jsonObject,
         originalSource = CustomerInfoOriginalSource.DEFAULT,
-        source = CustomerInfoSource.CACHE,
+        loadedFromCache = true,
     )
 
     /**
