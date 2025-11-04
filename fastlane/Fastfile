@@ -263,28 +263,58 @@ platform :android do
     )
   end
 
-  desc "Build and run purchases module load shedder integration tests"
+  desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_load_shedder_purchases_integration_tests do |options|
-    app_name = 'loadShedderIntegrationTest'
+  desc "Accepts a suite parameter: 'production' or 'loadshedder'"
+  lane :run_purchases_integration_tests do |options|
+    suite = options[:suite] || UI.user_error!("Missing suite parameter. Provide 'production' or 'loadshedder'")
+    
+    unless ['production', 'loadshedder'].include?(suite)
+      UI.user_error!("Invalid suite parameter. Must be 'production' or 'loadshedder'")
+    end
+
+    if suite == 'production'
+      app_name = 'integrationTest'
+      api_key = ENV['REVENUECAT_API_KEY']
+      google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+      is_load_shedder_integration_tests = false
+    else # loadshedder
+      app_name = 'loadShedderIntegrationTest'
+      api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+      google_purchase_token = ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+      is_load_shedder_integration_tests = true
+    end
+
     begin
       build_purchases_integration_tests(
         app_name: app_name,
-        api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-        google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
-        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
-        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-        is_load_shedder_integration_tests: true
+        api_key: api_key,
+        google_purchase_token: google_purchase_token,
+        product_id_to_purchase: product_id_to_purchase,
+        base_plan_id_to_purchase: base_plan_id_to_purchase,
+        active_entitlements_to_verify: active_entitlements_to_verify,
+        is_load_shedder_integration_tests: is_load_shedder_integration_tests
       )
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_load_shedder_integration_test(success: false)
+      send_slack_purchases_integration_test(suite: suite, success: false)
       raise
     else
-      send_slack_load_shedder_integration_test(success: true)
+      send_slack_purchases_integration_test(suite: suite, success: true)
     end
+  end
+
+  desc "Build and run purchases module load shedder integration tests"
+  desc "This requires the google cloud cli to be installed and initialized."
+  lane :run_load_shedder_purchases_integration_tests do |options|
+    run_purchases_integration_tests(suite: 'loadshedder')
   end
 
   desc "Build and run purchases module custom entitlement computation integration tests"
@@ -581,20 +611,30 @@ DESC
     end
   end
 
-  lane :send_slack_load_shedder_integration_test do |options|
+  lane :send_slack_purchases_integration_test do |options|
+    suite = options[:suite] || UI.user_error!("Missing suite parameter")
     success = options[:success] || false
+    
     message =
-        if success
-            "Android load shedder integration tests V6 finished successfully"
-        else
-            "Android load shedder integration tests V6 failed"
-        end
-    slack(
-      message: message,
-      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-      success: success,
-      default_payloads: [:git_branch]
-    )
+      if success
+        "Android purchases integration tests (#{suite}) finished successfully"
+      else
+        "Android purchases integration tests (#{suite}) failed"
+      end
+
+    slack_url = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
+
+    # Only send Slack notification if webhook URL is configured
+    if slack_url && slack_url.length > 0
+      slack(
+        message: message,
+        slack_url: slack_url,
+        success: success,
+        default_payloads: [:git_branch]
+      )
+    else
+      UI.message("Skipping Slack notification for #{suite} suite - no webhook URL configured")
+    end
   end
 
   desc "Updates paywall-preview-resources submodule and creates/updates PR"
