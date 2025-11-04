@@ -10,6 +10,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -74,6 +75,8 @@ internal class HTTPClient(
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
     }
+
+    private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
 
     private fun buffer(inputStream: InputStream): BufferedReader {
         return BufferedReader(InputStreamReader(inputStream))
@@ -252,6 +255,10 @@ internal class HTTPClient(
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
+            }
+
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
@@ -265,6 +272,14 @@ internal class HTTPClient(
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            if (enableExtraRequestLogging) {
+                errorLog(e) { "HTTP request failed" }
+            }
+            throw e
         } finally {
             inputStream?.close()
             connection.disconnect()
@@ -336,6 +351,26 @@ internal class HTTPClient(
             verificationResult,
             isLoadShedderResponse,
         )
+    }
+
+    private fun toCurlRequest(httpRequest: HTTPRequest): String {
+        val builder = StringBuilder("curl -v ")
+
+        val method = if (httpRequest.body == null) { "GET" } else { "POST" }
+
+        builder.append("-X ").append(method).append(" \\\n  ")
+
+        for (entry in httpRequest.headers) {
+            builder.append("-H \"").append(entry.key).append(":")
+            builder.append(entry.value)
+            builder.append("\" \\\n  ")
+        }
+
+        if (httpRequest.body != null) builder.append("-d '").append(httpRequest.body.toString()).append("' \\\n  ")
+
+        builder.append("\"").append(httpRequest.fullURL).append("\"")
+
+        return builder.toString()
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
