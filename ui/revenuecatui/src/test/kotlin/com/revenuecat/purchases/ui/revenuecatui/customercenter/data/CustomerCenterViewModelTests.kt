@@ -23,6 +23,8 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
+import com.revenuecat.purchases.customercenter.events.CustomerCenterPromoOfferEvent
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
@@ -619,6 +621,96 @@ class CustomerCenterViewModelTests {
             expectedOriginalPath = originalPath,
             expectedPricingDescription = "First 1 month free, then $9.99/mth"
         )
+    }
+
+    @Test
+    fun `loadAndDisplayPromotionalOffer tracks impression event when offer is displayed`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+        
+        val promoPricingPhase = stubPricingPhase(
+            billingCycleCount = 1,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 0.0,
+            recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+        )
+
+        val productDetails = mockk<ProductDetails>(relaxed = true)
+        every { productDetails.productId } returns "paywall_tester.subs"
+
+        val subscriptionOption = stubGoogleSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            productDetails = productDetails,
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(promoPricingPhase, regularPricingPhase),
+            tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
+        )
+
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption)
+        )
+
+        val promotionalOffer = createPromotionalOffer(
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
+        )
+
+        val originalPath = createOriginalPath(type = HelpPath.PathType.CANCEL)
+        setupSuccessLoadScreen(originalPath, model)
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", "monthly") } returns product
+
+        val purchaseInformation = PurchaseInformation(
+            title = "Monthly Subscription",
+            pricePaid = PriceDetails.Paid("$9.99"),
+            expirationOrRenewal = null,
+            product = product,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+            managementURL = null,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath,
+            purchaseInformation = purchaseInformation,
+            surveyOptionID = "too_expensive"
+        )
+
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val promoEvent = event as? CustomerCenterPromoOfferEvent
+                    assertThat(promoEvent).isNotNull()
+                    assertThat(promoEvent?.data?.type).isEqualTo(CustomerCenterEventType.PROMO_OFFER_IMPRESSION)
+                    assertThat(promoEvent?.data?.storeOfferID).isEqualTo("promotional-offer-id")
+                    assertThat(promoEvent?.data?.productID).isEqualTo("paywall_tester.subs:monthly")
+                    assertThat(promoEvent?.data?.targetProductID).isEqualTo("paywall_tester.subs:monthly")
+                    assertThat(promoEvent?.data?.surveyOptionID).isEqualTo("too_expensive")
+                    assertThat(promoEvent?.data?.path).isEqualTo(HelpPath.PathType.CANCEL)
+                }
+            )
+        }
     }
 
     @Test

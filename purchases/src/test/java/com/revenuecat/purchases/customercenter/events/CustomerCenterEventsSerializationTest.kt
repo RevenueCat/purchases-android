@@ -216,6 +216,41 @@ class CustomerCenterEventsSerializationTest {
     }
 
     @Test
+    fun `CustomerCenterPromoOfferEvent impression serialization includes all fields`() {
+        val event = CustomerCenterPromoOfferEvent(
+            data = CustomerCenterPromoOfferEvent.Data(
+                type = CustomerCenterEventType.PROMO_OFFER_IMPRESSION,
+                timestamp = Date(123456789),
+                darkMode = true,
+                locale = "en_US",
+                version = 1,
+                revisionID = 1,
+                displayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+                path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
+                url = null,
+                surveyOptionID = "too_expensive",
+                storeOfferID = "store_offer_123",
+                productID = "premium_monthly",
+                targetProductID = "premium_monthly_promo",
+                error = null,
+                transactionID = null,
+            )
+        )
+
+        val backendEvent = event.toBackendStoredEvent("appUserID", "sessionID")
+        val request = EventsRequest(listOf(backendEvent.toBackendEvent()))
+        val requestString = JsonProvider.defaultJson.encodeToString(request)
+
+        assertThat(requestString).contains("customer_center_promo_offer_impression")
+        assertThat(requestString).contains("\"store_offer_id\":\"store_offer_123\"")
+        assertThat(requestString).contains("\"product_id\":\"premium_monthly\"")
+        assertThat(requestString).contains("\"target_product_id\":\"premium_monthly_promo\"")
+        assertThat(requestString).contains("\"survey_option_id\":\"too_expensive\"")
+        assertThat(requestString).contains("\"path\":\"CANCEL\"")
+        assertThat(requestString).contains("\"dark_mode\":true")
+    }
+
+    @Test
     fun `can encode and decode impression event correctly`() {
         val event = CustomerCenterImpressionEvent(
             data = CustomerCenterImpressionEvent.Data(
