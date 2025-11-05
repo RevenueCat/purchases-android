@@ -58,7 +58,7 @@ class TestStoreErrorDialogActivityTest {
         assertThat(thrownException?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
         assertThat(thrownException?.message).isEqualTo(
             "Test Store API key used in release build. Please configure the " +
-                "Play Store app on the RevenueCat dashboard and use its corresponding Google API key " +
+                "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
                 "before releasing. Visit https://rev.cat/sdk-test-store to learn more."
         )
     }
@@ -86,7 +86,7 @@ class TestStoreErrorDialogActivityTest {
         assertThat(thrownException?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
         assertThat(thrownException?.message).isEqualTo(
             "Test Store API key used in release build. Please configure the " +
-            "Play Store app on the RevenueCat dashboard and use its corresponding Google API key " +
+            "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
             "before releasing. Visit https://rev.cat/sdk-test-store to learn more."
         )
     }
