@@ -225,7 +225,7 @@ class CreateSupportTicketViewTest {
     }
 
     @Test
-    fun `error state shows error message and keeps fields enabled`() {
+    fun `error state shows snackbar and keeps fields enabled`() {
         val mockOnSubmit: (String, String, () -> Unit, () -> Unit) -> Unit = { _, _, _, onError ->
             onError()
         }
@@ -254,7 +254,10 @@ class CreateSupportTicketViewTest {
             )
         ).performClick()
 
-        // Verify error message is shown
+        // Wait for snackbar to appear
+        composeTestRule.waitForIdle()
+
+        // Verify snackbar error message is shown
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED
