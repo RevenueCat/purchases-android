@@ -81,7 +81,7 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
-internal typealias CreateSupportTicketCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+internal typealias CreateSupportTicketCallback = Pair<(Boolean) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
@@ -746,7 +746,7 @@ internal class Backend(
         appUserID: String,
         email: String,
         description: String,
-        onSuccessHandler: () -> Unit,
+        onSuccessHandler: (Boolean) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.PostCreateSupportTicket
@@ -782,7 +782,8 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccessHandler()
+                            val wasSent = result.body.optBoolean("sent", false)
+                            onSuccessHandler(wasSent)
                         } catch (e: SerializationException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         } catch (e: IllegalArgumentException) {

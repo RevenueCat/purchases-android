@@ -59,7 +59,7 @@ internal interface PurchasesType {
     val preferredUILocaleOverride: String?
 
     @Throws(PurchasesException::class)
-    suspend fun awaitCreateSupportTicket(email: String, description: String)
+    suspend fun awaitCreateSupportTicket(email: String, description: String): Boolean
 }
 
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
@@ -124,7 +124,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         get() = purchases.preferredUILocaleOverride
 
     @Throws(PurchasesException::class)
-    override suspend fun awaitCreateSupportTicket(email: String, description: String) {
+    override suspend fun awaitCreateSupportTicket(email: String, description: String): Boolean {
         return purchases.awaitCreateSupportTicket(email, description)
     }
 }

@@ -222,17 +222,18 @@ suspend fun Purchases.awaitStorefrontLocale(): Locale {
  *
  * @param email The user's email address for the support ticket.
  * @param description The description of the support request.
+ * @return Boolean indicating whether the ticket was successfully sent.
  * @throws [PurchasesException] with a [PurchasesError] if there's an error creating the support ticket.
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String) {
+suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): Boolean {
     return suspendCoroutine { continuation ->
         createSupportTicket(
             email = email,
             description = description,
-            onSuccess = { continuation.resume(Unit) },
+            onSuccess = { wasSent -> continuation.resume(wasSent) },
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }

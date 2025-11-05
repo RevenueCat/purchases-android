@@ -815,7 +815,7 @@ internal class PurchasesOrchestrator(
     fun createSupportTicket(
         email: String,
         description: String,
-        onSuccess: () -> Unit,
+        onSuccess: (Boolean) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         backend.postCreateSupportTicket(

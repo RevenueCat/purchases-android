@@ -582,14 +582,14 @@ class Purchases internal constructor(
      * Creates a support ticket for the current user.
      * @param email The user's email address for the support ticket.
      * @param description The description of the support request.
-     * @param onSuccess Called when the support ticket is created successfully.
+     * @param onSuccess Called when the support ticket is created successfully with a Boolean indicating if it was sent.
      * @param onError Called when there's an error creating the support ticket.
      */
     @InternalRevenueCatAPI
     fun createSupportTicket(
         email: String,
         description: String,
-        onSuccess: () -> Unit,
+        onSuccess: (Boolean) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)

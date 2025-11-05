@@ -319,6 +319,9 @@ internal class CustomerCenterViewModelImpl(
                         onCancel = {
                             goBackToMain()
                         },
+                        onClose = {
+                            goBackToMain()
+                        },
                     ),
                     title = "Create Support Ticket", // TODO: Use localized string
                 )
@@ -339,13 +342,64 @@ internal class CustomerCenterViewModelImpl(
         viewModelScope.launch {
             try {
                 Logger.d("Creating support ticket - email: $email, Description: $description")
-                purchases.awaitCreateSupportTicket(email, description)
-                Logger.d("Support ticket created successfully")
-                goBackToMain()
+                val wasSent = purchases.awaitCreateSupportTicket(email, description)
+
+                if (wasSent) {
+                    Logger.d("Support ticket created successfully")
+                    showSupportTicketSuccess()
+                } else {
+                    Logger.e("Support ticket creation returned false")
+                    showSupportTicketError()
+                }
             } catch (e: PurchasesException) {
                 Logger.e("Error creating support ticket", e)
-                _actionError.value = e.error
-                goBackToMain()
+                showSupportTicketError()
+            }
+        }
+    }
+
+    private fun showSupportTicketSuccess() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val currentDestination = currentState.currentDestination
+                if (currentDestination is CustomerCenterDestination.CreateSupportTicket) {
+                    val updatedDestination = currentDestination.copy(
+                        data = currentDestination.data.copy(
+                            wasSuccessfullySent = true,
+                            hasError = false,
+                        ),
+                    )
+                    currentState.copy(
+                        navigationState = currentState.navigationState.pop().push(updatedDestination),
+                    )
+                } else {
+                    currentState
+                }
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun showSupportTicketError() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val currentDestination = currentState.currentDestination
+                if (currentDestination is CustomerCenterDestination.CreateSupportTicket) {
+                    val updatedDestination = currentDestination.copy(
+                        data = currentDestination.data.copy(
+                            hasError = true,
+                            wasSuccessfullySent = false,
+                        ),
+                    )
+                    currentState.copy(
+                        navigationState = currentState.navigationState.pop().push(updatedDestination),
+                    )
+                } else {
+                    currentState
+                }
+            } else {
+                currentState
             }
         }
     }
