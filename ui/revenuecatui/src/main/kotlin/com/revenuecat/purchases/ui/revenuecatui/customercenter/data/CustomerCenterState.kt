@@ -59,9 +59,7 @@ internal data class PromotionalOfferData(
 )
 
 internal data class CreateSupportTicketData(
-    @get:JvmSynthetic val onSubmit: (subject: String, description: String) -> Unit,
+    @get:JvmSynthetic val onSubmit: (email: String, description: String, onSuccess: () -> Unit, onError: () -> Unit) -> Unit,
     @get:JvmSynthetic val onCancel: () -> Unit,
     @get:JvmSynthetic val onClose: () -> Unit,
-    @get:JvmSynthetic val hasError: Boolean = false,
-    @get:JvmSynthetic val wasSuccessfullySent: Boolean = false,
 )

@@ -313,8 +313,8 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 val createSupportTicketDestination = CustomerCenterDestination.CreateSupportTicket(
                     data = CreateSupportTicketData(
-                        onSubmit = { email, description ->
-                            handleSupportTicketSubmit(email, description)
+                        onSubmit = { email, description, onSuccess, onError ->
+                            handleSupportTicketSubmit(email, description, onSuccess, onError)
                         },
                         onCancel = {
                             goBackToMain()
@@ -335,7 +335,12 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private fun handleSupportTicketSubmit(email: String, description: String) {
+    private fun handleSupportTicketSubmit(
+        email: String,
+        description: String,
+        onSuccess: () -> Unit,
+        onError: () -> Unit
+    ) {
         val state = _state.value
         if (state !is CustomerCenterState.Success) return
 
@@ -346,60 +351,14 @@ internal class CustomerCenterViewModelImpl(
 
                 if (wasSent) {
                     Logger.d("Support ticket created successfully")
-                    showSupportTicketSuccess()
+                    onSuccess()
                 } else {
                     Logger.e("Support ticket creation returned false")
-                    showSupportTicketError()
+                    onError()
                 }
             } catch (e: PurchasesException) {
                 Logger.e("Error creating support ticket", e)
-                showSupportTicketError()
-            }
-        }
-    }
-
-    private fun showSupportTicketSuccess() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                val currentDestination = currentState.currentDestination
-                if (currentDestination is CustomerCenterDestination.CreateSupportTicket) {
-                    val updatedDestination = currentDestination.copy(
-                        data = currentDestination.data.copy(
-                            wasSuccessfullySent = true,
-                            hasError = false,
-                        ),
-                    )
-                    currentState.copy(
-                        navigationState = currentState.navigationState.pop().push(updatedDestination),
-                    )
-                } else {
-                    currentState
-                }
-            } else {
-                currentState
-            }
-        }
-    }
-
-    private fun showSupportTicketError() {
-        _state.update { currentState ->
-            if (currentState is CustomerCenterState.Success) {
-                val currentDestination = currentState.currentDestination
-                if (currentDestination is CustomerCenterDestination.CreateSupportTicket) {
-                    val updatedDestination = currentDestination.copy(
-                        data = currentDestination.data.copy(
-                            hasError = true,
-                            wasSuccessfullySent = false,
-                        ),
-                    )
-                    currentState.copy(
-                        navigationState = currentState.navigationState.pop().push(updatedDestination),
-                    )
-                } else {
-                    currentState
-                }
-            } else {
-                currentState
+                onError()
             }
         }
     }

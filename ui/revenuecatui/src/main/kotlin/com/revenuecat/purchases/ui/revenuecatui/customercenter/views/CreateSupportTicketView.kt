@@ -36,11 +36,8 @@ internal fun CreateSupportTicketView(
     var email by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
-
-    // Reset submitting state when error occurs or success is shown
-    if (data.hasError || data.wasSuccessfullySent) {
-        isSubmitting = false
-    }
+    var wasSuccessfullySent by remember { mutableStateOf(false) }
+    var hasError by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -49,68 +46,64 @@ internal fun CreateSupportTicketView(
                 .padding(SECTION_SPACING)
                 .verticalScroll(rememberScrollState()),
         ) {
-            if (data.wasSuccessfullySent) {
-                // Success state - show only success message and close button
-                Text(
-                    text = "Message sent.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = SECTION_SPACING),
-                )
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                placeholder = { Text("Enter your email") },
+                enabled = !isSubmitting && !wasSuccessfullySent,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
 
-                SettingsButton(
-                    onClick = { data.onClose() },
-                    title = "Close",
-                )
-            } else {
-                // Form state - show error (if any), form fields, and submit button
-                if (data.hasError) {
-                    Text(
-                        text = "Failed to send support ticket. Please try again.",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = SECTION_TITLE_BOTTOM_PADDING),
+            Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                placeholder = { Text("Enter ticket description") },
+                enabled = !isSubmitting && !wasSuccessfullySent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                minLines = 6,
+                maxLines = 10,
+            )
+
+            Spacer(modifier = Modifier.height(SECTION_SPACING))
+
+            SettingsButton(
+                onClick = {
+                    isSubmitting = true
+                    hasError = false
+                    data.onSubmit(
+                        email,
+                        description,
+                        {
+                            isSubmitting = false
+                            wasSuccessfullySent = true
+                        },
+                        {
+                            isSubmitting = false
+                            hasError = true
+                        }
                     )
-                }
+                },
+                enabled = !isSubmitting && !wasSuccessfullySent && email.isNotBlank() && description.isNotBlank(),
+                loading = isSubmitting,
+                title = if (wasSuccessfullySent) "✓ Sent" else "Submit ticket",
+            )
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    placeholder = { Text("Enter your email") },
-                    enabled = !isSubmitting,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-
-                Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
-
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    placeholder = { Text("Enter ticket description") },
-                    enabled = !isSubmitting,
+            if (hasError) {
+                Spacer(modifier = Modifier.height(SECTION_SPACING))
+                Text(
+                    text = "Failed to send support ticket. Please try again.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
-                    minLines = 6,
-                    maxLines = 10,
-                )
-
-                Spacer(modifier = Modifier.height(SECTION_SPACING))
-
-                SettingsButton(
-                    onClick = {
-                        isSubmitting = true
-                        data.onSubmit(email, description)
-                    },
-                    enabled = !isSubmitting && email.isNotBlank() && description.isNotBlank(),
-                    loading = isSubmitting,
-                    title = "Submit ticket",
+                        .padding(bottom = SECTION_TITLE_BOTTOM_PADDING),
                 )
             }
         }
@@ -123,7 +116,7 @@ internal fun CreateSupportTicketView(
 internal fun CreateSupportTicketViewPreview() {
     CreateSupportTicketView(
         data = CreateSupportTicketData(
-            onSubmit = { _, _ -> },
+            onSubmit = { _, _, _, _ -> },
             onCancel = { },
             onClose = { },
         ),
