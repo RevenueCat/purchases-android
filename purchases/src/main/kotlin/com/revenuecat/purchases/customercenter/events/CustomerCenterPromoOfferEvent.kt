@@ -49,6 +49,7 @@ class CustomerCenterPromoOfferEvent(
      * @property path The help path type that led to this promo offer.
      * @property url The URL if the path type is CUSTOM_URL.
      * @property surveyOptionID The ID of the survey option selected, if applicable.
+     * @property source The rejection source if the event type is PROMO_OFFER_REJECTED.
      * @property storeOfferID The store-specific identifier for the promotional offer.
      * @property productID The product identifier for the promotional offer.
      * @property targetProductID The target product identifier associated with the promotional offer.
@@ -69,6 +70,7 @@ class CustomerCenterPromoOfferEvent(
         val path: CustomerCenterConfigData.HelpPath.PathType,
         val url: String?,
         val surveyOptionID: String?,
+        val source: PromoOfferRejectionSource? = null,
         val storeOfferID: String,
         val productID: String,
         val targetProductID: String,

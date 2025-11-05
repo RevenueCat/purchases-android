@@ -196,6 +196,7 @@ class CustomerCenterEventsSerializationTest {
                 path = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
                 url = null,
                 surveyOptionID = null,
+                source = PromoOfferRejectionSource.CANCEL,
                 storeOfferID = "store_offer_456",
                 productID = "product_abc",
                 targetProductID = "product_xyz",
@@ -212,6 +213,7 @@ class CustomerCenterEventsSerializationTest {
         assertThat(requestString).contains("customer_center_promo_offer_rejected")
 
         // Verify promo fields are present
+        assertThat(requestString).contains("\"source\":\"cancel\"")
         assertThat(requestString).contains("\"target_product_id\":\"product_xyz\"")
     }
 

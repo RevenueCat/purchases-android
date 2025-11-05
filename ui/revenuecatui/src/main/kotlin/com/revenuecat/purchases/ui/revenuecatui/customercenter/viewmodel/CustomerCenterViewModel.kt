@@ -38,6 +38,7 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterPromoOfferEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
+import com.revenuecat.purchases.customercenter.events.PromoOfferRejectionSource
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
@@ -103,7 +104,7 @@ internal interface CustomerCenterViewModel {
     ): Boolean
 
     suspend fun onAcceptedPromotionalOffer(subscriptionOption: SubscriptionOption, activity: Activity?)
-    fun dismissPromotionalOffer(context: Context, originalPath: HelpPath)
+    fun dismissPromotionalOffer(context: Context, originalPath: HelpPath, source: PromoOfferRejectionSource)
     fun onNavigationButtonPressed(context: Context, onDismiss: () -> Unit)
 
     @InternalRevenueCatAPI
@@ -871,6 +872,7 @@ internal class CustomerCenterViewModelImpl(
     override fun dismissPromotionalOffer(
         context: Context,
         originalPath: HelpPath,
+        source: PromoOfferRejectionSource,
     ) {
         // Extract promo offer data from current state before dismissing
         val currentState = _state.value as? CustomerCenterState.Success
@@ -895,6 +897,7 @@ internal class CustomerCenterViewModelImpl(
                     path = data.originalPath.type,
                     url = data.originalPath.url,
                     surveyOptionID = data.surveyOptionID,
+                    source = source,
                     storeOfferID = storeOfferId,
                     productID = originProductId,
                     targetProductID = targetProductId,
@@ -926,6 +929,7 @@ internal class CustomerCenterViewModelImpl(
             dismissPromotionalOffer(
                 context,
                 (currentState.currentDestination as CustomerCenterDestination.PromotionalOffer).data.originalPath,
+                source = PromoOfferRejectionSource.X_MARK,
             )
             return
         }
@@ -1070,6 +1074,7 @@ internal class CustomerCenterViewModelImpl(
         storeOfferID: String,
         productID: String,
         targetProductID: String,
+        source: PromoOfferRejectionSource? = null,
         error: String? = null,
         transactionID: String? = null,
     ) {
@@ -1083,6 +1088,7 @@ internal class CustomerCenterViewModelImpl(
                 path = path,
                 url = url,
                 surveyOptionID = surveyOptionID,
+                source = source,
                 storeOfferID = storeOfferID,
                 productID = productID,
                 targetProductID = targetProductID,
