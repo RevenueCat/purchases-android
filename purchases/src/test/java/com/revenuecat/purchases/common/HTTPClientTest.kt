@@ -13,8 +13,10 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -28,6 +30,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
@@ -982,6 +985,186 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }
     }
+
+    // region Timeout Management
+
+    @Test
+    fun `HTTPClient records SUCCESS_ON_MAIN_BACKEND when successful request to main backend`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+
+        // Create app config with main backend URL
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Record a timeout first to verify it gets reset
+        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+
+        // Setup successful response
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, """{"offerings": [], "current_offering_id": null}""")
+        )
+
+        // Perform request to main backend
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = emptyList(),
+        )
+
+        // Verify timeout was reset
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+    }
+
+    @Test
+    fun `HTTPClient records TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK when timeout occurs on main backend with fallback`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+
+        // Create app config with main backend URL
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Initially timeout should be default
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+
+        // Setup fallback server response
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        fallbackServer.enqueue(
+            MockResponse()
+                .setBody(validJsonPayload)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        )
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = any(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        enqueue(
+            endpoint.getPath(),
+            HTTPResult.createResult(),
+            bodyDelayMs = (HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100) + 100L,
+        )
+
+        try {
+            // Perform request - should timeout on main backend and use fallback
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+                .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+        } finally {
+            fallbackServer.shutdown()
+        }
+    }
+
+    @Test
+    fun `HTTPClient records OTHER_RESULT when timeout occurs on main backend with endpoint not supporting fallback`() {
+        val endpoint = Endpoint.LogIn
+
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+
+        // Create app config with main backend URL
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Initially timeout should be default
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / 100)
+
+        enqueue(
+            endpoint.getPath(),
+            HTTPResult.createResult(),
+            bodyDelayMs = (HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / 100) + 100L,
+        )
+
+        // Perform request - should timeout on main backend and not use fallback
+        assertThatThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }.isInstanceOf(SocketTimeoutException::class.java)
+
+        // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / 100)
+        assertThat(timeoutManager.getTimeoutForRequest(Endpoint.GetProductEntitlementMapping, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+    }
+
+    @Test
+    fun `HTTPClient records OTHER_RESULT when request fails without timeout`() {
+        val endpoint = Endpoint.GetProductEntitlementMapping
+
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+
+        // Create app config with main backend URL
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Record a timeout first
+        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+
+        // Setup error response (non-timeout error)
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.NOT_FOUND, """{"error": "not found"}""")
+        )
+
+        // Perform request - should record OTHER_RESULT for non-successful response
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = emptyList(),
+        )
+
+        // Verify HTTPClient recorded OTHER_RESULT and did NOT reset timeout
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
+        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+    }
+
+    // endregion Timeout Management
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
