@@ -91,6 +91,39 @@ class Offerings internal constructor(
             loadedFromCache = loadedFromCache,
         )
     }
+
+    /**
+     * @hide
+     */
+    override fun toString() =
+        "<Offerings\n " +
+            "current: $current\n" +
+            "all:  $all,\n" +
+            "placements: $placements,\n" +
+            "targeting: $targeting\n>"
+    override fun equals(other: Any?) = other is Offerings &&
+        OfferingsComparableData(this) == OfferingsComparableData(other)
+    override fun hashCode() = OfferingsComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores originalSource and loadedFromCache.
+ */
+private data class OfferingsComparableData(
+    val current: Offering?,
+    val all: Map<String, Offering>,
+    val placements: Offerings.Placements?,
+    val targeting: Offerings.Targeting?,
+) {
+    constructor(
+        offerings: Offerings,
+    ) : this(
+        current = offerings.current,
+        all = offerings.all,
+        placements = offerings.placements,
+        targeting = offerings.targeting,
+        // Note: originalSource and source are excluded from equality comparison as they are metadata
+    )
 }
 
 @OptIn(InternalRevenueCatAPI::class)
