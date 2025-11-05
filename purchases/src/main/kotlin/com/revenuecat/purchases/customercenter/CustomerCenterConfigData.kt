@@ -285,6 +285,27 @@ data class CustomerCenterConfigData(
 
             @SerialName("no_virtual_currency_balances_found")
             NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
+
+            @SerialName("support_ticket_create")
+            SUPPORT_TICKET_CREATE,
+
+            @SerialName("email")
+            EMAIL,
+
+            @SerialName("enter_email")
+            ENTER_EMAIL,
+
+            @SerialName("description")
+            DESCRIPTION,
+
+            @SerialName("sent")
+            SENT,
+
+            @SerialName("support_ticket_failed")
+            SUPPORT_TICKET_FAILED,
+
+            @SerialName("submit_ticket")
+            SUBMIT_TICKET,
             ;
 
             val defaultValue: String
@@ -389,6 +410,13 @@ data class CustomerCenterConfigData(
                     SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
                     VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
                     NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
+                    SUPPORT_TICKET_CREATE -> "Create a support ticket"
+                    EMAIL -> "Email"
+                    ENTER_EMAIL -> "Enter your email"
+                    DESCRIPTION -> "Description"
+                    SENT -> "Sent"
+                    SUPPORT_TICKET_FAILED -> "Failed to send, please try again."
+                    SUBMIT_TICKET -> "Submit ticket"
                 }
         }
 

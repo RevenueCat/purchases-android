@@ -438,6 +438,7 @@ private fun CustomerCenterNavHost(
             is CustomerCenterDestination.CreateSupportTicket -> {
                 CreateSupportTicketView(
                     data = destination.data,
+                    localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
         }

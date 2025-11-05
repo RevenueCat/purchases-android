@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants.Layout.SECTION_SPACING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants.Layout.SECTION_TITLE_BOTTOM_PADDING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSuppor
 internal fun CreateSupportTicketView(
     data: CreateSupportTicketData,
     modifier: Modifier = Modifier,
+    localization: CustomerCenterConfigData.Localization,
 ) {
     var email by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -52,8 +54,12 @@ internal fun CreateSupportTicketView(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
-                placeholder = { Text("Enter your email") },
+                label = { Text(localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.EMAIL,
+                )) },
+                placeholder = { Text(localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.ENTER_EMAIL,
+                )) },
                 enabled = !isSubmitting && !wasSuccessfullySent,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -68,8 +74,9 @@ internal fun CreateSupportTicketView(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description") },
-                placeholder = { Text("Enter ticket description") },
+                label = { Text(localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.DESCRIPTION,
+                )) },
                 enabled = !isSubmitting && !wasSuccessfullySent,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,13 +106,23 @@ internal fun CreateSupportTicketView(
                 },
                 enabled = !isSubmitting && !wasSuccessfullySent && email.isNotBlank() && description.isNotBlank(),
                 loading = isSubmitting,
-                title = if (wasSuccessfullySent) "✓ Sent" else "Submit ticket",
+                title = if (wasSuccessfullySent) {
+                    "✓ ${localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
+                    )}"
+                } else {
+                    localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET,
+                    )
+                },
             )
 
             if (hasError) {
                 Spacer(modifier = Modifier.height(SECTION_SPACING))
                 Text(
-                    text = "Failed to send support ticket. Please try again.",
+                    text = localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
+                    ),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
@@ -117,15 +134,3 @@ internal fun CreateSupportTicketView(
     }
 }
 
-@JvmSynthetic
-@Preview(showBackground = true)
-@Composable
-internal fun CreateSupportTicketViewPreview() {
-    CreateSupportTicketView(
-        data = CreateSupportTicketData(
-            onSubmit = { _, _, _, _ -> },
-            onCancel = { },
-            onClose = { },
-        ),
-    )
-}
