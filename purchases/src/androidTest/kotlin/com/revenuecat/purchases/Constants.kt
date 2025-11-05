@@ -15,14 +15,14 @@ object Constants {
 
     enum class BackendEnvironment {
         PRODUCTION,
-        LOAD_SHEDDER,
+        LOAD_SHEDDER_US_EAST_1,
         LOAD_SHEDDER_US_EAST_2,
         ;
 
         companion object {
             fun valueForString(backendEnvironmentString: String): BackendEnvironment {
                 return when (backendEnvironmentString) {
-                    "load_shedder_us_east_1" -> LOAD_SHEDDER
+                    "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1
                     "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2
                     "production" -> PRODUCTION
                     else -> error("Expected valid backend_environment value. Got $backendEnvironmentString")

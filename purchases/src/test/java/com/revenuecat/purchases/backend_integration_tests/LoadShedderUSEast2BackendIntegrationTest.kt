@@ -4,9 +4,9 @@ import io.mockk.every
 import org.junit.Before
 import java.net.URL
 
-internal class LoadShedderUSEast2BackendIntegrationTest: LoadShedderBackendIntegrationTest() {
+internal class LoadShedderUSEast2BackendIntegrationTest: LoadShedderUSEast1BackendIntegrationTest() {
     @Before
-    fun setup() {
+    override fun setup() {
         every { appConfig.baseURL } returns URL("https://fortress-us-east-2.revenuecat.com/")
     }
 }
