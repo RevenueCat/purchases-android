@@ -16,7 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentV
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 
-@Suppress("ModifierNotUsedAtRoot")
 @Composable
 internal fun ViewWithVideoBackground(
     state: PaywallState.Loaded.Components,
