@@ -126,6 +126,8 @@ internal interface CustomerCenterViewModel {
     fun showVirtualCurrencyBalances()
 
     fun showCreateSupportTicket()
+
+    fun dismissSupportTicketSuccessSnackbar()
 }
 
 @Stable
@@ -335,6 +337,16 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    override fun dismissSupportTicketSuccessSnackbar() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(showSupportTicketSuccessSnackbar = false)
+            } else {
+                currentState
+            }
+        }
+    }
+
     private fun handleSupportTicketSubmit(
         email: String,
         description: String,
@@ -351,6 +363,22 @@ internal class CustomerCenterViewModelImpl(
 
                 if (wasSent) {
                     Logger.d("Support ticket created successfully")
+                    // Navigate back and show success snackbar
+                    _state.update { currentState ->
+                        if (currentState is CustomerCenterState.Success) {
+                            currentState.copy(
+                                navigationState = currentState.navigationState.pop(),
+                                navigationButtonType = if (currentState.navigationState.pop().canNavigateBack) {
+                                    CustomerCenterState.NavigationButtonType.BACK
+                                } else {
+                                    CustomerCenterState.NavigationButtonType.CLOSE
+                                },
+                                showSupportTicketSuccessSnackbar = true,
+                            )
+                        } else {
+                            currentState
+                        }
+                    }
                     onSuccess()
                 } else {
                     Logger.e("Support ticket creation returned false")

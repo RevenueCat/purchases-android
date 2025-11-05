@@ -414,7 +414,7 @@ data class CustomerCenterConfigData(
                     EMAIL -> "Email"
                     ENTER_EMAIL -> "Enter your email"
                     DESCRIPTION -> "Description"
-                    SENT -> "Sent"
+                    SENT -> "Message sent"
                     SUPPORT_TICKET_FAILED -> "Failed to send, please try again."
                     SUBMIT_TICKET -> "Submit ticket"
                 }

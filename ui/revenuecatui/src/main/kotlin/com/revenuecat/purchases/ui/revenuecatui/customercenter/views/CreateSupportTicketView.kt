@@ -47,7 +47,6 @@ internal fun CreateSupportTicketView(
     var email by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
-    var wasSuccessfullySent by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -78,7 +77,7 @@ internal fun CreateSupportTicketView(
                 placeholder = { Text(localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.ENTER_EMAIL,
                 )) },
-                enabled = !isSubmitting && !wasSuccessfullySent,
+                enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("email_field"),
@@ -97,7 +96,7 @@ internal fun CreateSupportTicketView(
                 label = { Text(localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.DESCRIPTION,
                 )) },
-                enabled = !isSubmitting && !wasSuccessfullySent,
+                enabled = !isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
@@ -116,8 +115,7 @@ internal fun CreateSupportTicketView(
                         email,
                         description,
                         {
-                            isSubmitting = false
-                            wasSuccessfullySent = true
+                            // Success - navigation handled by ViewModel
                         },
                         {
                             isSubmitting = false
@@ -125,17 +123,11 @@ internal fun CreateSupportTicketView(
                         }
                     )
                 },
-                enabled = !isSubmitting && !wasSuccessfullySent && email.isNotBlank() && description.isNotBlank(),
+                enabled = !isSubmitting && email.isNotBlank() && description.isNotBlank(),
                 loading = isSubmitting,
-                title = if (wasSuccessfullySent) {
-                    "✓ ${localization.commonLocalizedString(
-                        CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
-                    )}"
-                } else {
-                    localization.commonLocalizedString(
-                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET,
-                    )
-                },
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET,
+                ),
             )
         }
 

@@ -8,6 +8,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -154,6 +157,9 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
                 is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
                 is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
+                is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
+                    viewModel.dismissSupportTicketSuccessSnackbar()
+                }
             }
         },
     )
@@ -365,11 +371,32 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    CustomerCenterNavHost(
-        currentDestination = state.currentDestination,
-        customerCenterState = state,
-        onAction = onAction,
+    val snackbarHostState = remember { SnackbarHostState() }
+    val successMessage = state.customerCenterConfigData.localization.commonLocalizedString(
+        CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
     )
+
+    LaunchedEffect(state.showSupportTicketSuccessSnackbar) {
+        if (state.showSupportTicketSuccessSnackbar) {
+            snackbarHostState.showSnackbar(successMessage)
+            onAction(CustomerCenterAction.DismissSupportTicketSuccessSnackbar)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CustomerCenterNavHost(
+            currentDestination = state.currentDestination,
+            customerCenterState = state,
+            onAction = onAction,
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+        )
+    }
 }
 
 @Suppress("LongMethod")
