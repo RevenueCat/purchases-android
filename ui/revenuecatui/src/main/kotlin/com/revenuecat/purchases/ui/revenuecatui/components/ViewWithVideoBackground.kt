@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
@@ -22,7 +21,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 internal fun ViewWithVideoBackground(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
-    modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -56,7 +54,7 @@ internal fun ViewWithVideoBackground(
                 VideoComponentView(
                     style = videoComponent,
                     state = state,
-                    modifier = modifier.align(Alignment.Companion.Center),
+                    modifier = Modifier.matchParentSize(),
                 )
             }
 
@@ -70,7 +68,6 @@ internal fun ViewWithVideoBackground(
 internal fun WithOptionalVideoBackground(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
-    modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     content: @Composable () -> Unit,
 ) {
@@ -78,7 +75,6 @@ internal fun WithOptionalVideoBackground(
         ViewWithVideoBackground(
             state = state,
             background = background,
-            modifier = modifier,
             shape = shape,
         ) {
             content()
