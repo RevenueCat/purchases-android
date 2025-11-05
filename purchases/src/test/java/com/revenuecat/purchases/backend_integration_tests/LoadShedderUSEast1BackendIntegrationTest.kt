@@ -4,14 +4,21 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import io.mockk.every
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.junit.Before
 import org.junit.Test
 import java.net.URL
 
-internal open class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
+internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
+
+    @Before
+    open fun setup() {
+        every { appConfig.baseURL } returns URL("https://fortress-us-east-1.revenuecat.com/")
+    }
 
     @Test
     fun `can perform product entitlement mapping backend request`() {
