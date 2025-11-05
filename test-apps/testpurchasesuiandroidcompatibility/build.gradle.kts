@@ -74,7 +74,8 @@ emerge {
         if (prNum != null) {
             prNumber.set(prNum)
         } else {
-            baseSha.set("")
+            // Don't set baseSha for main branch uploads
+            baseSha.set(null as String?)
         }
         gitHub {
             repoName.set("purchases-android")

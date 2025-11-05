@@ -266,6 +266,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     if (url == null) {
                         Logger.e("Web checkout URL cannot be found, not launching web checkout.")
                     } else {
+                        viewModel.invalidateCustomerInfoCache()
                         context.handleUrlDestination(url, action.openMethod)
                         if (action.autoDismiss) {
                             Logger.d("Auto-dismissing paywall after launching web checkout.")

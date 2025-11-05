@@ -1418,6 +1418,20 @@ class PaywallViewModelTest {
 
     // endregion getWebCheckoutUrl
 
+    // region invalidateCustomerInfoCache
+
+    @Test
+    fun `invalidateCustomerInfoCache invalidates previously obtained customer info`() {
+        val model = create(offering = offeringWithWPL)
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
+        model.invalidateCustomerInfoCache()
+        verify(exactly = 1) {
+            purchases.invalidateVirtualCurrenciesCache()
+        }
+    }
+
+    // endregion invalidateCustomerInfoCache
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,

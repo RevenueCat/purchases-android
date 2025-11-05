@@ -201,6 +201,10 @@ private class LoadingViewModel(
         return null
     }
 
+    override fun invalidateCustomerInfoCache() {
+        // no-op
+    }
+
     override fun purchaseSelectedPackage(activity: Activity?) {
         // no-op
     }

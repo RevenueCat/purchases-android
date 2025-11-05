@@ -571,6 +571,12 @@ internal class MockViewModel(
         return null
     }
 
+    var invalidateCustomerInfoCacheCallCount = 0
+        private set
+    override fun invalidateCustomerInfoCache() {
+        invalidateCustomerInfoCacheCallCount++
+    }
+
     var purchaseSelectedPackageCallCount = 0
         private set
     var purchaseSelectedPackageParams = mutableListOf<Activity?>()

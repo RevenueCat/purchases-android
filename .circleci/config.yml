@@ -394,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.12.0-SNAPSHOT s3://purchases-docs/android/9.12.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -588,20 +588,13 @@ jobs:
             - purchases/test_artifacts/integrationTest-app.apk
             - purchases/test_artifacts/integrationTest-test.apk
 
-  run-firebase-tests-purchases-integration-test:
-    description: "Run purchases module integration tests for Android in Firebase. Variant integrationTest"
-    executor: gcp-cli/google
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run-firebase-tests:
-          app_apk_path: purchases/test_artifacts/integrationTest-app.apk
-          test_apk_path: purchases/test_artifacts/integrationTest-test.apk
-
-  run-firebase-tests-purchases-load-shedder-integration-test:
-    description: "Run purchases module integration tests for Android in Firebase using the load shedder servers"
+  run-firebase-tests-purchases-integration-tests:
+    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
     <<: *android-executor
+    parameters:
+      backend_environment:
+        type: enum
+        enum: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
     steps:
       - checkout
       - install-sdkman
@@ -614,9 +607,9 @@ jobs:
           google_project_id: GOOGLE_PROJECT_ID
       - android/restore_build_cache
       - run:
-          name: Build and run load shedder integration tests
+          name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_load_shedder_purchases_integration_tests
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
       - android/save_build_cache
       - store_artifacts:
           path: ~/gsutil/
@@ -696,7 +689,22 @@ jobs:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
+      - run:
+          name: Verify no changes to golden test files
+          command: |
+            if ! git diff --quiet purchases/src/test/resources/backend_integration_tests_golden/; then
+              echo "ERROR: Golden test files have been modified!"
+              echo "The following changes have been found:"
+              git diff purchases/src/test/resources/backend_integration_tests_golden/
+              echo ""
+              echo "Golden test files should not be modified during test execution."
+              echo "If you need to update the golden files, commit the changes explicitly."
+              exit 1
+            fi
+            echo "Golden test files verification passed - no changes detected"
       - android/save_build_cache
+      - store_test_results:
+          path: purchases/build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
@@ -739,12 +747,10 @@ jobs:
               #   gh-readonly-queue/<base-branch>/pr-<number>-<base-commit>
               PR_NUM=$(echo "$branch" | sed -En 's/^gh-readonly-queue\/[^/]+\/pr-([0-9]+)-[0-9a-f]+$/\1/p')
             fi
-            # Set base-sha to empty string if no PR number is found.
+            # Do not set base-sha if no PR number is found.
             PR_ARG=""
             if [ -n "$PR_NUM" ]; then
               PR_ARG="--pr-number $PR_NUM"
-            else
-              PR_ARG="--base-sha \"\""
             fi
 
             emerge upload snapshots \
@@ -971,16 +977,15 @@ workflows:
           requires:
             - prepare-tests
       - integration-tests-build: *release-branches
-      - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches
-      - run-firebase-tests-purchases-integration-test:
-          requires:
-            - purchases-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
+      - run-firebase-tests-purchases-integration-tests:
           <<: *release-branches
           context:
             - slack-secrets
+          matrix:
+            parameters:
+              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -997,8 +1002,7 @@ workflows:
             - run-maestro-e2e-tests
             - run-revenuecatui-ui-tests
             - run-firebase-tests
-            - run-firebase-tests-purchases-integration-test
-            - run-firebase-tests-purchases-load-shedder-integration-test
+            - run-firebase-tests-purchases-integration-tests
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
             - verify-compatibility
           <<: *release-branches
@@ -1043,7 +1047,12 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
-      - run-firebase-tests-purchases-load-shedder-integration-test:
+      - run-firebase-tests-purchases-integration-tests:
+          backend_environment: "load_shedder_us_east_1"
+          context:
+            - slack-secrets
+      - run-firebase-tests-purchases-integration-tests:
+          backend_environment: "load_shedder_us_east_2"
           context:
             - slack-secrets
 

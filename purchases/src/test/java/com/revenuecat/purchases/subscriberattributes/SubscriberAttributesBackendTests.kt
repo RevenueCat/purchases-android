@@ -164,7 +164,7 @@ class SubscriberAttributesPosterTests {
                 Endpoint.PostAttributes(appUserID),
                 any(),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         }
     }
@@ -479,7 +479,7 @@ class SubscriberAttributesPosterTests {
                 Endpoint.PostAttributes(appUserID),
                 (expectedBody ?: any()),
                 postFieldsToSign = null,
-                mapOf("Authorization" to "Bearer $API_KEY")
+                mapOf("Authorization" to "Bearer $API_KEY"),
             )
         }
 
@@ -503,7 +503,7 @@ class SubscriberAttributesPosterTests {
                 Endpoint.PostReceipt,
                 capture(actualPostReceiptBodySlot),
                 any(),
-                mapOf("Authorization" to "Bearer $API_KEY")
+                mapOf("Authorization" to "Bearer $API_KEY"),
             )
         } answers {
             createResult(responseCode, responseBody).also {

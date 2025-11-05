@@ -1,14 +1,17 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import io.mockk.every
 import io.mockk.mockk
@@ -132,6 +135,33 @@ class PurchasedProductsFetcherTest {
         )
 
         assertThat(receivedListOfPurchasedProducts).isEmpty()
+    }
+
+    @Test
+    fun `returns an active purchased product without an entitlement`() {
+        val productIdentifier = "monthly"
+        mockEntitlementMapping(emptyMap())
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = "appUserID",
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts[0],
+            activePurchase,
+            emptyMap(),
+        )
     }
 
     @Test
@@ -285,16 +315,122 @@ class PurchasedProductsFetcherTest {
         )
     }
 
+    @Test
+    fun `subscription with add-on returns all purchased products when add-on has no entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val entitlementsByProduct = mapOf(
+            baseProductIdentifier to listOf("base_entitlement"),
+        )
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(multilineTransaction))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
+        val baseProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        assertPurchasedProduct(
+            baseProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+        )
+    }
+
+    @Test
+    fun `subscription with add-on returns all purchased products when add-on when base has no entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val entitlementsByProduct = mapOf(
+            addOnProductIdentifier to listOf("addon_entitlement"),
+        )
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(multilineTransaction))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
+        val addOnProduct = receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        assertPurchasedProduct(
+            addOnProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+            purchasedProductIndex = 1,
+        )
+    }
+
+    @Test
+    fun `subscription with add-on returns both when both have entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val entitlementsByProduct = mapOf(
+            baseProductIdentifier to listOf("base_entitlement"),
+            addOnProductIdentifier to listOf("addon_entitlement"),
+        )
+        mockEntitlementMapping(entitlementsByProduct)
+        val multilineTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(baseProductIdentifier, addOnProductIdentifier),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(multilineTransaction))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
+        val baseProduct =
+            receivedListOfPurchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        assertPurchasedProduct(
+            baseProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+        )
+
+        val addOnProduct =
+            receivedListOfPurchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        assertPurchasedProduct(
+            addOnProduct,
+            multilineTransaction,
+            entitlementsByProduct,
+            purchasedProductIndex = 1,
+        )
+    }
+
     // region helpers
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
         productIdentifierToEntitlements: Map<String, List<String>>,
+        purchasedProductIndex: Int = 0,
     ) {
-        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[0])
+        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[purchasedProductIndex])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
-        assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]!!.size)
-        assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
+        assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]?.size ?: 0)
+        if (purchasedProduct.entitlements.isNotEmpty()) {
+            assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
+        }
+
         val expiresDate = testDatePlusOneDay
         assertThat(purchasedProduct.expiresDate)
             .withFailMessage("Expires date should be $expiresDate, but it was ${purchasedProduct.expiresDate}")
