@@ -643,12 +643,12 @@ private fun MainStackComponent(
             }
         } else {
             stack(
-                outerShapeModifier.then(borderModifier).then(
-                    innerShapeModifier
-                        .conditional(stackState.applyBottomWindowInsets) {
-                            windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
-                        },
-                ),
+                outerShapeModifier
+                    .then(borderModifier)
+                    .then(innerShapeModifier)
+                    .conditional(stackState.applyBottomWindowInsets) {
+                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                    },
             )
         }
     } else if (nestedBadge != null) {
