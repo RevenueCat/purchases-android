@@ -434,14 +434,17 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                throw PurchasesException(
+                errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                    ),
-                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
-                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
-                        "Test Store is not supported in production builds.",
+                        underlyingErrorMessage = "Test Store API key used in release build. Please configure the " +
+                            "Play Store app on the RevenueCat dashboard and use its corresponding Google API key " +
+                            "before releasing. Visit https://rev.cat/sdk-test-store to learn more."
+                    )
                 )
+                TestStoreErrorDialogActivity.show(context)
+                // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
+                return apiKeyValidationResult
             }
 
             require(context.applicationContext is Application) { "Needs an application context." }
