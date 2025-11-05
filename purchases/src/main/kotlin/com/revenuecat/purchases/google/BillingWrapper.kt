@@ -175,9 +175,7 @@ internal class BillingWrapper(
                         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
                         sendErrorsToAllPendingRequests(error)
                     } catch (e: SecurityException) {
-                        log(LogIntent.GOOGLE_ERROR) {
-                            BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING.format(e)
-                        }
+                        errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
                         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
                         sendErrorsToAllPendingRequests(error)
                     }
