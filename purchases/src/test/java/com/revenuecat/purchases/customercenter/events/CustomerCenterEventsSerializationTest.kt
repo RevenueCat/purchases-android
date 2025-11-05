@@ -37,7 +37,7 @@ class CustomerCenterEventsSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
 
         // Verify promo fields are null in JSON
-        assertThat(requestString).contains("\"store_offer_id\":null")
+        assertThat(requestString).contains("\"store_promo_offer_id\":null")
         assertThat(requestString).contains("\"product_id\":null")
         assertThat(requestString).contains("\"target_product_id\":null")
 
@@ -69,7 +69,7 @@ class CustomerCenterEventsSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
 
         // Verify promo fields are null in JSON
-        assertThat(requestString).contains("\"store_offer_id\":null")
+        assertThat(requestString).contains("\"store_promo_offer_id\":null")
         assertThat(requestString).contains("\"product_id\":null")
         assertThat(requestString).contains("\"target_product_id\":null")
 
@@ -107,7 +107,7 @@ class CustomerCenterEventsSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
 
         // Verify all promo fields are present
-        assertThat(requestString).contains("\"store_offer_id\":\"store_offer_456\"")
+        assertThat(requestString).contains("\"store_promo_offer_id\":\"store_offer_456\"")
         assertThat(requestString).contains("\"product_id\":\"product_abc\"")
         assertThat(requestString).contains("\"target_product_id\":\"product_xyz\"")
         assertThat(requestString).contains("\"transaction_id\":\"transaction_789\"")
@@ -179,7 +179,7 @@ class CustomerCenterEventsSerializationTest {
         assertThat(requestString).contains("customer_center_promo_offer_cancel")
 
         // Verify promo fields are present
-        assertThat(requestString).contains("\"store_offer_id\":\"store_offer_456\"")
+        assertThat(requestString).contains("\"store_promo_offer_id\":\"store_offer_456\"")
     }
 
     @Test
@@ -242,7 +242,7 @@ class CustomerCenterEventsSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
 
         assertThat(requestString).contains("customer_center_promo_offer_impression")
-        assertThat(requestString).contains("\"store_offer_id\":\"store_offer_123\"")
+        assertThat(requestString).contains("\"store_promo_offer_id\":\"store_offer_123\"")
         assertThat(requestString).contains("\"product_id\":\"premium_monthly\"")
         assertThat(requestString).contains("\"target_product_id\":\"premium_monthly_promo\"")
         assertThat(requestString).contains("\"survey_option_id\":\"too_expensive\"")

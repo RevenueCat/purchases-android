@@ -891,7 +891,7 @@ internal class CustomerCenterViewModelImpl(
 
             if (storeOfferId != null && originProductId != null && targetProductId != null) {
                 trackPromoOfferEvent(
-                    eventType = CustomerCenterEventType.PROMO_OFFER_DISMISSED,
+                    eventType = CustomerCenterEventType.PROMO_OFFER_REJECTED,
                     path = data.originalPath.type,
                     url = data.originalPath.url,
                     surveyOptionID = data.surveyOptionID,

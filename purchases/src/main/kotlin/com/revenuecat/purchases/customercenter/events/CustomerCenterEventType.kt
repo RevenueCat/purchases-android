@@ -29,12 +29,6 @@ enum class CustomerCenterEventType {
     PROMO_OFFER_IMPRESSION,
 
     /**
-     * A promo offer was dismissed by the user before starting the purchase flow.
-     */
-    @SerialName("customer_center_promo_offer_dismissed")
-    PROMO_OFFER_DISMISSED,
-
-    /**
      * A promo offer was successfully completed.
      */
     @SerialName("customer_center_promo_offer_success")
@@ -47,7 +41,7 @@ enum class CustomerCenterEventType {
     PROMO_OFFER_CANCEL,
 
     /**
-     * A promo offer was rejected.
+     * A promo offer was rejected by the user before starting the purchase flow.
      */
     @SerialName("customer_center_promo_offer_rejected")
     PROMO_OFFER_REJECTED,

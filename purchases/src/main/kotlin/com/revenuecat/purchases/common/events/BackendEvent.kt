@@ -55,7 +55,7 @@ internal sealed class BackendEvent : Event {
         val surveyOptionID: String?,
 
         // only valid for promo offer events
-        @SerialName("store_offer_id")
+        @SerialName("store_promo_offer_id")
         val storeOfferID: String?,
         @SerialName("product_id")
         val productID: String?,
