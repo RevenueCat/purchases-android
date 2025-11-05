@@ -201,52 +201,51 @@ platform :android do
   end
 
   def check_version_not_in_maven_central(version, group_id, artifact_ids)
-    base_url = "https://repo1.maven.org/maven2"
+    require 'rest-client'
+    require 'json'
+    require 'uri'
+    
+    auth_token = ENV["FETCH_PUBLICATIONS_USER_TOKEN_MAVEN_CENTRAL"]
+    if auth_token.nil? || auth_token.empty?
+      UI.user_error!("FETCH_PUBLICATIONS_USER_TOKEN_MAVEN_CENTRAL environment variable is not set. Please provide a valid token to check Maven Central publications.")
+    end
+    
+    base_url = "https://central.sonatype.com/api/v1/publisher/published"
     existing_artifacts = []
     
     artifact_ids.each do |artifact_id|
-      # Convert group ID dots to slashes for URL path
-      group_path = group_id.gsub(".", "/")
-      url = "#{base_url}/#{group_path}/#{artifact_id}/#{version}/"
+      # Build query parameters for the API endpoint with proper URI encoding
+      # The API uses 'name' parameter which corresponds to the artifact_id
+      api_url = "#{base_url}?namespace=#{URI.encode_www_form_component(group_id)}&name=#{URI.encode_www_form_component(artifact_id)}&version=#{URI.encode_www_form_component(version)}"
       
-      UI.verbose("Checking Maven Central: #{url}")
+      UI.verbose("Checking Sonatype API for publication status: #{group_id}:#{artifact_id}:#{version}")
       
-      # Use curl to check if the version directory exists (HTTP HEAD request)
-      # Don't use -f flag so we can check the HTTP status code
-      # Use -L to follow redirects
       begin
-        # Capture both stdout (HTTP code) and stderr separately
-        result = sh("curl -s -S -o /dev/null -w '%{http_code}' -L -I '#{url}' 2>&1", log: false).strip
+        response = RestClient.get(
+          api_url,
+          {
+            'Authorization' => "Bearer #{auth_token}",
+            'accept' => 'application/json'
+          }
+        )
         
-        # Extract the HTTP status code (last 3 digits at the end of the output)
-        match_result = result.match(/(\d{3})\s*$/)
-        if match_result.nil?
-          UI.important("Could not parse HTTP status code for #{url}. Response: #{result}")
-          next
-        end
+        # Parse JSON response
+        response_data = JSON.parse(response.body)
         
-        http_code = match_result[1]
-        
-        if http_code == "200"
+        # Check if published field is true
+        if response_data["published"] == true
           existing_artifacts << artifact_id
           UI.important("Artifact #{group_id}:#{artifact_id}:#{version} already exists in Maven Central")
-        elsif http_code != "404"
-          # If we get an unexpected status code, warn but don't fail
-          UI.user_error!("Unexpected HTTP status #{http_code} when checking #{url}")
         end
       rescue => e
-        UI.user_error!("Failed to check #{url}: #{e.message}")
-        # Continue checking other artifacts even if one fails
-        next
+        UI.user_error!("Failed to check #{group_id}:#{artifact_id}:#{version}: #{e.message}")
       end
     end
     
     unless existing_artifacts.empty?
       error_message = "Version #{version} already exists in Maven Central for the following artifacts:\n"
       existing_artifacts.each do |artifact_id|
-        group_path = group_id.gsub(".", "/")
-        maven_url = "#{base_url}/#{group_path}/#{artifact_id}/#{version}/"
-        error_message += "  - #{group_id}:#{artifact_id}:#{version}\n    #{maven_url}\n"
+        error_message += "  - #{group_id}:#{artifact_id}:#{version}\n"
       end
       error_message += "\nDeployment cancelled to prevent duplicate releases."
       UI.user_error!(error_message)
