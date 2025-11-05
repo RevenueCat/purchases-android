@@ -33,7 +33,7 @@ class PaywallViewActivity : AppCompatActivity() {
                 val builder: AlertDialog.Builder = AlertDialog.Builder(this@PaywallViewActivity)
                 builder.setTitle("On Purchase Initiated Hook")
                 builder.setMessage(
-                    "Example of presenting other UI over the paywall. Do you want to proceed with the purchase?"
+                    "Example of presenting other UI over the paywall. Do you want to proceed with the purchase?",
                 )
                 builder.setPositiveButton(
                     "Proceed",

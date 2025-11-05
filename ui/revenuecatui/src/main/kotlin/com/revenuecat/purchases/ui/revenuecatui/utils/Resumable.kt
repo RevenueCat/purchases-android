@@ -5,4 +5,3 @@ fun interface Resumable {
 
     operator fun invoke(shouldResume: Boolean = true) = resume(shouldResume)
 }
-
