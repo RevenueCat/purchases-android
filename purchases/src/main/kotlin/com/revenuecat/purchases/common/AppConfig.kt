@@ -24,11 +24,13 @@ internal class AppConfig(
     // Should only be used for tests
     val runningTests: Boolean = false,
     forceSigningErrors: Boolean = false,
+    baseUrlString: String = Companion.baseUrlString,
 ) {
     companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
         val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
         val fallbackURL = URL("https://api-production.8-lives-cat.io/")
+        const val baseUrlString = "https://api.revenuecat.com/"
     }
 
     // Should only be used for tests
@@ -49,7 +51,7 @@ internal class AppConfig(
     var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO) { ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET }
-    } ?: URL("https://api.revenuecat.com/")
+    } ?: URL(baseUrlString)
     val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
         emptyList()
     } else {

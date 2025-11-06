@@ -21,7 +21,10 @@ internal object BillingStrings {
         "a crash. See https://github.com/RevenueCat/purchases-android/issues/381 for more information."
     const val BILLING_CLIENT_RETRY = "Retrying BillingClient connection after backoff of %s milliseconds."
     const val ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING = "There was an IllegalStateException when connecting to " +
-        "BillingClient. This has been reported to occur on Samsung devices on unknown circumstances.\nException: %s"
+        "BillingClient. This has been reported to occur on Samsung devices in unknown circumstances.\nException: %s"
+    const val SECURITY_EXCEPTION_WHEN_CONNECTING = "There was a SecurityException when connecting to " +
+        "BillingClient. This has been reported to occur on some devices in unknown circumstances. " +
+        "See issuetracker: https://issuetracker.google.com/issues/457463701"
     const val BILLING_CONNECTION_ERROR_INAPP_MESSAGES = "Error connecting to billing client to display " +
         "in-app messages: %s"
     const val BILLING_CONNECTION_ERROR_STORE_COUNTRY = "Error connecting to billing client to get store " +
