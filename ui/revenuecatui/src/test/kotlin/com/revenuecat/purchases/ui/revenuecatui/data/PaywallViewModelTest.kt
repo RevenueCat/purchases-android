@@ -44,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -184,8 +185,8 @@ class PaywallViewModelTest {
 
         listener = mockk {
             every { onPurchasePackageInitiated(any(), any()) } answers {
-                val resume = secondArg<() -> Unit>()
-                resume()
+                val resume = secondArg<Resumable>()
+                resume(true)
             }
         }
 
