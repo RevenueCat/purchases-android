@@ -325,7 +325,9 @@ internal class CustomerCenterViewModelImpl(
                             goBackToMain()
                         },
                     ),
-                    title = "Create Support Ticket", // TODO: Use localized string
+                    title = state.customerCenterConfigData.localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_CREATE,
+                    )
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(createSupportTicketDestination),
