@@ -47,7 +47,7 @@ internal fun CreateSupportTicketView(
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val errorSnackbarHostState = remember { SnackbarHostState() }
 
     val errorMessage = localization.commonLocalizedString(
         CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
@@ -55,7 +55,7 @@ internal fun CreateSupportTicketView(
 
     LaunchedEffect(hasError) {
         if (hasError) {
-            snackbarHostState.showSnackbar(errorMessage)
+            errorSnackbarHostState.showSnackbar(errorMessage)
             hasError = false
         }
     }
@@ -131,7 +131,7 @@ internal fun CreateSupportTicketView(
         }
 
         SnackbarHost(
-            hostState = snackbarHostState,
+            hostState = errorSnackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(SECTION_SPACING),
