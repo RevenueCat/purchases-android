@@ -107,6 +107,10 @@ internal fun RelevantPurchasesListView(
                 supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
                     supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
                 ),
+            addContactButton = (
+                supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
+                ),
             onAction = onAction,
         )
     }
