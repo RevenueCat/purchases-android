@@ -3306,4 +3306,226 @@ class BackendTest {
     }
 
     // endregion
+
+    // region postCreateSupportTicket
+
+    @Test
+    fun `postCreateSupportTicket makes call with correct parameters`() {
+        val email = "user@example.com"
+        val description = "I need help with my subscription"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = {},
+            onErrorHandler = {}
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = endpoint,
+                body = mapOf(
+                    "app_user_id" to appUserID,
+                    "customer_email" to email,
+                    "issue_description" to description
+                ),
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+            )
+        }
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls success handler with sent true`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{\"sent\":true}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertTrue(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls success handler with sent false`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{\"sent\":false}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = true
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertFalse(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket defaults to false when sent field is missing`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = true
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertFalse(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on network error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = IOException(),
+            resultBody = null,
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on server error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 500,
+            clientException = null,
+            resultBody = null,
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+            }
+        )
+
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on client error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 400,
+            clientException = null,
+            resultBody = "{\"code\":7101}",
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+            }
+        )
+
+        assertTrue(errorCalled)
+    }
+
+    // endregion
 }
