@@ -7,10 +7,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
@@ -55,7 +55,7 @@ fun showError(error: PurchasesError) {
 }
 
 fun showUserError(activity: Activity, error: PurchasesError) {
-    MaterialAlertDialogBuilder(activity)
+    AlertDialog.Builder(activity)
         .setMessage(error.message)
         .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
         .show()

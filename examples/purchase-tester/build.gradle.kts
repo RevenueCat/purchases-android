@@ -1,14 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.androidx.navigation.safeargs)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 apply(from = "$rootDir/base-application.gradle")
 
 android {
     buildFeatures {
-        dataBinding = true
+        compose = true
     }
 
     defaultConfig {
@@ -66,12 +67,21 @@ dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
 
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.activity.compose)
+    implementation(libs.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.material)
+
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.navigation.fragment)
-    implementation(libs.androidx.navigation.ui)
     implementation(libs.google.blockstore)
+    implementation(libs.kotlinx.serialization.json)
+
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.androidx.test.compose.manifest)
 }

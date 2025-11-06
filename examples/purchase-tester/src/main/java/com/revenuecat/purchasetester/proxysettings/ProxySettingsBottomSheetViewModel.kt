@@ -1,10 +1,10 @@
 package com.revenuecat.purchasetester.proxysettings
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Purchases
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -22,8 +22,8 @@ class ProxySettingsBottomSheetViewModel(
         private const val OK_CODE = 200
     }
 
-    private val _state: MutableLiveData<ProxySettingsState> = MutableLiveData(ProxySettingsState.Loading)
-    val state: LiveData<ProxySettingsState> = _state
+    private val _state: MutableStateFlow<ProxySettingsState> = MutableStateFlow(ProxySettingsState.Loading)
+    val state: StateFlow<ProxySettingsState> = _state
 
     private val proxyURL = Purchases.proxyURL
 
@@ -72,6 +72,6 @@ class ProxySettingsBottomSheetViewModel(
 
     private fun updateState(newState: ProxySettingsState) {
         Log.w("PurchaseTester", "New state: $newState")
-        _state.postValue(newState)
+        _state.value = newState
     }
 }

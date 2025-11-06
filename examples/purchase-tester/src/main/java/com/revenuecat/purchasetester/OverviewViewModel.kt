@@ -1,10 +1,7 @@
 package com.revenuecat.purchasetester
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.blockstore.Blockstore
@@ -12,69 +9,56 @@ import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Suppress("TooManyFunctions")
-class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
+class OverviewViewModel : ViewModel() {
 
-    val customerInfo: MutableLiveData<CustomerInfo?> by lazy {
-        MutableLiveData<CustomerInfo?>().apply {
-            value = null
-        }
+    private val _customerInfo = MutableStateFlow<CustomerInfo?>(null)
+    val customerInfo = _customerInfo.asStateFlow()
+
+    private val _isRestoring = MutableStateFlow(false)
+    val isRestoring = _isRestoring.asStateFlow()
+
+    val activeEntitlements = customerInfo.map { info ->
+        info?.entitlements?.active?.values?.let {
+            formatEntitlements(it)
+        } ?: ""
     }
 
-    val isRestoring = MutableLiveData<Boolean>(false)
-
-    val activeEntitlements = MediatorLiveData<String>()
-
-    val allEntitlements = MediatorLiveData<String>()
-
-    val customerInfoJson = MediatorLiveData<String>()
-
-    val verificationResult = MediatorLiveData<VerificationResult>()
-
-    val formattedVirtualCurrencies = MutableLiveData<String>()
-
-    init {
-        activeEntitlements.addSource(customerInfo) { info ->
-            info?.entitlements?.active?.values?.let {
-                activeEntitlements.value = formatEntitlements(it)
-            }
-        }
-
-        allEntitlements.addSource(customerInfo) { info ->
-            info?.entitlements?.all?.values?.let {
-                allEntitlements.value = formatEntitlements(it)
-            }
-        }
-
-        verificationResult.addSource(customerInfo) { info ->
-            info?.entitlements?.verification?.let {
-                verificationResult.value = it
-            }
-        }
-
-        customerInfoJson.addSource(customerInfo) { info ->
-            customerInfoJson.value = info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES)
-        }
+    val allEntitlements = customerInfo.map { info ->
+        info?.entitlements?.all?.values?.let {
+            formatEntitlements(it)
+        } ?: ""
     }
+
+    val verificationResult = customerInfo.map { info ->
+        info?.entitlements?.verification ?: VerificationResult.NOT_REQUESTED
+    }
+
+    val customerInfoJson = customerInfo.map { info ->
+        info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES) ?: ""
+    }
+
+    private val _formattedVirtualCurrencies = MutableStateFlow("")
+    val formattedVirtualCurrencies = _formattedVirtualCurrencies.asStateFlow()
 
     fun onRestoreClicked() {
-        isRestoring.value = true
+        _isRestoring.value = true
         Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
-            customerInfo.postValue(it)
-            interactionHandler.showToast("Restoring successful")
-            isRestoring.value = false
+            _customerInfo.value = it
+            _isRestoring.value = false
         }, onError = {
-            interactionHandler.displayError(it)
-            isRestoring.value = false
+            _isRestoring.value = false
         })
     }
 
@@ -88,44 +72,22 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
             .addOnFailureListener { Log.e("PurchaseTester", "Blockstore failed to clear: $it") }
     }
 
-    fun onCardClicked() = interactionHandler.toggleCard()
-
-    fun onCopyClicked() {
-        customerInfo.value?.originalAppUserId?.let {
-            interactionHandler.copyToClipboard(it)
-        }
-    }
-
-    fun onManageClicked() {
-        customerInfo.value?.managementURL?.let {
-            interactionHandler.launchURL(it)
-        }
-    }
-
     fun retrieveCustomerInfo() {
         viewModelScope.launch {
             try {
-                customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
-                Log.i("PurchaseTester", "Get Customer info returned Customer info: ${customerInfo.value}")
+                _customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
+                Log.i("PurchaseTester", "Get Customer info returned Customer info: ${_customerInfo.value}")
             } catch (e: PurchasesException) {
-                interactionHandler.displayError(e.error)
+                Log.e("PurchaseTester", "Error getting customer info", e)
             }
         }
-    }
-
-    fun onSetAttributeClicked() {
-        interactionHandler.setAttribute()
-    }
-
-    fun onSyncAttributesClicked() {
-        interactionHandler.syncAttributes()
     }
 
     fun onFetchVCsClicked() {
         viewModelScope.launch {
             val virtualCurrencies: VirtualCurrencies = Purchases.sharedInstance.awaitGetVirtualCurrencies()
             val formatted = formatVirtualCurrencies(virtualCurrencies = virtualCurrencies)
-            formattedVirtualCurrencies.value = formatted
+            _formattedVirtualCurrencies.value = formatted
             Log.i("PurchaseTester", formatted)
         }
     }
@@ -137,11 +99,11 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
     fun onFetchVCCache() {
         val cachedVirtualCurrencies: VirtualCurrencies? = Purchases.sharedInstance.cachedVirtualCurrencies
         if (cachedVirtualCurrencies == null) {
-            formattedVirtualCurrencies.value = "Cached VCs are null"
+            _formattedVirtualCurrencies.value = "Cached VCs are null"
             Log.i("PurchaseTester", "Cached VCs are null")
         } else {
             val formatted = formatVirtualCurrencies(virtualCurrencies = cachedVirtualCurrencies)
-            formattedVirtualCurrencies.value = formatted
+            _formattedVirtualCurrencies.value = formatted
             Log.i("PurchaseTester", formatted)
         }
     }
@@ -167,14 +129,4 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
         return stringBuilder.toString()
     }
-}
-
-interface OverviewInteractionHandler {
-    fun displayError(error: PurchasesError)
-    fun showToast(message: String)
-    fun toggleCard()
-    fun copyToClipboard(text: String)
-    fun launchURL(url: Uri)
-    fun setAttribute()
-    fun syncAttributes()
 }
