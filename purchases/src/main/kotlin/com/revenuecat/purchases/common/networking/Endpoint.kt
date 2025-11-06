@@ -71,7 +71,7 @@ internal sealed class Endpoint(
         "/v1/customercenter/support/create-ticket",
         "post_create_support_ticket",
     ) {
-        override fun getPath() = pathTemplate
+        override fun getPath(useFallback: Boolean) = pathTemplate
     }
     object PostRedeemWebPurchase : Endpoint(
         "/v1/subscribers/redeem_purchase",
