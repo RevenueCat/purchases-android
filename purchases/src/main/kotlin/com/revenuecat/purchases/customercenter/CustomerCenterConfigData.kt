@@ -577,7 +577,7 @@ data class CustomerCenterConfigData(
         @SerialName("display_virtual_currencies")
         val displayVirtualCurrencies: Boolean? = null,
         @SerialName("support_tickets")
-        val supportTickets: SupportTickets? = null,
+        val supportTickets: SupportTickets,
     ) {
         @Serializable
         data class SupportTickets(

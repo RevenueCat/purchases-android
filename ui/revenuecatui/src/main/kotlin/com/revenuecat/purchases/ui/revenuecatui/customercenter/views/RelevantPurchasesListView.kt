@@ -33,7 +33,7 @@ internal fun RelevantPurchasesListView(
     virtualCurrencies: VirtualCurrencies?,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
-    supportTicket: CustomerCenterConfigData.Support.SupportTickets?,
+    supportTicket: CustomerCenterConfigData.Support.SupportTickets,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -103,8 +103,8 @@ internal fun RelevantPurchasesListView(
             supportedPaths = supportedPaths,
             localization = localization,
             contactEmail = contactEmail,
-            addContactButton = supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE,
+            addCreateTicketButton = supportTicket.allowCreation && (supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE),
             onAction = onAction,
         )
     }

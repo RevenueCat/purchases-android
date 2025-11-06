@@ -23,6 +23,7 @@ internal fun ManageSubscriptionsButtonsView(
     localization: CustomerCenterConfigData.Localization,
     contactEmail: String?,
     addContactButton: Boolean = false,
+    addCreateTicketButton: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
@@ -43,9 +44,17 @@ internal fun ManageSubscriptionsButtonsView(
                 style = PathUtils.getButtonStyleForPath(path),
             )
         }
-        if (addContactButton && contactEmail != null) {
+        if (addCreateTicketButton && contactEmail != null) {
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.ShowSupportTicketCreation) },
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+                ),
+                style = SettingsButtonStyle.OUTLINED,
+            )
+        } else if (addContactButton && contactEmail != null) {
+            SettingsButton(
+                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),

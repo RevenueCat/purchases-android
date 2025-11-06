@@ -589,7 +589,10 @@ private val previewConfigData = CustomerCenterConfigData(
             "subscription" to "Subscription",
         ),
     ),
-    support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+    support = CustomerCenterConfigData.Support(
+        email = "test@revenuecat.com",
+        supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+    ),
 )
 
 @Preview

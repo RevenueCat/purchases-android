@@ -44,7 +44,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
-    supportTicket: CustomerCenterConfigData.Support.SupportTickets?,
+    supportTicket: CustomerCenterConfigData.Support.SupportTickets,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     onAction: (CustomerCenterAction) -> Unit,
@@ -95,8 +95,9 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
-            addContactButton = supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                supportTicket?.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE,
+            addCreateTicketButton = supportTicket.allowCreation && (supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE),
+            addContactButton = true,
             onAction = onAction,
         )
     }
