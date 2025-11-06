@@ -178,6 +178,10 @@ internal class BillingWrapper(
                         }
                         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
                         sendErrorsToAllPendingRequests(error)
+                    } catch (e: SecurityException) {
+                        errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
+                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                        sendErrorsToAllPendingRequests(error)
                     }
                 }
             }

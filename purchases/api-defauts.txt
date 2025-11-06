@@ -348,6 +348,7 @@ package com.revenuecat.purchases {
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnPackages(java.util.List<com.revenuecat.purchases.Package> addOnPackages);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnSubscriptionOptions(java.util.List<? extends com.revenuecat.purchases.models.SubscriptionOption> addOnSubscriptionOptions);
     method public com.revenuecat.purchases.PurchaseParams build();
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);

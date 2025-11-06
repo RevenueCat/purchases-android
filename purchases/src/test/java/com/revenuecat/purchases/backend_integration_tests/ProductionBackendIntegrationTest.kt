@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -15,6 +16,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
+import java.net.URL
 
 internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
@@ -42,9 +44,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             )
         }
         assertThat(error).isNull()
+        val urlString = URL(appConfig.baseURL, Endpoint.GetProductEntitlementMapping.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetProductEntitlementMapping.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -89,9 +92,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.GetOfferings("test-user-id").getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -131,9 +135,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.LogIn.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -156,9 +161,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.LogIn.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
@@ -195,9 +201,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostPaywallEvents.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.PostPaywallEvents.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()

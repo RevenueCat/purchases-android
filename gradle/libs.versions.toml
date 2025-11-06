@@ -27,8 +27,8 @@ dependencyGraph = "0.9"
 detekt = "1.23.8"
 detektRulesCompose = "0.4.10"
 dokka = "1.8.10"
-emergeGradlePlugin = "4.3.1"
-emergeSnapshots = "1.4.1"
+emergeGradlePlugin = "4.4.0"
+emergeSnapshots = "1.5.0"
 espresso = "3.4.0"
 fragment = "1.6.1"
 googleBlockstore = "16.4.0"
@@ -134,7 +134,7 @@ dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" 
 dokka-testApi = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "dokka" }
 
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
-emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
+emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
 
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }

@@ -140,7 +140,7 @@ dependencies {
     implementation(libs.commonmark)
     implementation(libs.commonmark.strikethrough)
 
-    compileOnly(libs.emerge.snapshots.annotations)
+    compileOnly(libs.emerge.snapshots.runtime)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)

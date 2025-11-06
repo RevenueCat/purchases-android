@@ -8,7 +8,9 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.revenuecat.purchases.NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
@@ -17,6 +19,7 @@ import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.google.QueryProductDetailsParamsBuilderException
 import com.revenuecat.purchases.google.buildQueryProductDetailsParams
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProducts
@@ -55,12 +58,21 @@ internal class QueryProductDetailsUseCase(
         withConnectedClient {
             val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
 
-            queryProductDetailsAsyncEnsuringOneResponse(
-                this,
-                googleType,
-                nonEmptyProductIds,
-                ::processResult,
-            )
+            try {
+                queryProductDetailsAsyncEnsuringOneResponse(
+                    this,
+                    googleType,
+                    nonEmptyProductIds,
+                    ::processResult,
+                )
+            } catch (e: QueryProductDetailsParamsBuilderException) {
+                onError(
+                    PurchasesError(
+                        code = PurchasesErrorCode.StoreProblemError,
+                        underlyingErrorMessage = "${e.message}: ${e.cause?.message}",
+                    ),
+                )
+            }
         }
     }
 
