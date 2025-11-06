@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.fromNow
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.add
+import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs

@@ -19,7 +19,6 @@ import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.NoCoreLibraryDesugaringException
@@ -356,7 +355,7 @@ internal class BillingWrapper(
 
     fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
-        onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
@@ -386,11 +385,7 @@ internal class BillingWrapper(
                     BillingClient.ProductType.INAPP,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
-                            subsPurchasesList.map {
-                                it.toStoreTransaction(ProductType.SUBS)
-                            } + inAppPurchasesList.map {
-                                it.toStoreTransaction(ProductType.INAPP)
-                            },
+                            subsPurchasesList + inAppPurchasesList,
                         )
                     },
                     onReceivePurchaseHistoryError,
@@ -526,10 +521,10 @@ internal class BillingWrapper(
                     appInBackground,
                 ),
                 { purchasesList ->
-                    val purchaseHistoryRecordWrapper =
-                        purchasesList.firstOrNull { it.products.contains(productId) }?.toStoreTransaction(productType)
-                    if (purchaseHistoryRecordWrapper != null) {
-                        onCompletion(purchaseHistoryRecordWrapper)
+                    val purchaseTransaction =
+                        purchasesList.firstOrNull { it.productIds.contains(productId) }
+                    if (purchaseTransaction != null) {
+                        onCompletion(purchaseTransaction)
                     } else {
                         val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)

@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -18,7 +19,9 @@ object NotFinishingTransactionsBillingClient : PurchasesUpdatedListener, Billing
     fun start(context: Context, testerLogHandler: TesterLogHandler) {
         billingClient = BillingClient.newBuilder(context)
             .setListener(this)
-            .enablePendingPurchases()
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder().enablePrepaidPlans().enableOneTimeProducts().build(),
+            )
             .build()
         billingClient.startConnection(this)
 
