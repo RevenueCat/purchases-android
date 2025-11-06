@@ -263,27 +263,49 @@ platform :android do
     )
   end
 
-  desc "Build and run purchases module load shedder integration tests"
+  desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_load_shedder_purchases_integration_tests do |options|
-    app_name = 'loadShedderIntegrationTest'
+  desc "Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'"
+  lane :run_purchases_integration_tests do |options|
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'load_shedder_us_east_1', or 'load_shedder_us_east_2'")
+    
+    unless ['production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'].include?(backend_environment)
+      UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
+    end
+
+    if backend_environment == 'production'
+      app_name = 'integrationTest'
+      api_key = ENV['REVENUECAT_API_KEY']
+      google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    else # loadshedder
+      app_name = 'loadShedderIntegrationTest'
+      api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+      google_purchase_token = ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    end
+
     begin
       build_purchases_integration_tests(
         app_name: app_name,
-        api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-        google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
-        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
-        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-        is_load_shedder_integration_tests: true
+        api_key: api_key,
+        google_purchase_token: google_purchase_token,
+        product_id_to_purchase: product_id_to_purchase,
+        base_plan_id_to_purchase: base_plan_id_to_purchase,
+        active_entitlements_to_verify: active_entitlements_to_verify,
+        backend_environment: backend_environment
       )
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_load_shedder_integration_test(success: false)
+      send_slack_purchases_integration_test(backend_environment: backend_environment, success: false)
       raise
     else
-      send_slack_load_shedder_integration_test(success: true)
+      send_slack_purchases_integration_test(backend_environment: backend_environment, success: true)
     end
   end
 
@@ -326,7 +348,7 @@ platform :android do
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
                                         proxy_url: nil, build_type: 'release', flavor: 'defaults', 
-                                        is_load_shedder_integration_tests: false)
+                                        backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -354,19 +376,11 @@ platform :android do
       allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
-    if is_load_shedder_integration_tests
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "true",
-        paths_of_files_to_update: [constants_path]
-      )
-    else
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "false",
-        paths_of_files_to_update: [constants_path]
-      )
-    end
+    replace_text_in_files(
+      previous_text: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS",
+      new_text: backend_environment,
+      paths_of_files_to_update: [constants_path]
+    )
     unless proxy_url.nil?
       replace_text_in_files(
         previous_text: "NO_PROXY_URL",
@@ -581,20 +595,30 @@ DESC
     end
   end
 
-  lane :send_slack_load_shedder_integration_test do |options|
+  lane :send_slack_purchases_integration_test do |options|
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter")
     success = options[:success] || false
+    
     message =
-        if success
-            "Android load shedder integration tests V6 finished successfully"
-        else
-            "Android load shedder integration tests V6 failed"
-        end
-    slack(
-      message: message,
-      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-      success: success,
-      default_payloads: [:git_branch]
-    )
+      if success
+        "Android purchases integration tests (#{backend_environment}) finished successfully"
+      else
+        "Android purchases integration tests (#{backend_environment}) failed"
+      end
+
+    slack_url = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
+
+    # Only send Slack notification if webhook URL is configured
+    if slack_url && slack_url.length > 0
+      slack(
+        message: message,
+        slack_url: slack_url,
+        success: success,
+        default_payloads: [:git_branch]
+      )
+    else
+      UI.message("Skipping Slack notification for #{backend_environment} backend environment - no webhook URL configured")
+    end
   end
 
   desc "Updates paywall-preview-resources submodule and creates/updates PR"

@@ -1,6 +1,6 @@
 {
-  "url": "https:\/\/api-paywalls.revenuecat.com\/v1\/events",
-  "method": "POST",
+  "url": "https:\/\/fortress-us-east-1.revenuecat.com\/v1\/subscribers\/test-user-id\/offerings",
+  "method": "GET",
   "headers": {
     "Content-Type": "application\/json",
     "X-Client-Bundle-ID": "com.revenuecat.purchases.backend_tests",
@@ -17,22 +17,5 @@
     "X-Platform-Version": "35",
     "X-Preferred-Locales": "en_US"
   },
-  "body": {
-    "events": [
-      {
-        "discriminator": "paywalls",
-        "id": "TEST_STATIC_VALUE",
-        "version": 1,
-        "type": "paywall_cancel",
-        "app_user_id": "TEST_STATIC_VALUE",
-        "session_id": "TEST_STATIC_VALUE",
-        "offering_id": "TEST_STATIC_VALUE",
-        "paywall_revision": 5,
-        "timestamp": "TEST_STATIC_VALUE",
-        "display_mode": "footer",
-        "dark_mode": true,
-        "locale": "en_US"
-      }
-    ]
-  }
+  "body": null
 }

@@ -4,26 +4,18 @@
 
 
 ## RevenueCat SDK
-### ✨ New Features
-* Add webCheckoutURL property to Offering and Package (#2747) via Toni Rico (@tonidero)
 ### 🐞 Bugfixes
-* Use the fallback endpoint in more failure scenarios (#2754) via JayShortway (@JayShortway)
-* Protect against developers excluding blockstore dependency (#2745) via Toni Rico (@tonidero)
-
-## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* Add support for Web Purchase buttons in paywalls (#2751) via Toni Rico (@tonidero)
-### Customer Center
-#### 🐞 Bugfixes
-* Add elevation to surfaces in Customer Center to fix default appearance (#2741) via Cesar de la Vega (@vegaro)
+* Hotfix video component crash onPause (#2804) via Jacob Rakidzich (@JZDesign)
+* Normalize product ids (#2797) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [CAT-2067 EXPERIMENTAL]: Add-On Subscription Options (#2763) via Will Taylor (@fire-at-will)
-* Avoids the `PaywallComponentsTemplate_Preview` from being rendered by Emerge (#2761) via JayShortway (@JayShortway)
-* Handle error building `QueryProductDetailsParams` in some devices (#2764) via Toni Rico (@tonidero)
-* Add more proper error message when using test store API key in release builds (#2762) via Toni Rico (@tonidero)
-* [Experimental]: Support Multi-Line Subscriptions (#2668) via Will Taylor (@fire-at-will)
-* Add PurchaseButtonComponent WPL field deserialization (#2749) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `25c7fb8` to `525d48c` (#2748) via dependabot[bot] (@dependabot[bot])
-* Add extra message test store dialog (#2746) via Toni Rico (@tonidero)
+* Adds `TestStoreErrorDialogActivity` (#2809) via JayShortway (@JayShortway)
+* Update golden test files to have tests pass again (#2813) via Toni Rico (@tonidero)
+* Wrap error when connecting to BillingClient (#2801) via Toni Rico (@tonidero)
+* Use new fortress us-east-1 base url (#2805) via Toni Rico (@tonidero)
+* Support fortress us-east-2 integration tests (#2793) via Toni Rico (@tonidero)
+* Add test backend environment parameter to integration tests (#2792) via Toni Rico (@tonidero)
+* Unify integration tests jobs (#2791) via Toni Rico (@tonidero)
+* Update CHANGELOG to reflect where changes actually happened in 9.12.0 and 9.12.1 (#2798) via Toni Rico (@tonidero)
+* Add extra request logging (#2794) via Toni Rico (@tonidero)
+* Fix golden backend integration tests (#2795) via Toni Rico (@tonidero)
