@@ -5,24 +5,17 @@
 
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* Remove GOOGLE_PRODUCT_MISSING_INFINITELY_RECURRING_BILLING_PHASE log message (#2767) via Will Taylor (@fire-at-will)
-
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Invalidate CustomerInfo cache when opening a WPB in paywalls (#2785) via Toni Rico (@tonidero)
-* FIX: Video component - felt slow on first appearance (#2784) via Jacob Rakidzich (@JZDesign)
-* Add package fallback to tab selection when there's no default selected (#2782) via Cesar de la Vega (@vegaro)
+* Hotfix video component crash onPause (#2804) via Jacob Rakidzich (@JZDesign)
+* Normalize product ids (#2797) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Add golden tests for requests and responses in backend integration tests (#2781) via Toni Rico (@tonidero)
-* Unlock entitlements from add-ons in offline entitlements mode (#2776) via Will Taylor (@fire-at-will)
-* Add fallback URL integration tests (#2769) via Toni Rico (@tonidero)
-* [SDK-4152] Use static fallback urls (#2780) via Antonio Pallares (@ajpallares)
-* Skip tests not supported in fortress (#2783) via Toni Rico (@tonidero)
-* Keep cache logic similar to iOS + ensure path extension is on file (#2750) via Jacob Rakidzich (@JZDesign)
-* Use cached offerings on network errors (#2772) via Toni Rico (@tonidero)
-* [EXTERNAL] Update Emerge snapshots to best/latest practices (#2777) by @rbro112 (#2779) via Toni Rico (@tonidero)
-* Change ForceServerErrorStrategy to be a `fun interface` to simplify instantiation (#2773) via Toni Rico (@tonidero)
-* Stores backend integration test result on CircleCI (#2771) via JayShortway (@JayShortway)
-* Change test server down mechanism to use new server down endpoint (#2765) via Toni Rico (@tonidero)
+* Adds `TestStoreErrorDialogActivity` (#2809) via JayShortway (@JayShortway)
+* Update golden test files to have tests pass again (#2813) via Toni Rico (@tonidero)
+* Wrap error when connecting to BillingClient (#2801) via Toni Rico (@tonidero)
+* Use new fortress us-east-1 base url (#2805) via Toni Rico (@tonidero)
+* Support fortress us-east-2 integration tests (#2793) via Toni Rico (@tonidero)
+* Add test backend environment parameter to integration tests (#2792) via Toni Rico (@tonidero)
+* Unify integration tests jobs (#2791) via Toni Rico (@tonidero)
+* Update CHANGELOG to reflect where changes actually happened in 9.12.0 and 9.12.1 (#2798) via Toni Rico (@tonidero)
+* Add extra request logging (#2794) via Toni Rico (@tonidero)
+* Fix golden backend integration tests (#2795) via Toni Rico (@tonidero)
