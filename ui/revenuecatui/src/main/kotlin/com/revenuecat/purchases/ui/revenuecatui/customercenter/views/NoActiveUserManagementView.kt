@@ -44,7 +44,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
-    supportTicket: CustomerCenterConfigData.Support.SupportTickets,
+    supportTickets: CustomerCenterConfigData.Support.SupportTickets,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     onAction: (CustomerCenterAction) -> Unit,
@@ -95,8 +95,8 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
-            addCreateTicketButton = supportTicket.allowCreation && (supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                supportTicket.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE),
+            addCreateTicketButton = supportTickets.allowCreation && (supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE),
             addContactButton = true,
             onAction = onAction,
         )
@@ -169,7 +169,7 @@ private fun NoActiveUserManagementView_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
-                supportTicket = testData.support.supportTickets,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 onAction = { },
             )
@@ -201,7 +201,7 @@ private fun NoActiveUserManagementView_WithVCs_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
-                supportTicket = testData.support.supportTickets,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
                 onAction = { },

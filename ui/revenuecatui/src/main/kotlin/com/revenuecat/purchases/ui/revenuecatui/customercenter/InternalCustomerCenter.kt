@@ -501,7 +501,7 @@ private fun MainScreenContent(
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
-                supportTicket = configuration.support.supportTickets,
+                supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
                     if (state.purchases.size > 1) {
@@ -522,7 +522,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
-                supportTicket = configuration.support.supportTickets,
+                supportTickets = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
