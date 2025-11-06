@@ -95,38 +95,29 @@ internal fun SettingsButton(
 @Preview
 @Composable
 private fun SettingsButton_Preview() {
-    fun onClick(){
-    }
-
     SettingsButton(
         title = "Cancel subscription",
         style = SettingsButtonStyle.FILLED,
-        onClick = { onClick() },
+        onClick = { },
     )
 }
 
 @Preview
 @Composable
 private fun SettingsButtonOutlined_Preview() {
-    fun onClick(){
-    }
-
     SettingsButton(
         title = "Restore purchases",
         style = SettingsButtonStyle.OUTLINED,
-        onClick = { onClick() },
+        onClick = { },
     )
 }
 
 @Preview
 @Composable
 private fun SettingsButtonLoading_Preview() {
-    fun onClick(){
-    }
-
     SettingsButton(
         title = "Restore purchases",
-        onClick = { onClick() },
+        onClick = { },
         loading = true
     )
 }
@@ -134,12 +125,9 @@ private fun SettingsButtonLoading_Preview() {
 @Preview
 @Composable
 private fun SettingsButtonOutlinedLoading_Preview() {
-    fun onClick(){
-    }
-
     SettingsButton(
         title = "Restore purchases",
-        onClick = { onClick() },
+        onClick = { },
         style = SettingsButtonStyle.OUTLINED,
         loading = true
     )
@@ -148,12 +136,9 @@ private fun SettingsButtonOutlinedLoading_Preview() {
 @Preview
 @Composable
 private fun SettingsButtonDisabled_Preview() {
-    fun onClick(){
-    }
-
     SettingsButton(
         title = "Restore purchases",
-        onClick = { onClick() },
+        onClick = { },
         enabled = false
     )
 }
