@@ -361,9 +361,9 @@ internal class CustomerCenterViewModelImpl(
         viewModelScope.launch {
             try {
                 Logger.d("Creating support ticket - email: $email, Description: $description")
-                val wasSent = purchases.awaitCreateSupportTicket(email, description)
+                val result = purchases.awaitCreateSupportTicket(email, description)
 
-                if (wasSent) {
+                if (result.success) {
                     Logger.d("Support ticket created successfully")
                     // Navigate back and show success snackbar
                     _state.update { currentState ->

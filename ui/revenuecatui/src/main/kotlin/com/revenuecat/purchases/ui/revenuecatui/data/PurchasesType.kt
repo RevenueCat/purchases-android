@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -59,7 +60,7 @@ internal interface PurchasesType {
     val preferredUILocaleOverride: String?
 
     @Throws(PurchasesException::class)
-    suspend fun awaitCreateSupportTicket(email: String, description: String): Boolean
+    suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
 }
 
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
@@ -124,7 +125,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         get() = purchases.preferredUILocaleOverride
 
     @Throws(PurchasesException::class)
-    override suspend fun awaitCreateSupportTicket(email: String, description: String): Boolean {
+    override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         return purchases.awaitCreateSupportTicket(email, description)
     }
 }
