@@ -327,7 +327,7 @@ internal class CustomerCenterViewModelImpl(
                     ),
                     title = state.customerCenterConfigData.localization.commonLocalizedString(
                         CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_CREATE,
-                    )
+                    ),
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(createSupportTicketDestination),
@@ -353,7 +353,7 @@ internal class CustomerCenterViewModelImpl(
         email: String,
         description: String,
         onSuccess: () -> Unit,
-        onError: () -> Unit
+        onError: () -> Unit,
     ) {
         val state = _state.value
         if (state !is CustomerCenterState.Success) return

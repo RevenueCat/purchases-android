@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterCon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -42,6 +43,7 @@ internal fun ManageSubscriptionsButtonsView(
                 onClick = { onAction(pathButtonPressed) },
                 title = path.title,
                 style = PathUtils.getButtonStyleForPath(path),
+                config = SettingsButtonConfig(),
             )
         }
         if (addCreateTicketButton && contactEmail != null) {
@@ -51,6 +53,7 @@ internal fun ManageSubscriptionsButtonsView(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
                 style = SettingsButtonStyle.OUTLINED,
+                config = SettingsButtonConfig(),
             )
         } else if (addContactButton && contactEmail != null) {
             SettingsButton(
@@ -59,6 +62,7 @@ internal fun ManageSubscriptionsButtonsView(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
                 style = SettingsButtonStyle.OUTLINED,
+                config = SettingsButtonConfig(),
             )
         }
     }

@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveButtonText
@@ -71,6 +72,7 @@ internal fun NoActiveUserManagementView(
                     start = ManagementViewHorizontalPadding,
                     end = ManagementViewHorizontalPadding,
                 ),
+                config = SettingsButtonConfig(),
             )
         }
 
@@ -95,8 +97,12 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
-            addCreateTicketButton = supportTickets.allowCreation && (supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE),
+            addCreateTicketButton = supportTickets.allowCreation && (
+                supportTickets.customerType ==
+                    CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    supportTickets.customerType ==
+                    CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE
+                ),
             addContactButton = true,
             onAction = onAction,
         )

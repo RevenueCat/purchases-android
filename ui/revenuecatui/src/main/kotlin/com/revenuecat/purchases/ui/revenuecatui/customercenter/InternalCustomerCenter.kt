@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -372,14 +373,18 @@ private fun CustomerCenterLoaded(
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val successMessage = state.customerCenterConfigData.localization.commonLocalizedString(
-        CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
+
+    val latestOnAction by rememberUpdatedState(newValue = onAction)
+    val latestMessage by rememberUpdatedState(
+        newValue = state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
+        ),
     )
 
     LaunchedEffect(state.showSupportTicketSuccessSnackbar) {
         if (state.showSupportTicketSuccessSnackbar) {
-            snackbarHostState.showSnackbar(successMessage)
-            onAction(CustomerCenterAction.DismissSupportTicketSuccessSnackbar)
+            snackbarHostState.showSnackbar(latestMessage)
+            latestOnAction(CustomerCenterAction.DismissSupportTicketSuccessSnackbar)
         }
     }
 
@@ -387,7 +392,7 @@ private fun CustomerCenterLoaded(
         CustomerCenterNavHost(
             currentDestination = state.currentDestination,
             customerCenterState = state,
-            onAction = onAction,
+            onAction = onAction, // pass through unchanged
         )
 
         SnackbarHost(

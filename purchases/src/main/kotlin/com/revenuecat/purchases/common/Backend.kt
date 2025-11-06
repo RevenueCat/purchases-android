@@ -155,6 +155,7 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
+
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 

@@ -34,31 +34,20 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants.Layout.SECTION_SPACING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants.Layout.SECTION_TITLE_BOTTOM_PADDING
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 
 @JvmSynthetic
 @Composable
 internal fun CreateSupportTicketView(
     data: CreateSupportTicketData,
-    modifier: Modifier = Modifier,
     localization: CustomerCenterConfigData.Localization,
+    modifier: Modifier = Modifier,
 ) {
     var email by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
-    val errorSnackbarHostState = remember { SnackbarHostState() }
-
-    val errorMessage = localization.commonLocalizedString(
-        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
-    )
-
-    LaunchedEffect(hasError) {
-        if (hasError) {
-            errorSnackbarHostState.showSnackbar(errorMessage)
-            hasError = false
-        }
-    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -67,81 +56,164 @@ internal fun CreateSupportTicketView(
                 .padding(SECTION_SPACING)
                 .verticalScroll(rememberScrollState()),
         ) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text(localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.EMAIL,
-                )) },
-                placeholder = { Text(localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.ENTER_EMAIL,
-                )) },
+            EmailInputField(
+                email = email,
+                onEmailChange = { email = it },
                 enabled = !isSubmitting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("email_field"),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
+                localization = localization,
             )
 
             Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
 
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.DESCRIPTION,
-                )) },
+            DescriptionInputField(
+                description = description,
+                onDescriptionChange = { description = it },
                 enabled = !isSubmitting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .testTag("description_field"),
-                minLines = 6,
-                maxLines = 10,
+                localization = localization,
             )
 
             Spacer(modifier = Modifier.height(SECTION_SPACING))
 
-            SettingsButton(
-                onClick = {
+            SubmitTicketButton(
+                email = email,
+                description = description,
+                isSubmitting = isSubmitting,
+                onSubmit = {
                     isSubmitting = true
                     hasError = false
                     data.onSubmit(
                         email,
                         description,
-                        {
-                            // Success - navigation handled by ViewModel
-                        },
+                        { /* Success - navigation handled by ViewModel */ },
                         {
                             isSubmitting = false
                             hasError = true
-                        }
+                        },
                     )
                 },
-                enabled = !isSubmitting && email.isNotBlank() && description.isNotBlank(),
-                loading = isSubmitting,
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET,
-                ),
+                localization = localization,
             )
         }
 
-        SnackbarHost(
-            hostState = errorSnackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(SECTION_SPACING),
-        ) { snackbarData ->
-            Snackbar(
-                snackbarData = snackbarData,
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            )
-        }
+        ErrorSnackbar(
+            hasError = hasError,
+            onErrorShow = { hasError = false },
+            localization = localization,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 
+@Composable
+private fun EmailInputField(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    enabled: Boolean,
+    localization: CustomerCenterConfigData.Localization,
+) {
+    OutlinedTextField(
+        value = email,
+        onValueChange = onEmailChange,
+        label = {
+            Text(
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.EMAIL,
+                ),
+            )
+        },
+        placeholder = {
+            Text(
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.ENTER_EMAIL,
+                ),
+            )
+        },
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("email_field"),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
+        ),
+    )
+}
+
+@Composable
+private fun DescriptionInputField(
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    enabled: Boolean,
+    localization: CustomerCenterConfigData.Localization,
+) {
+    OutlinedTextField(
+        value = description,
+        onValueChange = onDescriptionChange,
+        label = {
+            Text(
+                localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.DESCRIPTION,
+                ),
+            )
+        },
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .testTag("description_field"),
+        minLines = 6,
+        maxLines = 10,
+    )
+}
+
+@Composable
+private fun SubmitTicketButton(
+    email: String,
+    description: String,
+    isSubmitting: Boolean,
+    onSubmit: () -> Unit,
+    localization: CustomerCenterConfigData.Localization,
+) {
+    SettingsButton(
+        onClick = onSubmit,
+        config = SettingsButtonConfig(
+            enabled = !isSubmitting && email.isNotBlank() && description.isNotBlank(),
+            loading = isSubmitting,
+        ),
+        title = localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET,
+        ),
+    )
+}
+
+@Composable
+private fun ErrorSnackbar(
+    hasError: Boolean,
+    onErrorShow: () -> Unit,
+    localization: CustomerCenterConfigData.Localization,
+    modifier: Modifier = Modifier,
+) {
+    val errorSnackbarHostState = remember { SnackbarHostState() }
+    val errorMessage = localization.commonLocalizedString(
+        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
+    )
+
+    LaunchedEffect(hasError, onErrorShow) {
+        if (hasError) {
+            errorSnackbarHostState.showSnackbar(errorMessage)
+            onErrorShow()
+        }
+    }
+
+    SnackbarHost(
+        hostState = errorSnackbarHostState,
+        modifier = modifier.padding(SECTION_SPACING),
+    ) { snackbarData ->
+        Snackbar(
+            snackbarData = snackbarData,
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        )
+    }
+}

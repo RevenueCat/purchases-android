@@ -592,10 +592,13 @@ data class CustomerCenterConfigData(
             enum class CustomerType {
                 @SerialName("not_active")
                 NOT_ACTIVE,
+
                 @SerialName("none")
                 NONE,
+
                 @SerialName("all")
                 ALL,
+
                 @SerialName("active")
                 ACTIVE,
             }
