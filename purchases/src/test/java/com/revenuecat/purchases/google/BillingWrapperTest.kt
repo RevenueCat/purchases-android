@@ -301,6 +301,31 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `If starting connection throws a SecurityException, error is forwarded`() {
+        every { mockClient.isReady } returns false
+        every {
+            mockClient.startConnection(any())
+        } throws SecurityException("get package info: UID XXXXXXX requires android.permission.INTERACT_ACROSS_USERS_FULL or android.permission.INTERACT_ACROSS_USERS to access user 0.")
+
+        var error: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                fail("should be an error")
+            },
+            onError = {
+                error = it
+            }
+        )
+
+        verify {
+            mockClient.startConnection(billingClientStateListener!!)
+        }
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
     fun `can make a purchase`() {
         every {
             mockClient.launchBillingFlow(any(), any())

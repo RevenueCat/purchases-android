@@ -57,7 +57,7 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
         ) {
-            if (videoUrl == null && fallbackImageViewStyle != null) {
+            if (fallbackImageViewStyle != null) {
                 ImageComponentView(fallbackImageViewStyle, state, modifier)
             }
 
@@ -123,6 +123,8 @@ private fun rememberVideoContentState(
 
             val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
             videoUrl = url
+            // If we have a cached video, no need to display a fallback image
+            fallbackImageViewStyle = null
         } catch (_: Exception) {
             videoUrl = videoUrls.url.toString().let(::URI)
         }
@@ -133,10 +135,19 @@ private fun rememberVideoContentState(
             ?.takeIf { it != videoUrls.url }
             ?.run {
                 videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
+
+                if (videoUrl != null) {
+                    // If we have a cached video, no need to display a fallback image
+                    fallbackImageViewStyle = null
+                }
+
                 LaunchedEffect(Unit) {
-                    fetchVideoUrl(setLowResVideoURLFirst = false)
+                    fetchVideoUrl(setLowResVideoURLFirst = videoUrl == null)
                 }
             }
+    } else {
+        // If we have a cached video, no need to display a fallback image
+        fallbackImageViewStyle = null
     }
 
     if (videoUrl == null) {

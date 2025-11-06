@@ -48,6 +48,11 @@ android {
             name = "ENABLE_VIDEO_COMPONENT",
             value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
         )
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_EXTRA_REQUEST_LOGGING",
+            value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
+        )
 
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
@@ -170,11 +175,13 @@ dependencies {
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)
+    androidTestImplementation(libs.androidx.core.testing)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
 

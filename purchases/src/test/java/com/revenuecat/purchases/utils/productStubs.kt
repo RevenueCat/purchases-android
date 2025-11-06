@@ -351,22 +351,14 @@ fun stubStoreProductWithGoogleSubscriptionPurchaseData(
     productId: String = STUB_PRODUCT_IDENTIFIER,
     optionId: String = "optionId",
     token: String = "token",
-    period: Period = Period(1, Period.Unit.MONTH, "P1M")
+    period: Period = Period(1, Period.Unit.MONTH, "P1M"),
+    subscriptionOptions: List<SubscriptionOption> = listOf(
+        stubSubscriptionOption("p1m", productId, period)
+    )
 ): StoreProduct {
     val productDetails: ProductDetails = mockk()
-    val subscriptionOption = object : SubscriptionOption by stubSubscriptionOption("p1m", productId, period) {
-        override val purchasingData: PurchasingData
-            get() = GooglePurchasingData.Subscription(
-                productId = productId,
-                optionId = optionId,
-                productDetails = productDetails,
-                token = token,
-                billingPeriod = period,
-                addOnProducts = emptyList()
-            )
-    }
 
-    return object : StoreProduct by stubStoreProduct(productId, subscriptionOption) {
+    return object : StoreProduct by stubStoreProduct(productId, subscriptionOptions=subscriptionOptions) {
         override val purchasingData: PurchasingData
             get() = GooglePurchasingData.Subscription(
                 productId = productId,

@@ -70,9 +70,10 @@ internal class PurchasesFactory(
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString,
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -97,8 +98,8 @@ internal class PurchasesFactory(
                 apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
-                forceServerErrors,
                 forceSigningError,
+                baseUrlString = baseUrlString,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -183,6 +184,7 @@ internal class PurchasesFactory(
                 signingManager,
                 cache,
                 localeProvider = localeProvider,
+                forceServerErrorStrategy = forceServerErrorStrategy,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -433,11 +435,12 @@ internal class PurchasesFactory(
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
                 throw PurchasesException(
-                    PurchasesError(
+                    error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
-                            "RevenueCat dashboard and use its corresponding API key before releasing.",
                     ),
+                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
+                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
+                        "Test Store is not supported in production builds.",
                 )
             }
 
