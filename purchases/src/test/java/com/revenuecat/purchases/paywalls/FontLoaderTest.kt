@@ -263,7 +263,7 @@ class FontLoaderTest {
 
         fontLoader = FontLoader(
             context = mockContext,
-            cacheDir = mockCacheDir,
+            providedCacheDir = mockCacheDir,
             ioScope = testScope,
             urlConnectionFactory = urlConnectionFactory,
         )
