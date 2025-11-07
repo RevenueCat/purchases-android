@@ -1,6 +1,5 @@
 package com.revenuecat.paywallstester
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
@@ -29,7 +28,7 @@ class PaywallViewActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.paywallView.setOfferingId(offeringId)
         binding.paywallView.setPaywallListener(object : PaywallListener {
-            override fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {
+            override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
                 AlertDialog
                     .Builder(this@PaywallViewActivity)
                     .setTitle("On Purchase Initiated Hook")

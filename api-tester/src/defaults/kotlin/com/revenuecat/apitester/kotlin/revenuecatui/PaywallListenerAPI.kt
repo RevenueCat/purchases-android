@@ -11,7 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 private class PaywallListenerAPI {
     fun check() {
         val listener = object : PaywallListener {
-            override fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {}
+            override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {}
 
             override fun onPurchaseStarted(rcPackage: Package) {}
 

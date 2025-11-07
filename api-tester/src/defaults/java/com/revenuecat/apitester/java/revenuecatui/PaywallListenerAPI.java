@@ -14,7 +14,7 @@ final class PaywallListenerAPI {
     void check() {
         PaywallListener listener = new PaywallListener() {
             @Override
-            public void onPurchasePackageInitiated(@NonNull String packageId, @NonNull Resumable resume) {}
+            public void onPurchasePackageInitiated(@NonNull Package rcPackage, @NonNull Resumable resume) {}
 
             @Override
             public void onPurchaseStarted(@NonNull Package rcPackage) {}

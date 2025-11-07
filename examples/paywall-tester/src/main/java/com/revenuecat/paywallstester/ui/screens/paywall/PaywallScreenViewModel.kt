@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
@@ -12,13 +13,11 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 interface PaywallScreenViewModel : PaywallListener {
     companion object {
@@ -49,7 +48,7 @@ class PaywallScreenViewModelImpl(
     }
 
     @Suppress("MagicNumber")
-    override fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {
+    override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
         resume()
     }
 

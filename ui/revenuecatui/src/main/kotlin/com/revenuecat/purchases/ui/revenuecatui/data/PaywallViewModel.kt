@@ -349,12 +349,13 @@ internal class PaywallViewModelImpl(
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCoroutine { continuation ->
-            listener?.onPurchasePackageInitiated(packageToPurchase.identifier) { shouldResume ->
+            listener?.onPurchasePackageInitiated(packageToPurchase) { shouldResume ->
                 continuation.resume(shouldResume)
             } ?: continuation.resume(true)
         }
 
         if (!shouldResume) {
+            Logger.d("Purchase cancelled listener.onPurchasePackageInitiated returned false")
             return
         }
 
