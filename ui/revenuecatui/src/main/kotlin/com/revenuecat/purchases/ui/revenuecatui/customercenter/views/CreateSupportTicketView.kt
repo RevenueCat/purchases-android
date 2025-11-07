@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.content.res.Configuration
+import android.util.Patterns
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,6 +44,10 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSuppor
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
+private fun isValidEmail(email: String): Boolean {
+    return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
 @JvmSynthetic
 @Composable
 internal fun CreateSupportTicketView(
@@ -50,6 +56,8 @@ internal fun CreateSupportTicketView(
     modifier: Modifier = Modifier,
 ) {
     var email by remember { mutableStateOf("") }
+    var emailTouched by remember { mutableStateOf(false) }
+    var emailHasFocus by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
@@ -63,7 +71,12 @@ internal fun CreateSupportTicketView(
         ) {
             EmailInputField(
                 email = email,
-                onEmailChange = { email = it },
+                onEmailChange = {
+                    email = it
+                    if (!emailTouched) emailTouched = true
+                },
+                onFocusChanged = { emailHasFocus = it },
+                showError = emailTouched && !emailHasFocus && !isValidEmail(email),
                 enabled = !isSubmitting,
                 localization = localization,
             )
@@ -138,6 +151,8 @@ private fun CreateSupportTicketView_Preview() {
 private fun EmailInputField(
     email: String,
     onEmailChange: (String) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
+    showError: Boolean,
     enabled: Boolean,
     localization: CustomerCenterConfigData.Localization,
 ) {
@@ -158,9 +173,24 @@ private fun EmailInputField(
                 ),
             )
         },
+        isError = showError,
+        supportingText = if (showError) {
+            {
+                Text(
+                    localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.INVALID_EMAIL_ERROR,
+                    ),
+                )
+            }
+        } else {
+            null
+        },
         enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                onFocusChanged(focusState.isFocused)
+            }
             .testTag("email_field"),
         singleLine = true,
         keyboardOptions = KeyboardOptions(
@@ -208,7 +238,7 @@ private fun SubmitTicketButton(
     SettingsButton(
         onClick = onSubmit,
         config = SettingsButtonConfig(
-            enabled = !isSubmitting && email.isNotBlank() && description.isNotBlank(),
+            enabled = !isSubmitting && isValidEmail(email) && description.isNotBlank(),
             loading = isSubmitting,
         ),
         title = localization.commonLocalizedString(

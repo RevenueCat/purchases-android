@@ -306,6 +306,9 @@ data class CustomerCenterConfigData(
 
             @SerialName("submit_ticket")
             SUBMIT_TICKET,
+
+            @SerialName("invalid_email_error")
+            INVALID_EMAIL_ERROR,
             ;
 
             val defaultValue: String
@@ -417,6 +420,7 @@ data class CustomerCenterConfigData(
                     SENT -> "Message sent"
                     SUPPORT_TICKET_FAILED -> "Failed to send, please try again."
                     SUBMIT_TICKET -> "Submit ticket"
+                    INVALID_EMAIL_ERROR -> "Please enter a valid email address"
                 }
         }
 
