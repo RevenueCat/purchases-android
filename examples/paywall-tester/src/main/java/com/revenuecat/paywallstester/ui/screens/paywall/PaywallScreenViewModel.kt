@@ -50,10 +50,7 @@ class PaywallScreenViewModelImpl(
 
     @Suppress("MagicNumber")
     override fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {
-        runBlocking {
-            delay(2_000L)
-            resume(true)
-        }
+        resume()
     }
 
     override fun onRestoreStarted() {
