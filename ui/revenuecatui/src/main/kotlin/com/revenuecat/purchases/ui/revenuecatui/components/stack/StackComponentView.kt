@@ -620,26 +620,23 @@ private fun MainStackComponent(
     if (nestedBadge == null && overlay == null) {
         if (backgroundStyle is BackgroundStyle.Video) {
             // Video backgrounds require a Box wrapper with explicit sizing
-            Box(
+            WithOptionalVideoBackground(
+                state = state,
+                background = backgroundStyle,
+                shape = composeShape,
                 modifier = modifier
                     .size(stackState.size)
                     .then(outerShapeModifier)
                     .clip(composeShape)
                     .then(borderModifier),
             ) {
-                WithOptionalVideoBackground(
-                    state = state,
-                    background = backgroundStyle,
-                    shape = composeShape,
-                ) {
-                    stack(
-                        Modifier
-                            .then(innerShapeModifier)
-                            .conditional(stackState.applyBottomWindowInsets) {
-                                windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
-                            },
-                    )
-                }
+                stack(
+                    Modifier
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                        },
+                )
             }
         } else {
             stack(
@@ -658,7 +655,7 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            WithOptionalVideoBackground(state, backgroundStyle) {
+            WithOptionalVideoBackground(state, background = backgroundStyle) {
                 stack(Modifier.then(innerShapeModifier))
             }
 
@@ -676,7 +673,7 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            WithOptionalVideoBackground(state, backgroundStyle) {
+            WithOptionalVideoBackground(state, background = backgroundStyle) {
                 stack(borderModifier.then(innerShapeModifier))
             }
             overlay()

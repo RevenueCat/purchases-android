@@ -21,9 +21,10 @@ internal fun ViewWithVideoBackground(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
     shape: Shape = RectangleShape,
+    modifier: Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box {
+    Box(modifier = modifier) {
         when (val background = background) {
             is BackgroundStyle.Video -> {
                 val videoComponent = VideoComponentStyle(
@@ -66,6 +67,7 @@ internal fun ViewWithVideoBackground(
 @Composable
 internal fun WithOptionalVideoBackground(
     state: PaywallState.Loaded.Components,
+    modifier: Modifier = Modifier,
     background: BackgroundStyle?,
     shape: Shape = RectangleShape,
     content: @Composable () -> Unit,
@@ -75,6 +77,7 @@ internal fun WithOptionalVideoBackground(
             state = state,
             background = background,
             shape = shape,
+            modifier = modifier,
         ) {
             content()
         }
