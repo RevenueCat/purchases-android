@@ -101,7 +101,7 @@ class CustomerInfoFactoryTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.NOT_REQUESTED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
@@ -109,7 +109,7 @@ class CustomerInfoFactoryTest {
     }
 
     @Test
-    fun `builds CustomerInfo with custom source parameters`() {
+    fun `builds CustomerInfo with offline entitlements parameters`() {
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(
             JSONObject(Responses.validFullPurchaserResponse),
             overrideRequestDate = null,

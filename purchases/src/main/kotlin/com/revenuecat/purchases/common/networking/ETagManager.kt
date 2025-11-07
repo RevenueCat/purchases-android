@@ -76,7 +76,7 @@ internal class ETagManager(
         refreshETag: Boolean,
         requestDate: Date?,
         verificationResult: VerificationResult,
-        isLoadShedderResponse: Boolean? = null,
+        isLoadShedderResponse: Boolean,
     ): HTTPResult? {
         val resultFromBackend = HTTPResult(
             responseCode,

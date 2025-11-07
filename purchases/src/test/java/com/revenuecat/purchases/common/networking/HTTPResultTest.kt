@@ -20,14 +20,15 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000), // Tuesday, March 7, 2023 9:16:57 AM GMT,
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false}"
         )
     }
 
@@ -39,13 +40,14 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false}"
         )
     }
 
@@ -57,7 +59,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.FAILED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -76,7 +78,7 @@ class HTTPResultTest {
             HTTPResult.Origin.CACHE,
             null,
             VerificationResult.NOT_REQUESTED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -120,16 +122,16 @@ class HTTPResultTest {
     }
 
     @Test
-    fun `result with null load shedder header does not serialize it`() {
+    fun `result with false load shedder header serializes it`() {
         val result = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
         )
         val serialized = result.serialize()
-        assertThat(serialized).doesNotContain("isLoadShedderResponse")
+        assertThat(serialized).contains("\"isLoadShedderResponse\":false")
     }
 }

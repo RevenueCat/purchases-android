@@ -259,6 +259,8 @@ class CustomerInfoTest {
             loadedFromCache = true,
         )
 
+        assertThat(info.originalSource).isNotEqualTo(infoWithDifferentMetadata.originalSource)
+        assertThat(info.loadedFromCache).isNotEqualTo(infoWithDifferentMetadata.loadedFromCache)
         assertThat(info).isEqualTo(infoWithDifferentMetadata)
     }
 
