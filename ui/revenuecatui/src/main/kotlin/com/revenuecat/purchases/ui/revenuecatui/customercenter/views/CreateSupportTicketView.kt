@@ -2,6 +2,8 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants.Layout.SECTION_SPACING
@@ -36,6 +39,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterCon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
 @JvmSynthetic
 @Composable
@@ -103,6 +108,31 @@ internal fun CreateSupportTicketView(
         )
     }
 }
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun CreateSupportTicketView_Preview() {
+    val mockData = CreateSupportTicketData(
+        onSubmit = { _, _, _, _ -> },
+        onCancel = { },
+        onClose = { },
+    )
+
+    CustomerCenterPreviewTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            CreateSupportTicketView(
+                mockData,
+                CustomerCenterConfigTestData.customerCenterData().localization,
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun EmailInputField(
