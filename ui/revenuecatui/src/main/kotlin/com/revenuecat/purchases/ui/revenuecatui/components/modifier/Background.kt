@@ -42,6 +42,6 @@ internal fun Modifier.background(
                 .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
         is BackgroundStyle.Video ->
             // Video backgrounds are handled specially - they need to be rendered
-            // in a Box behind the content, so we just clip the shape here
-            this.clip(shape)
+            // in a Box behind the content, so we do nothing here
+            this
     }
