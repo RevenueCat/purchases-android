@@ -213,6 +213,9 @@ private fun DescriptionInputField(
     localization: CustomerCenterConfigData.Localization,
 ) {
     val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+    val remainingCharsText = localization.commonLocalizedString(
+        CustomerCenterConfigData.Localization.CommonLocalizedString.CHARACTERS_REMAINING,
+    ).replace("{{ count }}", remainingChars.toString())
 
     OutlinedTextField(
         value = description,
@@ -226,7 +229,7 @@ private fun DescriptionInputField(
         },
         supportingText = {
             Text(
-                text = "$remainingChars characters remaining",
+                text = remainingCharsText,
                 style = MaterialTheme.typography.bodySmall,
             )
         },
