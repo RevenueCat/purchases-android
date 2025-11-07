@@ -633,6 +633,16 @@ data class CustomerCenterConfigData(
                 @SerialName("user_since")
                 val userSince: Boolean = false,
             )
+
+            fun allowsActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
+            }
+
+            fun allowsNonActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE
+            }
         }
     }
 

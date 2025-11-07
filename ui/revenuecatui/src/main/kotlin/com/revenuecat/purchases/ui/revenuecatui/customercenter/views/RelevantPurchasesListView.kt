@@ -103,14 +103,8 @@ internal fun RelevantPurchasesListView(
             supportedPaths = supportedPaths,
             localization = localization,
             contactEmail = contactEmail,
-            addCreateTicketButton = supportTickets.allowCreation && (
-                supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                    supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
-                ),
-            addContactButton = (
-                supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                    supportTickets.customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
-                ),
+            addCreateTicketButton = supportTickets.allowCreation && supportTickets.allowsActiveCustomers(),
+            addContactButton = supportTickets.allowsActiveCustomers(),
             onAction = onAction,
         )
     }

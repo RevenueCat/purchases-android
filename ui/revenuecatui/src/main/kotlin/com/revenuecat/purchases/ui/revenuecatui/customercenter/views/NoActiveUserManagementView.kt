@@ -97,12 +97,7 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
-            addCreateTicketButton = supportTickets.allowCreation && (
-                supportTickets.customerType ==
-                    CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
-                    supportTickets.customerType ==
-                    CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE
-                ),
+            addCreateTicketButton = supportTickets.allowCreation && supportTickets.allowsNonActiveCustomers(),
             addContactButton = true,
             onAction = onAction,
         )
