@@ -44,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSuppor
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
+private const val MAX_DESCRIPTION_LENGTH = 250
 private fun isValidEmail(email: String): Boolean {
     return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
@@ -85,7 +86,11 @@ internal fun CreateSupportTicketView(
 
             DescriptionInputField(
                 description = description,
-                onDescriptionChange = { description = it },
+                onDescriptionChange = { newValue ->
+                    if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
+                        description = newValue
+                    }
+                },
                 enabled = !isSubmitting,
                 localization = localization,
             )
@@ -207,6 +212,8 @@ private fun DescriptionInputField(
     enabled: Boolean,
     localization: CustomerCenterConfigData.Localization,
 ) {
+    val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+
     OutlinedTextField(
         value = description,
         onValueChange = onDescriptionChange,
@@ -215,6 +222,12 @@ private fun DescriptionInputField(
                 localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.DESCRIPTION,
                 ),
+            )
+        },
+        supportingText = {
+            Text(
+                text = "$remainingChars characters remaining",
+                style = MaterialTheme.typography.bodySmall,
             )
         },
         enabled = enabled,
