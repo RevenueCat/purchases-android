@@ -392,7 +392,7 @@ private fun CustomerCenterLoaded(
         CustomerCenterNavHost(
             currentDestination = state.currentDestination,
             customerCenterState = state,
-            onAction = onAction, // pass through unchanged
+            onAction = onAction,
         )
 
         SnackbarHost(
