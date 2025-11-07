@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -100,6 +101,8 @@ internal class OfflineCustomerInfoCalculator(
             jsonObject,
             requestDate,
             VerificationResult.VERIFIED_ON_DEVICE,
+            CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
+            loadedFromCache = false,
         )
     }
 

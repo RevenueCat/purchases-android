@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.backend_integration_tests
 
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -128,6 +129,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 newAppUserID = "new-test-user-id",
                 onSuccessHandler = { customerInfo, _ ->
                     assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -154,6 +157,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 onSuccessHandler = { customerInfo, _ ->
                     assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
                     assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
