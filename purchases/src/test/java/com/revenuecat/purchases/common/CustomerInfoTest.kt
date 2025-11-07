@@ -8,9 +8,11 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
@@ -241,6 +243,25 @@ class CustomerInfoTest {
         val info1 = createCustomerInfo(jsonObject)
 
         assertThat(info).isNotEqualTo(info1)
+    }
+
+    @Test
+    fun `Given two customer infos with different original source and loadedFromCache, both are equal`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val info = CustomerInfoFactory.buildCustomerInfo(jsonObject, null, VerificationResult.NOT_REQUESTED)
+        assertThat(info.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+        assertThat(info.loadedFromCache).isEqualTo(false)
+        val infoWithDifferentMetadata = CustomerInfoFactory.buildCustomerInfo(
+            body = jsonObject,
+            overrideRequestDate = null,
+            verificationResult = VerificationResult.NOT_REQUESTED,
+            originalSource = CustomerInfoOriginalSource.LOAD_SHEDDER,
+            loadedFromCache = true,
+        )
+
+        assertThat(info.originalSource).isNotEqualTo(infoWithDifferentMetadata.originalSource)
+        assertThat(info.loadedFromCache).isNotEqualTo(infoWithDifferentMetadata.loadedFromCache)
+        assertThat(info).isEqualTo(infoWithDifferentMetadata)
     }
 
     @Test

@@ -7,7 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -16,18 +16,17 @@ import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlem
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.subtract
-import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import io.mockk.every
-import kotlinx.serialization.SerializationException
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
-import io.mockk.unmockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
@@ -284,6 +283,48 @@ class DeviceCacheTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
+    }
+
+    @Test
+    fun `given a cached customer info, source is set to CACHE and originalSource is preserved`() {
+        val cachedInfoWithSource = JSONObject(Responses.validFullPurchaserResponse).apply {
+            put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
+            put("verification_result", VerificationResult.VERIFIED.name)
+            put("customer_info_original_source", CustomerInfoOriginalSource.LOAD_SHEDDER.name)
+        }.toString()
+        mockString(cache.customerInfoCacheKey(appUserID), cachedInfoWithSource)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.originalSource).isEqualTo(CustomerInfoOriginalSource.LOAD_SHEDDER)
+        assertThat(info?.loadedFromCache).isTrue
+    }
+
+    @Test
+    fun `given a cached customer info without source fields, defaults are used`() {
+        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+        assertThat(info?.loadedFromCache).isTrue
+    }
+
+    @Test
+    fun `cacheCustomerInfo stores originalSource and sets source to CACHE`() {
+        every {
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
+        } returns mockEditor
+
+        val info = createCustomerInfo(Responses.validFullPurchaserResponse)
+        val infoJSONSlot = slot<String>()
+
+        every {
+            mockEditor.putString(any(), capture(infoJSONSlot))
+        } returns mockEditor
+        cache.cacheCustomerInfo(appUserID, info)
+
+        val cachedJSON = JSONObject(infoJSONSlot.captured)
+        assertThat(cachedJSON.has("customer_info_original_source")).isTrue
+        assertThat(cachedJSON.getString("customer_info_original_source")).isEqualTo(info.originalSource.name)
     }
 
     @Test

@@ -165,7 +165,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = Date(1234567890L),
-                verificationResult = VerificationResult.VERIFIED
+                verificationResult = VerificationResult.VERIFIED,
+                isLoadShedderResponse = false,
             )
         } returns expectedResult
         val response = MockResponse()
@@ -344,7 +345,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(thrownCorrectException).isTrue
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -371,7 +372,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
 
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
