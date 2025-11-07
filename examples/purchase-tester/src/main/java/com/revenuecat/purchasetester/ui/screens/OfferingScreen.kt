@@ -36,6 +36,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreTransaction
 
 @OptIn(ExperimentalMaterial3Api::class)
