@@ -658,8 +658,6 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            // The video component must have a calculated size to render the video. The matchParentSize modifier
-            // is only used for the video component if it's in the background
             WithOptionalVideoBackground(state, backgroundStyle) {
                 stack(Modifier.then(innerShapeModifier))
             }
@@ -678,8 +676,6 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            // The video component must have a calculated size to render the video. The matchParentSize modifier
-            // is only used for the video component if it's in the background
             WithOptionalVideoBackground(state, backgroundStyle) {
                 stack(borderModifier.then(innerShapeModifier))
             }
