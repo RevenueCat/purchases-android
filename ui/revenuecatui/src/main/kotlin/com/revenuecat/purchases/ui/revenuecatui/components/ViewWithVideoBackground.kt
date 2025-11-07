@@ -20,8 +20,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 internal fun ViewWithVideoBackground(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
+    modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
-    modifier: Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(modifier = modifier) {
@@ -67,8 +67,8 @@ internal fun ViewWithVideoBackground(
 @Composable
 internal fun WithOptionalVideoBackground(
     state: PaywallState.Loaded.Components,
-    modifier: Modifier = Modifier,
     background: BackgroundStyle?,
+    modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     content: @Composable () -> Unit,
 ) {
