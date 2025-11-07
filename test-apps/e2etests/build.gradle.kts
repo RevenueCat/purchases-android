@@ -9,7 +9,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.revenuecat.e2etests"
+        applicationId = "com.revenuecat.automatedsdktests"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

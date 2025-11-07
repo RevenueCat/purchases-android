@@ -1,0 +1,16 @@
+appId: com.revenuecat.automatedsdktests
+---
+- tapOn: Subscribe
+- runFlow:
+    label: "Disable authentication for purchases"
+    when:
+      visible: ".*authentication.*"
+    commands:
+      - tapOn: "No, thanks"
+      - tapOn: OK
+- repeat:
+    label: "Disable notifications and emails from Google Play"
+    while:
+      visible: "Not now"
+    commands:
+      - tapOn: "Not now"

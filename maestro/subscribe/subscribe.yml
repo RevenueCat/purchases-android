@@ -1,0 +1,8 @@
+appId: com.revenuecat.automatedsdktests
+---
+- runFlow:
+    label: "Subscribe on Google Play"
+    when:
+      # Good enough for now.
+      platform: Android
+    file: store/play-store.yml
