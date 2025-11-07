@@ -30,29 +30,20 @@ class PaywallViewActivity : AppCompatActivity() {
         binding.paywallView.setOfferingId(offeringId)
         binding.paywallView.setPaywallListener(object : PaywallListener {
             override fun onPurchasePackageInitiated(packageId: String, resume: Resumable) {
-                val builder: AlertDialog.Builder = AlertDialog.Builder(this@PaywallViewActivity)
-                builder.setTitle("On Purchase Initiated Hook")
-                builder.setMessage(
-                    "Example of presenting other UI over the paywall. Do you want to proceed with the purchase?",
-                )
-                builder.setPositiveButton(
-                    "Proceed",
-                    object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            resume()
-                        }
-                    },
-                )
-                builder.setNegativeButton(
-                    "Cancel",
-                ) { dialog, which ->
-                    dialog.dismiss() // Dismiss the dialog
-                    resume(false)
-                }
-                builder.setCancelable(false) // Prevents dialog from being dismissed by tapping outside or back button
-
-                val dialog: AlertDialog = builder.create()
-                dialog.show()
+                AlertDialog
+                    .Builder(this@PaywallViewActivity)
+                    .setTitle("On Purchase Initiated Hook")
+                    .setMessage(
+                        "Example of presenting other UI over the paywall. Do you want to proceed with the purchase?",
+                    )
+                    .setPositiveButton("Proceed") { dialog, which -> resume() }
+                    .setNegativeButton("Cancel") { dialog, which ->
+                        dialog.dismiss()
+                        resume(false)
+                    }
+                    .setCancelable(false)
+                    .create()
+                    .show()
             }
 
             override fun onPurchaseStarted(rcPackage: Package) {
