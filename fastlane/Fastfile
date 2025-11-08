@@ -105,6 +105,24 @@ platform :android do
     )
   end
 
+  desc "Check if version already exists in Maven Central"
+  lane :validate_version_not_in_maven_central do |options|
+    version = options[:version] || current_version_number
+    UI.message("Checking if version #{version} already exists in Maven Central...")
+    
+    group_id = "com.revenuecat.purchases"
+
+    artifact_ids = discover_published_artifacts
+    
+    if artifact_ids.empty?
+      UI.user_error!("No artifacts discovered. There should be artifacts deployed")
+    else
+      UI.message("Found #{artifact_ids.length} artifacts to check: #{artifact_ids.join(', ')}")
+      check_version_not_in_maven_central(version, group_id, artifact_ids)
+      UI.success("Version #{version} does not exist in Maven Central. Proceeding with deployment.")
+    end
+  end
+
   desc "Upload and close a release"
   lane :deploy do |options|
     version = current_version_number
@@ -116,6 +134,10 @@ platform :android do
       "mavenCentralPassword" => ENV['MAVEN_CENTRAL_PORTAL_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
+    
+    # Check if version already exists in Maven Central before deploying
+    validate_version_not_in_maven_central(version: version)
+    
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
@@ -141,6 +163,93 @@ platform :android do
     )
 
     github_release(version: version) unless is_snapshot_version?(version)
+  end
+
+  def discover_published_artifacts
+    artifacts = Set.new
+    
+    UI.message("Discovering all publications...")
+    
+    # Run gradle command from project root to discover all publications
+    Dir.chdir("..") do
+      cmd = ["./gradlew", "listPublications", "--no-daemon", "--quiet"]
+      output = sh(cmd.join(" "), log: false)
+      
+      # Parse output to extract artifact IDs
+      output.split("\n").each do |line|
+        line.strip!
+        # Format is: groupId:artifactId:version
+        # Only accept lines that match the format and have artifact IDs starting with "purchases-"
+        if line.match?(/^[^:]+:[^:]+:[^:]+$/)
+          parts = line.split(":")
+          artifact_id = parts[1] if parts.length == 3
+          # Only add artifact IDs that start with "purchases-" to filter out project names and other noise
+          if artifact_id && artifact_id.start_with?("purchases-")
+            artifacts.add(artifact_id)
+          end
+        end
+      end
+    end
+    
+    # Add the custom artifact IDs that are published via deploy_specific_package
+    # These use POM_ARTIFACT_ID to override the artifact ID, so they might not appear
+    # in the default publications list, but they will be published with these IDs
+    artifacts.add("purchases-custom-entitlement-computation")
+    artifacts.add("purchases-debug-view")
+    
+    artifacts.to_a
+  end
+
+  def check_version_not_in_maven_central(version, group_id, artifact_ids)
+    require 'rest-client'
+    require 'json'
+    require 'uri'
+    
+    auth_token = ENV["FETCH_PUBLICATIONS_USER_TOKEN_MAVEN_CENTRAL"]
+    if auth_token.nil? || auth_token.empty?
+      UI.user_error!("FETCH_PUBLICATIONS_USER_TOKEN_MAVEN_CENTRAL environment variable is not set. Please provide a valid token to check Maven Central publications.")
+    end
+    
+    base_url = "https://central.sonatype.com/api/v1/publisher/published"
+    existing_artifacts = []
+    
+    artifact_ids.each do |artifact_id|
+      # Build query parameters for the API endpoint with proper URI encoding
+      # The API uses 'name' parameter which corresponds to the artifact_id
+      api_url = "#{base_url}?namespace=#{URI.encode_www_form_component(group_id)}&name=#{URI.encode_www_form_component(artifact_id)}&version=#{URI.encode_www_form_component(version)}"
+      
+      UI.verbose("Checking Sonatype API for publication status: #{group_id}:#{artifact_id}:#{version}")
+      
+      begin
+        response = RestClient.get(
+          api_url,
+          {
+            'Authorization' => "Bearer #{auth_token}",
+            'accept' => 'application/json'
+          }
+        )
+        
+        # Parse JSON response
+        response_data = JSON.parse(response.body)
+        
+        # Check if published field is true
+        if response_data["published"] == true
+          existing_artifacts << artifact_id
+          UI.important("Artifact #{group_id}:#{artifact_id}:#{version} already exists in Maven Central")
+        end
+      rescue => e
+        UI.user_error!("Failed to check #{group_id}:#{artifact_id}:#{version}: #{e.message}")
+      end
+    end
+    
+    unless existing_artifacts.empty?
+      error_message = "Version #{version} already exists in Maven Central for the following artifacts:\n"
+      existing_artifacts.each do |artifact_id|
+        error_message += "  - #{group_id}:#{artifact_id}:#{version}\n"
+      end
+      error_message += "\nDeployment cancelled to prevent duplicate releases."
+      UI.user_error!(error_message)
+    end
   end
 
   def deploy_specific_package(variant, artifact_id, module_to_deploy, gradle_properties)
