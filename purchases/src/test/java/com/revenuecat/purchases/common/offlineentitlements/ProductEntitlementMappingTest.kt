@@ -107,8 +107,12 @@ class ProductEntitlementMappingTest {
     }
 
     @Test
-    fun `toJson transforms mappings back to original Json`() {
+    fun `toJson transforms mappings back to original Json while adding original data source field`() {
         val mappings = ProductEntitlementMapping.fromJson(sampleResponseJson)
-        assertThat(mappings.toJson().toString()).isEqualTo(sampleResponseJson.toString())
+        val json = mappings.toJson()
+        val toJsonWithoutOriginalDataSource = json.apply {
+            remove("rc_original_source")
+        }
+        assertThat(toJsonWithoutOriginalDataSource.toString()).isEqualTo(sampleResponseJson.toString())
     }
 }

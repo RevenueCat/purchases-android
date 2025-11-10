@@ -72,6 +72,7 @@ class CustomerInfoFactoryTest {
             null,
             VerificationResult.NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
@@ -87,6 +88,7 @@ class CustomerInfoFactoryTest {
             null,
             VerificationResult.NOT_REQUESTED,
             isLoadShedderResponse = true,
+            isFallbackURL = false,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.LOAD_SHEDDER)
@@ -102,6 +104,7 @@ class CustomerInfoFactoryTest {
             null,
             VerificationResult.NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(httpResult)
         assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)

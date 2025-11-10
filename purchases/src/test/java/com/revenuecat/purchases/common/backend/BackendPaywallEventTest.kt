@@ -301,6 +301,7 @@ class BackendPaywallEventTest {
                 requestDate = null,
                 VerificationResult.NOT_REQUESTED,
                 isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }
