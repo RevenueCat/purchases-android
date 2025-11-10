@@ -433,7 +433,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns null
 
@@ -445,7 +446,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns expectedResult
 
@@ -511,7 +513,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 any(),
                 false,
                 Date(1234567890),
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         }
     }
@@ -610,7 +613,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } throws JSONException("bad json")
         val response = MockResponse().setBody("not uh json").setResponseCode(responseCode)
@@ -659,7 +663,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns null
 
@@ -671,7 +676,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = urlString,
                 refreshETag = true,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns expectedResult
 
@@ -1221,7 +1227,8 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = any(),
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns HTTPResult.createResult(statusCode, invalidJsonPayload)
         every {
@@ -1232,7 +1239,8 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
@@ -1305,7 +1313,8 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 urlString = server.url(endpoint.getPath()).toString(),
                 refreshETag = false,
                 requestDate = any(),
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
@@ -1317,7 +1326,8 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 urlString = fallbackServer.url(endpoint.getPath(useFallback = true)).toString(),
                 refreshETag = false,
                 requestDate = any(),
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 

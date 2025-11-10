@@ -128,7 +128,8 @@ internal abstract class BaseHTTPClientTest {
                 urlString = urlString,
                 refreshETag = false,
                 requestDate = requestDateHeader,
-                verificationResult = verificationResult
+                verificationResult = verificationResult,
+                isLoadShedderResponse = false,
             )
         } returns expectedResult
         val response = MockResponse()

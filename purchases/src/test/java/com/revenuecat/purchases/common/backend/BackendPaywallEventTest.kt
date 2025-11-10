@@ -299,7 +299,8 @@ class BackendPaywallEventTest {
                 "{}",
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
             )
         }
     }

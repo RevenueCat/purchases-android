@@ -19,14 +19,16 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000), // Tuesday, March 7, 2023 9:16:57 AM GMT,
-            VerificationResult.VERIFIED
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false}"
         )
     }
 
@@ -37,13 +39,15 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             null,
-            VerificationResult.VERIFIED
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false}"
         )
     }
 
@@ -54,7 +58,8 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
-            VerificationResult.FAILED
+            VerificationResult.FAILED,
+            isLoadShedderResponse = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -72,11 +77,61 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.CACHE,
             null,
-            VerificationResult.NOT_REQUESTED
+            VerificationResult.NOT_REQUESTED,
+            isLoadShedderResponse = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"}")
         assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `result with load shedder header is serialized correctly`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = true,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).contains("\"isLoadShedderResponse\":true")
+        assertThat(serialized).contains("\"responseCode\":200")
+    }
+
+    @Test
+    fun `result with load shedder header is deserialized correctly`() {
+        val expectedResult = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = true,
+        )
+        val result = HTTPResult.deserialize("{" +
+            "\"responseCode\":200," +
+            "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
+            "\"origin\":\"BACKEND\"," +
+            "\"requestDate\":1678180617000," +
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":true}")
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `result with false load shedder header serializes it`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = false,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).contains("\"isLoadShedderResponse\":false")
     }
 }
