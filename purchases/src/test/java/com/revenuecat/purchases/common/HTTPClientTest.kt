@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.google.BillingClientVersion
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -206,6 +207,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
         assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
         assertThat(request.getHeader("X-Is-Backgrounded")).isEqualTo("true")
+        assertThat(request.getHeader("X-Billing-Client-Sdk-Version")).isEqualTo(BillingClientVersion)
     }
 
     @Test
