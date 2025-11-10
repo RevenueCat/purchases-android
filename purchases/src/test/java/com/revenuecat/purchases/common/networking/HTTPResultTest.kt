@@ -20,14 +20,17 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000), // Tuesday, March 7, 2023 9:16:57 AM GMT,
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false," +
+            "\"isFallbackURL\":false}"
         )
     }
 
@@ -39,13 +42,16 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             null,
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"VERIFIED\"}"
+            "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false," +
+            "\"isFallbackURL\":false}"
         )
     }
 
@@ -57,7 +63,8 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.FAILED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -76,7 +83,8 @@ class HTTPResultTest {
             HTTPResult.Origin.CACHE,
             null,
             VerificationResult.NOT_REQUESTED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -93,9 +101,26 @@ class HTTPResultTest {
             Date(1678180617000),
             VerificationResult.VERIFIED,
             isLoadShedderResponse = true,
+            isFallbackURL = false,
         )
         val serialized = result.serialize()
         assertThat(serialized).contains("\"isLoadShedderResponse\":true")
+        assertThat(serialized).contains("\"responseCode\":200")
+    }
+
+    @Test
+    fun `result with fallback url is serialized correctly`() {
+        val result = HTTPResult(
+            200,
+            "{\"test-key\":\"test-value\"}",
+            HTTPResult.Origin.BACKEND,
+            Date(1678180617000),
+            VerificationResult.VERIFIED,
+            isLoadShedderResponse = false,
+            isFallbackURL = true,
+        )
+        val serialized = result.serialize()
+        assertThat(serialized).contains("\"isFallbackURL\":true")
         assertThat(serialized).contains("\"responseCode\":200")
     }
 
@@ -108,6 +133,7 @@ class HTTPResultTest {
             Date(1678180617000),
             VerificationResult.VERIFIED,
             isLoadShedderResponse = true,
+            isFallbackURL = false
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -120,20 +146,6 @@ class HTTPResultTest {
     }
 
     @Test
-    fun `result with null load shedder header does not serialize it`() {
-        val result = HTTPResult(
-            200,
-            "{\"test-key\":\"test-value\"}",
-            HTTPResult.Origin.BACKEND,
-            Date(1678180617000),
-            VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
-        )
-        val serialized = result.serialize()
-        assertThat(serialized).doesNotContain("isLoadShedderResponse")
-    }
-
-    @Test
     fun `result with fallback URL is serialized correctly`() {
         val result = HTTPResult(
             200,
@@ -141,7 +153,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
         val serialized = result.serialize()
@@ -157,7 +169,7 @@ class HTTPResultTest {
             HTTPResult.Origin.BACKEND,
             Date(1678180617000),
             VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
         val result = HTTPResult.deserialize("{" +
@@ -166,23 +178,9 @@ class HTTPResultTest {
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
             "\"verificationResult\":\"VERIFIED\"," +
+            "\"isLoadShedderResponse\":false," +
             "\"isFallbackURL\":true}")
         assertThat(result).isEqualTo(expectedResult)
-    }
-
-    @Test
-    fun `result with null fallback URL does not serialize it`() {
-        val result = HTTPResult(
-            200,
-            "{\"test-key\":\"test-value\"}",
-            HTTPResult.Origin.BACKEND,
-            Date(1678180617000),
-            VerificationResult.VERIFIED,
-            isLoadShedderResponse = null,
-            isFallbackURL = null,
-        )
-        val serialized = result.serialize()
-        assertThat(serialized).doesNotContain("isFallbackURL")
     }
 
     @Test

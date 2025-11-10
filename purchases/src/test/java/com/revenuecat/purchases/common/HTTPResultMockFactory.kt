@@ -11,6 +11,6 @@ internal fun HTTPResult.Companion.createResult(
     origin: HTTPResult.Origin = HTTPResult.Origin.BACKEND,
     requestDate: Date? = null,
     verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
-    isLoadShedderResponse: Boolean? = null,
-    isFallbackURL: Boolean? = null,
+    isLoadShedderResponse: Boolean = false,
+    isFallbackURL: Boolean = false,
 ) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isLoadShedderResponse, isFallbackURL)

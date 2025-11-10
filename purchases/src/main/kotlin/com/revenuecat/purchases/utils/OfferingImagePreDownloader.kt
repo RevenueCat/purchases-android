@@ -113,6 +113,10 @@ internal class OfferingImagePreDownloader(
                 Uri.parse(value.light.webpLowRes.toString()),
                 value.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
             )
+            is Background.Video -> setOfNotNull(
+                Uri.parse(fallbackImage.light.webpLowRes.toString()),
+                fallbackImage.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
+            )
             is Background.Color,
             is Background.Unknown,
             null,

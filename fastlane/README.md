@@ -145,17 +145,7 @@ Build and run purchases module integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
-Accepts a backend_environment parameter: 'production' or 'loadshedder'
-
-### android run_load_shedder_purchases_integration_tests
-
-```sh
-[bundle exec] fastlane android run_load_shedder_purchases_integration_tests
-```
-
-Build and run purchases module load shedder integration tests
-
-This requires the google cloud cli to be installed and initialized.
+Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'
 
 ### android run_custom_entitlement_computation_integration_tests
 

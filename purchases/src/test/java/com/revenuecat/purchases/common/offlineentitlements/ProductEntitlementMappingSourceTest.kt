@@ -44,8 +44,8 @@ class ProductEntitlementMappingSourceTest {
     fun `productEntitlementMapping created with MAIN source from network response`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
-            isFallbackURL = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
@@ -59,7 +59,7 @@ class ProductEntitlementMappingSourceTest {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
-            isFallbackURL = null,
+            isFallbackURL = false,
         )
 
         val mapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
@@ -72,7 +72,7 @@ class ProductEntitlementMappingSourceTest {
     fun `productEntitlementMapping created with FALLBACK source from fallback URL response`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
 
@@ -87,7 +87,7 @@ class ProductEntitlementMappingSourceTest {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
-            isFallbackURL = null,
+            isFallbackURL = false,
         )
 
         val originalMapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
@@ -107,7 +107,7 @@ class ProductEntitlementMappingSourceTest {
     fun `productEntitlementMapping cache preserves originalSource when reading from cache`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
 

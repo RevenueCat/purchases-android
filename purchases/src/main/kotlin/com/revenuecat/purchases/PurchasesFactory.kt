@@ -73,6 +73,7 @@ internal class PurchasesFactory(
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString,
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -98,6 +99,7 @@ internal class PurchasesFactory(
                 dangerousSettings,
                 runningIntegrationTests,
                 forceSigningError,
+                baseUrlString = baseUrlString,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -432,14 +434,17 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                throw PurchasesException(
+                errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
+                        underlyingErrorMessage = "Test Store API key used in release build. Please configure the " +
+                            "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
+                            "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
-                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
-                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
-                        "Test Store is not supported in production builds.",
                 )
+                TestStoreErrorDialogActivity.show(context)
+                // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
+                return apiKeyValidationResult
             }
 
             require(context.applicationContext is Application) { "Needs an application context." }

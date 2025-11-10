@@ -431,6 +431,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns null
@@ -444,6 +445,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns expectedResult
@@ -511,6 +513,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 false,
                 Date(1234567890),
                 VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         }
@@ -611,6 +614,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } throws JSONException("bad json")
@@ -661,6 +665,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 refreshETag = false,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns null
@@ -674,6 +679,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 refreshETag = true,
                 requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns expectedResult
@@ -722,6 +728,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(),
             server = fallbackServer,
+            isFallbackURL = true,
         )
 
         client.performRequest(
@@ -840,6 +847,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.NOT_FOUND),
             server = fallbackServer,
+            isFallbackURL = true,
         )
 
         val result = client.performRequest(
@@ -874,6 +882,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = serverDownResponseCode),
             server = fallbackServer,
+            isFallbackURL = true,
         )
 
         val result = client.performRequest(
@@ -909,7 +918,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         enqueue(
             endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}"),
-            server = fallbackServer
+            server = fallbackServer,
+            isFallbackURL = true,
         )
 
         val result = client.performRequest(
@@ -949,6 +959,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             endpoint.getPath(useFallback = true),
             expectedResult = HTTPResult.createResult(responseCode = RCHTTPStatusCodes.SUCCESS),
             server = fallbackServer,
+            isFallbackURL = true,
         )
 
         client.performRequest(
@@ -1045,6 +1056,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns HTTPResult.createResult(statusCode, invalidJsonPayload)
@@ -1057,6 +1069,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = true,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
@@ -1131,6 +1144,7 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
@@ -1144,6 +1158,7 @@ internal class ParameterizedConnectionFailureFallbackTest(
                 refreshETag = false,
                 requestDate = any(),
                 verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
                 isFallbackURL = true,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)

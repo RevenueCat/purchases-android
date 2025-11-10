@@ -304,6 +304,6 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
-        // Note: originalSource and source are excluded from equality comparison as they are metadata
+        // Note: originalSource and loadedFromCache are excluded from equality comparison as they are metadata
     )
 }

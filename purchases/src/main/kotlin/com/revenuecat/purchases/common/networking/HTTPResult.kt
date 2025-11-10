@@ -21,8 +21,8 @@ internal data class HTTPResult(
     val origin: Origin,
     val requestDate: Date?,
     val verificationResult: VerificationResult,
-    val isLoadShedderResponse: Boolean? = null,
-    val isFallbackURL: Boolean? = null,
+    val isLoadShedderResponse: Boolean,
+    val isFallbackURL: Boolean,
 ) {
     companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
@@ -49,15 +49,15 @@ internal data class HTTPResult(
             } else {
                 VerificationResult.NOT_REQUESTED
             }
-            val isLoadShedderResponse: Boolean? = if (jsonObject.has(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)) {
+            val isLoadShedderResponse = if (jsonObject.has(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)) {
                 jsonObject.getBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)
             } else {
-                null
+                false
             }
-            val isFallbackURL: Boolean? = if (jsonObject.has(SERIALIZATION_NAME_IS_FALLBACK_URL)) {
+            val isFallbackURL = if (jsonObject.has(SERIALIZATION_NAME_IS_FALLBACK_URL)) {
                 jsonObject.getBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL)
             } else {
-                null
+                false
             }
             return HTTPResult(
                 responseCode,
@@ -103,8 +103,8 @@ internal data class HTTPResult(
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
             put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
-            isLoadShedderResponse?.let { put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, it) }
-            isFallbackURL?.let { put(SERIALIZATION_NAME_IS_FALLBACK_URL, it) }
+            put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
+            put(SERIALIZATION_NAME_IS_FALLBACK_URL, isFallbackURL)
         }
         return jsonObject.toString()
     }

@@ -103,6 +103,7 @@ internal class HTTPClient(
                     log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
                     connection.errorStream
                 }
+
                 else -> throw e
             }
         }
@@ -357,7 +358,11 @@ internal class HTTPClient(
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
         val builder = StringBuilder("curl -v ")
 
-        val method = if (httpRequest.body == null) { "GET" } else { "POST" }
+        val method = if (httpRequest.body == null) {
+            "GET"
+        } else {
+            "POST"
+        }
 
         builder.append("-X ").append(method).append(" \\\n  ")
 
@@ -489,17 +494,15 @@ internal class HTTPClient(
     private fun getRequestTimeHeader(connection: URLConnection): String? {
         return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
     }
+
     private fun getRequestDateHeader(connection: URLConnection): Date? {
         return getRequestTimeHeader(connection)?.toLong()?.let {
             Date(it)
         }
     }
-    private fun getLoadShedderHeader(connection: URLConnection): Boolean? {
+
+    private fun getLoadShedderHeader(connection: URLConnection): Boolean {
         val loadShedderHeader = connection.getHeaderField(HTTPResult.LOAD_SHEDDER_HEADER_NAME)
-        return if (loadShedderHeader?.lowercase() == "true") {
-            true
-        } else {
-            null
-        }
+        return loadShedderHeader?.lowercase() == "true"
     }
 }

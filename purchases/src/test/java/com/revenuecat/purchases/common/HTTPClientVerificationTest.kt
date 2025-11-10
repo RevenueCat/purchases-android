@@ -166,6 +166,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 refreshETag = false,
                 requestDate = Date(1234567890L),
                 verificationResult = VerificationResult.VERIFIED,
+                isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
         } returns expectedResult
@@ -345,7 +346,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(thrownCorrectException).isTrue
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -372,7 +373,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
 
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 

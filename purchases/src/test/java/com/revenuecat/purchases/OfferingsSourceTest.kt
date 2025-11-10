@@ -42,8 +42,8 @@ class OfferingsSourceTest {
     fun `offerings created with MAIN source from network response`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
-            isFallbackURL = null,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
         val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
@@ -64,7 +64,7 @@ class OfferingsSourceTest {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
-            isFallbackURL = null,
+            isFallbackURL = false,
         )
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
         val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
@@ -84,7 +84,7 @@ class OfferingsSourceTest {
     fun `offerings created with FALLBACK source from fallback URL response`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
@@ -110,7 +110,7 @@ class OfferingsSourceTest {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = true,
-            isFallbackURL = null,
+            isFallbackURL = false,
         )
         val originalOfferings = offeringParser.createOfferings(
             offeringsJson,
@@ -137,7 +137,7 @@ class OfferingsSourceTest {
         // Create and cache offerings with FALLBACK source
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = null,
+            isLoadShedderResponse = false,
             isFallbackURL = true,
         )
         val originalOfferings = offeringParser.createOfferings(

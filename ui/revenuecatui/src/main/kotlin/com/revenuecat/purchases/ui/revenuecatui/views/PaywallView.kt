@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
  * View that wraps the [Paywall] Composable to display the Paywall through XML layouts and the View system.
@@ -68,6 +69,9 @@ class PaywallView : CompatComposeView {
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
     private var internalListener: PaywallListener = object : PaywallListener {
+        override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
+            listener?.onPurchasePackageInitiated(rcPackage, resume) ?: resume()
+        }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)
