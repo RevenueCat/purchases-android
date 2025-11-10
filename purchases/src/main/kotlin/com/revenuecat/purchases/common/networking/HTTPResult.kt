@@ -12,6 +12,7 @@ private const val SERIALIZATION_NAME_PAYLOAD = "payload"
 private const val SERIALIZATION_NAME_ORIGIN = "origin"
 private const val SERIALIZATION_NAME_REQUEST_DATE = "requestDate"
 private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
+private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 
 internal data class HTTPResult(
     val responseCode: Int,
@@ -19,11 +20,13 @@ internal data class HTTPResult(
     val origin: Origin,
     val requestDate: Date?,
     val verificationResult: VerificationResult,
+    val isLoadShedderResponse: Boolean,
 ) {
     companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         const val SIGNATURE_HEADER_NAME = "X-Signature"
         const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
+        const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
 
         fun deserialize(serialized: String): HTTPResult {
             val jsonObject = JSONObject(serialized)
@@ -44,7 +47,12 @@ internal data class HTTPResult(
             } else {
                 VerificationResult.NOT_REQUESTED
             }
-            return HTTPResult(responseCode, payload, origin, requestDate, verificationResult)
+            val isLoadShedderResponse = if (jsonObject.has(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)) {
+                jsonObject.getBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)
+            } else {
+                false
+            }
+            return HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isLoadShedderResponse)
         }
     }
 
@@ -80,6 +88,7 @@ internal data class HTTPResult(
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
             put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
+            put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
         }
         return jsonObject.toString()
     }

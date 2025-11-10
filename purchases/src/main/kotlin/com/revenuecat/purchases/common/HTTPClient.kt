@@ -340,6 +340,7 @@ internal class HTTPClient(
             throw SignatureVerificationException(path)
         }
 
+        val isLoadShedderResponse = getLoadShedderHeader(connection)
         return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
@@ -348,6 +349,7 @@ internal class HTTPClient(
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
+            isLoadShedderResponse,
         )
     }
 
@@ -489,6 +491,14 @@ internal class HTTPClient(
     private fun getRequestDateHeader(connection: URLConnection): Date? {
         return getRequestTimeHeader(connection)?.toLong()?.let {
             Date(it)
+        }
+    }
+    private fun getLoadShedderHeader(connection: URLConnection): Boolean {
+        val loadShedderHeader = connection.getHeaderField(HTTPResult.LOAD_SHEDDER_HEADER_NAME)
+        return if (loadShedderHeader?.lowercase() == "true") {
+            true
+        } else {
+            false
         }
     }
 }

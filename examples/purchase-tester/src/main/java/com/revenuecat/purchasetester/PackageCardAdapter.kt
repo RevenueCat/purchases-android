@@ -88,8 +88,8 @@ class PackageCardAdapter(
             binding.isActive = activeSubscriptions.contains(product.id)
             binding.isPlayStore = isPlayStore
             binding.isAddOnMode = isAddOnMode
+            binding.buyOptionCheckbox.setOnCheckedChangeListener(null)
             binding.isSelected = isSelected
-
             binding.buyOptionCheckbox.isChecked = isSelected
             binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
                 if (checked) {
