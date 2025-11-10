@@ -521,13 +521,13 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
       - run:
             name: Publish aab
             command: |
-              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
+              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
 
   assemble-paywall-tester-release:
     <<: *android-executor
@@ -552,7 +552,7 @@ jobs:
       - run:
             name: Publish aab
             command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
+              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor

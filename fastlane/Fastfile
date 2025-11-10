@@ -213,7 +213,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundle',
+      build_task: 'examples:purchase-tester:bundleBc8',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -225,7 +225,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundle',
+      build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester'
     )
