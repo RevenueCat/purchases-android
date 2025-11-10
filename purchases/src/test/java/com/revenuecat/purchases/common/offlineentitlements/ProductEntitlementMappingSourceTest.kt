@@ -35,6 +35,21 @@ class ProductEntitlementMappingSourceTest {
         """.trimIndent()
     )
 
+    private val sampleResponseJsonWithSource = JSONObject(
+        """
+            {
+                "product_entitlement_mapping": {
+                    "com.revenuecat.foo_1:p1m": {
+                        "product_identifier": "com.revenuecat.foo_1",
+                        "base_plan_id": "p1m",
+                        "entitlements": ["pro_1"]
+                    }
+                },
+                "rc_original_source": "FALLBACK"
+            }
+        """.trimIndent()
+    )
+
     @Before
     fun setUp() {
         deviceCache = mockk()
@@ -120,8 +135,7 @@ class ProductEntitlementMappingSourceTest {
 
         // Mock retrieval with preserved originalSource
         every { deviceCache.getProductEntitlementMapping() } returns ProductEntitlementMapping.fromJson(
-            sampleResponseJson,
-            HTTPResponseOriginalSource.FALLBACK,
+            sampleResponseJsonWithSource,
             loadedFromCache = true,
         )
 
@@ -139,18 +153,6 @@ class ProductEntitlementMappingSourceTest {
         val mapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
 
         assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(mapping.loadedFromCache).isFalse
-    }
-
-    @Test
-    fun `productEntitlementMapping fromJson accepts explicit source parameters`() {
-        val mapping = ProductEntitlementMapping.fromJson(
-            sampleResponseJson,
-            HTTPResponseOriginalSource.LOAD_SHEDDER,
-            loadedFromCache = false,
-        )
-
-        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
         assertThat(mapping.loadedFromCache).isFalse
     }
 

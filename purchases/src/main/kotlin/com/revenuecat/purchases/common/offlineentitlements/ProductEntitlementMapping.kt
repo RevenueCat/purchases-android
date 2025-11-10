@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.originalDataSource
+import com.revenuecat.purchases.utils.copy
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,7 +23,6 @@ internal data class ProductEntitlementMapping(
 
         fun fromJson(
             json: JSONObject,
-            originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
             loadedFromCache: Boolean = false,
         ): ProductEntitlementMapping {
             val productsObject = json.getJSONObject(PRODUCT_ENTITLEMENT_MAPPING_KEY)
@@ -37,12 +38,21 @@ internal data class ProductEntitlementMapping(
                 }
                 mappings[mappingIdentifier] = Mapping(productIdentifier, basePlanId, entitlements)
             }
+            val originalSource = json.optNullableString(ORIGINAL_SOURCE_KEY)?.let {
+                try {
+                    HTTPResponseOriginalSource.valueOf(it)
+                } catch (e: IllegalArgumentException) {
+                    errorLog(e) { "Invalid original source when reading it from JSON: $it. Defaulting to MAIN." }
+                    null
+                }
+            } ?: HTTPResponseOriginalSource.MAIN
             return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
         }
 
         fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
-            val originalSource = httpResult.originalDataSource
-            return fromJson(json, originalSource, loadedFromCache = false)
+            val jsonCopy = json.copy(deep = false)
+            val jsonWithSource = jsonCopy.put(ORIGINAL_SOURCE_KEY, httpResult.originalDataSource.name)
+            return fromJson(jsonWithSource, loadedFromCache = false)
         }
     }
 

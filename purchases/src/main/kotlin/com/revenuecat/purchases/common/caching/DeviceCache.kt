@@ -12,7 +12,6 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -51,7 +50,6 @@ internal open class DeviceCache(
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
         private const val CUSTOMER_INFO_ORIGINAL_SOURCE_KEY = "customer_info_original_source"
-        private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
@@ -466,13 +464,11 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
-        val jsonWithSource = productEntitlementMapping.toJson().apply {
-            put(ORIGINAL_SOURCE_KEY, productEntitlementMapping.originalSource.name)
-        }
+        val json = productEntitlementMapping.toJson()
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                jsonWithSource.toString(),
+                json.toString(),
             )
             .apply()
 
@@ -502,15 +498,7 @@ internal open class DeviceCache(
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
                 val jsonObject = JSONObject(jsonString)
-                val cachedOriginalSource = jsonObject.optNullableString(ORIGINAL_SOURCE_KEY)?.let {
-                    try {
-                        HTTPResponseOriginalSource.valueOf(it)
-                    } catch (e: IllegalArgumentException) {
-                        errorLog(e) { "Invalid original data source in cached product entitlement mappings." }
-                        null
-                    }
-                } ?: HTTPResponseOriginalSource.MAIN
-                ProductEntitlementMapping.fromJson(jsonObject, cachedOriginalSource, loadedFromCache = true)
+                ProductEntitlementMapping.fromJson(jsonObject, loadedFromCache = true)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
                 preferences.edit()
