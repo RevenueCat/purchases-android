@@ -748,10 +748,10 @@ class OfferingsTest {
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
         assertThat(offerings.loadedFromCache).isFalse
 
-        val offeringsWithDifferentMetadata = offerings.copy(
+        val offeringsWithDifferentData = offerings.copy(
             current = null,
         )
-        assertThat(offerings).isNotEqualTo(offeringsWithDifferentMetadata)
+        assertThat(offerings).isNotEqualTo(offeringsWithDifferentData)
     }
 
     // endregion equality

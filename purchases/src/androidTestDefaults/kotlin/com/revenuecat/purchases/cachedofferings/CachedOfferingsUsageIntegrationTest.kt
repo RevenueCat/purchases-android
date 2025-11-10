@@ -46,11 +46,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        val networkOfferingsWithCacheOrigin = networkOfferings.copy(
-            loadedFromCache = true,
-        )
-
-        assertThat(cachedOfferings).isEqualTo(networkOfferingsWithCacheOrigin)
+        assertThat(cachedOfferings).isEqualTo(networkOfferings)
     }
 
     @Test
@@ -71,11 +67,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        val networkOfferingsWithCacheOrigin = networkOfferings.copy(
-            loadedFromCache = true,
-        )
-
-        assertThat(cachedOfferings).isEqualTo(networkOfferingsWithCacheOrigin)
+        assertThat(cachedOfferings).isEqualTo(networkOfferings)
     }
 
     @Test
