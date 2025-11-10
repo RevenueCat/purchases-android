@@ -3,6 +3,7 @@
   "method": "POST",
   "headers": {
     "Content-Type": "application\/json",
+    "X-Billing-Client-Sdk-Version": "bc7",
     "X-Client-Bundle-ID": "com.revenuecat.purchases.backend_tests",
     "X-Client-Locale": "en-US",
     "X-Client-Version": "test-version-name",
