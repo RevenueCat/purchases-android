@@ -27,15 +27,15 @@ internal enum class HTTPResponseOriginalSource {
  */
 internal val HTTPResult.originalDataSource: HTTPResponseOriginalSource
     get() {
-        if (isLoadShedderResponse == true && isFallbackURL == true) {
+        if (isLoadShedderResponse && isFallbackURL) {
             errorLog {
                 "Request to fallback URL was handled by load shedder, which should never happen. " +
                     "Defaulting to fallback source."
             }
         }
         return when {
-            isFallbackURL == true -> HTTPResponseOriginalSource.FALLBACK
-            isLoadShedderResponse == true -> HTTPResponseOriginalSource.LOAD_SHEDDER
+            isFallbackURL -> HTTPResponseOriginalSource.FALLBACK
+            isLoadShedderResponse -> HTTPResponseOriginalSource.LOAD_SHEDDER
             else -> HTTPResponseOriginalSource.MAIN
         }
     }

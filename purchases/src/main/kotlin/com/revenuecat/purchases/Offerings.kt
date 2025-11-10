@@ -122,7 +122,7 @@ private data class OfferingsComparableData(
         all = offerings.all,
         placements = offerings.placements,
         targeting = offerings.targeting,
-        // Note: originalSource and source are excluded from equality comparison as they are metadata
+        // Note: originalSource and loadedFromDiskCache are excluded from equality comparison as they are metadata
     )
 }
 

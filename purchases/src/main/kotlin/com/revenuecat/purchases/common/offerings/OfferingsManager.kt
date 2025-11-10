@@ -124,7 +124,7 @@ internal class OfferingsManager(
                 createAndCacheOfferings(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
-                    loadedFromCache = false,
+                    loadedFromDiskCache = false,
                     onError,
                     onSuccess,
                 )
@@ -150,7 +150,7 @@ internal class OfferingsManager(
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
-                                loadedFromCache = true,
+                                loadedFromDiskCache = true,
                                 onError,
                                 onSuccess,
                             )
@@ -167,14 +167,14 @@ internal class OfferingsManager(
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
-        loadedFromCache: Boolean,
+        loadedFromDiskCache: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
             originalDataSource,
-            loadedFromCache,
+            loadedFromDiskCache,
             onError = { error ->
                 handleErrorFetchingOfferings(error, onError)
             },
