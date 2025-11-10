@@ -378,10 +378,12 @@ platform :android do
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_purchases_integration_test(backend_environment: backend_environment, success: false)
+      slack_backend_integration_test_results(environment: backend_environment, success: false)
       raise
     else
-      send_slack_purchases_integration_test(backend_environment: backend_environment, success: true)
+      slack_backend_integration_test_results(environment: backend_environment, success: true)
+    ensure
+      ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
     end
   end
 
@@ -668,32 +670,6 @@ DESC
     ensure
       sh("git reset --hard")
       sh("git -C .. clean -fd")
-    end
-  end
-
-  lane :send_slack_purchases_integration_test do |options|
-    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter")
-    success = options[:success] || false
-    
-    message =
-      if success
-        "Android purchases integration tests (#{backend_environment}) finished successfully"
-      else
-        "Android purchases integration tests (#{backend_environment}) failed"
-      end
-
-    slack_url = ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"]
-
-    # Only send Slack notification if webhook URL is configured
-    if slack_url && slack_url.length > 0
-      slack(
-        message: message,
-        slack_url: slack_url,
-        success: success,
-        default_payloads: [:git_branch]
-      )
-    else
-      UI.message("Skipping Slack notification for #{backend_environment} backend environment - no webhook URL configured")
     end
   end
 
