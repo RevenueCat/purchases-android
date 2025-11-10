@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.utils.copy
 import org.json.JSONObject
 
 internal class OfferingsCache(
@@ -32,7 +33,7 @@ internal class OfferingsCache(
 
     @Synchronized
     fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
-        val finalJsonToCache = offeringsResponse.apply {
+        val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
             put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
         }
         offeringsCachedObject.cacheInstance(offerings)
