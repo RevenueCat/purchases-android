@@ -201,10 +201,16 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        named("customEntitlementComputationBc8") {
             suppress.set(true)
         }
-        named("defaults") {
+        named("customEntitlementComputationBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc8") {
             dependsOn("main")
             reportUndocumented.set(true)
             includeNonPublic.set(false)

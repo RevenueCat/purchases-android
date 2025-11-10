@@ -162,26 +162,34 @@ dependencies {
 }
 
 tasks.dokkaHtmlPartial.configure {
-    dokkaSourceSets.named("main") {
-        reportUndocumented.set(true)
-        includeNonPublic.set(false)
-        skipDeprecated.set(true)
-
-        externalDocumentationLink {
-            url.set(
-                uri("https://developer.android.com/reference/package-list").toURL(),
-            )
+    dokkaSourceSets {
+        named("defaultsBc7") {
+            suppress.set(true)
         }
-        sourceLink {
-            localDirectory.set(
-                file("src/main/kotlin"),
-            )
-            remoteUrl.set(
-                uri(
-                    "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                ).toURL(),
-            )
-            remoteLineSuffix.set("#L")
+        named("defaultsBc8") {
+            dependsOn("main")
+        }
+        named("main") {
+            reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(
+                    uri("https://developer.android.com/reference/package-list").toURL(),
+                )
+            }
+            sourceLink {
+                localDirectory.set(
+                    file("src/main/kotlin"),
+                )
+                remoteUrl.set(
+                    uri(
+                        "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
+                    ).toURL(),
+                )
+                remoteLineSuffix.set("#L")
+            }
         }
     }
 }
