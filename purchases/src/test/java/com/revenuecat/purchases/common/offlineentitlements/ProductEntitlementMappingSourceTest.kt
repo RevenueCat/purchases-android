@@ -119,7 +119,7 @@ class ProductEntitlementMappingSourceTest {
     }
 
     @Test
-    fun `productEntitlementMapping cache preserves originalSource when reading from cache`() {
+    fun `productEntitlementMapping reads originalSource from cached JSON when present`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.BACKEND,
             isLoadShedderResponse = false,
