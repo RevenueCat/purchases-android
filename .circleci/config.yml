@@ -1019,11 +1019,9 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
-      - integration-tests-build: *release-branches
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          <<: *release-branches
+      - integration-tests-build
+      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
       - run-firebase-tests-purchases-integration-tests:
-          <<: *release-branches
           context:
             - slack-secrets
           matrix:
