@@ -842,12 +842,12 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-revenuecat-ui
-          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
       - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
-            ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+            ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
 
   run-maestro-e2e-tests:
     description: "Run Maestro tests for Paywall Tester app"

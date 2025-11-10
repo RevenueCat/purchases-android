@@ -796,7 +796,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziDebug",
+      task: "#{gradle_module}:recordPaparazziBc8Debug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
