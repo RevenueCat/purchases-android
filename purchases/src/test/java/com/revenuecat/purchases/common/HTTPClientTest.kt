@@ -1075,7 +1075,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 urlString = any(),
                 refreshETag = false,
                 requestDate = any(),
-                verificationResult = VerificationResult.NOT_REQUESTED
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = true,
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
