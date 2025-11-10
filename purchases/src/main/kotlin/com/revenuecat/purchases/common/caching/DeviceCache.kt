@@ -464,11 +464,13 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+        val json = productEntitlementMapping.toJson()
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString(),
-            ).apply()
+                json.toString(),
+            )
+            .apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
     }
@@ -490,14 +492,18 @@ internal open class DeviceCache(
         )
     }
 
+    @Suppress("NestedBlockDepth")
     @Synchronized
     fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
-                ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+                val jsonObject = JSONObject(jsonString)
+                ProductEntitlementMapping.fromJson(jsonObject, loadedFromCache = true)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
-                preferences.edit().remove(productEntitlementMappingCacheKey).apply()
+                preferences.edit()
+                    .remove(productEntitlementMappingCacheKey)
+                    .apply()
                 null
             }
         }

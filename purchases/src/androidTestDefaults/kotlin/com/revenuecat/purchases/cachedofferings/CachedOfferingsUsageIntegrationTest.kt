@@ -90,6 +90,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
                             requestDate = null,
                             verificationResult = VerificationResult.VERIFIED_ON_DEVICE,
                             isLoadShedderResponse = false,
+                            isFallbackURL = false,
                         )
                     }
                     return null
