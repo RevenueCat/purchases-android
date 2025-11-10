@@ -39,7 +39,7 @@ internal abstract class OfferingParser {
         offeringsJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
-        loadedFromCache: Boolean = false,
+        loadedFromDiskCache: Boolean = false,
     ): Offerings {
         log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
@@ -104,7 +104,7 @@ internal abstract class OfferingParser {
             placements = placements,
             targeting = targeting,
             originalSource = originalSource,
-            loadedFromCache = loadedFromCache,
+            loadedFromDiskCache = loadedFromDiskCache,
         )
     }
 

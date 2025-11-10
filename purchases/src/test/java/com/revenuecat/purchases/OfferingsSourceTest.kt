@@ -52,11 +52,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
     }
 
     @Test
@@ -73,11 +73,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
     }
 
     @Test
@@ -94,11 +94,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
     }
 
     @Test
@@ -116,7 +116,7 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         // Cache the offerings
@@ -144,7 +144,7 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
@@ -160,7 +160,7 @@ class OfferingsSourceTest {
 
         assertThat(cachedOfferings).isNotNull
         assertThat(cachedOfferings!!.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
-        assertThat(cachedOfferings.loadedFromCache).isFalse
+        assertThat(cachedOfferings.loadedFromDiskCache).isFalse
     }
 
     @Test
@@ -172,7 +172,7 @@ class OfferingsSourceTest {
         val offerings = offeringParser.createOfferings(offeringsJson, productsById)
 
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
     }
 
     @Test
@@ -185,7 +185,7 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = true,
+            loadedFromDiskCache = true,
         )
 
         // Cache without storing originalSource (simulating old cache)
@@ -199,7 +199,7 @@ class OfferingsSourceTest {
 
         assertThat(cachedOfferings).isNotNull
         assertThat(cachedOfferings!!.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(cachedOfferings.loadedFromCache).isTrue
+        assertThat(cachedOfferings.loadedFromDiskCache).isTrue
     }
 
     @Test
@@ -216,11 +216,11 @@ class OfferingsSourceTest {
             offeringsJson,
             productsById,
             httpResult.originalDataSource,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
         )
 
         // LOAD_SHEDDER should take precedence
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
     }
 }

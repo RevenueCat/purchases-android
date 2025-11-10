@@ -16,7 +16,7 @@ class Offerings internal constructor(
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
     internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
-    internal val loadedFromCache: Boolean = false,
+    internal val loadedFromDiskCache: Boolean = false,
 ) {
     constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
@@ -80,7 +80,7 @@ class Offerings internal constructor(
         placements: Placements? = this.placements,
         targeting: Targeting? = this.targeting,
         originalSource: HTTPResponseOriginalSource = this.originalSource,
-        loadedFromCache: Boolean = this.loadedFromCache,
+        loadedFromDiskCache: Boolean = this.loadedFromDiskCache,
     ): Offerings {
         return Offerings(
             current = current,
@@ -88,7 +88,7 @@ class Offerings internal constructor(
             placements = placements,
             targeting = targeting,
             originalSource = originalSource,
-            loadedFromCache = loadedFromCache,
+            loadedFromDiskCache = loadedFromDiskCache,
         )
     }
 
@@ -107,7 +107,7 @@ class Offerings internal constructor(
 }
 
 /**
- * Contains fields to be used for equality, which ignores originalSource and loadedFromCache.
+ * Contains fields to be used for equality, which ignores originalSource and loadedFromDiskCache.
  */
 private data class OfferingsComparableData(
     val current: Offering?,

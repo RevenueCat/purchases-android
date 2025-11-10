@@ -371,7 +371,7 @@ class OfferingsManagerTest {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
                 originalDataSource = HTTPResponseOriginalSource.MAIN,
-                loadedFromCache = true,
+                loadedFromDiskCache = true,
                 onError = any(),
                 onSuccess = any(),
             )
@@ -747,7 +747,7 @@ class OfferingsManagerTest {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
                     originalDataSource = any(),
-                    loadedFromCache = any(),
+                    loadedFromDiskCache = any(),
                     onError = any(),
                     onSuccess = captureLambda(),
                 )
@@ -765,7 +765,7 @@ class OfferingsManagerTest {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
                     originalDataSource = any(),
-                    loadedFromCache = any(),
+                    loadedFromDiskCache = any(),
                     onError = captureLambda(),
                     onSuccess = any(),
                 )

@@ -254,7 +254,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -271,7 +271,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -289,7 +289,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -310,7 +310,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -330,7 +330,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -350,7 +350,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -370,7 +370,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -390,7 +390,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -415,7 +415,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -440,7 +440,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -474,7 +474,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -497,7 +497,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithWPL,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -527,7 +527,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = invalidUrlWPL,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -549,7 +549,7 @@ class OfferingsFactoryTest {
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
             originalDataSource = HTTPResponseOriginalSource.MAIN,
-            loadedFromCache = false,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )

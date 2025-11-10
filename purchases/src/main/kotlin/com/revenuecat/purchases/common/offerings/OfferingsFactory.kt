@@ -26,7 +26,7 @@ internal class OfferingsFactory(
     fun createOfferings(
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
-        loadedFromCache: Boolean,
+        loadedFromDiskCache: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (OfferingsResultData) -> Unit,
     ) {
@@ -60,7 +60,7 @@ internal class OfferingsFactory(
                                 offeringsJSON,
                                 productsById,
                                 originalDataSource,
-                                loadedFromCache,
+                                loadedFromDiskCache,
                             )
                             if (offerings.all.isEmpty()) {
                                 onError(

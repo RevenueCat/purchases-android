@@ -709,11 +709,11 @@ class OfferingsTest {
                 emptyMap()
             )
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentMetadata = offerings.copy(
             originalSource = HTTPResponseOriginalSource.LOAD_SHEDDER,
-            loadedFromCache = true,
+            loadedFromDiskCache = true,
         )
         assertThat(offerings).isEqualTo(offeringsWithDifferentMetadata)
     }
@@ -746,7 +746,7 @@ class OfferingsTest {
         )
 
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
-        assertThat(offerings.loadedFromCache).isFalse
+        assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentData = offerings.copy(
             current = null,
