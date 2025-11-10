@@ -96,8 +96,6 @@ internal class ETagManager(
                         // when enabling verification.
                         verificationResult = verificationResult,
                         requestDate = requestDate ?: storedResult.requestDate,
-                        // Preserve fallback flag from stored result
-                        isFallbackURL = storedResult.isFallbackURL,
                     )
                 }
                 return storedResult
