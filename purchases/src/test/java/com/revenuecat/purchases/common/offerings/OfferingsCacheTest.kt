@@ -8,6 +8,8 @@ import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
+import com.revenuecat.purchases.utils.copy
+import io.mockk.InternalPlatformDsl.toArray
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -72,7 +74,13 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.cachedOfferings).isNull()
         offeringsCache.cacheOfferings(offerings, offeringsResponse)
         assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
-        verify(exactly = 1) { deviceCache.cacheOfferingsResponse(offeringsResponse) }
+        verify(exactly = 1) {
+            deviceCache.cacheOfferingsResponse(
+                match {
+                    it.getString(OfferingsCache.ORIGINAL_SOURCE_KEY) == HTTPResponseOriginalSource.MAIN.name
+                }
+            )
+        }
     }
 
     // region offerings cache
