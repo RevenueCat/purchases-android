@@ -180,7 +180,6 @@ package com.revenuecat.purchases {
   }
 
   @dev.drewhamilton.poko.Poko public final class Offering {
-  public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents, optional java.net.URL? webCheckoutURL);
     method public operator com.revenuecat.purchases.Package get(String s);
@@ -1342,3 +1341,4 @@ package com.revenuecat.purchases.virtualcurrencies {
   }
 
 }
+
