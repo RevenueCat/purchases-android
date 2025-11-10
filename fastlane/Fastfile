@@ -140,6 +140,14 @@ platform :android do
       gradle_properties
     )
 
+    UI.verbose("Deploying amazon Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-store-amazon-bc7",
+      "feature:amazon",
+      gradle_properties
+    )
+
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
       "customEntitlementComputationBc8Release",
