@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -706,6 +706,25 @@ jobs:
       - store_test_results:
           path: purchases/build/test-results
 
+  update-golden-requests-backend-integration-tests:
+    description: "Run backend integration tests and create PR if golden files change"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - android/restore_gradle_cache
+      - run:
+          name: Run backend integration tests and create PR if needed
+          command: |
+            bundle exec fastlane android update_golden_requests_backend_integration_tests
+      - android/save_build_cache
+      - store_test_results:
+          path: purchases/build/test-results
+
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
     <<: *android-executor
@@ -1082,3 +1101,9 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
+
+  manual-update-golden-requests-backend-integration-tests:
+    when:
+      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
+    jobs:
+      - update-golden-requests-backend-integration-tests
