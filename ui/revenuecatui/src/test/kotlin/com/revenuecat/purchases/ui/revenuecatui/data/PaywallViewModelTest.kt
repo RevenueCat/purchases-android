@@ -16,11 +16,9 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -40,11 +38,13 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -68,9 +68,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
-import java.util.Date
-import java.util.UUID
 
+@Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
@@ -78,7 +77,7 @@ class PaywallViewModelTest {
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
             LocalizationKey("dummy_text") to LocalizationData.Text("dummy text"),
-        )
+        ),
     )
     private val emptyPaywallComponentsData = PaywallComponentsData(
         templateName = "template",
@@ -108,8 +107,69 @@ class PaywallViewModelTest {
         defaultOffering,
         mapOf(
             TestData.template1Offering.identifier to TestData.template1Offering,
-            TestData.template2Offering.identifier to TestData.template2Offering
+            TestData.template2Offering.identifier to TestData.template2Offering,
         ),
+    )
+
+    private val offeringWithWPL = Offering(
+        identifier = "offering-id",
+        serverDescription = "description",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        webCheckoutURL = URL("https://test-web-billing.revenuecat.com"),
+    )
+
+    private val launchWebCheckoutWithCustomUrlAndPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = TestData.Packages.monthly,
+            packageParam = "rc_package",
+        ),
+    )
+    private val launchWebCheckoutWithCustomUrlNoPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = "rc_package",
+        ),
+    )
+    private val launchWebCheckoutWithCustomUrlNoPackageParam = PaywallAction.External.LaunchWebCheckout(
+        customUrl = "https://revenuecat.com",
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = TestData.Packages.monthly,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithNoPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            rcPackage = null,
+            packageParam = null,
+        ),
+    )
+    private val launchWebCheckoutWithoutAppendingPackage = PaywallAction.External.LaunchWebCheckout(
+        customUrl = null,
+        autoDismiss = true,
+        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
     )
 
     @get:Rule
@@ -123,7 +183,12 @@ class PaywallViewModelTest {
         activity = mockk()
         context = mockk()
 
-        listener = mockk()
+        listener = mockk {
+            every { onPurchasePackageInitiated(any(), any()) } answers {
+                val resume = secondArg<Resumable>()
+                resume(true)
+            }
+        }
 
         dismissInvoked = false
 
@@ -165,7 +230,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicResult.Success
+            PurchaseLogicResult.Success,
         )
 
         val model = create(
@@ -191,7 +256,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicResult.Error()
+            PurchaseLogicResult.Error(),
         )
 
         val model = create(
@@ -228,7 +293,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1)  { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.syncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
@@ -300,7 +365,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicResult.Success
+            PurchaseLogicResult.Success,
         )
 
         val model = create(
@@ -314,7 +379,6 @@ class PaywallViewModelTest {
         coVerify(exactly = 1) { purchases.syncPurchases() }
         coVerify(exactly = 0) { listener.onRestoreStarted() }
         coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
-
     }
 
     @Test
@@ -326,7 +390,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicResult.Error()
+            PurchaseLogicResult.Error(),
         )
 
         val model = create(
@@ -354,7 +418,7 @@ class PaywallViewModelTest {
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Success,
-            null
+            null,
         )
 
         val model = create(
@@ -365,7 +429,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1)  { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.syncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
@@ -383,7 +447,7 @@ class PaywallViewModelTest {
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Cancellation,
-            null
+            null,
         )
 
         val model = create(
@@ -411,7 +475,7 @@ class PaywallViewModelTest {
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Error(),
-            null
+            null,
         )
 
         val model = create(
@@ -539,8 +603,10 @@ class PaywallViewModelTest {
     @Test
     fun `Error loading offerings`() {
         coEvery { purchases.awaitOfferings() } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.NetworkError
-        ))
+            PurchasesError(
+                PurchasesErrorCode.NetworkError,
+            ),
+        )
 
         val model = create()
 
@@ -572,7 +638,8 @@ class PaywallViewModelTest {
             return
         }
 
-        assertThat(state.errorMessage).isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
+        assertThat(state.errorMessage)
+            .isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
     }
 
     @Test
@@ -601,18 +668,20 @@ class PaywallViewModelTest {
             placementIdentifier = "test-placement-id",
             targetingContext = PresentedOfferingContext.TargetingContext(
                 revision = 1,
-                ruleId = "test-rule-id"
-            )
+                ruleId = "test-rule-id",
+            ),
         )
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .setOfferingIdAndPresentedOfferingContext(OfferingSelection.IdAndPresentedOfferingContext(
-                    offeringId = offering.identifier,
-                    presentedOfferingContext = expectedPresentedOfferingContext,
-                ))
+                .setOfferingIdAndPresentedOfferingContext(
+                    OfferingSelection.IdAndPresentedOfferingContext(
+                        offeringId = offering.identifier,
+                        presentedOfferingContext = expectedPresentedOfferingContext,
+                    ),
+                )
                 .setPurchaseLogic(null)
                 .setMode(PaywallMode.default)
                 .build(),
@@ -674,7 +743,7 @@ class PaywallViewModelTest {
         // Assert
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
         assertThat(
-            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size,
         ).isEqualTo(2)
     }
 
@@ -695,7 +764,7 @@ class PaywallViewModelTest {
         // Assert
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
         assertThat(
-            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size
+            (model.state.value as PaywallState.Loaded.Legacy).templateConfiguration.packages.all.size,
         ).isEqualTo(2)
     }
 
@@ -968,7 +1037,7 @@ class PaywallViewModelTest {
         )
         val model = create(
             offering = offering,
-            shouldDisplayBlock = { false }
+            shouldDisplayBlock = { false },
         )
         coEvery {
             purchases.awaitRestore()
@@ -1008,7 +1077,7 @@ class PaywallViewModelTest {
         )
         val model = create(
             offering = offering,
-            shouldDisplayBlock = { true }
+            shouldDisplayBlock = { true },
         )
         coEvery {
             purchases.awaitRestore()
@@ -1020,7 +1089,6 @@ class PaywallViewModelTest {
         // Assert
         assertThat(dismissInvoked).isFalse()
     }
-
 
     @Test
     fun `restorePurchases fails`() {
@@ -1168,7 +1236,7 @@ class PaywallViewModelTest {
                     assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
                     assertThat(paywallEvent.data.darkMode).isFalse
                     assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CLOSE)
-                }
+                },
             )
         }
         model.trackPaywallImpressionIfNeeded()
@@ -1226,7 +1294,7 @@ class PaywallViewModelTest {
             eventType = PaywallEventType.CANCEL,
             times = 1,
             offeringIdentifier = offering.identifier,
-            paywallRevision = offering.paywallComponents!!.data.revision
+            paywallRevision = offering.paywallComponents!!.data.revision,
         )
         assertThat(model.actionError.value).isNull()
         verify(exactly = 0) { listener.onPurchaseError(any()) }
@@ -1289,6 +1357,87 @@ class PaywallViewModelTest {
 
     // endregion events
 
+    // region getWebCheckoutUrl
+
+    @Test
+    fun `getWebCheckoutUrl returns expected state when no selected package`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `getWebCheckoutUrl returns expected state when selected package`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components
+            ?: error("Expected to have loaded components state")
+        state.update(TestData.Packages.annual)
+
+        // Uses given package
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+
+        // If no selected package, uses URL without package param
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_annual")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
+        ).isEqualTo("https://revenuecat.com")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_annual")
+
+        assertThat(
+            model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
+        ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    // endregion getWebCheckoutUrl
+
+    // region invalidateCustomerInfoCache
+
+    @Test
+    fun `invalidateCustomerInfoCache invalidates previously obtained customer info`() {
+        val model = create(offering = offeringWithWPL)
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
+        model.invalidateCustomerInfoCache()
+        verify(exactly = 1) {
+            purchases.invalidateVirtualCurrenciesCache()
+        }
+    }
+
+    // endregion invalidateCustomerInfoCache
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,
@@ -1338,7 +1487,7 @@ class PaywallViewModelTest {
                     assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
                     assertThat(paywallEvent.data.darkMode).isFalse
                     assertThat(paywallEvent.type).isEqualTo(eventType)
-                }
+                },
             )
         }
     }
@@ -1350,7 +1499,7 @@ class PaywallViewModelTest {
                     val paywallEvent = event as? PaywallEvent
                         ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
                     assertThat(paywallEvent.type).isEqualTo(eventType)
-                }
+                },
             )
         }
     }
@@ -1367,12 +1516,13 @@ class PaywallViewModelTest {
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
-        private val restoreResult: PurchaseLogicResult? = null
-    ) :  PurchaseLogicWithCallback() {
+        private val restoreResult: PurchaseLogicResult? = null,
+    ) : PurchaseLogicWithCallback() {
 
-        override fun performPurchaseWithCompletion(activity: Activity,
+        override fun performPurchaseWithCompletion(
+            activity: Activity,
             rcPackage: Package,
-            completion: (PurchaseLogicResult) -> Unit
+            completion: (PurchaseLogicResult) -> Unit,
         ) {
             val purchaseFlow = customPurchaseCalled
                 ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
@@ -1385,7 +1535,7 @@ class PaywallViewModelTest {
 
         override fun performRestoreWithCompletion(
             customerInfo: CustomerInfo,
-            completion: (PurchaseLogicResult) -> Unit
+            completion: (PurchaseLogicResult) -> Unit,
         ) {
             val restoreFlow = customRestoreCalled
                 ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
@@ -1402,7 +1552,7 @@ class PaywallViewModelTest {
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
-        private val restoreResult: PurchaseLogicResult? = null
+        private val restoreResult: PurchaseLogicResult? = null,
     ) : PurchaseLogic {
 
         override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {

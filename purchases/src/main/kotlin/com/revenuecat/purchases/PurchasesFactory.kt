@@ -51,6 +51,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -69,9 +70,10 @@ internal class PurchasesFactory(
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString,
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -96,8 +98,8 @@ internal class PurchasesFactory(
                 apiKeyValidationResult,
                 dangerousSettings,
                 runningIntegrationTests,
-                forceServerErrors,
                 forceSigningError,
+                baseUrlString = baseUrlString,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -182,6 +184,7 @@ internal class PurchasesFactory(
                 signingManager,
                 cache,
                 localeProvider = localeProvider,
+                forceServerErrorStrategy = forceServerErrorStrategy,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -352,6 +355,8 @@ internal class PurchasesFactory(
                 appConfig = appConfig,
             )
 
+            val purchaseParamsValidator = PurchaseParamsValidator()
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -380,6 +385,7 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
                 localeProvider = localeProvider,
                 virtualCurrencyManager = virtualCurrencyManager,
+                purchaseParamsValidator = purchaseParamsValidator,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -460,13 +466,17 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                throw PurchasesException(
-                    PurchasesError(
+                errorLog(
+                    error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Please configure the Play Store/Amazon store app on the " +
-                            "RevenueCat dashboard and use its corresponding API key before releasing.",
+                        underlyingErrorMessage = "Test Store API key used in release build. Please configure the " +
+                            "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
+                            "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
                 )
+                TestStoreErrorDialogActivity.show(context)
+                // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
+                return apiKeyValidationResult
             }
 
             require(context.applicationContext is Application) { "Needs an application context." }

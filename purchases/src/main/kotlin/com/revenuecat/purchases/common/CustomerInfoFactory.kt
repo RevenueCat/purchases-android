@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
@@ -27,7 +28,18 @@ internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
-        return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
+        val originalSource = if (httpResult.isLoadShedderResponse == true) {
+            CustomerInfoOriginalSource.LOAD_SHEDDER
+        } else {
+            CustomerInfoOriginalSource.MAIN
+        }
+        return buildCustomerInfo(
+            httpResult.body,
+            httpResult.requestDate,
+            httpResult.verificationResult,
+            originalSource,
+            loadedFromCache = false,
+        )
     }
 
     @Throws(JSONException::class)
@@ -35,6 +47,8 @@ internal object CustomerInfoFactory {
         body: JSONObject,
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,
+        originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.MAIN,
+        loadedFromCache: Boolean = false,
     ): CustomerInfo {
         val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
@@ -90,6 +104,8 @@ internal object CustomerInfoFactory {
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate,
+            originalSource = originalSource,
+            loadedFromCache = loadedFromCache,
         )
     }
 

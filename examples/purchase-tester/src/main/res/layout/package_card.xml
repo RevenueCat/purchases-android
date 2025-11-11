@@ -24,6 +24,14 @@
                 name="isPlayStore"
                 type="Boolean" />
 
+        <variable
+                name="isAddOnMode"
+                type="Boolean" />
+
+        <variable
+                name="isSelected"
+                type="Boolean" />
+
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -137,7 +145,30 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:barrierDirection="start"
-                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button" />
+                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button, wpl_buy_button" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/buy_option_checkbox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Buy Option"
+                    android:checked="@{isSelected}"
+                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/base_product_checkbox"/>
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/base_product_checkbox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Base Item"
+                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/buy_option_checkbox"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
 
             <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/is_upgrade_checkbox"
@@ -145,6 +176,7 @@
                     android:layout_height="wrap_content"
                     android:text="Is product change?"
                     android:enabled="@{isPlayStore}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="parent"
@@ -156,6 +188,7 @@
                     android:layout_height="wrap_content"
                     android:text="Is personalized price?"
                     android:enabled="@{isPlayStore}"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="@id/is_upgrade_checkbox"
@@ -167,6 +200,7 @@
                     android:layout_height="wrap_content"
                     android:text="Buy package (default option)"
                     android:textSize="10dp"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/is_personalized_checkbox"
@@ -178,6 +212,7 @@
                     android:layout_height="wrap_content"
                     android:textSize="10dp"
                     android:text="Buy product (default option)"
+                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button"
                     app:layout_constraintStart_toStartOf="@+id/option_buy_button" />
@@ -187,9 +222,19 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Buy option"
-                    android:visibility="@{isPlayStore ? View.VISIBLE : View.INVISIBLE}"
+                    android:visibility="@{isPlayStore &amp;&amp; !isAddOnMode ? View.VISIBLE : View.INVISIBLE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wpl_buy_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Buy WPL"
+                    android:visibility="@{currentPackage.webCheckoutURL == null ? View.GONE : View.VISIBLE}"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@id/option_buy_button"
+                    app:layout_constraintTop_toBottomOf="@+id/option_buy_button" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/package_details_container"

@@ -1,0 +1,42 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "515",
+    "Content-Type": "application\/json",
+    "server": "envoy",
+    "strict-transport-security": "max-age= 63072000; includeSubdomains; preload",
+    "x-revenuecat-fortress": "true"
+  },
+  "body": {
+    "product_entitlement_mapping": {
+      "com.revenuecat.loadshedder.monthly": {
+        "base_plan_id": "monthly",
+        "entitlements": [
+          "premium",
+          "pro"
+        ],
+        "product_identifier": "com.revenuecat.loadshedder.monthly"
+      },
+      "com.revenuecat.loadshedder.monthly:monthly": {
+        "base_plan_id": "monthly",
+        "entitlements": [
+          "premium",
+          "pro"
+        ],
+        "product_identifier": "com.revenuecat.loadshedder.monthly"
+      },
+      "consumable.10_coins": {
+        "entitlements": [],
+        "product_identifier": "consumable.10_coins"
+      },
+      "lifetime": {
+        "entitlements": [
+          "premium",
+          "pro"
+        ],
+        "product_identifier": "lifetime"
+      }
+    }
+  }
+}

@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -38,14 +39,20 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.MalformedURLException
+import java.net.URL
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
+@Suppress("TooManyFunctions")
 @Stable
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
@@ -58,6 +65,9 @@ internal interface PaywallViewModel {
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
     fun closePaywall()
+
+    fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
+    fun invalidateCustomerInfoCache()
 
     /**
      * Purchase the selected package
@@ -165,6 +175,42 @@ internal class PaywallViewModelImpl(
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         options.dismissRequest()
+    }
+
+    @Suppress("ReturnCount")
+    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
+        val customUrl = launchWebCheckout.customUrl
+        val state = state.value as? PaywallState.Loaded.Components
+        if (state == null) {
+            Logger.e("Web checkout URL can only be constructed for loaded Components paywalls")
+            return null
+        }
+        val behavior = launchWebCheckout.packageParamBehavior
+        val (packageToUse, packageParam) = when (behavior) {
+            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append ->
+                (behavior.rcPackage ?: state.selectedPackageInfo?.rcPackage) to behavior.packageParam
+            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
+                null to null
+        }
+        if (customUrl != null) {
+            val url = try {
+                URL(customUrl)
+            } catch (e: MalformedURLException) {
+                Logger.e("Invalid custom URL: $customUrl", e)
+                return null
+            }
+            val finalUrl = if (packageParam != null && packageToUse != null) {
+                url.appendQueryParameter(packageParam, packageToUse.identifier)
+            } else {
+                url
+            }
+            return finalUrl.toString()
+        }
+        return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+    }
+
+    override fun invalidateCustomerInfoCache() {
+        purchases.invalidateVirtualCurrenciesCache()
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
@@ -305,6 +351,19 @@ internal class PaywallViewModelImpl(
 
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+        // Call onPurchasePackageInitiated and wait for resume() to be called
+
+        val shouldResume = suspendCoroutine { continuation ->
+            listener?.onPurchasePackageInitiated(packageToPurchase) { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+
+        if (!shouldResume) {
+            Logger.d("Purchase cancelled listener.onPurchasePackageInitiated returned false")
+            return
+        }
+
         try {
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 

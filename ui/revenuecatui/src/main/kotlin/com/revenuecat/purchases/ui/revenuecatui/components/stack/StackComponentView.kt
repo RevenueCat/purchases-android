@@ -60,6 +60,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalVideoBackground
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -72,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -587,13 +589,13 @@ private fun MainStackComponent(
     }
 
     val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = if (shouldApplyShadow) {
         stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     } else {
         null
     }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
         Modifier
@@ -616,14 +618,36 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        stack(
-            outerShapeModifier
-                .then(borderModifier)
-                .then(innerShapeModifier)
-                .conditional(stackState.applyBottomWindowInsets) {
-                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
-                },
-        )
+        if (backgroundStyle is BackgroundStyle.Video) {
+            // Video backgrounds require a Box wrapper with explicit sizing
+            WithOptionalVideoBackground(
+                state = state,
+                background = backgroundStyle,
+                shape = composeShape,
+                modifier = modifier
+                    .size(stackState.size)
+                    .then(outerShapeModifier)
+                    .clip(composeShape)
+                    .then(borderModifier),
+            ) {
+                stack(
+                    Modifier
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                        },
+                )
+            }
+        } else {
+            stack(
+                outerShapeModifier
+                    .then(borderModifier)
+                    .then(innerShapeModifier)
+                    .conditional(stackState.applyBottomWindowInsets) {
+                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                    },
+            )
+        }
     } else if (nestedBadge != null) {
         Box(
             modifier = modifier
@@ -631,7 +655,10 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            stack(Modifier.then(innerShapeModifier))
+            WithOptionalVideoBackground(state, background = backgroundStyle) {
+                stack(Modifier.then(innerShapeModifier))
+            }
+
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
@@ -646,7 +673,9 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(borderModifier.then(innerShapeModifier))
+            WithOptionalVideoBackground(state, background = backgroundStyle) {
+                stack(borderModifier.then(innerShapeModifier))
+            }
             overlay()
         }
     }
@@ -1550,7 +1579,10 @@ private fun StackComponentView_Preview_HorizontalDivider() {
                 children = emptyList(),
                 visible = true,
                 size = Size(width = Fill, height = Fixed(1u)),
-                dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.LEADING,
+                    FlexDistribution.SPACE_BETWEEN,
+                ),
                 spacing = 0.dp,
                 // Explicitly applying vertical margin to make sure it doesn't "eat up" the divider.
                 margin = PaddingValues(vertical = 40.dp),

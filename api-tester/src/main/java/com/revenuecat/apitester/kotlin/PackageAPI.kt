@@ -4,6 +4,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
+import java.net.URL
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PackageAPI {
@@ -14,6 +15,7 @@ private class PackageAPI {
             val product: StoreProduct = product
             val offering: String = offering
             val presentedOfferingContext: PresentedOfferingContext = presentedOfferingContext
+            val webCheckoutURL: URL? = webCheckoutURL
         }
     }
 

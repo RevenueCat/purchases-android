@@ -263,27 +263,127 @@ platform :android do
     )
   end
 
-  desc "Build and run purchases module load shedder integration tests"
+  desc "Run backend integration tests and create PR if golden files change"
+  lane :update_golden_requests_backend_integration_tests do |options|
+    run_backend_integration_tests
+
+    golden_files_path = "purchases/src/test/resources/backend_integration_tests_golden/"
+    
+    # Ensure we're in the project root for git operations
+    project_root = File.basename(Dir.pwd) == "fastlane" ? ".." : "."
+    
+    Dir.chdir(project_root) do
+      # Check if there are changes to golden test files (modified tracked files or new untracked files)
+      has_modified_files = false
+      has_untracked_files = false
+      
+      # Check for modified tracked files
+      begin
+        sh("git", "diff", "--quiet", golden_files_path)
+      rescue
+        has_modified_files = true
+      end
+      
+      # Check for untracked files in the golden files directory
+      untracked_files = sh("git", "ls-files", "--others", "--exclude-standard", golden_files_path).strip
+      has_untracked_files = !untracked_files.empty?
+      
+      has_changes = has_modified_files || has_untracked_files
+
+      if has_changes
+        UI.message("Golden test files have been modified. Creating PR...")
+
+        # Get the current branch name (the branch that triggered the workflow)
+        current_branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip
+        UI.message("Current branch: #{current_branch}")
+
+        # Create a unique branch name for the PR
+        timestamp = Time.now.strftime("%Y%m%d-%H%M%S")
+        pr_branch_name = "update-golden-requests-#{current_branch}-#{timestamp}"
+
+        UI.message("Creating branch: #{pr_branch_name}")
+
+        # Create or checkout the branch
+        create_or_checkout_branch(branch_name: pr_branch_name)
+
+        # Stage only the golden files
+        sh("git", "add", golden_files_path)
+
+        commit_message = "[Automated] Update golden test files for backend integration tests"
+        title = "[AUTOMATIC] Update golden test files for backend integration tests"
+        body = "This PR automatically updates the golden test files in `#{golden_files_path}` based on the latest backend integration test results.\n\n" \
+               "Generated from branch: `#{current_branch}`\n\n" \
+               "Please review the changes to ensure they are expected."
+
+        # Commit only the staged golden files
+        sh("git", "commit", "-m", commit_message)
+
+        # Push the branch
+        sh("git", "push", "-u", "origin", pr_branch_name)
+
+        # Create PR against the current branch (not main)
+        create_pr_if_necessary(
+          repo: repo_name,
+          branch_name: pr_branch_name,
+          title: title,
+          body: body,
+          base: current_branch,
+          labels: ["pr:other"],
+          team_reviewers: ["coresdk"]
+        )
+
+        UI.success("PR created successfully!")
+      else
+        UI.success("Golden test files verification passed - no changes detected")
+      end
+    end
+  end
+
+  desc "Build and run purchases module integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_load_shedder_purchases_integration_tests do |options|
-    app_name = 'loadShedderIntegrationTest'
+  desc "Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'"
+  lane :run_purchases_integration_tests do |options|
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'load_shedder_us_east_1', or 'load_shedder_us_east_2'")
+    
+    unless ['production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'].include?(backend_environment)
+      UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
+    end
+
+    if backend_environment == 'production'
+      app_name = 'integrationTest'
+      api_key = ENV['REVENUECAT_API_KEY']
+      google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    else # loadshedder
+      app_name = 'loadShedderIntegrationTest'
+      api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+      google_purchase_token = ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    end
+
     begin
       build_purchases_integration_tests(
         app_name: app_name,
-        api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-        google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
-        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
-        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-        is_load_shedder_integration_tests: true
+        api_key: api_key,
+        google_purchase_token: google_purchase_token,
+        product_id_to_purchase: product_id_to_purchase,
+        base_plan_id_to_purchase: base_plan_id_to_purchase,
+        active_entitlements_to_verify: active_entitlements_to_verify,
+        backend_environment: backend_environment
       )
 
       run_firebase_integration_tests(app_name)
     rescue => exception
-      send_slack_load_shedder_integration_test(success: false)
+      slack_backend_integration_test_results(environment: backend_environment, success: false)
       raise
     else
-      send_slack_load_shedder_integration_test(success: true)
+      slack_backend_integration_test_results(environment: backend_environment, success: true)
+    ensure
+      ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
     end
   end
 
@@ -326,7 +426,7 @@ platform :android do
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
                                         proxy_url: nil, build_type: 'release', flavor: 'defaults', 
-                                        is_load_shedder_integration_tests: false)
+                                        backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -354,19 +454,11 @@ platform :android do
       allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
-    if is_load_shedder_integration_tests
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "true",
-        paths_of_files_to_update: [constants_path]
-      )
-    else
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "false",
-        paths_of_files_to_update: [constants_path]
-      )
-    end
+    replace_text_in_files(
+      previous_text: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS",
+      new_text: backend_environment,
+      paths_of_files_to_update: [constants_path]
+    )
     unless proxy_url.nil?
       replace_text_in_files(
         previous_text: "NO_PROXY_URL",
@@ -579,22 +671,6 @@ DESC
       sh("git reset --hard")
       sh("git -C .. clean -fd")
     end
-  end
-
-  lane :send_slack_load_shedder_integration_test do |options|
-    success = options[:success] || false
-    message =
-        if success
-            "Android load shedder integration tests V6 finished successfully"
-        else
-            "Android load shedder integration tests V6 failed"
-        end
-    slack(
-      message: message,
-      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-      success: success,
-      default_payloads: [:git_branch]
-    )
   end
 
   desc "Updates paywall-preview-resources submodule and creates/updates PR"

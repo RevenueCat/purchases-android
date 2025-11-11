@@ -29,6 +29,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
@@ -58,6 +59,7 @@ class SubscriberAttributesPurchasesTests {
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontLoaderMock = mockk<FontLoader>()
     private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
+    private val purchaseParamsValidator = mockk<PurchaseParamsValidator>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -121,6 +123,7 @@ class SubscriberAttributesPurchasesTests {
             fontLoader = fontLoaderMock,
             localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = virtualCurrencyManagerMock,
+            purchaseParamsValidator = purchaseParamsValidator,
         )
 
         underTest = Purchases(purchasesOrchestrator)

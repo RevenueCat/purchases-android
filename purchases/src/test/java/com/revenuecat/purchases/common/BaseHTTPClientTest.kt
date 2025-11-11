@@ -3,17 +3,18 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
@@ -46,6 +47,7 @@ internal abstract class BaseHTTPClientTest {
 
     @After
     fun teardown() {
+        clearAllMocks()
         server.shutdown()
     }
 
@@ -66,7 +68,8 @@ internal abstract class BaseHTTPClientTest {
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
-        localeProvider: LocaleProvider = DefaultLocaleProvider()
+        localeProvider: LocaleProvider = DefaultLocaleProvider(),
+        forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     ) = HTTPClient(
         appConfig,
         eTagManager,
@@ -74,7 +77,8 @@ internal abstract class BaseHTTPClientTest {
         signingManager ?: mockSigningManager,
         storefrontProvider,
         dateProvider,
-        localeProvider = localeProvider
+        localeProvider = localeProvider,
+        forceServerErrorStrategy = forceServerErrorStrategy,
     )
 
     protected fun createAppConfig(
@@ -86,7 +90,6 @@ internal abstract class BaseHTTPClientTest {
         store: Store = Store.PLAY_STORE,
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
-        forceServerErrors: Boolean = false,
         forceSigningErrors: Boolean = false,
     ): AppConfig {
         return AppConfig(
@@ -100,27 +103,30 @@ internal abstract class BaseHTTPClientTest {
             apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
-            forceServerErrors = forceServerErrors,
             forceSigningErrors = forceSigningErrors,
         )
     }
 
     protected fun enqueue(
-        endpoint: Endpoint,
+        urlPath: String,
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
         requestDateHeader: Date? = null,
         server: MockWebServer = this.server,
+        isFallbackURL: Boolean = false,
     ) {
+        val urlString = server.url(urlPath).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = requestDateHeader,
-                verificationResult = verificationResult
+                verificationResult = verificationResult,
+                isLoadShedderResponse = false,
+                isFallbackURL = isFallbackURL,
             )
         } returns expectedResult
         val response = MockResponse()

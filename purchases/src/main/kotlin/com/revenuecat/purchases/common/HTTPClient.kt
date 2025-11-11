@@ -7,8 +7,10 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -37,6 +39,24 @@ import java.net.URLConnection
 import java.util.Date
 import kotlin.time.Duration
 
+/**
+ * Listener interface for observing HTTP requests and responses.
+ * Useful for testing and recording network interactions.
+ */
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+internal interface RequestResponseListener {
+    @Suppress("LongParameterList")
+    fun onRequestResponse(
+        url: String,
+        method: String,
+        requestHeaders: Map<String, String>,
+        requestBody: String?,
+        responseCode: Int,
+        responseHeaders: Map<String, String>,
+        responseBody: String,
+    )
+}
+
 @Suppress("LongParameterList")
 internal class HTTPClient(
     private val appConfig: AppConfig,
@@ -47,12 +67,16 @@ internal class HTTPClient(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
+    private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
+    private val requestResponseListener: RequestResponseListener? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
     }
+
+    private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
 
     private fun buffer(inputStream: InputStream): BufferedReader {
         return BufferedReader(InputStreamReader(inputStream))
@@ -79,6 +103,7 @@ internal class HTTPClient(
                     log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
                     connection.errorStream
                 }
+
                 else -> throw e
             }
         }
@@ -111,22 +136,46 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        if (appConfig.forceServerErrors) {
-            warnLog { "Forcing server error for request to ${endpoint.getPath()}" }
-            return HTTPResult(
-                RCHTTPStatusCodes.ERROR,
-                payload = "",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+        fun canUseFallback(): Boolean =
+            endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
+
+        fun performRequestToFallbackURL(): HTTPResult {
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
+                    endpoint.getPath(useFallback = true),
+                    fallbackBaseURL,
+                )
+            }
+            return performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
             )
         }
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
+            callResult = performCall(
+                baseURL,
+                fallbackURLIndex > 0,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+            )
             callSuccessful = true
+        } catch (e: IOException) {
+            // Handle connection failures with fallback URLs
+            if (canUseFallback()) callResult = performRequestToFallbackURL() else throw e
         } finally {
             trackHttpRequestPerformedIfNeeded(
                 baseURL,
@@ -149,32 +198,17 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex,
             )
-        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) &&
-            endpoint.supportsFallbackBaseURLs &&
-            fallbackURLIndex in fallbackBaseURLs.indices
-        ) {
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
             // Handle server errors with fallback URLs
-            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
-            log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(endpoint.getPath(), fallbackBaseURL)
-            }
-            callResult = performRequest(
-                fallbackBaseURL,
-                endpoint,
-                body,
-                postFieldsToSign,
-                requestHeaders,
-                refreshETag,
-                fallbackBaseURLs,
-                fallbackURLIndex + 1,
-            )
+            callResult = performRequestToFallbackURL()
         }
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
     private fun performCall(
         baseURL: URL,
+        isFallbackURL: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -182,14 +216,30 @@ internal class HTTPClient(
         refreshETag: Boolean,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath()
+        val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         val postFieldsToSignHeader: String?
+        val fullURL: URL
+
+        if (appConfig.runningTests) {
+            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+                warnLog { "Faking response for request to ${endpoint.getPath()}" }
+                return it
+            }
+        }
+
         try {
-            val fullURL = URL(baseURL, path)
+            fullURL = if (appConfig.runningTests &&
+                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
+            ) {
+                warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
+                URL(forceServerErrorStrategy.serverErrorURL)
+            } else {
+                URL(baseURL, path)
+            }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
@@ -197,7 +247,7 @@ internal class HTTPClient(
             }
             val headers = getHeaders(
                 requestHeaders,
-                path,
+                fullURL,
                 refreshETag,
                 nonce,
                 shouldSignResponse,
@@ -205,6 +255,10 @@ internal class HTTPClient(
             )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
+            }
 
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
@@ -219,6 +273,14 @@ internal class HTTPClient(
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            if (enableExtraRequestLogging) {
+                errorLog(e) { "HTTP request failed" }
+            }
+            throw e
         } finally {
             inputStream?.close()
             connection.disconnect()
@@ -227,6 +289,42 @@ internal class HTTPClient(
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
+        }
+
+        // Notify listener if present
+        if (appConfig.runningTests) {
+            requestResponseListener?.let {
+                val responseHeaders = mutableMapOf<String, String>()
+                connection.headerFields.forEach { (key, values) ->
+                    // Skip null keys (status line) and collect all headers
+                    if (key != null && values.isNotEmpty()) {
+                        responseHeaders[key] = values.joinToString(", ")
+                    }
+                }
+
+                try {
+                    val fullURL = URL(baseURL, path)
+                    it.onRequestResponse(
+                        url = fullURL.toString(),
+                        method = connection.requestMethod,
+                        requestHeaders = getHeaders(
+                            requestHeaders,
+                            fullURL,
+                            refreshETag,
+                            nonce,
+                            shouldSignResponse,
+                            postFieldsToSignHeader,
+                        ),
+                        requestBody = jsonBody?.toString(),
+                        responseCode = responseCode,
+                        responseHeaders = responseHeaders,
+                        responseBody = payload,
+                    )
+                } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                    // Don't let listener errors break the request
+                    warnLog { "RequestResponseListener error: ${e.message}" }
+                }
+            }
         }
 
         val verificationResult = if (shouldSignResponse &&
@@ -243,15 +341,42 @@ internal class HTTPClient(
             throw SignatureVerificationException(path)
         }
 
+        val isLoadShedderResponse = getLoadShedderHeader(connection)
         return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
             getETagHeader(connection),
-            path,
+            fullURL.toString(),
             refreshETag,
             getRequestDateHeader(connection),
             verificationResult,
+            isLoadShedderResponse,
+            isFallbackURL,
         )
+    }
+
+    private fun toCurlRequest(httpRequest: HTTPRequest): String {
+        val builder = StringBuilder("curl -v ")
+
+        val method = if (httpRequest.body == null) {
+            "GET"
+        } else {
+            "POST"
+        }
+
+        builder.append("-X ").append(method).append(" \\\n  ")
+
+        for (entry in httpRequest.headers) {
+            builder.append("-H \"").append(entry.key).append(":")
+            builder.append(entry.value)
+            builder.append("\" \\\n  ")
+        }
+
+        if (httpRequest.body != null) builder.append("-d '").append(httpRequest.body.toString()).append("' \\\n  ")
+
+        builder.append("\"").append(httpRequest.fullURL).append("\"")
+
+        return builder.toString()
     }
 
     private fun trackHttpRequestPerformedIfNeeded(
@@ -295,7 +420,7 @@ internal class HTTPClient(
     @Suppress("LongParameterList")
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
-        urlPath: String,
+        fullURL: URL,
         refreshETag: Boolean,
         nonce: String?,
         shouldSignResponse: Boolean,
@@ -324,7 +449,7 @@ internal class HTTPClient(
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
+            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 
@@ -369,9 +494,15 @@ internal class HTTPClient(
     private fun getRequestTimeHeader(connection: URLConnection): String? {
         return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
     }
+
     private fun getRequestDateHeader(connection: URLConnection): Date? {
         return getRequestTimeHeader(connection)?.toLong()?.let {
             Date(it)
         }
+    }
+
+    private fun getLoadShedderHeader(connection: URLConnection): Boolean {
+        val loadShedderHeader = connection.getHeaderField(HTTPResult.LOAD_SHEDDER_HEADER_NAME)
+        return loadShedderHeader?.lowercase() == "true"
     }
 }

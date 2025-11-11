@@ -4,10 +4,18 @@
 
 
 ## RevenueCat SDK
-### ✨ New Features
-* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
+### 🐞 Bugfixes
+* [Purchase Tester]: Fix toggling "Base Item" box sometimes programmatically enabling other "Buy Option" boxes (#2812) via Will Taylor (@fire-at-will)
 
 ## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add hook to delay payment screens (#2753) via Jacob Rakidzich (@JZDesign)
+* Video Background (#2786) via Jacob Rakidzich (@JZDesign)
 ### Customer Center
 #### 🐞 Bugfixes
-* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
+* Fix dark mode in CustomerCenterView (#2817) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Fix integration tests (#2821) via Toni Rico (@tonidero)
+* Add internal CustomerInfo source properties (#2796) via Toni Rico (@tonidero)
