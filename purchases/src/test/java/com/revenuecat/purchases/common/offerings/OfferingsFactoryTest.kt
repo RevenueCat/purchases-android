@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -252,6 +253,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -267,6 +270,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -283,6 +288,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -302,6 +309,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -320,6 +329,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -338,6 +349,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -356,6 +369,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -374,6 +389,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -397,6 +414,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -420,6 +439,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -452,6 +473,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -473,6 +496,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -501,6 +526,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = invalidUrlWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -521,6 +548,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )

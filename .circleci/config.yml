@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -394,7 +394,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.14.0-SNAPSHOT s3://purchases-docs/android/9.14.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -702,6 +702,25 @@ jobs:
               exit 1
             fi
             echo "Golden test files verification passed - no changes detected"
+      - android/save_build_cache
+      - store_test_results:
+          path: purchases/build/test-results
+
+  update-golden-requests-backend-integration-tests:
+    description: "Run backend integration tests and create PR if golden files change"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - android/restore_gradle_cache
+      - run:
+          name: Run backend integration tests and create PR if needed
+          command: |
+            bundle exec fastlane android update_golden_requests_backend_integration_tests
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/test-results
@@ -1082,3 +1101,9 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
+
+  manual-update-golden-requests-backend-integration-tests:
+    when:
+      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
+    jobs:
+      - update-golden-requests-backend-integration-tests

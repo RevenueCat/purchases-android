@@ -90,6 +90,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     fail("fetching from backend should be success. Error: ${it.message}")
                 },
                 onSuccess = { fetchedCustomerInfo ->
+                    assertThat(fetchedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(fetchedCustomerInfo.loadedFromCache).isFalse
                     Purchases.sharedInstance.getCustomerInfoWith(
                         CacheFetchPolicy.CACHE_ONLY,
                         onError = {
@@ -97,6 +99,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         },
                         onSuccess = { cachedCustomerInfo ->
                             assertThat(cachedCustomerInfo).isEqualTo(fetchedCustomerInfo)
+                            assertThat(cachedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                            assertThat(cachedCustomerInfo.loadedFromCache).isTrue
                             lock.countDown()
                         },
                     )
@@ -185,6 +189,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onError = { fail("Expected success. Got error: $it") },
                 onSuccess = { customerInfo ->
                     verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
             )
@@ -337,6 +343,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
                     verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     lock.countDown()
                 },
             )

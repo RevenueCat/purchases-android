@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
@@ -369,6 +370,8 @@ class OfferingsManagerTest {
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
+                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                loadedFromDiskCache = true,
                 onError = any(),
                 onSuccess = any(),
             )
@@ -743,6 +746,8 @@ class OfferingsManagerTest {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
+                    originalDataSource = any(),
+                    loadedFromDiskCache = any(),
                     onError = any(),
                     onSuccess = captureLambda(),
                 )
@@ -759,6 +764,8 @@ class OfferingsManagerTest {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
+                    originalDataSource = any(),
+                    loadedFromDiskCache = any(),
                     onError = captureLambda(),
                     onSuccess = any(),
                 )
@@ -772,7 +779,7 @@ class OfferingsManagerTest {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
+            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(JSONObject(response), HTTPResponseOriginalSource.MAIN)
         }
     }
 

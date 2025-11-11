@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -14,6 +15,8 @@ class Offerings internal constructor(
     val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
+    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    internal val loadedFromDiskCache: Boolean = false,
 ) {
     constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
@@ -69,6 +72,57 @@ class Offerings internal constructor(
     internal data class Placements(
         val fallbackOfferingId: String?,
         val offeringIdsByPlacement: Map<String, String?>,
+    )
+
+    internal fun copy(
+        current: Offering? = this.current,
+        all: Map<String, Offering> = this.all,
+        placements: Placements? = this.placements,
+        targeting: Targeting? = this.targeting,
+        originalSource: HTTPResponseOriginalSource = this.originalSource,
+        loadedFromDiskCache: Boolean = this.loadedFromDiskCache,
+    ): Offerings {
+        return Offerings(
+            current = current,
+            all = all,
+            placements = placements,
+            targeting = targeting,
+            originalSource = originalSource,
+            loadedFromDiskCache = loadedFromDiskCache,
+        )
+    }
+
+    /**
+     * @hide
+     */
+    override fun toString() =
+        "<Offerings\n " +
+            "current: $current\n" +
+            "all:  $all,\n" +
+            "placements: $placements,\n" +
+            "targeting: $targeting\n>"
+    override fun equals(other: Any?) = other is Offerings &&
+        OfferingsComparableData(this) == OfferingsComparableData(other)
+    override fun hashCode() = OfferingsComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores originalSource and loadedFromDiskCache.
+ */
+private data class OfferingsComparableData(
+    val current: Offering?,
+    val all: Map<String, Offering>,
+    val placements: Offerings.Placements?,
+    val targeting: Offerings.Targeting?,
+) {
+    constructor(
+        offerings: Offerings,
+    ) : this(
+        current = offerings.current,
+        all = offerings.all,
+        placements = offerings.placements,
+        targeting = offerings.targeting,
+        // Note: originalSource and loadedFromDiskCache are excluded from equality comparison as they are metadata
     )
 }
 
