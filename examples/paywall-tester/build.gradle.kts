@@ -1,11 +1,8 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("revenuecat-android-application")
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.baselineprofile)
 }
-
-apply(from = "$rootDir/base-application.gradle")
 
 android {
     namespace = "com.revenuecat.paywallstester"
