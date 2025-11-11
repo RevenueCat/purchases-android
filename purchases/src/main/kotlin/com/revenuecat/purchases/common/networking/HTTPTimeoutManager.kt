@@ -68,6 +68,14 @@ internal class HTTPTimeoutManager(
         }
     }
 
+    fun getReadTimeout(): Long {
+        return if (appConfig.runningTests) {
+            READ_TIMEOUT_MS / TEST_DIVIDER
+        } else {
+            READ_TIMEOUT_MS
+        }
+    }
+
     /**
      * Records the result of a request and updates internal state accordingly.
      * @param result The result of the request

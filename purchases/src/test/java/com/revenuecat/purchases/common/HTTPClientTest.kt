@@ -1089,10 +1089,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
+        val responseDelayMs = (HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS +
+            HTTPTimeoutManager.READ_TIMEOUT_MS) / 100L + 100L
+
         enqueue(
             endpoint.getPath(),
             HTTPResult.createResult(),
-            bodyDelayMs = (HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100) + 100L,
+            bodyDelayMs = responseDelayMs,
         )
 
         verify(exactly = 0) {

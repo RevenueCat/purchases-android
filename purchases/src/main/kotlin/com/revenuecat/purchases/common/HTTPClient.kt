@@ -477,7 +477,7 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
-            readTimeout = HTTPTimeoutManager.READ_TIMEOUT_MS.toInt()
+            readTimeout = timeoutManager.getReadTimeout().toInt()
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }
