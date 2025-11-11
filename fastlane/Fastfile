@@ -126,7 +126,7 @@ platform :android do
 
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
-      "customEntitlementComputationRelease",
+      "customEntitlementComputationBc8Release",
       "purchases-custom-entitlement-computation",
       "purchases",
       gradle_properties
@@ -134,7 +134,7 @@ platform :android do
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
-      "defaultsDebug",
+      "defaultsBc8Debug",
       "purchases-debug-view",
       "ui:debugview",
       gradle_properties
@@ -211,7 +211,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundle',
+      build_task: 'examples:purchase-tester:bundleBc8',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -223,7 +223,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundle',
+      build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester'
     )
@@ -255,7 +255,7 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     gradle(
-      task: ':purchases:testDefaultsDebugUnitTest',
+      task: ':purchases:testDefaultsBc8DebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true,
         "minSdkVersion" => 21,
@@ -400,7 +400,7 @@ platform :android do
       # We default to empty active entitlements since we are using an expired token for these integration tests.
       # So no active entitlements will be returned by our servers.
       active_entitlements_to_verify: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-      flavor: 'customEntitlementComputation'
+      flavor: 'customEntitlementComputationBc8'
     )
 
     run_firebase_integration_tests(app_name)
@@ -425,7 +425,7 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults', 
+                                        proxy_url: nil, build_type: 'release', flavor: 'defaultsBc8',
                                         backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
@@ -770,7 +770,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziDebug",
+      task: "#{gradle_module}:recordPaparazziBc8Debug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
@@ -908,7 +908,7 @@ def check_no_git_tag_exists(version_number)
 end
 
 def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
-  task_to_run = flavor == 'defaults' ? 'assembleDefaultsAndroidTest' : 'assembleCustomEntitlementComputationAndroidTest'
+  task_to_run = flavor == 'defaultsBc8' ? 'assembleDefaultsBc8AndroidTest' : 'assembleCustomEntitlementComputationBc8AndroidTest'
   gradle(
     task: ":purchases:#{task_to_run}",
     properties: {
@@ -917,7 +917,7 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-#{flavor}-#{build_type}-androidTest.apk"
+  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-*-androidTest.apk"
   new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(

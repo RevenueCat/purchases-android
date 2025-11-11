@@ -15,9 +15,14 @@ android {
     namespace = "com.revenuecat.purchases.ui.debugview"
 
     flavorDimensions += "apis"
+    flavorDimensions += "billingclient"
     productFlavors {
         create("defaults") {
             dimension = "apis"
+            isDefault = true
+        }
+        create("bc8") {
+            dimension = "billingclient"
             isDefault = true
         }
     }

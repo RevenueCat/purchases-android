@@ -243,7 +243,7 @@ jobs:
           paths:
             - .
 
-  test_defaults_debug:
+  test_defaults_bc8_debug:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -253,18 +253,18 @@ jobs:
       - android/restore_gradle_cache
       - run:
           name: Run Defaults Debug Tests
-          command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
+          command: ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results-defaults-debug
-            find . -path ./build/test-results-defaults-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-debug/ \;
+            mkdir -p build/test-results-defaults-bc8-debug
+            find . -path ./build/test-results-defaults-bc8-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-bc8-debug/ \;
       - store_test_results:
-          path: build/test-results-defaults-debug
+          path: build/test-results-defaults-bc8-debug
       - store_artifacts:
           path: build/reports
 
-  test_defaults_release:
+  test_defaults_bc8_release:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -274,22 +274,22 @@ jobs:
       - android/restore_gradle_cache
       - run:
           name: Run Defaults Release Tests
-          command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
+          command: ./gradlew testDefaultsBc8ReleaseUnitTest --parallel --no-daemon
       - run:
           name: Generate Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
+          command: ./gradlew purchases:koverHtmlReportDefaultsBc8Release
       - run:
           name: Generate Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsRelease
+          command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
       - codecov/upload:
-          file: purchases/build/reports/kover/reportDefaultsRelease.xml
+          file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results-defaults-release
-            find . -path ./build/test-results-defaults-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-release/ \;
+            mkdir -p build/test-results-defaults-bc8-release
+            find . -path ./build/test-results-defaults-bc8-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-bc8-release/ \;
       - store_test_results:
-          path: build/test-results-defaults-release
+          path: build/test-results-defaults-bc8-release
       - store_artifacts:
           path: build/reports
 
@@ -303,7 +303,7 @@ jobs:
       - android/restore_gradle_cache
       - run:
           name: Run CEC Debug Tests
-          command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
+          command: ./gradlew testCustomEntitlementComputationBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
@@ -324,7 +324,7 @@ jobs:
       - android/restore_gradle_cache
       - run:
           name: Run CEC Release Tests
-          command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
+          command: ./gradlew testCustomEntitlementComputationBc8ReleaseUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
@@ -500,13 +500,13 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
 
   assemble-paywall-tester-release:
     <<: *android-executor
@@ -529,9 +529,9 @@ jobs:
           cache-version: v1
       - build-paywall-tester
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -821,12 +821,12 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-revenuecat-ui
-          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
       - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
-            ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+            ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
 
   run-maestro-e2e-tests:
     description: "Run Maestro tests for Paywall Tester app"
@@ -947,10 +947,10 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
-      - test_defaults_debug:
+      - test_defaults_bc8_debug:
           requires:
             - prepare-tests
-      - test_defaults_release:
+      - test_defaults_bc8_release:
           requires:
             - prepare-tests
       - test_cec_debug:
@@ -1011,8 +1011,8 @@ workflows:
       - hold:
           type: approval
           requires:
-            - test_defaults_debug
-            - test_defaults_release
+            - test_defaults_bc8_debug
+            - test_defaults_bc8_release
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

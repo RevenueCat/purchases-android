@@ -28,6 +28,7 @@ android {
     }
 
     flavorDimensions += "apis"
+    flavorDimensions += "billingclient"
 
     productFlavors {
         create("defaults") {
@@ -36,6 +37,10 @@ android {
         }
         create("customEntitlementComputation") {
             dimension = "apis"
+        }
+        create("bc8") {
+            dimension = "billingclient"
+            isDefault = true
         }
     }
 
@@ -154,7 +159,7 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    api(libs.billing)
+    "bc8Api"(libs.billing)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
@@ -166,7 +171,7 @@ dependencies {
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    testImplementation(libs.billing)
+    "testBc8Implementation"(libs.billing)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
@@ -191,10 +196,10 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        named("customEntitlementComputationBc8") {
             suppress.set(true)
         }
-        named("defaults") {
+        named("defaultsBc8") {
             dependsOn("main")
             reportUndocumented.set(true)
             includeNonPublic.set(false)

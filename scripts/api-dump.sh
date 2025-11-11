@@ -2,7 +2,7 @@
 
 exit_code=0
 
-./gradlew metalavaGenerateSignatureDefaultsRelease || exit_code=$?
-./gradlew metalavaGenerateSignatureCustomEntitlementComputationRelease || exit_code=$?
+./gradlew metalavaGenerateSignatureDefaultsBc8Release || exit_code=$?
+./gradlew metalavaGenerateSignatureCustomEntitlementComputationBc8Release || exit_code=$?
 
 exit $exit_code
