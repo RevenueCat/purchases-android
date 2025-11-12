@@ -83,12 +83,6 @@ internal class HTTPTimeoutManagerTest {
     }
 
     @Test
-    fun `getReadTimeout returns READ_TIMEOUT_MS`() {
-        val timeout = timeoutManager.getReadTimeout()
-        assertThat(timeout).isEqualTo(HTTPTimeoutManager.READ_TIMEOUT_MS)
-    }
-
-    @Test
     fun `recordRequestResult SUCCESS_ON_MAIN_BACKEND resets timeout state`() {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 

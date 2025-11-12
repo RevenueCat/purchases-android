@@ -15,7 +15,6 @@ internal class HTTPTimeoutManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
     companion object {
-        const val READ_TIMEOUT_MS = 30000L // We always use 30 seconds for read timeout
         const val SUPPORTED_FALLBACK_TIMEOUT_MS = 5000L // 5 seconds for requests with fallback support
         const val REDUCED_TIMEOUT_MS = 2000L // 2 seconds for requests with fallback support after timeout
         const val DEFAULT_TIMEOUT_MS = 30000L // 30 seconds for requests without fallback support and fallback requests
@@ -65,14 +64,6 @@ internal class HTTPTimeoutManager(
             timeout / TEST_DIVIDER
         } else {
             timeout
-        }
-    }
-
-    fun getReadTimeout(): Long {
-        return if (appConfig.runningTests) {
-            READ_TIMEOUT_MS / TEST_DIVIDER
-        } else {
-            READ_TIMEOUT_MS
         }
     }
 
