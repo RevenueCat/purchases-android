@@ -17,9 +17,7 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -81,13 +79,12 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
-import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class BillingWrapperTest {
 
-    private companion object {
+    internal companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
     }
@@ -1366,78 +1363,6 @@ class BillingWrapperTest {
     }
 
     // region diagnostics tracking
-
-    @Test
-    fun `querySkuDetailsAsync tracks diagnostics call with correct parameters`() {
-        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
-
-        val result = BillingResult.newBuilder()
-            .setResponseCode(BillingClient.BillingResponseCode.OK)
-            .setDebugMessage("test-debug-message")
-            .build()
-        val slot = slot<ProductDetailsResponseListener>()
-        every {
-            mockClient.queryProductDetailsAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
-        }
-
-        wrapper.queryProductDetailsAsync(
-            productType = ProductType.SUBS,
-            productIds = setOf("test-sku"),
-            onReceive = {},
-            onError = { fail("shouldn't be an error") }
-        )
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
-                setOf("test-sku"),
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.OK,
-                billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
-            )
-        }
-    }
-
-    @Test
-    fun `querySkuDetailsAsync tracks diagnostics call with correct parameters on error`() {
-        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
-
-        val result = BillingResult.newBuilder()
-            .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
-            .setDebugMessage("test-debug-message")
-            .build()
-        val slot = slot<ProductDetailsResponseListener>()
-        every {
-            mockClient.queryProductDetailsAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onProductDetailsResponse(result, QueryProductDetailsResult.create(emptyList(), emptyList()))
-        }
-
-        wrapper.queryProductDetailsAsync(
-            productType = ProductType.SUBS,
-            productIds = setOf("test-sku"),
-            onReceive = { fail("should be an error") },
-            onError = {}
-        )
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
-                setOf("test-sku"),
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.DEVELOPER_ERROR,
-                billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
-            )
-        }
-    }
 
     @Test
     fun `trackProductDetailsNotSupported is called when receiving a FEATURE_NOT_SUPPORTED error from isFeatureSupported after setup`() {

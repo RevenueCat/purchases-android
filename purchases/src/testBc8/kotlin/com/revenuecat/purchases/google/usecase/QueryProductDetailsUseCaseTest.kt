@@ -2,12 +2,14 @@ package com.revenuecat.purchases.google.usecase
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryProductDetailsResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.google.BillingWrapperTest
 import com.revenuecat.purchases.google.productId
 import com.revenuecat.purchases.google.productList
 import com.revenuecat.purchases.google.productType
@@ -22,14 +24,17 @@ import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.AssertionsForClassTypes
 import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("MagicNumber", "FunctionNaming", "TooManyFunctions", "MaximumLineLength", "MaxLineLength")
 @RunWith(AndroidJUnit4::class)
@@ -590,6 +595,98 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             "Error while building QueryProductDetailsParams in Billing client: Simulated ExceptionInInitializerError",
         )
     }
+
+    // region diagnostics
+
+    @Test
+    fun `querySkuDetailsAsync tracks diagnostics call with correct parameters`() {
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(BillingWrapperTest.Companion.timestamp0),
+            Date(
+                BillingWrapperTest.Companion.timestamp123,
+            ),
+        )
+
+        val result = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.OK)
+            .setDebugMessage("test-debug-message")
+            .build()
+        val slot = slot<ProductDetailsResponseListener>()
+        every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot),
+            )
+        } answers {
+            slot.captured.onProductDetailsResponse(
+                result,
+                QueryProductDetailsResult.create(emptyList(), emptyList()),
+            )
+        }
+
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            onReceive = {},
+            onError = { fail("shouldn't be an error") },
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
+                BillingClient.ProductType.SUBS,
+                BillingClient.BillingResponseCode.OK,
+                billingDebugMessage = "test-debug-message",
+                responseTime = 123.milliseconds,
+            )
+        }
+    }
+
+    @Test
+    fun `querySkuDetailsAsync tracks diagnostics call with correct parameters on error`() {
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(BillingWrapperTest.Companion.timestamp0),
+            Date(
+                BillingWrapperTest.Companion.timestamp123,
+            ),
+        )
+
+        val result = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
+            .setDebugMessage("test-debug-message")
+            .build()
+        val slot = slot<ProductDetailsResponseListener>()
+        every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot),
+            )
+        } answers {
+            slot.captured.onProductDetailsResponse(
+                result,
+                QueryProductDetailsResult.create(emptyList(), emptyList()),
+            )
+        }
+
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            onReceive = { fail("should be an error") },
+            onError = {},
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+                setOf("test-sku"),
+                BillingClient.ProductType.SUBS,
+                BillingClient.BillingResponseCode.DEVELOPER_ERROR,
+                billingDebugMessage = "test-debug-message",
+                responseTime = 123.milliseconds,
+            )
+        }
+    }
+
+    // endregion diagnostics
 
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
