@@ -31,6 +31,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.io.InputStream
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.Date
@@ -1216,6 +1217,250 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     // endregion Timeout Management
+
+    // region Read Timeout Tests
+
+    @Test
+    fun `performRequest throws SocketTimeoutException when overall read operation exceeds read timeout`() {
+        // Arrange
+        val endpoint = Endpoint.GetOfferings("test_user")
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Set a body delay that exceeds the read timeout
+        val readTimeoutMs = timeoutManager.getReadTimeout()
+        val excessiveDelayMs = readTimeoutMs + 500L
+
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(200, """{"offerings": []}"""),
+            bodyDelayMs = excessiveDelayMs,
+        )
+
+        // Act & Assert
+        assertThatThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+        }.isInstanceOf(SocketTimeoutException::class.java)
+            .hasMessageContaining("timed out")
+    }
+
+    @Test
+    fun `performRequest completes successfully when response is within read timeout`() {
+        // Arrange
+        val endpoint = Endpoint.GetOfferings("test_user")
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // Set a reasonable body delay that's well within the read timeout
+        val readTimeoutMs = timeoutManager.getReadTimeout()
+        val reasonableDelayMs = readTimeoutMs / 10 // 10% of timeout
+
+        val expectedPayload = """{"offerings": [], "current_offering_id": null}"""
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(200, expectedPayload),
+            bodyDelayMs = reasonableDelayMs,
+        )
+
+        // Act
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        // Assert
+        assertThat(result.responseCode).isEqualTo(200)
+        assertThat(result.payload).isEqualTo(expectedPayload)
+    }
+
+    @Test
+    fun `performRequest with read timeout triggers fallback when main backend times out`() {
+        // Arrange
+        val endpoint = Endpoint.GetOfferings("test_user")
+        assert(endpoint.supportsFallbackBaseURLs) {
+            "This test requires an endpoint that supports fallback URLs"
+        }
+
+        val appConfig = createAppConfig()
+        val timeoutManager = HTTPTimeoutManager(appConfig)
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        // Main backend will timeout
+        val readTimeoutMs = timeoutManager.getReadTimeout()
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(200, """{"offerings": []}"""),
+            bodyDelayMs = readTimeoutMs + 500L,
+        )
+
+        // Fallback backend succeeds
+        val successPayload = """{"offerings": [], "current_offering_id": null}"""
+        enqueue(
+            endpoint.getPath(useFallback = true),
+            expectedResult = HTTPResult.createResult(200, successPayload),
+            server = fallbackServer,
+            isFallbackURL = true,
+        )
+
+        // Act
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = listOf(fallbackBaseURL),
+        )
+
+        // Assert
+        assertThat(result.responseCode).isEqualTo(200)
+        assertThat(result.payload).isEqualTo(successPayload)
+
+        // Verify both main and fallback were called
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(fallbackServer.requestCount).isEqualTo(1)
+
+        fallbackServer.shutdown()
+    }
+
+    // endregion Read Timeout Tests
+
+    // region readFullyWithTimeout Unit Tests
+
+    @Test
+    fun `readFullyWithTimeout successfully reads fast stream within timeout`() {
+        // Arrange
+        val testData = "This is test data that should be read successfully"
+        val inputStream = testData.byteInputStream()
+        val timeoutMs = 1000L
+
+        // Act
+        val result = client.readFullyWithTimeout(inputStream, timeoutMs)
+
+        // Assert
+        assertThat(result).isEqualTo(testData)
+    }
+
+    @Test
+    fun `readFullyWithTimeout throws SocketTimeoutException when trickling data exceeds timeout`() {
+        // Arrange
+        val timeoutMs = 500L
+        val delayPerChunkMs = 100L
+        val numChunks = 10 // Total time: 10 * 100ms = 1000ms, exceeds 500ms timeout
+
+        // Create a stream that trickles data slowly
+        val tricklingInputStream = object : InputStream() {
+            private var chunksRead = 0
+            private val chunkData = "chunk".toByteArray()
+            private var positionInChunk = 0
+
+            override fun read(): Int {
+                if (chunksRead >= numChunks) {
+                    return -1 // End of stream
+                }
+
+                // Delay to simulate slow network
+                Thread.sleep(delayPerChunkMs)
+
+                val byte = chunkData[positionInChunk].toInt()
+                positionInChunk++
+
+                if (positionInChunk >= chunkData.size) {
+                    positionInChunk = 0
+                    chunksRead++
+                }
+
+                return byte
+            }
+        }
+
+        // Act & Assert
+        assertThatThrownBy {
+            client.readFullyWithTimeout(tricklingInputStream, timeoutMs)
+        }.isInstanceOf(SocketTimeoutException::class.java)
+            .hasMessageContaining("Read operation timed out")
+            .hasMessageContaining("limit: ${timeoutMs}ms")
+    }
+
+    @Test
+    fun `readFullyWithTimeout successfully reads trickling data within timeout`() {
+        // Arrange
+        val expectedData = "slow data"
+        val timeoutMs = 2000L
+        val delayPerChunkMs = 50L
+        val numChunks = 5 // Total time: 5 * 50ms = 250ms, well within 2000ms timeout
+
+        // Create a stream that trickles data slowly but within timeout
+        val tricklingInputStream = object : InputStream() {
+            private var chunksRead = 0
+            private val dataBytes = expectedData.toByteArray()
+            private val chunkSize = dataBytes.size / numChunks
+            private var position = 0
+
+            override fun read(): Int {
+                if (position >= dataBytes.size) {
+                    return -1 // End of stream
+                }
+
+                // Delay every chunkSize bytes to simulate network delays
+                if (position % chunkSize == 0 && position > 0) {
+                    Thread.sleep(delayPerChunkMs)
+                }
+
+                return dataBytes[position++].toInt()
+            }
+        }
+
+        // Act
+        val result = client.readFullyWithTimeout(tricklingInputStream, timeoutMs)
+
+        // Assert
+        assertThat(result).isEqualTo(expectedData)
+    }
+
+    @Test
+    fun `readFullyWithTimeout handles empty stream`() {
+        // Arrange
+        val emptyStream = ByteArray(0).inputStream()
+        val timeoutMs = 1000L
+
+        // Act
+        val result = client.readFullyWithTimeout(emptyStream, timeoutMs)
+
+        // Assert
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `readFullyWithTimeout reads large data in chunks`() {
+        // Arrange
+        val largeData = "x".repeat(50000) // 50KB of data
+        val inputStream = largeData.byteInputStream()
+        val timeoutMs = 5000L
+
+        // Act
+        val result = client.readFullyWithTimeout(inputStream, timeoutMs)
+
+        // Assert
+        assertThat(result).isEqualTo(largeData)
+        assertThat(result.length).isEqualTo(50000)
+    }
+
+    // endregion readFullyWithTimeout Unit Tests
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)

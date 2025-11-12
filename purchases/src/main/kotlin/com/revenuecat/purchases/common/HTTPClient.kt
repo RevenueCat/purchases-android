@@ -77,6 +77,7 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+        const val READ_BUFFER_SIZE = 8192 // 8KB chunks
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -89,9 +90,45 @@ internal class HTTPClient(
         return BufferedWriter(OutputStreamWriter(outputStream))
     }
 
+    /**
+     * Reads the input stream with an overall timeout to prevent hanging in bad network conditions.
+     * While readTimeout handles per-read timeouts, this ensures the entire read operation completes
+     * within a reasonable time even if data trickles in slowly but continuously.
+     *
+     * Reads data in chunks and checks elapsed time after each chunk to avoid thread interruption issues.
+     *
+     * @param inputStream The input stream to read from
+     * @param timeoutMs The maximum time in milliseconds to wait for the entire read operation
+     * @throws SocketTimeoutException if the read operation exceeds the timeout
+     * @throws IOException for other IO errors
+     */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Throws(IOException::class)
-    private fun readFully(inputStream: InputStream): String {
-        return buffer(inputStream).readText()
+    internal fun readFullyWithTimeout(inputStream: InputStream, timeoutMs: Long): String {
+        val startTime = System.currentTimeMillis()
+        val buffer = CharArray(READ_BUFFER_SIZE)
+        val result = StringBuilder()
+        val reader = buffer(inputStream)
+
+        while (true) {
+            // Check if we've exceeded the overall timeout
+            val elapsed = System.currentTimeMillis() - startTime
+            if (elapsed > timeoutMs) {
+                throw SocketTimeoutException("Read operation timed out after ${elapsed}ms (limit: ${timeoutMs}ms)")
+            }
+
+            // Read next chunk - this respects the per-read socket timeout
+            val charsRead = reader.read(buffer, 0, buffer.size)
+
+            if (charsRead == -1) {
+                // End of stream reached
+                break
+            }
+
+            result.append(buffer, 0, charsRead)
+        }
+
+        return result.toString()
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -293,7 +330,7 @@ internal class HTTPClient(
         try {
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
-            payload = inputStream?.let { readFully(it) }
+            payload = inputStream?.let { readFullyWithTimeout(it, timeoutManager.getReadTimeout()) }
             if (enableExtraRequestLogging) {
                 debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
             }
