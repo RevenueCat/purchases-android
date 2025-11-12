@@ -42,6 +42,9 @@ android {
             dimension = "billingclient"
             isDefault = true
         }
+        create("bc7") {
+            dimension = "billingclient"
+        }
     }
 
     defaultConfig {
@@ -160,6 +163,7 @@ dependencies {
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
     "bc8Api"(libs.billing)
+    "bc7Api"(libs.billing.bc7)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
@@ -172,6 +176,7 @@ dependencies {
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
     "testBc8Implementation"(libs.billing)
+    "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)

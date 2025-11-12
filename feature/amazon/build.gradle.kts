@@ -24,6 +24,9 @@ android {
             dimension = "billingclient"
             isDefault = true
         }
+        create("bc7") {
+            dimension = "billingclient"
+        }
     }
 
     defaultConfig {
