@@ -46,24 +46,24 @@ internal fun ManageSubscriptionsButtonsView(
                 config = SettingsButtonConfig(),
             )
         }
-        if (addCreateTicketButton && contactEmail != null) {
-            SettingsButton(
-                onClick = { onAction(CustomerCenterAction.ShowSupportTicketCreation) },
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
-                ),
-                style = SettingsButtonStyle.OUTLINED,
-                config = SettingsButtonConfig(),
-            )
-        } else if (addContactButton && contactEmail != null) {
-            SettingsButton(
-                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
-                title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
-                ),
-                style = SettingsButtonStyle.OUTLINED,
-                config = SettingsButtonConfig(),
-            )
-        }
+//        if (addCreateTicketButton && contactEmail != null) {
+        SettingsButton(
+            onClick = { onAction(CustomerCenterAction.ShowSupportTicketCreation) },
+            title = localization.commonLocalizedString(
+                CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+            ),
+            style = SettingsButtonStyle.OUTLINED,
+            config = SettingsButtonConfig(),
+        )
+//        } else if (addContactButton && contactEmail != null) {
+//            SettingsButton(
+//                onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
+//                title = localization.commonLocalizedString(
+//                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+//                ),
+//                style = SettingsButtonStyle.OUTLINED,
+//                config = SettingsButtonConfig(),
+//            )
+//        }
     }
 }

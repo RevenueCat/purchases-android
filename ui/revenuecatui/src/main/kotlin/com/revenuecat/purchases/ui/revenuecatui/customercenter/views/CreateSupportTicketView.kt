@@ -45,9 +45,24 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
 private const val MAX_DESCRIPTION_LENGTH = 250
+
 private fun isValidEmail(email: String): Boolean {
     return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
+
+private data class EmailInputState(
+    val email: String,
+    val onEmailChange: (String) -> Unit,
+    val onFocusChanged: (Boolean) -> Unit,
+    val showError: Boolean,
+    val enabled: Boolean,
+)
+
+private data class DescriptionInputState(
+    val description: String,
+    val onDescriptionChange: (String) -> Unit,
+    val enabled: Boolean,
+)
 
 @JvmSynthetic
 @Composable
@@ -64,13 +79,8 @@ internal fun CreateSupportTicketView(
     var hasError by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(SECTION_SPACING)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            EmailInputField(
+        CreateSupportTicketContent(
+            emailState = EmailInputState(
                 email = email,
                 onEmailChange = {
                     email = it
@@ -79,12 +89,8 @@ internal fun CreateSupportTicketView(
                 onFocusChanged = { emailHasFocus = it },
                 showError = emailTouched && !emailHasFocus && !isValidEmail(email),
                 enabled = !isSubmitting,
-                localization = localization,
-            )
-
-            Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
-
-            DescriptionInputField(
+            ),
+            descriptionState = DescriptionInputState(
                 description = description,
                 onDescriptionChange = { newValue ->
                     if (newValue.length <= MAX_DESCRIPTION_LENGTH) {
@@ -92,37 +98,69 @@ internal fun CreateSupportTicketView(
                     }
                 },
                 enabled = !isSubmitting,
-                localization = localization,
-            )
-
-            Spacer(modifier = Modifier.height(SECTION_SPACING))
-
-            SubmitTicketButton(
-                email = email,
-                description = description,
-                isSubmitting = isSubmitting,
-                onSubmit = {
-                    isSubmitting = true
-                    hasError = false
-                    data.onSubmit(
-                        email,
-                        description,
-                        { /* Success - navigation handled by ViewModel */ },
-                        {
-                            isSubmitting = false
-                            hasError = true
-                        },
-                    )
-                },
-                localization = localization,
-            )
-        }
+            ),
+            isSubmitting = isSubmitting,
+            onSubmit = {
+                isSubmitting = true
+                hasError = false
+                data.onSubmit(
+                    email,
+                    description,
+                    { /* Success - navigation handled by ViewModel */ },
+                    {
+                        isSubmitting = false
+                        hasError = true
+                    },
+                )
+            },
+            localization = localization,
+        )
 
         ErrorSnackbar(
             hasError = hasError,
             onErrorShow = { hasError = false },
             localization = localization,
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun CreateSupportTicketContent(
+    emailState: EmailInputState,
+    descriptionState: DescriptionInputState,
+    isSubmitting: Boolean,
+    onSubmit: () -> Unit,
+    localization: CustomerCenterConfigData.Localization,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(SECTION_SPACING)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        EmailInputField(
+            state = emailState,
+            localization = localization,
+        )
+
+        Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
+
+        DescriptionInputField(
+            description = descriptionState.description,
+            onDescriptionChange = descriptionState.onDescriptionChange,
+            enabled = descriptionState.enabled,
+            localization = localization,
+        )
+
+        Spacer(modifier = Modifier.height(SECTION_SPACING))
+
+        SubmitTicketButton(
+            email = emailState.email,
+            description = descriptionState.description,
+            isSubmitting = isSubmitting,
+            onSubmit = onSubmit,
+            localization = localization,
         )
     }
 }
@@ -151,19 +189,14 @@ private fun CreateSupportTicketView_Preview() {
     }
 }
 
-
 @Composable
 private fun EmailInputField(
-    email: String,
-    onEmailChange: (String) -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
-    showError: Boolean,
-    enabled: Boolean,
+    state: EmailInputState,
     localization: CustomerCenterConfigData.Localization,
 ) {
     OutlinedTextField(
-        value = email,
-        onValueChange = onEmailChange,
+        value = state.email,
+        onValueChange = state.onEmailChange,
         label = {
             Text(
                 localization.commonLocalizedString(
@@ -178,8 +211,8 @@ private fun EmailInputField(
                 ),
             )
         },
-        isError = showError,
-        supportingText = if (showError) {
+        isError = state.showError,
+        supportingText = if (state.showError) {
             {
                 Text(
                     localization.commonLocalizedString(
@@ -190,11 +223,11 @@ private fun EmailInputField(
         } else {
             null
         },
-        enabled = enabled,
+        enabled = state.enabled,
         modifier = Modifier
             .fillMaxWidth()
             .onFocusChanged { focusState ->
-                onFocusChanged(focusState.isFocused)
+                state.onFocusChanged(focusState.isFocused)
             }
             .testTag("email_field"),
         singleLine = true,
