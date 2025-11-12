@@ -162,7 +162,7 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    "bc8Api"(libs.billing)
+    "bc8Api"(libs.billing.bc8)
     "bc7Api"(libs.billing.bc7)
 
     compileOnly(libs.compose.annotations)
@@ -175,7 +175,7 @@ dependencies {
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    "testBc8Implementation"(libs.billing)
+    "testBc8Implementation"(libs.billing.bc8)
     "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)

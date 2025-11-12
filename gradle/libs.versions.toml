@@ -96,7 +96,7 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
-billing = { module = "com.android.billingclient:billing", version.ref = "bc8" }
+billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
 billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
