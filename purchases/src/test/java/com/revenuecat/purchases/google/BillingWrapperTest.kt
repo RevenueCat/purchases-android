@@ -1674,10 +1674,10 @@ class BillingWrapperTest {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
-    // region findPurchaseInActivePurchases
+    // region findPurchaseInPurchaseHistory
 
     @Test
-    fun `findPurchaseInActivePurchases finds purchase in active purchases`() {
+    fun `findPurchaseInPurchaseHistory finds purchase in active purchases`() {
         val oldPurchase = stubGooglePurchase()
         val purchases = listOf(oldPurchase)
 
@@ -1689,7 +1689,7 @@ class BillingWrapperTest {
         )
 
         var foundPurchase: StoreTransaction? = null
-        wrapper.findPurchaseInActivePurchases(
+        wrapper.findPurchaseInPurchaseHistory(
             appUserID = "test-app-user-id",
             productType = ProductType.SUBS,
             productId = oldPurchase.firstProductId,
@@ -1702,7 +1702,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `findPurchaseInActivePurchases does not find purchase if not in active purchases`() {
+    fun `findPurchaseInPurchaseHistory does not find purchase if not in active purchases`() {
         val oldPurchase = stubGooglePurchase()
         val purchases = listOf(oldPurchase)
 
@@ -1714,7 +1714,7 @@ class BillingWrapperTest {
         )
 
         var error: PurchasesError? = null
-        wrapper.findPurchaseInActivePurchases(
+        wrapper.findPurchaseInPurchaseHistory(
             appUserID = "test-app-user-id",
             productType = ProductType.SUBS,
             productId = "unpurchased-product-id",
@@ -1729,7 +1729,7 @@ class BillingWrapperTest {
         )
     }
 
-    // endregion findPurchaseInActivePurchases
+    // endregion findPurchaseInPurchaseHistory
 
     // region Multi-line subscriptions
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -1968,6 +1968,9 @@ class BillingWrapperTest {
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())

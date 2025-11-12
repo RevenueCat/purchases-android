@@ -246,7 +246,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -292,7 +292,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -2349,7 +2349,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
