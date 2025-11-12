@@ -204,6 +204,12 @@ tasks.dokkaHtmlPartial.configure {
         named("customEntitlementComputationBc8") {
             suppress.set(true)
         }
+        named("customEntitlementComputationBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
         named("defaultsBc8") {
             dependsOn("main")
             reportUndocumented.set(true)

@@ -163,6 +163,9 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
         named("defaultsBc8") {
             dependsOn("main")
         }
