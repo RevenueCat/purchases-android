@@ -44,26 +44,6 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSuppor
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
-private const val MAX_DESCRIPTION_LENGTH = 250
-
-private fun isValidEmail(email: String): Boolean {
-    return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
-}
-
-private data class EmailInputState(
-    val email: String,
-    val onEmailChange: (String) -> Unit,
-    val onFocusChanged: (Boolean) -> Unit,
-    val showError: Boolean,
-    val enabled: Boolean,
-)
-
-private data class DescriptionInputState(
-    val description: String,
-    val onDescriptionChange: (String) -> Unit,
-    val enabled: Boolean,
-)
-
 @JvmSynthetic
 @Composable
 internal fun CreateSupportTicketView(
@@ -124,6 +104,26 @@ internal fun CreateSupportTicketView(
         )
     }
 }
+
+private const val MAX_DESCRIPTION_LENGTH = 250
+
+private fun isValidEmail(email: String): Boolean {
+    return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
+private data class EmailInputState(
+    val email: String,
+    val onEmailChange: (String) -> Unit,
+    val onFocusChanged: (Boolean) -> Unit,
+    val showError: Boolean,
+    val enabled: Boolean,
+)
+
+private data class DescriptionInputState(
+    val description: String,
+    val onDescriptionChange: (String) -> Unit,
+    val enabled: Boolean,
+)
 
 @Composable
 private fun CreateSupportTicketContent(
