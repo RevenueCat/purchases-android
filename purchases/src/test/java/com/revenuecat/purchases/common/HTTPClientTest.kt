@@ -16,7 +16,6 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -26,6 +25,7 @@ import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.json.JSONException
 import org.junit.Before
 import org.junit.Test
@@ -1089,8 +1089,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
-        val responseDelayMs = (HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS +
-            HTTPTimeoutManager.READ_TIMEOUT_MS) / 100L + 100L
+        val responseDelayMs = HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100L + 100L
 
         enqueue(
             endpoint.getPath(),
