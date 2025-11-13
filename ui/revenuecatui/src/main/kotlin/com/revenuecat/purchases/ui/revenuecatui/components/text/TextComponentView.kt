@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.LocalCountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -110,7 +111,9 @@ private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
 ): String {
-    val processedText by remember(state, textState) {
+    val countdownTime = LocalCountdownTime.current
+
+    val processedText by remember(state, textState, countdownTime) {
         derivedStateOf {
             textState.applicablePackage?.let { packageToUse ->
                 val dateLocale = state.locale.toJavaLocale()
@@ -143,6 +146,7 @@ private fun rememberProcessedText(
                     currencyLocale = currencyLocale,
                     dateLocale = dateLocale,
                     date = state.currentDate,
+                    countdownTime = countdownTime,
                 )
             } ?: textState.text
         }

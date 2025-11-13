@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -425,7 +426,25 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is CountdownComponent -> createCountdownComponentStyle(
+                component,
+            )
         }
+    }
+
+    private fun StyleFactoryScope.createCountdownComponentStyle(
+        component: CountdownComponent,
+    ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
+        first = createStackComponentStyle(component.countdownStack),
+        second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+        third = component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+    ) { countdownStack, endStack, fallbackStack ->
+        CountdownComponentStyle(
+            date = component.style.date,
+            countdownStackComponentStyle = countdownStack,
+            endStackComponentStyle = endStack,
+            fallbackStackComponentStyle = fallbackStack,
+        )
     }
 
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
