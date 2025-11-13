@@ -930,6 +930,9 @@ internal class BillingWrapper(
                     .build(),
             )
         } catch (e: NoClassDefFoundError) {
+            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
+            // a BillingFlowParams in some devices because the library started using Java 8 types.
+            // This was fixed in Billing Client 8.
             throw NoCoreLibraryDesugaringException(e)
         }
     }
@@ -960,6 +963,9 @@ internal class BillingWrapper(
                     .build(),
             )
         } catch (e: NoClassDefFoundError) {
+            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
+            // a BillingFlowParams in some devices because the library started using Java 8 types.
+            // This was fixed in Billing Client 8.
             throw NoCoreLibraryDesugaringException(e)
         }
     }
