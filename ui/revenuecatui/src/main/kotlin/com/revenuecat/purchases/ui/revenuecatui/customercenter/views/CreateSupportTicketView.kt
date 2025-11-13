@@ -84,7 +84,7 @@ internal fun CreateSupportTicketView(
                 isSubmitting = true
                 hasError = false
                 data.onSubmit(
-                    email,
+                    email.trim(),
                     description,
                     { /* Success - navigation handled by ViewModel */ },
                     {
