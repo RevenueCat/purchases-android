@@ -3,11 +3,7 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.ProductDetails.OneTimePurchaseOfferDetails
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.google.extensions.toStoreTransaction
-import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
 import org.json.JSONArray
@@ -40,13 +36,3 @@ fun stubPurchaseHistoryRecord(
     """.trimIndent(),
     signature,
 )
-
-fun stubStoreTransactionFromPurchaseHistoryRecord(
-    productIds: List<String>,
-    purchaseTime: Long,
-): StoreTransaction {
-    return stubPurchaseHistoryRecord(
-        productIds = productIds,
-        purchaseTime = purchaseTime,
-    ).toStoreTransaction(ProductType.SUBS)
-}

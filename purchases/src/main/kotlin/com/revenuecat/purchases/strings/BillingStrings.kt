@@ -17,8 +17,6 @@ internal object BillingStrings {
     const val BILLING_WRAPPER_PURCHASES_UPDATED = "BillingWrapper purchases updated: %s"
     const val BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU = "There's more than one sku in the " +
         "PurchaseHistoryRecord, but only one will be used."
-    const val BILLING_PURCHASE_MORE_THAN_ONE_SKU = "There's more than one sku in the PurchaseHistoryRecord, " +
-        "but only one will be used."
     const val CANNOT_CALL_CAN_MAKE_PAYMENTS = "canMakePayments requires the Google Play Store. Skipping " +
         "any checks and returning true."
     const val NULL_ACTIVITY_INTENT = "Activity passed into launchBillingFlow has a null intent, which may cause " +
