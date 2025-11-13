@@ -52,7 +52,7 @@ internal fun CreateSupportTicketView(
     modifier: Modifier = Modifier,
 ) {
     var email by remember { mutableStateOf("") }
-    var emailTouched by remember { mutableStateOf(false) }
+    var emailDirty by remember { mutableStateOf(false) }
     var emailHasFocus by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
@@ -64,10 +64,10 @@ internal fun CreateSupportTicketView(
                 email = email,
                 onEmailChange = {
                     email = it
-                    if (!emailTouched) emailTouched = true
+                    if (!emailDirty) emailDirty = true
                 },
                 onFocusChanged = { emailHasFocus = it },
-                showError = emailTouched && !emailHasFocus && !isValidEmail(email),
+                showError = emailDirty && !emailHasFocus && !isValidEmail(email),
                 enabled = !isSubmitting,
             ),
             descriptionState = DescriptionInputState(
