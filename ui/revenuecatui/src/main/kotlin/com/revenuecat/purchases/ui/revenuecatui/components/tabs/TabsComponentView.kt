@@ -287,5 +287,6 @@ private fun previewStackComponentStyle(
         scrollOrientation = null,
         rcPackage = null,
         tabIndex = tabIndex,
+        countdownDate = null,
         overrides = emptyList(),
     )

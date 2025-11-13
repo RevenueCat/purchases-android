@@ -114,6 +114,10 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
         /**
+         * If this is non-null, it means the branch currently being built is inside a countdown component.
+         */
+        var countdownDate: java.util.Date? = null,
+        /**
          * Keeps the predicates we're actively using to count components.
          */
         private val countPredicates: MutableMap<Int, (PaywallComponent) -> Boolean> = mutableMapOf(),
@@ -250,6 +254,7 @@ internal class StyleFactory(
         fun <T> withSelectedScope(
             packageInfo: AvailablePackages.Info?,
             tabControlIndex: Int?,
+            countdownDate: java.util.Date? = null,
             block: StyleFactoryScope.() -> T,
         ): T {
             if (packageInfo != null) recordPackage(packageInfo)
@@ -257,11 +262,13 @@ internal class StyleFactory(
             val currentScope = copy()
             this.packageInfo = packageInfo
             this.tabControlIndex = tabControlIndex
+            this.countdownDate = countdownDate
 
             val result = block()
 
             this.packageInfo = currentScope.packageInfo
             this.tabControlIndex = currentScope.tabControlIndex
+            this.countdownDate = currentScope.countdownDate
 
             return result
         }
@@ -434,18 +441,25 @@ internal class StyleFactory(
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
-    ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = createStackComponentStyle(component.countdownStack),
-        second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
-        third = component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
-    ) { countdownStack, endStack, fallbackStack ->
-        CountdownComponentStyle(
-            date = component.style.date,
-            countdownStackComponentStyle = countdownStack,
-            endStackComponentStyle = endStack,
-            fallbackStackComponentStyle = fallbackStack,
-        )
-    }
+    ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> =
+        withSelectedScope(
+            packageInfo = null,
+            tabControlIndex = null,
+            countdownDate = component.style.date,
+        ) {
+            zipOrAccumulate(
+                first = createStackComponentStyle(component.countdownStack),
+                second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+                third = component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+            ) { countdownStack, endStack, fallbackStack ->
+                CountdownComponentStyle(
+                    date = component.style.date,
+                    countdownStackComponentStyle = countdownStack,
+                    endStackComponentStyle = endStack,
+                    fallbackStackComponentStyle = fallbackStack,
+                )
+            }
+        }
 
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
@@ -690,6 +704,7 @@ internal class StyleFactory(
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
+            countdownDate = countdownDate,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
         )
@@ -736,6 +751,7 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
+            countdownDate = countdownDate,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )

@@ -3,16 +3,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-
-@Suppress("CompositionLocalAllowlist")
-internal val LocalCountdownTime = compositionLocalOf<CountdownTime?> { null }
 
 @Composable
 internal fun CountdownComponentView(
@@ -28,12 +23,10 @@ internal fun CountdownComponentView(
     } else {
         style.countdownStackComponentStyle
     }
-    CompositionLocalProvider(LocalCountdownTime provides countdownState.countdownTime) {
-        StackComponentView(
-            style = stackStyle,
-            state = state,
-            clickHandler = onClick,
-            modifier = modifier,
-        )
-    }
+    StackComponentView(
+        style = stackStyle,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
 }

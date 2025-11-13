@@ -282,6 +282,7 @@ private fun previewButtonComponentStyle(
         scrollOrientation = null,
         rcPackage = null,
         tabIndex = null,
+        countdownDate = null,
         overrides = emptyList(),
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,

@@ -33,7 +33,7 @@ internal class CountdownComponentTests {
                     Args(
                         json = """
                             {
-                              "type": "countdown_dev",
+                              "type": "countdown",
                               "style": {
                                 "type": "date",
                                 "date": "2025-11-20T02:06:12.634Z"
@@ -67,7 +67,7 @@ internal class CountdownComponentTests {
                     Args(
                         json = """
                             {
-                              "type": "countdown_dev",
+                              "type": "countdown",
                               "style": {
                                 "type": "date",
                                 "date": "2025-11-20T02:06:12.634Z"
@@ -91,7 +91,7 @@ internal class CountdownComponentTests {
                     Args(
                         json = """
                             {
-                              "type": "countdown_dev",
+                              "type": "countdown",
                               "style": {
                                 "type": "date",
                                 "date": "2025-11-20T02:06:12.634Z"
@@ -115,7 +115,7 @@ internal class CountdownComponentTests {
                     Args(
                         json = """
                             {
-                              "type": "countdown_dev",
+                              "type": "countdown",
                               "style": {
                                 "type": "date",
                                 "date": "2025-11-20T02:06:12.634Z"

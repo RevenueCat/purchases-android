@@ -55,6 +55,11 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val tabIndex: Int?,
+    /**
+     * If this is non-null, it means this stack is inside a countdown component.
+     */
+    @get:JvmSynthetic
+    val countdownDate: java.util.Date?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedStackPartial>>,
     /**

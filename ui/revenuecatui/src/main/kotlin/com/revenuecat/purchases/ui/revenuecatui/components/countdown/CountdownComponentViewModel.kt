@@ -50,8 +50,8 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
             val delta = targetDate.time - now
 
             if (delta <= 0) {
-                hasEnded = true
                 countdownTime = CountdownTime.ZERO
+                hasEnded = true
                 break
             }
 

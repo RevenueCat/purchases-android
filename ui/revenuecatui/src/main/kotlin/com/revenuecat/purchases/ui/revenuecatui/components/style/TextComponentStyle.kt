@@ -55,6 +55,12 @@ internal class TextComponentStyle(
      */
     @get:JvmSynthetic
     val tabIndex: Int?,
+    /**
+     * If this is non-null, it means this text is inside a countdown component and countdown variables should be
+     * replaced with values calculated from this date.
+     */
+    @get:JvmSynthetic
+    val countdownDate: java.util.Date?,
     @get:JvmSynthetic
     val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     @get:JvmSynthetic

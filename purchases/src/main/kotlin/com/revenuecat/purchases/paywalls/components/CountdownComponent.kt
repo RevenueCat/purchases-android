@@ -11,7 +11,7 @@ import java.util.Date
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-@SerialName("countdown_dev")
+@SerialName("countdown")
 @Immutable
 class CountdownComponent(
     @get:JvmSynthetic val style: CountdownStyle,
