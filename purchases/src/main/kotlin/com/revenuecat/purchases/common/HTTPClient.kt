@@ -21,7 +21,6 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
-import com.revenuecat.purchases.google.BillingClientVersion
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -448,7 +447,7 @@ internal class HTTPClient(
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
-            "X-Billing-Client-Sdk-Version" to BillingClientVersion,
+            "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
