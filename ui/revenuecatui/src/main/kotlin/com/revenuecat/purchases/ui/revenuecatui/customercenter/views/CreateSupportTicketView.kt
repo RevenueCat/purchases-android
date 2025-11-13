@@ -25,7 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,12 +51,12 @@ internal fun CreateSupportTicketView(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
 ) {
-    var email by remember { mutableStateOf("") }
-    var emailDirty by remember { mutableStateOf(false) }
-    var emailHasFocus by remember { mutableStateOf(false) }
-    var description by remember { mutableStateOf("") }
-    var isSubmitting by remember { mutableStateOf(false) }
-    var hasError by remember { mutableStateOf(false) }
+    var email by rememberSaveable { mutableStateOf("") }
+    var emailDirty by rememberSaveable { mutableStateOf(false) }
+    var emailHasFocus by rememberSaveable { mutableStateOf(false) }
+    var description by rememberSaveable { mutableStateOf("") }
+    var isSubmitting by rememberSaveable { mutableStateOf(false) }
+    var hasError by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         CreateSupportTicketContent(
@@ -303,7 +303,7 @@ private fun ErrorSnackbar(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
 ) {
-    val errorSnackbarHostState = remember { SnackbarHostState() }
+    val errorSnackbarHostState = rememberSaveable { SnackbarHostState() }
     val errorMessage = localization.commonLocalizedString(
         CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
     )
