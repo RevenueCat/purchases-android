@@ -36,6 +36,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -156,6 +157,8 @@ private fun CreateSupportTicketContent(
             onDescriptionChange = descriptionState.onDescriptionChange,
             enabled = descriptionState.enabled,
             localization = localization,
+            showDone = !isSubmitting && isValidEmail(emailState.email.trim()),
+            onSubmit = onSubmit,
         )
 
         Spacer(modifier = Modifier.height(SECTION_SPACING))
@@ -239,6 +242,7 @@ private fun EmailInputField(
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
         ),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
     )
@@ -250,6 +254,8 @@ private fun DescriptionInputField(
     onDescriptionChange: (String) -> Unit,
     enabled: Boolean,
     localization: CustomerCenterConfigData.Localization,
+    showDone: Boolean,
+    onSubmit: () -> Unit,
 ) {
     val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
     val remainingCharsText = localization.commonLocalizedString(
@@ -279,6 +285,8 @@ private fun DescriptionInputField(
             .testTag("description_field"),
         minLines = 6,
         maxLines = 10,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { if (showDone && description.isNotBlank()) onSubmit() }),
     )
 }
 
