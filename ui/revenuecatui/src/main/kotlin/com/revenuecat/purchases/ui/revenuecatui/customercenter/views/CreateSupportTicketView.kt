@@ -55,11 +55,13 @@ internal fun CreateSupportTicketView(
     data: CreateSupportTicketData,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
+    initialEmail: String = "",
+    initialDescription: String = ""
 ) {
-    var email by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf(initialEmail) }
     var emailDirty by rememberSaveable { mutableStateOf(false) }
     var emailHasFocus by rememberSaveable { mutableStateOf(false) }
-    var description by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf(initialDescription) }
     var isSubmitting by rememberSaveable { mutableStateOf(false) }
     var hasError by rememberSaveable { mutableStateOf(false) }
 
@@ -107,6 +109,53 @@ internal fun CreateSupportTicketView(
             localization = localization,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun CreateSupportTicketView_Preview() {
+    val mockData = CreateSupportTicketData(
+        onSubmit = { _, _, _, _ -> },
+        onCancel = { },
+        onClose = { },
+    )
+    CustomerCenterPreviewTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            CreateSupportTicketView(
+                mockData,
+                CustomerCenterConfigTestData.customerCenterData().localization,
+            )
+        }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun CreateSupportTicketView_WithDataPreview() {
+    val mockData = CreateSupportTicketData(
+        onSubmit = { _, _, _, _ -> },
+        onCancel = { },
+        onClose = { },
+    )
+    CustomerCenterPreviewTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            CreateSupportTicketView(
+                mockData,
+                CustomerCenterConfigTestData.customerCenterData().localization,
+                initialEmail = "user@example.com",
+                initialDescription = "I'm having an issue with my subscription."
+            )
+        }
     }
 }
 
@@ -170,30 +219,6 @@ private fun CreateSupportTicketContent(
             onSubmit = onSubmit,
             localization = localization,
         )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Composable
-private fun CreateSupportTicketView_Preview() {
-    val mockData = CreateSupportTicketData(
-        onSubmit = { _, _, _, _ -> },
-        onCancel = { },
-        onClose = { },
-    )
-
-    CustomerCenterPreviewTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            CreateSupportTicketView(
-                mockData,
-                CustomerCenterConfigTestData.customerCenterData().localization,
-            )
-        }
     }
 }
 
