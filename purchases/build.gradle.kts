@@ -42,6 +42,9 @@ android {
             dimension = "billingclient"
             isDefault = true
         }
+        create("bc7") {
+            dimension = "billingclient"
+        }
     }
 
     defaultConfig {
@@ -159,7 +162,8 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    "bc8Api"(libs.billing)
+    "bc8Api"(libs.billing.bc8)
+    "bc7Api"(libs.billing.bc7)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
@@ -171,7 +175,8 @@ dependencies {
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    "testBc8Implementation"(libs.billing)
+    "testBc8Implementation"(libs.billing.bc8)
+    "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
@@ -197,6 +202,12 @@ dependencies {
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
         named("customEntitlementComputationBc8") {
+            suppress.set(true)
+        }
+        named("customEntitlementComputationBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc7") {
             suppress.set(true)
         }
         named("defaultsBc8") {

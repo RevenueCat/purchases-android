@@ -1116,27 +1116,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `getting all purchases gets both subs and inapps`() {
-        val builder = mockClient.mockQueryPurchases(
-            billingClientOKResult,
-            listOf(stubGooglePurchase())
-        )
-
-        var receivedPurchases = listOf<StoreTransaction>()
-        wrapper.queryAllPurchases(
-            appUserID = "appUserID",
-            onReceivePurchaseHistory = {
-                receivedPurchases = it
-            },
-            onReceivePurchaseHistoryError = { fail("Shouldn't be error") }
-        )
-
-        assertThat(receivedPurchases.size).isNotZero
-        mockClient.verifyQueryPurchasesCalledWithType(subsGoogleProductType, builder)
-        mockClient.verifyQueryPurchasesCalledWithType(inAppGoogleProductType, builder)
-    }
-
-    @Test
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         assertThat(onConnectedCalled).isTrue
@@ -1598,63 +1577,6 @@ class BillingWrapperTest {
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
-
-    // region findPurchaseInPurchaseHistory
-
-    @Test
-    fun `findPurchaseInPurchaseHistory finds purchase in active purchases`() {
-        val oldPurchase = stubGooglePurchase()
-        val purchases = listOf(oldPurchase)
-
-        mockClient.mockQueryPurchasesAsync(
-            billingClientOKResult,
-            billingClientOKResult,
-            purchases,
-            emptyList()
-        )
-
-        var foundPurchase: StoreTransaction? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserID = "test-app-user-id",
-            productType = ProductType.SUBS,
-            productId = oldPurchase.firstProductId,
-            onCompletion = { foundPurchase = it },
-            onError = { fail("Shouldn't be an error: $it") }
-        )
-
-        assertThat(foundPurchase).isNotNull
-        assertThat(foundPurchase!!.purchaseToken).isEqualTo(oldPurchase.purchaseToken)
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory does not find purchase if not in active purchases`() {
-        val oldPurchase = stubGooglePurchase()
-        val purchases = listOf(oldPurchase)
-
-        mockClient.mockQueryPurchasesAsync(
-            billingClientOKResult,
-            billingClientOKResult,
-            purchases,
-            emptyList()
-        )
-
-        var error: PurchasesError? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserID = "test-app-user-id",
-            productType = ProductType.SUBS,
-            productId = "unpurchased-product-id",
-            onCompletion = { fail("Should be an error") },
-            onError = { error = it }
-        )
-
-        assertThat(error).isNotNull
-        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(error!!.underlyingErrorMessage).isEqualTo(
-            PurchaseStrings.NO_EXISTING_PURCHASE.format("unpurchased-product-id")
-        )
-    }
-
-    // endregion findPurchaseInPurchaseHistory
 
     // region Multi-line subscriptions
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

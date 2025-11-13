@@ -35,6 +35,9 @@ android {
             dimension = "billingclient"
             isDefault = true
         }
+        create("bc7") {
+            dimension = "billingclient"
+        }
     }
 
     buildTypes {
@@ -160,6 +163,9 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
         named("defaultsBc8") {
             dependsOn("main")
         }
