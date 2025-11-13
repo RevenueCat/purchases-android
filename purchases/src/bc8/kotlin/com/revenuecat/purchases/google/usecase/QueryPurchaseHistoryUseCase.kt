@@ -29,6 +29,12 @@ internal data class QueryPurchaseHistoryUseCaseParams(
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
+/**
+ * Use case to query the purchase history from Google Play Billing.
+ * This doesn't actually return the purchase history starting in Billing Library 8.0.0, however, we keep the name,
+ * since we support older versions of the billing client in the bc7 flavor, and we need to ensure that the same name
+ * is used.
+ */
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,
     val onReceive: (List<StoreTransaction>) -> Unit,
