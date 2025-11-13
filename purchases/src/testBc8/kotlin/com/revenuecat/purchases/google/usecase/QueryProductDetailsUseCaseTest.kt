@@ -23,7 +23,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.AssertionsForClassTypes
 import org.assertj.core.data.Offset
@@ -71,8 +71,8 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             },
         )
 
-        Assertions.assertThat(receivedList).isNotNull
-        Assertions.assertThat(receivedList!!.size).isZero
+        assertThat(receivedList).isNotNull
+        assertThat(receivedList!!.size).isZero
     }
 
     @Test
@@ -98,8 +98,8 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             },
         )
 
-        Assertions.assertThat(slot.isCaptured).isTrue
-        Assertions.assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
     }
 
     @Test
@@ -120,10 +120,10 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             },
         )
 
-        Assertions.assertThat(slot.captured).isNotNull
+        assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
         val queriedProductIds = queryProductDetailsParamsProductList.map { it.productId }
-        Assertions.assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
+        assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
     }
 
     @Test
@@ -132,7 +132,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             productType = ProductType.SUBS,
             productIds = emptySet(),
             onReceive = {
-                Assertions.assertThat(it).isEmpty()
+                assertThat(it).isEmpty()
             },
             onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
@@ -150,7 +150,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             productType = ProductType.SUBS,
             productIds = setOf("", ""),
             onReceive = {
-                Assertions.assertThat(it).isEmpty()
+                assertThat(it).isEmpty()
             },
             onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
@@ -189,7 +189,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
             },
         )
 
-        Assertions.assertThat(numCallbacks).isEqualTo(1)
+        assertThat(numCallbacks).isEqualTo(1)
     }
 
     @Test
@@ -229,9 +229,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         lock.await()
-        Assertions.assertThat(lock.count).isEqualTo(0)
+        assertThat(lock.count).isEqualTo(0)
 
-        Assertions.assertThat(numCallbacks.get()).isEqualTo(1)
+        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     // region retries
@@ -260,7 +260,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 receivedList = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                fail("shouldn't be an error")
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -288,9 +288,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(timesExecutedInMainThread).isEqualTo(2)
-        Assertions.assertThat(receivedList).isNotNull
-        Assertions.assertThat(receivedList!!.size).isOne
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
+        assertThat(receivedList).isNotNull
+        assertThat(receivedList!!.size).isOne
     }
 
     @Test
@@ -314,7 +314,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = false,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -337,9 +337,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
     @Test
@@ -363,7 +363,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = true,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -386,12 +386,12 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(capturedDelays.size).isEqualTo(12)
-        Assertions.assertThat(
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(
             capturedDelays.last(),
         ).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
@@ -416,7 +416,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = false,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -440,11 +440,11 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(timesRetried).isEqualTo(4)
-        Assertions.assertThat(capturedDelays.last())
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last())
             .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
@@ -468,7 +468,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = false,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -491,9 +491,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
@@ -517,7 +517,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = false,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -540,9 +540,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        Assertions.assertThat(timesRetried).isEqualTo(1)
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
     }
 
     // endregion retries
@@ -570,7 +570,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 appInBackground = false,
             ),
             { _ ->
-                Assertions.fail("shouldn't be success")
+                fail("shouldn't be success")
             },
             { error ->
                 receivedError = error
@@ -587,9 +587,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         unmockkStatic(QueryProductDetailsParams::class)
 
-        Assertions.assertThat(receivedError).isNotNull
-        Assertions.assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        Assertions.assertThat(
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(
             receivedError!!.underlyingErrorMessage,
         ).isEqualTo(
             "Error while building QueryProductDetailsParams in Billing client: Simulated ExceptionInInitializerError",
