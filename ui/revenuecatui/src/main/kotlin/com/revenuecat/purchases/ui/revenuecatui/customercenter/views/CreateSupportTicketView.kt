@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,7 +57,7 @@ internal fun CreateSupportTicketView(
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     initialEmail: String = "",
-    initialDescription: String = ""
+    initialDescription: String = "",
 ) {
     var email by rememberSaveable { mutableStateOf(initialEmail) }
     var emailDirty by rememberSaveable { mutableStateOf(false) }
@@ -85,21 +86,22 @@ internal fun CreateSupportTicketView(
                     }
                 },
                 enabled = !isSubmitting,
+                showDone = !isSubmitting && isValidEmail(email.trim()),
+                onSubmit = {
+                    isSubmitting = true
+                    hasError = false
+                    data.onSubmit(
+                        email.trim(),
+                        description,
+                        { /* Success - navigation handled by ViewModel */ },
+                        {
+                            isSubmitting = false
+                            hasError = true
+                        },
+                    )
+                },
             ),
             isSubmitting = isSubmitting,
-            onSubmit = {
-                isSubmitting = true
-                hasError = false
-                data.onSubmit(
-                    email.trim(),
-                    description,
-                    { /* Success - navigation handled by ViewModel */ },
-                    {
-                        isSubmitting = false
-                        hasError = true
-                    },
-                )
-            },
             localization = localization,
         )
 
@@ -153,7 +155,7 @@ private fun CreateSupportTicketView_WithDataPreview() {
                 mockData,
                 CustomerCenterConfigTestData.customerCenterData().localization,
                 initialEmail = "user@example.com",
-                initialDescription = "I'm having an issue with my subscription."
+                initialDescription = "I'm having an issue with my subscription.",
             )
         }
     }
@@ -177,6 +179,8 @@ private data class DescriptionInputState(
     val description: String,
     val onDescriptionChange: (String) -> Unit,
     val enabled: Boolean,
+    val showDone: Boolean = false,
+    val onSubmit: () -> Unit = {},
 )
 
 @Composable
@@ -184,7 +188,6 @@ private fun CreateSupportTicketContent(
     emailState: EmailInputState,
     descriptionState: DescriptionInputState,
     isSubmitting: Boolean,
-    onSubmit: () -> Unit,
     localization: CustomerCenterConfigData.Localization,
 ) {
     Column(
@@ -202,12 +205,8 @@ private fun CreateSupportTicketContent(
         Spacer(modifier = Modifier.height(SECTION_TITLE_BOTTOM_PADDING))
 
         DescriptionInputField(
-            description = descriptionState.description,
-            onDescriptionChange = descriptionState.onDescriptionChange,
-            enabled = descriptionState.enabled,
+            state = descriptionState,
             localization = localization,
-            showDone = !isSubmitting && isValidEmail(emailState.email.trim()),
-            onSubmit = onSubmit,
         )
 
         Spacer(modifier = Modifier.height(SECTION_SPACING))
@@ -216,7 +215,7 @@ private fun CreateSupportTicketContent(
             email = emailState.email,
             description = descriptionState.description,
             isSubmitting = isSubmitting,
-            onSubmit = onSubmit,
+            onSubmit = descriptionState.onSubmit,
             localization = localization,
         )
     }
@@ -275,21 +274,19 @@ private fun EmailInputField(
 
 @Composable
 private fun DescriptionInputField(
-    description: String,
-    onDescriptionChange: (String) -> Unit,
-    enabled: Boolean,
+    state: DescriptionInputState,
     localization: CustomerCenterConfigData.Localization,
-    showDone: Boolean,
-    onSubmit: () -> Unit,
 ) {
-    val remainingChars = MAX_DESCRIPTION_LENGTH - description.length
+    val remainingChars = MAX_DESCRIPTION_LENGTH - state.description.length
     val remainingCharsText = localization.commonLocalizedString(
         CustomerCenterConfigData.Localization.CommonLocalizedString.CHARACTERS_REMAINING,
     ).replace("{{ count }}", remainingChars.toString())
 
+    val currentOnSubmit by rememberUpdatedState(state.onSubmit)
+
     OutlinedTextField(
-        value = description,
-        onValueChange = onDescriptionChange,
+        value = state.description,
+        onValueChange = state.onDescriptionChange,
         label = {
             Text(
                 localization.commonLocalizedString(
@@ -303,7 +300,7 @@ private fun DescriptionInputField(
                 style = MaterialTheme.typography.bodySmall,
             )
         },
-        enabled = enabled,
+        enabled = state.enabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
@@ -311,7 +308,9 @@ private fun DescriptionInputField(
         minLines = 6,
         maxLines = 10,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { if (showDone && description.isNotBlank()) onSubmit() }),
+        keyboardActions = KeyboardActions(
+            onDone = { if (state.showDone && state.description.isNotBlank()) currentOnSubmit() },
+        ),
     )
 }
 
@@ -346,11 +345,12 @@ private fun ErrorSnackbar(
     val errorMessage = localization.commonLocalizedString(
         CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
     )
+    val currentOnErrorShow by rememberUpdatedState(onErrorShow)
 
     LaunchedEffect(hasError) {
         if (hasError) {
             errorSnackbarHostState.showSnackbar(errorMessage)
-            onErrorShow()
+            currentOnErrorShow()
         }
     }
 
