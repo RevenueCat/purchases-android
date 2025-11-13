@@ -1104,7 +1104,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         try {
             // Perform request - should timeout on main backend and use fallback
             val result = client.performRequest(
-                baseURL,
+                URL("http://10.255.255.255/"), // Unroutable IP to force connection timeout
                 endpoint,
                 body = null,
                 postFieldsToSign = null,
@@ -1151,7 +1151,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // Perform request - should timeout on main backend and not use fallback
         assertThatThrownBy {
             client.performRequest(
-                baseURL,
+                URL("http://10.255.255.255/"), // Unroutable IP to force connection timeout
                 endpoint,
                 body = null,
                 postFieldsToSign = null,

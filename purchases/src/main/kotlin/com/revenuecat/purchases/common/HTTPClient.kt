@@ -162,7 +162,7 @@ internal class HTTPClient(
             )
         }
 
-        val isMainBackend = baseURL.toString() == appConfig.baseURL.toString()
+        val isMainBackend = fallbackURLIndex == 0
 
         var callSuccessful = false
         val requestStartTime = dateProvider.now
