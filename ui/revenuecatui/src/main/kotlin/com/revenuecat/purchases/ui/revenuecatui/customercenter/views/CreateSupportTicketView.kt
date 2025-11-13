@@ -322,7 +322,7 @@ private fun ErrorSnackbar(
         CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED,
     )
 
-    LaunchedEffect(hasError, onErrorShow) {
+    LaunchedEffect(hasError) {
         if (hasError) {
             errorSnackbarHostState.showSnackbar(errorMessage)
             onErrorShow()
