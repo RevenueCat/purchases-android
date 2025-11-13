@@ -104,7 +104,13 @@ metalava {
 
     val name = if (variantName.lowercase().contains("defaults")) {
         excludeSourceSets.add("src/customEntitlementComputation/kotlin")
-        "api-defauts.txt"
+        if (variantName.lowercase().contains("bc8")) {
+            "api-defauts.txt"
+        } else if (variantName.lowercase().contains("bc7")) {
+            "api-defaults-bc7.txt"
+        } else {
+            "api-defaults-unknown.txt"
+        }
     } else if (variantName.lowercase().contains("entitlement")) {
         excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"

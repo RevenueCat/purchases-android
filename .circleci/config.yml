@@ -243,95 +243,55 @@ jobs:
           paths:
             - .
 
-  test_defaults_bc8_debug:
+  test:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
+    parameters:
+      flavor:
+        type: string
+        description: "Flavor to test: defaults or customEntitlementComputation"
+      bc_version:
+        type: string
+        description: "BC version: bc7 or bc8"
+      build_type:
+        type: string
+        description: "Build type: debug or release"
+      run_kover:
+        type: boolean
+        default: false
+        description: "Whether to run kover commands (only for defaults bc8 release)"
     steps:
       - checkout
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Run Defaults Debug Tests
-          command: ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+          name: Run << parameters.flavor >> << parameters.bc_version >> << parameters.build_type >> Tests
+          command: |
+            FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
+            BC_VERSION_CAPITALIZED=$(echo << parameters.bc_version >> | sed 's/\b\(.\)/\u\1/')
+            BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
+            TASK="test${FLAVOR_CAPITALIZED}${BC_VERSION_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            ./gradlew $TASK --parallel --no-daemon
+      - when:
+          condition: << parameters.run_kover >>
+          steps:
+            - run:
+                name: Generate Kover HTML
+                command: ./gradlew purchases:koverHtmlReportDefaultsBc8Release
+            - run:
+                name: Generate Kover XML
+                command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
+            - codecov/upload:
+                file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results-defaults-bc8-debug
-            find . -path ./build/test-results-defaults-bc8-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-bc8-debug/ \;
+            RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
       - store_test_results:
-          path: build/test-results-defaults-bc8-debug
-      - store_artifacts:
-          path: build/reports
-
-  test_defaults_bc8_release:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run Defaults Release Tests
-          command: ./gradlew testDefaultsBc8ReleaseUnitTest --parallel --no-daemon
-      - run:
-          name: Generate Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsBc8Release
-      - run:
-          name: Generate Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
-      - codecov/upload:
-          file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-defaults-bc8-release
-            find . -path ./build/test-results-defaults-bc8-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-bc8-release/ \;
-      - store_test_results:
-          path: build/test-results-defaults-bc8-release
-      - store_artifacts:
-          path: build/reports
-
-  test_cec_debug:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run CEC Debug Tests
-          command: ./gradlew testCustomEntitlementComputationBc8DebugUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-cec-debug
-            find . -path ./build/test-results-cec-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-debug/ \;
-      - store_test_results:
-          path: build/test-results-cec-debug
-      - store_artifacts:
-          path: build/reports
-
-  test_cec_release:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run CEC Release Tests
-          command: ./gradlew testCustomEntitlementComputationBc8ReleaseUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-cec-release
-            find . -path ./build/test-results-cec-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-release/ \;
-      - store_test_results:
-          path: build/test-results-cec-release
+          path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
       - store_artifacts:
           path: build/reports
 
@@ -947,16 +907,36 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
-      - test_defaults_bc8_debug:
+      - test:
+          name: test_defaults_bc8_debug
+          flavor: "defaults"
+          bc_version: "bc8"
+          build_type: "debug"
           requires:
             - prepare-tests
-      - test_defaults_bc8_release:
+      - test:
+          name: test_defaults_bc7_release
+          flavor: "defaults"
+          bc_version: "bc7"
+          build_type: "release"
           requires:
             - prepare-tests
-      - test_cec_debug:
+      - test:
+          name: test_cec_<< matrix.build_type >>
+          flavor: "customEntitlementComputation"
+          bc_version: "bc8"
           requires:
             - prepare-tests
-      - test_cec_release:
+          matrix:
+            parameters:
+              build_type: ["debug", "release"]
+      # Special case for defaults BC8 release with kover
+      - test:
+          name: test_defaults_bc8_release
+          flavor: "defaults"
+          bc_version: "bc8"
+          build_type: "release"
+          run_kover: true
           requires:
             - prepare-tests
       - verify-compatibility:
@@ -1013,6 +993,7 @@ workflows:
           requires:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
+            - test_defaults_bc7_release
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester
