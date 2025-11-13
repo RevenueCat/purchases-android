@@ -118,7 +118,6 @@ internal abstract class BaseHTTPClientTest {
         expectedResult: HTTPResult,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
         requestDateHeader: Date? = null,
-        bodyDelayMs: Long? = null,
         server: MockWebServer = this.server,
         isFallbackURL: Boolean = false,
     ) {
@@ -140,9 +139,6 @@ internal abstract class BaseHTTPClientTest {
             .setBody(expectedResult.payload)
             .setResponseCode(expectedResult.responseCode)
             .apply {
-                if (bodyDelayMs != null) {
-                    setBodyDelay(bodyDelayMs, TimeUnit.MILLISECONDS)
-                }
                 if (requestDateHeader != null) {
                     setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, requestDateHeader.time)
                 }
