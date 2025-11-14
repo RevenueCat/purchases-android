@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -288,5 +289,6 @@ private fun previewStackComponentStyle(
         rcPackage = null,
         tabIndex = tabIndex,
         countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     )

@@ -144,6 +144,7 @@ private fun rememberProcessedText(
                     dateLocale = dateLocale,
                     date = state.currentDate,
                     countdownTime = textState.countdownTime,
+                    countFrom = textState.countFrom,
                 )
             } ?: textState.text
         }

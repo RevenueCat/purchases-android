@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -116,6 +117,13 @@ internal class TextComponentState(
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
     }
+
+    /**
+     * How countdown variables should be displayed (component hours vs total hours).
+     */
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom
+        get() = style.countFrom
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)

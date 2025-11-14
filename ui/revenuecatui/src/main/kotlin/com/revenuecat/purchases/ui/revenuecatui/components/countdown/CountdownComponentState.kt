@@ -30,6 +30,14 @@ internal data class CountdownTime(
     val minutes: Int,
     val seconds: Int,
 ) {
+    @Suppress("MagicNumber")
+    val totalHours: Int
+        get() = days * 24 + hours
+
+    @Suppress("MagicNumber")
+    val totalMinutes: Int
+        get() = days * 24 * 60 + hours * 60 + minutes
+
     companion object {
         val ZERO = CountdownTime(0, 0, 0, 0)
 

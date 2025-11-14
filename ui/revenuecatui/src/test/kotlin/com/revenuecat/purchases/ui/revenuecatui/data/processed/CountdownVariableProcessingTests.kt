@@ -7,6 +7,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
@@ -153,7 +154,81 @@ class CountdownVariableProcessingTests {
         assertThat(result).isEqualTo("This has no countdown variables")
     }
 
-    private fun processTemplate(template: String, countdownTime: CountdownTime): String {
+    @Test
+    fun `countFrom DAYS shows component values for all units`() {
+        val countdownTime = CountdownTime(days = 2, hours = 5, minutes = 30, seconds = 15)
+        val template = "{{ count_days_without_zero }}:{{ count_hours_without_zero }}:{{ count_minutes_without_zero }}:{{ count_seconds_without_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.DAYS)
+
+        assertThat(result).isEqualTo("2:5:30:15")
+    }
+
+    @Test
+    fun `countFrom HOURS shows total hours with days hidden`() {
+        val countdownTime = CountdownTime(days = 2, hours = 5, minutes = 30, seconds = 15)
+        val template = "{{ count_days_without_zero }}:{{ count_hours_without_zero }}:{{ count_minutes_without_zero }}:{{ count_seconds_without_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.HOURS)
+
+        assertThat(result).isEqualTo("0:53:30:15")
+    }
+
+    @Test
+    fun `countFrom HOURS with 48 hours shows 48 not 24`() {
+        val countdownTime = CountdownTime(days = 2, hours = 0, minutes = 0, seconds = 0)
+        val template = "{{ count_hours_without_zero }} hours remaining"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.HOURS)
+
+        assertThat(result).isEqualTo("48 hours remaining")
+    }
+
+    @Test
+    fun `countFrom MINUTES shows total minutes with days and hours hidden`() {
+        val countdownTime = CountdownTime(days = 2, hours = 5, minutes = 30, seconds = 15)
+        val template = "{{ count_days_without_zero }}:{{ count_hours_without_zero }}:{{ count_minutes_without_zero }}:{{ count_seconds_without_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.MINUTES)
+
+        assertThat(result).isEqualTo("0:0:3210:15")
+    }
+
+    @Test
+    fun `countFrom MINUTES with 6 days shows total minutes`() {
+        val countdownTime = CountdownTime(days = 6, hours = 22, minutes = 59, seconds = 56)
+        val template = "{{ count_hours_without_zero }}:{{ count_minutes_without_zero }}:{{ count_seconds_without_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.MINUTES)
+
+        assertThat(result).isEqualTo("0:10019:56")
+    }
+
+    @Test
+    fun `countFrom HOURS with zero padding shows total hours correctly`() {
+        val countdownTime = CountdownTime(days = 7, hours = 3, minutes = 15, seconds = 45)
+        val template = "{{ count_days_with_zero }}:{{ count_hours_with_zero }}:{{ count_minutes_with_zero }}:{{ count_seconds_with_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.HOURS)
+
+        assertThat(result).isEqualTo("00:171:15:45")
+    }
+
+    @Test
+    fun `countFrom MINUTES with zero padding shows total minutes correctly`() {
+        val countdownTime = CountdownTime(days = 1, hours = 2, minutes = 3, seconds = 4)
+        val template = "{{ count_days_with_zero }}:{{ count_hours_with_zero }}:{{ count_minutes_with_zero }}:{{ count_seconds_with_zero }}"
+
+        val result = processTemplate(template, countdownTime, CountdownComponent.CountFrom.MINUTES)
+
+        assertThat(result).isEqualTo("00:00:1563:04")
+    }
+
+    private fun processTemplate(
+        template: String,
+        countdownTime: CountdownTime,
+        countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+    ): String {
         val variableDataProvider = VariableDataProvider(MockResourceProvider())
         return VariableProcessorV2.processVariables(
             template = template,
@@ -169,6 +244,7 @@ class CountdownVariableProcessingTests {
             dateLocale = Locale.US,
             date = Date(),
             countdownTime = countdownTime,
+            countFrom = countFrom,
         )
     }
 }

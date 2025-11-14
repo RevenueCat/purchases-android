@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -98,6 +99,7 @@ class ButtonComponentViewTests {
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
                             countdownDate = null,
+                            countFrom = CountdownComponent.CountFrom.DAYS,
                             overrides = emptyList(),
                         ),
                     ),
@@ -121,6 +123,7 @@ class ButtonComponentViewTests {
                     rcPackage = null,
                     tabIndex = null,
                     countdownDate = null,
+                    countFrom = CountdownComponent.CountFrom.DAYS,
                     overrides = emptyList(),
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
