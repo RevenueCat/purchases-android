@@ -41,9 +41,19 @@ android {
         create("bc8") {
             dimension = "billingclient"
             isDefault = true
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc8.get()}\"",
+            )
         }
         create("bc7") {
             dimension = "billingclient"
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc7.get()}\"",
+            )
         }
     }
 
