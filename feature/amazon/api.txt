@@ -1,0 +1,13 @@
+// Signature format: 4.0
+package com.revenuecat.purchases.amazon {
+
+  public final class AmazonConfiguration extends com.revenuecat.purchases.PurchasesConfiguration {
+    ctor public AmazonConfiguration(com.revenuecat.purchases.amazon.AmazonConfiguration.Builder);
+  }
+
+  public static final class AmazonConfiguration.Builder extends com.revenuecat.purchases.PurchasesConfiguration.Builder {
+    ctor public AmazonConfiguration.Builder(android.content.Context, String);
+  }
+
+}
+

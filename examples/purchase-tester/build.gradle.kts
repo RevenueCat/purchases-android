@@ -1,10 +1,7 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    id("revenuecat-android-application")
     alias(libs.plugins.androidx.navigation.safeargs)
 }
-
-apply(from = "$rootDir/base-application.gradle")
 
 android {
     buildFeatures {
