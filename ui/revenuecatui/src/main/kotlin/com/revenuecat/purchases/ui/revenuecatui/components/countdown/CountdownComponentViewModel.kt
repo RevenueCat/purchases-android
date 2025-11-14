@@ -48,8 +48,13 @@ internal data class CountdownTime(
 
 @Composable
 internal fun rememberCountdownState(targetDate: Date): CountdownState {
-    var countdownTime by remember { mutableStateOf(CountdownTime.ZERO) }
-    var hasEnded by remember { mutableStateOf(false) }
+    val initialDelta = remember(targetDate) { targetDate.time - Date().time }
+    var countdownTime by remember(targetDate) {
+        mutableStateOf(
+            if (initialDelta <= 0) CountdownTime.ZERO else CountdownTime.fromInterval(initialDelta),
+        )
+    }
+    var hasEnded by remember(targetDate) { mutableStateOf(initialDelta <= 0) }
     var isCountingEnabled by remember { mutableStateOf(true) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
