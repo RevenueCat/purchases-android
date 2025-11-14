@@ -3,7 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class CountdownComponentViewModelTests {
+class CountdownComponentStateTests {
 
     @Test
     fun `CountdownTime fromInterval with zero interval returns ZERO`() {
