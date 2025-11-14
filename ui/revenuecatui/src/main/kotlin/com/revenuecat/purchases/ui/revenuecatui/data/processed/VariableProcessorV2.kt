@@ -422,14 +422,14 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage.product.name
 
-        Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.days?.let { String.format(Locale.US, "%02d", it) } ?: ""
-        Variable.COUNT_DAYS_WITHOUT_ZERO -> countdownTime?.days?.toString() ?: ""
-        Variable.COUNT_HOURS_WITH_ZERO -> countdownTime?.hours?.let { String.format(Locale.US, "%02d", it) } ?: ""
-        Variable.COUNT_HOURS_WITHOUT_ZERO -> countdownTime?.hours?.toString() ?: ""
-        Variable.COUNT_MINUTES_WITH_ZERO -> countdownTime?.minutes?.let { String.format(Locale.US, "%02d", it) } ?: ""
-        Variable.COUNT_MINUTES_WITHOUT_ZERO -> countdownTime?.minutes?.toString() ?: ""
-        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let { String.format(Locale.US, "%02d", it) } ?: ""
-        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.toString() ?: ""
+        Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.days?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_DAYS_WITHOUT_ZERO -> countdownTime?.days?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_HOURS_WITH_ZERO -> countdownTime?.hours?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_HOURS_WITHOUT_ZERO -> countdownTime?.hours?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_MINUTES_WITH_ZERO -> countdownTime?.minutes?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_MINUTES_WITHOUT_ZERO -> countdownTime?.minutes?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%d", it) } ?: ""
     }
 
     private fun String.processFunction(function: Function, locale: Locale): String = when (function) {
