@@ -67,6 +67,15 @@ class EventsManagerTest {
             locale = "es_ES"
         )
     )
+    private val adEvent = AdEvent.Displayed(
+        id = "ad-event-id",
+        timestamp = 1699270688884,
+        networkName = "Google AdMob",
+        mediatorName = AdMediatorName.AD_MOB,
+        placement = "banner_home",
+        adUnitId = "ca-app-pub-123456",
+        impressionId = "impression-id"
+    )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
     private var postedRequest: EventsRequest? = null
 
@@ -557,5 +566,91 @@ class EventsManagerTest {
         eventsManager.track(revenueEvent)
 
         checkFileNumberOfEvents(3)
+    }
+
+    // File Size Limit Tests
+
+    @Test
+    fun `file size limit is not reached with small number of events`() {
+        // Track a small number of events that won't reach the 2048KB limit
+        for (i in 0..9) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(10)
+    }
+
+    @Test
+    fun `file size limit clears oldest events when limit is reached`() {
+        // Each event is approximately 300 bytes when serialized
+        // To reach 2048KB (2097152 bytes), we need about 7000 events
+        // Let's track 7100 events to exceed the limit
+        val eventsToTrack = 7100
+
+        for (i in 0 until eventsToTrack) {
+            eventsManager.track(paywallEvent)
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val finalEventCount = file.readLines().size
+
+        // The file should have fewer events than we tracked because
+        // the oldest 50 events were cleared each time the limit was reached
+        assertThat(finalEventCount).isLessThan(eventsToTrack)
+        assertThat(finalEventCount).isGreaterThan(5000) // Should still have a significant number of events
+
+        // Verify file size is under the limit (2048KB)
+        val fileSizeKB = file.length() / 1024.0
+        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `file size limit works with mixed event types`() {
+        // Track a mix of events to exceed the limit
+        val eventsToTrack = 2500
+
+        for (i in 0 until eventsToTrack) {
+            when (i % 3) {
+                0 -> eventsManager.track(paywallEvent)
+                1 -> eventsManager.track(customerCenterImpressionEvent)
+                2 -> eventsManager.track(adEvent)
+            }
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `oldest events are cleared when limit is reached maintaining file integrity`() {
+        // Track enough events to trigger the size check multiple times
+        // With ~1.3KB per event, we need about 1600 events to reach the limit
+        for (i in 0 until 1700) {
+            eventsManager.track(paywallEvent.copy(
+                data = paywallEvent.data.copy(
+                    offeringIdentifier = "offeringID_${i}_" + "x".repeat(1000),
+                )
+            ))
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+
+        val lines = file.readLines()
+        val firstLine = lines.first()
+        // Assert that the first line has a more recent offeringIdentifier, indicating older events were cleared
+        val firstOfferingID = firstLine.substringAfter("offeringID_").substringBefore("_").toInt()
+        assertThat(firstOfferingID).isGreaterThan(50) // At least one clearing should have occurred
+
+        // Verify all remaining events are left as expected
+        lines.forEach { line ->
+            // Should not throw exception
+            assertThat(line).startsWith("{\"type\":")
+        }
     }
 }
