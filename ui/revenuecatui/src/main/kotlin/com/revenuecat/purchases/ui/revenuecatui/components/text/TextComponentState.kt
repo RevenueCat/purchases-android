@@ -13,10 +13,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -35,13 +38,14 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TextComponentState =
-    rememberUpdatedTextComponentState(
+): TextComponentState {
+    return rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
+}
 
 @Stable
 @JvmSynthetic
@@ -54,6 +58,11 @@ internal fun rememberUpdatedTextComponentState(
 ): TextComponentState {
     val screenCondition = LocalScreenCondition.current
 
+    // Create countdown state once if this text is inside a countdown component
+    val countdownState = style.countdownDate?.let { date ->
+        rememberCountdownState(date)
+    }
+
     return remember(style) {
         TextComponentState(
             initialScreenCondition = screenCondition,
@@ -64,6 +73,7 @@ internal fun rememberUpdatedTextComponentState(
         )
     }.apply {
         update(
+            countdownTime = countdownState?.countdownTime,
             screenCondition = screenCondition,
         )
     }
@@ -78,6 +88,17 @@ internal class TextComponentState(
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
+
+    /**
+     * The current countdown time, if this text is inside a countdown component.
+     *
+     * Updated every second via [update] when countdown is active. Triggers recomposition
+     * to update countdown variables (e.g., {{ count_hours_without_zero }}) in the text.
+     * Null if this text is not inside a countdown component.
+     */
+    var countdownTime by mutableStateOf<CountdownTime?>(null)
+        private set
+
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -95,6 +116,13 @@ internal class TextComponentState(
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
     }
+
+    /**
+     * How countdown variables should be displayed (component hours vs total hours).
+     */
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom
+        get() = style.countFrom
 
     private val presentedPartial by derivedStateOf {
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
@@ -170,8 +198,10 @@ internal class TextComponentState(
 
     @JvmSynthetic
     fun update(
+        countdownTime: CountdownTime? = this.countdownTime,
         screenCondition: ScreenConditionSnapshot? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition
+        this.countdownTime = countdownTime
     }
 }
