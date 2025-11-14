@@ -94,11 +94,12 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     @Serializable
-    @SerialName("ad_opened")
+    @SerialName("ad")
     data class Ad(
         val id: String,
         val version: Int,
         val type: String,
+        @SerialName("timestamp_ms")
         val timestamp: Long,
         @SerialName("network_name")
         val networkName: String,
@@ -107,12 +108,14 @@ internal sealed class BackendEvent : Event {
         val placement: String?,
         @SerialName("ad_unit_id")
         val adUnitId: String,
-        @SerialName("ad_instance_id")
-        val adInstanceId: String,
+        @SerialName("impression_id")
+        val impressionId: String,
         @SerialName("app_user_id")
         val appUserID: String,
         @SerialName("app_session_id")
         val appSessionID: String,
+
+        // Revenue event only fields
         @SerialName("revenue_micros")
         val revenueMicros: Long? = null,
         val currency: String? = null,

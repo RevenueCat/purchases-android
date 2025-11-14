@@ -38,14 +38,14 @@ class AdTracker internal constructor(
      * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
      * @param placement The placement of the ad, if available.
      * @param adUnitId The ad unit ID.
-     * @param adInstanceId The ad instance ID.
+     * @param impressionId The impression ID.
      */
     fun trackAdDisplayed(
         networkName: String,
         mediatorName: String,
         placement: String?,
         adUnitId: String,
-        adInstanceId: String,
+        impressionId: String,
     ) {
         eventsManager?.track(
             event = AdEvent.Displayed(
@@ -53,7 +53,7 @@ class AdTracker internal constructor(
                 mediatorName = mediatorName,
                 placement = placement,
                 adUnitId = adUnitId,
-                adInstanceId = adInstanceId,
+                impressionId = impressionId,
             ),
         )
     }
@@ -65,14 +65,14 @@ class AdTracker internal constructor(
      * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
      * @param placement The placement of the ad, if available.
      * @param adUnitId The ad unit ID.
-     * @param adInstanceId The ad instance ID.
+     * @param impressionId The impression ID.
      */
     fun trackAdOpened(
         networkName: String,
         mediatorName: String,
         placement: String?,
         adUnitId: String,
-        adInstanceId: String,
+        impressionId: String,
     ) {
         eventsManager?.track(
             event = AdEvent.Open(
@@ -80,7 +80,7 @@ class AdTracker internal constructor(
                 mediatorName = mediatorName,
                 placement = placement,
                 adUnitId = adUnitId,
-                adInstanceId = adInstanceId,
+                impressionId = impressionId,
             ),
         )
     }
@@ -92,7 +92,7 @@ class AdTracker internal constructor(
      * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
      * @param placement The placement of the ad, if available.
      * @param adUnitId The ad unit ID.
-     * @param adInstanceId The ad instance ID.
+     * @param impressionId The impression ID.
      * @param revenueMicros The revenue generated from the ad in micros.
      * @param currency The currency code for the revenue (e.g., "USD").
      * @param precision The precision of the revenue value. Should normally be one of [AdRevenuePrecision].
@@ -103,7 +103,7 @@ class AdTracker internal constructor(
         mediatorName: String,
         placement: String?,
         adUnitId: String,
-        adInstanceId: String,
+        impressionId: String,
         revenueMicros: Long,
         currency: String,
         precision: String, // WIP Should normally be one of AdRevenuePrecision.
@@ -114,7 +114,7 @@ class AdTracker internal constructor(
                 mediatorName = mediatorName,
                 placement = placement,
                 adUnitId = adUnitId,
-                adInstanceId = adInstanceId,
+                impressionId = impressionId,
                 revenueMicros = revenueMicros,
                 currency = currency,
                 precision = precision,

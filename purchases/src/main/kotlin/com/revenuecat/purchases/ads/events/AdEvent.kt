@@ -9,9 +9,9 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import java.util.UUID
 
 internal enum class AdEventType(val value: String) {
-    DISPLAYED("displayed"),
-    OPENED("opened"),
-    REVENUE("revenue"),
+    DISPLAYED("rc_ads_ad_displayed"),
+    OPENED("rc_ads_ad_opened"),
+    REVENUE("rc_ads_ad_revenue"),
 }
 
 internal sealed interface AdEvent : FeatureEvent {
@@ -23,7 +23,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val mediatorName: String
     val placement: String?
     val adUnitId: String
-    val adInstanceId: String
+    val impressionId: String
 
     class Displayed(
         override val id: String = UUID.randomUUID().toString(),
@@ -34,7 +34,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val mediatorName: String,
         override val placement: String?,
         override val adUnitId: String,
-        override val adInstanceId: String,
+        override val impressionId: String,
     ) : AdEvent
 
     class Open(
@@ -46,7 +46,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val mediatorName: String,
         override val placement: String?,
         override val adUnitId: String,
-        override val adInstanceId: String,
+        override val impressionId: String,
     ) : AdEvent
 
     class Revenue(
@@ -58,7 +58,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val mediatorName: String,
         override val placement: String?,
         override val adUnitId: String,
-        override val adInstanceId: String,
+        override val impressionId: String,
         val revenueMicros: Long,
         val currency: String,
         val precision: String,
