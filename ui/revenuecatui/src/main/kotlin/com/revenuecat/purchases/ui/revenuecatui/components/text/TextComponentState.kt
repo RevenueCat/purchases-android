@@ -14,8 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment

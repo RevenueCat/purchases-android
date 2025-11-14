@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -75,11 +76,12 @@ internal fun LoadedPaywallComponents(
 
     val style = state.stack
     val screenConditionState = rememberScreenConditionState(state.screenSizes)
+    val density = LocalDensity.current
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
     val scaffoldModifier = modifier
-        .trackScreenCondition(screenConditionState)
+        .trackScreenCondition(screenConditionState, density)
         .background(background)
 
     CompositionLocalProvider(LocalScreenCondition provides screenConditionState.snapshot) {

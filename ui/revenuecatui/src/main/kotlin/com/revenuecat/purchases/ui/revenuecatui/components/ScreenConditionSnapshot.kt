@@ -15,4 +15,5 @@ internal enum class ScreenOrientation {
     UNKNOWN,
 }
 
+@Suppress("CompositionLocalAllowlist")
 internal val LocalScreenCondition = staticCompositionLocalOf { ScreenConditionSnapshot() }

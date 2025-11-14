@@ -3,14 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -91,7 +89,9 @@ internal class ScreenConditionState(
         return orientation == ScreenOrientation.LANDSCAPE && windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     }
 
-    private fun resolveBreakpoints(screenSizes: List<UiConfig.AppConfig.ScreenSize>?): List<UiConfig.AppConfig.ScreenSize> {
+    private fun resolveBreakpoints(
+        screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
+    ): List<UiConfig.AppConfig.ScreenSize> {
         val allSizes = screenSizes?.takeIf { it.isNotEmpty() } ?: UiConfig.AppConfig.ScreenSize.Defaults.all
         return allSizes.sortedBy { it.width }
     }
@@ -120,11 +120,9 @@ internal fun rememberScreenConditionState(
 
 internal fun Modifier.trackScreenCondition(
     state: ScreenConditionState,
-): Modifier = composed {
-    val density: Density = LocalDensity.current
-    onSizeChanged { size ->
-        val widthDp = size.width / density.density
-        val heightDp = size.height / density.density
-        state.updateLayoutSize(widthDp = widthDp, heightDp = heightDp)
-    }
+    density: Density,
+): Modifier = this.onSizeChanged { size ->
+    val widthDp = size.width / density.density
+    val heightDp = size.height / density.density
+    state.updateLayoutSize(widthDp = widthDp, heightDp = heightDp)
 }

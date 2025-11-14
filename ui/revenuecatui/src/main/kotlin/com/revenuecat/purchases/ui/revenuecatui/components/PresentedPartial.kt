@@ -104,69 +104,80 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
+): Boolean = this.conditions.all { condition ->
+    conditionMatches(condition, screenCondition, introOfferEligibility, state, selectedPackageIdentifier)
+}
+
+private fun conditionMatches(
+    condition: ComponentOverride.Condition,
+    screenCondition: ScreenConditionSnapshot,
+    introOfferEligibility: IntroOfferEligibility,
+    state: ComponentViewState,
+    selectedPackageIdentifier: String?,
+): Boolean = when (condition) {
+    ComponentOverride.Condition.Compact,
+    ComponentOverride.Condition.Medium,
+    ComponentOverride.Condition.Expanded,
+    -> screenCondition.condition.applicableConditions.contains(condition)
+
+    ComponentOverride.Condition.MultipleIntroOffers ->
+        introOfferEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+
+    ComponentOverride.Condition.IntroOffer ->
+        introOfferEligibility != IntroOfferEligibility.INELIGIBLE
+
+    ComponentOverride.Condition.Selected ->
+        state == ComponentViewState.SELECTED
+
+    ComponentOverride.Condition.Unsupported -> false
+
+    is ComponentOverride.Condition.Orientation ->
+        matchesOrientation(condition, screenCondition.orientation)
+
+    is ComponentOverride.Condition.ScreenSize ->
+        matchesScreenSize(condition, screenCondition.screenSize?.name)
+
+    is ComponentOverride.Condition.SelectedPackage ->
+        matchesSelectedPackage(condition, selectedPackageIdentifier)
+}
+
+private fun matchesOrientation(
+    condition: ComponentOverride.Condition.Orientation,
+    orientation: ScreenOrientation,
 ): Boolean {
-    for (condition in conditions) {
-        when (condition) {
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-            -> {
-                if (!screenCondition.condition.applicableConditions.contains(condition)) return false
-            }
-            ComponentOverride.Condition.MultipleIntroOffers -> {
-                if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
-            }
-            ComponentOverride.Condition.IntroOffer -> {
-                if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
-            }
-            ComponentOverride.Condition.Selected -> {
-                if (state != ComponentViewState.SELECTED) return false
-            }
-            ComponentOverride.Condition.Unsupported -> {
-                return false
-            }
-            is ComponentOverride.Condition.Orientation -> {
-                val activeOrientation = screenCondition.orientation.toConditionOrientationType()
-                when (condition.operator) {
-                    ComponentOverride.Condition.ArrayOperatorType.IN ->
-                        if (activeOrientation == null || !condition.orientations.contains(activeOrientation)) {
-                            return false
-                        }
-                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
-                        if (activeOrientation != null && condition.orientations.contains(activeOrientation)) {
-                            return false
-                        }
-                }
-            }
-            is ComponentOverride.Condition.ScreenSize -> {
-                val activeScreenSize = screenCondition.screenSize?.name ?: return false
-                when (condition.operator) {
-                    ComponentOverride.Condition.ArrayOperatorType.IN ->
-                        if (!condition.sizes.contains(activeScreenSize)) {
-                            return false
-                        }
-                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
-                        if (condition.sizes.contains(activeScreenSize)) {
-                            return false
-                        }
-                }
-            }
-            is ComponentOverride.Condition.SelectedPackage -> {
-                val selected = selectedPackageIdentifier ?: return false
-                when (condition.operator) {
-                    ComponentOverride.Condition.ArrayOperatorType.IN ->
-                        if (!condition.packages.contains(selected)) {
-                            return false
-                        }
-                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
-                        if (condition.packages.contains(selected)) {
-                            return false
-                        }
-                }
-            }
-        }
+    val activeOrientation = orientation.toConditionOrientationType()
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            activeOrientation != null && condition.orientations.contains(activeOrientation)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            activeOrientation == null || !condition.orientations.contains(activeOrientation)
     }
-    return true
+}
+
+private fun matchesScreenSize(
+    condition: ComponentOverride.Condition.ScreenSize,
+    activeName: String?,
+): Boolean {
+    activeName ?: return false
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            condition.sizes.contains(activeName)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            !condition.sizes.contains(activeName)
+    }
+}
+
+private fun matchesSelectedPackage(
+    condition: ComponentOverride.Condition.SelectedPackage,
+    selectedPackageIdentifier: String?,
+): Boolean {
+    val selected = selectedPackageIdentifier ?: return false
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            condition.packages.contains(selected)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            !condition.packages.contains(selected)
+    }
 }
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
