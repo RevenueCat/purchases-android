@@ -110,7 +110,7 @@ private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
 ): String {
-    val processedText by remember(state, textState, textState.countdownTime) {
+    val processedText by remember(state, textState) {
         derivedStateOf {
             textState.applicablePackage?.let { packageToUse ->
                 val dateLocale = state.locale.toJavaLocale()

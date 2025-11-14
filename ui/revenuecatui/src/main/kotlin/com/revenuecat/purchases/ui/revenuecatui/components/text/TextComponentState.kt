@@ -39,16 +39,11 @@ internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
 ): TextComponentState {
-    val countdownState = style.countdownDate?.let { date ->
-        rememberCountdownState(date)
-    }
-
     return rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        countdownTimeProvider = { countdownState?.countdownTime },
     )
 }
 
@@ -60,9 +55,13 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    countdownTimeProvider: () -> CountdownTime?,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+
+    // Create countdown state once if this text is inside a countdown component
+    val countdownState = style.countdownDate?.let { date ->
+        rememberCountdownState(date)
+    }
 
     return remember(style) {
         TextComponentState(
@@ -71,11 +70,11 @@ internal fun rememberUpdatedTextComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            countdownTimeProvider = countdownTimeProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
+            countdownTime = countdownState?.countdownTime,
         )
     }
 }
@@ -87,9 +86,19 @@ internal class TextComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
-    private val countdownTimeProvider: () -> CountdownTime?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+
+    /**
+     * The current countdown time, if this text is inside a countdown component.
+     *
+     * Updated every second via [update] when countdown is active. Triggers recomposition
+     * to update countdown variables (e.g., {{ count_hours_without_zero }}) in the text.
+     * Null if this text is not inside a countdown component.
+     */
+    var countdownTime by mutableStateOf<CountdownTime?>(null)
+        private set
+
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -106,13 +115,6 @@ internal class TextComponentState(
      */
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
-    }
-
-    /**
-     * The current countdown time, if this text is inside a countdown component.
-     */
-    val countdownTime by derivedStateOf {
-        countdownTimeProvider()
     }
 
     private val presentedPartial by derivedStateOf {
@@ -186,7 +188,9 @@ internal class TextComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        countdownTime: CountdownTime? = this.countdownTime,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        this.countdownTime = countdownTime
     }
 }

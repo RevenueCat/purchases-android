@@ -54,7 +54,6 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
             if (initialDelta <= 0) CountdownTime.ZERO else CountdownTime.fromInterval(initialDelta),
         )
     }
-    var hasEnded by remember(targetDate) { mutableStateOf(initialDelta <= 0) }
     var isCountingEnabled by remember { mutableStateOf(true) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -76,12 +75,10 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
 
                 if (delta <= 0) {
                     countdownTime = CountdownTime.ZERO
-                    hasEnded = true
                     break
                 }
 
                 countdownTime = CountdownTime.fromInterval(delta)
-                hasEnded = false
             }
 
             delay(1.seconds)
@@ -90,7 +87,7 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
 
     return CountdownState(
         countdownTime = countdownTime,
-        hasEnded = hasEnded,
+        hasEnded = countdownTime == CountdownTime.ZERO,
     )
 }
 
