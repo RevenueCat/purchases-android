@@ -7,20 +7,44 @@ import com.revenuecat.purchases.common.events.EventsManager
  * Common ad mediator names.
  */
 @InternalRevenueCatAPI
-object AdMediatorName {
-    const val AD_MOB = "AdMob"
-    const val APP_LOVIN = "AppLovin"
+@JvmInline
+value class AdMediatorName internal constructor(internal val value: String) {
+    companion object {
+        val AD_MOB = AdMediatorName("AdMob")
+        val APP_LOVIN = AdMediatorName("AppLovin")
+
+        fun fromString(value: String): AdMediatorName {
+            return when (value.trim()) {
+                "AdMob" -> AD_MOB
+                "AppLovin" -> APP_LOVIN
+                else -> AdMediatorName(value)
+            }
+        }
+    }
 }
 
 /**
  * Common ad revenue precision values.
  */
 @InternalRevenueCatAPI
-object AdRevenuePrecision {
-    const val EXACT = "exact"
-    const val PUBLISHER_DEFINED = "publisher_defined"
-    const val ESTIMATED = "estimated"
-    const val UNKNOWN = "unknown"
+@JvmInline
+value class AdRevenuePrecision internal constructor(internal val value: String) {
+    companion object {
+        val EXACT = AdRevenuePrecision("exact")
+        val PUBLISHER_DEFINED = AdRevenuePrecision("publisher_defined")
+        val ESTIMATED = AdRevenuePrecision("estimated")
+        val UNKNOWN = AdRevenuePrecision("unknown")
+
+        fun fromString(value: String): AdRevenuePrecision {
+            return when (value.lowercase().trim()) {
+                "exact" -> EXACT
+                "publisher_defined" -> PUBLISHER_DEFINED
+                "estimated" -> ESTIMATED
+                "unknown" -> UNKNOWN
+                else -> AdRevenuePrecision(value)
+            }
+        }
+    }
 }
 
 /**
@@ -42,7 +66,7 @@ class AdTracker internal constructor(
      */
     fun trackAdDisplayed(
         networkName: String,
-        mediatorName: String,
+        mediatorName: AdMediatorName,
         placement: String?,
         adUnitId: String,
         impressionId: String,
@@ -69,7 +93,7 @@ class AdTracker internal constructor(
      */
     fun trackAdOpened(
         networkName: String,
-        mediatorName: String,
+        mediatorName: AdMediatorName,
         placement: String?,
         adUnitId: String,
         impressionId: String,
@@ -100,13 +124,13 @@ class AdTracker internal constructor(
     @Suppress("LongParameterList")
     fun trackAdRevenue(
         networkName: String,
-        mediatorName: String,
+        mediatorName: AdMediatorName,
         placement: String?,
         adUnitId: String,
         impressionId: String,
         revenueMicros: Long,
         currency: String,
-        precision: String, // WIP Should normally be one of AdRevenuePrecision.
+        precision: AdRevenuePrecision,
     ) {
         eventsManager?.track(
             event = AdEvent.Revenue(

@@ -20,7 +20,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val type: AdEventType
     val timestamp: Long
     val networkName: String
-    val mediatorName: String
+    val mediatorName: AdMediatorName
     val placement: String?
     val adUnitId: String
     val impressionId: String
@@ -31,7 +31,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val type: AdEventType = AdEventType.DISPLAYED,
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
-        override val mediatorName: String,
+        override val mediatorName: AdMediatorName,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -43,7 +43,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val type: AdEventType = AdEventType.OPENED,
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
-        override val mediatorName: String,
+        override val mediatorName: AdMediatorName,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -55,12 +55,12 @@ internal sealed interface AdEvent : FeatureEvent {
         override val type: AdEventType = AdEventType.REVENUE,
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
-        override val mediatorName: String,
+        override val mediatorName: AdMediatorName,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
         val revenueMicros: Long,
         val currency: String,
-        val precision: String,
+        val precision: AdRevenuePrecision,
     ) : AdEvent
 }

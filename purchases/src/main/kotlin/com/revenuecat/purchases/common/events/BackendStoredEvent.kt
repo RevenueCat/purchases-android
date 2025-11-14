@@ -148,6 +148,7 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
@@ -160,7 +161,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
             type = type.value,
             timestamp = timestamp,
             networkName = networkName,
-            mediatorName = mediatorName,
+            mediatorName = mediatorName.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -170,6 +171,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Displayed.toBackendStoredEvent(
     appUserID: String,
@@ -182,7 +184,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
             type = type.value,
             timestamp = timestamp,
             networkName = networkName,
-            mediatorName = mediatorName,
+            mediatorName = mediatorName.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -192,6 +194,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Revenue.toBackendStoredEvent(
     appUserID: String,
@@ -204,7 +207,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
             type = type.value,
             timestamp = timestamp,
             networkName = networkName,
-            mediatorName = mediatorName,
+            mediatorName = mediatorName.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -212,7 +215,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
             appSessionID = appSessionID,
             revenueMicros = revenueMicros,
             currency = currency,
-            precision = precision,
+            precision = precision.value,
         ),
     )
 }
