@@ -26,8 +26,10 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     @Synchronized
-    fun appendEvent(event: T) {
-        checkFileSizeAndClearIfNeeded()
+    fun appendEvent(event: T, shouldCheckFileSize: Boolean = true) {
+        if (shouldCheckFileSize) {
+            checkFileSizeAndClearIfNeeded()
+        }
         fileHelper.appendToFile(
             filePath,
             (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
