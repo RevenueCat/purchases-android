@@ -6,6 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.AdMediatorName
+import com.revenuecat.purchases.ads.events.AdRevenuePrecision
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -383,5 +386,176 @@ class EventsManagerTest {
     private fun appendToFile(contents: String) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         file.appendText(contents)
+    }
+
+    // Ad Events Tests
+
+    @Test
+    fun `tracking ad displayed events adds them to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad displayed event with null placement adds to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = null,
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad opened events adds them to file`() {
+        val adEvent = AdEvent.Open(
+            id = "ad-event-id-456",
+            timestamp = 1699270688885,
+            networkName = "AppLovin",
+            mediatorName = AdMediatorName.APP_LOVIN,
+            placement = "interstitial",
+            adUnitId = "ad-unit-789",
+            impressionId = "impression-456"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad revenue events adds them to file`() {
+        val adEvent = AdEvent.Revenue(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            revenueMicros = 1500000,
+            currency = "USD",
+            precision = AdRevenuePrecision.EXACT
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking mixed events with ad events adds them to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(paywallEvent)
+        eventsManager.track(adEvent)
+        eventsManager.track(customerCenterImpressionEvent)
+
+        checkFileContents(
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + "\n"
+                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
+                + "\n"
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
+                + "\n"
+        )
+    }
+
+    @Test
+    fun `flushEvents sends ad events to backend`() {
+        mockBackendResponse(success = true)
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+        eventsManager.flushEvents()
+
+        checkFileContents("")
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `tracking multiple ad event types adds them to file`() {
+        val displayedEvent = AdEvent.Displayed(
+            id = "ad-event-id-1",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "banner",
+            adUnitId = "ad-unit-1",
+            impressionId = "impression-1"
+        )
+
+        val openedEvent = AdEvent.Open(
+            id = "ad-event-id-2",
+            timestamp = 1699270688885,
+            networkName = "AppLovin",
+            mediatorName = AdMediatorName.APP_LOVIN,
+            placement = "interstitial",
+            adUnitId = "ad-unit-2",
+            impressionId = "impression-2"
+        )
+
+        val revenueEvent = AdEvent.Revenue(
+            id = "ad-event-id-3",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded",
+            adUnitId = "ad-unit-3",
+            impressionId = "impression-3",
+            revenueMicros = 2000000,
+            currency = "EUR",
+            precision = AdRevenuePrecision.ESTIMATED
+        )
+
+        eventsManager.track(displayedEvent)
+        eventsManager.track(openedEvent)
+        eventsManager.track(revenueEvent)
+
+        checkFileNumberOfEvents(3)
     }
 }
