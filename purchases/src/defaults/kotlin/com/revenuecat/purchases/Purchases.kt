@@ -170,6 +170,7 @@ class Purchases internal constructor(
     /**
      * The AdTracker used to track ad attribution data.
      */
+    @get:JvmSynthetic
     @InternalRevenueCatAPI
     val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker

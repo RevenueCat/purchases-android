@@ -365,7 +365,6 @@ package com.revenuecat.purchases {
     method public void close();
     method public void collectDeviceIdentifiers();
     method public static com.revenuecat.purchases.Purchases configure(com.revenuecat.purchases.PurchasesConfiguration configuration);
-    method public com.revenuecat.purchases.ads.events.AdTracker getAdTracker();
     method @Deprecated @kotlin.jvm.Synchronized public boolean getAllowSharingPlayStoreAccount();
     method public void getAmazonLWAConsentStatus(com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback callback);
     method @kotlin.jvm.Synchronized public String getAppUserID();
