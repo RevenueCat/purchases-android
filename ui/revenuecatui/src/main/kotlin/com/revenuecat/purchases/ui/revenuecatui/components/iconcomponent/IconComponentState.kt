@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -11,12 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -47,12 +46,12 @@ private fun rememberUpdatedIconComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
 ): IconComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = LocalScreenCondition.current
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         IconComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
@@ -60,20 +59,20 @@ private fun rememberUpdatedIconComponentState(
         )
     }.apply {
         update(
-            windowSize = windowSize,
+            screenCondition = screenCondition,
         )
     }
 }
 
 @Stable
 internal class IconComponentState(
-    initialWindowSize: WindowWidthSizeClass,
+    initialScreenCondition: ScreenConditionSnapshot,
     initialLayoutDirection: LayoutDirection,
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
-    private var windowSize by mutableStateOf(initialWindowSize)
+    private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
@@ -88,11 +87,15 @@ internal class IconComponentState(
         style.rcPackage ?: selectedPackageProvider()
     }
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = screenConditionSnapshot,
+            introOfferEligibility = introOfferEligibility,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl
@@ -147,8 +150,8 @@ internal class IconComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
+        screenCondition: ScreenConditionSnapshot? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
+        if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }
 }

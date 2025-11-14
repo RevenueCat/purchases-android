@@ -77,13 +77,21 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  */
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
-    windowSize: ScreenCondition,
+    screenCondition: ScreenConditionSnapshot,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
+    selectedPackageIdentifier: String?,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+        if (
+            override.shouldApply(
+                screenCondition,
+                introOfferEligibility,
+                state,
+                selectedPackageIdentifier,
+            )
+        ) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
@@ -92,9 +100,10 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 
 @Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
-    windowSize: ScreenCondition,
+    screenCondition: ScreenConditionSnapshot,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
+    selectedPackageIdentifier: String?,
 ): Boolean {
     for (condition in conditions) {
         when (condition) {
@@ -102,7 +111,7 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             ComponentOverride.Condition.Medium,
             ComponentOverride.Condition.Expanded,
             -> {
-                if (!windowSize.applicableConditions.contains(condition)) return false
+                if (!screenCondition.condition.applicableConditions.contains(condition)) return false
             }
             ComponentOverride.Condition.MultipleIntroOffers -> {
                 if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
@@ -115,6 +124,45 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             }
             ComponentOverride.Condition.Unsupported -> {
                 return false
+            }
+            is ComponentOverride.Condition.Orientation -> {
+                val activeOrientation = screenCondition.orientation.toConditionOrientationType()
+                when (condition.operator) {
+                    ComponentOverride.Condition.ArrayOperatorType.IN ->
+                        if (activeOrientation == null || !condition.orientations.contains(activeOrientation)) {
+                            return false
+                        }
+                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+                        if (activeOrientation != null && condition.orientations.contains(activeOrientation)) {
+                            return false
+                        }
+                }
+            }
+            is ComponentOverride.Condition.ScreenSize -> {
+                val activeScreenSize = screenCondition.screenSize?.name ?: return false
+                when (condition.operator) {
+                    ComponentOverride.Condition.ArrayOperatorType.IN ->
+                        if (!condition.sizes.contains(activeScreenSize)) {
+                            return false
+                        }
+                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+                        if (condition.sizes.contains(activeScreenSize)) {
+                            return false
+                        }
+                }
+            }
+            is ComponentOverride.Condition.SelectedPackage -> {
+                val selected = selectedPackageIdentifier ?: return false
+                when (condition.operator) {
+                    ComponentOverride.Condition.ArrayOperatorType.IN ->
+                        if (!condition.packages.contains(selected)) {
+                            return false
+                        }
+                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+                        if (condition.packages.contains(selected)) {
+                            return false
+                        }
+                }
             }
         }
     }
@@ -130,4 +178,11 @@ private val ScreenCondition.applicableConditions: Set<ComponentOverride.Conditio
             ComponentOverride.Condition.Medium,
             ComponentOverride.Condition.Expanded,
         )
+    }
+
+private fun ScreenOrientation.toConditionOrientationType(): ComponentOverride.Condition.OrientationType? =
+    when (this) {
+        ScreenOrientation.PORTRAIT -> ComponentOverride.Condition.OrientationType.PORTRAIT
+        ScreenOrientation.LANDSCAPE -> ComponentOverride.Condition.OrientationType.LANDSCAPE
+        ScreenOrientation.UNKNOWN -> null
     }

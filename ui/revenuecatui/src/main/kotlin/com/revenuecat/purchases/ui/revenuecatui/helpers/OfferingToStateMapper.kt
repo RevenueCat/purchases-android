@@ -188,6 +188,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             variableDataProvider = VariableDataProvider(resourceProvider),
             packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
+            screenSizes = paywallComponents.uiConfig.app.screenSizes,
         )
     }
 }
@@ -325,6 +326,7 @@ internal fun Offering.toComponentsPaywallState(
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         purchases = purchases,
+        screenSizes = validationResult.screenSizes,
     )
 }
 

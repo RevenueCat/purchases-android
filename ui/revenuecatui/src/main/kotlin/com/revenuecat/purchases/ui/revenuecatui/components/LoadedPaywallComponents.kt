@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -73,32 +74,39 @@ internal fun LoadedPaywallComponents(
     state.update(localeList = configuration.locales)
 
     val style = state.stack
+    val screenConditionState = rememberScreenConditionState(state.screenSizes)
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
-    SimpleBottomSheetScaffold(
-        sheetState = state.sheet,
-        modifier = modifier.background(background),
-    ) {
-        WithOptionalVideoBackground(state, background = background) {
-            Column {
-                ComponentView(
-                    style = style,
-                    state = state,
-                    onClick = onClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                )
-                footerComponentStyle?.let {
+    val scaffoldModifier = modifier
+        .trackScreenCondition(screenConditionState)
+        .background(background)
+
+    CompositionLocalProvider(LocalScreenCondition provides screenConditionState.snapshot) {
+        SimpleBottomSheetScaffold(
+            sheetState = state.sheet,
+            modifier = scaffoldModifier,
+        ) {
+            WithOptionalVideoBackground(state, background = background) {
+                Column {
                     ComponentView(
-                        style = it,
+                        style = style,
                         state = state,
                         onClick = onClick,
                         modifier = Modifier
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                     )
+                    footerComponentStyle?.let {
+                        ComponentView(
+                            style = it,
+                            state = state,
+                            onClick = onClick,
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
