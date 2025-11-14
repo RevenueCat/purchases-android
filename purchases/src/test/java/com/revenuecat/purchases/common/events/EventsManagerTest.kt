@@ -227,14 +227,19 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `if more than maximum events flushEvents only posts maximum events`() {
+    fun `if more than maximum events flushEvents, posts maximum events per batch`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
             eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(50)
+        // With multi-batch flushing, all 100 events will be flushed (2 batches of 50)
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -329,8 +334,12 @@ class EventsManagerTest {
         appendToFile("invalid event 3\n")
         checkFileNumberOfEvents(78)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(28)
-        expectNumberOfEventsSynced(48)
+        // With multi-batch flushing, all events will be flushed across 2 batches
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch of 50 lines)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any())
+        }
     }
 
     @SuppressLint("CheckResult")
@@ -557,5 +566,55 @@ class EventsManagerTest {
         eventsManager.track(revenueEvent)
 
         checkFileNumberOfEvents(3)
+    }
+
+    @Test
+    fun `flushEvents stops after maximum batch limit`() {
+        mockBackendResponse(success = true)
+        // Add 550 events (more than 10 batches of 50)
+        for (i in 0..549) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(550)
+        eventsManager.flushEvents()
+        // Should flush 10 batches (500 events), leaving 50
+        checkFileNumberOfEvents(50)
+        // Verify backend was called exactly 10 times (the maximum)
+        verify(exactly = 10) {
+            backend.postEvents(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `flushEvents stops on first batch failure`() {
+        // Mock backend to fail on first call
+        var callCount = 0
+        val successSlot = slot<() -> Unit>()
+        val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
+        every {
+            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+        } answers {
+            callCount++
+            if (callCount == 1) {
+                // First batch fails
+                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), false)
+            } else {
+                // Subsequent batches succeed (but shouldn't be called)
+                successSlot.captured.invoke()
+            }
+        }
+
+        // Add 150 events (3 potential batches)
+        for (i in 0..149) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(150)
+        eventsManager.flushEvents()
+        // Events should not be deleted since first batch failed
+        checkFileNumberOfEvents(150)
+        // Verify backend was called only once (stopped after first failure)
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any())
+        }
     }
 }
