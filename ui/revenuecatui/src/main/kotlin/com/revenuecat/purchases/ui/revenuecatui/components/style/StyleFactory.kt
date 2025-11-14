@@ -254,7 +254,6 @@ internal class StyleFactory(
         fun <T> withSelectedScope(
             packageInfo: AvailablePackages.Info?,
             tabControlIndex: Int?,
-            countdownDate: java.util.Date? = null,
             block: StyleFactoryScope.() -> T,
         ): T {
             if (packageInfo != null) recordPackage(packageInfo)
@@ -262,13 +261,11 @@ internal class StyleFactory(
             val currentScope = copy()
             this.packageInfo = packageInfo
             this.tabControlIndex = tabControlIndex
-            this.countdownDate = countdownDate
 
             val result = block()
 
             this.packageInfo = currentScope.packageInfo
             this.tabControlIndex = currentScope.tabControlIndex
-            this.countdownDate = currentScope.countdownDate
 
             return result
         }
@@ -303,6 +300,23 @@ internal class StyleFactory(
             val result = block()
 
             this.tabIndex = currentScope.tabIndex
+
+            return result
+        }
+
+        /**
+         * Records that this branch of the tree is in a countdown with the provided [countdownDate].
+         */
+        fun <T> withCountdown(
+            countdownDate: java.util.Date,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.countdownDate = countdownDate
+
+            val result = block()
+
+            this.countdownDate = currentScope.countdownDate
 
             return result
         }
@@ -442,11 +456,7 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
     ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> =
-        withSelectedScope(
-            packageInfo = null,
-            tabControlIndex = null,
-            countdownDate = component.style.date,
-        ) {
+        withCountdown(component.style.date) {
             zipOrAccumulate(
                 first = createStackComponentStyle(component.countdownStack),
                 second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
