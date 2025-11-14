@@ -7,6 +7,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.text.DateFormat
@@ -56,6 +57,15 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
+
+        COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
+        COUNT_DAYS_WITHOUT_ZERO("count_days_without_zero"),
+        COUNT_HOURS_WITH_ZERO("count_hours_with_zero"),
+        COUNT_HOURS_WITHOUT_ZERO("count_hours_without_zero"),
+        COUNT_MINUTES_WITH_ZERO("count_minutes_with_zero"),
+        COUNT_MINUTES_WITHOUT_ZERO("count_minutes_without_zero"),
+        COUNT_SECONDS_WITH_ZERO("count_seconds_with_zero"),
+        COUNT_SECONDS_WITHOUT_ZERO("count_seconds_without_zero"),
         ;
 
         companion object {
@@ -103,6 +113,7 @@ internal object VariableProcessorV2 {
         currencyLocale: Locale,
         dateLocale: Locale,
         date: Date,
+        countdownTime: CountdownTime? = null,
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -115,6 +126,7 @@ internal object VariableProcessorV2 {
             currencyLocale = currencyLocale,
             dateLocale = dateLocale,
             date = date,
+            countdownTime = countdownTime,
         )
     }
 
@@ -158,6 +170,7 @@ internal object VariableProcessorV2 {
         currencyLocale: Locale,
         dateLocale: Locale,
         date: Date,
+        countdownTime: CountdownTime?,
     ): String {
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
@@ -173,6 +186,7 @@ internal object VariableProcessorV2 {
                 currencyLocale = currencyLocale,
                 dateLocale = dateLocale,
                 date = date,
+                countdownTime = countdownTime,
             )?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, currencyLocale)
@@ -269,6 +283,7 @@ internal object VariableProcessorV2 {
         currencyLocale: Locale,
         dateLocale: Locale,
         date: Date,
+        countdownTime: CountdownTime?,
     ): String? = when (this) {
         Variable.PRODUCT_CURRENCY_CODE -> rcPackage.product.price.currencyCode
         Variable.PRODUCT_CURRENCY_SYMBOL ->
@@ -406,6 +421,15 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext.relativeDiscount(localizedVariableKeys)
 
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage.product.name
+
+        Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.days?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_DAYS_WITHOUT_ZERO -> countdownTime?.days?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_HOURS_WITH_ZERO -> countdownTime?.hours?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_HOURS_WITHOUT_ZERO -> countdownTime?.hours?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_MINUTES_WITH_ZERO -> countdownTime?.minutes?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_MINUTES_WITHOUT_ZERO -> countdownTime?.minutes?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%d", it) } ?: ""
     }
 
     private fun String.processFunction(function: Function, locale: Locale): String = when (function) {

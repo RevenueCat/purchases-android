@@ -97,6 +97,7 @@ class ButtonComponentViewTests {
                             variableLocalizations = nonEmptyMapOf(
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
+                            countdownDate = null,
                             overrides = emptyList(),
                         ),
                     ),
@@ -119,6 +120,7 @@ class ButtonComponentViewTests {
                     scrollOrientation = null,
                     rcPackage = null,
                     tabIndex = null,
+                    countdownDate = null,
                     overrides = emptyList(),
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),

@@ -181,6 +181,7 @@ internal fun previewStackComponentStyle(
         scrollOrientation = scrollOrientation,
         rcPackage = null,
         tabIndex = null,
+        countdownDate = null,
         overrides = emptyList(),
     )
 }
@@ -220,6 +221,7 @@ internal fun previewTextComponentStyle(
         margin = margin.toPaddingValues(),
         rcPackage = null,
         tabIndex = tabIndex,
+        countdownDate = null,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,
     )
