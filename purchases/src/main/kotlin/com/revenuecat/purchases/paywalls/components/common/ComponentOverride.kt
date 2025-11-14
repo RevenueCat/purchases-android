@@ -5,6 +5,7 @@ import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
@@ -35,8 +36,24 @@ class ComponentOverride<T : PartialComponent>(
         @Serializable
         object Selected : Condition
 
+        @Poko
+        @Serializable
+        class SelectedPackage(
+            @get:JvmSynthetic val operator: ArrayOperatorType,
+            @get:JvmSynthetic val packages: List<String>,
+        ) : Condition
+
         @Serializable
         object Unsupported : Condition
+
+        @Serializable
+        enum class ArrayOperatorType {
+            @SerialName("in")
+            IN,
+
+            @SerialName("not_in")
+            NOT_IN,
+        }
     }
 }
 
@@ -50,6 +67,7 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
+        "selected_package" to { Condition.SelectedPackage.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

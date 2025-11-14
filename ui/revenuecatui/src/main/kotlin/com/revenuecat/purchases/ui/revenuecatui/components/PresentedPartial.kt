@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
@@ -71,6 +72,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  * @param windowSize Current screen condition (compact / medium / expanded).
  * @param introOfferEligibility Whether the user is eligible for an intro offer.
  * @param state Current view state (selected / unselected).
+ * @param selectedPackage The currently selected package, if any.
  *
  * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
  * available overrides to use.
@@ -80,10 +82,11 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
     windowSize: ScreenCondition,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
+    selectedPackage: Package? = null,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+        if (override.shouldApply(windowSize, introOfferEligibility, state, selectedPackage)) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
@@ -95,6 +98,7 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
+    selectedPackage: Package?,
 ): Boolean {
     for (condition in conditions) {
         when (condition) {
@@ -112,6 +116,18 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             }
             ComponentOverride.Condition.Selected -> {
                 if (state != ComponentViewState.SELECTED) return false
+            }
+            is ComponentOverride.Condition.SelectedPackage -> {
+                if (selectedPackage == null) return false
+                val isInList = condition.packages.contains(selectedPackage.identifier)
+                when (condition.operator) {
+                    ComponentOverride.Condition.ArrayOperatorType.IN -> {
+                        if (!isInList) return false
+                    }
+                    ComponentOverride.Condition.ArrayOperatorType.NOT_IN -> {
+                        if (isInList) return false
+                    }
+                }
             }
             ComponentOverride.Condition.Unsupported -> {
                 return false
