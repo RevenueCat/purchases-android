@@ -24,6 +24,11 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     @Synchronized
+    fun fileSizeInKB(): Double {
+        return fileHelper.fileSizeInKB(filePath)
+    }
+
+    @Synchronized
     fun readFile(block: ((Sequence<T?>) -> Unit)) {
         val eventDeserializer = eventDeserializer
         if (eventDeserializer == null || fileHelper.fileIsEmpty(filePath)) {
