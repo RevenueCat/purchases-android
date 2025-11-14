@@ -8,8 +8,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.Date
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 private const val SECONDS_IN_DAY = 86_400
@@ -43,20 +50,34 @@ internal data class CountdownTime(
 internal fun rememberCountdownState(targetDate: Date): CountdownState {
     var countdownTime by remember { mutableStateOf(CountdownTime.ZERO) }
     var hasEnded by remember { mutableStateOf(false) }
+    var isCountingEnabled by remember { mutableStateOf(true) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(targetDate) {
-        while (true) {
-            val now = Date().time
-            val delta = targetDate.time - now
+        launch {
+            lifecycleOwner.lifecycle.currentStateFlow
+                .map { it.isAtLeast(Lifecycle.State.STARTED) }
+                .distinctUntilChanged()
+                .collect { isStarted ->
+                    isCountingEnabled = isStarted
+                }
+        }
 
-            if (delta <= 0) {
-                countdownTime = CountdownTime.ZERO
-                hasEnded = true
-                break
+        while (coroutineContext.isActive) {
+            if (isCountingEnabled) {
+                val now = Date().time
+                val delta = targetDate.time - now
+
+                if (delta <= 0) {
+                    countdownTime = CountdownTime.ZERO
+                    hasEnded = true
+                    break
+                }
+
+                countdownTime = CountdownTime.fromInterval(delta)
+                hasEnded = false
             }
-
-            countdownTime = CountdownTime.fromInterval(delta)
-            hasEnded = false
 
             delay(1.seconds)
         }
