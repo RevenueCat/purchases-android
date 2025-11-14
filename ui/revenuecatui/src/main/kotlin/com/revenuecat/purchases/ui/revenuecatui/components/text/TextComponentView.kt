@@ -26,8 +26,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
-import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
-import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -59,16 +57,10 @@ internal fun TextComponentView(
         paywallState = state,
     )
 
-    // Calculate countdown only if this text is inside a countdown
-    val countdownTime = style.countdownDate?.let { date ->
-        rememberCountdownState(date).countdownTime
-    }
-
     // Process any variables in the text.
     val text = rememberProcessedText(
         state = state,
         textState = textState,
-        countdownTime = countdownTime,
     )
 
     val colorStyle = textState.color.forCurrentTheme
@@ -117,9 +109,8 @@ internal fun TextComponentView(
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
-    countdownTime: CountdownTime?,
 ): String {
-    val processedText by remember(state, textState, countdownTime) {
+    val processedText by remember(state, textState, textState.countdownTime) {
         derivedStateOf {
             textState.applicablePackage?.let { packageToUse ->
                 val dateLocale = state.locale.toJavaLocale()
@@ -152,7 +143,7 @@ private fun rememberProcessedText(
                     currencyLocale = currencyLocale,
                     dateLocale = dateLocale,
                     date = state.currentDate,
-                    countdownTime = countdownTime,
+                    countdownTime = textState.countdownTime,
                 )
             } ?: textState.text
         }

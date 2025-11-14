@@ -18,6 +18,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -36,13 +38,19 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TextComponentState =
-    rememberUpdatedTextComponentState(
+): TextComponentState {
+    val countdownState = style.countdownDate?.let { date ->
+        rememberCountdownState(date)
+    }
+
+    return rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        countdownTimeProvider = { countdownState?.countdownTime },
     )
+}
 
 @Stable
 @JvmSynthetic
@@ -52,6 +60,7 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    countdownTimeProvider: () -> CountdownTime?,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -62,6 +71,7 @@ internal fun rememberUpdatedTextComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            countdownTimeProvider = countdownTimeProvider,
         )
     }.apply {
         update(
@@ -77,6 +87,7 @@ internal class TextComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val countdownTimeProvider: () -> CountdownTime?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
@@ -95,6 +106,13 @@ internal class TextComponentState(
      */
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
+    }
+
+    /**
+     * The current countdown time, if this text is inside a countdown component.
+     */
+    val countdownTime by derivedStateOf {
+        countdownTimeProvider()
     }
 
     private val presentedPartial by derivedStateOf {

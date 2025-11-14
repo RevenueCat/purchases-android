@@ -1315,6 +1315,7 @@ private fun createStackComponentStyle(
             scrollOrientation = stack.overflow?.toOrientation(stack.dimension),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
             overrides = emptyList(),
         )
     )
