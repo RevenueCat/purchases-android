@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.events
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -600,7 +599,7 @@ class EventsManagerTest {
 
         // Verify file size is under the limit (2048KB)
         val fileSizeKB = file.length() / 1024.0
-        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
     }
 
     @Test
@@ -620,7 +619,7 @@ class EventsManagerTest {
         val fileSizeKB = file.length() / 1024.0
 
         // Verify file size is under the limit
-        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
     }
 
     @Test
@@ -639,7 +638,7 @@ class EventsManagerTest {
         val fileSizeKB = file.length() / 1024.0
 
         // Verify file size is under the limit
-        assertThat(fileSizeKB).isLessThan(EventsFileHelper.FILE_SIZE_LIMIT_KB)
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
 
         val lines = file.readLines()
         val firstLine = lines.first()

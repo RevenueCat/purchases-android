@@ -568,7 +568,7 @@ internal class DiagnosticsTracker(
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
         verboseLog { "Tracking diagnostics entry: $diagnosticsEntry" }
         try {
-            diagnosticsFileHelper.appendEvent(diagnosticsEntry, shouldCheckFileSize = false)
+            diagnosticsFileHelper.appendEvent(diagnosticsEntry)
             listener?.onEventTracked()
         } catch (e: IOException) {
             verboseLog { "Error tracking diagnostics entry: $e" }
