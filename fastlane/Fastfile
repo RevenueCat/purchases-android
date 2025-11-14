@@ -124,6 +124,30 @@ platform :android do
       properties: gradle_properties
     )
 
+    UI.verbose("Deploying purchases Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-bc7",
+      "purchases",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying purchases-ui Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-ui-bc7",
+      "ui:revenuecatui",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying amazon Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-store-amazon-bc7",
+      "feature:amazon",
+      gradle_properties
+    )
+
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
       "customEntitlementComputationBc8Release",
