@@ -7,8 +7,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.models.Checksum
-import com.revenuecat.purchases.paywalls.components.CountdownComponent
-import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.storage.DefaultFileRepository
@@ -27,25 +25,13 @@ internal class OfferingVideoPredownloader(
             // WIP: We will add a remote flag in the offering metadata that will indicate if we should
             // pre-download videos or not. For now, we want to only download the low-res to ensure we
             // don't rack up high cloudfront costs
-            offering.paywallComponents?.data?.componentsConfig?.base?.stack?.let { stack ->
-                downloadVideosFromStack(stack)
-            }
-        }
-    }
-
-    private fun downloadVideosFromStack(stack: StackComponent) {
-        stack.components.forEach { component ->
-            when (component) {
-                is VideoComponent -> {
-                    fileRepository.prefetch(component.source.checkedUrls())
+            offering.paywallComponents?.data?.componentsConfig?.base?.stack
+                ?.filter { it is VideoComponent }
+                ?.forEach { component ->
+                    if (component is VideoComponent) {
+                        fileRepository.prefetch(component.source.checkedUrls())
+                    }
                 }
-                is CountdownComponent -> {
-                    downloadVideosFromStack(component.countdownStack)
-                    component.endStack?.let { downloadVideosFromStack(it) }
-                    component.fallback?.let { downloadVideosFromStack(it) }
-                }
-                else -> {}
-            }
         }
     }
 }
