@@ -82,6 +82,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
+import java.util.Date
 
 @Suppress("TooManyFunctions", "LargeClass")
 @Immutable
@@ -116,7 +117,7 @@ internal class StyleFactory(
         /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
-        var countdownDate: java.util.Date? = null,
+        var countdownDate: Date? = null,
         /**
          * Keeps the predicates we're actively using to count components.
          */
@@ -308,7 +309,7 @@ internal class StyleFactory(
          * Records that this branch of the tree is in a countdown with the provided [countdownDate].
          */
         fun <T> withCountdown(
-            countdownDate: java.util.Date,
+            countdownDate: Date,
             block: StyleFactoryScope.() -> T,
         ): T {
             val currentScope = copy()
