@@ -55,7 +55,7 @@ class DiagnosticsFileHelperTest {
     fun `appendEntryToDiagnosticsFile calls are correct`() {
         val contentToAppend = "$testDiagnosticsEntry\n"
         every { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) } just Runs
-        diagnosticsFileHelper.appendEvent(testDiagnosticsEntry, shouldCheckFileSize = false)
+        diagnosticsFileHelper.appendEvent(testDiagnosticsEntry)
         verify(exactly = 1) { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) }
     }
 
