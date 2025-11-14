@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -182,6 +183,7 @@ internal fun previewStackComponentStyle(
         rcPackage = null,
         tabIndex = null,
         countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     )
 }
@@ -222,6 +224,7 @@ internal fun previewTextComponentStyle(
         rcPackage = null,
         tabIndex = tabIndex,
         countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,
     )

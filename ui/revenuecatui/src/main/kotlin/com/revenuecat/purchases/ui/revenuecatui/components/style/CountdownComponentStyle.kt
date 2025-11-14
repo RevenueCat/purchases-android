@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import dev.drewhamilton.poko.Poko
 import java.util.Date
@@ -10,6 +11,8 @@ import java.util.Date
 internal class CountdownComponentStyle(
     @get:JvmSynthetic
     val date: Date,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val countdownStackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic

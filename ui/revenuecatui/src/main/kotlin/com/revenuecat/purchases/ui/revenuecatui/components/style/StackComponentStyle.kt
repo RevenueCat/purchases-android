@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -61,6 +62,8 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val countdownDate: Date?,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedStackPartial>>,
     /**

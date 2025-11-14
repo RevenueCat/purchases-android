@@ -15,6 +15,8 @@ import java.util.Date
 @Immutable
 class CountdownComponent(
     @get:JvmSynthetic val style: CountdownStyle,
+    @SerialName("count_from")
+    @get:JvmSynthetic val countFrom: CountFrom = CountFrom.DAYS,
     @SerialName("countdown_stack")
     @get:JvmSynthetic val countdownStack: StackComponent,
     @SerialName("end_stack")
@@ -31,4 +33,17 @@ class CountdownComponent(
         @Serializable(with = ISO8601DateSerializer::class)
         @get:JvmSynthetic val date: Date,
     )
+
+    @InternalRevenueCatAPI
+    @Serializable
+    enum class CountFrom {
+        @SerialName("days")
+        DAYS,
+
+        @SerialName("hours")
+        HOURS,
+
+        @SerialName("minutes")
+        MINUTES,
+    }
 }

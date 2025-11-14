@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -283,6 +284,7 @@ private fun previewButtonComponentStyle(
         rcPackage = null,
         tabIndex = null,
         countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,

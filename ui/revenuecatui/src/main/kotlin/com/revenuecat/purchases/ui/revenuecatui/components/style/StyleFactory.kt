@@ -119,6 +119,10 @@ internal class StyleFactory(
          */
         var countdownDate: Date? = null,
         /**
+         * Indicates how the countdown should count (from days, hours, or minutes).
+         */
+        var countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+        /**
          * Keeps the predicates we're actively using to count components.
          */
         private val countPredicates: MutableMap<Int, (PaywallComponent) -> Boolean> = mutableMapOf(),
@@ -306,18 +310,21 @@ internal class StyleFactory(
         }
 
         /**
-         * Records that this branch of the tree is in a countdown with the provided [countdownDate].
+         * Records that this branch of the tree is in a countdown with the provided [countdownDate] and [countFrom].
          */
         fun <T> withCountdown(
             countdownDate: Date,
+            countFrom: CountdownComponent.CountFrom,
             block: StyleFactoryScope.() -> T,
         ): T {
             val currentScope = copy()
             this.countdownDate = countdownDate
+            this.countFrom = countFrom
 
             val result = block()
 
             this.countdownDate = currentScope.countdownDate
+            this.countFrom = currentScope.countFrom
 
             return result
         }
@@ -457,7 +464,7 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
     ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> =
-        withCountdown(component.style.date) {
+        withCountdown(component.style.date, component.countFrom) {
             zipOrAccumulate(
                 first = createStackComponentStyle(component.countdownStack),
                 second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
@@ -465,6 +472,7 @@ internal class StyleFactory(
             ) { countdownStack, endStack, fallbackStack ->
                 CountdownComponentStyle(
                     date = component.style.date,
+                    countFrom = component.countFrom,
                     countdownStackComponentStyle = countdownStack,
                     endStackComponentStyle = endStack,
                     fallbackStackComponentStyle = fallbackStack,
@@ -716,6 +724,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
+            countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
         )
@@ -763,6 +772,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
+            countFrom = countFrom,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )
