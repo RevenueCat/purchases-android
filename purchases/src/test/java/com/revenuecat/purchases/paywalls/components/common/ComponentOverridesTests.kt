@@ -93,6 +93,42 @@ internal class ComponentOverridesTests {
                                 "properties": {
                                   "font_name": "condition with other unknown property"
                                 }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "orientation",
+                                    "operator": "in",
+                                    "orientations": ["portrait"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "orientation font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "screen_size",
+                                    "operator": "not_in",
+                                    "sizes": ["tablet", "desktop"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "screen size font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "selected_package",
+                                    "operator": "in",
+                                    "packages": ["rc_annual"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "selected package font"
+                                }
                               }
                             ]
                         """.trimIndent(),
@@ -137,7 +173,34 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(
                                     fontName = FontAlias("condition with other unknown property"),
                                 ),
-                            )
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.Orientation(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                        orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("orientation font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.ScreenSize(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                        sizes = listOf("tablet", "desktop"),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("screen size font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.SelectedPackage(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                        packages = listOf("rc_annual"),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("selected package font")),
+                            ),
                         )
                     )
                 ),

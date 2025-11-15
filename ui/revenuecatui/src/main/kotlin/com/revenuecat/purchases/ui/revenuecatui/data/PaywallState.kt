@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
@@ -102,6 +103,7 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
         ) : Loaded {
 
             data class AvailablePackages(

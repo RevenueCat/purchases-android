@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -9,10 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -43,31 +42,31 @@ private fun rememberUpdatedCarouselComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
 ): CarouselComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = LocalScreenCondition.current
 
     return remember(style) {
         CarouselComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
-            windowSize = windowSize,
+            screenCondition = screenCondition,
         )
     }
 }
 
 @Stable
 internal class CarouselComponentState(
-    initialWindowSize: WindowWidthSizeClass,
+    initialScreenCondition: ScreenConditionSnapshot,
     private val style: CarouselComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
 
-    private var windowSize by mutableStateOf(initialWindowSize)
+    private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -83,11 +82,15 @@ internal class CarouselComponentState(
     }
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = screenConditionSnapshot,
+            introOfferEligibility = introOfferEligibility,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
 
     @get:JvmSynthetic
@@ -142,8 +145,8 @@ internal class CarouselComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
+        screenCondition: ScreenConditionSnapshot? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
+        if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }
 }

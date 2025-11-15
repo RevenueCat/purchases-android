@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -13,11 +12,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
@@ -57,7 +56,7 @@ internal fun rememberUpdatedTextComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = LocalScreenCondition.current
 
     // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->
@@ -66,7 +65,7 @@ internal fun rememberUpdatedTextComponentState(
 
     return remember(style) {
         TextComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
@@ -74,21 +73,21 @@ internal fun rememberUpdatedTextComponentState(
         )
     }.apply {
         update(
-            windowSize = windowSize,
             countdownTime = countdownState?.countdownTime,
+            screenCondition = screenCondition,
         )
     }
 }
 
 @Stable
 internal class TextComponentState(
-    initialWindowSize: WindowWidthSizeClass,
+    initialScreenCondition: ScreenConditionSnapshot,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
-    private var windowSize by mutableStateOf(initialWindowSize)
+    private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
     /**
      * The current countdown time, if this text is inside a countdown component.
@@ -126,11 +125,15 @@ internal class TextComponentState(
         get() = style.countFrom
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = screenConditionSnapshot,
+            introOfferEligibility = introOfferEligibility,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
 
     @get:JvmSynthetic
@@ -195,10 +198,10 @@ internal class TextComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
         countdownTime: CountdownTime? = this.countdownTime,
+        screenCondition: ScreenConditionSnapshot? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
+        if (screenCondition != null) this.screenConditionSnapshot = screenCondition
         this.countdownTime = countdownTime
     }
 }
