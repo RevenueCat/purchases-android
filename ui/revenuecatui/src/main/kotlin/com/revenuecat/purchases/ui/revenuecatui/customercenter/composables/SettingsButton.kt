@@ -4,9 +4,11 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.composables
 
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -16,13 +18,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+internal data class SettingsButtonConfig(
+    val enabled: Boolean = true,
+    val loading: Boolean = false,
+)
+
 @Composable
 @JvmSynthetic
 internal fun SettingsButton(
     title: String,
+    onClick: () -> Unit,
+    config: SettingsButtonConfig,
     modifier: Modifier = Modifier,
     style: SettingsButtonStyle = SettingsButtonStyle.FILLED,
-    onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(24.dp)
     val buttonModifier = modifier
@@ -40,12 +48,12 @@ internal fun SettingsButton(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 contentPadding = ButtonDefaults.TextButtonContentPadding,
+                enabled = config.enabled,
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                    ),
+                ButtonContent(
+                    title = title,
+                    loading = config.loading,
+                    loadingColor = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }
@@ -58,15 +66,37 @@ internal fun SettingsButton(
                     contentColor = MaterialTheme.colorScheme.primary,
                 ),
                 contentPadding = ButtonDefaults.TextButtonContentPadding,
+                enabled = config.enabled,
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                    ),
+                ButtonContent(
+                    title = title,
+                    loading = config.loading,
+                    loadingColor = MaterialTheme.colorScheme.primary,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ButtonContent(
+    title: String,
+    loading: Boolean,
+    loadingColor: androidx.compose.ui.graphics.Color,
+) {
+    if (loading) {
+        CircularProgressIndicator(
+            color = loadingColor,
+            strokeWidth = 2.dp,
+            modifier = Modifier.size(20.dp),
+        )
+    } else {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Medium,
+            ),
+        )
     }
 }
 
@@ -76,7 +106,9 @@ private fun SettingsButton_Preview() {
     SettingsButton(
         title = "Cancel subscription",
         style = SettingsButtonStyle.FILLED,
-    ) {}
+        onClick = { },
+        config = SettingsButtonConfig(),
+    )
 }
 
 @Preview
@@ -85,7 +117,40 @@ private fun SettingsButtonOutlined_Preview() {
     SettingsButton(
         title = "Restore purchases",
         style = SettingsButtonStyle.OUTLINED,
-    ) {}
+        onClick = { },
+        config = SettingsButtonConfig(),
+    )
+}
+
+@Preview
+@Composable
+private fun SettingsButtonLoading_Preview() {
+    SettingsButton(
+        title = "Restore purchases",
+        onClick = { },
+        config = SettingsButtonConfig(loading = true),
+    )
+}
+
+@Preview
+@Composable
+private fun SettingsButtonOutlinedLoading_Preview() {
+    SettingsButton(
+        title = "Restore purchases",
+        onClick = { },
+        style = SettingsButtonStyle.OUTLINED,
+        config = SettingsButtonConfig(loading = true),
+    )
+}
+
+@Preview
+@Composable
+private fun SettingsButtonDisabled_Preview() {
+    SettingsButton(
+        title = "Restore purchases",
+        onClick = { },
+        config = SettingsButtonConfig(enabled = false),
+    )
 }
 
 internal enum class SettingsButtonStyle {

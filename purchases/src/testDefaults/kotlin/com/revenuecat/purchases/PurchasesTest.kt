@@ -1604,6 +1604,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             ),
             support = CustomerCenterConfigData.Support(
                 email = "",
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
             ),
         )
 

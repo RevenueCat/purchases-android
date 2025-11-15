@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -50,5 +51,9 @@ internal class MockPurchasesType(
     }
     override fun syncPurchases() {
         // No-op for mock
+    }
+    override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+        // No-op for mock - return success to simulate success
+        return CreateSupportTicketResult(success = true)
     }
 }

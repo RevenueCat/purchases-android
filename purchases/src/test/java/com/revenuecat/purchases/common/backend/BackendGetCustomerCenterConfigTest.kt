@@ -186,7 +186,8 @@ class BackendGetCustomerCenterConfigTest {
         ),
         support = CustomerCenterConfigData.Support(
             email = "support@revenuecat.com",
-            shouldWarnCustomerToUpdate = true
+            shouldWarnCustomerToUpdate = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
         ),
         lastPublishedAppVersion = null
     )

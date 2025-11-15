@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  * Mock implementation of [PurchasesType] for previews and test data
  * NOTE: This is only used for UI previews and test data, not for actual testing
  */
+@Suppress("TooManyFunctions")
 internal class MockPurchasesType(
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
@@ -52,5 +54,9 @@ internal class MockPurchasesType(
     }
     override fun syncPurchases() {
         // No-op for mock
+    }
+    override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+        // No-op for mock - return success to simulate success
+        return CreateSupportTicketResult(success = true)
     }
 }
