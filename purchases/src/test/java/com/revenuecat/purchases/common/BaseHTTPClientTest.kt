@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.clearAllMocks
@@ -24,6 +25,7 @@ import org.junit.Before
 import java.net.URL
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 internal abstract class BaseHTTPClientTest {
 
@@ -70,6 +72,7 @@ internal abstract class BaseHTTPClientTest {
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
+        timeoutManager: HTTPTimeoutManager? = null,
     ) = HTTPClient(
         appConfig,
         eTagManager,
@@ -79,6 +82,7 @@ internal abstract class BaseHTTPClientTest {
         dateProvider,
         localeProvider = localeProvider,
         forceServerErrorStrategy = forceServerErrorStrategy,
+        timeoutManager = timeoutManager ?: HTTPTimeoutManager(appConfig, dateProvider),
     )
 
     protected fun createAppConfig(
@@ -91,6 +95,7 @@ internal abstract class BaseHTTPClientTest {
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         forceSigningErrors: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString
     ): AppConfig {
         return AppConfig(
             context = context,
@@ -104,6 +109,7 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceSigningErrors = forceSigningErrors,
+            baseUrlString = baseUrlString,
         )
     }
 
