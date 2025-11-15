@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -19,6 +20,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -29,9 +31,10 @@ import java.util.UUID
  * @property eventsDispatcher Dispatches event-related operations.
  * @property postEvents Function for sending events to the backend.
  */
+@Suppress("LongParameterList")
 internal class EventsManager(
     private val appSessionID: UUID = Companion.appSessionID,
-    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
+    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
@@ -46,6 +49,7 @@ internal class EventsManager(
         private const val FLUSH_COUNT = 50
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
         internal val appSessionID: UUID = UUID.randomUUID()
 
         @OptIn(ExperimentalSerializationApi::class)
@@ -54,6 +58,7 @@ internal class EventsManager(
                 polymorphic(BackendStoredEvent::class) {
                     subclass(BackendStoredEvent.CustomerCenter::class, BackendStoredEvent.CustomerCenter.serializer())
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
+                    subclass(BackendStoredEvent.Ad::class, BackendStoredEvent.Ad.serializer())
                 }
             }
             explicitNulls = false
@@ -75,6 +80,21 @@ internal class EventsManager(
         }
 
         /**
+         * Creates an `EventsFileHelper` for handling ad events.
+         *
+         * @param fileHelper The file helper used for event storage.
+         * @return An `EventsFileHelper` for `BackendStoredEvent.Ad`.
+         */
+        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
+            return EventsFileHelper(
+                fileHelper,
+                AD_EVENTS_FILE_PATH,
+                { event -> json.encodeToString(BackendStoredEvent.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendStoredEvent.serializer(), jsonString) },
+            )
+        }
+
+        /**
          * Creates an `EventsFileHelper` for handling paywall events.
          *
          * @param fileHelper The file helper used for event storage.
@@ -90,9 +110,7 @@ internal class EventsManager(
         }
     }
 
-    @get:Synchronized
-    @set:Synchronized
-    private var flushInProgress = false
+    private var flushInProgress = AtomicBoolean(false)
 
     @get:Synchronized
     @set:Synchronized
@@ -121,6 +139,18 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
+                is AdEvent.Displayed -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Open -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Revenue -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 else -> null
             }
 
@@ -138,11 +168,10 @@ internal class EventsManager(
     @Synchronized
     fun flushEvents() {
         enqueue {
-            if (flushInProgress) {
+            if (flushInProgress.getAndSet(true)) {
                 debugLog { "Flush already in progress." }
                 return@enqueue
             }
-            flushInProgress = true
 
             if (!legacyFlushTriggered) {
                 legacyFlushTriggered = true
@@ -154,7 +183,7 @@ internal class EventsManager(
 
             if (storedEvents.isEmpty()) {
                 verboseLog { "No new events to sync." }
-                flushInProgress = false
+                flushInProgress.set(false)
                 return@enqueue
             }
 
@@ -165,7 +194,7 @@ internal class EventsManager(
                     verboseLog { "New event flush: success." }
                     enqueue {
                         fileHelper.clear(storedEventsWithNullValues.size)
-                        flushInProgress = false
+                        flushInProgress.set(false)
                     }
                 },
                 { error, shouldMarkAsSynced ->
@@ -174,7 +203,7 @@ internal class EventsManager(
                         if (shouldMarkAsSynced) {
                             fileHelper.clear(storedEventsWithNullValues.size)
                         }
-                        flushInProgress = false
+                        flushInProgress.set(false)
                     }
                 },
             )
@@ -185,6 +214,8 @@ internal class EventsManager(
      * Flushes legacy paywall events to the backend.
      */
     private fun flushLegacyEvents() {
+        val legacyEventsFileHelper = this.legacyEventsFileHelper
+            ?: return // No legacy events file helper provided; nothing to flush.
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
@@ -234,7 +265,7 @@ internal class EventsManager(
      */
     private fun getLegacyPaywallsStoredEvents(): List<PaywallStoredEvent?> {
         var events: List<PaywallStoredEvent?> = emptyList()
-        legacyEventsFileHelper.readFile { sequence ->
+        legacyEventsFileHelper?.readFile { sequence ->
             events = sequence.take(FLUSH_COUNT).toList()
         }
         return events

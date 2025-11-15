@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -29,15 +30,14 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
-import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
@@ -1472,7 +1472,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `track close event clears cache`() {
-        every { mockEventsManager.track(any()) } just Runs
+        every { mockEventsManager.track(any<FeatureEvent>()) } just Runs
         val impressionEvent = mockk<PaywallEvent>().apply {
             every { type } returns PaywallEventType.IMPRESSION
         }

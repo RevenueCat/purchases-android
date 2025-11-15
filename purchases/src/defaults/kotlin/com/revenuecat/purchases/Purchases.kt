@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -165,6 +166,14 @@ class Purchases internal constructor(
     @InternalRevenueCatAPI
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
+
+    /**
+     * The AdTracker used to track ad attribution data.
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    val adTracker: AdTracker
+        get() = purchasesOrchestrator.adTracker
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
