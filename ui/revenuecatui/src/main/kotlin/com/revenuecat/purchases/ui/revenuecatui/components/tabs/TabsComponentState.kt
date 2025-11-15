@@ -73,7 +73,12 @@ internal class TabsComponentState(
         val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            introOfferEligibility,
+            componentState,
+            selectedPackageProvider(),
+        )
     }
 
     @get:JvmSynthetic

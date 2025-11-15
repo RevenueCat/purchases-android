@@ -3,6 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.FontAlias
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -27,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibilit
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,6 +46,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val windowSize: ScreenCondition,
         val introOfferEligibility: IntroOfferEligibility,
         val state: ComponentViewState,
+        val selectedPackage: Package? = null,
         val expected: LocalizedTextPartial?,
     )
 
@@ -121,6 +126,29 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             aliases = emptyMap(),
             fontAliases = emptyMap(),
         ).getOrThrow()
+        private val selectedPackagePartial = LocalizedTextPartial(
+            from = PartialTextComponent(),
+            using = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    LocalizationKey("key") to LocalizationData.Text("Hello selected package"),
+                )
+            ),
+            aliases = emptyMap(),
+            fontAliases = emptyMap(),
+        ).getOrThrow()
+
+        private val monthlyPackage = Package(
+            identifier = "\$rc_monthly",
+            packageType = PackageType.MONTHLY,
+            product = mockk(relaxed = true),
+            presentedOfferingContext = PresentedOfferingContext("default"),
+        )
+        private val annualPackage = Package(
+            identifier = "\$rc_annual",
+            packageType = PackageType.ANNUAL,
+            product = mockk(relaxed = true),
+            presentedOfferingContext = PresentedOfferingContext("default"),
+        )
 
         @JvmStatic
         private fun buildPresentedOverrides(
@@ -727,6 +755,136 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     ).getOrThrow(),
                 ),
             ),
+            arrayOf(
+                "should pick selected package partial when package matches IN operator",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("\$rc_monthly", "\$rc_annual"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = monthlyPackage,
+                    expected = selectedPackagePartial,
+                ),
+            ),
+            arrayOf(
+                "should return null when package does not match IN operator",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("\$rc_annual"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = monthlyPackage,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "should pick selected package partial when package does not match NOT_IN operator",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("\$rc_annual"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = monthlyPackage,
+                    expected = selectedPackagePartial,
+                ),
+            ),
+            arrayOf(
+                "should return null when package matches NOT_IN operator",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("\$rc_monthly", "\$rc_annual"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = monthlyPackage,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "should return null when no package is selected and SelectedPackage condition is present",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("\$rc_monthly"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = null,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "should combine selected package override with other overrides when all conditions match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.Medium),
+                            properties = mediumPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("\$rc_monthly"),
+                                )
+                            ),
+                            properties = selectedPackagePartial,
+                        ),
+                    ),
+                    windowSize = MEDIUM,
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    selectedPackage = monthlyPackage,
+                    expected = selectedPackagePartial,
+                ),
+            ),
         )
     }
 
@@ -737,6 +895,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             windowSize = args.windowSize,
             introOfferEligibility = args.introOfferEligibility,
             state = args.state,
+            selectedPackage = args.selectedPackage,
         )
 
         // Assert
