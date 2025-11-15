@@ -51,7 +51,12 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                             locale = "en_US",
                             path = null,
                             url = null,
-                            surveyOptionID = null
+                            surveyOptionID = null,
+                            storeOfferID = null,
+                            productID = null,
+                            targetProductID = null,
+                            error = null,
+                            transactionID = null,
                         ),
                         BackendEvent.CustomerCenter(
                             id = UUID.randomUUID().toString(),
@@ -66,6 +71,11 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                             url = null,
                             surveyOptionID = "surveyOptionID",
                             locale = "en_US",
+                            storeOfferID = null,
+                            productID = null,
+                            targetProductID = null,
+                            error = null,
+                            transactionID = null,
                         )
                     )
                 ),
