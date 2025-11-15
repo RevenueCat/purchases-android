@@ -18,6 +18,18 @@ android {
 
         missingDimensionStrategy("apis", "defaults")
 
+        flavorDimensions += "billingclient"
+
+        productFlavors {
+            create("bc8") {
+                dimension = "billingclient"
+                isDefault = true
+            }
+            create("bc7") {
+                dimension = "billingclient"
+            }
+        }
+
         vectorDrawables {
             useSupportLibrary = true
         }

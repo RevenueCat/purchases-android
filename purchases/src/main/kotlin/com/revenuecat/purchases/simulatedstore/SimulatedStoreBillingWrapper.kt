@@ -101,7 +101,7 @@ internal class SimulatedStoreBillingWrapper(
         debugLog { "SimulatedStoreBillingAbstract: consumeAndSave - no-op for test store" }
     }
 
-    override fun findPurchaseInActivePurchases(
+    override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -109,7 +109,7 @@ internal class SimulatedStoreBillingWrapper(
         onError: (PurchasesError) -> Unit,
     ) {
         debugLog {
-            "SimulatedStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId will always fail"
+            "SimulatedStoreBillingAbstract: findPurchaseInPurchaseHistory for product: $productId will always fail"
         }
 
         onError(

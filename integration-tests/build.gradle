@@ -18,6 +18,7 @@ android {
         // Our applications however don't need the extra flavor. This makes sure that we use the
         // default flavor.
         missingDimensionStrategy 'apis', 'defaults'
+        missingDimensionStrategy 'billingclient', 'bc8'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true

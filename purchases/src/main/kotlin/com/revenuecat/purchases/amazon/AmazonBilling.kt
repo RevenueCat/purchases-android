@@ -242,7 +242,7 @@ internal class AmazonBilling(
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)
     }
 
-    override fun findPurchaseInActivePurchases(
+    override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: RevenueCatProductType,
         productId: String,
@@ -250,10 +250,11 @@ internal class AmazonBilling(
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
-        queryPurchases(
+        queryAllPurchases(
             appUserID,
-            onSuccess = {
-                val record: StoreTransaction? = it[productId]
+            onReceivePurchaseHistory = {
+                // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
+                val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {

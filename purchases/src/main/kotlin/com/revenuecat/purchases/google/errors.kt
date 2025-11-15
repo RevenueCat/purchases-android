@@ -24,16 +24,6 @@ internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseC
     }
 }
 
-@Suppress("MaximumLineLength", "MaxLineLength")
-internal fun @receiver:BillingClient.OnPurchasesUpdatedSubResponseCode Int.getOnPurchasesUpdatedSubResponseCodeName() = when (this) {
-    BillingClient.OnPurchasesUpdatedSubResponseCode.NO_APPLICABLE_SUB_RESPONSE_CODE ->
-        "NO_APPLICABLE_SUB_RESPONSE_CODE"
-    BillingClient.OnPurchasesUpdatedSubResponseCode.PAYMENT_DECLINED_DUE_TO_INSUFFICIENT_FUNDS ->
-        "PAYMENT_DECLINED_DUE_TO_INSUFFICIENT_FUNDS"
-    BillingClient.OnPurchasesUpdatedSubResponseCode.USER_INELIGIBLE -> "USER_INELIGIBLE"
-    else -> "UNKNOWN_SUB_RESPONSE_CODE ($this)"
-}
-
 internal const val IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE = "Google Play In-app Billing API version is less than 3"
 
 internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {

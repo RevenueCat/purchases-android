@@ -114,6 +114,9 @@ internal open class BaseBillingUseCaseTest {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
         } just Runs
         every {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
+        } just Runs
+        every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs

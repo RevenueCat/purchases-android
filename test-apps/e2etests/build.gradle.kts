@@ -15,6 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         missingDimensionStrategy("apis", "defaults")
+        missingDimensionStrategy("billingclient", "bc8")
     }
 
     buildTypes {
