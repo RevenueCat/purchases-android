@@ -277,10 +277,11 @@ private fun DescriptionInputField(
     state: DescriptionInputState,
     localization: CustomerCenterConfigData.Localization,
 ) {
-    val remainingChars = MAX_DESCRIPTION_LENGTH - state.description.length
+    val usedChars = state.description.length
+    val charsText = "$usedChars / $MAX_DESCRIPTION_LENGTH"
     val remainingCharsText = localization.commonLocalizedString(
         CustomerCenterConfigData.Localization.CommonLocalizedString.CHARACTERS_REMAINING,
-    ).replace("{{ count }}", remainingChars.toString())
+    ).replace("{{ count }}", charsText)
 
     val currentOnSubmit by rememberUpdatedState(state.onSubmit)
 
