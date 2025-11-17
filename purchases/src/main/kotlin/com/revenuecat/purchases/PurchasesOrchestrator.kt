@@ -1546,7 +1546,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.findPurchaseInActivePurchases(
+        billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
             previousProductId,
