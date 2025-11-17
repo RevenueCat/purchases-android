@@ -18,7 +18,6 @@ internal fun Project.configureApisFlavorsForApplication() {
             }
             create("customEntitlementComputation") {
                 dimension = "apis"
-                missingDimensionStrategy("apis", "defaults")
             }
         }
     }

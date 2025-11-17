@@ -6,7 +6,9 @@ import com.revenuecat.purchases.android.buildlogic.ktx.versionCatalog
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 internal fun Project.configureAndroidLibrary() {
     val libs = versionCatalog
@@ -47,13 +49,13 @@ internal fun Project.configureAndroidLibrary() {
 
     extensions.configure<KotlinAndroidProjectExtension> {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+            jvmTarget.set(JvmTarget.JVM_1_8)
             val kotlinLanguageVersion = libs.getVersion("kotlinLanguage")
             languageVersion.set(
-                org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinLanguageVersion),
+                KotlinVersion.fromVersion(kotlinLanguageVersion),
             )
             apiVersion.set(
-                org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinLanguageVersion),
+                KotlinVersion.fromVersion(kotlinLanguageVersion),
             )
         }
     }

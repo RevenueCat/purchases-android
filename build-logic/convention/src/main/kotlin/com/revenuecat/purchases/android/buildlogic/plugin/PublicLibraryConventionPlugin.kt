@@ -21,7 +21,6 @@ class PublicLibraryConventionPlugin : Plugin<Project> {
             apply(libs.plugins.kotlin.android.get().pluginId)
             apply(libs.plugins.kover.get().pluginId)
             apply(libs.plugins.dokka.get().pluginId)
-            apply(libs.plugins.mavenPublish.get().pluginId)
             apply(libs.plugins.baselineprofile.get().pluginId)
         }
 
