@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -94,7 +95,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun StackComponentView(
     style: StackComponentStyle,
@@ -795,6 +796,8 @@ private fun StackComponentView_Preview_Vertical() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -851,6 +854,8 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                 scrollOrientation = Orientation.Vertical,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -920,6 +925,8 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -993,6 +1000,8 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1046,6 +1055,8 @@ private fun StackComponentView_Preview_Nested_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1091,6 +1102,8 @@ private fun StackComponentView_Preview_Horizontal() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1147,6 +1160,8 @@ private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1203,6 +1218,8 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                 scrollOrientation = Orientation.Horizontal,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1265,6 +1282,8 @@ private fun StackComponentView_Preview_ZLayer() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1307,6 +1326,8 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -1348,6 +1369,8 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -1411,6 +1434,8 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1462,6 +1487,8 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1509,6 +1536,8 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1560,6 +1589,8 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1715,6 +1746,8 @@ private fun previewBadge(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         style = style,
