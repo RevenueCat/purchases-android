@@ -19,15 +19,6 @@ class ComponentOverride<T : PartialComponent>(
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
         @Serializable
-        object Compact : Condition
-
-        @Serializable
-        object Medium : Condition
-
-        @Serializable
-        object Expanded : Condition
-
-        @Serializable
         object IntroOffer : Condition
 
         @Serializable
@@ -81,9 +72,6 @@ class ComponentOverride<T : PartialComponent>(
 internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serialName = "Condition",
     serializerByType = mapOf(
-        "compact" to { Condition.Compact.serializer() },
-        "medium" to { Condition.Medium.serializer() },
-        "expanded" to { Condition.Expanded.serializer() },
         "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },

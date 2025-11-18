@@ -115,10 +115,6 @@ private fun conditionMatches(
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = when (condition) {
-    ComponentOverride.Condition.Compact,
-    ComponentOverride.Condition.Medium,
-    ComponentOverride.Condition.Expanded,
-    -> screenCondition.condition.applicableConditions.contains(condition)
 
     ComponentOverride.Condition.MultipleIntroOffers ->
         introOfferEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
@@ -179,17 +175,6 @@ private fun matchesSelectedPackage(
             !condition.packages.contains(selected)
     }
 }
-
-private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
-    get() = when (this) {
-        ScreenCondition.COMPACT -> setOf(ComponentOverride.Condition.Compact)
-        ScreenCondition.MEDIUM -> setOf(ComponentOverride.Condition.Compact, ComponentOverride.Condition.Medium)
-        ScreenCondition.EXPANDED -> setOf(
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-        )
-    }
 
 private fun ScreenOrientation.toConditionOrientationType(): ComponentOverride.Condition.OrientationType? =
     when (this) {
