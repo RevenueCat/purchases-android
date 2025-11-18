@@ -477,7 +477,7 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
-            // readTimeout = 0 We let the read timeout to the default, which is infinite.
+            // We leave the read timeout to the default (readTimeout = 0), which means infinite.
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }
