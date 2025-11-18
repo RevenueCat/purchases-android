@@ -468,6 +468,7 @@ internal class HTTPClient(
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
             "X-Is-Backgrounded" to appConfig.isAppBackgrounded.toString(),
+            "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))

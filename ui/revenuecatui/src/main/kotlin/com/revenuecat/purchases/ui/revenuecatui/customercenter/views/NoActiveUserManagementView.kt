@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveButtonText
@@ -44,6 +45,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
+    supportTickets: CustomerCenterConfigData.Support.SupportTickets,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     onAction: (CustomerCenterAction) -> Unit,
@@ -70,6 +72,7 @@ internal fun NoActiveUserManagementView(
                     start = ManagementViewHorizontalPadding,
                     end = ManagementViewHorizontalPadding,
                 ),
+                config = SettingsButtonConfig(),
             )
         }
 
@@ -94,6 +97,7 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
+            addCreateTicketButton = supportTickets.allowCreation && supportTickets.allowsNonActiveCustomers(),
             addContactButton = true,
             onAction = onAction,
         )
@@ -166,6 +170,7 @@ private fun NoActiveUserManagementView_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 onAction = { },
             )
@@ -197,6 +202,7 @@ private fun NoActiveUserManagementView_WithVCs_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
                 onAction = { },
