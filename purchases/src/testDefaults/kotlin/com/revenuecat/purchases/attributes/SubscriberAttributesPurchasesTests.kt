@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -60,6 +61,8 @@ class SubscriberAttributesPurchasesTests {
     private val fontLoaderMock = mockk<FontLoader>()
     private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
     private val purchaseParamsValidator = mockk<PurchaseParamsValidator>()
+    private val eventsManagerMock = mockk<EventsManager>()
+    private val adEventsManagerMock = mockk<EventsManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -114,8 +117,8 @@ class SubscriberAttributesPurchasesTests {
             postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
-            eventsManager = null,
-            adEventsManager = null,
+            eventsManager = eventsManagerMock,
+            adEventsManager = adEventsManagerMock,
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
@@ -210,6 +213,12 @@ class SubscriberAttributesPurchasesTests {
     @Test
     fun `on app foregrounded attributes are synced`() {
         every {
+            eventsManagerMock.flushEvents()
+        } just Runs
+        every {
+            adEventsManagerMock.flushEvents()
+        } just Runs
+        every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
@@ -232,6 +241,12 @@ class SubscriberAttributesPurchasesTests {
 
     @Test
     fun `on app backgrounded attributes are synced`() {
+        every {
+            eventsManagerMock.flushEvents()
+        } just Runs
+        every {
+            adEventsManagerMock.flushEvents()
+        } just Runs
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs

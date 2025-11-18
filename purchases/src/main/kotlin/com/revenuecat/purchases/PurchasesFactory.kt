@@ -421,29 +421,21 @@ internal class PurchasesFactory(
         legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
         fileHelper: EventsFileHelper<BackendStoredEvent>,
         baseURL: URL,
-    ): EventsManager? {
-        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
-        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
-        // older versions.
-        return if (isAndroidNOrNewer()) {
-            EventsManager(
-                legacyEventsFileHelper = legacyEventsFileHelper,
-                fileHelper = fileHelper,
-                identityManager = identityManager,
-                eventsDispatcher = eventsDispatcher,
-                postEvents = { request, onSuccess, onError ->
-                    backend.postEvents(
-                        paywallEventRequest = request,
-                        baseURL = baseURL,
-                        onSuccessHandler = onSuccess,
-                        onErrorHandler = onError,
-                    )
-                },
-            )
-        } else {
-            debugLog { "Paywall events are only supported on Android N or newer." }
-            null
-        }
+    ): EventsManager {
+        return EventsManager(
+            legacyEventsFileHelper = legacyEventsFileHelper,
+            fileHelper = fileHelper,
+            identityManager = identityManager,
+            eventsDispatcher = eventsDispatcher,
+            postEvents = { request, onSuccess, onError ->
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = baseURL,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+        )
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
