@@ -323,9 +323,9 @@ class SimulatedStoreBillingWrapperTest {
     }
 
     @Test
-    fun `findPurchaseInActivePurchases returns error`() {
+    fun `findPurchaseInPurchaseHistory returns error`() {
         var error: PurchasesError? = null
-        testStoreBilling.findPurchaseInActivePurchases(
+        testStoreBilling.findPurchaseInPurchaseHistory(
             appUserID = "test_user",
             productType = ProductType.SUBS,
             productId = "test-product-id",
@@ -339,7 +339,7 @@ class SimulatedStoreBillingWrapperTest {
     }
 
     @Test
-    fun `findPurchaseInActivePurchases returns error when purchase not found`() {
+    fun `findPurchaseInPurchaseHistory returns error when purchase not found`() {
         // Given - no purchases in cache
         val nonExistentProductId = "non_existent_product"
         
@@ -347,7 +347,7 @@ class SimulatedStoreBillingWrapperTest {
         var foundPurchase: StoreTransaction? = null
         var errorFound: PurchasesError? = null
         
-        testStoreBilling.findPurchaseInActivePurchases(
+        testStoreBilling.findPurchaseInPurchaseHistory(
             appUserID = "test_user",
             productType = ProductType.SUBS,
             productId = nonExistentProductId,

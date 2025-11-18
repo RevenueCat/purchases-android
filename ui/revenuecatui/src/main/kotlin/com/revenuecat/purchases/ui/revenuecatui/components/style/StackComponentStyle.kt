@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import java.util.Date
 
 @Suppress("LongParameterList")
 @Immutable
@@ -55,6 +57,13 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val tabIndex: Int?,
+    /**
+     * If this is non-null, it means this stack is inside a countdown component.
+     */
+    @get:JvmSynthetic
+    val countdownDate: Date?,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedStackPartial>>,
     /**

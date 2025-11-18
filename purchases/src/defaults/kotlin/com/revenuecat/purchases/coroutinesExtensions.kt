@@ -215,3 +215,36 @@ suspend fun Purchases.awaitStorefrontLocale(): Locale {
         )
     }
 }
+
+/**
+ * Result of creating a support ticket.
+ *
+ * @property success Boolean indicating whether the ticket was successfully sent.
+ */
+@InternalRevenueCatAPI
+data class CreateSupportTicketResult(
+    val success: Boolean,
+)
+
+/**
+ * Creates a support ticket for the current user.
+ * Coroutine friendly version of [Purchases.createSupportTicket].
+ *
+ * @param email The user's email address for the support ticket.
+ * @param description The description of the support request.
+ * @return [CreateSupportTicketResult] indicating whether the ticket was successfully sent.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error creating the support ticket.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+@InternalRevenueCatAPI
+suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+    return suspendCoroutine { continuation ->
+        createSupportTicket(
+            email = email,
+            description = description,
+            onSuccess = { wasSent -> continuation.resume(CreateSupportTicketResult(success = wasSent)) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}

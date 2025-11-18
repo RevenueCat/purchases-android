@@ -21,6 +21,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
@@ -152,7 +153,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
             startPurchaseWithoutFinishingTransaction(currentPackage.product.purchasingData)
@@ -165,7 +166,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
             startPurchaseWithoutFinishingTransaction(currentProduct.purchasingData)
@@ -178,7 +179,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
