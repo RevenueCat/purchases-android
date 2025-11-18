@@ -3,6 +3,7 @@ package com.revenuecat.purchases.utils
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -55,6 +56,12 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
 
             is TimelineComponent -> {
                 queue.addAll(current.items.flatMap { listOfNotNull(it.title, it.description, it.icon) })
+            }
+
+            is CountdownComponent -> {
+                queue.add(current.countdownStack)
+                current.endStack?.let { queue.add(it) }
+                current.fallback?.let { queue.add(it) }
             }
 
             is VideoComponent,

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -81,6 +82,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
+import java.util.Date
 
 @Suppress("TooManyFunctions", "LargeClass")
 @Immutable
@@ -112,6 +114,14 @@ internal class StyleFactory(
          * If this is non-null, it means the branch currently being built is inside a tab component.
          */
         var tabIndex: Int? = null,
+        /**
+         * If this is non-null, it means the branch currently being built is inside a countdown component.
+         */
+        var countdownDate: Date? = null,
+        /**
+         * Indicates how the countdown should count (from days, hours, or minutes).
+         */
+        var countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
         /**
          * Keeps the predicates we're actively using to count components.
          */
@@ -299,6 +309,26 @@ internal class StyleFactory(
             return result
         }
 
+        /**
+         * Records that this branch of the tree is in a countdown with the provided [countdownDate] and [countFrom].
+         */
+        fun <T> withCountdown(
+            countdownDate: Date,
+            countFrom: CountdownComponent.CountFrom,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val currentScope = copy()
+            this.countdownDate = countdownDate
+            this.countFrom = countFrom
+
+            val result = block()
+
+            this.countdownDate = currentScope.countdownDate
+            this.countFrom = currentScope.countFrom
+
+            return result
+        }
+
         inline fun <T> withCount(
             noinline predicate: (PaywallComponent) -> Boolean,
             block: StyleFactoryScope.() -> T,
@@ -425,8 +455,30 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is CountdownComponent -> createCountdownComponentStyle(
+                component,
+            )
         }
     }
+
+    private fun StyleFactoryScope.createCountdownComponentStyle(
+        component: CountdownComponent,
+    ): Result<CountdownComponentStyle, NonEmptyList<PaywallValidationError>> =
+        withCountdown(component.style.date, component.countFrom) {
+            zipOrAccumulate(
+                first = createStackComponentStyle(component.countdownStack),
+                second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+                third = component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
+            ) { countdownStack, endStack, fallbackStack ->
+                CountdownComponentStyle(
+                    date = component.style.date,
+                    countFrom = component.countFrom,
+                    countdownStackComponentStyle = countdownStack,
+                    endStackComponentStyle = endStack,
+                    fallbackStackComponentStyle = fallbackStack,
+                )
+            }
+        }
 
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
@@ -671,6 +723,8 @@ internal class StyleFactory(
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
+            countdownDate = countdownDate,
+            countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
         )
@@ -717,6 +771,8 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
+            countdownDate = countdownDate,
+            countFrom = countFrom,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
         )

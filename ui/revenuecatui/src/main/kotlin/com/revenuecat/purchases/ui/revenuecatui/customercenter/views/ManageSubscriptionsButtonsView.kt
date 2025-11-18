@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterCon
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -23,6 +24,7 @@ internal fun ManageSubscriptionsButtonsView(
     localization: CustomerCenterConfigData.Localization,
     contactEmail: String?,
     addContactButton: Boolean = false,
+    addCreateTicketButton: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
@@ -41,15 +43,27 @@ internal fun ManageSubscriptionsButtonsView(
                 onClick = { onAction(pathButtonPressed) },
                 title = path.title,
                 style = PathUtils.getButtonStyleForPath(path),
+                config = SettingsButtonConfig(),
             )
         }
-        if (addContactButton && contactEmail != null) {
+
+        if (addCreateTicketButton) {
+            SettingsButton(
+                onClick = { onAction(CustomerCenterAction.ShowSupportTicketCreation) },
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
+                ),
+                style = SettingsButtonStyle.OUTLINED,
+                config = SettingsButtonConfig(),
+            )
+        } else if (addContactButton && contactEmail != null) {
             SettingsButton(
                 onClick = { onAction(CustomerCenterAction.ContactSupport(contactEmail)) },
                 title = localization.commonLocalizedString(
                     CustomerCenterConfigData.Localization.CommonLocalizedString.CONTACT_SUPPORT,
                 ),
                 style = SettingsButtonStyle.OUTLINED,
+                config = SettingsButtonConfig(),
             )
         }
     }
