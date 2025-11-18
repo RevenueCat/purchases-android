@@ -186,7 +186,7 @@ internal class HTTPClient(
             }
         } catch (e: IOException) {
             if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
-                requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
+                requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
                 callResult = performRequestToFallbackURL()
             } else if (canUseFallback()) {
                 callResult = performRequestToFallbackURL()

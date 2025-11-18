@@ -29,9 +29,9 @@ internal class HTTPTimeoutManager(
         SUCCESS_ON_MAIN_BACKEND,
 
         /**
-         * Request timed out on the main backend and supports fallback URLs
+         * Request timed out on the main backend in fallback supported endpoint
          */
-        TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK,
+        TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT,
 
         /**
          * Any other result (non-main backend, non-timeout errors, etc.)
@@ -76,7 +76,7 @@ internal class HTTPTimeoutManager(
             RequestResult.SUCCESS_ON_MAIN_BACKEND -> {
                 resetTimeout()
             }
-            RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK -> {
+            RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT -> {
                 lastTimeoutRequestTime.set(dateProvider.now.time)
             }
             RequestResult.OTHER_RESULT -> {

@@ -17,7 +17,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.test.BeforeTest
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -59,7 +58,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
 
         val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallback = false)
         assertThat(timeout).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
@@ -87,7 +88,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout first
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -98,7 +101,7 @@ internal class HTTPTimeoutManagerTest {
     }
 
     @Test
-    fun `recordRequestResult TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK sets timeout state`() {
+    fun `recordRequestResult TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT sets timeout state`() {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Initially no timeout
@@ -106,7 +109,9 @@ internal class HTTPTimeoutManagerTest {
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
@@ -116,7 +121,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout first
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -131,7 +138,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -148,7 +157,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -181,7 +192,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // First timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -189,7 +202,9 @@ internal class HTTPTimeoutManagerTest {
         dateProvider.advanceTime(300000)
 
         // Second timeout - should update timestamp
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -206,7 +221,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
@@ -224,7 +241,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
 
         // Multiple calls should all return reduced timeout
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
@@ -240,7 +259,9 @@ internal class HTTPTimeoutManagerTest {
         val endpoint = Endpoint.GetOfferings("test_user_id")
 
         // Record timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
 
         // Fallback requests should always use DEFAULT_TIMEOUT_MS
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = true))
@@ -262,7 +283,9 @@ internal class HTTPTimeoutManagerTest {
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
 
         // Even after recording timeout
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
 

@@ -1017,7 +1017,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Record a timeout first to verify it gets reset
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
 
@@ -1051,7 +1053,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `HTTPClient records TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK when timeout occurs on main backend with fallback`() {
+    fun `HTTPClient records TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT when timeout occurs on main backend with fallback`() {
         val endpoint = Endpoint.GetOfferings("test_user_id")
         assert(endpoint.supportsFallbackBaseURLs)
 
@@ -1109,12 +1111,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 fallbackBaseURLs = listOf(fallbackBaseURL),
             )
 
-            // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
+            // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
             assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
                 .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
             verify(exactly = 1) {
-                timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+                timeoutManager.recordRequestResult(
+                    HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+                )
             }
         } finally {
             fallbackServer.shutdown()
@@ -1177,7 +1181,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Record a timeout first
-        timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK)
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
 
