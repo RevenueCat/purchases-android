@@ -1,24 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight
-import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
-import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.DEFAULT
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SELECTED
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.INELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
@@ -293,6 +282,29 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "should apply orientation NOT_IN when orientation unknown",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        condition = ScreenCondition.MEDIUM,
+                        orientation = ScreenOrientation.UNKNOWN,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                ),
+            ),
+            arrayOf(
                 "should reject orientation when NOT_IN matches",
                 Args(
                     availableOverrides = listOf(
@@ -336,6 +348,29 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "should reject screen size when active size is unknown",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.ScreenSize(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    sizes = listOf("tablet"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        condition = ScreenCondition.MEDIUM,
+                        screenSizeName = null,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
                 ),
             ),
             arrayOf(
@@ -383,6 +418,27 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "should reject selected package when not provided",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = null,
+                ),
+            ),
+            arrayOf(
                 "should reject selected package when NOT_IN matches",
                 Args(
                     availableOverrides = listOf(
@@ -401,6 +457,21 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     state = DEFAULT,
                     expected = null,
                     selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject unsupported condition",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
                 ),
             ),
             arrayOf(
