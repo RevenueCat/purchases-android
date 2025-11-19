@@ -11,6 +11,8 @@ import java.util.Locale
 
 internal object PriceFactory {
 
+    private const val DECIMAL_BASE = 10.0
+
     @JvmSynthetic
     @OptIn(InternalRevenueCatAPI::class)
     internal fun createPrice(
@@ -20,11 +22,11 @@ internal object PriceFactory {
     ): Price {
         val currency = Currency.getInstance(currencyCode)
         val digits = currency.defaultFractionDigits.coerceAtLeast(0)
-        
-        val divisor = Math.pow(10.0, digits.toDouble())
+
+        val divisor = Math.pow(DECIMAL_BASE, digits.toDouble())
         val valueInCurrency = amountMicros / MICRO_MULTIPLIER
         val truncatedValue = Math.floor(valueInCurrency * divisor) / divisor
-        
+
         val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
             this.currency = currency
             maximumFractionDigits = digits
