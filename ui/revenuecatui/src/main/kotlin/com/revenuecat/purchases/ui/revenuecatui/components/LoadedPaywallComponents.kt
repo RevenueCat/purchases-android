@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -84,31 +83,32 @@ internal fun LoadedPaywallComponents(
         .trackScreenCondition(screenConditionState, density)
         .background(background)
 
-    CompositionLocalProvider(LocalScreenCondition provides screenConditionState.snapshot) {
-        SimpleBottomSheetScaffold(
-            sheetState = state.sheet,
-            modifier = scaffoldModifier,
-        ) {
-            WithOptionalVideoBackground(state, background = background) {
-                Column {
+    val screenCondition = screenConditionState.snapshot
+    state.screenConditionSnapshot = screenCondition
+
+    SimpleBottomSheetScaffold(
+        sheetState = state.sheet,
+        modifier = scaffoldModifier,
+    ) {
+        WithOptionalVideoBackground(state, background = background) {
+            Column {
+                ComponentView(
+                    style = style,
+                    state = state,
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                )
+                footerComponentStyle?.let {
                     ComponentView(
-                        style = style,
+                        style = it,
                         state = state,
                         onClick = onClick,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
+                            .fillMaxWidth(),
                     )
-                    footerComponentStyle?.let {
-                        ComponentView(
-                            style = it,
-                            state = state,
-                            onClick = onClick,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                        )
-                    }
                 }
             }
         }

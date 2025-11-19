@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.runtime.staticCompositionLocalOf
 import com.revenuecat.purchases.UiConfig
 
 internal data class ScreenConditionSnapshot(
@@ -14,6 +13,3 @@ internal enum class ScreenOrientation {
     LANDSCAPE,
     UNKNOWN,
 }
-
-@Suppress("CompositionLocalAllowlist")
-internal val LocalScreenCondition = staticCompositionLocalOf { ScreenConditionSnapshot() }

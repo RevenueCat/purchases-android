@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -31,6 +30,7 @@ internal fun rememberUpdatedTabsComponentState(
     rememberUpdatedTabsComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        screenConditionProvider = { paywallState.screenConditionSnapshot },
     )
 
 @Stable
@@ -39,8 +39,9 @@ internal fun rememberUpdatedTabsComponentState(
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageProvider: () -> Package?,
+    screenConditionProvider: () -> ScreenConditionSnapshot,
 ): TabsComponentState {
-    val screenCondition = LocalScreenCondition.current
+    val screenCondition = screenConditionProvider()
 
     return remember(style) {
         TabsComponentState(

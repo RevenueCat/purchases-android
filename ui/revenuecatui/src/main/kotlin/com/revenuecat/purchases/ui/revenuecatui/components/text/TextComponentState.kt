@@ -15,7 +15,6 @@ import androidx.compose.ui.text.intl.Locale
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
@@ -44,6 +43,7 @@ internal fun rememberUpdatedTextComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        screenConditionProvider = { paywallState.screenConditionSnapshot },
     )
 }
 
@@ -55,8 +55,9 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    screenConditionProvider: () -> ScreenConditionSnapshot,
 ): TextComponentState {
-    val screenCondition = LocalScreenCondition.current
+    val screenCondition = screenConditionProvider()
 
     // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->

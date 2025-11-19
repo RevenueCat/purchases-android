@@ -19,7 +19,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.LocalScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -40,6 +39,7 @@ internal fun rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        screenConditionProvider = { paywallState.screenConditionSnapshot },
     )
 
 @Stable
@@ -49,9 +49,10 @@ internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    screenConditionProvider: () -> ScreenConditionSnapshot,
 ): StackComponentState {
-    val screenCondition = LocalScreenCondition.current
     val layoutDirection = LocalLayoutDirection.current
+    val screenCondition = screenConditionProvider()
 
     return remember(style) {
         StackComponentState(

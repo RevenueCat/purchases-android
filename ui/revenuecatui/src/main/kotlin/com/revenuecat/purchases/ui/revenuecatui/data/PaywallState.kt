@@ -24,6 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -105,6 +106,9 @@ internal sealed interface PaywallState {
             private val purchases: PurchasesType,
             val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
         ) : Loaded {
+
+            var screenConditionSnapshot by mutableStateOf(ScreenConditionSnapshot())
+                internal set
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
