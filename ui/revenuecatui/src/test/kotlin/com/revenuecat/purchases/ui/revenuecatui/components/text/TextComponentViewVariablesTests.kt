@@ -1126,7 +1126,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "SE",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "1\u00A0666,66\u00A0kr"
+                "1 666,66 kr"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",

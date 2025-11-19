@@ -162,11 +162,11 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes total_price_and_per_month in spanish`() {
-        expectVariablesResult("{{ total_price_and_per_month }}", "$67.99/a (5,66\u00A0US$/m.)", esLocale, TestData.Packages.annual)
+        expectVariablesResult("{{ total_price_and_per_month }}", "$67.99/a (5,66 US$/m.)", esLocale, TestData.Packages.annual)
         expectVariablesResult("{{ total_price_and_per_month }}", "$7.99/m.", esLocale, TestData.Packages.monthly)
-        expectVariablesResult("{{ total_price_and_per_month }}", "$1.49/sem. (6,47\u00A0US$/m.)", esLocale, TestData.Packages.weekly)
+        expectVariablesResult("{{ total_price_and_per_month }}", "$1.49/sem. (6,47 US$/m.)", esLocale, TestData.Packages.weekly)
         expectVariablesResult("{{ total_price_and_per_month }}", "$1,000", esLocale, TestData.Packages.lifetime)
-        expectVariablesResult("{{ total_price_and_per_month }}", "$23.99/3 m. (7,99\u00A0US$/m.)", esLocale, TestData.Packages.quarterly)
+        expectVariablesResult("{{ total_price_and_per_month }}", "$23.99/3 m. (7,99 US$/m.)", esLocale, TestData.Packages.quarterly)
     }
 
     // endregion
@@ -184,11 +184,11 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes total_price_and_per_month_full in spanish`() {
-        expectVariablesResult("{{ total_price_and_per_month_full }}", "$67.99/año (5,66\u00A0US$/mes)", esLocale, TestData.Packages.annual)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$67.99/año (5,66 US$/mes)", esLocale, TestData.Packages.annual)
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/mes", esLocale, TestData.Packages.monthly)
-        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1.49/semana (6,47\u00A0US$/mes)", esLocale, TestData.Packages.weekly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1.49/semana (6,47 US$/mes)", esLocale, TestData.Packages.weekly)
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$1,000", esLocale, TestData.Packages.lifetime)
-        expectVariablesResult("{{ total_price_and_per_month_full }}", "$23.99/3 meses (7,99\u00A0US$/mes)", esLocale, TestData.Packages.quarterly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$23.99/3 meses (7,99 US$/mes)", esLocale, TestData.Packages.quarterly)
     }
 
     // endregion
@@ -285,7 +285,7 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes sub_price_per_month in other locales`() {
-        expectVariablesResult("{{ sub_price_per_month }}", "5,66\u00A0US$", esLocale)
+        expectVariablesResult("{{ sub_price_per_month }}", "5,66 US$", esLocale)
     }
 
     // endregion
