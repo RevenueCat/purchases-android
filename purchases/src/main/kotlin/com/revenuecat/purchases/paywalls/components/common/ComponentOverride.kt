@@ -19,7 +19,10 @@ class ComponentOverride<T : PartialComponent>(
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
         @Serializable
-        object IntroOffer : Condition
+        data class IntroOffer(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
 
         @Serializable
         object MultipleIntroOffers : Condition
@@ -58,6 +61,15 @@ class ComponentOverride<T : PartialComponent>(
         }
 
         @Serializable
+        enum class EqualityOperatorType {
+            @SerialName("=") // WIP… Should we make this human language from the server like in and not_in?
+            EQUALS,
+
+            @SerialName("!=") // WIP… Should we make this human language from the server like in and not_in?
+            NOT_EQUALS,
+        }
+
+        @Serializable
         enum class OrientationType {
             @SerialName("portrait")
             PORTRAIT,
@@ -72,7 +84,7 @@ class ComponentOverride<T : PartialComponent>(
 internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serialName = "Condition",
     serializerByType = mapOf(
-        "intro_offer" to { Condition.IntroOffer.serializer() },
+        "introductory_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
         "orientation" to { Condition.Orientation.serializer() },

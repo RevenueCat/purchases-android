@@ -119,13 +119,17 @@ private fun conditionMatches(
     ComponentOverride.Condition.MultipleIntroOffers ->
         introOfferEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
 
-    ComponentOverride.Condition.IntroOffer ->
-        introOfferEligibility != IntroOfferEligibility.INELIGIBLE
-
     ComponentOverride.Condition.Selected ->
         state == ComponentViewState.SELECTED
 
     ComponentOverride.Condition.Unsupported -> false
+
+    is ComponentOverride.Condition.IntroOffer -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferEligibility.isEligible() == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferEligibility.isEligible() != condition.value
+    }
 
     is ComponentOverride.Condition.Orientation ->
         matchesOrientation(condition, screenCondition.orientation)
@@ -182,3 +186,6 @@ private fun ScreenOrientation.toConditionOrientationType(): ComponentOverride.Co
         ScreenOrientation.LANDSCAPE -> ComponentOverride.Condition.OrientationType.LANDSCAPE
         ScreenOrientation.UNKNOWN -> null
     }
+
+private fun IntroOfferEligibility.isEligible(): Boolean =
+    this != IntroOfferEligibility.INELIGIBLE
