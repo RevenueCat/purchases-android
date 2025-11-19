@@ -522,6 +522,240 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = null,
                 ),
             ),
+            arrayOf(
+                "should apply override when SelectedPackage and IntroOffer both match (single offer)",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should apply override when SelectedPackage and IntroOffer both match (multiple offers)",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when SelectedPackage matches but IntroOffer does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when IntroOffer matches but SelectedPackage does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_monthly",
+                ),
+            ),
+            arrayOf(
+                "should apply override with SelectedPackage NOT_IN and IntroOffer when both match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_monthly"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should apply override when SelectedPackage and MultipleIntroOffers both match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.MultipleIntroOffers,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when SelectedPackage matches but MultipleIntroOffers does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.MultipleIntroOffers,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should apply override with multiple packages and IntroOffer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual", "rc_six_month"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_six_month",
+                ),
+            ),
+            arrayOf(
+                "should apply override with three combined conditions: SelectedPackage, IntroOffer, and Orientation",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        condition = ScreenCondition.MEDIUM,
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when SelectedPackage and IntroOffer match but Orientation does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        condition = ScreenCondition.MEDIUM,
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
         )
     }
 
