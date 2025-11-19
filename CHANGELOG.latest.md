@@ -3,5 +3,13 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
+## RevenueCatUI SDK
+### Customer Center
+#### ✨ New Features
+* CC-581 | Allow for support ticket creation (#2810) via Rosie Watson (@RosieWatson)
+
 ### 🔄 Other Changes
-* Add BC7 version of the SDKs  (#2839) via Toni Rico (@tonidero)
+* Uses some git+GitHub lanes from Fastlane plugin (#2856) via JayShortway (@JayShortway)
+* Add client side timeout logic for endpoints that support fallback URLs (#2807) via Toni Rico (@tonidero)
+* [EXTERNAL] Fix deprecation warnings in examples module (#2852) contributed by @gojoel (#2853) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `9f78bb9` to `083ced9` (#2848) via dependabot[bot] (@dependabot[bot])
