@@ -19,15 +19,19 @@ internal object PriceFactory {
         locale: Locale,
     ): Price {
         val currency = Currency.getInstance(currencyCode)
+        val digits = currency.defaultFractionDigits.coerceAtLeast(0)
+        
+        val divisor = Math.pow(10.0, digits.toDouble())
+        val valueInCurrency = amountMicros / MICRO_MULTIPLIER
+        val truncatedValue = Math.floor(valueInCurrency * divisor) / divisor
+        
         val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
             this.currency = currency
-            // Making sure we do not add spurious digits:
-            val digits = currency.defaultFractionDigits.coerceAtLeast(0)
             maximumFractionDigits = digits
             minimumFractionDigits = digits
         }
 
-        val formatted = numberFormat.format(amountMicros / MICRO_MULTIPLIER)
+        val formatted = numberFormat.format(truncatedValue)
 
         return Price(formatted, amountMicros, currencyCode)
     }
