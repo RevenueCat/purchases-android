@@ -135,23 +135,30 @@ private fun SimpleSheetState.show(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
+    val defaultPackage = state.getDefaultSelectedPackage()
     show(
         backgroundBlur = sheet.backgroundBlur,
-    ) {
-        ComponentView(
-            style = sheet.stack,
-            state = state,
-            onClick = { action ->
-                when (action) {
-                    is PaywallAction.External.NavigateBack -> hide()
-                    else -> onClick(action)
-                }
-            },
-            modifier = Modifier
-                .applyIfNotNull(sheet.size) { size(it) }
-                .conditional(sheet.size == null) { fillMaxWidth() },
-        )
-    }
+        content = {
+            ComponentView(
+                style = sheet.stack,
+                state = state,
+                onClick = { action ->
+                    when (action) {
+                        is PaywallAction.External.NavigateBack -> hide()
+                        else -> onClick(action)
+                    }
+                },
+                modifier = Modifier
+                    .applyIfNotNull(sheet.size) { size(it) }
+                    .conditional(sheet.size == null) { fillMaxWidth() },
+            )
+        },
+        onDismiss = {
+            // Reset package selection to default when sheet is dismissed to prevent
+            // purchasing a hidden package that was selected in the sheet
+            defaultPackage?.let { state.update(selectedPackage = it) }
+        },
+    )
 }
 
 @Suppress("LongMethod")
