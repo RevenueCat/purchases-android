@@ -19,7 +19,7 @@ internal class HTTPTimeoutManager(
         const val REDUCED_TIMEOUT_MS = 2000L // 2 seconds for requests with fallback support after timeout
         const val DEFAULT_TIMEOUT_MS = 30000L // 30 seconds for requests without fallback support and fallback requests
         const val TIMEOUT_RESET_INTERVAL_MS = 600000L // 10 minutes
-        private const val TEST_DIVIDER = 100L // When running tests, we reduce timeouts
+        const val TEST_DIVIDER = 10L // When running tests, we reduce timeouts
     }
 
     enum class RequestResult {
