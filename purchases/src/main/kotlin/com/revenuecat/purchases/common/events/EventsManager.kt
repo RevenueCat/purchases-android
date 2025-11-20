@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -9,6 +10,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
@@ -52,6 +54,12 @@ internal class EventsManager(
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
         internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
         internal val appSessionID: UUID = UUID.randomUUID()
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val FILE_SIZE_LIMIT_KB = 2048.0
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val EVENTS_TO_CLEAR_ON_LIMIT = 50
 
         @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
@@ -118,6 +126,17 @@ internal class EventsManager(
     private var legacyFlushTriggered = false
 
     /**
+     * Checks if the event file size exceeds the limit and clears oldest events if needed.
+     */
+    private fun checkFileSizeAndClearIfNeeded() {
+        val currentFileSizeKB = fileHelper.fileSizeInKB()
+        if (currentFileSizeKB >= FILE_SIZE_LIMIT_KB) {
+            warnLog { "Event store size limit reached. Clearing oldest events to free up space." }
+            fileHelper.clear(EVENTS_TO_CLEAR_ON_LIMIT)
+        }
+    }
+
+    /**
      * Tracks an event and stores it in the event file for future syncing.
      *
      * @param event The event to be tracked.
@@ -156,6 +175,7 @@ internal class EventsManager(
             }
 
             if (backendEvent != null) {
+                checkFileSizeAndClearIfNeeded()
                 fileHelper.appendEvent(backendEvent)
             } else {
                 debugLog { "Backend event not implemented for: $event" }
