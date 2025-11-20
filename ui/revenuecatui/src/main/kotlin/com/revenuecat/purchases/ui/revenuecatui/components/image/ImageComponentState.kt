@@ -112,8 +112,6 @@ internal class ImageComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
-    private val hasAnyIntroOfferEligiblePackage: Boolean,
-    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private val selected by derivedStateOf {
