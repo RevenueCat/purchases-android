@@ -115,6 +115,7 @@ class SubscriberAttributesPurchasesTests {
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
             eventsManager = null,
+            adEventsManager = null,
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),

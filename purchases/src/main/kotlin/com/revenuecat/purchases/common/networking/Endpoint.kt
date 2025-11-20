@@ -36,7 +36,7 @@ internal sealed class Endpoint(
     object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    object PostPaywallEvents : Endpoint("/v1/events", "post_paywall_events") {
+    object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
     data class PostAttributes(val userId: String) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
@@ -108,7 +108,7 @@ internal sealed class Endpoint(
             is GetAmazonReceipt,
             is PostAttributes,
             PostDiagnostics,
-            PostPaywallEvents,
+            PostEvents,
             is GetCustomerCenterConfig,
             PostCreateSupportTicket,
             is WebBillingGetProducts,
@@ -130,7 +130,7 @@ internal sealed class Endpoint(
             is GetOfferings,
             is PostAttributes,
             PostDiagnostics,
-            PostPaywallEvents,
+            PostEvents,
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
             PostCreateSupportTicket,
