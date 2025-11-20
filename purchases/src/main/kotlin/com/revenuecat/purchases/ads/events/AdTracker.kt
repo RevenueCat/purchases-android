@@ -52,7 +52,7 @@ value class AdRevenuePrecision internal constructor(internal val value: String) 
  */
 @InternalRevenueCatAPI
 class AdTracker internal constructor(
-    private val eventsManager: EventsManager?,
+    private val eventsManager: EventsManager,
 ) {
 
     /**
@@ -71,7 +71,7 @@ class AdTracker internal constructor(
         adUnitId: String,
         impressionId: String,
     ) {
-        eventsManager?.track(
+        eventsManager.track(
             event = AdEvent.Displayed(
                 networkName = networkName,
                 mediatorName = mediatorName,
@@ -98,7 +98,7 @@ class AdTracker internal constructor(
         adUnitId: String,
         impressionId: String,
     ) {
-        eventsManager?.track(
+        eventsManager.track(
             event = AdEvent.Open(
                 networkName = networkName,
                 mediatorName = mediatorName,
@@ -132,7 +132,7 @@ class AdTracker internal constructor(
         currency: String,
         precision: AdRevenuePrecision,
     ) {
-        eventsManager?.track(
+        eventsManager.track(
             event = AdEvent.Revenue(
                 networkName = networkName,
                 mediatorName = mediatorName,
