@@ -115,7 +115,6 @@ private fun conditionMatches(
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = when (condition) {
-
     ComponentOverride.Condition.MultipleIntroOffers ->
         introOfferEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
 
