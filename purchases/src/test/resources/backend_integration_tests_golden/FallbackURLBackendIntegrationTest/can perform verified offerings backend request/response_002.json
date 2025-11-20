@@ -1,6 +1,7 @@
 {
   "statusCode": 200,
   "headers": {
+    "Accept-Ranges": "bytes",
     "Connection": "keep-alive",
     "Content-Length": "87466",
     "Server": "cloudflare",
