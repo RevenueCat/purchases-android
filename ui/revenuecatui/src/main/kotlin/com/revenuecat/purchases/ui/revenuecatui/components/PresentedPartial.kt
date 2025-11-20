@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
@@ -78,9 +80,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     screenCondition: ScreenConditionSnapshot,
-    introOfferEligibility: IntroOfferEligibility,
-    hasAnyIntroOfferEligiblePackage: Boolean,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): T? {
@@ -89,9 +89,7 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
         if (
             override.shouldApply(
                 screenCondition,
-                introOfferEligibility,
-                hasAnyIntroOfferEligiblePackage,
-                hasAnyMultipleIntroOffersEligiblePackage,
+                introOfferSnapshot,
                 state,
                 selectedPackageIdentifier,
             )
@@ -105,44 +103,33 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 @Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     screenCondition: ScreenConditionSnapshot,
-    introOfferEligibility: IntroOfferEligibility,
-    hasAnyIntroOfferEligiblePackage: Boolean,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = this.conditions.all { condition ->
-    conditionMatches(
-        condition,
-        screenCondition,
-        introOfferEligibility,
-        hasAnyIntroOfferEligiblePackage,
-        hasAnyMultipleIntroOffersEligiblePackage,
-        state,
-        selectedPackageIdentifier,
-    )
+    conditionMatches(condition, screenCondition, introOfferSnapshot, state, selectedPackageIdentifier)
 }
 
+@Suppress("ComplexMethod")
 private fun conditionMatches(
     condition: ComponentOverride.Condition,
     screenCondition: ScreenConditionSnapshot,
-    introOfferEligibility: IntroOfferEligibility,
-    hasAnyIntroOfferEligiblePackage: Boolean,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = when (condition) {
     is ComponentOverride.Condition.MultipleIntroOffers -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
-            introOfferEligibility.hasMultipleIntroOffers() == condition.value
+            introOfferSnapshot.eligibility.hasMultipleIntroOffers() == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
-            introOfferEligibility.hasMultipleIntroOffers() != condition.value
+            introOfferSnapshot.eligibility.hasMultipleIntroOffers() != condition.value
     }
 
     is ComponentOverride.Condition.AnyMultipleIntroOffers -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
-            hasAnyMultipleIntroOffersEligiblePackage == condition.value
+            introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
-            hasAnyMultipleIntroOffersEligiblePackage != condition.value
+            introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage != condition.value
     }
 
     ComponentOverride.Condition.Selected ->
@@ -152,16 +139,16 @@ private fun conditionMatches(
 
     is ComponentOverride.Condition.IntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
-            introOfferEligibility.isEligible() == condition.value
+            introOfferSnapshot.eligibility.isEligible() == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
-            introOfferEligibility.isEligible() != condition.value
+            introOfferSnapshot.eligibility.isEligible() != condition.value
     }
 
     is ComponentOverride.Condition.AnyIntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
-            hasAnyIntroOfferEligiblePackage == condition.value
+            introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
-            hasAnyIntroOfferEligiblePackage != condition.value
+            introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage != condition.value
     }
 
     is ComponentOverride.Condition.Orientation ->

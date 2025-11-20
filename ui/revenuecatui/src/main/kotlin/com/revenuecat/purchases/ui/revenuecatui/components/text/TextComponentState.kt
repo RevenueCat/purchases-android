@@ -15,6 +15,8 @@ import androidx.compose.ui.text.intl.Locale
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
@@ -44,22 +46,24 @@ internal fun rememberUpdatedTextComponentState(
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
-        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
-        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 }
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
-    hasAnyIntroOfferEligiblePackage: Boolean = false,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TextComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -75,8 +79,7 @@ internal fun rememberUpdatedTextComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferAvailability = introOfferAvailability,
         )
     }.apply {
         update(
@@ -93,8 +96,7 @@ internal class TextComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
-    private val hasAnyIntroOfferEligiblePackage: Boolean,
-    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
@@ -136,12 +138,14 @@ internal class TextComponentState(
     private val presentedPartial by derivedStateOf {
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
-            introOfferEligibility = introOfferEligibility,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )

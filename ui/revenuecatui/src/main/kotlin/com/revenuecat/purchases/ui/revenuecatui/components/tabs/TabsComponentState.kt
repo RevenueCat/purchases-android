@@ -11,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -31,8 +33,10 @@ internal fun rememberUpdatedTabsComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
-        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
-        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 
 @Stable
@@ -42,8 +46,7 @@ internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageProvider: () -> Package?,
     screenConditionProvider: () -> ScreenConditionSnapshot,
-    hasAnyIntroOfferEligiblePackage: Boolean = false,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TabsComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -52,8 +55,7 @@ internal fun rememberUpdatedTabsComponentState(
             initialScreenCondition = screenCondition,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferAvailability = introOfferAvailability,
         )
     }.apply {
         update(
@@ -67,8 +69,7 @@ internal class TabsComponentState(
     initialScreenCondition: ScreenConditionSnapshot,
     private val style: TabsComponentStyle,
     private val selectedPackageProvider: () -> Package?,
-    private val hasAnyIntroOfferEligiblePackage: Boolean,
-    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
@@ -79,12 +80,14 @@ internal class TabsComponentState(
     private val presentedPartial by derivedStateOf {
         val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
-            introOfferEligibility = introOfferEligibility,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )

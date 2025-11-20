@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -29,8 +31,10 @@ internal fun rememberUpdatedTimelineComponentState(
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
-        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
-        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 
 @Stable
@@ -41,8 +45,7 @@ private fun rememberUpdatedTimelineComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
-    hasAnyIntroOfferEligiblePackage: Boolean = false,
-    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TimelineComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -52,8 +55,7 @@ private fun rememberUpdatedTimelineComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferAvailability = introOfferAvailability,
         )
     }.apply {
         update(
@@ -68,8 +70,7 @@ internal class TimelineComponentState(
     private val style: TimelineComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
-    private val hasAnyIntroOfferEligiblePackage: Boolean,
-    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
 
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -90,12 +91,14 @@ internal class TimelineComponentState(
     private val presentedPartial by derivedStateOf {
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
-            introOfferEligibility = introOfferEligibility,
-            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )
@@ -133,8 +136,7 @@ internal class TimelineComponentState(
                 style = it,
                 selectedPackageProvider = selectedPackageProvider,
                 selectedTabIndexProvider = selectedTabIndexProvider,
-                hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-                hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+                introOfferAvailability = introOfferAvailability,
             )
         }
     }
@@ -152,8 +154,7 @@ internal class TimelineComponentState(
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageProvider: () -> Package?,
         private val selectedTabIndexProvider: () -> Int,
-        private val hasAnyIntroOfferEligiblePackage: Boolean,
-        private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
+        private val introOfferAvailability: IntroOfferAvailability,
     ) {
 
         private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -174,12 +175,14 @@ internal class TimelineComponentState(
         private val presentedPartial by derivedStateOf {
             val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
             val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+            val introOfferSnapshot = IntroOfferSnapshot(
+                eligibility = introOfferEligibility,
+                availability = introOfferAvailability,
+            )
 
             style.overrides.buildPresentedPartial(
                 screenCondition = screenConditionSnapshot,
-                introOfferEligibility = introOfferEligibility,
-                hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
-                hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
+                introOfferSnapshot = introOfferSnapshot,
                 state = componentState,
                 selectedPackageIdentifier = applicablePackage?.identifier,
             )

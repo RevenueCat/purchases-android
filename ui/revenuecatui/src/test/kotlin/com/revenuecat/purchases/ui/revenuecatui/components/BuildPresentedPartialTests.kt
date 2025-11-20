@@ -8,6 +8,8 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.DEFAULT
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SELECTED
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.INELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
@@ -888,9 +890,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         // Arrange, Act
         val actual: LocalizedTextPartial? = args.availableOverrides.buildPresentedPartial(
             screenCondition = args.screenCondition,
-            introOfferEligibility = args.introOfferEligibility,
-            hasAnyIntroOfferEligiblePackage = args.hasAnyIntroOfferEligiblePackage,
-            hasAnyMultipleIntroOffersEligiblePackage = args.hasAnyMultipleIntroOffersEligiblePackage,
+            introOfferSnapshot = IntroOfferSnapshot(
+                eligibility = args.introOfferEligibility,
+                availability = IntroOfferAvailability(
+                    hasAnyIntroOfferEligiblePackage = args.hasAnyIntroOfferEligiblePackage,
+                    hasAnyMultipleIntroOffersEligiblePackage = args.hasAnyMultipleIntroOffersEligiblePackage,
+                ),
+            ),
             state = args.state,
             selectedPackageIdentifier = args.selectedPackageIdentifier,
         )
