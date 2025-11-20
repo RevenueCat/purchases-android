@@ -132,8 +132,8 @@ internal class PurchasesOrchestrator(
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
-    private val eventsManager: EventsManager?,
-    private val adEventsManager: EventsManager?,
+    private val eventsManager: EventsManager,
+    private val adEventsManager: EventsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -829,9 +829,7 @@ internal class PurchasesOrchestrator(
                 paywallPresentedCache.receiveEvent(event)
         }
 
-        if (isAndroidNOrNewer()) {
-            eventsManager?.track(event)
-        }
+        eventsManager.track(event)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -1579,10 +1577,8 @@ internal class PurchasesOrchestrator(
     }
 
     private fun flushPaywallEvents() {
-        if (isAndroidNOrNewer()) {
-            eventsManager?.flushEvents()
-            adEventsManager?.flushEvents()
-        }
+        eventsManager.flushEvents()
+        adEventsManager.flushEvents()
     }
 
     private fun createCallbackWithDiagnosticsIfNeeded(
