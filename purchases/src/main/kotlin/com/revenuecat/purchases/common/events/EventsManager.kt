@@ -49,6 +49,7 @@ internal class EventsManager(
 
     companion object {
         private const val FLUSH_COUNT = 50
+        private const val MAX_FLUSH_BATCHES = 10
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
         internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
@@ -198,36 +199,53 @@ internal class EventsManager(
                 flushLegacyEvents()
             }
 
-            val storedEventsWithNullValues = getStoredEvents()
-            val storedEvents = storedEventsWithNullValues.filterNotNull()
-
-            if (storedEvents.isEmpty()) {
-                verboseLog { "No new events to sync." }
-                flushInProgress.set(false)
-                return@enqueue
-            }
-
-            verboseLog { "New event flush: posting ${storedEvents.size} events." }
-            postEvents(
-                EventsRequest(storedEvents.map { it.toBackendEvent() }),
-                {
-                    verboseLog { "New event flush: success." }
-                    enqueue {
-                        fileHelper.clear(storedEventsWithNullValues.size)
-                        flushInProgress.set(false)
-                    }
-                },
-                { error, shouldMarkAsSynced ->
-                    errorLog { "New event flush error: $error." }
-                    enqueue {
-                        if (shouldMarkAsSynced) {
-                            fileHelper.clear(storedEventsWithNullValues.size)
-                        }
-                        flushInProgress.set(false)
-                    }
-                },
-            )
+            flushNextBatch(batchNumber = 1)
         }
+    }
+
+    /**
+     * Flushes the next batch of events.
+     *
+     * @param batchNumber The current batch number being flushed.
+     */
+    private fun flushNextBatch(batchNumber: Int) {
+        if (batchNumber > MAX_FLUSH_BATCHES) {
+            verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
+            flushInProgress.set(false)
+            return
+        }
+
+        val storedEventsWithNullValues = getStoredEvents()
+        val storedEvents = storedEventsWithNullValues.filterNotNull()
+
+        if (storedEvents.isEmpty()) {
+            verboseLog { "No new events to sync." }
+            flushInProgress.set(false)
+            return
+        }
+
+        verboseLog { "New event flush (batch $batchNumber): posting ${storedEvents.size} events." }
+        postEvents(
+            EventsRequest(storedEvents.map { it.toBackendEvent() }),
+            {
+                verboseLog { "New event flush (batch $batchNumber): success." }
+                enqueue {
+                    fileHelper.clear(storedEventsWithNullValues.size)
+                    // Continue flushing next batch
+                    flushNextBatch(batchNumber + 1)
+                }
+            },
+            { error, shouldMarkAsSynced ->
+                errorLog { "New event flush (batch $batchNumber) error: $error." }
+                enqueue {
+                    if (shouldMarkAsSynced) {
+                        fileHelper.clear(storedEventsWithNullValues.size)
+                    }
+                    // Stop flushing on error
+                    flushInProgress.set(false)
+                }
+            },
+        )
     }
 
     /**
