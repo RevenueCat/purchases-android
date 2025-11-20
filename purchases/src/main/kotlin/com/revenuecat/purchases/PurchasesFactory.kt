@@ -446,36 +446,6 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun createAdEventsManager(
-        context: Context,
-        identityManager: IdentityManager,
-        eventsDispatcher: Dispatcher,
-        backend: Backend,
-    ): EventsManager? {
-        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
-        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
-        // older versions.
-        return if (isAndroidNOrNewer()) {
-            EventsManager(
-                legacyEventsFileHelper = null,
-                fileHelper = EventsManager.adEvents(fileHelper = FileHelper(context)),
-                identityManager = identityManager,
-                eventsDispatcher = eventsDispatcher,
-                postEvents = { request, onSuccess, onError ->
-                    backend.postEvents(
-                        paywallEventRequest = request,
-                        baseURL = AppConfig.adEventsURL,
-                        onSuccessHandler = onSuccess,
-                        onErrorHandler = onError,
-                    )
-                },
-            )
-        } else {
-            debugLog { "Ad events are only supported on Android N or newer." }
-            null
-        }
-    }
-
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
