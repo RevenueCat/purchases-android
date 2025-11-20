@@ -124,9 +124,33 @@ platform :android do
       properties: gradle_properties
     )
 
+    UI.verbose("Deploying purchases Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-bc7",
+      "purchases",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying purchases-ui Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-ui-bc7",
+      "ui:revenuecatui",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying amazon Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-store-amazon-bc7",
+      "feature:amazon",
+      gradle_properties
+    )
+
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
-      "customEntitlementComputationRelease",
+      "customEntitlementComputationBc8Release",
       "purchases-custom-entitlement-computation",
       "purchases",
       gradle_properties
@@ -134,7 +158,7 @@ platform :android do
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
-      "defaultsDebug",
+      "defaultsBc8Debug",
       "purchases-debug-view",
       "ui:debugview",
       gradle_properties
@@ -211,7 +235,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundle',
+      build_task: 'examples:purchase-tester:bundleBc8',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -223,7 +247,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundle',
+      build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester'
     )
@@ -255,7 +279,7 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     gradle(
-      task: ':purchases:testDefaultsDebugUnitTest',
+      task: ':purchases:testDefaultsBc8DebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true,
         "minSdkVersion" => 21,
@@ -323,11 +347,12 @@ platform :android do
 
         # Create PR against the current branch (not main)
         create_pr_if_necessary(
-          repo: repo_name,
-          branch_name: pr_branch_name,
+          github_pr_token: ENV["GITHUB_TOKEN"],
+          repo_name: repo_name,
+          base_branch: current_branch,
+          head_branch: pr_branch_name,
           title: title,
           body: body,
-          base: current_branch,
           labels: ["pr:other"],
           team_reviewers: ["coresdk"]
         )
@@ -400,7 +425,7 @@ platform :android do
       # We default to empty active entitlements since we are using an expired token for these integration tests.
       # So no active entitlements will be returned by our servers.
       active_entitlements_to_verify: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-      flavor: 'customEntitlementComputation'
+      flavor: 'customEntitlementComputationBc8'
     )
 
     run_firebase_integration_tests(app_name)
@@ -425,7 +450,7 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults', 
+                                        proxy_url: nil, build_type: 'release', flavor: 'defaultsBc8',
                                         backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
@@ -770,7 +795,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziDebug",
+      task: "#{gradle_module}:recordPaparazziBc8Debug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
@@ -780,25 +805,6 @@ DESC
     # Copy the output to the output_dir
     if options[:output_dir] && options[:output_dir].length > 0
       sh("cp -r #{paparazzi_output_dir}/ #{options[:output_dir]}")
-    end
-  end
-
-  private_lane :create_or_checkout_branch do |options|
-    branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
-
-    # Check if branch exists locally or remotely
-    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
-    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
-
-    if branch_exists_locally || branch_exists_remotely
-      UI.message("Branch #{branch_name} already exists, checking it out")
-      sh("git", "checkout", branch_name)
-      if branch_exists_remotely
-        sh("git", "pull", "origin", branch_name)
-      end
-    else
-      UI.message("Creating new branch #{branch_name}")
-      sh("git", "checkout", "-b", branch_name)
     end
   end
 
@@ -825,41 +831,6 @@ DESC
     end
   end
 
-  private_lane :create_pr_if_necessary do |options|
-    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
-    title = options[:title] || UI.user_error!("No title provided")
-    body = options[:body] || UI.user_error!("No body provided")
-    repo = options[:repo] || repo_name
-    repo_with_owner = "RevenueCat/#{repo}"
-    base = options[:base] || "main"
-    labels = options[:labels] || []
-    team_reviewers = options[:team_reviewers] || []
-
-    existing_pr = github_api(
-      api_token: ENV["GITHUB_TOKEN"],
-      path: "/repos/#{repo_with_owner}/pulls?head=RevenueCat:#{branch_name}&state=open"
-    )
-
-    if existing_pr[:json].length == 0
-      pr_url = create_pull_request(
-        repo: repo_with_owner,
-        title: title,
-        body: body,
-        base: base,
-        head: branch_name,
-        api_token: ENV["GITHUB_TOKEN"],
-        labels: labels,
-        team_reviewers: team_reviewers
-      )
-      
-      if pr_url.nil?
-        UI.user_error!("Failed to create pull request.")
-      end
-    else
-      UI.message("PR already exists.")
-    end
-  end
-
 
   private_lane :commit_push_and_create_pr_if_necessary do |options|
     branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
@@ -878,8 +849,10 @@ DESC
       )
 
       create_pr_if_necessary(
-        repo: repo,
-        branch_name: branch_name,
+        github_pr_token: ENV["GITHUB_TOKEN"],
+        repo_name: repo,
+        base_branch: "main",
+        head_branch: branch_name,
         title: title,
         body: body,
         labels: labels,
@@ -908,7 +881,10 @@ def check_no_git_tag_exists(version_number)
 end
 
 def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
-  task_to_run = flavor == 'defaults' ? 'assembleDefaultsAndroidTest' : 'assembleCustomEntitlementComputationAndroidTest'
+  task_to_run = flavor == 'defaultsBc8' ? 'assembleDefaultsBc8AndroidTest' : 'assembleCustomEntitlementComputationBc8AndroidTest'
+  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-*-androidTest.apk"
+  # Delete any preexisting apks to avoid possible interferences
+  sh "rm -f #{apk_path}"
   gradle(
     task: ":purchases:#{task_to_run}",
     properties: {
@@ -917,7 +893,6 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-#{flavor}-#{build_type}-androidTest.apk"
   new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(

@@ -13,11 +13,19 @@ android {
     namespace = "com.revenuecat.purchases.amazon"
 
     flavorDimensions += "apis"
+    flavorDimensions += "billingclient"
 
     productFlavors {
         create("defaults") {
             dimension = "apis"
             isDefault = true
+        }
+        create("bc8") {
+            dimension = "billingclient"
+            isDefault = true
+        }
+        create("bc7") {
+            dimension = "billingclient"
         }
     }
 

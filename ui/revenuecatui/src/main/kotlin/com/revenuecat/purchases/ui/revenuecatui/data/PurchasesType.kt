@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
@@ -25,6 +27,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 /**
  * Abstraction over [Purchases] that can be mocked.
  */
+@Suppress("TooManyFunctions")
 internal interface PurchasesType {
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
@@ -56,8 +59,12 @@ internal interface PurchasesType {
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
 }
 
+@Suppress("TooManyFunctions")
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         return purchases.awaitPurchase(purchaseParams.build())
@@ -118,4 +125,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+        return purchases.awaitCreateSupportTicket(email, description)
+    }
 }

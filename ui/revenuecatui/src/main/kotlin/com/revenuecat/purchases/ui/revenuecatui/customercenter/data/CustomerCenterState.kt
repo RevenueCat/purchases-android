@@ -38,6 +38,7 @@ internal sealed class CustomerCenterState(
         ),
         @get:JvmSynthetic override val navigationButtonType: NavigationButtonType = NavigationButtonType.CLOSE,
         @get:JvmSynthetic val virtualCurrencies: VirtualCurrencies? = null,
+        @get:JvmSynthetic val showSupportTicketSuccessSnackbar: Boolean = false,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination
@@ -56,4 +57,11 @@ internal data class PromotionalOfferData(
     @get:JvmSynthetic val subscriptionOption: SubscriptionOption,
     @get:JvmSynthetic val originalPath: CustomerCenterConfigData.HelpPath,
     @get:JvmSynthetic val localizedPricingPhasesDescription: String,
+)
+
+internal data class CreateSupportTicketData(
+    @get:JvmSynthetic val onSubmit:
+    (email: String, description: String, onSuccess: () -> Unit, onError: () -> Unit) -> Unit,
+    @get:JvmSynthetic val onCancel: () -> Unit,
+    @get:JvmSynthetic val onClose: () -> Unit,
 )
