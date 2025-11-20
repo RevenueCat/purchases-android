@@ -53,7 +53,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
 
         private val defaultAvailableOverrides = listOf(
             ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 properties = PartialTextComponent(fontName = introOffer),
             ),
             ComponentOverride(
@@ -137,7 +140,10 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     expected = Result.Success(
                         listOf(
                             PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                                 properties = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = introOffer),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),

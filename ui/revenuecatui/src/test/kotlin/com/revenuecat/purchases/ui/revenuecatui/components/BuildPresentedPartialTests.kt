@@ -90,7 +90,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             introOffer?.let {
                 overrides.add(
                     PresentedOverride(
-                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                        conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                            value = true,
+                        )),
                         properties = it,
                     ),
                 )
@@ -532,7 +535,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -554,7 +560,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -576,7 +585,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -598,7 +610,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -620,7 +635,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
                                     packages = listOf("rc_monthly"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -686,7 +704,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual", "rc_six_month"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -708,7 +729,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                                 ComponentOverride.Condition.Orientation(
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
@@ -737,7 +761,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.IntroOffer,
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                                 ComponentOverride.Condition.Orientation(
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
