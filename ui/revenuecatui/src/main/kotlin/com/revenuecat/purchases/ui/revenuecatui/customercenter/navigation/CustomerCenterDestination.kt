@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation
 
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -39,4 +40,9 @@ internal sealed class CustomerCenterDestination {
     ) : CustomerCenterDestination()
 
     data class VirtualCurrencyBalances(override val title: String?) : CustomerCenterDestination()
+
+    data class CreateSupportTicket(
+        val data: CreateSupportTicketData,
+        override val title: String,
+    ) : CustomerCenterDestination()
 }

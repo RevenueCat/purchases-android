@@ -652,6 +652,25 @@ internal class TextComponentViewVariablesTests(
                     ),
                     "Annual"
                 )
+
+                Variable.COUNT_DAYS_WITH_ZERO,
+                Variable.COUNT_DAYS_WITHOUT_ZERO,
+                Variable.COUNT_HOURS_WITH_ZERO,
+                Variable.COUNT_HOURS_WITHOUT_ZERO,
+                Variable.COUNT_MINUTES_WITH_ZERO,
+                Variable.COUNT_MINUTES_WITHOUT_ZERO,
+                Variable.COUNT_SECONDS_WITH_ZERO,
+                Variable.COUNT_SECONDS_WITHOUT_ZERO,
+                -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    ""
+                )
             }
         } + listOf(
             // Lifetime:

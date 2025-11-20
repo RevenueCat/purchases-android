@@ -848,7 +848,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserId,
                 ProductType.SUBS,
                 oldSubId,
@@ -1616,7 +1616,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val oldPurchase = mockPurchaseFound(error)
 
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
@@ -1720,7 +1720,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -1784,7 +1784,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
@@ -2558,7 +2558,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         every {
-            mockBillingAbstract.findPurchaseInActivePurchases(
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,

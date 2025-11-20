@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import java.util.Date
 
 @Suppress("LongParameterList")
 @Immutable
@@ -55,6 +57,14 @@ internal class TextComponentStyle(
      */
     @get:JvmSynthetic
     val tabIndex: Int?,
+    /**
+     * If this is non-null, it means this text is inside a countdown component and countdown variables should be
+     * replaced with values calculated from this date.
+     */
+    @get:JvmSynthetic
+    val countdownDate: Date?,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     @get:JvmSynthetic
