@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.events
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -66,6 +65,15 @@ class EventsManagerTest {
             darkMode = true,
             locale = "es_ES"
         )
+    )
+    private val adEvent = AdEvent.Displayed(
+        id = "ad-event-id",
+        timestamp = 1699270688884,
+        networkName = "Google AdMob",
+        mediatorName = AdMediatorName.AD_MOB,
+        placement = "banner_home",
+        adUnitId = "ca-app-pub-123456",
+        impressionId = "impression-id"
     )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
     private var postedRequest: EventsRequest? = null
@@ -227,14 +235,19 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `if more than maximum events flushEvents only posts maximum events`() {
+    fun `if more than maximum events flushEvents, posts maximum events per batch`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
             eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(50)
+        // With multi-batch flushing, all 100 events will be flushed (2 batches of 50)
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -329,8 +342,12 @@ class EventsManagerTest {
         appendToFile("invalid event 3\n")
         checkFileNumberOfEvents(78)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(28)
-        expectNumberOfEventsSynced(48)
+        // With multi-batch flushing, all events will be flushed across 2 batches
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch of 50 lines)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any())
+        }
     }
 
     @SuppressLint("CheckResult")
@@ -557,5 +574,141 @@ class EventsManagerTest {
         eventsManager.track(revenueEvent)
 
         checkFileNumberOfEvents(3)
+    }
+
+    @Test
+    fun `flushEvents stops after maximum batch limit`() {
+        mockBackendResponse(success = true)
+        // Add 550 events (more than 10 batches of 50)
+        for (i in 0..549) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(550)
+        eventsManager.flushEvents()
+        // Should flush 10 batches (500 events), leaving 50
+        checkFileNumberOfEvents(50)
+        // Verify backend was called exactly 10 times (the maximum)
+        verify(exactly = 10) {
+            backend.postEvents(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `flushEvents stops on first batch failure`() {
+        // Mock backend to fail on first call
+        var callCount = 0
+        val successSlot = slot<() -> Unit>()
+        val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
+        every {
+            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+        } answers {
+            callCount++
+            if (callCount == 1) {
+                // First batch fails
+                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), false)
+            } else {
+                // Subsequent batches succeed (but shouldn't be called)
+                successSlot.captured.invoke()
+            }
+        }
+
+        // Add 150 events (3 potential batches)
+        for (i in 0..149) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(150)
+        eventsManager.flushEvents()
+        // Events should not be deleted since first batch failed
+        checkFileNumberOfEvents(150)
+        // Verify backend was called only once (stopped after first failure)
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any())
+        }
+    }
+
+    // File Size Limit Tests
+
+    @Test
+    fun `file size limit is not reached with small number of events`() {
+        // Track a small number of events that won't reach the 2048KB limit
+        for (i in 0..9) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(10)
+    }
+
+    @Test
+    fun `file size limit clears oldest events when limit is reached`() {
+        // Each event is approximately 300 bytes when serialized
+        // To reach 2048KB (2097152 bytes), we need about 7000 events
+        // Let's track 7100 events to exceed the limit
+        val eventsToTrack = 7100
+
+        for (i in 0 until eventsToTrack) {
+            eventsManager.track(paywallEvent)
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val finalEventCount = file.readLines().size
+
+        // The file should have fewer events than we tracked because
+        // the oldest 50 events were cleared each time the limit was reached
+        assertThat(finalEventCount).isLessThan(eventsToTrack)
+        assertThat(finalEventCount).isGreaterThan(5000) // Should still have a significant number of events
+
+        // Verify file size is under the limit (2048KB)
+        val fileSizeKB = file.length() / 1024.0
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `file size limit works with mixed event types`() {
+        // Track a mix of events to exceed the limit
+        val eventsToTrack = 2500
+
+        for (i in 0 until eventsToTrack) {
+            when (i % 3) {
+                0 -> eventsManager.track(paywallEvent)
+                1 -> eventsManager.track(customerCenterImpressionEvent)
+                2 -> eventsManager.track(adEvent)
+            }
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `oldest events are cleared when limit is reached maintaining file integrity`() {
+        // Track enough events to trigger the size check multiple times
+        // With ~1.3KB per event, we need about 1600 events to reach the limit
+        for (i in 0 until 1700) {
+            eventsManager.track(paywallEvent.copy(
+                data = paywallEvent.data.copy(
+                    offeringIdentifier = "offeringID_${i}_" + "x".repeat(1000),
+                )
+            ))
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+
+        val lines = file.readLines()
+        val firstLine = lines.first()
+        // Assert that the first line has a more recent offeringIdentifier, indicating older events were cleared
+        val firstOfferingID = firstLine.substringAfter("offeringID_").substringBefore("_").toInt()
+        assertThat(firstOfferingID).isGreaterThan(50) // At least one clearing should have occurred
+
+        // Verify all remaining events are left as expected
+        lines.forEach { line ->
+            // Should not throw exception
+            assertThat(line).startsWith("{\"type\":")
+        }
     }
 }

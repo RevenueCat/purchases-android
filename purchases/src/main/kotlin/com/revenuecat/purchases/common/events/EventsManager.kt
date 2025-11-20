@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -9,6 +10,7 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
@@ -47,10 +49,17 @@ internal class EventsManager(
 
     companion object {
         private const val FLUSH_COUNT = 50
+        private const val MAX_FLUSH_BATCHES = 10
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
         internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
         internal val appSessionID: UUID = UUID.randomUUID()
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val FILE_SIZE_LIMIT_KB = 2048.0
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val EVENTS_TO_CLEAR_ON_LIMIT = 50
 
         @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
@@ -117,6 +126,17 @@ internal class EventsManager(
     private var legacyFlushTriggered = false
 
     /**
+     * Checks if the event file size exceeds the limit and clears oldest events if needed.
+     */
+    private fun checkFileSizeAndClearIfNeeded() {
+        val currentFileSizeKB = fileHelper.fileSizeInKB()
+        if (currentFileSizeKB >= FILE_SIZE_LIMIT_KB) {
+            warnLog { "Event store size limit reached. Clearing oldest events to free up space." }
+            fileHelper.clear(EVENTS_TO_CLEAR_ON_LIMIT)
+        }
+    }
+
+    /**
      * Tracks an event and stores it in the event file for future syncing.
      *
      * @param event The event to be tracked.
@@ -155,6 +175,7 @@ internal class EventsManager(
             }
 
             if (backendEvent != null) {
+                checkFileSizeAndClearIfNeeded()
                 fileHelper.appendEvent(backendEvent)
             } else {
                 debugLog { "Backend event not implemented for: $event" }
@@ -178,36 +199,53 @@ internal class EventsManager(
                 flushLegacyEvents()
             }
 
-            val storedEventsWithNullValues = getStoredEvents()
-            val storedEvents = storedEventsWithNullValues.filterNotNull()
-
-            if (storedEvents.isEmpty()) {
-                verboseLog { "No new events to sync." }
-                flushInProgress.set(false)
-                return@enqueue
-            }
-
-            verboseLog { "New event flush: posting ${storedEvents.size} events." }
-            postEvents(
-                EventsRequest(storedEvents.map { it.toBackendEvent() }),
-                {
-                    verboseLog { "New event flush: success." }
-                    enqueue {
-                        fileHelper.clear(storedEventsWithNullValues.size)
-                        flushInProgress.set(false)
-                    }
-                },
-                { error, shouldMarkAsSynced ->
-                    errorLog { "New event flush error: $error." }
-                    enqueue {
-                        if (shouldMarkAsSynced) {
-                            fileHelper.clear(storedEventsWithNullValues.size)
-                        }
-                        flushInProgress.set(false)
-                    }
-                },
-            )
+            flushNextBatch(batchNumber = 1)
         }
+    }
+
+    /**
+     * Flushes the next batch of events.
+     *
+     * @param batchNumber The current batch number being flushed.
+     */
+    private fun flushNextBatch(batchNumber: Int) {
+        if (batchNumber > MAX_FLUSH_BATCHES) {
+            verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
+            flushInProgress.set(false)
+            return
+        }
+
+        val storedEventsWithNullValues = getStoredEvents()
+        val storedEvents = storedEventsWithNullValues.filterNotNull()
+
+        if (storedEvents.isEmpty()) {
+            verboseLog { "No new events to sync." }
+            flushInProgress.set(false)
+            return
+        }
+
+        verboseLog { "New event flush (batch $batchNumber): posting ${storedEvents.size} events." }
+        postEvents(
+            EventsRequest(storedEvents.map { it.toBackendEvent() }),
+            {
+                verboseLog { "New event flush (batch $batchNumber): success." }
+                enqueue {
+                    fileHelper.clear(storedEventsWithNullValues.size)
+                    // Continue flushing next batch
+                    flushNextBatch(batchNumber + 1)
+                }
+            },
+            { error, shouldMarkAsSynced ->
+                errorLog { "New event flush (batch $batchNumber) error: $error." }
+                enqueue {
+                    if (shouldMarkAsSynced) {
+                        fileHelper.clear(storedEventsWithNullValues.size)
+                    }
+                    // Stop flushing on error
+                    flushInProgress.set(false)
+                }
+            },
+        )
     }
 
     /**
