@@ -79,6 +79,8 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     screenCondition: ScreenConditionSnapshot,
     introOfferEligibility: IntroOfferEligibility,
+    hasAnyIntroOfferEligiblePackage: Boolean,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): T? {
@@ -88,6 +90,8 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
             override.shouldApply(
                 screenCondition,
                 introOfferEligibility,
+                hasAnyIntroOfferEligiblePackage,
+                hasAnyMultipleIntroOffersEligiblePackage,
                 state,
                 selectedPackageIdentifier,
             )
@@ -102,16 +106,28 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     screenCondition: ScreenConditionSnapshot,
     introOfferEligibility: IntroOfferEligibility,
+    hasAnyIntroOfferEligiblePackage: Boolean,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = this.conditions.all { condition ->
-    conditionMatches(condition, screenCondition, introOfferEligibility, state, selectedPackageIdentifier)
+    conditionMatches(
+        condition,
+        screenCondition,
+        introOfferEligibility,
+        hasAnyIntroOfferEligiblePackage,
+        hasAnyMultipleIntroOffersEligiblePackage,
+        state,
+        selectedPackageIdentifier,
+    )
 }
 
 private fun conditionMatches(
     condition: ComponentOverride.Condition,
     screenCondition: ScreenConditionSnapshot,
     introOfferEligibility: IntroOfferEligibility,
+    hasAnyIntroOfferEligiblePackage: Boolean,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = when (condition) {
@@ -120,6 +136,13 @@ private fun conditionMatches(
             introOfferEligibility.hasMultipleIntroOffers() == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferEligibility.hasMultipleIntroOffers() != condition.value
+    }
+
+    is ComponentOverride.Condition.AnyMultipleIntroOffers -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            hasAnyMultipleIntroOffersEligiblePackage == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            hasAnyMultipleIntroOffersEligiblePackage != condition.value
     }
 
     ComponentOverride.Condition.Selected ->
@@ -132,6 +155,13 @@ private fun conditionMatches(
             introOfferEligibility.isEligible() == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferEligibility.isEligible() != condition.value
+    }
+
+    is ComponentOverride.Condition.AnyIntroOffer -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            hasAnyIntroOfferEligiblePackage == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            hasAnyIntroOfferEligiblePackage != condition.value
     }
 
     is ComponentOverride.Condition.Orientation ->

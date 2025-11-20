@@ -40,6 +40,8 @@ internal fun rememberUpdatedStackComponentState(
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
+        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
     )
 
 @Stable
@@ -50,6 +52,8 @@ internal fun rememberUpdatedStackComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
+    hasAnyIntroOfferEligiblePackage: Boolean = false,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
 ): StackComponentState {
     val layoutDirection = LocalLayoutDirection.current
     val screenCondition = screenConditionProvider()
@@ -61,6 +65,8 @@ internal fun rememberUpdatedStackComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
         )
     }.apply {
         update(
@@ -77,6 +83,8 @@ internal class StackComponentState(
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val hasAnyIntroOfferEligiblePackage: Boolean,
+    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -103,6 +111,8 @@ internal class StackComponentState(
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
             introOfferEligibility = introOfferEligibility,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )

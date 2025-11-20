@@ -32,6 +32,8 @@ internal fun rememberUpdatedCarouselComponentState(
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
+        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
     )
 
 @Stable
@@ -42,6 +44,8 @@ private fun rememberUpdatedCarouselComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
+    hasAnyIntroOfferEligiblePackage: Boolean = false,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
 ): CarouselComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -51,6 +55,8 @@ private fun rememberUpdatedCarouselComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
         )
     }.apply {
         update(
@@ -65,6 +71,8 @@ internal class CarouselComponentState(
     private val style: CarouselComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val hasAnyIntroOfferEligiblePackage: Boolean,
+    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
 ) {
 
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -89,6 +97,8 @@ internal class CarouselComponentState(
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
             introOfferEligibility = introOfferEligibility,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )

@@ -18,14 +18,39 @@ class ComponentOverride<T : PartialComponent>(
 
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
+        /**
+         * Compares the selected package's intro-offer eligibility (not the whole paywall) against [value].
+         * This matches the package the customer currently has highlighted in the UI.
+         */
         @Serializable
         data class IntroOffer(
             @SerialName("operator") val operator: EqualityOperatorType,
             @SerialName("value") val value: Boolean,
         ) : Condition
 
+        /**
+         * Compares whether the selected package exposes multiple intro offers. Other packages are ignored.
+         */
         @Serializable
         data class MultipleIntroOffers(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
+
+        /**
+         * Compares against whether any package on the paywall has an intro offer.
+         */
+        @Serializable
+        data class AnyIntroOffer(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
+
+        /**
+         * Compares against whether any package on the paywall exposes multiple intro offers.
+         */
+        @Serializable
+        data class AnyMultipleIntroOffers(
             @SerialName("operator") val operator: EqualityOperatorType,
             @SerialName("value") val value: Boolean,
         ) : Condition
@@ -89,6 +114,8 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serializerByType = mapOf(
         "introductory_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
+        "introductory_offer_available" to { Condition.AnyIntroOffer.serializer() },
+        "multiple_intro_offers_available" to { Condition.AnyMultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
         "orientation" to { Condition.Orientation.serializer() },
         "screen_size" to { Condition.ScreenSize.serializer() },

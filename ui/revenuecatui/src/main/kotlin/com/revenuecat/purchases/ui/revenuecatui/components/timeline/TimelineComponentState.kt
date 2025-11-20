@@ -29,6 +29,8 @@ internal fun rememberUpdatedTimelineComponentState(
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
+        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
     )
 
 @Stable
@@ -39,6 +41,8 @@ private fun rememberUpdatedTimelineComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
+    hasAnyIntroOfferEligiblePackage: Boolean = false,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
 ): TimelineComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -48,6 +52,8 @@ private fun rememberUpdatedTimelineComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
         )
     }.apply {
         update(
@@ -62,6 +68,8 @@ internal class TimelineComponentState(
     private val style: TimelineComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val hasAnyIntroOfferEligiblePackage: Boolean,
+    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
 ) {
 
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -86,6 +94,8 @@ internal class TimelineComponentState(
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
             introOfferEligibility = introOfferEligibility,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )
@@ -123,6 +133,8 @@ internal class TimelineComponentState(
                 style = it,
                 selectedPackageProvider = selectedPackageProvider,
                 selectedTabIndexProvider = selectedTabIndexProvider,
+                hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+                hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
             )
         }
     }
@@ -140,6 +152,8 @@ internal class TimelineComponentState(
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageProvider: () -> Package?,
         private val selectedTabIndexProvider: () -> Int,
+        private val hasAnyIntroOfferEligiblePackage: Boolean,
+        private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
     ) {
 
         private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -164,6 +178,8 @@ internal class TimelineComponentState(
             style.overrides.buildPresentedPartial(
                 screenCondition = screenConditionSnapshot,
                 introOfferEligibility = introOfferEligibility,
+                hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+                hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
                 state = componentState,
                 selectedPackageIdentifier = applicablePackage?.identifier,
             )

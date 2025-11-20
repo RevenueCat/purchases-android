@@ -31,6 +31,8 @@ internal fun rememberUpdatedTabsComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         screenConditionProvider = { paywallState.screenConditionSnapshot },
+        hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+        hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
     )
 
 @Stable
@@ -40,6 +42,8 @@ internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageProvider: () -> Package?,
     screenConditionProvider: () -> ScreenConditionSnapshot,
+    hasAnyIntroOfferEligiblePackage: Boolean = false,
+    hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
 ): TabsComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -48,6 +52,8 @@ internal fun rememberUpdatedTabsComponentState(
             initialScreenCondition = screenCondition,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
         )
     }.apply {
         update(
@@ -61,6 +67,8 @@ internal class TabsComponentState(
     initialScreenCondition: ScreenConditionSnapshot,
     private val style: TabsComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val hasAnyIntroOfferEligiblePackage: Boolean,
+    private val hasAnyMultipleIntroOffersEligiblePackage: Boolean,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
@@ -75,6 +83,8 @@ internal class TabsComponentState(
         style.overrides.buildPresentedPartial(
             screenCondition = screenConditionSnapshot,
             introOfferEligibility = introOfferEligibility,
+            hasAnyIntroOfferEligiblePackage = hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = hasAnyMultipleIntroOffersEligiblePackage,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
         )

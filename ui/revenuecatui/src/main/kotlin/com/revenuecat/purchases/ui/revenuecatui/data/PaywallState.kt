@@ -24,10 +24,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
@@ -143,6 +145,12 @@ internal sealed interface PaywallState {
                 ?.pkg
             private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.pkg }
+            private val allAvailablePackages: Set<Package> = mutableSetOf<Package>().apply {
+                addAll(packagesOutsideTabs)
+                packages.packagesByTab.values.forEach { infoList ->
+                    infoList.forEach { add(it.pkg) }
+                }
+            }
             private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packages) ->
                     packages.forEach { packageInfo ->
@@ -152,6 +160,16 @@ internal sealed interface PaywallState {
                     }
                 }
             }
+
+            val hasAnyIntroOfferEligiblePackage: Boolean =
+                allAvailablePackages.any { pkg ->
+                    pkg.introEligibility != IntroOfferEligibility.INELIGIBLE
+                }
+
+            val hasAnyMultipleIntroOffersEligiblePackage: Boolean =
+                allAvailablePackages.any { pkg ->
+                    pkg.introEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+                }
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 

@@ -31,6 +31,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val state: ComponentViewState,
         val expected: LocalizedTextPartial?,
         val selectedPackageIdentifier: String? = null,
+        val hasAnyIntroOfferEligiblePackage: Boolean = false,
+        val hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
     )
 
     @Suppress("LargeClass")
@@ -706,6 +708,90 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "should apply override when any package has an intro offer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyIntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                    hasAnyIntroOfferEligiblePackage = true,
+                ),
+            ),
+            arrayOf(
+                "should reject override when no package has an intro offer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyIntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    hasAnyIntroOfferEligiblePackage = false,
+                ),
+            ),
+            arrayOf(
+                "should apply override when any package has multiple intro offers",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = multipleIntroOffersPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = multipleIntroOffersPartial,
+                    hasAnyMultipleIntroOffersEligiblePackage = true,
+                ),
+            ),
+            arrayOf(
+                "should reject override when no package has multiple intro offers",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = multipleIntroOffersPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    hasAnyMultipleIntroOffersEligiblePackage = false,
+                ),
+            ),
+            arrayOf(
                 "should apply override with multiple packages and IntroOffer",
                 Args(
                     availableOverrides = listOf(
@@ -803,6 +889,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val actual: LocalizedTextPartial? = args.availableOverrides.buildPresentedPartial(
             screenCondition = args.screenCondition,
             introOfferEligibility = args.introOfferEligibility,
+            hasAnyIntroOfferEligiblePackage = args.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = args.hasAnyMultipleIntroOffersEligiblePackage,
             state = args.state,
             selectedPackageIdentifier = args.selectedPackageIdentifier,
         )
