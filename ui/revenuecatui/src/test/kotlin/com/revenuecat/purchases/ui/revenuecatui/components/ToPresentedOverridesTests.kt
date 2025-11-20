@@ -60,7 +60,12 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 properties = PartialTextComponent(fontName = introOffer),
             ),
             ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                conditions = listOf(
+                    ComponentOverride.Condition.MultipleIntroOffers(
+                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                        value = true,
+                    )
+                ),
                 properties = PartialTextComponent(fontName = multipleIntroOffers),
             ),
             ComponentOverride(
@@ -152,7 +157,12 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.MultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
                                 properties = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = multipleIntroOffers),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),

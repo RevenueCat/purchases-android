@@ -461,7 +461,12 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(
+                        ComponentOverride.Condition.MultipleIntroOffers(
+                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                            value = true,
+                        )
+                    ),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -621,7 +626,12 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(
+                        ComponentOverride.Condition.MultipleIntroOffers(
+                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                            value = true,
+                        )
+                    ),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())

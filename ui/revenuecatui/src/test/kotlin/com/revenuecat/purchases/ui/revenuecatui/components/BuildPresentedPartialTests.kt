@@ -101,7 +101,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             multipleIntroOffers?.let {
                 overrides.add(
                     PresentedOverride(
-                        conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                        conditions = listOf(
+                            ComponentOverride.Condition.MultipleIntroOffers(
+                                operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                value = true,
+                            )
+                        ),
                         properties = it,
                     ),
                 )
@@ -660,7 +665,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.MultipleIntroOffers,
+                                ComponentOverride.Condition.MultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),
@@ -682,7 +690,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     operator = ComponentOverride.Condition.ArrayOperatorType.IN,
                                     packages = listOf("rc_annual"),
                                 ),
-                                ComponentOverride.Condition.MultipleIntroOffers,
+                                ComponentOverride.Condition.MultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
                             properties = compactPartial,
                         ),

@@ -47,7 +47,9 @@ internal class ComponentOverridesTests {
                                 }
                               },
                               {
-                                "conditions": [ { "type": "multiple_intro_offers" } ],
+                                "conditions": [
+                                  { "type": "multiple_intro_offers", "operator": "=", "value": true }
+                                ],
                                 "properties": {
                                   "font_name": "multiple intros font"
                                 }
@@ -123,7 +125,12 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.MultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
                                 properties = PartialTextComponent(fontName = FontAlias("multiple intros font")),
                             ),
                             ComponentOverride(
@@ -230,7 +237,9 @@ internal class ComponentOverridesTests {
                             "properties": { "override_source_lid": "intro" }
                           },
                           {
-                            "conditions": [ { "type": "multiple_intro_offers" } ],
+                            "conditions": [
+                              { "type": "multiple_intro_offers", "operator": "=", "value": true }
+                            ],
                             "properties": { "override_source_lid": "multiple_intros" }
                           },
                           {
@@ -248,7 +257,12 @@ internal class ComponentOverridesTests {
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.MultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
                                 properties = PartialImageComponent(
                                     overrideSourceLid = LocalizationKey("multiple_intros")
                                 ),
@@ -309,7 +323,22 @@ internal class ComponentOverridesTests {
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
                 )),
-                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = false,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = false,
+                )),
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),

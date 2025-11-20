@@ -25,7 +25,10 @@ class ComponentOverride<T : PartialComponent>(
         ) : Condition
 
         @Serializable
-        object MultipleIntroOffers : Condition
+        data class MultipleIntroOffers(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
 
         @Serializable
         object Selected : Condition

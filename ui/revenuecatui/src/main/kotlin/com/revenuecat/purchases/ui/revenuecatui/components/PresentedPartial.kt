@@ -115,8 +115,12 @@ private fun conditionMatches(
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
 ): Boolean = when (condition) {
-    ComponentOverride.Condition.MultipleIntroOffers ->
-        introOfferEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+    is ComponentOverride.Condition.MultipleIntroOffers -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferEligibility.hasMultipleIntroOffers() == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferEligibility.hasMultipleIntroOffers() != condition.value
+    }
 
     ComponentOverride.Condition.Selected ->
         state == ComponentViewState.SELECTED
@@ -188,3 +192,6 @@ private fun ScreenOrientation.toConditionOrientationType(): ComponentOverride.Co
 
 private fun IntroOfferEligibility.isEligible(): Boolean =
     this != IntroOfferEligibility.INELIGIBLE
+
+private fun IntroOfferEligibility.hasMultipleIntroOffers(): Boolean =
+    this == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
