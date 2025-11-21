@@ -80,15 +80,24 @@ internal class SimpleSheetState {
     var visible by mutableStateOf(false)
         private set
 
-    fun show(backgroundBlur: Boolean, content: @Composable () -> Unit) {
+    private var onDismiss: (() -> Unit)? = null
+
+    fun show(
+        backgroundBlur: Boolean,
+        content: @Composable () -> Unit,
+        onDismiss: (() -> Unit)? = null,
+    ) {
         this.backgroundBlur = backgroundBlur
         this.content = content
+        this.onDismiss = onDismiss
         visible = true
     }
 
     fun hide() {
         backgroundBlur = false
         visible = false
+        onDismiss?.invoke()
+        onDismiss = null
     }
 }
 
@@ -138,23 +147,26 @@ private fun <T> blurAnimationSpec(): TweenSpec<T> = tween()
 @Composable
 private fun SimpleBottomSheetScaffold_Preview() {
     val sheetState = SimpleSheetState().apply {
-        show(backgroundBlur = true) {
-            Column(
-                Modifier
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        show(
+            backgroundBlur = true,
+            content = {
+                Column(
+                    Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        )
+                        .padding(all = 16.dp),
+                ) {
+                    Text(
+                        text = "Hello from my bottom sheet",
                     )
-                    .padding(all = 16.dp),
-            ) {
-                Text(
-                    text = "Hello from my bottom sheet",
-                )
-                Text(
-                    text = "It's beautiful, isn't it?",
-                )
-            }
-        }
+                    Text(
+                        text = "It's beautiful, isn't it?",
+                    )
+                }
+            },
+        )
     }
 
     SimpleBottomSheetScaffold(
