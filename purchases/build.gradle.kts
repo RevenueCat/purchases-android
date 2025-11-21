@@ -28,6 +28,7 @@ android {
     }
 
     flavorDimensions += "apis"
+    flavorDimensions += "billingclient"
 
     productFlavors {
         create("defaults") {
@@ -36,6 +37,23 @@ android {
         }
         create("customEntitlementComputation") {
             dimension = "apis"
+        }
+        create("bc8") {
+            dimension = "billingclient"
+            isDefault = true
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc8.get()}\"",
+            )
+        }
+        create("bc7") {
+            dimension = "billingclient"
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc7.get()}\"",
+            )
         }
     }
 
@@ -96,7 +114,13 @@ metalava {
 
     val name = if (variantName.lowercase().contains("defaults")) {
         excludeSourceSets.add("src/customEntitlementComputation/kotlin")
-        "api-defauts.txt"
+        if (variantName.lowercase().contains("bc8")) {
+            "api-defauts.txt"
+        } else if (variantName.lowercase().contains("bc7")) {
+            "api-defaults-bc7.txt"
+        } else {
+            "api-defaults-unknown.txt"
+        }
     } else if (variantName.lowercase().contains("entitlement")) {
         excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"
@@ -154,7 +178,8 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    api(libs.billing)
+    "bc8Api"(libs.billing.bc8)
+    "bc7Api"(libs.billing.bc7)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
@@ -166,7 +191,8 @@ dependencies {
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    testImplementation(libs.billing)
+    "testBc8Implementation"(libs.billing.bc8)
+    "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
@@ -191,10 +217,16 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        named("customEntitlementComputationBc8") {
             suppress.set(true)
         }
-        named("defaults") {
+        named("customEntitlementComputationBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc8") {
             dependsOn("main")
             reportUndocumented.set(true)
             includeNonPublic.set(false)

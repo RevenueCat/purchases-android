@@ -11,6 +11,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
@@ -66,6 +67,7 @@ internal class DiagnosticsTracker(
         const val HAD_UNSYNCED_PURCHASES_BEFORE_KEY = "had_unsynced_purchases_before"
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
+        const val CONNECTION_ERROR_REASON_KEY = "connection_error_reason"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -90,6 +92,7 @@ internal class DiagnosticsTracker(
         resultOrigin: HTTPResult.Origin?,
         verificationResult: VerificationResult,
         isRetry: Boolean,
+        connectionErrorReason: ConnectionErrorReason?,
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
@@ -104,6 +107,7 @@ internal class DiagnosticsTracker(
                 ETAG_HIT_KEY to eTagHit,
                 VERIFICATION_RESULT_KEY to verificationResult.name,
                 IS_RETRY to isRetry,
+                CONNECTION_ERROR_REASON_KEY to connectionErrorReason?.name,
             ).filterNotNullValues(),
         )
     }
@@ -144,6 +148,23 @@ internal class DiagnosticsTracker(
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
                 RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 FOUND_PRODUCT_IDS_KEY to foundProductIds,
+            ),
+        )
+    }
+
+    fun trackGoogleQueryPurchaseHistoryRequest(
+        productType: String,
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+        responseTime: Duration,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+            properties = mapOf(
+                PRODUCT_TYPE_QUERIED_KEY to productType,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }
