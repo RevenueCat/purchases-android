@@ -135,7 +135,7 @@ private fun SimpleSheetState.show(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
-    val defaultPackage = state.getDefaultSelectedPackage()
+    val previouslySelectedPackage = state.selectedPackageInfo?.rcPackage
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
@@ -154,9 +154,9 @@ private fun SimpleSheetState.show(
             )
         },
         onDismiss = {
-            // Reset package selection to default when sheet is dismissed to prevent
+            // Restore the previously selected package when sheet is dismissed to prevent
             // purchasing a hidden package that was selected in the sheet
-            defaultPackage?.let { state.update(selectedPackage = it) }
+            previouslySelectedPackage?.let { state.update(selectedPackage = it) }
         },
     )
 }

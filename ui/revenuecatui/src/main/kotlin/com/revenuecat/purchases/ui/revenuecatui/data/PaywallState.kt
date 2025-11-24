@@ -265,12 +265,6 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
             }
 
-            fun getDefaultSelectedPackage(): Package? {
-                return initialSelectedPackageOutsideTabs
-                    ?: selectedPackageByTab[selectedTabIndex]
-                    ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg
-            }
-
             private fun LocaleList.toLocaleId(): LocaleId {
                 val preferredOverride = purchases.preferredUILocaleOverride
                 val deviceLocales = map { it.toLocaleId() }.plus(locales.head)
