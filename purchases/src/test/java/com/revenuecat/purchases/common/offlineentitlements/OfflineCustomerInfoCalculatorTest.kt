@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
@@ -758,6 +759,21 @@ class OfflineCustomerInfoCalculatorTest {
         } answers {
             lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(purchasedProducts)
         }
+    }
+
+    @Test
+    fun `computes customer info with OFFLINE_ENTITLEMENTS source`() {
+        val purchasedProduct = mockActiveProducts().first()
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+        assertThat(receivedCustomerInfo?.loadedFromCache).isFalse
     }
     // endregion
 }

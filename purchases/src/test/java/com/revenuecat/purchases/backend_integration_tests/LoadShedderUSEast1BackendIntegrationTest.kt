@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -60,6 +61,8 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
                             entitlements = listOf("premium", "pro")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -111,6 +114,8 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
                             entitlements = listOf("premium", "pro")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -127,8 +132,9 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onError = { _, _ ->
@@ -152,8 +158,9 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
                 onError = { error, _ ->

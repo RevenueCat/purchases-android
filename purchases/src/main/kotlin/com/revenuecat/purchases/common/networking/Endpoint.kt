@@ -36,7 +36,7 @@ internal sealed class Endpoint(
     object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    object PostPaywallEvents : Endpoint("/v1/events", "post_paywall_events") {
+    object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
     data class PostAttributes(val userId: String) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
@@ -66,6 +66,12 @@ internal sealed class Endpoint(
         "get_customer_center_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+    }
+    object PostCreateSupportTicket : Endpoint(
+        "/v1/customercenter/support/create-ticket",
+        "post_create_support_ticket",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate
     }
     object PostRedeemWebPurchase : Endpoint(
         "/v1/subscribers/redeem_purchase",
@@ -102,8 +108,9 @@ internal sealed class Endpoint(
             is GetAmazonReceipt,
             is PostAttributes,
             PostDiagnostics,
-            PostPaywallEvents,
+            PostEvents,
             is GetCustomerCenterConfig,
+            PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
             ->
@@ -123,9 +130,10 @@ internal sealed class Endpoint(
             is GetOfferings,
             is PostAttributes,
             PostDiagnostics,
-            PostPaywallEvents,
+            PostEvents,
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
+            PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
             ->

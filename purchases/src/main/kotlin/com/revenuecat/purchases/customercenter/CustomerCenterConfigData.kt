@@ -285,6 +285,33 @@ data class CustomerCenterConfigData(
 
             @SerialName("no_virtual_currency_balances_found")
             NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
+
+            @SerialName("support_ticket_create")
+            SUPPORT_TICKET_CREATE,
+
+            @SerialName("email")
+            EMAIL,
+
+            @SerialName("enter_email")
+            ENTER_EMAIL,
+
+            @SerialName("description")
+            DESCRIPTION,
+
+            @SerialName("sent")
+            SENT,
+
+            @SerialName("support_ticket_failed")
+            SUPPORT_TICKET_FAILED,
+
+            @SerialName("submit_ticket")
+            SUBMIT_TICKET,
+
+            @SerialName("invalid_email_error")
+            INVALID_EMAIL_ERROR,
+
+            @SerialName("characters_remaining")
+            CHARACTERS_REMAINING,
             ;
 
             val defaultValue: String
@@ -389,6 +416,15 @@ data class CustomerCenterConfigData(
                     SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
                     VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
                     NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
+                    SUPPORT_TICKET_CREATE -> "Create a support ticket"
+                    EMAIL -> "Email"
+                    ENTER_EMAIL -> "Enter your email"
+                    DESCRIPTION -> "Description"
+                    SENT -> "Message sent"
+                    SUPPORT_TICKET_FAILED -> "Failed to send, please try again."
+                    SUBMIT_TICKET -> "Submit ticket"
+                    INVALID_EMAIL_ERROR -> "Please enter a valid email address"
+                    CHARACTERS_REMAINING -> "{{ count }} characters"
                 }
         }
 
@@ -548,7 +584,71 @@ data class CustomerCenterConfigData(
         val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
         val displayVirtualCurrencies: Boolean? = null,
-    )
+        @SerialName("support_tickets")
+        val supportTickets: SupportTickets = SupportTickets(),
+    ) {
+        @Serializable
+        data class SupportTickets(
+            @SerialName("allow_creation")
+            val allowCreation: Boolean = false,
+            @SerialName("customer_details")
+            val customerDetails: CustomerDetails = CustomerDetails(),
+            @SerialName("customer_type")
+            val customerType: CustomerType = CustomerType.NOT_ACTIVE,
+        ) {
+            @Serializable
+            enum class CustomerType {
+                @SerialName("not_active")
+                NOT_ACTIVE,
+
+                @SerialName("none")
+                NONE,
+
+                @SerialName("all")
+                ALL,
+
+                @SerialName("active")
+                ACTIVE,
+            }
+
+            @Serializable
+            data class CustomerDetails(
+                @SerialName("active_entitlements")
+                val activeEntitlements: Boolean = false,
+                @SerialName("app_user_id")
+                val appUserId: Boolean = false,
+                @SerialName("att_consent")
+                val attConsent: Boolean = false,
+                val country: Boolean = false,
+                @SerialName("device_version")
+                val deviceVersion: Boolean = false,
+                val email: Boolean = false,
+                @SerialName("facebook_anon_id")
+                val facebookAnonId: Boolean = false,
+                val idfa: Boolean = false,
+                val idfv: Boolean = false,
+                val ip: Boolean = false,
+                @SerialName("last_opened")
+                val lastOpened: Boolean = false,
+                @SerialName("last_seen_app_version")
+                val lastSeenAppVersion: Boolean = false,
+                @SerialName("total_spent")
+                val totalSpent: Boolean = false,
+                @SerialName("user_since")
+                val userSince: Boolean = false,
+            )
+
+            fun allowsActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
+            }
+
+            fun allowsNonActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE
+            }
+        }
+    }
 
     fun getManagementScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]

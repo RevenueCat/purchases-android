@@ -89,6 +89,8 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
                             origin = HTTPResult.Origin.BACKEND,
                             requestDate = null,
                             verificationResult = VerificationResult.VERIFIED_ON_DEVICE,
+                            isLoadShedderResponse = false,
+                            isFallbackURL = false,
                         )
                     }
                     return null

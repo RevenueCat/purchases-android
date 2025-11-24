@@ -13,7 +13,8 @@ annotationExperimental = "1.5.1"
 appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
-billing = "8.0.0"
+bc8 = "8.0.0"
+bc7 = "7.1.1"
 composeBom = "2024.09.00"
 composeAnnotation = "1.9.0"
 coil = "2.4.0"
@@ -95,7 +96,8 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
-billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
+billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
+billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }

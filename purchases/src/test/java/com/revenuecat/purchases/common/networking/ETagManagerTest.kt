@@ -351,7 +351,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertStoredResponse(urlString, eTagInResponse, testDate, responsePayload)
@@ -373,7 +375,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
@@ -397,7 +401,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNull()
@@ -422,7 +428,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = true,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -446,7 +454,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -470,7 +480,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = true,
             requestDate = null,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -490,7 +502,9 @@ class ETagManagerTest {
             urlString = "http://localhost:100/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
-            verificationResult = VERIFIED
+            verificationResult = VERIFIED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.verificationResult).isEqualTo(VERIFIED)
@@ -507,7 +521,9 @@ class ETagManagerTest {
             urlString = "http://localhost:100/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
@@ -529,7 +545,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = NOT_REQUESTED
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
@@ -578,7 +596,9 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = backendVerificationResult
+            verificationResult = backendVerificationResult,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.verificationResult).isEqualTo(expectedVerificationResult)

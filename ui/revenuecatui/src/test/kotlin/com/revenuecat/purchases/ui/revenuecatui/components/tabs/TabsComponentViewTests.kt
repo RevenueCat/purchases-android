@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -1275,6 +1276,12 @@ class TabsComponentViewTests {
                         is TabsComponent.TabControl.Toggle -> queue.add(control.stack)
                     }
                     queue.addAll(current.tabs.map { it.stack })
+                }
+
+                is CountdownComponent -> {
+                    queue.add(current.countdownStack)
+                    current.endStack?.let { queue.add(it) }
+                    current.fallback?.let { queue.add(it) }
                 }
 
                 is TabControlToggleComponent,

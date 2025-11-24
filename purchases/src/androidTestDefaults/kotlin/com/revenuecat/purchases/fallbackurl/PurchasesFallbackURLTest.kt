@@ -3,6 +3,7 @@ package com.revenuecat.purchases.fallbackurl
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
@@ -49,6 +50,8 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         assertThat(customerInfo.entitlements.active).isEmpty()
         assertThat(customerInfo.originalAppUserId).isEqualTo(appUserID)
         assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED_ON_DEVICE)
+        assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+        assertThat(customerInfo.loadedFromCache).isFalse
     }
 
     @Test
@@ -85,7 +88,10 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         val activePurchases = performPurchase()
 
         // Should have entitlements using offline entitlement
-        verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
+        verifyGetCustomerInfo(
+            shouldHaveAcknowledgedPurchase = false,
+            originalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
+        )
 
         // Restart and recover connectivity to main server
         simulateSdkRestart(
@@ -98,18 +104,26 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         Purchases.sharedInstance.awaitRestore()
 
         // Check that active purchases are synced.
-        verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
+        verifyGetCustomerInfo(
+            shouldHaveAcknowledgedPurchase = true,
+            originalSource = expectedCustomerInfoOriginalSource,
+            loadedFromCache = true,
+        )
     }
 
     // region Helpers
 
     private suspend fun verifyGetCustomerInfo(
         shouldHaveAcknowledgedPurchase: Boolean,
+        originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
+        loadedFromCache: Boolean = false,
     ) {
         val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
         assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
             entitlementsToVerify,
         )
+        assertThat(customerInfo.originalSource).isEqualTo(originalSource)
+        assertThat(customerInfo.loadedFromCache).isEqualTo(loadedFromCache)
         if (shouldHaveAcknowledgedPurchase) {
             assertAcknowledgePurchaseDidHappen()
         } else {
@@ -147,6 +161,8 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         assertThat(result.customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
             entitlementsToVerify,
         )
+        assertThat(result.customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+        assertThat(result.customerInfo.loadedFromCache).isFalse
         if (shouldHaveAcknowledgedPurchase) {
             assertAcknowledgePurchaseDidHappen()
         } else {

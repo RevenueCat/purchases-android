@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -100,6 +99,7 @@ class BackendPaywallEventTest {
         mockHttpResult()
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = {},
             onErrorHandler = { _, _ -> },
         )
@@ -131,6 +131,7 @@ class BackendPaywallEventTest {
         var successCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { successCalled = true },
             onErrorHandler = { _, _ -> fail("Expected success") },
         )
@@ -143,6 +144,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, _ -> errorCalled = true },
         )
@@ -155,6 +157,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -170,6 +173,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -185,6 +189,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -211,6 +216,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -227,6 +233,7 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse()
@@ -242,11 +249,13 @@ class BackendPaywallEventTest {
         val lock = CountDownLatch(2)
         asyncBackend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
         asyncBackend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
@@ -255,7 +264,7 @@ class BackendPaywallEventTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,
-                Endpoint.PostPaywallEvents,
+                Endpoint.PostEvents,
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -269,7 +278,7 @@ class BackendPaywallEventTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,
-                Endpoint.PostPaywallEvents,
+                Endpoint.PostEvents,
                 body = expectedBody,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -299,7 +308,9 @@ class BackendPaywallEventTest {
                 "{}",
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }

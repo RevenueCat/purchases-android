@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -208,6 +209,7 @@ private fun progressColorFor(backgroundStyles: BackgroundStyles?): Color {
     return when (backgroundStyles) {
         is BackgroundStyles.Color -> progressColorFor(backgroundStyles.color.forCurrentTheme)
         is BackgroundStyles.Image -> Color.White
+        is BackgroundStyles.Video -> Color.White
     }
 }
 
@@ -281,6 +283,8 @@ private fun previewButtonComponentStyle(
         scrollOrientation = null,
         rcPackage = null,
         tabIndex = null,
+        countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
