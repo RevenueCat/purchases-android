@@ -1,0 +1,35 @@
+appId: com.revenuecat.automatedsdktests
+env:
+  PRODUCT_ID: subscription_monthly
+onFlowStart:
+  - runScript:
+      when:
+        platform: Android
+      label: "Load RevenueCat API v1"
+      file: ./rc-api/v1/api.js
+      env:
+        apiKey: ${RC_SECRET_API_KEY_V1}
+  - runFlow:
+      when:
+        platform: Android
+      label: "Log in with a Google account"
+      file: google-login/google-login.yml
+---
+- launchApp:
+    appId: com.revenuecat.automatedsdktests
+    clearState: true
+- tapOn: Offerings
+- tapOn: default
+- tapOn: Show Paywall
+- assertVisible: Paywall V2
+- tapOn: Monthly
+- tapOn: Continue
+- runFlow:
+    label: "Subscribe"
+    file: subscribe/subscribe.yml
+- tapOn: Customer Info
+- assertVisible: "pro: "
+- assertVisible: "${'Active: true, Product: ' + PRODUCT_ID}"
+- copyTextFrom:
+    id: "Original App User ID"
+- evalScript: ${output.rcApiV1.revokeGooglePlaySubscription(maestro.copiedText, PRODUCT_ID)}
