@@ -24,8 +24,6 @@ internal object BillingConstants {
     const val INAPP_PURCHASE_DATA_LIST = "INAPP_PURCHASE_DATA_LIST"
     const val INAPP_DATA_SIGNATURE_LIST = "INAPP_DATA_SIGNATURE_LIST"
     const val INAPP_CONTINUATION_TOKEN = "INAPP_CONTINUATION_TOKEN"
-    const val DETAILS_LIST = "DETAILS_LIST"
-    const val BUY_INTENT = "BUY_INTENT"
 
     // Item types
     const val ITEM_TYPE_INAPP = "inapp"

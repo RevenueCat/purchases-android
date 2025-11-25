@@ -18,11 +18,6 @@ import kotlin.coroutines.resumeWithException
 
 /**
  * Manager for querying purchase history using the AIDL-generated stub.
- * This is the clean implementation that uses the IInAppBillingService.aidl interface.
- *
- * NOTE: This currently encounters a BadParcelableException due to Google Play writing
- * extra bytes (12) after the Bundle response. See PurchaseHistoryManagerDirect for
- * a working workaround that bypasses AIDL validation.
  *
  * This provides access to the deprecated getPurchaseHistory() method that was
  * removed from Play Billing Library 8.0.0 but is still supported by Google Play.
