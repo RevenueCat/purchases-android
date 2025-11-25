@@ -44,6 +44,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
@@ -79,7 +80,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass", "TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -87,6 +88,7 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
+    private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
