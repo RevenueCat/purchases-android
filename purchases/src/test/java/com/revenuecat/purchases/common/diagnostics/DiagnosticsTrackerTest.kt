@@ -554,7 +554,7 @@ class DiagnosticsTrackerTest {
             "play_store_version" to "123",
             "play_services_version" to "456",
             "offline_entitlement_error_reason" to "unknown",
-            "error_message" to "Unknown error. Underlying error: test error message",
+            "error_message" to "Unknown error. Check the underlying error for more details. Underlying error: test error message",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(
