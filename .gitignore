@@ -137,5 +137,5 @@ purchases-android-snapshots
 # Make sure we share the same Detekt IntelliJ plugin settings
 !.idea/detekt.xml
 
-# Kotlin error logs
-.kotlin/errors/
+# Kotlin compiler
+.kotlin
