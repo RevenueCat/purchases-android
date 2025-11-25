@@ -147,21 +147,25 @@ private fun SimpleSheetState.show(
 ) {
     show(
         backgroundBlur = sheet.backgroundBlur,
-    ) {
-        ComponentView(
-            style = sheet.stack,
-            state = state,
-            onClick = { action ->
-                when (action) {
-                    is PaywallAction.External.NavigateBack -> hide()
-                    else -> onClick(action)
-                }
-            },
-            modifier = Modifier
-                .applyIfNotNull(sheet.size) { size(it) }
-                .conditional(sheet.size == null) { fillMaxWidth() },
-        )
-    }
+        content = {
+            ComponentView(
+                style = sheet.stack,
+                state = state,
+                onClick = { action ->
+                    when (action) {
+                        is PaywallAction.External.NavigateBack -> hide()
+                        else -> onClick(action)
+                    }
+                },
+                modifier = Modifier
+                    .applyIfNotNull(sheet.size) { size(it) }
+                    .conditional(sheet.size == null) { fillMaxWidth() },
+            )
+        },
+        onDismiss = {
+            state.resetToDefaultPackage()
+        },
+    )
 }
 
 @Suppress("LongMethod")
