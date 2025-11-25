@@ -2,6 +2,11 @@ appId: com.revenuecat.automatedsdktests
 env:
   PRODUCT_ID: subscription_monthly
 onFlowStart:
+  - runFlow:
+      label: "Start screen recording"
+      file: record/start.yml
+      env:
+        filename: ${MAESTRO_FILENAME}
   - runScript:
       when:
         platform: Android
@@ -14,6 +19,13 @@ onFlowStart:
         platform: Android
       label: "Log in with a Google account"
       file: google-login/google-login.yml
+onFlowComplete:
+  - runFlow:
+      label: "Stop screen recording"
+      file: record/stop.yml
+      env:
+        filename: ${MAESTRO_FILENAME}
+        outputDir: ${RECORDING_OUTPUT_DIR}
 ---
 - launchApp:
     appId: com.revenuecat.automatedsdktests
@@ -33,3 +45,4 @@ onFlowStart:
 - copyTextFrom:
     id: "Original App User ID"
 - evalScript: ${output.rcApiV1.revokeGooglePlaySubscription(maestro.copiedText, PRODUCT_ID)}
+- runFlow: conventions/mark-successful.yml

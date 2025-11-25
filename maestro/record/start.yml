@@ -1,0 +1,12 @@
+appId: com.revenuecat.automatedsdktests
+env:
+  filename: ${filename}
+---
+- runScript:
+    file: ../shell/shell.js
+
+- runScript:
+    when:
+      platform: Android
+    file: scripts/android.js
+- evalScript: ${output.record.start(filename)}

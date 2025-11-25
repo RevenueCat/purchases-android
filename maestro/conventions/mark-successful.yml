@@ -1,0 +1,7 @@
+# A convention to mark a flow as successful, to work around the fact that 
+# Maestro doesn't have onFlowSucceeded/onFlowFailed hooks.
+# This should be called at the end of all regular steps in the flow.
+
+appId: com.revenuecat.automatedsdktests
+---
+- evalScript: ${output.flowSucceeded = true}

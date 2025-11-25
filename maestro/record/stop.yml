@@ -1,0 +1,13 @@
+appId: com.revenuecat.automatedsdktests
+env:
+  filename: ${filename}
+  outputDir: ${outputDir}
+---
+- runScript:
+    file: ../shell/shell.js
+- runScript:
+    when:
+      platform: Android
+    file: scripts/android.js
+# We only pull the video if the flow failed.
+- evalScript: "${output.record.stop(filename, output.flowSucceeded ? null : outputDir)}"
