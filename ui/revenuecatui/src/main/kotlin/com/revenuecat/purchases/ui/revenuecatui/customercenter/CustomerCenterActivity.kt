@@ -11,6 +11,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
+import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
 internal class CustomerCenterActivity : ComponentActivity() {
     companion object {
@@ -21,6 +23,8 @@ internal class CustomerCenterActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        restoreSdkConfigurationIfNeeded(this, savedInstanceState)
 
         setContent {
             val isDarkTheme = isSystemInDarkTheme()
@@ -38,5 +42,10 @@ internal class CustomerCenterActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        saveSdkConfiguration(outState)
+        super.onSaveInstanceState(outState)
     }
 }
