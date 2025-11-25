@@ -590,7 +590,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}}}"
+                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}},\"rc_original_source\":\"MAIN\"}"
             )
         }
         verify(exactly = 1) {
@@ -603,7 +603,10 @@ class DeviceCacheTest {
     fun `cacheProductEntitlementMapping caches empty mappings in shared preferences correctly`() {
         cache.cacheProductEntitlementMapping(createProductEntitlementMapping(emptyMap()))
         verify(exactly = 1) {
-            mockEditor.putString(productEntitlementMappingCacheKey, "{\"product_entitlement_mapping\":{}}")
+            mockEditor.putString(
+                productEntitlementMappingCacheKey,
+                "{\"product_entitlement_mapping\":{},\"rc_original_source\":\"MAIN\"}",
+            )
         }
         verify(exactly = 1) {
             mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
@@ -683,7 +686,7 @@ class DeviceCacheTest {
         every {
             mockPrefs.getString(productEntitlementMappingCacheKey, null)
         } returns expectedMappings.toJson().toString()
-        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings)
+        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings.copy(loadedFromCache = true))
     }
 
     // endregion

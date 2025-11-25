@@ -85,6 +85,7 @@ class AmazonBackendTest {
         requestDate = null,
         verificationResult = VerificationResult.NOT_REQUESTED,
         isLoadShedderResponse = false,
+        isFallbackURL = false,
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -98,6 +99,7 @@ class AmazonBackendTest {
         requestDate = null,
         verificationResult = VerificationResult.NOT_REQUESTED,
         isLoadShedderResponse = false,
+        isFallbackURL = false,
     )
 
     @Test

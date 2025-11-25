@@ -4,6 +4,7 @@ import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -36,6 +37,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -68,6 +71,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -84,8 +89,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.length()).isPositive
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { _, _ ->
@@ -109,8 +115,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.length()).isPositive
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { error, _ ->
@@ -198,6 +205,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         ensureBlockFinishes { latch ->
             backend.postEvents(
                 request,
+                baseURL = AppConfig.paywallEventsURL,
                 onSuccessHandler = {
                     latch.countDown()
                 },
@@ -206,7 +214,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostPaywallEvents.getPath()).toString()
+        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostEvents.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
             sharedPreferencesEditor.putString(urlString, any())

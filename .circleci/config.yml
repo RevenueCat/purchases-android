@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -243,95 +243,55 @@ jobs:
           paths:
             - .
 
-  test_defaults_debug:
+  test:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
+    parameters:
+      flavor:
+        type: string
+        description: "Flavor to test: defaults or customEntitlementComputation"
+      bc_version:
+        type: string
+        description: "BC version: bc7 or bc8"
+      build_type:
+        type: string
+        description: "Build type: debug or release"
+      run_kover:
+        type: boolean
+        default: false
+        description: "Whether to run kover commands (only for defaults bc8 release)"
     steps:
       - checkout
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Run Defaults Debug Tests
-          command: ./gradlew testDefaultsDebugUnitTest --parallel --no-daemon
+          name: Run << parameters.flavor >> << parameters.bc_version >> << parameters.build_type >> Tests
+          command: |
+            FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
+            BC_VERSION_CAPITALIZED=$(echo << parameters.bc_version >> | sed 's/\b\(.\)/\u\1/')
+            BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
+            TASK="test${FLAVOR_CAPITALIZED}${BC_VERSION_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            ./gradlew $TASK --parallel --no-daemon
+      - when:
+          condition: << parameters.run_kover >>
+          steps:
+            - run:
+                name: Generate Kover HTML
+                command: ./gradlew purchases:koverHtmlReportDefaultsBc8Release
+            - run:
+                name: Generate Kover XML
+                command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
+            - codecov/upload:
+                file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
           command: |
-            mkdir -p build/test-results-defaults-debug
-            find . -path ./build/test-results-defaults-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-debug/ \;
+            RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
       - store_test_results:
-          path: build/test-results-defaults-debug
-      - store_artifacts:
-          path: build/reports
-
-  test_defaults_release:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run Defaults Release Tests
-          command: ./gradlew testDefaultsReleaseUnitTest --parallel --no-daemon
-      - run:
-          name: Generate Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
-      - run:
-          name: Generate Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsRelease
-      - codecov/upload:
-          file: purchases/build/reports/kover/reportDefaultsRelease.xml
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-defaults-release
-            find . -path ./build/test-results-defaults-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-defaults-release/ \;
-      - store_test_results:
-          path: build/test-results-defaults-release
-      - store_artifacts:
-          path: build/reports
-
-  test_cec_debug:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run CEC Debug Tests
-          command: ./gradlew testCustomEntitlementComputationDebugUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-cec-debug
-            find . -path ./build/test-results-cec-debug -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-debug/ \;
-      - store_test_results:
-          path: build/test-results-cec-debug
-      - store_artifacts:
-          path: build/reports
-
-  test_cec_release:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Run CEC Release Tests
-          command: ./gradlew testCustomEntitlementComputationReleaseUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            mkdir -p build/test-results-cec-release
-            find . -path ./build/test-results-cec-release -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results-cec-release/ \;
-      - store_test_results:
-          path: build/test-results-cec-release
+          path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
       - store_artifacts:
           path: build/reports
 
@@ -394,7 +354,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.13.0-SNAPSHOT s3://purchases-docs/android/9.13.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.15.0-SNAPSHOT s3://purchases-docs/android/9.15.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -500,13 +460,13 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
 
   assemble-paywall-tester-release:
     <<: *android-executor
@@ -529,9 +489,9 @@ jobs:
           cache-version: v1
       - build-paywall-tester
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -706,6 +666,25 @@ jobs:
       - store_test_results:
           path: purchases/build/test-results
 
+  update-golden-requests-backend-integration-tests:
+    description: "Run backend integration tests and create PR if golden files change"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - android/restore_gradle_cache
+      - run:
+          name: Run backend integration tests and create PR if needed
+          command: |
+            bundle exec fastlane android update_golden_requests_backend_integration_tests
+      - android/save_build_cache
+      - store_test_results:
+          path: purchases/build/test-results
+
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
     <<: *android-executor
@@ -802,12 +781,12 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-revenuecat-ui
-          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
       - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
-            ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+            ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
 
   run-maestro-e2e-tests:
     description: "Run Maestro tests for Paywall Tester app"
@@ -928,16 +907,36 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
-      - test_defaults_debug:
+      - test:
+          name: test_defaults_bc8_debug
+          flavor: "defaults"
+          bc_version: "bc8"
+          build_type: "debug"
           requires:
             - prepare-tests
-      - test_defaults_release:
+      - test:
+          name: test_defaults_bc7_release
+          flavor: "defaults"
+          bc_version: "bc7"
+          build_type: "release"
           requires:
             - prepare-tests
-      - test_cec_debug:
+      - test:
+          name: test_cec_<< matrix.build_type >>
+          flavor: "customEntitlementComputation"
+          bc_version: "bc8"
           requires:
             - prepare-tests
-      - test_cec_release:
+          matrix:
+            parameters:
+              build_type: ["debug", "release"]
+      # Special case for defaults BC8 release with kover
+      - test:
+          name: test_defaults_bc8_release
+          flavor: "defaults"
+          bc_version: "bc8"
+          build_type: "release"
+          run_kover: true
           requires:
             - prepare-tests
       - verify-compatibility:
@@ -992,8 +991,9 @@ workflows:
       - hold:
           type: approval
           requires:
-            - test_defaults_debug
-            - test_defaults_release
+            - test_defaults_bc8_debug
+            - test_defaults_bc8_release
+            - test_defaults_bc7_release
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester
@@ -1082,3 +1082,9 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
+
+  manual-update-golden-requests-backend-integration-tests:
+    when:
+      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
+    jobs:
+      - update-golden-requests-backend-integration-tests

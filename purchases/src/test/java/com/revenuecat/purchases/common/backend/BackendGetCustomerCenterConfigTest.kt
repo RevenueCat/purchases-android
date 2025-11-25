@@ -186,7 +186,8 @@ class BackendGetCustomerCenterConfigTest {
         ),
         support = CustomerCenterConfigData.Support(
             email = "support@revenuecat.com",
-            shouldWarnCustomerToUpdate = true
+            shouldWarnCustomerToUpdate = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
         ),
         lastPublishedAppVersion = null
     )
@@ -306,6 +307,7 @@ class BackendGetCustomerCenterConfigTest {
                 requestDate = null,
                 VerificationResult.NOT_REQUESTED,
                 isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }

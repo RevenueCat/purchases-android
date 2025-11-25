@@ -135,6 +135,14 @@ Build purchases module integration tests pointing to production
 
 Build purchases module integration tests pointing to production
 
+### android update_golden_requests_backend_integration_tests
+
+```sh
+[bundle exec] fastlane android update_golden_requests_backend_integration_tests
+```
+
+Run backend integration tests and create PR if golden files change
+
 ### android run_purchases_integration_tests
 
 ```sh
@@ -223,14 +231,6 @@ Builds a Purchase Tester APK and prompts for:
 * Version name
 * Min SDK Version
 * Amazon pem path (optional)
-
-
-### android send_slack_purchases_integration_test
-
-```sh
-[bundle exec] fastlane android send_slack_purchases_integration_test
-```
-
 
 
 ### android update_paywall_preview_resources_submodule

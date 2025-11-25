@@ -353,6 +353,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertStoredResponse(urlString, eTagInResponse, testDate, responsePayload)
@@ -376,6 +377,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
@@ -401,6 +403,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNull()
@@ -427,6 +430,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -452,6 +456,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -477,6 +482,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result).isNotNull
@@ -498,6 +504,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = VERIFIED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.verificationResult).isEqualTo(VERIFIED)
@@ -516,6 +523,7 @@ class ETagManagerTest {
             requestDate = expectedDate,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
@@ -539,6 +547,7 @@ class ETagManagerTest {
             requestDate = expectedDate,
             verificationResult = NOT_REQUESTED,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
@@ -589,6 +598,7 @@ class ETagManagerTest {
             requestDate = null,
             verificationResult = backendVerificationResult,
             isLoadShedderResponse = false,
+            isFallbackURL = false,
         )
 
         assertThat(result?.verificationResult).isEqualTo(expectedVerificationResult)

@@ -1315,6 +1315,8 @@ private fun createStackComponentStyle(
             scrollOrientation = stack.overflow?.toOrientation(stack.dimension),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = com.revenuecat.purchases.paywalls.components.CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         )
     )
