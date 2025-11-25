@@ -328,6 +328,62 @@ internal class ComponentsConfigTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "exit paywalls present",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
+                          "exit_paywalls": {
+                            "bounce": {
+                              "offering_id": "bounce-offering",
+                              "presentation": "sheet",
+                              "dismiss_current": true
+                            },
+                            "abandonment": {
+                              "offering_id": "abandonment-offering",
+                              "presentation": "fullscreen",
+                              "dismiss_current": false
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary")),
+                                ),
+                            ),
+                            exitPaywalls = ExitPaywallsConfiguration(
+                                bounce = ExitPaywallConfiguration(
+                                    offeringId = "bounce-offering",
+                                    presentation = ExitPaywallPresentation.SHEET,
+                                    dismissCurrent = true,
+                                ),
+                                abandonment = ExitPaywallConfiguration(
+                                    offeringId = "abandonment-offering",
+                                    presentation = ExitPaywallPresentation.FULLSCREEN,
+                                    dismissCurrent = false,
+                                ),
+                            ),
+                        )
+                    ),
+                ),
             )
         }
 

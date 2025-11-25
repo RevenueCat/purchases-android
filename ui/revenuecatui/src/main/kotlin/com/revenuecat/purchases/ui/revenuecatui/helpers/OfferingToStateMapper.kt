@@ -6,6 +6,8 @@ import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.ExitPaywallConfiguration
+import com.revenuecat.purchases.paywalls.components.common.ExitPaywallsConfiguration
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -22,6 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.navigation.ExitPaywallSettings
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -188,6 +191,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             variableDataProvider = VariableDataProvider(resourceProvider),
             packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
+            exitPaywallSettings = config.exitPaywalls.toExitPaywallSettings(),
         )
     }
 }
@@ -324,6 +328,7 @@ internal fun Offering.toComponentsPaywallState(
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        exitPaywallSettings = validationResult.exitPaywallSettings,
         purchases = purchases,
     )
 }
@@ -388,3 +393,26 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
+
+private fun ExitPaywallsConfiguration?.toExitPaywallSettings(): ExitPaywallSettings? {
+    if (this == null) return null
+    val bounceSetting = bounce?.toExitPaywallSetting()
+    val abandonmentSetting = abandonment?.toExitPaywallSetting()
+    return if (bounceSetting == null && abandonmentSetting == null) {
+        null
+    } else {
+        ExitPaywallSettings(
+            bounce = bounceSetting,
+            abandonment = abandonmentSetting,
+        )
+    }
+}
+
+private fun ExitPaywallConfiguration.toExitPaywallSetting(): ExitPaywallSettings.ExitPaywall? {
+    if (offeringId.isBlank()) return null
+    return ExitPaywallSettings.ExitPaywall(
+        offeringId = offeringId,
+        presentation = presentation,
+        dismissCurrent = dismissCurrent,
+    )
+}
