@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -98,6 +99,7 @@ class BillingWrapperTest {
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     private var mockDateProvider: DateProvider = mockk()
+    private var mockPurchaseHistoryManager: PurchaseHistoryManager = mockk()
 
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
@@ -163,6 +165,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
+            mockPurchaseHistoryManager,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener

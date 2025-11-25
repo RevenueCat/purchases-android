@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.utils.MockHandlerFactory
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -40,6 +41,7 @@ internal open class BaseBillingUseCaseTest {
     protected var mockClient: BillingClient = mockk()
     protected var mockDeviceCache: DeviceCache = mockk()
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    protected var mockPurchaseHistoryManager: PurchaseHistoryManager = mockk()
     protected var mockDateProvider: DateProvider = mockk()
 
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
@@ -85,6 +87,7 @@ internal open class BaseBillingUseCaseTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
+            mockPurchaseHistoryManager,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener

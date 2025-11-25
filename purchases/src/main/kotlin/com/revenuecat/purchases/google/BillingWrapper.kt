@@ -44,6 +44,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.history.BillingConstants
 import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
@@ -76,6 +77,10 @@ import java.io.StringWriter
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -109,6 +114,8 @@ internal class BillingWrapper(
 
     private val serviceRequests =
         ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
+
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -361,18 +368,59 @@ internal class BillingWrapper(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
-        QueryPurchaseHistoryUseCase(
-            QueryPurchaseHistoryUseCaseParams(
-                dateProvider,
-                diagnosticsTrackerIfEnabled,
-                productType,
-                appInBackground,
-            ),
-            onReceivePurchaseHistory,
-            onReceivePurchaseHistoryError,
-            ::withConnectedClient,
-            ::executeRequestOnUIThread,
-        ).run()
+
+        // For INAPP, use PurchaseHistoryManager (AIDL)
+        if (productType == BillingClient.ProductType.INAPP) {
+            coroutineScope.launch {
+                try {
+                    val connected = purchaseHistoryManager.connect()
+                    if (!connected) {
+                        onReceivePurchaseHistoryError(
+                            PurchasesError(
+                                PurchasesErrorCode.StoreProblemError,
+                                "Failed to connect to billing service for purchase history"
+                            )
+                        )
+                        return@launch
+                    }
+
+                    try {
+                        val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
+                            BillingConstants.ITEM_TYPE_INAPP
+                        )
+                        onReceivePurchaseHistory(transactions)
+                    } finally {
+                        purchaseHistoryManager.disconnect()
+                    }
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    try {
+                        purchaseHistoryManager.disconnect()
+                    } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Exception) {
+                        // Ignore disconnect errors when already handling an error
+                    }
+                    onReceivePurchaseHistoryError(
+                        PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            "Error querying purchase history: ${e.message}"
+                        )
+                    )
+                }
+            }
+        } else {
+            // For SUBS, continue using QueryPurchaseHistoryUseCase
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
+                    dateProvider,
+                    diagnosticsTrackerIfEnabled,
+                    productType,
+                    appInBackground,
+                ),
+                onReceivePurchaseHistory,
+                onReceivePurchaseHistoryError,
+                ::withConnectedClient,
+                ::executeRequestOnUIThread,
+            ).run()
+        }
     }
 
     override fun queryAllPurchases(
