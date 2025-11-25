@@ -40,7 +40,7 @@ internal object BillingFactory {
                 cache,
                 diagnosticsTrackerIfEnabled,
                 stateProvider,
-                purchaseHistoryManager = PurchaseHistoryManager(application)
+                purchaseHistoryManager = PurchaseHistoryManager(application),
             )
             Store.AMAZON -> {
                 try {

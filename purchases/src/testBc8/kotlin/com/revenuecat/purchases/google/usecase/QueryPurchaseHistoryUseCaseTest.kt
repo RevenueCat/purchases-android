@@ -15,11 +15,16 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import io.mockk.Runs
 import io.mockk.clearStaticMockk
+import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.data.Offset
@@ -31,13 +36,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("MagicNumber", "FunctionNaming", "TooManyFunctions", "LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
-    private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
     private val appUserId = "jerry"
 
     @Test
@@ -215,26 +220,13 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
         }
         clearStaticMockk(QueryPurchasesParams::class)
-
-        val inAppBuilder = mockClient.mockQueryPurchasesAsync(
-            subsResult = billingClientOKResult,
-            inAppResult = billingClientOKResult,
-            subPurchases = emptyList(),
-            inAppPurchases = emptyList(),
-        )
-
-        wrapper.queryPurchaseHistoryAsync(
-            productType = inAppGoogleProductType,
-            onReceivePurchaseHistory = {},
-            onReceivePurchaseHistoryError = {},
-        )
-
-        verify(exactly = 1) { (inAppBuilder as QueryPurchasesParams.Builder).setProductType(inAppGoogleProductType) }
-        verify(exactly = 2) {
+        verify(exactly = 1) {
             mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
         }
         clearStaticMockk(QueryPurchasesParams::class)
     }
+
+    // WIP: Add tests for the AIDL version of querying purchase history
 
     // region diagnostics tracking
 
@@ -746,6 +738,10 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             inAppPurchases = emptyList(),
         )
 
+        coEvery { mockPurchaseHistoryManager.connect() } returns true
+        coEvery { mockPurchaseHistoryManager.disconnect() } just Runs
+        coEvery { mockPurchaseHistoryManager.queryAllPurchaseHistory(any()) } returns emptyList()
+
         var receivedPurchases = listOf<StoreTransaction>()
         wrapper.queryAllPurchases(
             appUserID = "appUserID",
@@ -755,11 +751,12 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             onReceivePurchaseHistoryError = { fail("Shouldn't be error") },
         )
 
+        testScope.advanceUntilIdle()
+
         assertThat(receivedPurchases.size).isNotZero
         verify(exactly = 1) { (builder as QueryPurchasesParams.Builder).setProductType(subsGoogleProductType) }
-        verify(exactly = 1) { (builder as QueryPurchasesParams.Builder).setProductType(inAppGoogleProductType) }
 
-        verify(exactly = 2) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
+        verify(exactly = 1) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
 
         clearStaticMockk(QueryPurchasesParams::class)
     }

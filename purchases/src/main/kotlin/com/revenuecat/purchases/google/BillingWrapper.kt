@@ -72,15 +72,15 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -95,6 +95,7 @@ internal class BillingWrapper(
     purchasesStateProvider: PurchasesStateProvider,
     private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     private companion object {
@@ -114,8 +115,6 @@ internal class BillingWrapper(
 
     private val serviceRequests =
         ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
-
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -378,15 +377,15 @@ internal class BillingWrapper(
                         onReceivePurchaseHistoryError(
                             PurchasesError(
                                 PurchasesErrorCode.StoreProblemError,
-                                "Failed to connect to billing service for purchase history"
-                            )
+                                "Failed to connect to billing service for purchase history",
+                            ),
                         )
                         return@launch
                     }
 
                     try {
                         val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
-                            BillingConstants.ITEM_TYPE_INAPP
+                            BillingConstants.ITEM_TYPE_INAPP,
                         )
                         onReceivePurchaseHistory(transactions)
                     } finally {
@@ -397,12 +396,13 @@ internal class BillingWrapper(
                         purchaseHistoryManager.disconnect()
                     } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Exception) {
                         // Ignore disconnect errors when already handling an error
+                        errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
                     }
                     onReceivePurchaseHistoryError(
                         PurchasesError(
                             PurchasesErrorCode.StoreProblemError,
-                            "Error querying purchase history: ${e.message}"
-                        )
+                            "Error querying purchase history: ${e.message}",
+                        ),
                     )
                 }
             }

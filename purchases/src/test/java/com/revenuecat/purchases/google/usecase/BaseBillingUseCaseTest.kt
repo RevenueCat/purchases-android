@@ -21,6 +21,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Before
 import java.util.Date
@@ -43,6 +44,7 @@ internal open class BaseBillingUseCaseTest {
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     protected var mockPurchaseHistoryManager: PurchaseHistoryManager = mockk()
     protected var mockDateProvider: DateProvider = mockk()
+    protected var testScope = TestScope()
 
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     protected val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
@@ -88,7 +90,8 @@ internal open class BaseBillingUseCaseTest {
             mockDiagnosticsTracker,
             purchasesStateProvider,
             mockPurchaseHistoryManager,
-            mockDateProvider
+            mockDateProvider,
+            testScope,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
