@@ -391,6 +391,11 @@ internal class ComponentOverridesTests {
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
                 )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
@@ -406,6 +411,11 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
+                )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
                 )),
                 arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyIntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
