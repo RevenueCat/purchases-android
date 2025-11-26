@@ -43,6 +43,7 @@ internal class ExitPaywallCoordinator {
 
     fun onCloseRequested(): NavigationDecision {
         val current = stack.lastOrNull() ?: return NavigationDecision.Dismiss
+
         val nextExit = when (purchaseInteraction) {
             PurchaseInteraction.CANCELLED,
             PurchaseInteraction.STARTED,
@@ -60,7 +61,7 @@ internal class ExitPaywallCoordinator {
 
         shownExitOfferings += nextExit.offeringId
         if (nextExit.dismissCurrent) {
-            removeCurrent()
+            removeCurrentKeepExitHistory()
         }
 
         return NavigationDecision.ShowExitPaywall(
@@ -72,12 +73,20 @@ internal class ExitPaywallCoordinator {
 
     fun hasActivePaywall(): Boolean = stack.isNotEmpty()
 
+    fun isShowingExitPaywall(): Boolean = shownExitOfferings.isNotEmpty()
+
     private fun removeCurrent() {
         if (stack.isNotEmpty()) {
             stack.removeLast()
         }
         if (stack.isEmpty()) {
             shownExitOfferings.clear()
+        }
+    }
+
+    private fun removeCurrentKeepExitHistory() {
+        if (stack.isNotEmpty()) {
+            stack.removeLast()
         }
     }
 

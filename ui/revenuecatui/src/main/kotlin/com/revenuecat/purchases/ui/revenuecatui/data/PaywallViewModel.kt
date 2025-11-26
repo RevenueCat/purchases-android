@@ -128,6 +128,9 @@ internal class PaywallViewModelImpl(
     }
 
     fun updateOptions(options: PaywallOptions) {
+        if (exitPaywallCoordinator.hasActivePaywall() && exitPaywallCoordinator.isShowingExitPaywall()) {
+            return
+        }
         val needsUpdateState = this.options.hashCode() != options.hashCode()
         // Some properties not considered for equality (hashCode) may have changed
         // (e.g. the listener may change in some re-renderers)
@@ -176,7 +179,6 @@ internal class PaywallViewModelImpl(
     }
 
     override fun closePaywall() {
-        Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         when (val decision = exitPaywallCoordinator.onCloseRequested()) {
             NavigationDecision.Dismiss -> {
@@ -674,10 +676,12 @@ internal class PaywallViewModelImpl(
 
     private fun handleNavigationState(state: PaywallState) {
         when (state) {
-            is PaywallState.Loaded.Components -> exitPaywallCoordinator.onPaywallPresented(
-                offeringId = state.offering.identifier,
-                exitSettings = state.exitPaywallSettings,
-            )
+            is PaywallState.Loaded.Components -> {
+                exitPaywallCoordinator.onPaywallPresented(
+                    offeringId = state.offering.identifier,
+                    exitSettings = state.exitPaywallSettings,
+                )
+            }
             else -> if (!exitPaywallCoordinator.hasActivePaywall()) {
                 exitPaywallCoordinator.reset()
             }

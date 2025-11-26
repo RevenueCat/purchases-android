@@ -3295,7 +3295,19 @@
               "spacing": 16,
               "type": "stack"
             },
-            "sticky_footer": null
+            "sticky_footer": null,
+            "exit_paywalls": {
+              "bounce": {
+                "offering_id": "cesar_tests_3",
+                "presentation": "sheet",
+                "dismiss_current": true
+              },
+              "abandonment": {
+                "offering_id": "cesar_tests_3",
+                "presentation": "fullscreen",
+                "dismiss_current": true
+              }
+            }
           }
         },
         "components_localizations": {
@@ -40585,7 +40597,19 @@
               "spacing": 0,
               "type": "stack"
             },
-            "sticky_footer": null
+            "sticky_footer": null,
+            "exit_paywalls": {
+              "bounce": {
+                "offering_id": "cesar_tests_3",
+                "presentation": "sheet",
+                "dismiss_current": true
+              },
+              "abandonment": {
+                "offering_id": "cesar_tests_3",
+                "presentation": "fullscreen",
+                "dismiss_current": true
+              }
+            }
           }
         },
         "components_localizations": {
