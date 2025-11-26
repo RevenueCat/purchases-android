@@ -26,6 +26,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertVerboseLog
@@ -69,9 +70,11 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -168,6 +171,16 @@ class BillingWrapperTest {
 
         mockDetailsList = listOf(mockProductDetails())
 
+        setupBillingWrapper()
+
+        every {
+            mockActivity.intent
+        } returns Intent()
+    }
+
+    private fun setupBillingWrapper(
+        isAIDLEnabled: Boolean = false,
+    ) {
         wrapper = BillingWrapper(
             mockClientFactory,
             handler,
@@ -177,6 +190,7 @@ class BillingWrapperTest {
             mockPurchaseHistoryManager,
             mockDateProvider,
             coroutineScope = testScope,
+            isAIDLEnabled = isAIDLEnabled,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
@@ -186,10 +200,6 @@ class BillingWrapperTest {
                 onConnectedCalled = true
             }
         }
-
-        every {
-            mockActivity.intent
-        } returns Intent()
     }
 
     @After
@@ -1737,7 +1747,9 @@ class BillingWrapperTest {
     // region queryPurchaseHistoryAsync with PurchaseHistoryManager tests
 
     @Test
-    fun `queryPurchaseHistoryAsync for INAPP uses PurchaseHistoryManager`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP uses PurchaseHistoryManager`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
         val mockTransactions = listOf(
             mockk<StoreTransaction>().apply {
                 every { productIds } returns listOf("inapp1")
@@ -1781,7 +1793,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync for INAPP handles connection failure`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles connection failure`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
         coEvery {
             mockPurchaseHistoryManager.connect()
         } returns false
@@ -1817,7 +1831,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync for INAPP handles query exception`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles query exception`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
         coEvery {
             mockPurchaseHistoryManager.connect()
         } returns true
@@ -1858,7 +1874,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync for INAPP disconnects even when disconnect fails`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP disconnects even when disconnect fails`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
         coEvery {
             mockPurchaseHistoryManager.connect()
         } returns true
@@ -1894,7 +1912,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync for INAPP returns empty list successfully`() = runTest {
+    fun `queryPurchaseHistoryAsync for AIDL for INAPP returns empty list successfully`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
         coEvery {
             mockPurchaseHistoryManager.connect()
         } returns true

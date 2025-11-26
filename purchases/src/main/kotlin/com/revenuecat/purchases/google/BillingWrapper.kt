@@ -29,6 +29,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -96,6 +97,7 @@ internal class BillingWrapper(
     private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val isAIDLEnabled: Boolean = BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL,
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     private companion object {
@@ -368,11 +370,9 @@ internal class BillingWrapper(
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
 
-        // For INAPP, use PurchaseHistoryManager (AIDL)
-        if (productType == BillingClient.ProductType.INAPP) {
+        if (productType == BillingClient.ProductType.INAPP && isAIDLEnabled) {
             queryInAppPurchaseHistoryWithAIDL(onReceivePurchaseHistory, onReceivePurchaseHistoryError)
         } else {
-            // For SUBS, continue using QueryPurchaseHistoryUseCase
             QueryPurchaseHistoryUseCase(
                 QueryPurchaseHistoryUseCaseParams(
                     dateProvider,
