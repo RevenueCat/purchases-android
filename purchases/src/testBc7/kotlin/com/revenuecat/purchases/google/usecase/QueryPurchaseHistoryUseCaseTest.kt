@@ -10,16 +10,23 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.extensions.firstSku
+import com.revenuecat.purchases.google.history.BillingConstants
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
+import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.data.Offset
@@ -31,13 +38,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("MagicNumber", "FunctionNaming", "TooManyFunctions", "LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
-    private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
     private val appUserId = "jerry"
 
     @Test
@@ -203,19 +210,6 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, subsBuilder)
-
-        val inAppBuilder = mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList(),
-        )
-
-        wrapper.queryPurchaseHistoryAsync(
-            productType = inAppGoogleProductType,
-            onReceivePurchaseHistory = {},
-            onReceivePurchaseHistoryError = {},
-        )
-
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, inAppBuilder)
     }
 
     // region diagnostics tracking
@@ -717,6 +711,10 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             listOf(stubPurchaseHistoryRecord()),
         )
 
+        coEvery { mockPurchaseHistoryManager.connect() } returns true
+        coEvery { mockPurchaseHistoryManager.disconnect() } just Runs
+        coEvery { mockPurchaseHistoryManager.queryAllPurchaseHistory(any()) } returns emptyList()
+
         var receivedPurchases = listOf<StoreTransaction>()
         wrapper.queryAllPurchases(
             appUserID = "appUserID",
@@ -726,9 +724,13 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             onReceivePurchaseHistoryError = { fail("Shouldn't be error") },
         )
 
+        testScope.advanceUntilIdle()
+
         assertThat(receivedPurchases.size).isNotZero
         mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, builder)
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, builder)
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        }
     }
 
     // endregion BillingClient queryAllPurchases

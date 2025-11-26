@@ -758,6 +758,10 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
         verify(exactly = 1) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
 
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        }
+
         clearStaticMockk(QueryPurchasesParams::class)
     }
 
