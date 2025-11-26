@@ -1,51 +1,10 @@
 package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.types.AdDisplayedData
+import com.revenuecat.purchases.ads.events.types.AdOpenedData
+import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.common.events.EventsManager
-
-/**
- * Common ad mediator names.
- */
-@InternalRevenueCatAPI
-@JvmInline
-value class AdMediatorName internal constructor(internal val value: String) {
-    companion object {
-        val AD_MOB = AdMediatorName("AdMob")
-        val APP_LOVIN = AdMediatorName("AppLovin")
-
-        fun fromString(value: String): AdMediatorName {
-            return when (value.trim()) {
-                "AdMob" -> AD_MOB
-                "AppLovin" -> APP_LOVIN
-                else -> AdMediatorName(value)
-            }
-        }
-    }
-}
-
-/**
- * Common ad revenue precision values.
- */
-@InternalRevenueCatAPI
-@JvmInline
-value class AdRevenuePrecision internal constructor(internal val value: String) {
-    companion object {
-        val EXACT = AdRevenuePrecision("exact")
-        val PUBLISHER_DEFINED = AdRevenuePrecision("publisher_defined")
-        val ESTIMATED = AdRevenuePrecision("estimated")
-        val UNKNOWN = AdRevenuePrecision("unknown")
-
-        fun fromString(value: String): AdRevenuePrecision {
-            return when (value.lowercase().trim()) {
-                "exact" -> EXACT
-                "publisher_defined" -> PUBLISHER_DEFINED
-                "estimated" -> ESTIMATED
-                "unknown" -> UNKNOWN
-                else -> AdRevenuePrecision(value)
-            }
-        }
-    }
-}
 
 /**
  * Tracks ad-related events such as ad displays, opens, and revenue.
@@ -58,26 +17,16 @@ class AdTracker internal constructor(
     /**
      * Tracks an ad displayed event.
      *
-     * @param networkName The name of the ad network.
-     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
-     * @param placement The placement of the ad, if available.
-     * @param adUnitId The ad unit ID.
-     * @param impressionId The impression ID.
+     * @param data The ad display event data.
      */
-    fun trackAdDisplayed(
-        networkName: String,
-        mediatorName: AdMediatorName,
-        placement: String?,
-        adUnitId: String,
-        impressionId: String,
-    ) {
+    fun trackAdDisplayed(data: AdDisplayedData) {
         eventsManager.track(
             event = AdEvent.Displayed(
-                networkName = networkName,
-                mediatorName = mediatorName,
-                placement = placement,
-                adUnitId = adUnitId,
-                impressionId = impressionId,
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
             ),
         )
     }
@@ -85,26 +34,16 @@ class AdTracker internal constructor(
     /**
      * Tracks an ad opened event.
      *
-     * @param networkName The name of the ad network.
-     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
-     * @param placement The placement of the ad, if available.
-     * @param adUnitId The ad unit ID.
-     * @param impressionId The impression ID.
+     * @param data The ad open event data.
      */
-    fun trackAdOpened(
-        networkName: String,
-        mediatorName: AdMediatorName,
-        placement: String?,
-        adUnitId: String,
-        impressionId: String,
-    ) {
+    fun trackAdOpened(data: AdOpenedData) {
         eventsManager.track(
             event = AdEvent.Open(
-                networkName = networkName,
-                mediatorName = mediatorName,
-                placement = placement,
-                adUnitId = adUnitId,
-                impressionId = impressionId,
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
             ),
         )
     }
@@ -112,36 +51,19 @@ class AdTracker internal constructor(
     /**
      * Tracks an ad revenue event.
      *
-     * @param networkName The name of the ad network.
-     * @param mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
-     * @param placement The placement of the ad, if available.
-     * @param adUnitId The ad unit ID.
-     * @param impressionId The impression ID.
-     * @param revenueMicros The revenue generated from the ad in micros.
-     * @param currency The currency code for the revenue (e.g., "USD").
-     * @param precision The precision of the revenue value. Should normally be one of [AdRevenuePrecision].
+     * @param data The ad revenue event data.
      */
-    @Suppress("LongParameterList")
-    fun trackAdRevenue(
-        networkName: String,
-        mediatorName: AdMediatorName,
-        placement: String?,
-        adUnitId: String,
-        impressionId: String,
-        revenueMicros: Long,
-        currency: String,
-        precision: AdRevenuePrecision,
-    ) {
+    fun trackAdRevenue(data: AdRevenueData) {
         eventsManager.track(
             event = AdEvent.Revenue(
-                networkName = networkName,
-                mediatorName = mediatorName,
-                placement = placement,
-                adUnitId = adUnitId,
-                impressionId = impressionId,
-                revenueMicros = revenueMicros,
-                currency = currency,
-                precision = precision,
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                revenueMicros = data.revenueMicros,
+                currency = data.currency,
+                precision = data.precision,
             ),
         )
     }
