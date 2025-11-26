@@ -41,7 +41,7 @@ internal class ComponentOverridesTests {
                         json = """
                             [
                               {
-                                "conditions": [ { "type": "introductory_offer", "operator": "=", "value": true } ],
+                                "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "intro font"
                                 }
@@ -77,7 +77,7 @@ internal class ComponentOverridesTests {
                                 }
                               },
                               {
-                                "conditions": [ { "type": "selected" }, { "type": "introductory_offer", "operator": "=", "value": true } ],
+                                "conditions": [ { "type": "selected" }, { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "compact font"
                                 }
@@ -267,7 +267,7 @@ internal class ComponentOverridesTests {
                         json = """
                         [
                           {
-                            "conditions": [ { "type": "introductory_offer", "operator": "=", "value": true } ],
+                            "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                             "properties": { "override_source_lid": "intro" }
                           },
                           {
@@ -375,19 +375,19 @@ internal class ComponentOverridesTests {
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = false,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
                 )),
