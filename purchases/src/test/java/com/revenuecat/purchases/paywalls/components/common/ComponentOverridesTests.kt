@@ -4,6 +4,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -41,7 +42,7 @@ internal class ComponentOverridesTests {
                         json = """
                             [
                               {
-                                "conditions": [ { "type": "introductory_offer", "operator": "=", "value": true } ],
+                                "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "intro font"
                                 }
@@ -77,7 +78,7 @@ internal class ComponentOverridesTests {
                                 }
                               },
                               {
-                                "conditions": [ { "type": "selected" }, { "type": "introductory_offer", "operator": "=", "value": true } ],
+                                "conditions": [ { "type": "selected" }, { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "compact font"
                                 }
@@ -230,6 +231,36 @@ internal class ComponentOverridesTests {
                         expected = emptyList()
                     )
                 ),
+                arrayOf(
+                    "legacy intro_offer without operator/value with visible property",
+                    Args(
+                        json = """
+                            [
+                              {
+                                "conditions": [ { "type": "intro_offer" } ],
+                                "properties": {
+                                  "visible": true,
+                                  "text_lid": "intro_text_key",
+                                  "font_size": 16
+                                }
+                              }
+                            ]
+                        """.trimIndent(),
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                )),
+                                properties = PartialTextComponent(
+                                    visible = true,
+                                    text = LocalizationKey("intro_text_key"),
+                                    fontSize = 16,
+                                ),
+                            ),
+                        )
+                    )
+                ),
             )
         }
 
@@ -267,7 +298,7 @@ internal class ComponentOverridesTests {
                         json = """
                         [
                           {
-                            "conditions": [ { "type": "introductory_offer", "operator": "=", "value": true } ],
+                            "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                             "properties": { "override_source_lid": "intro" }
                           },
                           {
@@ -375,21 +406,26 @@ internal class ComponentOverridesTests {
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = false,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
+                )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
                 )),
                 arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
@@ -406,6 +442,11 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
+                )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
                 )),
                 arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyIntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,

@@ -21,20 +21,24 @@ class ComponentOverride<T : PartialComponent>(
         /**
          * Compares the selected package's intro-offer eligibility (not the whole paywall) against [value].
          * This matches the package the customer currently has highlighted in the UI.
+         *
+         * Default values provide backward compatibility with legacy JSON that only has `{"type": "intro_offer"}`.
          */
         @Serializable
         data class IntroOffer(
-            @SerialName("operator") val operator: EqualityOperatorType,
-            @SerialName("value") val value: Boolean,
+            @SerialName("operator") val operator: EqualityOperatorType = EqualityOperatorType.EQUALS,
+            @SerialName("value") val value: Boolean = true,
         ) : Condition
 
         /**
          * Compares whether the selected package exposes multiple intro offers. Other packages are ignored.
+         *
+         * Default values provide backward compatibility with legacy JSON.
          */
         @Serializable
         data class MultipleIntroOffers(
-            @SerialName("operator") val operator: EqualityOperatorType,
-            @SerialName("value") val value: Boolean,
+            @SerialName("operator") val operator: EqualityOperatorType = EqualityOperatorType.EQUALS,
+            @SerialName("value") val value: Boolean = true,
         ) : Condition
 
         /**
@@ -112,7 +116,7 @@ class ComponentOverride<T : PartialComponent>(
 internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serialName = "Condition",
     serializerByType = mapOf(
-        "introductory_offer" to { Condition.IntroOffer.serializer() },
+        "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
         "introductory_offer_available" to { Condition.AnyIntroOffer.serializer() },
         "multiple_intro_offers_available" to { Condition.AnyMultipleIntroOffers.serializer() },
