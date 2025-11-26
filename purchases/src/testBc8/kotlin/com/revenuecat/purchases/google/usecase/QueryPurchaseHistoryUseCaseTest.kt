@@ -215,6 +215,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
             mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
         }
         clearStaticMockk(QueryPurchasesParams::class)
+
         val inAppBuilder = mockClient.mockQueryPurchasesAsync(
             subsResult = billingClientOKResult,
             inAppResult = billingClientOKResult,
@@ -234,8 +235,6 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
         }
         clearStaticMockk(QueryPurchasesParams::class)
     }
-
-    // WIP: Add tests for the AIDL version of querying purchase history
 
     // region diagnostics tracking
 
