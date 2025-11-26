@@ -288,6 +288,10 @@ internal class PurchaseHistoryManager(private val context: Context) {
      */
     suspend fun disconnect() {
         operationsMutex.withLock {
+            connectDeferred?.cancel()
+            queryDeferreds.forEach {
+                it.value.cancel()
+            }
             serviceConnection?.let { connection ->
                 try {
                     context.unbindService(connection)
@@ -299,6 +303,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             billingService = null
             serviceConnection = null
             connectDeferred = null
+            queryDeferreds.clear()
         }
     }
 }
