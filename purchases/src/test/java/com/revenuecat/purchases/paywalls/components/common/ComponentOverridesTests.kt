@@ -4,6 +4,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -228,6 +229,36 @@ internal class ComponentOverridesTests {
                         []
                         """.trimIndent(),
                         expected = emptyList()
+                    )
+                ),
+                arrayOf(
+                    "legacy intro_offer without operator/value with visible property",
+                    Args(
+                        json = """
+                            [
+                              {
+                                "conditions": [ { "type": "intro_offer" } ],
+                                "properties": {
+                                  "visible": true,
+                                  "text_lid": "intro_text_key",
+                                  "font_size": 16
+                                }
+                              }
+                            ]
+                        """.trimIndent(),
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                )),
+                                properties = PartialTextComponent(
+                                    visible = true,
+                                    text = LocalizationKey("intro_text_key"),
+                                    fontSize = 16,
+                                ),
+                            ),
+                        )
                     )
                 ),
             )
