@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.firstProductId
+import com.revenuecat.purchases.google.history.BillingConstants
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import io.mockk.Runs
 import io.mockk.clearStaticMockk
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

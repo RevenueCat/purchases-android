@@ -95,7 +95,7 @@ internal class BillingWrapper(
     purchasesStateProvider: PurchasesStateProvider,
     private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     private companion object {
@@ -396,12 +396,14 @@ internal class BillingWrapper(
             try {
                 val connected = purchaseHistoryManager.connect()
                 if (!connected) {
-                    onReceivePurchaseHistoryError(
-                        PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            "Failed to connect to billing service for purchase history",
-                        ),
-                    )
+                    mainHandler.post {
+                        onReceivePurchaseHistoryError(
+                            PurchasesError(
+                                PurchasesErrorCode.StoreProblemError,
+                                "Failed to connect to billing service for purchase history",
+                            ),
+                        )
+                    }
                     return@launch
                 }
 
@@ -409,7 +411,9 @@ internal class BillingWrapper(
                     val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
                         BillingConstants.ITEM_TYPE_INAPP,
                     )
-                    onReceivePurchaseHistory(transactions)
+                    mainHandler.post {
+                        onReceivePurchaseHistory(transactions)
+                    }
                 } finally {
                     purchaseHistoryManager.disconnect()
                 }
@@ -420,12 +424,14 @@ internal class BillingWrapper(
                     // Ignore disconnect errors when already handling an error
                     errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
                 }
-                onReceivePurchaseHistoryError(
-                    PurchasesError(
-                        PurchasesErrorCode.StoreProblemError,
-                        "Error querying purchase history: ${e.message}",
-                    ),
-                )
+                mainHandler.post {
+                    onReceivePurchaseHistoryError(
+                        PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            "Error querying purchase history: ${e.message}",
+                        ),
+                    )
+                }
             }
         }
     }
