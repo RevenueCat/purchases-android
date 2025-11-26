@@ -12,9 +12,12 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreTransaction
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Manager for querying purchase history using the AIDL-generated stub.
@@ -24,63 +27,111 @@ import kotlin.coroutines.resumeWithException
  */
 internal class PurchaseHistoryManager(private val context: Context) {
     private var billingService: IInAppBillingService? = null
-
-    // WIP: Handle concurrency.
-    private var serviceConnected = false
     private var serviceConnection: ServiceConnection? = null
+
+    private val operationsMutex = Mutex()
+    private var connectDeferred: CompletableDeferred<Boolean>? = null
+    private val queryDeferreds = mutableMapOf<String, CompletableDeferred<List<StoreTransaction>>>()
+
+    /**
+     * Helper function to execute an operation with concurrency control.
+     * If an operation is already in progress, subsequent calls will reuse it.
+     *
+     * @param clearOnCompletion If true, clears the deferred after operation completes.
+     *                          If false, keeps it cached (useful for one-time operations like connect).
+     */
+    private suspend inline fun <T> getOrExecute(
+        crossinline getDeferred: () -> CompletableDeferred<T>?,
+        crossinline setDeferred: (CompletableDeferred<T>?) -> Unit,
+        debugMessage: String,
+        clearOnCompletion: Boolean = true,
+        crossinline operation: suspend () -> T,
+    ): T {
+        // Atomically check if operation is in progress or completed, or start a new one
+        val (deferred, shouldStart) = operationsMutex.withLock {
+            getDeferred()?.let { existing ->
+                // Check if it's already completed
+                if (existing.isCompleted) {
+                    debugLog { "$debugMessage (already completed)" }
+                } else {
+                    debugLog { debugMessage }
+                }
+                return@withLock existing to false
+            }
+            val newDeferred = CompletableDeferred<T>()
+            setDeferred(newDeferred)
+            newDeferred to true
+        }
+
+        if (!shouldStart) {
+            return deferred.await()
+        }
+
+        return try {
+            val result = operation()
+            deferred.complete(result)
+            result
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            deferred.completeExceptionally(e)
+            throw e
+        } finally {
+            if (clearOnCompletion) {
+                operationsMutex.withLock {
+                    setDeferred(null)
+                }
+            }
+        }
+    }
 
     /**
      * Connect to the Google Play billing service.
      * This is a suspending function that waits for the connection to be established.
+     * If a connection is already in progress or has completed, this will reuse it.
      *
      * @return true if connection was successful, false otherwise
      */
-    suspend fun connect(): Boolean = suspendCancellableCoroutine { continuation ->
-        if (serviceConnected) {
-            continuation.resume(true)
-            return@suspendCancellableCoroutine
-        }
+    suspend fun connect(): Boolean = getOrExecute(
+        getDeferred = { connectDeferred },
+        setDeferred = { connectDeferred = it },
+        debugMessage = "Connection already in progress or completed, hooking into existing operation",
+        clearOnCompletion = false, // Keep connectDeferred as a cache
+    ) {
+        suspendCoroutine { continuation ->
+            val connection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                    debugLog { "AIDL Billing service connected" }
+                    billingService = IInAppBillingService.Stub.asInterface(service)
+                    serviceConnection = this
+                    continuation.resume(true)
+                }
 
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                debugLog { "AIDL Billing service connected" }
-                billingService = IInAppBillingService.Stub.asInterface(service)
-                serviceConnected = true
-                serviceConnection = this
-                continuation.resume(true)
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    debugLog { "AIDL Billing service disconnected" }
+                    billingService = null
+                }
             }
 
-            override fun onServiceDisconnected(name: ComponentName?) {
-                debugLog { "AIDL Billing service disconnected" }
-                billingService = null
-                serviceConnected = false
-            }
-        }
+            try {
+                val serviceIntent = Intent(BillingConstants.BILLING_SERVICE_ACTION).apply {
+                    setPackage(BillingConstants.VENDING_PACKAGE)
+                }
 
-        try {
-            val serviceIntent = Intent(BillingConstants.BILLING_SERVICE_ACTION).apply {
-                setPackage(BillingConstants.VENDING_PACKAGE)
-            }
-
-            val bound = context.bindService(
-                serviceIntent,
-                connection,
-                Context.BIND_AUTO_CREATE,
-            )
-
-            if (!bound) {
-                errorLog { "Failed to bind to AIDL billing service" }
-                continuation.resumeWithException(
-                    Exception("Failed to bind to Google Play billing service"),
+                val bound = context.bindService(
+                    serviceIntent,
+                    connection,
+                    Context.BIND_AUTO_CREATE,
                 )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog(e) { "Error binding to AIDL billing service" }
-            continuation.resumeWithException(e)
-        }
 
-        continuation.invokeOnCancellation {
-            disconnect()
+                if (!bound) {
+                    errorLog { "Failed to bind to AIDL billing service" }
+                    continuation.resumeWithException(
+                        Exception("Failed to bind to Google Play billing service"),
+                    )
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                errorLog(e) { "Error binding to AIDL billing service" }
+                continuation.resumeWithException(e)
+            }
         }
     }
 
@@ -95,7 +146,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
         type: String = BillingConstants.ITEM_TYPE_INAPP,
         continuationToken: String? = null,
     ): PurchaseHistoryResult {
-        if (!serviceConnected || billingService == null) {
+        if (billingService == null) {
             return PurchaseHistoryResult(
                 responseCode = BillingConstants.BILLING_RESPONSE_RESULT_SERVICE_UNAVAILABLE,
                 records = emptyList(),
@@ -134,13 +185,32 @@ internal class PurchaseHistoryManager(private val context: Context) {
 
     /**
      * Query all purchase history, handling pagination automatically.
+     * If a query is already in progress for the same type, this will hook into that
+     * operation instead of starting a new one.
      *
      * @param type Product type ("inapp" or "subs")
      * @return List of all purchase history records
      */
     suspend fun queryAllPurchaseHistory(
         type: String = BillingConstants.ITEM_TYPE_INAPP,
-    ): List<StoreTransaction> {
+    ): List<StoreTransaction> = getOrExecute(
+        getDeferred = { queryDeferreds[type] },
+        setDeferred = { deferred ->
+            if (deferred != null) {
+                queryDeferreds[type] = deferred
+            } else {
+                queryDeferreds.remove(type)
+            }
+        },
+        debugMessage = "Query for type $type already in progress, hooking into existing operation",
+    ) {
+        performQuery(type)
+    }
+
+    /**
+     * Performs the actual query operation with pagination.
+     */
+    private fun performQuery(type: String): List<StoreTransaction> {
         val allRecords = mutableListOf<PurchaseHistoryRecord>()
         var continuationToken: String? = null
 
@@ -214,9 +284,10 @@ internal class PurchaseHistoryManager(private val context: Context) {
 
     /**
      * Disconnect from the billing service.
+     * Clears the cached connection state so subsequent connect() calls will reconnect.
      */
-    fun disconnect() {
-        if (serviceConnected) {
+    suspend fun disconnect() {
+        operationsMutex.withLock {
             serviceConnection?.let { connection ->
                 try {
                     context.unbindService(connection)
@@ -225,9 +296,9 @@ internal class PurchaseHistoryManager(private val context: Context) {
                     errorLog(e) { "Error disconnecting from AIDL Billing service" }
                 }
             }
-            serviceConnected = false
             billingService = null
             serviceConnection = null
+            connectDeferred = null
         }
     }
 }
