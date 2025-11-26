@@ -370,42 +370,7 @@ internal class BillingWrapper(
 
         // For INAPP, use PurchaseHistoryManager (AIDL)
         if (productType == BillingClient.ProductType.INAPP) {
-            coroutineScope.launch {
-                try {
-                    val connected = purchaseHistoryManager.connect()
-                    if (!connected) {
-                        onReceivePurchaseHistoryError(
-                            PurchasesError(
-                                PurchasesErrorCode.StoreProblemError,
-                                "Failed to connect to billing service for purchase history",
-                            ),
-                        )
-                        return@launch
-                    }
-
-                    try {
-                        val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
-                            BillingConstants.ITEM_TYPE_INAPP,
-                        )
-                        onReceivePurchaseHistory(transactions)
-                    } finally {
-                        purchaseHistoryManager.disconnect()
-                    }
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    try {
-                        purchaseHistoryManager.disconnect()
-                    } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Exception) {
-                        // Ignore disconnect errors when already handling an error
-                        errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
-                    }
-                    onReceivePurchaseHistoryError(
-                        PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            "Error querying purchase history: ${e.message}",
-                        ),
-                    )
-                }
-            }
+            queryInAppPurchaseHistoryWithAIDL(onReceivePurchaseHistory, onReceivePurchaseHistoryError)
         } else {
             // For SUBS, continue using QueryPurchaseHistoryUseCase
             QueryPurchaseHistoryUseCase(
@@ -420,6 +385,48 @@ internal class BillingWrapper(
                 ::withConnectedClient,
                 ::executeRequestOnUIThread,
             ).run()
+        }
+    }
+
+    private fun queryInAppPurchaseHistoryWithAIDL(
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+    ) {
+        coroutineScope.launch {
+            try {
+                val connected = purchaseHistoryManager.connect()
+                if (!connected) {
+                    onReceivePurchaseHistoryError(
+                        PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            "Failed to connect to billing service for purchase history",
+                        ),
+                    )
+                    return@launch
+                }
+
+                try {
+                    val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
+                        BillingConstants.ITEM_TYPE_INAPP,
+                    )
+                    onReceivePurchaseHistory(transactions)
+                } finally {
+                    purchaseHistoryManager.disconnect()
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                try {
+                    purchaseHistoryManager.disconnect()
+                } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Exception) {
+                    // Ignore disconnect errors when already handling an error
+                    errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
+                }
+                onReceivePurchaseHistoryError(
+                    PurchasesError(
+                        PurchasesErrorCode.StoreProblemError,
+                        "Error querying purchase history: ${e.message}",
+                    ),
+                )
+            }
         }
     }
 
