@@ -1,4 +1,4 @@
-appId: com.revenuecat.e2etests
+appId: com.revenuecat.automatedsdktests
 ---
 - launchApp:
     clearState: true

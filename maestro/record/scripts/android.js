@@ -21,7 +21,15 @@ function stop(filename, outputDir) {
     var pid = output.recordingPids ? output.recordingPids[name] : null;
 
     if (pid && pid !== -1) {
-        output.shell.stop(pid);
+        // Send SIGINT to the host-side adb process (propagates properly to device screenrecord)
+        output.shell.run('kill -SIGINT ' + pid);
+        
+        // Wait for the process to exit gracefully (lets screenrecord write the moov atom)
+        output.shell.run('while kill -0 ' + pid + ' 2>/dev/null; do sleep 0.5; done');
+        
+        // Extra wait for file system sync
+        output.shell.run('sleep 2');
+        
         delete output.recordingPids[name];
     }
 

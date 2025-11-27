@@ -797,6 +797,9 @@ jobs:
           at: .
       - install-sdkman
       - run:
+          name: Start shell-over-http server
+          command: ./scripts/start-shell-over-http-server.sh
+      - run:
           name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
           command: |
@@ -817,9 +820,81 @@ jobs:
       - run:
           name: Run Maestro tests
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/
+            mkdir -p videos
+
+            echo "=== Starting screenrecord ==="
+            adb shell screenrecord --verbose /sdcard/test.mp4 &
+            SCREENRECORD_PID=$!
+            echo "Host-side adb PID: $SCREENRECORD_PID"
+            
+            # Give screenrecord time to initialize
+            sleep 2
+            
+            # Verify it's actually running
+            echo "=== Verify screenrecord started ==="
+            echo "Host process:"
+            ps -p $SCREENRECORD_PID -o pid,ppid,state,cmd || echo "Host process not found!"
+            echo "Device process:"
+            adb shell "ps -A | grep screenrecord" || echo "No screenrecord on device!"
+            echo "Initial file check:"
+            adb shell "ls -la /sdcard/test.mp4" || echo "File not created yet"
+
+            set +e  # Don't exit on error
+
+            maestro test \
+            --format junit \
+            --output maestro/report.xml \
+            -e RECORDING_OUTPUT_DIR=$(pwd)/videos \
+            maestro/
+            MAESTRO_EXIT=$?
+            set -e  # Re-enable exit on error
+            
+            echo "=== Stopping screenrecord ==="
+            echo "Host process before stop:"
+            ps -p $SCREENRECORD_PID -o pid,ppid,state,cmd || echo "Host process already dead!"
+            echo "Device process before stop:"
+            adb shell "ps -A | grep screenrecord" || echo "No screenrecord on device!"
+            echo "File before stop:"
+            adb shell "ls -la /sdcard/test.mp4" || echo "File not found!"
+            adb shell "stat /sdcard/test.mp4" || true
+            
+            # Send SIGINT to the HOST-side adb process (this propagates properly!)
+            echo "Sending SIGINT to host adb process $SCREENRECORD_PID..."
+            kill -SIGINT $SCREENRECORD_PID 2>/dev/null || true
+            
+            # Wait for the process to exit gracefully (this is crucial!)
+            echo "Waiting for adb process to finish gracefully..."
+            wait $SCREENRECORD_PID 2>/dev/null || true
+            
+            # Extra wait for file system sync
+            sleep 2
+            
+            echo "=== After stop ==="
+            echo "Device process after stop:"
+            adb shell "ps -A | grep screenrecord" || echo "screenrecord stopped (good!)"
+            echo "File after stop:"
+            adb shell "ls -la /sdcard/test.mp4" || echo "File not found!"
+            adb shell "stat /sdcard/test.mp4" || true
+            
+            echo "=== Pulling video ==="
+            adb pull /sdcard/test.mp4 videos/test.mp4
+            
+            echo "=== Final debug info ==="
+            echo "Local file:"
+            ls -la videos/test.mp4 || echo "Pull failed!"
+            echo "File type check:"
+            file videos/test.mp4 || true
+            
+            # Try to get video metadata (if ffprobe available)
+            ffprobe videos/test.mp4 2>&1 || echo "ffprobe not available or file corrupt"
+
+            exit $MAESTRO_EXIT
       - store_artifacts:
           path: ~/.maestro/tests/
+      - store_artifacts:
+          path: videos/
+      - store_artifacts:
+          path: /tmp/shell-over-http-server.log
       - store_test_results:
           path: maestro/report.xml
 
