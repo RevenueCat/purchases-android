@@ -37,6 +37,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -83,6 +84,8 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
+
+internal typealias CreateSupportTicketCallback = Pair<(Boolean) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
@@ -150,6 +153,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
@@ -581,6 +587,7 @@ internal class Backend(
 
     fun postEvents(
         paywallEventRequest: EventsRequest,
+        baseURL: URL,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
@@ -598,8 +605,8 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    AppConfig.paywallEventsURL,
-                    Endpoint.PostPaywallEvents,
+                    baseURL,
+                    Endpoint.PostEvents,
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
@@ -741,6 +748,70 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             customerCenterCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun postCreateSupportTicket(
+        appUserID: String,
+        email: String,
+        description: String,
+        onSuccessHandler: (Boolean) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val path = endpoint.getPath()
+        val body = mapOf(
+            APP_USER_ID to appUserID,
+            "customer_email" to email,
+            "issue_description" to description,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val wasSent = result.body.optBoolean("sent", false)
+                            onSuccessHandler(wasSent)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            createSupportTicketCallbacks.addCallback(
                 call,
                 dispatcher,
                 path,

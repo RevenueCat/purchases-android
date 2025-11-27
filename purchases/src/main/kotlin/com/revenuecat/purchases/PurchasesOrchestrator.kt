@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -131,7 +132,8 @@ internal class PurchasesOrchestrator(
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
-    private val eventsManager: EventsManager?,
+    private val eventsManager: EventsManager,
+    private val adEventsManager: EventsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -153,6 +155,7 @@ internal class PurchasesOrchestrator(
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -826,9 +829,7 @@ internal class PurchasesOrchestrator(
                 paywallPresentedCache.receiveEvent(event)
         }
 
-        if (isAndroidNOrNewer()) {
-            eventsManager?.track(event)
-        }
+        eventsManager.track(event)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -841,6 +842,21 @@ internal class PurchasesOrchestrator(
             onErrorHandler = { error ->
                 callback.onError(error)
             },
+        )
+    }
+
+    fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: (Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        backend.postCreateSupportTicket(
+            identityManager.currentAppUserID,
+            email,
+            description,
+            onSuccessHandler = onSuccess,
+            onErrorHandler = onError,
         )
     }
 
@@ -1531,7 +1547,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.findPurchaseInActivePurchases(
+        billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
             previousProductId,
@@ -1561,9 +1577,8 @@ internal class PurchasesOrchestrator(
     }
 
     private fun flushPaywallEvents() {
-        if (isAndroidNOrNewer()) {
-            eventsManager?.flushEvents()
-        }
+        eventsManager.flushEvents()
+        adEventsManager.flushEvents()
     }
 
     private fun createCallbackWithDiagnosticsIfNeeded(

@@ -16,6 +16,7 @@ internal object CustomerCenterConfigTestData {
     @SuppressWarnings("LongMethod")
     fun customerCenterData(
         shouldWarnCustomerToUpdate: Boolean = false,
+        allowSupportTicketCreation: Boolean = false,
     ): CustomerCenterConfigData {
         return CustomerCenterConfigData(
             screens = mapOf(
@@ -108,6 +109,26 @@ internal object CustomerCenterConfigTestData {
             support = CustomerCenterConfigData.Support(
                 email = "test-support@revenuecat.com",
                 shouldWarnCustomerToUpdate = shouldWarnCustomerToUpdate,
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(
+                    allowCreation = allowSupportTicketCreation,
+                    customerDetails = CustomerCenterConfigData.Support.SupportTickets.CustomerDetails(
+                        activeEntitlements = false,
+                        appUserId = false,
+                        attConsent = false,
+                        country = false,
+                        deviceVersion = false,
+                        email = false,
+                        facebookAnonId = false,
+                        idfa = false,
+                        idfv = false,
+                        ip = false,
+                        lastOpened = false,
+                        lastSeenAppVersion = false,
+                        totalSpent = false,
+                        userSince = false,
+                    ),
+                    customerType = CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE,
+                ),
             ),
         )
     }

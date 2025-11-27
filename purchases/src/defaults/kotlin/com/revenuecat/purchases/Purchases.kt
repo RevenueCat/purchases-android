@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -165,6 +166,14 @@ class Purchases internal constructor(
     @InternalRevenueCatAPI
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
+
+    /**
+     * The AdTracker used to track ad attribution data.
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    val adTracker: AdTracker
+        get() = purchasesOrchestrator.adTracker
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
@@ -576,6 +585,23 @@ class Purchases internal constructor(
         callback: GetCustomerCenterConfigCallback,
     ) {
         purchasesOrchestrator.getCustomerCenterConfig(callback)
+    }
+
+    /**
+     * Creates a support ticket for the current user.
+     * @param email The user's email address for the support ticket.
+     * @param description The description of the support request.
+     * @param onSuccess Called when the support ticket is created successfully with a Boolean indicating if it was sent.
+     * @param onError Called when there's an error creating the support ticket.
+     */
+    @InternalRevenueCatAPI
+    fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: (Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
     }
 
     // region Subscriber Attributes

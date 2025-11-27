@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
@@ -152,7 +153,8 @@ class DiagnosticsTrackerTest {
             "response_code" to 200,
             "etag_hit" to true,
             "verification_result" to "NOT_REQUESTED",
-            "is_retry" to false
+            "is_retry" to false,
+            "connection_error_reason" to "NO_NETWORK",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -164,7 +166,8 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.CACHE,
             VerificationResult.NOT_REQUESTED,
-            false
+            isRetry = false,
+            connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
@@ -186,7 +189,8 @@ class DiagnosticsTrackerTest {
             "backend_error_code" to 1234,
             "etag_hit" to false,
             "verification_result" to "NOT_REQUESTED",
-            "is_retry" to false
+            "is_retry" to false,
+            "connection_error_reason" to "NO_NETWORK",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -198,7 +202,8 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             VerificationResult.NOT_REQUESTED,
-            false
+            isRetry = false,
+            connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
@@ -220,7 +225,8 @@ class DiagnosticsTrackerTest {
             "backend_error_code" to 1234,
             "etag_hit" to false,
             "verification_result" to "NOT_REQUESTED",
-            "is_retry" to true
+            "is_retry" to true,
+            "connection_error_reason" to "NO_NETWORK",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -232,7 +238,8 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             VerificationResult.NOT_REQUESTED,
-            true
+            isRetry = true,
+            connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
@@ -307,6 +314,31 @@ class DiagnosticsTrackerTest {
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "product_type_queried" to "inapp",
+            "billing_response_code" to 12,
+            "billing_debug_message" to "test-debug-message",
+            "response_time_millis" to 1234L
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
+            productType = "inapp",
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -522,7 +554,7 @@ class DiagnosticsTrackerTest {
             "play_store_version" to "123",
             "play_services_version" to "456",
             "offline_entitlement_error_reason" to "unknown",
-            "error_message" to "Unknown error. Underlying error: test error message",
+            "error_message" to "Unknown error. Check the underlying error for more details. Underlying error: test error message",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(

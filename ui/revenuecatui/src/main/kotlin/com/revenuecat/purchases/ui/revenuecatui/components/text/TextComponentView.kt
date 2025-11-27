@@ -143,6 +143,8 @@ private fun rememberProcessedText(
                     currencyLocale = currencyLocale,
                     dateLocale = dateLocale,
                     date = state.currentDate,
+                    countdownTime = textState.countdownTime,
+                    countFrom = textState.countFrom,
                 )
             } ?: textState.text
         }
