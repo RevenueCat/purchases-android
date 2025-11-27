@@ -47,8 +47,16 @@ Please follow the [Quickstart Guide](https://docs.revenuecat.com/docs/) for more
 
 Or view / build our Android sample app:
 - [MagicWeather](examples/MagicWeather) (open it on a different Android Studio window)
+- [Cat Paywall Compose](https://github.com/RevenueCat/cat-paywall-compose/): Cat Paywall Compose demonstrates the paywall with Google Play's billing system using RevenueCat SDK for Android and Jetpack Compose.
 
-## Codelab
+## ✍️ Technical Content
+
+- [Turn Your App into Revenue: Building Paywalls in Android With Jetpack Compose](https://www.revenuecat.com/blog/engineering/build-paywalls-compose/): In-app subscriptions have become a popular way to monetize mobile applications that offer recurring value to users. In this article, you'll learn how to seamlessly implement in-app subscriptions and paywall features in Android using Jetpack Compose and the RevenueCat SDK.
+- [How to monetize Android apps with ad-free subscriptions using RevenueCat](https://www.revenuecat.com/blog/engineering/ad-free-subscriptions-android/): Most apps monetize through ads using things like AdMob or Audience Network. To maximize your earnings with ads, you need to show as many of them as possible, which makes for a pretty lousy user experience.
+- [Server-driven UI SDK on Android: how RevenueCat enables remote paywalls without app updates](https://www.revenuecat.com/blog/engineering/server-driven-android/): In this article, we’ll explore the concept of server-driven UI, with a focus on how RevenueCat’s Paywall Editor enables you to build and remotely update paywalls—without needing app updates—using RevenueCat’s Android SDK.
+- [Simplify in-app purchase unit testing with RevenueCat’s Test Store](https://www.revenuecat.com/blog/engineering/testing-test-store/): In-app purchase testing has long been a pain point in Android development. Setting up Google Play sandbox environments, managing test accounts, waiting for purchase verification, dealing with cached state… the friction is real. Luckily, RevenueCat’s Test Store is a solution to this problem — offering instant testing without the complexity of real billing systems. But the real benefit of Test Store isn’t just its simplified setup, it’s how it enables true unit testing of purchase flows, with minimal infrastructure.
+
+## 💻 [Codelab](https://revenuecat.github.io/)
 
 1. [RevenueCat Google Play Integration](https://revenuecat.github.io/codelab/google-play/codelab-1-google-play-integration/index.html#0): In this codelab, you'll learn how to:
 
@@ -64,10 +72,12 @@ Or view / build our Android sample app:
    - Learn how to distinguish between paying and non-paying users
    - Build a paywall screen, which is based on server-driven UI approach
 
+
+
 ## Requirements
-- Java 8+
-- Kotlin 1.8.0+
+- Kotlin 2.0.21+
 - Minimum target: Android 5.0+ (API level 21+)
+- Compile SDK: 35
 
 ## SDK Reference
 Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).
