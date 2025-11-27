@@ -797,6 +797,9 @@ jobs:
           at: .
       - install-sdkman
       - run:
+          name: Start shell-over-http server
+          command: ./scripts/start-shell-over-http-server.sh
+      - run:
           name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
           command: |
@@ -817,9 +820,16 @@ jobs:
       - run:
           name: Run Maestro tests
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/
+            mkdir -p videos
+            maestro test \
+              --format junit \
+              --output maestro/report.xml \
+              -e RECORDING_OUTPUT_DIR=videos \
+              maestro/
       - store_artifacts:
           path: ~/.maestro/tests/
+      - store_artifacts:
+          path: videos/
       - store_test_results:
           path: maestro/report.xml
 
