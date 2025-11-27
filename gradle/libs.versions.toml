@@ -1,4 +1,9 @@
 [versions]
+# Android SDK versions
+android-compileSdk = "35"
+android-minSdk = "21"
+android-targetSdk = "35"
+
 agp = "8.11.1"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
@@ -63,6 +68,8 @@ baselineprofile = "1.4.0"
 profileinstaller = "1.4.1"
 
 [libraries]
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-annotation-experimental = { module = "androidx.annotation:annotation-experimental", version.ref = "annotationExperimental" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }

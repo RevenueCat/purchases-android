@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent

@@ -1,5 +1,10 @@
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.ads.events.types.AdDisplayedData
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdOpenedData
+import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.events.EventsManager
 import io.mockk.Runs
 import io.mockk.every
@@ -28,11 +33,13 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackAdDisplayed(
-            networkName = "Google AdMob",
-            mediatorName = AdMediatorName.AD_MOB,
-            placement = "banner_home",
-            adUnitId = "ca-app-pub-123456",
-            impressionId = "impression-123"
+            data = AdDisplayedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "banner_home",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.Displayed>()) }
@@ -51,11 +58,13 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackAdDisplayed(
-            networkName = "Google AdMob",
-            mediatorName = AdMediatorName.AD_MOB,
-            placement = null,
-            adUnitId = "ca-app-pub-123456",
-            impressionId = "impression-123"
+            data = AdDisplayedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = null,
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.Displayed>()) }
@@ -68,11 +77,13 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackAdOpened(
-            networkName = "Google AdMob",
-            mediatorName = AdMediatorName.AD_MOB,
-            placement = "interstitial_level_complete",
-            adUnitId = "ca-app-pub-789012",
-            impressionId = "impression-456"
+            data = AdOpenedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "interstitial_level_complete",
+                adUnitId = "ca-app-pub-789012",
+                impressionId = "impression-456",
+            ),
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.Open>()) }
@@ -91,14 +102,16 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackAdRevenue(
-            networkName = "AppLovin",
-            mediatorName = AdMediatorName.APP_LOVIN,
-            placement = "rewarded_video",
-            adUnitId = "ad-unit-999",
-            impressionId = "impression-789",
-            revenueMicros = 1500000,
-            currency = "USD",
-            precision = AdRevenuePrecision.EXACT
+            data = AdRevenueData(
+                networkName = "AppLovin",
+                mediatorName = AdMediatorName.APP_LOVIN,
+                placement = "rewarded_video",
+                adUnitId = "ad-unit-999",
+                impressionId = "impression-789",
+                revenueMicros = 1500000,
+                currency = "USD",
+                precision = AdRevenuePrecision.EXACT,
+            ),
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.Revenue>()) }
@@ -120,14 +133,16 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackAdRevenue(
-            networkName = "Network",
-            mediatorName = AdMediatorName.AD_MOB,
-            placement = "placement",
-            adUnitId = "ad-unit",
-            impressionId = "impression",
-            revenueMicros = 1000000,
-            currency = "EUR",
-            precision = AdRevenuePrecision.ESTIMATED
+            data = AdRevenueData(
+                networkName = "Network",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "placement",
+                adUnitId = "ad-unit",
+                impressionId = "impression",
+                revenueMicros = 1000000,
+                currency = "EUR",
+                precision = AdRevenuePrecision.ESTIMATED,
+            ),
         )
 
         assertThat(eventSlot.captured.precision).isEqualTo(AdRevenuePrecision.ESTIMATED)

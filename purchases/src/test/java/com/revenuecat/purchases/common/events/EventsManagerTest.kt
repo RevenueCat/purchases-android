@@ -6,8 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
-import com.revenuecat.purchases.ads.events.AdMediatorName
-import com.revenuecat.purchases.ads.events.AdRevenuePrecision
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
