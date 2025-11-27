@@ -71,7 +71,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             val result = operation()
             deferred.complete(result)
             result
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             deferred.completeExceptionally(e)
             throw e
         } finally {
@@ -128,7 +128,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
                         Exception("Failed to bind to Google Play billing service"),
                     )
                 }
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 errorLog(e) { "Error binding to AIDL billing service" }
                 continuation.resumeWithException(e)
             }
@@ -173,7 +173,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             )
 
             parseResponse(response)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             errorLog(e) { "Error querying purchase history via AIDL" }
             PurchaseHistoryResult(
                 responseCode = BillingConstants.BILLING_RESPONSE_RESULT_ERROR,
@@ -296,7 +296,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
                 try {
                     context.unbindService(connection)
                     debugLog { "AIDL Billing service disconnected" }
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                     errorLog(e) { "Error disconnecting from AIDL Billing service" }
                 }
             }
