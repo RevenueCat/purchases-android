@@ -1258,11 +1258,14 @@ internal class PurchasesOrchestrator(
     }
 
     private fun getPurchaseCallback(productId: String): PurchaseCallback? {
-        return state.purchaseCallbacksByProductId[productId].also {
+        val callback = state.purchaseCallbacksByProductId[productId]
+        if (callback != null) {
             state = state.copy(
-                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
+                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId
+                    .filterNot { (key, value) -> key == productId || value == callback },
             )
         }
+        return callback
     }
 
     private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
@@ -1315,7 +1318,7 @@ internal class PurchasesOrchestrator(
         synchronized(this@PurchasesOrchestrator) {
             state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
                 state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
-                return@getAndClearAllPurchaseCallbacks purchaseCallbacks.values.toList()
+                return@getAndClearAllPurchaseCallbacks purchaseCallbacks.values.distinct()
             }
         }
     }
@@ -1447,6 +1450,11 @@ internal class PurchasesOrchestrator(
         val startTime = dateProvider.now
 
         val callbackWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(purchaseCallback, purchasingData, startTime)
+        val productIdsForCallback = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+            setOf(oldProductId, purchasingData.productId)
+        } else {
+            setOf(purchasingData.productId)
+        }
 
         if (purchasingData.productType != ProductType.SUBS) {
             PurchasesError(
@@ -1483,15 +1491,11 @@ internal class PurchasesOrchestrator(
                 log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
 
-            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
-                // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
-                    oldProductId
-                } else {
-                    purchasingData.productId
-                }
-                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
+            val callbacksInProgress = productIdsForCallback.any { state.purchaseCallbacksByProductId.containsKey(it) }
+            if (!callbacksInProgress) {
+                // For deferred proration we may receive the transaction for either the old or the new product,
+                // so associate the callback with both to avoid missing the purchase update.
+                val mapOfProductIdToListener = productIdsForCallback.associateWith { callbackWithDiagnostics }
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
