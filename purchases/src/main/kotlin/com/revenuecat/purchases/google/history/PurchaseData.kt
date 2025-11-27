@@ -15,9 +15,9 @@ internal data class PurchaseData(
     val purchaseTime: Long,
     val purchaseState: Int,
     val purchaseToken: String,
-    val quantity: Int = 1,
-    val acknowledged: Boolean = false,
-    val autoRenewing: Boolean = false,
+    val quantity: Int,
+    val acknowledged: Boolean,
+    val autoRenewing: Boolean,
 ) {
     companion object {
         /**
@@ -41,18 +41,6 @@ internal data class PurchaseData(
                 errorLog(e) { "Error parsing AIDL purchase data JSON: $json" }
                 null
             }
-        }
-    }
-
-    /**
-     * Get a human-readable string for the purchase state.
-     */
-    fun getPurchaseStateString(): String {
-        return when (purchaseState) {
-            0 -> "Purchased"
-            1 -> "Canceled"
-            2 -> "Pending"
-            else -> "Unknown ($purchaseState)"
         }
     }
 }
