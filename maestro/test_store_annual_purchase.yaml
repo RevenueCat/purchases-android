@@ -1,4 +1,17 @@
 appId: com.revenuecat.automatedsdktests
+onFlowStart:
+  - runFlow:
+      label: "Start screen recording"
+      file: record/start.yml
+      env:
+        filename: ${MAESTRO_FILENAME}
+onFlowComplete:
+  - runFlow:
+      label: "Stop screen recording"
+      file: record/stop.yml
+      env:
+        filename: ${MAESTRO_FILENAME}
+        outputDir: ${RECORDING_OUTPUT_DIR}
 ---
 - launchApp:
     clearState: true
@@ -19,3 +32,4 @@ appId: com.revenuecat.automatedsdktests
 - tapOn: Refresh
 - assertVisible: "Subscription: test_yearly"
 - assertVisible: "pro_cat: Active: true, Product: test_yearly"
+- runFlow: conventions/mark-successful.yml
