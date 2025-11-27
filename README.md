@@ -72,8 +72,6 @@ Or view / build our Android sample app:
    - Learn how to distinguish between paying and non-paying users
    - Build a paywall screen, which is based on server-driven UI approach
 
-
-
 ## Requirements
 - Kotlin 2.0.21+
 - Minimum target: Android 5.0+ (API level 21+)
