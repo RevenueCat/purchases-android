@@ -6,7 +6,7 @@ package com.revenuecat.purchases.google.history
  */
 internal object BillingConstants {
     // Billing API version - use 6 for purchase history support (introduced in v6)
-    const val BILLING_API_VERSION = 6
+    const val BILLING_API_VERSION = 7
 
     // Response codes
     const val BILLING_RESPONSE_RESULT_OK = 0
