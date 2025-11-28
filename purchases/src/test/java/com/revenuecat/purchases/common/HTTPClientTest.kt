@@ -545,7 +545,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -566,7 +566,18 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, true, responseCode, null, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                responseTime,
+                wasSuccessful = true,
+                responseCode,
+                backendErrorCode = null,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false,
+                connectionErrorReason = null,
+            )
         }
     }
 
@@ -574,7 +585,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -596,7 +607,18 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, responseTime, false, responseCode, backendErrorCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED, false)
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                responseTime,
+                wasSuccessful = false,
+                responseCode,
+                backendErrorCode,
+                HTTPResult.Origin.BACKEND,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false,
+                connectionErrorReason = null,
+            )
         }
     }
 
@@ -604,7 +626,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -631,7 +653,18 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackHttpRequestPerformed(server.hostName, endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, null, VerificationResult.NOT_REQUESTED, false)
+                diagnosticsTracker.trackHttpRequestPerformed(
+                    server.hostName,
+                    endpoint,
+                    responseTime = any(),
+                    wasSuccessful = false,
+                    HTTPClient.NO_STATUS_CODE,
+                    backendErrorCode = null,
+                    resultOrigin = null,
+                    VerificationResult.NOT_REQUESTED,
+                    isRetry = false,
+                    connectionErrorReason = null,
+                )
             }
             return
         }
@@ -641,7 +674,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         val response =
@@ -705,7 +738,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 VerificationResult.NOT_REQUESTED,
-                isRetry = true
+                isRetry = true,
+                connectionErrorReason = null,
             )
         }
     }
@@ -944,7 +978,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         // This test requires an endpoint that supports fallback host URLs
@@ -987,7 +1021,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 VerificationResult.NOT_REQUESTED,
-                isRetry = false
+                isRetry = false,
+                connectionErrorReason = null,
             )
         }
 
@@ -1001,7 +1036,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 VerificationResult.NOT_REQUESTED,
-                isRetry = false
+                isRetry = false,
+                connectionErrorReason = null,
             )
         }
     }
@@ -1023,7 +1059,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup successful response
         enqueue(
@@ -1048,7 +1084,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // Verify timeout was reset
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
         }
@@ -1067,7 +1103,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Initially timeout should be default
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup fallback server response
         val fallbackServer = MockWebServer()
@@ -1116,7 +1152,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
             assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-                .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+                .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
             verify(exactly = 1) {
                 timeoutManager.recordRequestResult(
                     HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
@@ -1139,7 +1175,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Initially timeout should be default
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         enqueue(
             endpoint.getPath(),
@@ -1164,9 +1200,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         assertThat(timeoutManager.getTimeoutForRequest(Endpoint.GetProductEntitlementMapping, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
         }
@@ -1187,7 +1223,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup error response (non-timeout error)
         enqueue(
@@ -1212,7 +1248,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // Verify HTTPClient recorded OTHER_RESULT and did NOT reset timeout
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
         assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / 100)
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
         }

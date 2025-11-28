@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         // fetch plugins from google maven (https://maven.google.com)
         google {

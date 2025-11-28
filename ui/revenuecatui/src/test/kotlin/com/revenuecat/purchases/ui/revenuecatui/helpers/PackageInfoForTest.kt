@@ -49,21 +49,21 @@ internal fun Package.getPackageInfoForTest(
         else -> error("Unknown package type $packageType")
     }
     val offerDetails = when(packageType) {
-        PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
+        PackageType.ANNUAL -> "$67.99/yr ($5.66/mth)"
         PackageType.MONTHLY -> "$7.99/mth"
-        PackageType.TWO_MONTH -> "$15.99/2 mths ($8.00/mth)"
-        PackageType.THREE_MONTH -> "$23.99/3 mths ($8.00/mth)"
-        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.67/mth)"
+        PackageType.TWO_MONTH -> "$15.99/2 mths ($7.99/mth)"
+        PackageType.THREE_MONTH -> "$23.99/3 mths ($7.99/mth)"
+        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.66/mth)"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
         PackageType.LIFETIME -> "$1,000"
         else -> error("Unknown package type $packageType")
     }
     val offerDetailsWithIntroOffer = when(packageType) {
-        PackageType.ANNUAL -> "$67.99/yr ($5.67/mth) after 1 month trial"
+        PackageType.ANNUAL -> "$67.99/yr ($5.66/mth) after 1 month trial"
         PackageType.MONTHLY -> "$7.99/mth after  trial"
-        PackageType.TWO_MONTH -> "$15.99/2 mths ($8.00/mth) after 1 month trial"
-        PackageType.THREE_MONTH -> "$23.99/3 mths ($8.00/mth) after 2 weeks trial"
-        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.67/mth) after  trial"
+        PackageType.TWO_MONTH -> "$15.99/2 mths ($7.99/mth) after 1 month trial"
+        PackageType.THREE_MONTH -> "$23.99/3 mths ($7.99/mth) after 2 weeks trial"
+        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.66/mth) after  trial"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
         PackageType.LIFETIME -> "$1,000 after  trial"
         else -> error("Unknown package type $packageType")

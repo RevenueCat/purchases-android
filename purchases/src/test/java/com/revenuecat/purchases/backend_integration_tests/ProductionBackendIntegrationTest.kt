@@ -205,6 +205,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         ensureBlockFinishes { latch ->
             backend.postEvents(
                 request,
+                baseURL = AppConfig.paywallEventsURL,
                 onSuccessHandler = {
                     latch.countDown()
                 },
@@ -213,7 +214,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostPaywallEvents.getPath()).toString()
+        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostEvents.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
             sharedPreferencesEditor.putString(urlString, any())

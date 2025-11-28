@@ -37,6 +37,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -586,6 +587,7 @@ internal class Backend(
 
     fun postEvents(
         paywallEventRequest: EventsRequest,
+        baseURL: URL,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
@@ -603,8 +605,8 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    AppConfig.paywallEventsURL,
-                    Endpoint.PostPaywallEvents,
+                    baseURL,
+                    Endpoint.PostEvents,
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,

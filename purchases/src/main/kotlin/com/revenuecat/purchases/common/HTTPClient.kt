@@ -12,12 +12,14 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -104,7 +106,14 @@ internal class HTTPClient(
                 is IOException,
                 -> {
                     log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
-                    connection.errorStream
+                    try {
+                        connection.errorStream
+                    } catch (e: NullPointerException) {
+                        // We've received some reports on issues reading from the errorStream in what seems to be a
+                        // Android/device specific issue: https://github.com/RevenueCat/purchases-android/issues/2606.
+                        // This attempts to handle this gracefully.
+                        throw NullPointerReadingErrorStreamException(e.message, e)
+                    }
                 }
 
                 else -> throw e
@@ -168,6 +177,7 @@ internal class HTTPClient(
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
+        var exceptionHit: IOException? = null
 
         try {
             callResult = performCall(
@@ -185,6 +195,7 @@ internal class HTTPClient(
                 requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
             }
         } catch (e: IOException) {
+            exceptionHit = e
             if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
                 requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
                 callResult = performRequestToFallbackURL()
@@ -203,6 +214,7 @@ internal class HTTPClient(
                 callSuccessful,
                 callResult,
                 isRetry = refreshETag,
+                connectionException = exceptionHit,
             )
         }
         if (callResult == null) {
@@ -407,6 +419,7 @@ internal class HTTPClient(
         callSuccessful: Boolean,
         callResult: HTTPResult?,
         isRetry: Boolean,
+        connectionException: IOException?,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
@@ -420,6 +433,7 @@ internal class HTTPClient(
             val origin = callResult?.origin
             val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
+            val connectionErrorReason = connectionException?.let { ConnectionErrorReason.fromIOException(it) }
             tracker.trackHttpRequestPerformed(
                 baseURL.host,
                 endpoint,
@@ -430,6 +444,7 @@ internal class HTTPClient(
                 origin,
                 verificationResult,
                 isRetry,
+                connectionErrorReason,
             )
         }
     }
