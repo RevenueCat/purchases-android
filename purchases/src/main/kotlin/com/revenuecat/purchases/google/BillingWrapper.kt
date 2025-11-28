@@ -45,7 +45,6 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.google.history.BillingConstants
 import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
@@ -409,7 +408,7 @@ internal class BillingWrapper(
 
                 try {
                     val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
-                        BillingConstants.ITEM_TYPE_INAPP,
+                        BillingClient.ProductType.INAPP,
                     )
                     mainHandler.post {
                         onReceivePurchaseHistory(transactions)

@@ -6,11 +6,13 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import com.android.billingclient.api.BillingClient
 import com.android.vending.billing.IInAppBillingService
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.google.getBillingResponseCodeName
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -163,12 +165,12 @@ internal class PurchaseHistoryManager(private val context: Context) {
      * @return PurchaseHistoryResult containing the response
      */
     private fun queryPurchaseHistory(
-        type: String = BillingConstants.ITEM_TYPE_INAPP,
+        type: String = BillingClient.ProductType.INAPP,
         continuationToken: String? = null,
     ): PurchaseHistoryResult {
         if (billingService == null) {
             return PurchaseHistoryResult(
-                responseCode = BillingConstants.BILLING_RESPONSE_RESULT_SERVICE_UNAVAILABLE,
+                responseCode = BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
                 records = emptyList(),
                 continuationToken = null,
             )
@@ -196,7 +198,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             errorLog(e) { "Error querying purchase history via AIDL" }
             PurchaseHistoryResult(
-                responseCode = BillingConstants.BILLING_RESPONSE_RESULT_ERROR,
+                responseCode = BillingClient.BillingResponseCode.ERROR,
                 records = emptyList(),
                 continuationToken = null,
             )
@@ -213,7 +215,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
      */
     @Suppress("LoopWithTooManyJumpStatements")
     suspend fun queryAllPurchaseHistory(
-        type: String = BillingConstants.ITEM_TYPE_INAPP,
+        type: String = BillingClient.ProductType.INAPP,
     ): List<StoreTransaction> = getOrExecute(
         getDeferred = { queryDeferreds[type] },
         setDeferred = { deferred ->
@@ -269,11 +271,9 @@ internal class PurchaseHistoryManager(private val context: Context) {
     private fun parseResponse(response: Bundle): PurchaseHistoryResult {
         val responseCode = response.getInt(BillingConstants.RESPONSE_CODE, -1)
 
-        if (responseCode != BillingConstants.BILLING_RESPONSE_RESULT_OK) {
+        if (responseCode != BillingClient.BillingResponseCode.OK) {
             warnLog {
-                "Purchase history query returned non-OK response: ${BillingConstants.getResponseCodeString(
-                    responseCode,
-                )}"
+                "Purchase history query returned non-OK response: ${responseCode.getBillingResponseCodeName()}"
             }
             return PurchaseHistoryResult(
                 responseCode = responseCode,
