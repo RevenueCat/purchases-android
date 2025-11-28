@@ -418,13 +418,9 @@ internal class BillingWrapper(
                 } finally {
                     purchaseHistoryManager.disconnect()
                 }
-            } catch (e: CancellationException) {
-                throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 try {
                     purchaseHistoryManager.disconnect()
-                } catch (e: CancellationException) {
-                    throw e
                 } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Throwable) {
                     // Ignore disconnect errors when already handling an error
                     errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
