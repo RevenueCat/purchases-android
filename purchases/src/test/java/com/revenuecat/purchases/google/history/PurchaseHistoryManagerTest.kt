@@ -20,6 +20,7 @@ import io.mockk.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -69,7 +70,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -125,7 +126,7 @@ internal class PurchaseHistoryManagerTest {
         val result3 = async { manager.connect() }
 
         // Yield to allow the async tasks to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -148,7 +149,7 @@ internal class PurchaseHistoryManagerTest {
         val result1 = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         val mockIBinder = mockk<IBinder>()
         every { IInAppBillingService.Stub.asInterface(mockIBinder) } returns mockBillingService
@@ -170,7 +171,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -496,7 +497,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         assertThat(serviceConnectionSlot.isCaptured).isTrue()
 
@@ -520,7 +521,7 @@ internal class PurchaseHistoryManagerTest {
         val connectJob = async { manager.connect() }
 
         // Yield to allow the async task to start and call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()

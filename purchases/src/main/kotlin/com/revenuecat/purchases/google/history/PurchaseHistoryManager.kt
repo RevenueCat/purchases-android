@@ -21,9 +21,6 @@ import kotlin.coroutines.suspendCoroutine
 
 /**
  * Manager for querying purchase history using the AIDL-generated stub.
- *
- * This provides access to the deprecated getPurchaseHistory() method that was
- * removed from Play Billing Library 8.0.0 but is still supported by Google Play.
  */
 internal class PurchaseHistoryManager(private val context: Context) {
     private var billingService: IInAppBillingService? = null
@@ -107,7 +104,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
 
                 override fun onServiceDisconnected(name: ComponentName?) {
                     debugLog { "AIDL Billing service disconnected" }
-                    billingService = null
+                    cleanup()
                 }
             }
 
@@ -204,13 +201,6 @@ internal class PurchaseHistoryManager(private val context: Context) {
         },
         debugMessage = "Query for type $type already in progress, hooking into existing operation",
     ) {
-        performQuery(type)
-    }
-
-    /**
-     * Performs the actual query operation with pagination.
-     */
-    private fun performQuery(type: String): List<StoreTransaction> {
         val allRecords = mutableListOf<PurchaseHistoryRecord>()
         var continuationToken: String? = null
 
@@ -234,7 +224,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             ProductType.INAPP
         }
 
-        return allRecords.map { it.toStoreTransaction(productType) }
+        allRecords.map { it.toStoreTransaction(productType) }
     }
 
     /**
@@ -288,22 +278,26 @@ internal class PurchaseHistoryManager(private val context: Context) {
      */
     suspend fun disconnect() {
         operationsMutex.withLock {
-            connectDeferred?.cancel()
-            queryDeferreds.forEach {
-                it.value.cancel()
-            }
-            serviceConnection?.let { connection ->
-                try {
-                    context.unbindService(connection)
-                    debugLog { "AIDL Billing service disconnected" }
-                } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-                    errorLog(e) { "Error disconnecting from AIDL Billing service" }
-                }
-            }
-            billingService = null
-            serviceConnection = null
-            connectDeferred = null
-            queryDeferreds.clear()
+            cleanup()
         }
+    }
+
+    private fun cleanup() {
+        connectDeferred?.cancel()
+        queryDeferreds.forEach {
+            it.value.cancel()
+        }
+        serviceConnection?.let { connection ->
+            try {
+                context.unbindService(connection)
+                debugLog { "AIDL Billing service disconnected" }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog(e) { "Error disconnecting from AIDL Billing service" }
+            }
+        }
+        billingService = null
+        serviceConnection = null
+        connectDeferred = null
+        queryDeferreds.clear()
     }
 }

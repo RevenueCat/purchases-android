@@ -5,8 +5,7 @@ import org.json.JSONObject
 
 /**
  * Data class representing a purchase from the Play Store.
- * This is used to parse the JSON strings returned by both the Play Billing Library
- * and the manual AIDL getPurchaseHistory call.
+ * This is used to parse the JSON strings returned by the AIDL getPurchaseHistory call.
  */
 internal data class PurchaseData(
     val orderId: String,
@@ -37,7 +36,7 @@ internal data class PurchaseData(
                     acknowledged = jsonObject.optBoolean("acknowledged", false),
                     autoRenewing = jsonObject.optBoolean("autoRenewing", false),
                 )
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                 errorLog(e) { "Error parsing AIDL purchase data JSON: $json" }
                 null
             }

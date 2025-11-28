@@ -5,7 +5,6 @@ package com.revenuecat.purchases.google.history
  * These match the constants used by the Play Billing Library internally.
  */
 internal object BillingConstants {
-    // Billing API version - use 6 for purchase history support (introduced in v6)
     const val BILLING_API_VERSION = 7
 
     // Response codes

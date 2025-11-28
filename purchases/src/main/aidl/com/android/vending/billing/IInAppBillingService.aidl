@@ -1,4 +1,3 @@
-// IInAppBillingService.aidl
 package com.android.vending.billing;
 
 /**
