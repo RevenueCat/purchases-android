@@ -1,36 +1,20 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
-    alias(libs.plugins.android.library)
+    id("revenuecat-public-library")
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
-    alias(libs.plugins.metalava)
-    alias(libs.plugins.baselineprofile)
 }
-
-// Conditional Maven Publish plugin application
-if (!project.properties["ANDROID_VARIANT_TO_PUBLISH"].toString().contains("customEntitlementComputation")) {
-    apply(plugin = "com.vanniktech.maven.publish")
-}
-
-// Apply shared library config
-apply(from = "${rootProject.projectDir}/library.gradle")
 
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
 
-    flavorDimensions += "apis"
+    // billingclient dimension is added for bc7/bc8 support
     flavorDimensions += "billingclient"
     productFlavors {
-        create("defaults") {
-            dimension = "apis"
-            isDefault = true
-        }
         create("bc8") {
             dimension = "billingclient"
             isDefault = true
