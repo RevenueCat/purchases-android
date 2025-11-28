@@ -17,8 +17,11 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
@@ -297,6 +300,57 @@ internal class PurchaseHistoryManagerTest {
                 BillingConstants.ITEM_TYPE_INAPP,
                 "continuation_token_1",
                 any()
+            )
+        }
+    }
+
+    @Test
+    fun `queryAllPurchaseHistory() stops pagination when coroutine is cancelled`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        // First call returns with a delay to simulate I/O
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), null, any())
+        } answers {
+            Thread.sleep(200) // Simulate I/O delay
+            createBundle(
+                responseCode = BillingConstants.BILLING_RESPONSE_RESULT_OK,
+                purchases = listOf(purchaseData to "signature1"), continuationToken = "continuation_token_1",
+            )
+        }
+
+        // Run on a real dispatcher to allow proper threading
+        val job = launch(Dispatchers.Default) {
+            manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        }
+
+        // Give some time for first page to start fetching without starting fetching the second.
+        Thread.sleep(100)
+
+        // Cancel the job while the second call is in progress
+        job.cancelAndJoin()
+
+        // Verify the first call was made
+        verify(exactly = 1) {
+            mockBillingService.getPurchaseHistory(
+                BillingConstants.BILLING_API_VERSION,
+                "com.test.package",
+                BillingConstants.ITEM_TYPE_INAPP,
+                null,
+                any()
+            )
+        }
+
+        // Verify it does not continue to the second page after cancellation
+        verify(exactly = 0) {
+            mockBillingService.getPurchaseHistory(
+                any(),
+                any(),
+                any(),
+                "continuation_token_1",
+                any(),
             )
         }
     }

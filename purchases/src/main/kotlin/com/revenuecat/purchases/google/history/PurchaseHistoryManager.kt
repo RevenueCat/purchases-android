@@ -12,7 +12,10 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreTransaction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
@@ -68,6 +71,8 @@ internal class PurchaseHistoryManager(private val context: Context) {
             val result = operation()
             deferred.complete(result)
             result
+        } catch (e: CancellationException) {
+            throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             deferred.completeExceptionally(e)
             throw e
@@ -216,7 +221,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             continuationToken = result.continuationToken
 
             debugLog { "Retrieved ${result.records.size} records from AIDL queryPurchaseHistory" }
-        } while (continuationToken != null)
+        } while (continuationToken != null && currentCoroutineContext().isActive)
 
         val productType = if (type == BillingConstants.ITEM_TYPE_SUBS) {
             ProductType.SUBS
