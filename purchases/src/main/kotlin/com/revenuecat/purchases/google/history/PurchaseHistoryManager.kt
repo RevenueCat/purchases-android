@@ -256,7 +256,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             }
         } while (continuationToken != null && currentCoroutineContext().isActive)
 
-        val productType = if (type == BillingConstants.ITEM_TYPE_SUBS) {
+        val productType = if (type == BillingClient.ProductType.SUBS) {
             ProductType.SUBS
         } else {
             ProductType.INAPP
