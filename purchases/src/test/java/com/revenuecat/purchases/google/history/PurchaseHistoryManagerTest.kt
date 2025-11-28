@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.BillingClient
 import com.android.vending.billing.IInAppBillingService
 import com.revenuecat.purchases.ProductType
 import io.mockk.CapturingSlot
@@ -17,9 +18,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -69,7 +74,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -114,7 +119,8 @@ internal class PurchaseHistoryManagerTest {
             manager.connect()
             assert(false) { "Expected exception" }
         } catch (e: Exception) {
-            assertThat(e).isEqualTo(expectedException)
+            assertThat(e).isInstanceOf(SecurityException::class.java)
+            assertThat(e.message).isEqualTo("Permission denied")
         }
     }
 
@@ -125,7 +131,7 @@ internal class PurchaseHistoryManagerTest {
         val result3 = async { manager.connect() }
 
         // Yield to allow the async tasks to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -148,7 +154,7 @@ internal class PurchaseHistoryManagerTest {
         val result1 = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         val mockIBinder = mockk<IBinder>()
         every { IInAppBillingService.Stub.asInterface(mockIBinder) } returns mockBillingService
@@ -170,7 +176,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
@@ -183,8 +189,8 @@ internal class PurchaseHistoryManagerTest {
         serviceConnectionSlot.captured.onServiceDisconnected(ComponentName("com.android.vending", ""))
 
         // Query should fail because service is null
-        mockBillingServiceResponse(BillingConstants.BILLING_RESPONSE_RESULT_OK, emptyList())
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        mockBillingServiceResponse(BillingClient.BillingResponseCode.OK, emptyList())
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
         assertThat(transactions).isEmpty()
     }
 
@@ -194,7 +200,7 @@ internal class PurchaseHistoryManagerTest {
 
     @Test
     fun `queryAllPurchaseHistory() returns empty list when service is not connected`() = runTest {
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
         assertThat(transactions).isEmpty()
     }
 
@@ -204,11 +210,11 @@ internal class PurchaseHistoryManagerTest {
 
         val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
         mockBillingServiceResponse(
-            BillingConstants.BILLING_RESPONSE_RESULT_OK,
+            BillingClient.BillingResponseCode.OK,
             listOf(purchaseData to "signature1")
         )
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         assertThat(transactions).hasSize(1)
         assertThat(transactions[0].purchaseToken).isEqualTo("token1")
@@ -220,7 +226,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_INAPP,
+                BillingClient.ProductType.INAPP,
                 null,
                 any()
             )
@@ -233,11 +239,11 @@ internal class PurchaseHistoryManagerTest {
 
         val purchaseData = createMockPurchaseData("token1", "sub1", 1234567890000L)
         mockBillingServiceResponse(
-            BillingConstants.BILLING_RESPONSE_RESULT_OK,
+            BillingClient.BillingResponseCode.OK,
             listOf(purchaseData to "signature1")
         )
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_SUBS)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.SUBS)
 
         assertThat(transactions).hasSize(1)
         assertThat(transactions[0].type).isEqualTo(ProductType.SUBS)
@@ -246,7 +252,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_SUBS,
+                BillingClient.ProductType.SUBS,
                 null,
                 any()
             )
@@ -263,7 +269,7 @@ internal class PurchaseHistoryManagerTest {
 
         // First call returns data with continuation token
         mockBillingServiceResponse(
-            BillingConstants.BILLING_RESPONSE_RESULT_OK,
+            BillingClient.BillingResponseCode.OK,
             listOf(purchaseData1 to "signature1", purchaseData2 to "signature2"),
             continuationToken = "continuation_token_1"
         )
@@ -271,11 +277,11 @@ internal class PurchaseHistoryManagerTest {
         // Second call with continuation token returns more data
         mockBillingServiceResponseWithToken(
             "continuation_token_1",
-            BillingConstants.BILLING_RESPONSE_RESULT_OK,
+            BillingClient.BillingResponseCode.OK,
             listOf(purchaseData3 to "signature3")
         )
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         assertThat(transactions).hasSize(3)
         assertThat(transactions.map { it.purchaseToken }).containsExactly("token1", "token2", "token3")
@@ -284,7 +290,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_INAPP,
+                BillingClient.ProductType.INAPP,
                 null,
                 any()
             )
@@ -293,9 +299,60 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_INAPP,
+                BillingClient.ProductType.INAPP,
                 "continuation_token_1",
                 any()
+            )
+        }
+    }
+
+    @Test
+    fun `queryAllPurchaseHistory() stops pagination when coroutine is cancelled`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        // First call returns with a delay to simulate I/O
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), null, any())
+        } answers {
+            Thread.sleep(200) // Simulate I/O delay
+            createBundle(
+                responseCode = BillingClient.BillingResponseCode.OK,
+                purchases = listOf(purchaseData to "signature1"), continuationToken = "continuation_token_1",
+            )
+        }
+
+        // Run on a real dispatcher to allow proper threading
+        val job = launch(Dispatchers.Default) {
+            manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
+        }
+
+        // Give some time for first page to start fetching without starting fetching the second.
+        Thread.sleep(100)
+
+        // Cancel the job while the second call is in progress
+        job.cancelAndJoin()
+
+        // Verify the first call was made
+        verify(exactly = 1) {
+            mockBillingService.getPurchaseHistory(
+                BillingConstants.BILLING_API_VERSION,
+                "com.test.package",
+                BillingClient.ProductType.INAPP,
+                null,
+                any()
+            )
+        }
+
+        // Verify it does not continue to the second page after cancellation
+        verify(exactly = 0) {
+            mockBillingService.getPurchaseHistory(
+                any(),
+                any(),
+                any(),
+                "continuation_token_1",
+                any(),
             )
         }
     }
@@ -304,9 +361,9 @@ internal class PurchaseHistoryManagerTest {
     fun `queryAllPurchaseHistory() returns empty list on error response`() = runTest {
         connectService()
 
-        mockBillingServiceResponse(BillingConstants.BILLING_RESPONSE_RESULT_ERROR, emptyList())
+        mockBillingServiceResponse(BillingClient.BillingResponseCode.ERROR, emptyList())
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         assertThat(transactions).isEmpty()
     }
@@ -315,9 +372,9 @@ internal class PurchaseHistoryManagerTest {
     fun `queryAllPurchaseHistory() returns empty list on SERVICE_UNAVAILABLE response`() = runTest {
         connectService()
 
-        mockBillingServiceResponse(BillingConstants.BILLING_RESPONSE_RESULT_SERVICE_UNAVAILABLE, emptyList())
+        mockBillingServiceResponse(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE, emptyList())
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         assertThat(transactions).isEmpty()
     }
@@ -330,7 +387,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
         } throws RuntimeException("Test exception")
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         assertThat(transactions).isEmpty()
     }
@@ -343,7 +400,7 @@ internal class PurchaseHistoryManagerTest {
         val invalidPurchaseJson = "{invalid json}"
 
         val bundle = Bundle().apply {
-            putInt(BillingConstants.RESPONSE_CODE, BillingConstants.BILLING_RESPONSE_RESULT_OK)
+            putInt(BillingConstants.RESPONSE_CODE, BillingClient.BillingResponseCode.OK)
             putStringArrayList(
                 BillingConstants.INAPP_PURCHASE_DATA_LIST,
                 arrayListOf(validPurchaseData, invalidPurchaseJson)
@@ -358,7 +415,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
         } returns bundle
 
-        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
 
         // Only valid purchase should be included
         assertThat(transactions).hasSize(1)
@@ -371,13 +428,13 @@ internal class PurchaseHistoryManagerTest {
 
         val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
         mockBillingServiceResponse(
-            BillingConstants.BILLING_RESPONSE_RESULT_OK,
+            BillingClient.BillingResponseCode.OK,
             listOf(purchaseData to "signature1")
         )
 
-        val result1 = async { manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP) }
-        val result2 = async { manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP) }
-        val result3 = async { manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP) }
+        val result1 = async { manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP) }
+        val result2 = async { manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP) }
+        val result3 = async { manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP) }
 
         val transactions1 = result1.await()
         val transactions2 = result2.await()
@@ -403,24 +460,24 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_INAPP,
+                BillingClient.ProductType.INAPP,
                 null,
                 any()
             )
-        } returns createBundle(BillingConstants.BILLING_RESPONSE_RESULT_OK, listOf(inappData to "signature1"))
+        } returns createBundle(BillingClient.BillingResponseCode.OK, listOf(inappData to "signature1"))
 
         every {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_SUBS,
+                BillingClient.ProductType.SUBS,
                 null,
                 any()
             )
-        } returns createBundle(BillingConstants.BILLING_RESPONSE_RESULT_OK, listOf(subsData to "signature2"))
+        } returns createBundle(BillingClient.BillingResponseCode.OK, listOf(subsData to "signature2"))
 
-        val inappResult = async { manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP) }
-        val subsResult = async { manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_SUBS) }
+        val inappResult = async { manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP) }
+        val subsResult = async { manager.queryAllPurchaseHistory(BillingClient.ProductType.SUBS) }
 
         val inappTransactions = inappResult.await()
         val subsTransactions = subsResult.await()
@@ -434,7 +491,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_INAPP,
+                BillingClient.ProductType.INAPP,
                 null,
                 any()
             )
@@ -443,7 +500,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingConstants.ITEM_TYPE_SUBS,
+                BillingClient.ProductType.INAPP,
                 null,
                 any()
             )
@@ -496,7 +553,7 @@ internal class PurchaseHistoryManagerTest {
         val result = async { manager.connect() }
 
         // Yield to allow the async task to call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         assertThat(serviceConnectionSlot.isCaptured).isTrue()
 
@@ -511,6 +568,112 @@ internal class PurchaseHistoryManagerTest {
         }
     }
 
+    @Test
+    fun `queryAllPurchaseHistory() pagination limit prevents infinite loop`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        // Mock infinite pagination (always returns continuationToken)
+        var callCount = 0
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
+        } answers {
+            callCount++
+            createBundle(
+                BillingClient.BillingResponseCode.OK,
+                listOf(purchaseData to "signature$callCount"),
+                continuationToken = "token$callCount" // Always return a token
+            )
+        }
+
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
+
+        // Should stop at MAX_PAGINATION_PAGES (50)
+        assertThat(transactions).hasSize(50)
+        assertThat(callCount).isEqualTo(50)
+    }
+
+    @Test
+    fun `disconnect() handles unbind exception gracefully`() = runTest {
+        connectService()
+
+        every {
+            context.unbindService(any<ServiceConnection>())
+        } throws IllegalArgumentException("Service not registered")
+
+        // Should not throw despite exception
+        manager.disconnect()
+
+        verify(exactly = 1) {
+            context.unbindService(any<ServiceConnection>())
+        }
+    }
+
+    @Test
+    fun `service binding failures - Play Services unavailable`() = runTest {
+        // Create a fresh manager to test binding failure
+        val testManager = PurchaseHistoryManager(context)
+
+        // Make bindService return false to simulate Play Services unavailable
+        every {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        } returns false
+
+        try {
+            testManager.connect()
+            assert(false) { "Expected exception" }
+        } catch (e: Exception) {
+            assertThat(e.message).contains("Failed to bind to Google Play billing service")
+        }
+
+        verify(exactly = 1) {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        }
+    }
+
+    @Test
+    fun `service binding failures - SecurityException`() = runTest {
+        every {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        } throws SecurityException("Permission denied")
+
+        try {
+            manager.connect()
+            assert(false) { "Expected SecurityException" }
+        } catch (e: SecurityException) {
+            assertThat(e.message).isEqualTo("Permission denied")
+        }
+    }
+
+    @Test
+    fun `service disconnects during query`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        var callCount = 0
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
+        } answers {
+            callCount++
+            if (callCount == 2) {
+                // Trigger service disconnection during pagination
+                serviceConnectionSlot.captured.onServiceDisconnected(ComponentName("com.android.vending", ""))
+            }
+            createBundle(
+                BillingClient.BillingResponseCode.OK,
+                listOf(purchaseData to "signature$callCount"),
+                continuationToken = if (callCount < 5) "token$callCount" else null
+            )
+        }
+
+        val transactions = manager.queryAllPurchaseHistory(BillingClient.ProductType.INAPP)
+
+        // Should handle gracefully (returns partial results before disconnect)
+        assertThat(transactions).isNotEmpty()
+    }
+
     // endregion
 
     // Helper functions
@@ -520,7 +683,7 @@ internal class PurchaseHistoryManagerTest {
         val connectJob = async { manager.connect() }
 
         // Yield to allow the async task to start and call bindService
-        kotlinx.coroutines.yield()
+        yield()
 
         // Simulate service connection
         val mockIBinder = mockk<IBinder>()
