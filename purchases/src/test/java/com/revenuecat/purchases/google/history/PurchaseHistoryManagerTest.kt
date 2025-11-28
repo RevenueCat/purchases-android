@@ -470,7 +470,7 @@ internal class PurchaseHistoryManagerTest {
             mockBillingService.getPurchaseHistory(
                 BillingConstants.BILLING_API_VERSION,
                 "com.test.package",
-                BillingClient.ProductType.INAPP,
+                BillingClient.ProductType.SUBS,
                 null,
                 any()
             )
