@@ -42,6 +42,7 @@ internal class FontLoader(
     }
 
     private val fontInfosForHash = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
+    private val lock = Any()
 
     private val cachedFontFamilyByFontInfo: MutableMap<DownloadableFontInfo, String> = mutableMapOf()
     private val cachedFontFamilyByFamilyName: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
@@ -56,7 +57,7 @@ internal class FontLoader(
             }
         }
 
-        synchronized(this) {
+        synchronized(lock) {
             val cachedFontFamilyName = cachedFontFamilyByFontInfo[fontInfoToDownload]
             val cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
             if (cachedFontFamily != null) {
@@ -79,7 +80,7 @@ internal class FontLoader(
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
             val cachedFile = File(cacheDirectory, "$urlHash.$extension")
 
-            synchronized(this) {
+            synchronized(lock) {
                 val fontInfosListeningToHash = fontInfosForHash[urlHash]
                 if (fontInfosListeningToHash == null) {
                     fontInfosForHash[urlHash] = mutableSetOf(fontInfo)
@@ -111,7 +112,7 @@ internal class FontLoader(
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 errorLog(t) { "Error downloading remote font from $url" }
             } finally {
-                synchronized(this) {
+                synchronized(lock) {
                     fontInfosForHash.remove(urlHash)
                 }
             }
@@ -119,7 +120,7 @@ internal class FontLoader(
     }
 
     private fun addFileToCache(urlHash: String, file: File) {
-        synchronized(this) {
+        synchronized(lock) {
             for (fontInfo in fontInfosForHash[urlHash] ?: emptySet()) {
                 val familyName = fontInfo.family
                 if (cachedFontFamilyByFontInfo[fontInfo] != null) {
