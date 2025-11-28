@@ -16,11 +16,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Manager for querying purchase history using the AIDL-generated stub.
@@ -32,6 +32,10 @@ internal class PurchaseHistoryManager(private val context: Context) {
     private val operationsMutex = Mutex()
     private var connectDeferred: CompletableDeferred<Boolean>? = null
     private val queryDeferreds = mutableMapOf<String, CompletableDeferred<List<StoreTransaction>>>()
+
+    companion object {
+        private const val MAX_PAGINATION_PAGES = 50
+    }
 
     /**
      * Helper function to execute an operation with concurrency control.
@@ -72,6 +76,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
             deferred.complete(result)
             result
         } catch (e: CancellationException) {
+            deferred.cancel()
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             deferred.completeExceptionally(e)
@@ -98,19 +103,32 @@ internal class PurchaseHistoryManager(private val context: Context) {
         debugMessage = "Connection already in progress or completed, hooking into existing operation",
         clearOnCompletion = false, // Keep connectDeferred as a cache
     ) {
-        suspendCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             val connection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                     debugLog { "AIDL Billing service connected" }
-                    billingService = IInAppBillingService.Stub.asInterface(service)
-                    serviceConnection = this
-                    continuation.resume(true)
+                    if (continuation.isActive) {
+                        // Only mutate state if continuation is still active
+                        billingService = IInAppBillingService.Stub.asInterface(service)
+                        serviceConnection = this
+                        continuation.resume(true)
+                    } else {
+                        // Connection happened after cancellation - unbind immediately
+                        debugLog { "AIDL Billing service connected after cancellation, cleaning up" }
+                        cleanup()
+                    }
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
                     debugLog { "AIDL Billing service disconnected" }
                     cleanup()
                 }
+            }
+
+            // Set up cancellation handler to unbind service if timeout occurs
+            continuation.invokeOnCancellation {
+                debugLog { "Connection cancelled, cleaning up service if needed" }
+                cleanup()
             }
 
             try {
@@ -193,6 +211,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
      * @param type Product type ("inapp" or "subs")
      * @return List of all purchase history records
      */
+    @Suppress("LoopWithTooManyJumpStatements")
     suspend fun queryAllPurchaseHistory(
         type: String = BillingConstants.ITEM_TYPE_INAPP,
     ): List<StoreTransaction> = getOrExecute(
@@ -208,8 +227,17 @@ internal class PurchaseHistoryManager(private val context: Context) {
     ) {
         val allRecords = mutableListOf<PurchaseHistoryRecord>()
         var continuationToken: String? = null
+        var pageCount = 0
 
         do {
+            if (pageCount >= MAX_PAGINATION_PAGES) {
+                warnLog {
+                    "Reached maximum pagination limit for AIDL purchase history " +
+                        "($MAX_PAGINATION_PAGES pages). Will stop querying further pages."
+                }
+                break
+            }
+
             val result = queryPurchaseHistory(type, continuationToken)
 
             if (!result.isSuccess()) {
@@ -219,8 +247,11 @@ internal class PurchaseHistoryManager(private val context: Context) {
 
             allRecords.addAll(result.records)
             continuationToken = result.continuationToken
+            pageCount++
 
-            debugLog { "Retrieved ${result.records.size} records from AIDL queryPurchaseHistory" }
+            debugLog {
+                "Retrieved ${result.records.size} records from AIDL queryPurchaseHistory (page $pageCount)"
+            }
         } while (continuationToken != null && currentCoroutineContext().isActive)
 
         val productType = if (type == BillingConstants.ITEM_TYPE_SUBS) {

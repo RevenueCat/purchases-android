@@ -18,6 +18,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
@@ -118,7 +119,8 @@ internal class PurchaseHistoryManagerTest {
             manager.connect()
             assert(false) { "Expected exception" }
         } catch (e: Exception) {
-            assertThat(e).isEqualTo(expectedException)
+            assertThat(e).isInstanceOf(SecurityException::class.java)
+            assertThat(e.message).isEqualTo("Permission denied")
         }
     }
 
@@ -564,6 +566,112 @@ internal class PurchaseHistoryManagerTest {
         verify(exactly = 2) {
             context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
         }
+    }
+
+    @Test
+    fun `queryAllPurchaseHistory() pagination limit prevents infinite loop`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        // Mock infinite pagination (always returns continuationToken)
+        var callCount = 0
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
+        } answers {
+            callCount++
+            createBundle(
+                BillingConstants.BILLING_RESPONSE_RESULT_OK,
+                listOf(purchaseData to "signature$callCount"),
+                continuationToken = "token$callCount" // Always return a token
+            )
+        }
+
+        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+
+        // Should stop at MAX_PAGINATION_PAGES (50)
+        assertThat(transactions).hasSize(50)
+        assertThat(callCount).isEqualTo(50)
+    }
+
+    @Test
+    fun `disconnect() handles unbind exception gracefully`() = runTest {
+        connectService()
+
+        every {
+            context.unbindService(any<ServiceConnection>())
+        } throws IllegalArgumentException("Service not registered")
+
+        // Should not throw despite exception
+        manager.disconnect()
+
+        verify(exactly = 1) {
+            context.unbindService(any<ServiceConnection>())
+        }
+    }
+
+    @Test
+    fun `service binding failures - Play Services unavailable`() = runTest {
+        // Create a fresh manager to test binding failure
+        val testManager = PurchaseHistoryManager(context)
+
+        // Make bindService return false to simulate Play Services unavailable
+        every {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        } returns false
+
+        try {
+            testManager.connect()
+            assert(false) { "Expected exception" }
+        } catch (e: Exception) {
+            assertThat(e.message).contains("Failed to bind to Google Play billing service")
+        }
+
+        verify(exactly = 1) {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        }
+    }
+
+    @Test
+    fun `service binding failures - SecurityException`() = runTest {
+        every {
+            context.bindService(any<Intent>(), any<ServiceConnection>(), any<Int>())
+        } throws SecurityException("Permission denied")
+
+        try {
+            manager.connect()
+            assert(false) { "Expected SecurityException" }
+        } catch (e: SecurityException) {
+            assertThat(e.message).isEqualTo("Permission denied")
+        }
+    }
+
+    @Test
+    fun `service disconnects during query`() = runTest {
+        connectService()
+
+        val purchaseData = createMockPurchaseData("token1", "product1", 1234567890000L)
+
+        var callCount = 0
+        every {
+            mockBillingService.getPurchaseHistory(any(), any(), any(), any(), any())
+        } answers {
+            callCount++
+            if (callCount == 2) {
+                // Trigger service disconnection during pagination
+                serviceConnectionSlot.captured.onServiceDisconnected(ComponentName("com.android.vending", ""))
+            }
+            createBundle(
+                BillingConstants.BILLING_RESPONSE_RESULT_OK,
+                listOf(purchaseData to "signature$callCount"),
+                continuationToken = if (callCount < 5) "token$callCount" else null
+            )
+        }
+
+        val transactions = manager.queryAllPurchaseHistory(BillingConstants.ITEM_TYPE_INAPP)
+
+        // Should handle gracefully (returns partial results before disconnect)
+        assertThat(transactions).isNotEmpty()
     }
 
     // endregion
