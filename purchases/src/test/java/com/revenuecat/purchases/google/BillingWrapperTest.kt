@@ -26,6 +26,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertVerboseLog
@@ -36,6 +37,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -63,13 +65,21 @@ import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -80,6 +90,7 @@ import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class BillingWrapperTest {
@@ -98,12 +109,14 @@ class BillingWrapperTest {
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     private var mockDateProvider: DateProvider = mockk()
+    private var mockPurchaseHistoryManager: PurchaseHistoryManager = mockk()
 
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
     private lateinit var wrapper: BillingWrapper
 
     private lateinit var mockDetailsList: List<ProductDetails>
+    private lateinit var testScope: TestScope
 
     private var storeProducts: List<StoreProduct>? = null
 
@@ -117,6 +130,7 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
+        testScope = TestScope()
         storeProducts = null
         purchasesUpdatedListener = null
         billingClientStateListener = null
@@ -157,13 +171,26 @@ class BillingWrapperTest {
 
         mockDetailsList = listOf(mockProductDetails())
 
+        setupBillingWrapper()
+
+        every {
+            mockActivity.intent
+        } returns Intent()
+    }
+
+    private fun setupBillingWrapper(
+        isAIDLEnabled: Boolean = false,
+    ) {
         wrapper = BillingWrapper(
             mockClientFactory,
             handler,
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            mockPurchaseHistoryManager,
+            mockDateProvider,
+            coroutineScope = testScope,
+            isAIDLEnabled = isAIDLEnabled,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
@@ -173,10 +200,6 @@ class BillingWrapperTest {
                 onConnectedCalled = true
             }
         }
-
-        every {
-            mockActivity.intent
-        } returns Intent()
     }
 
     @After
@@ -1718,6 +1741,215 @@ class BillingWrapperTest {
         )
     }
     // endregion
+
+    // endregion
+
+    // region queryPurchaseHistoryAsync with PurchaseHistoryManager tests
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP uses PurchaseHistoryManager`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        val mockTransactions = listOf(
+            mockk<StoreTransaction>().apply {
+                every { productIds } returns listOf("inapp1")
+                every { purchaseToken } returns "token1"
+            }
+        )
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns true
+
+        coEvery {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        } returns mockTransactions
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        assertThat(receivedTransactions).isEqualTo(mockTransactions)
+        assertThat(receivedError).isNull()
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+            mockPurchaseHistoryManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles connection failure`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns false
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        assertThat(receivedTransactions).isNull()
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError?.underlyingErrorMessage).contains("Failed to connect")
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+        }
+        coVerify(exactly = 0) {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles query exception`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns true
+
+        coEvery {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        } throws RuntimeException("Test exception")
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        assertThat(receivedTransactions).isNull()
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError?.underlyingErrorMessage).contains("Error querying purchase history")
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        }
+        coVerify {
+            mockPurchaseHistoryManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP disconnects even when disconnect fails`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns true
+
+        coEvery {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        } throws RuntimeException("Query exception")
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } throws RuntimeException("Disconnect exception")
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        assertThat(receivedTransactions).isNull()
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+
+        coVerify(exactly = 2) {
+            mockPurchaseHistoryManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync for AIDL for INAPP returns empty list successfully`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns true
+
+        coEvery {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        } returns emptyList()
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        assertThat(receivedTransactions).isNotNull
+        assertThat(receivedTransactions).isEmpty()
+        assertThat(receivedError).isNull()
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+            mockPurchaseHistoryManager.disconnect()
+        }
+    }
 
     // endregion
 

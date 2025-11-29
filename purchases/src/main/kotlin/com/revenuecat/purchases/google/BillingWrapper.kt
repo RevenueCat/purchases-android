@@ -29,6 +29,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -44,6 +45,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
@@ -70,6 +72,10 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
@@ -79,7 +85,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass", "TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -87,7 +93,10 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
+    private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val isAIDLEnabled: Boolean = BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL,
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     private companion object {
@@ -359,18 +368,71 @@ internal class BillingWrapper(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
-        QueryPurchaseHistoryUseCase(
-            QueryPurchaseHistoryUseCaseParams(
-                dateProvider,
-                diagnosticsTrackerIfEnabled,
-                productType,
-                appInBackground,
-            ),
-            onReceivePurchaseHistory,
-            onReceivePurchaseHistoryError,
-            ::withConnectedClient,
-            ::executeRequestOnUIThread,
-        ).run()
+
+        if (productType == BillingClient.ProductType.INAPP && isAIDLEnabled) {
+            queryInAppPurchaseHistoryWithAIDL(onReceivePurchaseHistory, onReceivePurchaseHistoryError)
+        } else {
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
+                    dateProvider,
+                    diagnosticsTrackerIfEnabled,
+                    productType,
+                    appInBackground,
+                ),
+                onReceivePurchaseHistory,
+                onReceivePurchaseHistoryError,
+                ::withConnectedClient,
+                ::executeRequestOnUIThread,
+            ).run()
+        }
+    }
+
+    private fun queryInAppPurchaseHistoryWithAIDL(
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+    ) {
+        coroutineScope.launch {
+            try {
+                val connected = purchaseHistoryManager.connect()
+                if (!connected) {
+                    mainHandler.post {
+                        onReceivePurchaseHistoryError(
+                            PurchasesError(
+                                PurchasesErrorCode.StoreProblemError,
+                                "Failed to connect to billing service for purchase history",
+                            ),
+                        )
+                    }
+                    return@launch
+                }
+
+                try {
+                    val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
+                        BillingClient.ProductType.INAPP,
+                    )
+                    mainHandler.post {
+                        onReceivePurchaseHistory(transactions)
+                    }
+                } finally {
+                    purchaseHistoryManager.disconnect()
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                try {
+                    purchaseHistoryManager.disconnect()
+                } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Throwable) {
+                    // Ignore disconnect errors when already handling an error
+                    errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
+                }
+                mainHandler.post {
+                    onReceivePurchaseHistoryError(
+                        PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            "Error querying purchase history: ${e.message}",
+                        ),
+                    )
+                }
+            }
+        }
     }
 
     override fun queryAllPurchases(
