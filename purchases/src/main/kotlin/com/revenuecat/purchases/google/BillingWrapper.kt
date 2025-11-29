@@ -282,13 +282,14 @@ internal class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
-            // switching from, because the transaction we receive on successful purchase is for the old product.
-            val productId =
+            val productIds =
                 if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
-                    replaceProductInfo.oldPurchase.productIds.first()
+                    listOf(
+                        replaceProductInfo.oldPurchase.productIds.first(),
+                        googlePurchasingData.productId,
+                    ).distinct()
                 } else {
-                    googlePurchasingData.productId
+                    listOf(googlePurchasingData.productId)
                 }
 
             // Create a map that tells us which subscription option ID was purchased for a given product ID.
@@ -305,13 +306,15 @@ internal class BillingWrapper(
                     }
             }
 
-            purchaseContext[productId] = PurchaseContext(
-                googlePurchasingData.productType,
-                presentedOfferingContext,
-                subscriptionOptionId,
-                replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
-                subscriptionOptionIdForProductIDs,
-            )
+            productIds.forEach { productId ->
+                purchaseContext[productId] = PurchaseContext(
+                    googlePurchasingData.productType,
+                    presentedOfferingContext,
+                    subscriptionOptionId,
+                    replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
+                    subscriptionOptionIdForProductIDs,
+                )
+            }
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
