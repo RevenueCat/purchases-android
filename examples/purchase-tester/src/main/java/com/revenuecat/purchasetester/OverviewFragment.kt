@@ -37,6 +37,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -48,6 +49,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private lateinit var binding: FragmentOverviewBinding
     private lateinit var dataStoreUtils: DataStoreUtils
 
+    @Suppress("LongMethod")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
 
@@ -64,29 +66,26 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
-        binding.logsButton.setOnClickListener {
-            navigateToLogsFragment()
-        }
-
-        binding.proxyButton.setOnClickListener {
-            navigateToProxyFragment()
-        }
-
-        binding.getProductsButton.setOnClickListener {
-            showGetProductsDialog()
-        }
-
-        binding.purchaseProductIdButton.setOnClickListener {
-            showPurchaseProductIdDialog()
-        }
-
-        binding.findByPlacementButton.setOnClickListener {
-            showFindPlacementDialog()
-        }
+        binding.logsButton.setOnClickListener { navigateToLogsFragment() }
+        binding.proxyButton.setOnClickListener { navigateToProxyFragment() }
+        binding.getProductsButton.setOnClickListener { showGetProductsDialog() }
+        binding.purchaseProductIdButton.setOnClickListener { showPurchaseProductIdDialog() }
+        binding.findByPlacementButton.setOnClickListener { showFindPlacementDialog() }
 
         viewModel = OverviewViewModel(this)
-        binding.lifecycleOwner = this
-        binding.viewModel = viewModel
+
+        binding.customerInfoCard.setOnClickListener { viewModel.onCardClicked() }
+        binding.customerInfoCopyUserIdButton.setOnClickListener { viewModel.onCopyClicked() }
+        binding.customerInfoManageButton.setOnClickListener { viewModel.onManageClicked() }
+        binding.customerInfoRestorePurchasesButton.setOnClickListener { viewModel.onRestoreClicked() }
+        binding.customerInfoSetAttribute.setOnClickListener { viewModel.onSetAttributeClicked() }
+        binding.customerInfoSyncAttributes.setOnClickListener { viewModel.onSyncAttributesClicked() }
+        binding.blockStoreClearButton.setOnClickListener { viewModel.onBlockStoreClearClicked(requireContext()) }
+        binding.customerInfoFetchVcsButton.setOnClickListener { viewModel.onFetchVCsClicked() }
+        binding.customerInfoInvalidateVcsCacheButton.setOnClickListener {
+            viewModel.onInvalidateVirtualCurrenciesCache()
+        }
+        binding.customerInfoFetchVcCacheButton.setOnClickListener { viewModel.onFetchVCCache() }
 
         return binding.root
     }
@@ -102,6 +101,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         viewModel.retrieveCustomerInfo()
+
+        setupObservers()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
 
@@ -402,5 +403,50 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private fun navigateToProxyFragment() {
         val directions = OverviewFragmentDirections.actionOverviewFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
+    }
+
+    private fun setupObservers() {
+        viewModel.customerInfo.observe(viewLifecycleOwner) { customerInfo ->
+            binding.customerInfoRequestDate.text = customerInfo?.requestDate?.let { " as of $it" } ?: ""
+            binding.customerInfoRequestDate.visibility =
+                if (customerInfo?.requestDate != null) View.VISIBLE else View.GONE
+
+            binding.customerInfoAppUserId.updateRowView("Original App User Id: ", customerInfo?.originalAppUserId)
+            binding.customerInfoManageButton.visibility =
+                if (customerInfo?.managementURL != null) View.VISIBLE else View.GONE
+        }
+
+        viewModel.verificationResult.observe(viewLifecycleOwner) { verificationResult ->
+            binding.customerInfoVerificationResult.updateRowView(
+                "Current verification result: ",
+                verificationResult?.name,
+            )
+        }
+
+        viewModel.activeEntitlements.observe(viewLifecycleOwner) { activeEntitlements ->
+            binding.customerInfoActiveEntitlements.updateRowView("Active Entitlements: ", activeEntitlements)
+        }
+
+        viewModel.allEntitlements.observe(viewLifecycleOwner) { allEntitlements ->
+            binding.customerInfoAllEntitlements.updateRowView("All Entitlements: ", allEntitlements)
+        }
+
+        viewModel.formattedVirtualCurrencies.observe(viewLifecycleOwner) { formattedVirtualCurrencies ->
+            binding.customerInfoVirtualCurrencies.updateRowView("Virtual Currencies: ", formattedVirtualCurrencies)
+        }
+
+        viewModel.customerInfoJson.observe(viewLifecycleOwner) { customerInfoJson ->
+            binding.customerInfoJsonObject.updateRowView("JSON Object", customerInfoJson)
+        }
+
+        viewModel.isRestoring.observe(viewLifecycleOwner) { isRestoring ->
+            binding.customerInfoRestorePurchasesButton.isEnabled = !isRestoring
+            binding.customerInfoRestoreProgress.visibility = if (isRestoring) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = if (detail.isNullOrEmpty()) "None" else detail
     }
 }
