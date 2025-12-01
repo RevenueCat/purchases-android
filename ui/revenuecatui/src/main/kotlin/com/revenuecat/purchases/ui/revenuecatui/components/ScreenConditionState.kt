@@ -122,7 +122,10 @@ internal fun Modifier.trackScreenCondition(
     state: ScreenConditionState,
     density: Density,
 ): Modifier = this.onSizeChanged { size ->
-    val widthDp = size.width / density.density
-    val heightDp = size.height / density.density
-    state.updateLayoutSize(widthDp = widthDp, heightDp = heightDp)
+    with(density) {
+        state.updateLayoutSize(
+            widthDp = size.width.toDp().value,
+            heightDp = size.height.toDp().value,
+        )
+    }
 }
