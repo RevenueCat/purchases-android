@@ -131,7 +131,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         // Manually update offering views
         binding.offeringDetailsName.text = offering.identifier
-        updateRowView(binding.offeringDetailsServerDescription, "Description:", offering.serverDescription)
+        binding.offeringDetailsServerDescription.updateRowView("Description:", offering.serverDescription)
         binding.offeringDetailsOpenWplButton.visibility =
             if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
@@ -152,9 +152,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
-        rowViewBinding.headerView.text = header
-        rowViewBinding.value.text = detail ?: "None"
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = detail ?: "None"
     }
 
     override fun onPurchasePackageClicked(

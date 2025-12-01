@@ -43,9 +43,8 @@ class DeprecatedPackageCardAdapter(
             binding.packageProductTitle.text = "${product.title}${if (isActive) " (active)" else ""}"
             binding.packageProductDescription.text = product.description
 
-            updateRowView(binding.packageProductSku, "Sku:", product.id)
-            updateRowView(
-                binding.packageType,
+            binding.packageProductSku.updateRowView("Sku:", product.id)
+            binding.packageType.updateRowView(
                 "Package Type:",
                 if (currentPackage.packageType == PackageType.CUSTOM) {
                     "custom -> ${currentPackage.packageType.identifier}"
@@ -56,7 +55,7 @@ class DeprecatedPackageCardAdapter(
 
             binding.packageOneTimePrice.root.visibility = if (isSubscription) View.GONE else View.VISIBLE
             if (!isSubscription) {
-                updateRowView(binding.packageOneTimePrice, "One Time Price:", product.price.formatted)
+                binding.packageOneTimePrice.updateRowView("One Time Price:", product.price.formatted)
             }
 
             // Upgrades are no longer possible with deprecated methods.
@@ -85,8 +84,7 @@ class DeprecatedPackageCardAdapter(
             }
             binding.productBuyButton.text = "Buy product (deprecated)"
 
-            updateRowView(
-                binding.packageDetailsJsonObject,
+            binding.packageDetailsJsonObject.updateRowView(
                 "Product JSON",
                 product.googleProduct?.productDetails?.toString()
                     ?: product.amazonProduct?.originalProductJSON.toString(),
@@ -99,9 +97,9 @@ class DeprecatedPackageCardAdapter(
             }
         }
 
-        private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
-            rowViewBinding.headerView.text = header
-            rowViewBinding.value.text = detail ?: "None"
+        private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+            headerView.text = header
+            value.text = detail ?: "None"
         }
     }
 

@@ -411,33 +411,32 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             binding.customerInfoRequestDate.visibility =
                 if (customerInfo?.requestDate != null) View.VISIBLE else View.GONE
 
-            updateRowView(binding.customerInfoAppUserId, "Original App User Id: ", customerInfo?.originalAppUserId)
+            binding.customerInfoAppUserId.updateRowView("Original App User Id: ", customerInfo?.originalAppUserId)
             binding.customerInfoManageButton.visibility =
                 if (customerInfo?.managementURL != null) View.VISIBLE else View.GONE
         }
 
         viewModel.verificationResult.observe(viewLifecycleOwner) { verificationResult ->
-            updateRowView(
-                binding.customerInfoVerificationResult,
+            binding.customerInfoVerificationResult.updateRowView(
                 "Current verification result: ",
                 verificationResult?.name,
             )
         }
 
         viewModel.activeEntitlements.observe(viewLifecycleOwner) { activeEntitlements ->
-            updateRowView(binding.customerInfoActiveEntitlements, "Active Entitlements: ", activeEntitlements)
+            binding.customerInfoActiveEntitlements.updateRowView("Active Entitlements: ", activeEntitlements)
         }
 
         viewModel.allEntitlements.observe(viewLifecycleOwner) { allEntitlements ->
-            updateRowView(binding.customerInfoAllEntitlements, "All Entitlements: ", allEntitlements)
+            binding.customerInfoAllEntitlements.updateRowView("All Entitlements: ", allEntitlements)
         }
 
         viewModel.formattedVirtualCurrencies.observe(viewLifecycleOwner) { formattedVirtualCurrencies ->
-            updateRowView(binding.customerInfoVirtualCurrencies, "Virtual Currencies: ", formattedVirtualCurrencies)
+            binding.customerInfoVirtualCurrencies.updateRowView("Virtual Currencies: ", formattedVirtualCurrencies)
         }
 
         viewModel.customerInfoJson.observe(viewLifecycleOwner) { customerInfoJson ->
-            updateRowView(binding.customerInfoJsonObject, "JSON Object", customerInfoJson)
+            binding.customerInfoJsonObject.updateRowView("JSON Object", customerInfoJson)
         }
 
         viewModel.isRestoring.observe(viewLifecycleOwner) { isRestoring ->
@@ -446,8 +445,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
     }
 
-    private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
-        rowViewBinding.headerView.text = header
-        rowViewBinding.value.text = if (detail.isNullOrEmpty()) "None" else detail
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = if (detail.isNullOrEmpty()) "None" else detail
     }
 }

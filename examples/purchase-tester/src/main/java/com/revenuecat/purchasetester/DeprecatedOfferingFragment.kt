@@ -62,7 +62,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         val offering = offerings.getOffering(offeringId) ?: return
 
         binding.offeringDetailsName.text = offering.identifier
-        updateRowView(binding.offeringDetailsServerDescription, "Description:", offering.serverDescription)
+        binding.offeringDetailsServerDescription.updateRowView("Description:", offering.serverDescription)
         binding.offeringDetailsOpenWplButton.visibility =
             if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
@@ -144,8 +144,8 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
-    private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
-        rowViewBinding.headerView.text = header
-        rowViewBinding.value.text = detail ?: "None"
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = detail ?: "None"
     }
 }
