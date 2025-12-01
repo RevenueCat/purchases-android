@@ -20,6 +20,7 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import android.widget.TextView
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases_sample.R
@@ -59,7 +60,10 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun populateOfferings(offerings: Offerings) {
         val offering = offerings.getOffering(offeringId) ?: return
-        binding.offering = offering
+        
+        binding.offeringDetailsName.text = offering.identifier
+        updateRowView(binding.offeringDetailsServerDescription, "Description:", offering.serverDescription)
+        binding.offeringDetailsOpenWplButton.visibility = if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.offeringDetailsPackagesRecycler.adapter =
@@ -137,5 +141,10 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun toggleLoadingIndicator(isLoading: Boolean) {
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+    
+    private fun updateRowView(rowViewBinding: com.revenuecat.purchases_sample.databinding.RowViewBinding, header: String, detail: String?) {
+        rowViewBinding.headerView.text = header
+        rowViewBinding.value.text = detail ?: "None"
     }
 }

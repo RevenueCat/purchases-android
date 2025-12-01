@@ -35,8 +35,11 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import android.widget.TextView
+import androidx.lifecycle.Observer
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -85,8 +88,37 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         viewModel = OverviewViewModel(this)
-        binding.lifecycleOwner = this
-        binding.viewModel = viewModel
+
+        binding.customerInfoCard.setOnClickListener {
+            viewModel.onCardClicked()
+        }
+        binding.customerInfoCopyUserIdButton.setOnClickListener {
+            viewModel.onCopyClicked()
+        }
+        binding.customerInfoManageButton.setOnClickListener {
+            viewModel.onManageClicked()
+        }
+        binding.customerInfoRestorePurchasesButton.setOnClickListener {
+            viewModel.onRestoreClicked()
+        }
+        binding.customerInfoSetAttribute.setOnClickListener {
+            viewModel.onSetAttributeClicked()
+        }
+        binding.customerInfoSyncAttributes.setOnClickListener {
+            viewModel.onSyncAttributesClicked()
+        }
+        binding.blockStoreClearButton.setOnClickListener {
+            viewModel.onBlockStoreClearClicked(requireContext())
+        }
+        binding.customerInfoFetchVcsButton.setOnClickListener {
+            viewModel.onFetchVCsClicked()
+        }
+        binding.customerInfoInvalidateVcsCacheButton.setOnClickListener {
+            viewModel.onInvalidateVirtualCurrenciesCache()
+        }
+        binding.customerInfoFetchVcCacheButton.setOnClickListener {
+            viewModel.onFetchVCCache()
+        }
 
         return binding.root
     }
@@ -102,6 +134,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         viewModel.retrieveCustomerInfo()
+
+        setupObservers()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
 
@@ -402,5 +436,45 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private fun navigateToProxyFragment() {
         val directions = OverviewFragmentDirections.actionOverviewFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
+    }
+
+    private fun setupObservers() {
+        viewModel.customerInfo.observe(viewLifecycleOwner) { customerInfo ->
+            binding.customerInfoRequestDate.text = customerInfo?.requestDate?.let { " as of $it" } ?: ""
+            binding.customerInfoRequestDate.visibility = if (customerInfo?.requestDate != null) View.VISIBLE else View.GONE
+
+            updateRowView(binding.customerInfoAppUserId, "Original App User Id: ", customerInfo?.originalAppUserId)
+            binding.customerInfoManageButton.visibility = if (customerInfo?.managementURL != null) View.VISIBLE else View.GONE
+        }
+
+        viewModel.verificationResult.observe(viewLifecycleOwner) { verificationResult ->
+            updateRowView(binding.customerInfoVerificationResult, "Current verification result: ", verificationResult?.name)
+        }
+
+        viewModel.activeEntitlements.observe(viewLifecycleOwner) { activeEntitlements ->
+            updateRowView(binding.customerInfoActiveEntitlements, "Active Entitlements: ", activeEntitlements)
+        }
+
+        viewModel.allEntitlements.observe(viewLifecycleOwner) { allEntitlements ->
+            updateRowView(binding.customerInfoAllEntitlements, "All Entitlements: ", allEntitlements)
+        }
+
+        viewModel.formattedVirtualCurrencies.observe(viewLifecycleOwner) { formattedVirtualCurrencies ->
+            updateRowView(binding.customerInfoVirtualCurrencies, "Virtual Currencies: ", formattedVirtualCurrencies)
+        }
+
+        viewModel.customerInfoJson.observe(viewLifecycleOwner) { customerInfoJson ->
+            updateRowView(binding.customerInfoJsonObject, "JSON Object", customerInfoJson)
+        }
+
+        viewModel.isRestoring.observe(viewLifecycleOwner) { isRestoring ->
+            binding.customerInfoRestorePurchasesButton.isEnabled = !isRestoring
+            binding.customerInfoRestoreProgress.visibility = if (isRestoring) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
+        rowViewBinding.headerView.text = header
+        rowViewBinding.value.text = if (detail.isNullOrEmpty()) "None" else detail
     }
 }

@@ -5,7 +5,7 @@ plugins {
 
 android {
     buildFeatures {
-        dataBinding = true
+        viewBinding = true
     }
 
     defaultConfig {
