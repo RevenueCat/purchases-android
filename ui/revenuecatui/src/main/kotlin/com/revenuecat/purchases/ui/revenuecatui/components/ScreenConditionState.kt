@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,7 +9,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Density
-import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.UiConfig
 import kotlin.math.min
@@ -22,7 +20,6 @@ internal class ScreenConditionState(
     private var layoutWidthDp: Float? = null
     private var layoutHeightDp: Float? = null
     private var windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.COMPACT
-    private var windowHeightSizeClass: WindowHeightSizeClass = WindowHeightSizeClass.COMPACT
 
     var snapshot by mutableStateOf(ScreenConditionSnapshot())
         private set
@@ -38,12 +35,8 @@ internal class ScreenConditionState(
         recalculate()
     }
 
-    fun updateWindowSizeClasses(
-        widthSizeClass: WindowWidthSizeClass,
-        heightSizeClass: WindowHeightSizeClass,
-    ) {
+    fun updateWindowWidthSizeClass(widthSizeClass: WindowWidthSizeClass) {
         windowWidthSizeClass = widthSizeClass
-        windowHeightSizeClass = heightSizeClass
         recalculate()
     }
 
@@ -63,16 +56,14 @@ internal class ScreenConditionState(
             else -> ScreenOrientation.PORTRAIT
         }
 
-        val effectiveWidth = if (currentWidth == null || currentHeight == null) {
+        // Always use the shorter dimension to determine screen size (device form factor).
+        // This ensures a tablet stays "tablet" regardless of orientation.
+        // The orientation condition handles landscape/portrait separately.
+        val screenSize = if (currentWidth == null || currentHeight == null) {
             null
-        } else if (shouldUseLandscapeLayout(orientation)) {
-            currentWidth
         } else {
-            min(currentWidth, currentHeight)
-        }
-
-        val screenSize = effectiveWidth?.let { widthDp ->
-            breakpoints.lastOrNull { it.width <= widthDp } ?: breakpoints.firstOrNull()
+            val shorterDimension = min(currentWidth, currentHeight)
+            breakpoints.lastOrNull { it.width <= shorterDimension } ?: breakpoints.firstOrNull()
         }
 
         snapshot = ScreenConditionSnapshot(
@@ -80,13 +71,6 @@ internal class ScreenConditionState(
             orientation = orientation,
             screenSize = screenSize,
         )
-    }
-
-    private fun shouldUseLandscapeLayout(orientation: ScreenOrientation): Boolean {
-        if (windowHeightSizeClass == WindowHeightSizeClass.COMPACT) {
-            return true
-        }
-        return orientation == ScreenOrientation.LANDSCAPE && windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     }
 
     private fun resolveBreakpoints(
@@ -101,28 +85,26 @@ internal class ScreenConditionState(
 internal fun rememberScreenConditionState(
     screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
 ): ScreenConditionState {
-    val state = remember(screenSizes) {
+    val adaptiveInfo = currentWindowAdaptiveInfo()
+
+    return remember(screenSizes) {
         ScreenConditionState(screenSizes).also {
             it.updateScreenSizes(screenSizes)
         }
+    }.apply {
+        // Update synchronously to avoid race conditions with onSizeChanged.
+        updateWindowWidthSizeClass(adaptiveInfo.windowSizeClass.windowWidthSizeClass)
     }
-
-    val adaptiveInfo = currentWindowAdaptiveInfo()
-    LaunchedEffect(adaptiveInfo.windowSizeClass) {
-        state.updateWindowSizeClasses(
-            widthSizeClass = adaptiveInfo.windowSizeClass.windowWidthSizeClass,
-            heightSizeClass = adaptiveInfo.windowSizeClass.windowHeightSizeClass,
-        )
-    }
-
-    return state
 }
 
 internal fun Modifier.trackScreenCondition(
     state: ScreenConditionState,
     density: Density,
 ): Modifier = this.onSizeChanged { size ->
-    val widthDp = size.width / density.density
-    val heightDp = size.height / density.density
-    state.updateLayoutSize(widthDp = widthDp, heightDp = heightDp)
+    with(density) {
+        state.updateLayoutSize(
+            widthDp = size.width.toDp().value,
+            heightDp = size.height.toDp().value,
+        )
+    }
 }
