@@ -3,7 +3,6 @@ package com.revenuecat.purchasetester
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Package
@@ -12,8 +11,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 
 class DeprecatedPackageCardAdapter(
     private val packages: List<Package>,
@@ -40,10 +39,10 @@ class DeprecatedPackageCardAdapter(
             val product = currentPackage.product
             val isSubscription = product.type == ProductType.SUBS
             val isActive = activeSubscriptions.contains(product.id)
-            
+
             binding.packageProductTitle.text = "${product.title}${if (isActive) " (active)" else ""}"
             binding.packageProductDescription.text = product.description
-            
+
             updateRowView(binding.packageProductSku, "Sku:", product.id)
             updateRowView(
                 binding.packageType,
@@ -52,14 +51,14 @@ class DeprecatedPackageCardAdapter(
                     "custom -> ${currentPackage.packageType.identifier}"
                 } else {
                     currentPackage.packageType.toString()
-                }
+                },
             )
-            
+
             binding.packageOneTimePrice.root.visibility = if (isSubscription) View.GONE else View.VISIBLE
             if (!isSubscription) {
                 updateRowView(binding.packageOneTimePrice, "One Time Price:", product.price.formatted)
             }
-            
+
             // Upgrades are no longer possible with deprecated methods.
             binding.isUpgradeCheckbox.isVisible = false
             binding.isPersonalizedCheckbox.visibility = View.GONE
@@ -90,7 +89,7 @@ class DeprecatedPackageCardAdapter(
                 binding.packageDetailsJsonObject,
                 "Product JSON",
                 product.googleProduct?.productDetails?.toString()
-                    ?: product.amazonProduct?.originalProductJSON.toString()
+                    ?: product.amazonProduct?.originalProductJSON.toString(),
             )
 
             binding.root.setOnClickListener {
@@ -99,8 +98,8 @@ class DeprecatedPackageCardAdapter(
                 }
             }
         }
-        
-        private fun updateRowView(rowViewBinding: com.revenuecat.purchases_sample.databinding.RowViewBinding, header: String, detail: String?) {
+
+        private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
             rowViewBinding.headerView.text = header
             rowViewBinding.value.text = detail ?: "None"
         }

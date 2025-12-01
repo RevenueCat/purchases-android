@@ -34,7 +34,6 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
-import android.widget.TextView
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 import com.revenuecat.purchases_sample.databinding.RowViewBinding
@@ -129,11 +128,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun populateOfferings(offerings: Offerings) {
         val offering = offerings.getOffering(offeringId) ?: return
-        
+
         // Manually update offering views
         binding.offeringDetailsName.text = offering.identifier
         updateRowView(binding.offeringDetailsServerDescription, "Description:", offering.serverDescription)
-        binding.offeringDetailsOpenWplButton.visibility = if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
+        binding.offeringDetailsOpenWplButton.visibility =
+            if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
 
@@ -151,7 +151,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             startActivity(intent)
         }
     }
-    
+
     private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
         rowViewBinding.headerView.text = header
         rowViewBinding.value.text = detail ?: "None"
@@ -208,11 +208,15 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         updatePurchaseButtonState(hasSelectedPackages, hasValidBaseProduct, isAddOnPurchaseMode)
     }
 
-    private fun updatePurchaseButtonState(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean, isAddOnPurchaseMode: Boolean) {
+    private fun updatePurchaseButtonState(
+        hasSelectedPackages: Boolean,
+        hasValidBaseProduct: Boolean,
+        isAddOnPurchaseMode: Boolean,
+    ) {
         val isEnabled = isAddOnPurchaseMode && hasSelectedPackages && hasValidBaseProduct
         binding.purchaseAllButton.isEnabled = isEnabled
     }
-    
+
     private fun updateAddOnPurchaseModeUI(isAddOnPurchaseMode: Boolean, isPurchaseButtonEnabled: Boolean) {
         binding.isAddOnPurchaseUpgradeCheckbox.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE
         binding.purchaseAllButton.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE

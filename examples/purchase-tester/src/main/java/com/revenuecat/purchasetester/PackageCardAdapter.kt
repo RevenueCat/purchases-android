@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
-import android.widget.TextView
 import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
@@ -17,7 +16,6 @@ import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 import com.revenuecat.purchases_sample.databinding.RowViewBinding
 
@@ -83,15 +81,15 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        @Suppress("LongMethod")
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
         fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
             val isSubscription = product.type == ProductType.SUBS
             val isActive = activeSubscriptions.contains(product.id)
-            
+
             binding.packageProductTitle.text = "${product.title}${if (isActive) " (active)" else ""}"
             binding.packageProductDescription.text = product.description
-            
+
             updateRowView(binding.packageProductSku, "Sku:", product.id)
             updateRowView(
                 binding.packageType,
@@ -100,30 +98,32 @@ class PackageCardAdapter(
                     "custom -> ${currentPackage.packageType.identifier}"
                 } else {
                     currentPackage.packageType.toString()
-                }
+                },
             )
-            
+
             binding.packageOneTimePrice.root.visibility = if (isSubscription) View.GONE else View.VISIBLE
             if (!isSubscription) {
                 updateRowView(binding.packageOneTimePrice, "One Time Price:", product.price.formatted)
             }
-            
-            binding.packageSubscriptionOptionTitle.visibility = if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
-            binding.packageSubscriptionOptionGroup.visibility = if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
-            
+
+            binding.packageSubscriptionOptionTitle.visibility =
+                if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
+            binding.packageSubscriptionOptionGroup.visibility =
+                if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
+
             binding.buyOptionCheckbox.visibility = if (isAddOnMode) View.VISIBLE else View.GONE
             binding.baseProductCheckbox.visibility = if (isAddOnMode) View.VISIBLE else View.GONE
             binding.isUpgradeCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
             binding.isPersonalizedCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
-            
+
             binding.isUpgradeCheckbox.isEnabled = isPlayStore
             binding.isPersonalizedCheckbox.isEnabled = isPlayStore
-            
+
             binding.packageBuyButton.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
             binding.productBuyButton.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
             binding.optionBuyButton.visibility = if (isPlayStore && !isAddOnMode) View.VISIBLE else View.INVISIBLE
             binding.wplBuyButton.visibility = if (currentPackage.webCheckoutURL == null) View.GONE else View.VISIBLE
-            
+
             binding.buyOptionCheckbox.setOnCheckedChangeListener(null)
             binding.buyOptionCheckbox.isChecked = isSelected
             binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
@@ -195,7 +195,7 @@ class PackageCardAdapter(
                 binding.packageDetailsJsonObject,
                 "Product JSON",
                 product.googleProduct?.productDetails?.toString()
-                    ?: product.amazonProduct?.originalProductJSON.toString()
+                    ?: product.amazonProduct?.originalProductJSON.toString(),
             )
 
             bindSubscriptionOptions(currentPackage)
@@ -277,7 +277,7 @@ class PackageCardAdapter(
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
         }
-        
+
         private fun updateRowView(rowViewBinding: RowViewBinding, header: String, detail: String?) {
             rowViewBinding.headerView.text = header
             rowViewBinding.value.text = detail ?: "None"

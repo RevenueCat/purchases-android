@@ -35,8 +35,6 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import android.widget.TextView
-import androidx.lifecycle.Observer
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 import com.revenuecat.purchases_sample.databinding.RowViewBinding
@@ -51,6 +49,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private lateinit var binding: FragmentOverviewBinding
     private lateinit var dataStoreUtils: DataStoreUtils
 
+    @Suppress("LongMethod")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
 
@@ -67,58 +66,26 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
-        binding.logsButton.setOnClickListener {
-            navigateToLogsFragment()
-        }
-
-        binding.proxyButton.setOnClickListener {
-            navigateToProxyFragment()
-        }
-
-        binding.getProductsButton.setOnClickListener {
-            showGetProductsDialog()
-        }
-
-        binding.purchaseProductIdButton.setOnClickListener {
-            showPurchaseProductIdDialog()
-        }
-
-        binding.findByPlacementButton.setOnClickListener {
-            showFindPlacementDialog()
-        }
+        binding.logsButton.setOnClickListener { navigateToLogsFragment() }
+        binding.proxyButton.setOnClickListener { navigateToProxyFragment() }
+        binding.getProductsButton.setOnClickListener { showGetProductsDialog() }
+        binding.purchaseProductIdButton.setOnClickListener { showPurchaseProductIdDialog() }
+        binding.findByPlacementButton.setOnClickListener { showFindPlacementDialog() }
 
         viewModel = OverviewViewModel(this)
 
-        binding.customerInfoCard.setOnClickListener {
-            viewModel.onCardClicked()
-        }
-        binding.customerInfoCopyUserIdButton.setOnClickListener {
-            viewModel.onCopyClicked()
-        }
-        binding.customerInfoManageButton.setOnClickListener {
-            viewModel.onManageClicked()
-        }
-        binding.customerInfoRestorePurchasesButton.setOnClickListener {
-            viewModel.onRestoreClicked()
-        }
-        binding.customerInfoSetAttribute.setOnClickListener {
-            viewModel.onSetAttributeClicked()
-        }
-        binding.customerInfoSyncAttributes.setOnClickListener {
-            viewModel.onSyncAttributesClicked()
-        }
-        binding.blockStoreClearButton.setOnClickListener {
-            viewModel.onBlockStoreClearClicked(requireContext())
-        }
-        binding.customerInfoFetchVcsButton.setOnClickListener {
-            viewModel.onFetchVCsClicked()
-        }
+        binding.customerInfoCard.setOnClickListener { viewModel.onCardClicked() }
+        binding.customerInfoCopyUserIdButton.setOnClickListener { viewModel.onCopyClicked() }
+        binding.customerInfoManageButton.setOnClickListener { viewModel.onManageClicked() }
+        binding.customerInfoRestorePurchasesButton.setOnClickListener { viewModel.onRestoreClicked() }
+        binding.customerInfoSetAttribute.setOnClickListener { viewModel.onSetAttributeClicked() }
+        binding.customerInfoSyncAttributes.setOnClickListener { viewModel.onSyncAttributesClicked() }
+        binding.blockStoreClearButton.setOnClickListener { viewModel.onBlockStoreClearClicked(requireContext()) }
+        binding.customerInfoFetchVcsButton.setOnClickListener { viewModel.onFetchVCsClicked() }
         binding.customerInfoInvalidateVcsCacheButton.setOnClickListener {
             viewModel.onInvalidateVirtualCurrenciesCache()
         }
-        binding.customerInfoFetchVcCacheButton.setOnClickListener {
-            viewModel.onFetchVCCache()
-        }
+        binding.customerInfoFetchVcCacheButton.setOnClickListener { viewModel.onFetchVCCache() }
 
         return binding.root
     }
@@ -441,14 +408,20 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private fun setupObservers() {
         viewModel.customerInfo.observe(viewLifecycleOwner) { customerInfo ->
             binding.customerInfoRequestDate.text = customerInfo?.requestDate?.let { " as of $it" } ?: ""
-            binding.customerInfoRequestDate.visibility = if (customerInfo?.requestDate != null) View.VISIBLE else View.GONE
+            binding.customerInfoRequestDate.visibility =
+                if (customerInfo?.requestDate != null) View.VISIBLE else View.GONE
 
             updateRowView(binding.customerInfoAppUserId, "Original App User Id: ", customerInfo?.originalAppUserId)
-            binding.customerInfoManageButton.visibility = if (customerInfo?.managementURL != null) View.VISIBLE else View.GONE
+            binding.customerInfoManageButton.visibility =
+                if (customerInfo?.managementURL != null) View.VISIBLE else View.GONE
         }
 
         viewModel.verificationResult.observe(viewLifecycleOwner) { verificationResult ->
-            updateRowView(binding.customerInfoVerificationResult, "Current verification result: ", verificationResult?.name)
+            updateRowView(
+                binding.customerInfoVerificationResult,
+                "Current verification result: ",
+                verificationResult?.name,
+            )
         }
 
         viewModel.activeEntitlements.observe(viewLifecycleOwner) { activeEntitlements ->
