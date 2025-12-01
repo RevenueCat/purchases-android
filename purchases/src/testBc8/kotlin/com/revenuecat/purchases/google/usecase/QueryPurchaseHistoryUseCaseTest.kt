@@ -9,6 +9,7 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -23,6 +24,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.data.Offset
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -197,6 +199,8 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `queryPurchaseHistoryAsync sets correct type`() {
+        assumeFalse(BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL)
+
         val subsBuilder = mockClient.mockQueryPurchasesAsync(
             subsResult = billingClientOKResult,
             inAppResult = billingClientOKResult,
@@ -739,6 +743,8 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
+        assumeFalse(BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL)
+
         val builder = mockClient.mockQueryPurchasesAsync(
             subsResult = billingClientOKResult,
             inAppResult = billingClientOKResult,
