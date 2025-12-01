@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdatedStackComponentState
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -72,6 +73,14 @@ internal fun ButtonComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val stackState = rememberUpdatedStackComponentState(
+        style = style.stackComponentStyle,
+        paywallState = state,
+    )
+    if (!stackState.visible) {
+        return
+    }
+
     TransitionView(transition = style.transition) {
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(
