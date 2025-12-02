@@ -147,12 +147,8 @@ internal sealed interface PaywallState {
             private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.pkg }
 
-            private val allAvailablePackages: Set<Package> = mutableSetOf<Package>().apply {
-                addAll(packagesOutsideTabs)
-                packages.packagesByTab.values.forEach { infoList ->
-                    infoList.forEach { add(it.pkg) }
-                }
-            }
+            private val allAvailablePackages: Set<Package> =
+                packagesOutsideTabs + packages.packagesByTab.values.flatten().map { it.pkg }
 
             private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packages) ->
