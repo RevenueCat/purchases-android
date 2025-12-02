@@ -135,7 +135,7 @@ private fun conditionMatches(
     ComponentOverride.Condition.Selected ->
         state == ComponentViewState.SELECTED
 
-    ComponentOverride.Condition.Unsupported -> false
+    ComponentOverride.Condition.Unsupported -> true // Ignore case and render partial
 
     is ComponentOverride.Condition.IntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
