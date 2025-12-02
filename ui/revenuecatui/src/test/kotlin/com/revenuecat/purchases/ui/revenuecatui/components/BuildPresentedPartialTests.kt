@@ -459,7 +459,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should reject unsupported condition",
+                "should ignore unsupported condition",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -470,7 +470,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
-                    expected = null,
+                    expected = compactPartial,
                 ),
             ),
             arrayOf(
