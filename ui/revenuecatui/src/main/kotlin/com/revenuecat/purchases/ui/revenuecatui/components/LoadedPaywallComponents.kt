@@ -83,8 +83,7 @@ internal fun LoadedPaywallComponents(
         .trackScreenCondition(screenConditionState, density)
         .background(background)
 
-    val screenCondition = screenConditionState.snapshot
-    state.screenCondition = screenCondition
+    state.screenCondition = screenConditionState.screenCondition
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
