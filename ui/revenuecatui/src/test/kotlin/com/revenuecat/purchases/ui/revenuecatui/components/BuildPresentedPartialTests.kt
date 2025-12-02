@@ -8,8 +8,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.DEFAULT
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SELECTED
-import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
-import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.INELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
@@ -26,6 +24,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
 
     // LocalizedTextPartial is an arbitrary choice. Any PresentedPartial type would do to test
     // the buildPresentedPartial() logic.
+    @Suppress("LongParameterList")
     class Args(
         val availableOverrides: List<PresentedOverride<LocalizedTextPartial>>,
         val screenCondition: ScreenConditionSnapshot,
@@ -40,9 +39,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
     @Suppress("LargeClass")
     companion object {
         private val localeId = LocaleId("en_US")
-        private val dummyLocalizationDictionary = nonEmptyMapOf(
-            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText"),
-        )
         private val selectedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
@@ -94,10 +90,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             introOffer?.let {
                 overrides.add(
                     PresentedOverride(
-                        conditions = listOf(ComponentOverride.Condition.IntroOffer(
-                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
-                            value = true,
-                        )),
+                        conditions = listOf(
+                            ComponentOverride.Condition.IntroOffer(
+                                operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                value = true,
+                            ),
+                        ),
                         properties = it,
                     ),
                 )
@@ -109,7 +107,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             ComponentOverride.Condition.MultipleIntroOffers(
                                 operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                 value = true,
-                            )
+                            ),
                         ),
                         properties = it,
                     ),
@@ -127,11 +125,9 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         }
 
         private fun snapshot(
-            condition: ScreenCondition,
             orientation: ScreenOrientation = ScreenOrientation.PORTRAIT,
             screenSizeName: String? = null,
         ): ScreenConditionSnapshot = ScreenConditionSnapshot(
-            condition = condition,
             orientation = orientation,
             screenSize = screenSizeName?.let { UiConfig.AppConfig.ScreenSize(name = it, width = 0) },
         )
@@ -144,7 +140,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick selected when all overrides available and applicable",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = selectedPartial,
@@ -154,7 +150,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick multiple intros when all overrides available and state is not selected",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = DEFAULT,
                     expected = multipleIntroOffersPartial,
@@ -164,7 +160,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick intro when all overrides available and state is not selected and eligibility is single",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = introOfferPartial,
@@ -185,7 +181,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.LANDSCAPE,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -208,7 +203,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -231,7 +225,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         screenSizeName = "tablet",
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -253,7 +246,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -264,7 +257,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick intro when all overrides applicable, but selected and multiple intro override unavailable",
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = introOfferPartial,
@@ -285,7 +278,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -308,7 +300,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.UNKNOWN,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -331,7 +322,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -354,7 +344,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         screenSizeName = "tablet",
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -377,7 +366,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         screenSizeName = null,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -400,7 +388,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         screenSizeName = "tablet",
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -422,7 +409,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -443,7 +430,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -464,7 +451,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -480,7 +467,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -502,7 +489,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.LANDSCAPE,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -526,7 +512,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = INELIGIBLE,
@@ -552,7 +537,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -577,7 +562,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -602,7 +587,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -627,7 +612,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -652,7 +637,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -677,7 +662,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -702,7 +687,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -723,7 +708,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = introOfferPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = introOfferPartial,
@@ -744,7 +729,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = introOfferPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -765,7 +750,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = multipleIntroOffersPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = multipleIntroOffersPartial,
@@ -786,7 +771,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = multipleIntroOffersPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = null,
@@ -811,7 +796,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             properties = compactPartial,
                         ),
                     ),
-                    screenCondition = snapshot(ScreenCondition.MEDIUM),
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
@@ -841,7 +826,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
@@ -873,7 +857,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                     ),
                     screenCondition = snapshot(
-                        condition = ScreenCondition.MEDIUM,
                         orientation = ScreenOrientation.PORTRAIT,
                     ),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,

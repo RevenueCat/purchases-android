@@ -46,7 +46,6 @@ internal class ScreenConditionState(
     }
 
     private fun recalculate() {
-        val legacyCondition = ScreenCondition.from(windowWidthSizeClass)
         val currentWidth = layoutWidthDp
         val currentHeight = layoutHeightDp
         val orientation = when {
@@ -67,7 +66,6 @@ internal class ScreenConditionState(
         }
 
         snapshot = ScreenConditionSnapshot(
-            condition = legacyCondition,
             orientation = orientation,
             screenSize = screenSize,
         )
