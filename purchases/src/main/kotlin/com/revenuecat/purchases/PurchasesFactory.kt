@@ -452,15 +452,16 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
+                val redactedApiKey = apiKey.asRedactedAPIKey
                 errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Test Store API key used in release build. Please configure the " +
+                        underlyingErrorMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
                             "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
                             "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
                 )
-                TestStoreErrorDialogActivity.show(context)
+                TestStoreErrorDialogActivity.show(context, redactedApiKey)
                 // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
                 return apiKeyValidationResult
             }
@@ -497,3 +498,29 @@ internal class PurchasesFactory(
         }
     }
 }
+
+internal val String.asRedactedAPIKey: String
+    get() {
+        val underscoreIndex = indexOf('_')
+        if (underscoreIndex == -1) {
+            return this // no underscore → do not redact
+        }
+
+        // Remainder after the underscore
+        if (length <= underscoreIndex + 1) {
+            return this // nothing after underscore
+        }
+
+        val remainder = substring(underscoreIndex + 1)
+
+        // If fewer than 6 chars after underscore → do not redact
+        if (remainder.length < 6) {
+            return this
+        }
+
+        val prefix = substring(0, underscoreIndex + 1) // includes underscore
+        val start = remainder.substring(0, 2)
+        val end = remainder.takeLast(4)
+
+        return prefix + start + "********" + end
+    }
