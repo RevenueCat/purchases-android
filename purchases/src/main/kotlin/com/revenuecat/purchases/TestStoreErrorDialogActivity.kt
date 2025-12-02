@@ -31,9 +31,9 @@ internal class TestStoreErrorDialogActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle("Wrong API Key")
             .setMessage(
-                "This app is using a test API key: $redactedApiKey.\n\nTo prepare for release, update your RevenueCat " +
-                    "settings to use a production key.\n\nFor more info, visit the RevenueCat dashboard.\n\nThe " +
-                    "app will close now to protect the security of test purchases.",
+                "This app is using a test API key: $redactedApiKey.\n\nTo prepare for release, update your RevenueCat" +
+                    " settings to use a production key.\n\nFor more info, visit the RevenueCat dashboard.\n\nThe" +
+                    " app will close now to protect the security of test purchases.",
             )
             .setCancelable(false)
             .setPositiveButton("OK") { _, _ -> crashApp() }

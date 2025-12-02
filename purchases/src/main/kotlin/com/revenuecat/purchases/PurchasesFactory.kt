@@ -456,9 +456,10 @@ internal class PurchasesFactory(
                 errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
-                            "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
-                            "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
+                        underlyingErrorMessage = "Test Store API key used in release build: $redactedApiKey. " +
+                            "Please configure the Play Store/Amazon app on the RevenueCat dashboard " +
+                            "and use its corresponding API key before releasing. " +
+                            "Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
                 )
                 TestStoreErrorDialogActivity.show(context, redactedApiKey)
@@ -499,6 +500,10 @@ internal class PurchasesFactory(
     }
 }
 
+private const val REMAINDER_START_LENGTH = 2
+private const val REMAINDER_END_LENGTH = 4
+private const val REDACTION_PLACEHOLDER = "********"
+
 internal val String.asRedactedAPIKey: String
     get() {
         val underscoreIndex = indexOf('_')
@@ -514,13 +519,14 @@ internal val String.asRedactedAPIKey: String
         val remainder = substring(underscoreIndex + 1)
 
         // If fewer than 6 chars after underscore → do not redact
-        if (remainder.length < 6) {
+        val minimumLengthToRedact = REMAINDER_START_LENGTH + REMAINDER_END_LENGTH
+        if (remainder.length < minimumLengthToRedact) {
             return this
         }
 
         val prefix = substring(0, underscoreIndex + 1) // includes underscore
-        val start = remainder.substring(0, 2)
-        val end = remainder.takeLast(4)
+        val start = remainder.substring(0, REMAINDER_START_LENGTH)
+        val end = remainder.takeLast(REMAINDER_END_LENGTH)
 
-        return prefix + start + "********" + end
+        return prefix + start + REDACTION_PLACEHOLDER + end
     }
