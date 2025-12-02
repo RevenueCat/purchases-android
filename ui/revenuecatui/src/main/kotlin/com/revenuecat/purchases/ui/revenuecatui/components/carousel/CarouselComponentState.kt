@@ -48,7 +48,7 @@ private fun rememberUpdatedCarouselComponentState(
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenConditionSnapshot,
-    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    introOfferAvailability: IntroOfferAvailability,
 ): CarouselComponentState {
     val screenCondition = screenConditionProvider()
 
