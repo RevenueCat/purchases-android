@@ -1,6 +1,5 @@
 package com.revenuecat.purchases
 
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
