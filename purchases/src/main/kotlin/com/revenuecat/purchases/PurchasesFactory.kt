@@ -452,7 +452,7 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                val redactedApiKey = apiKey.asRedactedAPIKey
+                val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
                 errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
@@ -499,34 +499,3 @@ internal class PurchasesFactory(
         }
     }
 }
-
-private const val REMAINDER_START_LENGTH = 2
-private const val REMAINDER_END_LENGTH = 4
-private const val REDACTION_PLACEHOLDER = "********"
-
-internal val String.asRedactedAPIKey: String
-    get() {
-        val underscoreIndex = indexOf('_')
-        if (underscoreIndex == -1) {
-            return this // no underscore → do not redact
-        }
-
-        // Remainder after the underscore
-        if (length <= underscoreIndex + 1) {
-            return this // nothing after underscore
-        }
-
-        val remainder = substring(underscoreIndex + 1)
-
-        // If fewer than 6 chars after underscore → do not redact
-        val minimumLengthToRedact = REMAINDER_START_LENGTH + REMAINDER_END_LENGTH
-        if (remainder.length < minimumLengthToRedact) {
-            return this
-        }
-
-        val prefix = substring(0, underscoreIndex + 1) // includes underscore
-        val start = remainder.substring(0, REMAINDER_START_LENGTH)
-        val end = remainder.takeLast(REMAINDER_END_LENGTH)
-
-        return prefix + start + REDACTION_PLACEHOLDER + end
-    }
