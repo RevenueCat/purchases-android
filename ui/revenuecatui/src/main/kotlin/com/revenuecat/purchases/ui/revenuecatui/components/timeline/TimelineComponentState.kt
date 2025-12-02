@@ -11,7 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
@@ -30,7 +30,7 @@ internal fun rememberUpdatedTimelineComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -44,7 +44,7 @@ private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TimelineComponentState {
     val screenCondition = screenConditionProvider()
@@ -66,7 +66,7 @@ private fun rememberUpdatedTimelineComponentState(
 
 @Stable
 internal class TimelineComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
+    initialScreenCondition: ScreenCondition,
     private val style: TimelineComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
@@ -143,14 +143,14 @@ internal class TimelineComponentState(
 
     @JvmSynthetic
     fun update(
-        screenCondition: ScreenConditionSnapshot? = null,
+        screenCondition: ScreenCondition? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }
 
     @Stable
     class ItemState(
-        initialScreenCondition: ScreenConditionSnapshot,
+        initialScreenCondition: ScreenCondition,
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageProvider: () -> Package?,
         private val selectedTabIndexProvider: () -> Int,
@@ -205,7 +205,7 @@ internal class TimelineComponentState(
 
         @JvmSynthetic
         fun update(
-            screenCondition: ScreenConditionSnapshot? = null,
+            screenCondition: ScreenCondition? = null,
         ) {
             if (screenCondition != null) this.screenConditionSnapshot = screenCondition
         }

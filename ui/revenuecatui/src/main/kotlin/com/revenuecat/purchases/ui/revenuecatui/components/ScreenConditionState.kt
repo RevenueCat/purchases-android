@@ -21,7 +21,7 @@ internal class ScreenConditionState(
     private var layoutHeightDp: Float? = null
     private var windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.COMPACT
 
-    var snapshot by mutableStateOf(ScreenConditionSnapshot())
+    var snapshot by mutableStateOf(ScreenCondition())
         private set
 
     fun updateLayoutSize(widthDp: Float, heightDp: Float) {
@@ -65,7 +65,7 @@ internal class ScreenConditionState(
             breakpoints.lastOrNull { it.width <= shorterDimension } ?: breakpoints.firstOrNull()
         }
 
-        snapshot = ScreenConditionSnapshot(
+        snapshot = ScreenCondition(
             orientation = orientation,
             screenSize = screenSize,
         )

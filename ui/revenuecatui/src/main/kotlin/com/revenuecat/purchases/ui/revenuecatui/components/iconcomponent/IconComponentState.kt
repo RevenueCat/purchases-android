@@ -16,7 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -37,7 +37,7 @@ internal fun rememberUpdatedIconComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -51,7 +51,7 @@ private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): IconComponentState {
     val screenCondition = screenConditionProvider()
@@ -75,7 +75,7 @@ private fun rememberUpdatedIconComponentState(
 
 @Stable
 internal class IconComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
+    initialScreenCondition: ScreenCondition,
     initialLayoutDirection: LayoutDirection,
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
@@ -164,7 +164,7 @@ internal class IconComponentState(
 
     @JvmSynthetic
     fun update(
-        screenCondition: ScreenConditionSnapshot? = null,
+        screenCondition: ScreenCondition? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }

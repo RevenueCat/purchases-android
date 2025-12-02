@@ -17,7 +17,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -109,7 +109,7 @@ internal sealed interface PaywallState {
             val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
         ) : Loaded {
 
-            var screenConditionSnapshot by mutableStateOf(ScreenConditionSnapshot())
+            var screenCondition by mutableStateOf(ScreenCondition())
                 internal set
 
             data class AvailablePackages(

@@ -28,7 +28,7 @@ import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
@@ -48,7 +48,7 @@ internal class VideoComponentState(
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
-    private val initialScreenCondition: ScreenConditionSnapshot,
+    private val initialScreenCondition: ScreenCondition,
     private val style: VideoComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
@@ -312,7 +312,7 @@ internal fun rememberUpdatedVideoComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -328,7 +328,7 @@ internal fun rememberUpdatedVideoComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): VideoComponentState {
     val screenCondition = screenConditionProvider()

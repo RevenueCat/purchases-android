@@ -12,7 +12,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -33,7 +33,7 @@ internal fun rememberUpdatedCarouselComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -47,7 +47,7 @@ private fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability,
 ): CarouselComponentState {
     val screenCondition = screenConditionProvider()
@@ -69,7 +69,7 @@ private fun rememberUpdatedCarouselComponentState(
 
 @Stable
 internal class CarouselComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
+    initialScreenCondition: ScreenCondition,
     private val style: CarouselComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
@@ -159,7 +159,7 @@ internal class CarouselComponentState(
 
     @JvmSynthetic
     fun update(
-        screenCondition: ScreenConditionSnapshot? = null,
+        screenCondition: ScreenCondition? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }

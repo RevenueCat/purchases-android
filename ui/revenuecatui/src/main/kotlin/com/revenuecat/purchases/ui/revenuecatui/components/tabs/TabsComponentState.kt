@@ -13,7 +13,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -32,7 +32,7 @@ internal fun rememberUpdatedTabsComponentState(
     rememberUpdatedTabsComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -45,7 +45,7 @@ internal fun rememberUpdatedTabsComponentState(
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageProvider: () -> Package?,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TabsComponentState {
     val screenCondition = screenConditionProvider()
@@ -66,7 +66,7 @@ internal fun rememberUpdatedTabsComponentState(
 
 @Stable
 internal class TabsComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
+    initialScreenCondition: ScreenCondition,
     private val style: TabsComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val introOfferAvailability: IntroOfferAvailability,
@@ -122,7 +122,7 @@ internal class TabsComponentState(
 
     @JvmSynthetic
     fun update(
-        screenCondition: ScreenConditionSnapshot? = null,
+        screenCondition: ScreenCondition? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition
     }

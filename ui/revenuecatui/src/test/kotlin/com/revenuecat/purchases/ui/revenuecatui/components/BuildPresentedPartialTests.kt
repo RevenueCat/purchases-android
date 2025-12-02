@@ -27,7 +27,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
     @Suppress("LongParameterList")
     class Args(
         val availableOverrides: List<PresentedOverride<LocalizedTextPartial>>,
-        val screenCondition: ScreenConditionSnapshot,
+        val screenCondition: ScreenCondition,
         val introOfferEligibility: IntroOfferEligibility,
         val state: ComponentViewState,
         val expected: LocalizedTextPartial?,
@@ -127,7 +127,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         private fun snapshot(
             orientation: ScreenOrientation = ScreenOrientation.PORTRAIT,
             screenSizeName: String? = null,
-        ): ScreenConditionSnapshot = ScreenConditionSnapshot(
+        ): ScreenCondition = ScreenCondition(
             orientation = orientation,
             screenSize = screenSizeName?.let { UiConfig.AppConfig.ScreenSize(name = it, width = 0) },
         )

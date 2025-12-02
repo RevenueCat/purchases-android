@@ -21,7 +21,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
 import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenConditionSnapshot
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -41,7 +41,7 @@ internal fun rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        screenConditionProvider = { paywallState.screenConditionSnapshot },
+        screenConditionProvider = { paywallState.screenCondition },
         introOfferAvailability = IntroOfferAvailability(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
@@ -55,7 +55,7 @@ internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    screenConditionProvider: () -> ScreenConditionSnapshot,
+    screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): StackComponentState {
     val layoutDirection = LocalLayoutDirection.current
@@ -80,7 +80,7 @@ internal fun rememberUpdatedStackComponentState(
 
 @Stable
 internal class StackComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
+    initialScreenCondition: ScreenCondition,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
@@ -174,7 +174,7 @@ internal class StackComponentState(
 
     @JvmSynthetic
     fun update(
-        screenCondition: ScreenConditionSnapshot? = null,
+        screenCondition: ScreenCondition? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
         if (screenCondition != null) this.screenConditionSnapshot = screenCondition

@@ -79,7 +79,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  */
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
-    screenCondition: ScreenConditionSnapshot,
+    screenCondition: ScreenCondition,
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
@@ -102,7 +102,7 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 
 @Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
-    screenCondition: ScreenConditionSnapshot,
+    screenCondition: ScreenCondition,
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
@@ -113,7 +113,7 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
 @Suppress("ComplexMethod")
 private fun conditionMatches(
     condition: ComponentOverride.Condition,
-    screenCondition: ScreenConditionSnapshot,
+    screenCondition: ScreenCondition,
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
