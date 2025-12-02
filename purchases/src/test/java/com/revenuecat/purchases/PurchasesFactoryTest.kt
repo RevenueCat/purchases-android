@@ -8,7 +8,9 @@ import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.clearAllMocks
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -120,6 +122,9 @@ class PurchasesFactoryTest {
         every {
             apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
         } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+        every {
+            apiKeyValidatorMock.redactApiKey(any())
+        } returns "a_redacted_api_key"
 
         // Act
         purchasesFactory.validateConfiguration(createConfiguration())
@@ -129,6 +134,7 @@ class PurchasesFactoryTest {
         val capturedIntent = intentSlot.captured
         assertThat(capturedIntent.component?.className).isEqualTo(SimulatedStoreErrorDialogActivity::class.java.name)
         assertThat(capturedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+        assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo("a_redacted_api_key")
     }
 
     private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
