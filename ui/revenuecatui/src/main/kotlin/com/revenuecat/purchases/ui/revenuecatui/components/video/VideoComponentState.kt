@@ -45,17 +45,16 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class VideoComponentState(
-    initialScreenCondition: ScreenConditionSnapshot,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
+    private val initialScreenCondition: ScreenConditionSnapshot,
     private val style: VideoComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
 ) {
-    private val screenConditionSnapshot = initialScreenCondition
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -85,7 +84,7 @@ internal class VideoComponentState(
         )
 
         style.overrides.buildPresentedPartial(
-            screenCondition = screenConditionSnapshot,
+            screenCondition = initialScreenCondition,
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
