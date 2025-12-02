@@ -462,8 +462,8 @@ internal class PurchasesFactory(
                             "Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
                 )
-                TestStoreErrorDialogActivity.show(context, redactedApiKey)
-                // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
+                SimulatedStoreErrorDialogActivity.show(context, redactedApiKey)
+                // SimulatedStoreErrorDialogActivity will crash the app when the user dismisses it.
                 return apiKeyValidationResult
             }
 

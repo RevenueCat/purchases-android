@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class TestStoreErrorDialogActivityTest {
+class SimulatedStoreErrorDialogActivityTest {
 
     private val redactedApiKey = "test_redacted_api_key"
 
@@ -27,12 +27,12 @@ class TestStoreErrorDialogActivityTest {
         every { contextMock.startActivity(capture(intentSlot)) } returns Unit
 
         // Act
-        TestStoreErrorDialogActivity.show(contextMock, redactedApiKey)
+        SimulatedStoreErrorDialogActivity.show(contextMock, redactedApiKey)
 
         // Assert
         verify { contextMock.startActivity(any()) }
         val capturedIntent = intentSlot.captured
-        assertThat(capturedIntent.component?.className).isEqualTo(TestStoreErrorDialogActivity::class.java.name)
+        assertThat(capturedIntent.component?.className).isEqualTo(SimulatedStoreErrorDialogActivity::class.java.name)
         assertThat(capturedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
         assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo(redactedApiKey)
     }
@@ -43,12 +43,12 @@ class TestStoreErrorDialogActivityTest {
         var exceptionThrown = false
         var thrownException: PurchasesException? = null
 
-        val intent = Intent(ApplicationProvider.getApplicationContext<Context>(), TestStoreErrorDialogActivity::class.java).apply {
+        val intent = Intent(ApplicationProvider.getApplicationContext<Context>(), SimulatedStoreErrorDialogActivity::class.java).apply {
             putExtra("redactedApiKey", redactedApiKey)
         }
 
         try {
-            launchActivity<TestStoreErrorDialogActivity>(intent).use { scenario ->
+            launchActivity<SimulatedStoreErrorDialogActivity>(intent).use { scenario ->
                 scenario.moveToState(Lifecycle.State.CREATED)
 
                 scenario.onActivity { activity ->
@@ -77,12 +77,12 @@ class TestStoreErrorDialogActivityTest {
         var exceptionThrown = false
         var thrownException: PurchasesException? = null
 
-        val intent = Intent(ApplicationProvider.getApplicationContext<Context>(), TestStoreErrorDialogActivity::class.java).apply {
+        val intent = Intent(ApplicationProvider.getApplicationContext<Context>(), SimulatedStoreErrorDialogActivity::class.java).apply {
             putExtra("redactedApiKey", redactedApiKey)
         }
 
         try {
-            launchActivity<TestStoreErrorDialogActivity>(intent).use { scenario ->
+            launchActivity<SimulatedStoreErrorDialogActivity>(intent).use { scenario ->
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 // Act
                 // Moving from RESUMED to STARTED will trigger onPause()

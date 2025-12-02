@@ -6,13 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 
-internal class TestStoreErrorDialogActivity : Activity() {
+internal class SimulatedStoreErrorDialogActivity : Activity() {
 
     companion object {
         private const val redactedApiKeyExtra = "redactedApiKey"
 
         fun show(context: Context, redactedApiKey: String) {
-            val intent = Intent(context, TestStoreErrorDialogActivity::class.java).apply {
+            val intent = Intent(context, SimulatedStoreErrorDialogActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 putExtra(redactedApiKeyExtra, redactedApiKey)
             }

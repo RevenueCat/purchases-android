@@ -5,9 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.PlatformInfo
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -129,7 +127,7 @@ class PurchasesFactoryTest {
         // Assert
         verify(exactly = 1) { applicationMock.startActivity(any()) }
         val capturedIntent = intentSlot.captured
-        assertThat(capturedIntent.component?.className).isEqualTo(TestStoreErrorDialogActivity::class.java.name)
+        assertThat(capturedIntent.component?.className).isEqualTo(SimulatedStoreErrorDialogActivity::class.java.name)
         assertThat(capturedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
