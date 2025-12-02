@@ -65,6 +65,11 @@ android {
     }
 }
 
+tasks.withType<Test> {
+    forkEvery = 1
+    maxParallelForks = 5
+}
+
 metalava {
     hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
     arguments.addAll(listOf("--hide", "ReferencesHidden"))
