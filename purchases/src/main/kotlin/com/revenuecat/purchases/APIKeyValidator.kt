@@ -81,7 +81,6 @@ internal class APIKeyValidator {
         }
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun redactApiKey(apiKey: String): String {
         val underscoreIndex = apiKey.indexOf('_')
         val prefix: String
