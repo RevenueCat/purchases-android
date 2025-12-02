@@ -17,6 +17,7 @@ class PaywallDialogOptions internal constructor(
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
     val purchaseLogic: PurchaseLogic?,
+    val replaceProductData: ReplaceProductData?,
 ) {
 
     constructor(builder: Builder) : this(
@@ -27,6 +28,7 @@ class PaywallDialogOptions internal constructor(
         fontProvider = builder.fontProvider,
         listener = builder.listener,
         purchaseLogic = builder.purchaseLogic,
+        replaceProductData = builder.replaceProductData,
     )
 
     internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
@@ -39,6 +41,7 @@ class PaywallDialogOptions internal constructor(
             .setFontProvider(fontProvider)
             .setListener(listener)
             .setPurchaseLogic(purchaseLogic)
+            .setReplaceProductData(replaceProductData)
             .build()
     }
 
@@ -50,6 +53,7 @@ class PaywallDialogOptions internal constructor(
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PurchaseLogic? = null
+        internal var replaceProductData: ReplaceProductData? = null
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
@@ -97,6 +101,13 @@ class PaywallDialogOptions internal constructor(
 
         fun setCustomPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
             this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Sets [ReplaceProductData] to the builder to start the correct product upgrade flow.
+         */
+        fun setReplaceProductData(replaceProductData: ReplaceProductData?) = apply {
+            this.replaceProductData = replaceProductData
         }
 
         fun build(): PaywallDialogOptions {

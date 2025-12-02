@@ -50,6 +50,7 @@ class PaywallOptions internal constructor(
     val purchaseLogic: PurchaseLogic?,
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
+    val replaceProductData: ReplaceProductData?,
 ) {
     companion object {
         private const val hashMultiplier = 31
@@ -63,10 +64,11 @@ class PaywallOptions internal constructor(
         purchaseLogic = builder.purchaseLogic,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
+        replaceProductData = builder.replaceProductData,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
-    // Fields like fontProvider, listener, purchaseLogic, and dismissRequest are excluded because
+    // Fields like fontProvider, listener, purchaseLogic, dismissRequest, and replaceProductData are excluded because
     // they don't influence visual/structural uniqueness and may not be reliably hashable.
     override fun hashCode(): Int {
         var result = offeringSelection.offeringIdentifier.hashCode()
@@ -86,6 +88,7 @@ class PaywallOptions internal constructor(
             this.listener != other.listener -> false
             this.purchaseLogic != other.purchaseLogic -> false
             this.mode != other.mode -> false
+            this.replaceProductData != other.replaceProductData -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -98,6 +101,7 @@ class PaywallOptions internal constructor(
         purchaseLogic: PurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
+        replaceProductData: ReplaceProductData? = this.replaceProductData,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -106,6 +110,7 @@ class PaywallOptions internal constructor(
         purchaseLogic = purchaseLogic,
         mode = mode,
         dismissRequest = dismissRequest,
+        replaceProductData = replaceProductData,
     )
 
     class Builder(
@@ -117,6 +122,7 @@ class PaywallOptions internal constructor(
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
+        internal var replaceProductData: ReplaceProductData? = null
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -152,6 +158,13 @@ class PaywallOptions internal constructor(
 
         fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
             this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Sets [ReplaceProductData] to the builder to start the correct product upgrade flow.
+         */
+        fun setReplaceProductData(replaceProductData: ReplaceProductData?) = apply {
+            this.replaceProductData = replaceProductData
         }
 
         internal fun setMode(mode: PaywallMode) = apply {
