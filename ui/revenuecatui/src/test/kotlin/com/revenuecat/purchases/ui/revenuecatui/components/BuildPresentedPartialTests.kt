@@ -700,7 +700,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.AnyIntroOffer(
+                                ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                     value = true,
                                 ),
@@ -721,7 +721,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.AnyIntroOffer(
+                                ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                     value = true,
                                 ),
@@ -742,7 +742,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                     value = true,
                                 ),
@@ -763,7 +763,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                     value = true,
                                 ),

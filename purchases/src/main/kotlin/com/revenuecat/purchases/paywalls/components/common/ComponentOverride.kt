@@ -43,40 +43,56 @@ class ComponentOverride<T : PartialComponent>(
 
         /**
          * Compares against whether any package on the paywall has an intro offer.
+         *
+         * Assuming the user is eligible for the offer
          */
         @Serializable
-        data class AnyIntroOffer(
+        data class AnyPackageContainsIntroOffer(
             @SerialName("operator") val operator: EqualityOperatorType,
             @SerialName("value") val value: Boolean,
         ) : Condition
 
         /**
          * Compares against whether any package on the paywall exposes multiple intro offers.
+         *
+         * Assuming the user is eligible for the offers
          */
         @Serializable
-        data class AnyMultipleIntroOffers(
+        data class AnyPackageContainsMultipleIntroOffers(
             @SerialName("operator") val operator: EqualityOperatorType,
             @SerialName("value") val value: Boolean,
         ) : Condition
 
+        /**
+         * Is the current component in a selected state?
+         * */
         @Serializable
         object Selected : Condition
 
         @Serializable
         object Unsupported : Condition
 
+        /**
+         * Compares the current device orientation against the list of [orientations].
+         * */
         @Serializable
         data class Orientation(
             @SerialName("operator") val operator: ArrayOperatorType,
             @SerialName("orientations") val orientations: List<OrientationType>,
         ) : Condition
 
+        /**
+         * Compares the current screen size against the list of [sizes].
+         * */
         @Serializable
         data class ScreenSize(
             @SerialName("operator") val operator: ArrayOperatorType,
             @SerialName("sizes") val sizes: List<String>,
         ) : Condition
 
+        /**
+         * Compares the selected package against the list of [packages].
+         * */
         @Serializable
         data class SelectedPackage(
             @SerialName("operator") val operator: ArrayOperatorType,
@@ -94,10 +110,10 @@ class ComponentOverride<T : PartialComponent>(
 
         @Serializable
         enum class EqualityOperatorType {
-            @SerialName("=") // WIP… Should we make this human language from the server like in and not_in?
+            @SerialName("=")
             EQUALS,
 
-            @SerialName("!=") // WIP… Should we make this human language from the server like in and not_in?
+            @SerialName("!=")
             NOT_EQUALS,
         }
 
@@ -118,8 +134,8 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serializerByType = mapOf(
         "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
-        "introductory_offer_available" to { Condition.AnyIntroOffer.serializer() },
-        "multiple_intro_offers_available" to { Condition.AnyMultipleIntroOffers.serializer() },
+        "introductory_offer_available" to { Condition.AnyPackageContainsIntroOffer.serializer() },
+        "multiple_intro_offers_available" to { Condition.AnyPackageContainsMultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
         "orientation" to { Condition.Orientation.serializer() },
         "screen_size" to { Condition.ScreenSize.serializer() },

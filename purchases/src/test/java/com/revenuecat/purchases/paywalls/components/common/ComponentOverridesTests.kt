@@ -4,7 +4,6 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -152,7 +151,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.AnyIntroOffer(
+                                    ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                                         operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                         value = true,
                                     )
@@ -161,7 +160,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                    ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                                         operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                         value = true,
                                     )
@@ -346,7 +345,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.AnyIntroOffer(
+                                    ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                                         operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                         value = true,
                                     )
@@ -357,7 +356,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.AnyMultipleIntroOffers(
+                                    ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                                         operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                                         value = true,
                                     )
@@ -448,19 +447,19 @@ internal class ComponentOverridesTests {
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyIntroOffer(
+                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyIntroOffer(
+                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyPackageContainsIntroOffer(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
                 )),
-                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyMultipleIntroOffers(
+                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
                     value = true,
                 )),
-                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyMultipleIntroOffers(
+                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
                     operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
                     value = false,
                 )),

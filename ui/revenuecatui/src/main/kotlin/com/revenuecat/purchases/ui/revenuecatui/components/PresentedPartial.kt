@@ -125,7 +125,7 @@ private fun conditionMatches(
             introOfferSnapshot.eligibility.hasMultipleIntroOffers() != condition.value
     }
 
-    is ComponentOverride.Condition.AnyMultipleIntroOffers -> when (condition.operator) {
+    is ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
@@ -144,7 +144,7 @@ private fun conditionMatches(
             introOfferSnapshot.eligibility.isEligible() != condition.value
     }
 
-    is ComponentOverride.Condition.AnyIntroOffer -> when (condition.operator) {
+    is ComponentOverride.Condition.AnyPackageContainsIntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage == condition.value
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
