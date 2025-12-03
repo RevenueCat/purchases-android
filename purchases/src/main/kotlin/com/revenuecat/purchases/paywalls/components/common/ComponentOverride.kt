@@ -99,6 +99,16 @@ class ComponentOverride<T : PartialComponent>(
             @SerialName("packages") val packages: List<String>,
         ) : Condition
 
+        /**
+         * Compares the app version against the [version].
+         * */
+        @Serializable
+        data class AppVersion(
+            @SerialName("operator") val operator: ComparisonOperatorType,
+            // TODO Make a serializes that converts a string to an int, filtering by 0...9 and just keeping the #'s
+            @SerialName("android_version") val version: Int,
+        ) : Condition
+
         @Serializable
         enum class ArrayOperatorType {
             @SerialName("in")
@@ -115,6 +125,24 @@ class ComponentOverride<T : PartialComponent>(
 
             @SerialName("!=")
             NOT_EQUALS,
+        }
+
+        @Serializable
+        enum class ComparisonOperatorType {
+            @SerialName("=")
+            EQUALS,
+
+            @SerialName("<")
+            LESS_THAN,
+
+            @SerialName("<=")
+            LESS_THAN_OR_EQUAL_TO,
+
+            @SerialName(">")
+            GREATER_THAN,
+
+            @SerialName(">=")
+            GREATER_THAN_OR_EQUAL_TO,
         }
 
         @Serializable
@@ -140,6 +168,7 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "orientation" to { Condition.Orientation.serializer() },
         "screen_size" to { Condition.ScreenSize.serializer() },
         "selected_package" to { Condition.SelectedPackage.serializer() },
+        "app_version" to { Condition.AppVersion.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )
