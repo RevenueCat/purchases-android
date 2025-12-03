@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.common.events.EventsManager
@@ -64,6 +66,41 @@ class AdTracker internal constructor(
                 revenueMicros = data.revenueMicros,
                 currency = data.currency,
                 precision = data.precision,
+            ),
+        )
+    }
+
+    /**
+     * Tracks an ad loaded event.
+     *
+     * @param data The ad loaded event data.
+     */
+    fun trackAdLoaded(data: AdLoadedData) {
+        eventsManager.track(
+            event = AdEvent.Loaded(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+            ),
+        )
+    }
+
+    /**
+     * Tracks an ad failed to load event.
+     *
+     * @param data The ad failed to load event data.
+     */
+    fun trackAdFailedToLoad(data: AdFailedToLoadData) {
+        eventsManager.track(
+            event = AdEvent.FailedToLoad(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = null,
+                mediatorErrorCode = data.mediatorErrorCode,
             ),
         )
     }

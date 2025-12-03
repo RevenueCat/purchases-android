@@ -487,6 +487,45 @@ class EventsManagerTest {
     }
 
     @Test
+    fun `tracking ad loaded events adds them to file`() {
+        val adEvent = AdEvent.Loaded(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad failed to load events adds them to file`() {
+        val adEvent = AdEvent.FailedToLoad(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            mediatorErrorCode = 123L,
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+        )
+    }
+
+
+    @Test
     fun `tracking mixed events with ad events adds them to file`() {
         val adEvent = AdEvent.Displayed(
             id = "ad-event-id-123",
