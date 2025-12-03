@@ -129,6 +129,18 @@ internal class ComponentOverridesTests {
                                 "properties": {
                                   "font_name": "selected package font"
                                 }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "app_version",
+                                    "operator": ">=",
+                                    "android_version": 200
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "app version font"
+                                }
                               }
                             ]
                         """.trimIndent(),
@@ -217,6 +229,15 @@ internal class ComponentOverridesTests {
                                     )
                                 ),
                                 properties = PartialTextComponent(fontName = FontAlias("selected package font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.AppVersion(
+                                        operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN_OR_EQUAL_TO,
+                                        version = 200,
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("app version font")),
                             ),
                         )
                     )
@@ -466,6 +487,42 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
+                // AppVersion conditions with all comparison operators
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \"=\", \"android_version\": 100 }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.EQUALS,
+                        version = 100,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \"<\", \"android_version\": 200 }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.LESS_THAN,
+                        version = 200,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \"<=\", \"android_version\": 200 }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.LESS_THAN_OR_EQUAL_TO,
+                        version = 200,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \">\", \"android_version\": 100 }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN,
+                        version = 100,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \">=\", \"android_version\": 100 }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN_OR_EQUAL_TO,
+                        version = 100,
+                    )
+                ),
             )
         }
 
