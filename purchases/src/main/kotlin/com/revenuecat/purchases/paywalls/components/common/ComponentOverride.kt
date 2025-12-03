@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.VersionIntSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -105,8 +106,9 @@ class ComponentOverride<T : PartialComponent>(
         @Serializable
         data class AppVersion(
             @SerialName("operator") val operator: ComparisonOperatorType,
-            // TODO Make a serializes that converts a string to an int, filtering by 0...9 and just keeping the #'s
-            @SerialName("android_version") val version: Int,
+            @SerialName("android_version")
+            @Serializable(with = VersionIntSerializer::class)
+            val version: Int,
         ) : Condition
 
         @Serializable

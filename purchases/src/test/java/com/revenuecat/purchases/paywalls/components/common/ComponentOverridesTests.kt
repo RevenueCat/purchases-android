@@ -489,38 +489,59 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
                 // AppVersion conditions with all comparison operators
                 arrayOf(
-                    "{ \"type\": \"app_version\", \"operator\": \"=\", \"android_version\": 100 }",
+                    "{ \"type\": \"app_version\", \"operator\": \"=\", \"android_version\": \"100\" }",
                     ComponentOverride.Condition.AppVersion(
                         operator = ComponentOverride.Condition.ComparisonOperatorType.EQUALS,
                         version = 100,
                     )
                 ),
                 arrayOf(
-                    "{ \"type\": \"app_version\", \"operator\": \"<\", \"android_version\": 200 }",
+                    "{ \"type\": \"app_version\", \"operator\": \"<\", \"android_version\": \"200\" }",
                     ComponentOverride.Condition.AppVersion(
                         operator = ComponentOverride.Condition.ComparisonOperatorType.LESS_THAN,
                         version = 200,
                     )
                 ),
                 arrayOf(
-                    "{ \"type\": \"app_version\", \"operator\": \"<=\", \"android_version\": 200 }",
+                    "{ \"type\": \"app_version\", \"operator\": \"<=\", \"android_version\": \"200\" }",
                     ComponentOverride.Condition.AppVersion(
                         operator = ComponentOverride.Condition.ComparisonOperatorType.LESS_THAN_OR_EQUAL_TO,
                         version = 200,
                     )
                 ),
                 arrayOf(
-                    "{ \"type\": \"app_version\", \"operator\": \">\", \"android_version\": 100 }",
+                    "{ \"type\": \"app_version\", \"operator\": \">\", \"android_version\": \"100\" }",
                     ComponentOverride.Condition.AppVersion(
                         operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN,
                         version = 100,
                     )
                 ),
                 arrayOf(
-                    "{ \"type\": \"app_version\", \"operator\": \">=\", \"android_version\": 100 }",
+                    "{ \"type\": \"app_version\", \"operator\": \">=\", \"android_version\": \"100\" }",
                     ComponentOverride.Condition.AppVersion(
                         operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN_OR_EQUAL_TO,
                         version = 100,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \">=\", \"android_version\": \"3.2.0\" }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.GREATER_THAN_OR_EQUAL_TO,
+                        version = 320,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \"<\", \"android_version\": \"1.0.0-beta1\" }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.LESS_THAN,
+                        version = 1001,
+                    )
+                ),
+                arrayOf(
+                    "{ \"type\": \"app_version\", \"operator\": \"=\", \"android_version\": \"0012.34.56\" }",
+                    ComponentOverride.Condition.AppVersion(
+                        operator = ComponentOverride.Condition.ComparisonOperatorType.EQUALS,
+                        version = 123456,
                     )
                 ),
             )

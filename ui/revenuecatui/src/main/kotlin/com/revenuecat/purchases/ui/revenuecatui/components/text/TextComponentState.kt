@@ -93,6 +93,7 @@ internal fun rememberUpdatedTextComponentState(
 }
 
 @Stable
+@Suppress("LongParameterList")
 internal class TextComponentState(
     initialScreenCondition: ScreenCondition,
     private val style: TextComponentStyle,

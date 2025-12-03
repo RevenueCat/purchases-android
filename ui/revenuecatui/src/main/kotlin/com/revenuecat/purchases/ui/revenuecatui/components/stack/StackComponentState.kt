@@ -83,6 +83,7 @@ internal fun rememberUpdatedStackComponentState(
 }
 
 @Stable
+@Suppress("LongParameterList")
 internal class StackComponentState(
     initialScreenCondition: ScreenCondition,
     initialLayoutDirection: LayoutDirection,

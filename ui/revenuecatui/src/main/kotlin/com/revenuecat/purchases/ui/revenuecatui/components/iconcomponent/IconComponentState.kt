@@ -78,6 +78,7 @@ private fun rememberUpdatedIconComponentState(
 }
 
 @Stable
+@Suppress("LongParameterList")
 internal class IconComponentState(
     initialScreenCondition: ScreenCondition,
     initialLayoutDirection: LayoutDirection,
