@@ -68,6 +68,9 @@ class CarouselComponent(
     val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent {
 
     @Poko

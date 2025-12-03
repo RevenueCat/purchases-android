@@ -77,4 +77,6 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyBottomWindowInsets: Boolean = false,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle

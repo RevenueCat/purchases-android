@@ -417,6 +417,7 @@ private fun previewCarouselComponentStyle(
         rcPackage = null,
         tabIndex = null,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     )
 }
 
@@ -501,5 +502,6 @@ private fun previewPage(
         countdownDate = null,
         countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     )
 }

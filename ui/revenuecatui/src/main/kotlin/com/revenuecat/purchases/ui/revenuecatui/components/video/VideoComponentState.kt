@@ -88,6 +88,7 @@ internal class VideoComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            evaluateUnknownConditionsAs = style.evaluateUnknownConditionsAs,
         )
     }
 

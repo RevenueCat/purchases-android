@@ -534,6 +534,7 @@ private fun previewImageComponentStyle(
     rcPackage = null,
     tabIndex = null,
     overrides = emptyList(),
+    evaluateUnknownConditionsAs = null,
 )
 
 @Composable

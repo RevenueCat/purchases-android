@@ -109,6 +109,7 @@ internal class IconComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            evaluateUnknownConditionsAs = style.evaluateUnknownConditionsAs,
         )
     }
     private val baseUrl: String by derivedStateOf {

@@ -49,6 +49,7 @@ internal fun ViewWithVideoBackground(
                     margin = PaddingValues(),
                     border = null,
                     shadow = null,
+                    evaluateUnknownConditionsAs = null,
                 )
 
                 VideoComponentView(

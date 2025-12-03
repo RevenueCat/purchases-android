@@ -95,6 +95,9 @@ class TabsComponent(
     val defaultTabId: String? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko

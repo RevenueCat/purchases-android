@@ -251,6 +251,7 @@ private fun TabsComponentView_Preview() {
                 ),
             ),
             overrides = emptyList(),
+            evaluateUnknownConditionsAs = null,
         ),
         state = previewEmptyState(),
         clickHandler = { },
@@ -291,4 +292,5 @@ private fun previewStackComponentStyle(
         countdownDate = null,
         countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     )

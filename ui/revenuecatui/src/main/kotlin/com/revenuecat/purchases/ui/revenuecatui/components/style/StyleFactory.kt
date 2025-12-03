@@ -727,6 +727,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -775,6 +776,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -811,6 +813,7 @@ internal class StyleFactory(
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -865,6 +868,7 @@ internal class StyleFactory(
             shape = component.maskShape?.toShape(),
             contentScale = component.fitMode.toContentScale(),
             ignoreTopWindowInsets = ignoreTopWindowInsets,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -895,6 +899,7 @@ internal class StyleFactory(
                 rcPackage = rcPackage,
                 tabIndex = tabControlIndex,
                 overrides = presentedOverrides,
+                evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
             )
         }
 
@@ -921,6 +926,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -992,6 +998,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
+            evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
         )
     }
 
@@ -1055,6 +1062,7 @@ internal class StyleFactory(
                     control = control,
                     tabs = tabs,
                     overrides = overrides,
+                    evaluateUnknownConditionsAs = component.evaluateUnknownConditionsAs
                 )
             }
         }

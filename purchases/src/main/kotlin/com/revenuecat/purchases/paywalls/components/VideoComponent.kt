@@ -66,6 +66,9 @@ class VideoComponent(
     @get:JvmSynthetic
     @SerialName("override_source_lid")
     val overrideSourceLid: LocalizationKey? = null,
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent
 
 @Suppress("LongParameterList")

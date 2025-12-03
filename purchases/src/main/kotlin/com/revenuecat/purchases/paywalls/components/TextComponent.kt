@@ -71,6 +71,9 @@ constructor(
     val margin: Padding = zero,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI

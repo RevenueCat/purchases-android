@@ -45,6 +45,9 @@ class TimelineComponent(
     val items: List<Item> = emptyList(),
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent {
 
     @Serializable(with = TimelineIconAlignmentDeserializer::class)

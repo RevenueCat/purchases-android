@@ -101,6 +101,7 @@ internal class TimelineComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            evaluateUnknownConditionsAs = style.evaluateUnknownConditionsAs,
         )
     }
 
@@ -185,6 +186,7 @@ internal class TimelineComponentState(
                 introOfferSnapshot = introOfferSnapshot,
                 state = componentState,
                 selectedPackageIdentifier = applicablePackage?.identifier,
+                evaluateUnknownConditionsAs = null
             )
         }
 

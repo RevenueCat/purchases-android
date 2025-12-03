@@ -147,6 +147,7 @@ internal class ImageComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            evaluateUnknownConditionsAs = style.evaluateUnknownConditionsAs,
         )
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {

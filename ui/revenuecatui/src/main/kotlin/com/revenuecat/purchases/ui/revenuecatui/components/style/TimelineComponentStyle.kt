@@ -45,6 +45,8 @@ internal data class TimelineComponentStyle(
     val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedTimelinePartial>>,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle {
     @Immutable
     data class ItemStyle(
