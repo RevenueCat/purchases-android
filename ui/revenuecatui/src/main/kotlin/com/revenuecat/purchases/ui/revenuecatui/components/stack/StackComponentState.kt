@@ -46,17 +46,20 @@ internal fun rememberUpdatedStackComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): StackComponentState {
     val layoutDirection = LocalLayoutDirection.current
     val screenCondition = screenConditionProvider()
@@ -69,6 +72,7 @@ internal fun rememberUpdatedStackComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }.apply {
         update(
@@ -86,6 +90,7 @@ internal class StackComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -118,6 +123,7 @@ internal class StackComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
 

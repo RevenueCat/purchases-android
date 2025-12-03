@@ -50,6 +50,7 @@ internal fun rememberUpdatedTextComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 }
 
@@ -64,6 +65,7 @@ internal fun rememberUpdatedTextComponentState(
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): TextComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -80,6 +82,7 @@ internal fun rememberUpdatedTextComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }.apply {
         update(
@@ -97,6 +100,7 @@ internal class TextComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
@@ -148,6 +152,7 @@ internal class TextComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
 

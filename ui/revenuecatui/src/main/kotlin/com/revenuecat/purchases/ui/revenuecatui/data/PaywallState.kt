@@ -107,6 +107,11 @@ internal sealed interface PaywallState {
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
             val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
+            /**
+             * The app version as an integer, derived from the version name by keeping only digits.
+             * For example: "3.2.0" -> 320. Used for conditional visibility based on app version.
+             */
+            val appVersionInt: Int? = null,
         ) : Loaded {
 
             var screenCondition by mutableStateOf(ScreenCondition())

@@ -37,6 +37,7 @@ internal fun rememberUpdatedTabsComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 
 @Stable
@@ -47,6 +48,7 @@ internal fun rememberUpdatedTabsComponentState(
     selectedPackageProvider: () -> Package?,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): TabsComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -56,6 +58,7 @@ internal fun rememberUpdatedTabsComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }.apply {
         update(
@@ -70,6 +73,7 @@ internal class TabsComponentState(
     private val style: TabsComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
@@ -90,6 +94,7 @@ internal class TabsComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
 

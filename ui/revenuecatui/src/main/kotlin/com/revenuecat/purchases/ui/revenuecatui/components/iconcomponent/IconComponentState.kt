@@ -42,17 +42,20 @@ internal fun rememberUpdatedIconComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): IconComponentState {
     val screenCondition = screenConditionProvider()
     val layoutDirection = LocalLayoutDirection.current
@@ -65,6 +68,7 @@ private fun rememberUpdatedIconComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }.apply {
         update(
@@ -81,6 +85,7 @@ internal class IconComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -109,6 +114,7 @@ internal class IconComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
     private val baseUrl: String by derivedStateOf {

@@ -526,6 +526,7 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
+                appVersionInt = resourceProvider.getAppVersionInt(),
             )
         }
     }

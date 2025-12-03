@@ -35,17 +35,20 @@ internal fun rememberUpdatedTimelineComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): TimelineComponentState {
     val screenCondition = screenConditionProvider()
 
@@ -56,6 +59,7 @@ private fun rememberUpdatedTimelineComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }.apply {
         update(
@@ -71,6 +75,7 @@ internal class TimelineComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
 
     private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -101,6 +106,7 @@ internal class TimelineComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
 
@@ -137,6 +143,7 @@ internal class TimelineComponentState(
                 selectedPackageProvider = selectedPackageProvider,
                 selectedTabIndexProvider = selectedTabIndexProvider,
                 introOfferAvailability = introOfferAvailability,
+                appVersionIntProvider = appVersionIntProvider,
             )
         }
     }
@@ -155,6 +162,7 @@ internal class TimelineComponentState(
         private val selectedPackageProvider: () -> Package?,
         private val selectedTabIndexProvider: () -> Int,
         private val introOfferAvailability: IntroOfferAvailability,
+        private val appVersionIntProvider: () -> Int?,
     ) {
 
         private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
@@ -185,6 +193,7 @@ internal class TimelineComponentState(
                 introOfferSnapshot = introOfferSnapshot,
                 state = componentState,
                 selectedPackageIdentifier = applicablePackage?.identifier,
+                appVersion = appVersionIntProvider(),
             )
         }
 

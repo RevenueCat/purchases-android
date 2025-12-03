@@ -307,6 +307,7 @@ internal fun Offering.toComponentsPaywallState(
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
     purchases: PurchasesType,
+    appVersionInt: Int? = null,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -327,6 +328,7 @@ internal fun Offering.toComponentsPaywallState(
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         purchases = purchases,
         screenSizes = validationResult.screenSizes,
+        appVersionInt = appVersionInt,
     )
 }
 

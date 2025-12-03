@@ -304,6 +304,7 @@ internal fun Offering.validatePaywallComponentsDataOrNullForPreviews(): Result<P
             applicationName = "RevenueCatUI Previews",
             packageName = "com.revenuecat.purchases.ui.revenuecatui",
             resources = LocalContext.current.resources,
+            appVersionInt = null,
         ),
     )
 
