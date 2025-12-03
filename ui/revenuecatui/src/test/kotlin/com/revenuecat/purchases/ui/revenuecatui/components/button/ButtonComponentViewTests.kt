@@ -101,6 +101,7 @@ class ButtonComponentViewTests {
                             countdownDate = null,
                             countFrom = CountdownComponent.CountFrom.DAYS,
                             overrides = emptyList(),
+                            evaluateUnknownConditionsAs = null,
                         ),
                     ),
                     dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
@@ -125,6 +126,7 @@ class ButtonComponentViewTests {
                     countdownDate = null,
                     countFrom = CountdownComponent.CountFrom.DAYS,
                     overrides = emptyList(),
+                    evaluateUnknownConditionsAs = null,
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
             )

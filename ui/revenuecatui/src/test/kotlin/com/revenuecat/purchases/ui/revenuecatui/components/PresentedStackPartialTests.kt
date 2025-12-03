@@ -1318,5 +1318,6 @@ private fun createStackComponentStyle(
             countdownDate = null,
             countFrom = com.revenuecat.purchases.paywalls.components.CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
+            evaluateUnknownConditionsAs = null,
         )
     )
