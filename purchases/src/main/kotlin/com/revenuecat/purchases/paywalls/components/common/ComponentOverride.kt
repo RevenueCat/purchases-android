@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.VersionIntSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -99,6 +100,17 @@ class ComponentOverride<T : PartialComponent>(
             @SerialName("packages") val packages: List<String>,
         ) : Condition
 
+        /**
+         * Compares the app version against the [version].
+         * */
+        @Serializable
+        data class AppVersion(
+            @SerialName("operator") val operator: ComparisonOperatorType,
+            @SerialName("android_version")
+            @Serializable(with = VersionIntSerializer::class)
+            val version: Int,
+        ) : Condition
+
         @Serializable
         enum class ArrayOperatorType {
             @SerialName("in")
@@ -115,6 +127,24 @@ class ComponentOverride<T : PartialComponent>(
 
             @SerialName("!=")
             NOT_EQUALS,
+        }
+
+        @Serializable
+        enum class ComparisonOperatorType {
+            @SerialName("=")
+            EQUALS,
+
+            @SerialName("<")
+            LESS_THAN,
+
+            @SerialName("<=")
+            LESS_THAN_OR_EQUAL_TO,
+
+            @SerialName(">")
+            GREATER_THAN,
+
+            @SerialName(">=")
+            GREATER_THAN_OR_EQUAL_TO,
         }
 
         @Serializable
@@ -140,6 +170,7 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "orientation" to { Condition.Orientation.serializer() },
         "screen_size" to { Condition.ScreenSize.serializer() },
         "selected_package" to { Condition.SelectedPackage.serializer() },
+        "app_version" to { Condition.AppVersion.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

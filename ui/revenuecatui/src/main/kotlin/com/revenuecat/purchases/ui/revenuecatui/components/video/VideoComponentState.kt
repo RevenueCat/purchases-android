@@ -54,6 +54,7 @@ internal class VideoComponentState(
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
+    private val appVersionIntProvider: () -> Int?,
 ) {
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
@@ -88,6 +89,7 @@ internal class VideoComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            appVersion = appVersionIntProvider(),
         )
     }
 
@@ -317,6 +319,7 @@ internal fun rememberUpdatedVideoComponentState(
             hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
             hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
         ),
+        appVersionIntProvider = { paywallState.appVersionInt },
     )
 
 @Stable
@@ -330,6 +333,7 @@ internal fun rememberUpdatedVideoComponentState(
     selectedTabIndexProvider: () -> Int,
     screenConditionProvider: () -> ScreenCondition,
     introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
+    appVersionIntProvider: () -> Int? = { null },
 ): VideoComponentState {
     val screenCondition = screenConditionProvider()
     val density = LocalDensity.current
@@ -346,6 +350,7 @@ internal fun rememberUpdatedVideoComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             introOfferAvailability = introOfferAvailability,
+            appVersionIntProvider = appVersionIntProvider,
         )
     }
 }

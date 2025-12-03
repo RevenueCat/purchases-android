@@ -30,16 +30,23 @@ internal interface ResourceProvider {
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily?
     fun getAssetManager(): AssetManager?
+    fun getAppVersionInt(): Int?
 }
 
 internal class PaywallResourceProvider(
     private val applicationName: String,
     private val packageName: String,
     private val resources: Resources,
+    private val appVersionInt: Int?,
 ) : ResourceProvider {
     constructor(
         context: Context,
-    ) : this(context.applicationContext.applicationName(), context.packageName, context.resources)
+    ) : this(
+        context.applicationContext.applicationName(),
+        context.packageName,
+        context.resources,
+        context.versionInt,
+    )
 
     override fun getApplicationName(): String {
         return applicationName
@@ -112,6 +119,10 @@ internal class PaywallResourceProvider(
 
     override fun getAssetManager(): AssetManager? {
         return resources.assets
+    }
+
+    override fun getAppVersionInt(): Int? {
+        return appVersionInt
     }
 }
 

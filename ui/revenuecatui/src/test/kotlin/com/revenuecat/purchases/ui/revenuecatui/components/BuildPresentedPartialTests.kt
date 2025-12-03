@@ -34,6 +34,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val selectedPackageIdentifier: String? = null,
         val hasAnyIntroOfferEligiblePackage: Boolean = false,
         val hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
+        val appVersion: Int? = null,
     )
 
     @Suppress("LargeClass")
@@ -882,6 +883,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             state = args.state,
             selectedPackageIdentifier = args.selectedPackageIdentifier,
+            appVersion = args.appVersion,
         )
 
         // Assert

@@ -483,6 +483,10 @@ internal class MockResourceProvider(
     override fun getAssetManager(): AssetManager? {
         return mockAssetManager
     }
+
+    override fun getAppVersionInt(): Int? {
+        return null
+    }
 }
 
 @Suppress("TooManyFunctions")
