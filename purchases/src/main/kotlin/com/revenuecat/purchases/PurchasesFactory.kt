@@ -337,7 +337,7 @@ internal class PurchasesFactory(
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
-                OfferingsFactory(billing, offeringParser, dispatcher),
+                OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
