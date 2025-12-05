@@ -94,7 +94,7 @@ class SamsungStoreProduct(
             period = this.period,
             subscriptionOptions = this.subscriptionOptions,
             defaultOption = this.defaultOption,
-            presentedOfferingContext = presentedOfferingContext
+            presentedOfferingContext = presentedOfferingContext,
         )
     }
 

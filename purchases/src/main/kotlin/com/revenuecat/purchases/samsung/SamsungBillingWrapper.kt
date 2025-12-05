@@ -14,9 +14,10 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 
+@Suppress("TooManyFunctions")
 internal class SamsungBillingWrapper(
     stateProvider: PurchasesStateProvider,
-): BillingAbstract(purchasesStateProvider = stateProvider) {
+) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         TODO("Not yet implemented")
     }
