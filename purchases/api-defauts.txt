@@ -1415,6 +1415,55 @@ package com.revenuecat.purchases.models {
 
 }
 
+package com.revenuecat.purchases.samsung {
+
+  public abstract sealed class SamsungPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class SamsungPurchasingData.Product extends com.revenuecat.purchases.samsung.SamsungPurchasingData {
+    ctor public SamsungPurchasingData.Product(com.revenuecat.purchases.samsung.SamsungStoreProduct storeProduct);
+    method public String getProductId();
+    method public com.revenuecat.purchases.ProductType getProductType();
+    method public com.revenuecat.purchases.samsung.SamsungStoreProduct getStoreProduct();
+    property public String productId;
+    property public com.revenuecat.purchases.ProductType productType;
+    property public final com.revenuecat.purchases.samsung.SamsungStoreProduct storeProduct;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class SamsungStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
+    ctor public SamsungStoreProduct(String id, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
+    method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
+    method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
+    method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
+    method public String getDescription();
+    method public String getId();
+    method public String getName();
+    method public com.revenuecat.purchases.models.Period? getPeriod();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
+    method @Deprecated public String? getPresentedOfferingIdentifier();
+    method public com.revenuecat.purchases.models.Price getPrice();
+    method public com.revenuecat.purchases.samsung.SamsungPurchasingData getPurchasingData();
+    method @Deprecated public String getSku();
+    method public com.revenuecat.purchases.models.SubscriptionOptions? getSubscriptionOptions();
+    method public String getTitle();
+    method public com.revenuecat.purchases.ProductType getType();
+    property public com.revenuecat.purchases.models.SubscriptionOption? defaultOption;
+    property public String description;
+    property public String id;
+    property public String name;
+    property public com.revenuecat.purchases.models.Period? period;
+    property public com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
+    property @Deprecated public String? presentedOfferingIdentifier;
+    property public com.revenuecat.purchases.models.Price price;
+    property public com.revenuecat.purchases.samsung.SamsungPurchasingData purchasingData;
+    property @Deprecated public String sku;
+    property public com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions;
+    property public String title;
+    property public com.revenuecat.purchases.ProductType type;
+  }
+
+}
+
 package com.revenuecat.purchases.utils {
 
   public final class Iso8601Utils {
