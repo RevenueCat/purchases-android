@@ -110,6 +110,11 @@ constructor(
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
     override val presentedOfferingContext: PresentedOfferingContext? = null,
+
+    /**
+     * Contains all [OneTimePurchaseOption]s. Null for SUBS products.
+     */
+    oneTimePurchaseOptions: OneTimePurchaseOptions? = null,
 ) : StoreProduct {
 
     internal constructor(
