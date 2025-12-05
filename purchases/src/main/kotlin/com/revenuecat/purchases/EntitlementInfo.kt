@@ -238,7 +238,7 @@ enum class Store {
     /**
      * For entitlement granted via the Samsung store.
      */
-    SAMSUNG_STORE
+    SAMSUNG_STORE,
     ;
 
     internal val stringValue: String
