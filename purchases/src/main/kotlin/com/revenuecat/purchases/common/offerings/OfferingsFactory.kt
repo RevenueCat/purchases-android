@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
@@ -20,6 +21,7 @@ internal class OfferingsFactory(
     private val billing: BillingAbstract,
     private val offeringParser: OfferingParser,
     private val dispatcher: Dispatcher,
+    private val appConfig: AppConfig,
 ) {
 
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
@@ -36,7 +38,10 @@ internal class OfferingsFactory(
                 onError(
                     PurchasesError(
                         PurchasesErrorCode.ConfigurationError,
-                        OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS,
+                        OfferingStrings.getConfigurationErrorNoProductsForOfferings(
+                            appConfig.apiKeyValidationResult,
+                            appConfig.store,
+                        ),
                     ),
                 )
             } else {
