@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -18,7 +17,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -28,6 +26,8 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
@@ -54,25 +54,33 @@ internal fun rememberUpdatedImageComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        screenConditionProvider = { paywallState.screenCondition },
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    screenConditionProvider: () -> ScreenCondition,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): ImageComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = screenConditionProvider()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         ImageComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             initialDensity = density,
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
@@ -80,10 +88,11 @@ internal fun rememberUpdatedImageComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            introOfferAvailability = introOfferAvailability,
         )
     }.apply {
         update(
-            windowSize = windowSize,
+            screenCondition = screenCondition,
             density = density,
             darkMode = darkMode,
             layoutDirection = layoutDirection,
@@ -94,7 +103,7 @@ internal fun rememberUpdatedImageComponentState(
 @Suppress("LongParameterList")
 @Stable
 internal class ImageComponentState(
-    initialWindowSize: WindowWidthSizeClass,
+    initialScreenCondition: ScreenCondition,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
@@ -102,8 +111,9 @@ internal class ImageComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
-    private var windowSize by mutableStateOf(initialWindowSize)
+    private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -125,11 +135,19 @@ internal class ImageComponentState(
     }
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = screenConditionSnapshot,
+            introOfferSnapshot = introOfferSnapshot,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()
@@ -240,12 +258,12 @@ internal class ImageComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
+        screenCondition: ScreenCondition? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
+        if (screenCondition != null) this.screenConditionSnapshot = screenCondition
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
         if (layoutDirection != null) this.layoutDirection = layoutDirection

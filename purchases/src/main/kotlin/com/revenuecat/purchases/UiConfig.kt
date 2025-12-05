@@ -41,6 +41,8 @@ class UiConfig(
         val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
         val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        @get:JvmSynthetic
+        val screenSizes: List<ScreenSize>? = null,
     ) {
         @InternalRevenueCatAPI
         @Poko
@@ -71,6 +73,28 @@ class UiConfig(
                 @Serializable
                 @SerialName("google_fonts")
                 class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+            }
+        }
+
+        @InternalRevenueCatAPI
+        @Poko
+        @Serializable
+        class ScreenSize(
+            @get:JvmSynthetic val name: String,
+            @get:JvmSynthetic val width: Int,
+        ) {
+            companion object Defaults {
+                @JvmField
+                val mobile = ScreenSize(name = "mobile", width = 375)
+
+                @JvmField
+                val tablet = ScreenSize(name = "tablet", width = 700)
+
+                @JvmField
+                val desktop = ScreenSize(name = "desktop", width = 1024)
+
+                @JvmStatic
+                val all = listOf(mobile, tablet, desktop)
             }
         }
     }
