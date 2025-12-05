@@ -366,10 +366,11 @@ internal class BillingWrapper(
         @BillingClient.ProductType productType: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+        shouldUseAIDL: Boolean = isAIDLEnabled && productType == BillingClient.ProductType.INAPP,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
 
-        if (productType == BillingClient.ProductType.INAPP && isAIDLEnabled) {
+        if (shouldUseAIDL) {
             queryInAppPurchaseHistoryWithAIDL(onReceivePurchaseHistory, onReceivePurchaseHistoryError)
         } else {
             QueryPurchaseHistoryUseCase(
@@ -396,11 +397,12 @@ internal class BillingWrapper(
                 val connected = purchaseHistoryManager.connect()
                 if (!connected) {
                     mainHandler.post {
-                        onReceivePurchaseHistoryError(
-                            PurchasesError(
-                                PurchasesErrorCode.StoreProblemError,
-                                "Failed to connect to billing service for purchase history",
-                            ),
+                        // Fallback to the Billing library method if there is an error connecting to the AIDL
+                        queryPurchaseHistoryAsync(
+                            BillingClient.ProductType.INAPP,
+                            onReceivePurchaseHistory,
+                            onReceivePurchaseHistoryError,
+                            shouldUseAIDL = false,
                         )
                     }
                     return@launch
@@ -424,11 +426,12 @@ internal class BillingWrapper(
                     errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
                 }
                 mainHandler.post {
-                    onReceivePurchaseHistoryError(
-                        PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            "Error querying purchase history: ${e.message}",
-                        ),
+                    // Fallback to the Billing library method if there is an error querying through AIDL
+                    queryPurchaseHistoryAsync(
+                        BillingClient.ProductType.INAPP,
+                        onReceivePurchaseHistory,
+                        onReceivePurchaseHistoryError,
+                        shouldUseAIDL = false,
                     )
                 }
             }
