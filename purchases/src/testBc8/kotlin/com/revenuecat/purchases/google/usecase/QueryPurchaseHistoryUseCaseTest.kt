@@ -297,7 +297,8 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.queryPurchaseHistoryAsync(
             productType = BillingClient.ProductType.SUBS,
             onReceivePurchaseHistory = { fail("should be an error") },
-        ) {}
+            onReceivePurchaseHistoryError = {},
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(

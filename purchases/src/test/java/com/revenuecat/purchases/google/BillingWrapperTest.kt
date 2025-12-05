@@ -1793,45 +1793,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles connection failure`() = runTest {
-        setupBillingWrapper(isAIDLEnabled = true)
-
-        coEvery {
-            mockPurchaseHistoryManager.connect()
-        } returns false
-
-        coEvery {
-            mockPurchaseHistoryManager.disconnect()
-        } just Runs
-
-        var receivedTransactions: List<StoreTransaction>? = null
-        var receivedError: PurchasesError? = null
-
-        wrapper.purchasesUpdatedListener = mockPurchasesListener
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.INAPP,
-            onReceivePurchaseHistory = { receivedTransactions = it },
-            onReceivePurchaseHistoryError = { receivedError = it }
-        )
-
-        // Wait for coroutine to complete
-        testScope.advanceUntilIdle()
-
-        assertThat(receivedTransactions).isNull()
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        assertThat(receivedError?.underlyingErrorMessage).contains("Failed to connect")
-
-        coVerify(exactly = 1) {
-            mockPurchaseHistoryManager.connect()
-        }
-        coVerify(exactly = 0) {
-            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
-        }
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync with AIDL for INAPP handles query exception`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP falls back to billing library when query exception occurs`() = runTest {
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -1846,6 +1808,14 @@ class BillingWrapperTest {
             mockPurchaseHistoryManager.disconnect()
         } just Runs
 
+        val fallbackPurchases = listOf(stubGooglePurchase(productIds = listOf("fallback_product")))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            emptyList(),
+            fallbackPurchases
+        )
+
         var receivedTransactions: List<StoreTransaction>? = null
         var receivedError: PurchasesError? = null
 
@@ -1859,10 +1829,10 @@ class BillingWrapperTest {
         // Wait for coroutine to complete
         testScope.advanceUntilIdle()
 
-        assertThat(receivedTransactions).isNull()
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        assertThat(receivedError?.underlyingErrorMessage).contains("Error querying purchase history")
+        assertThat(receivedError).isNull()
+        assertThat(receivedTransactions).isNotNull
+        assertThat(receivedTransactions?.size).isEqualTo(1)
+        assertThat(receivedTransactions?.first()?.productIds).contains("fallback_product")
 
         coVerify(exactly = 1) {
             mockPurchaseHistoryManager.connect()
@@ -1874,7 +1844,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryPurchaseHistoryAsync with AIDL for INAPP disconnects even when disconnect fails`() = runTest {
+    fun `queryPurchaseHistoryAsync with AIDL for INAPP disconnects even when disconnect fails and fallback works`() = runTest {
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -1889,6 +1859,15 @@ class BillingWrapperTest {
             mockPurchaseHistoryManager.disconnect()
         } throws RuntimeException("Disconnect exception")
 
+        // Mock the fallback to return successful results
+        val fallbackPurchases = listOf(stubGooglePurchase(productIds = listOf("fallback_product")))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            emptyList(),
+            fallbackPurchases
+        )
+
         var receivedTransactions: List<StoreTransaction>? = null
         var receivedError: PurchasesError? = null
 
@@ -1902,9 +1881,10 @@ class BillingWrapperTest {
         // Wait for coroutine to complete
         testScope.advanceUntilIdle()
 
-        assertThat(receivedTransactions).isNull()
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        // Fallback should work even when disconnect fails
+        assertThat(receivedError).isNull()
+        assertThat(receivedTransactions).isNotNull
+        assertThat(receivedTransactions?.size).isEqualTo(1)
 
         coVerify(exactly = 2) {
             mockPurchaseHistoryManager.disconnect()
@@ -1947,6 +1927,106 @@ class BillingWrapperTest {
         coVerify(exactly = 1) {
             mockPurchaseHistoryManager.connect()
             mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+            mockPurchaseHistoryManager.disconnect()
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL does fallback when connection fails`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns false
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        // Mock the fallback to return successful results
+        val fallbackPurchases = listOf(stubGooglePurchase(productIds = listOf("fallback_product")))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            emptyList(),
+            fallbackPurchases
+        )
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        // Fallback should work even when disconnect fails
+        assertThat(receivedError).isNull()
+        assertThat(receivedTransactions).isNotNull
+        assertThat(receivedTransactions?.size).isEqualTo(1)
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+        }
+        coVerify(exactly = 0) {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        }
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync with AIDL fallback handles billing library errors`() = runTest {
+        setupBillingWrapper(isAIDLEnabled = true)
+
+        coEvery {
+            mockPurchaseHistoryManager.connect()
+        } returns true
+
+        coEvery {
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        } throws RuntimeException("Test exception")
+
+        coEvery {
+            mockPurchaseHistoryManager.disconnect()
+        } just Runs
+
+        // Mock the fallback to return error from billing library
+        val billingError = BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult()
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingError,
+            emptyList(),
+            emptyList()
+        )
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.INAPP,
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it }
+        )
+
+        // Wait for coroutine to complete
+        testScope.advanceUntilIdle()
+
+        // Should return error from the fallback
+        assertThat(receivedTransactions).isNull()
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+
+        coVerify(exactly = 1) {
+            mockPurchaseHistoryManager.connect()
+            mockPurchaseHistoryManager.queryAllPurchaseHistory(any())
+        }
+        // Disconnect is called twice: once in finally block, once in catch block
+        coVerify(exactly = 2) {
             mockPurchaseHistoryManager.disconnect()
         }
     }
