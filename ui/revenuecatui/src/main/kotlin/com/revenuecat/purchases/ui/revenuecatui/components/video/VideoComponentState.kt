@@ -48,10 +48,10 @@ internal class VideoComponentState(
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
-    private val initialScreenCondition: ScreenCondition,
+    private val screenConditionProvider: () -> ScreenCondition,
     private val style: VideoComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
+    private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
     private val introOfferAvailability: IntroOfferAvailability,
 ) {
@@ -84,7 +84,7 @@ internal class VideoComponentState(
         )
 
         style.overrides.buildPresentedPartial(
-            screenCondition = initialScreenCondition,
+            screenCondition = screenConditionProvider(),
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
@@ -338,7 +338,7 @@ internal fun rememberUpdatedVideoComponentState(
     val layoutDirection = LocalLayoutDirection.current
     return remember(style, screenCondition, density, darkMode, layoutDirection) {
         VideoComponentState(
-            initialScreenCondition = screenCondition,
+            screenConditionProvider = screenConditionProvider,
             initialDensity = density,
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
