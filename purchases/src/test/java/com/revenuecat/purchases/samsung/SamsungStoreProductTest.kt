@@ -45,12 +45,11 @@ class SamsungStoreProductTest {
         assertThat(copiedProduct.subscriptionOptions).isEqualTo(product.subscriptionOptions)
         assertThat(copiedProduct.defaultOption).isEqualTo(product.defaultOption)
 
-        assertThat(copiedProduct.presentedOfferingContext!!.offeringIdentifier).isEqualTo(expectedOfferingId)
-        assertThat(copiedProduct.presentedOfferingContext.placementIdentifier)
-            .isEqualTo(originalPresentedOfferingContext.placementIdentifier)
-        assertThat(copiedProduct.presentedOfferingContext.targetingContext)
-            .isEqualTo(originalPresentedOfferingContext.targetingContext)
-        assertThat(product.presentedOfferingContext!!.offeringIdentifier).isEqualTo("originalOfferingId")
+        val copiedContext = requireNotNull(copiedProduct.presentedOfferingContext)
+        assertThat(copiedContext.offeringIdentifier).isEqualTo(expectedOfferingId)
+        assertThat(copiedContext.placementIdentifier).isEqualTo(originalPresentedOfferingContext.placementIdentifier)
+        assertThat(copiedContext.targetingContext).isEqualTo(originalPresentedOfferingContext.targetingContext)
+        assertThat(requireNotNull(product.presentedOfferingContext).offeringIdentifier).isEqualTo("originalOfferingId")
     }
 
     @Test
@@ -60,9 +59,11 @@ class SamsungStoreProductTest {
         val expectedOfferingId = "newOfferingId"
         val copiedProduct = product.copyWithOfferingId(expectedOfferingId) as SamsungStoreProduct
 
-        assertThat(copiedProduct.presentedOfferingContext!!.offeringIdentifier).isEqualTo(expectedOfferingId)
-        assertThat(copiedProduct.presentedOfferingContext.placementIdentifier).isNull()
-        assertThat(copiedProduct.presentedOfferingContext.targetingContext).isNull()
+        val copiedContext = requireNotNull(copiedProduct.presentedOfferingContext)
+        assertThat(copiedContext.offeringIdentifier).isEqualTo(expectedOfferingId)
+        assertThat(copiedContext.placementIdentifier).isNull()
+        assertThat(copiedContext.targetingContext).isNull()
+        assertThat(product.presentedOfferingContext).isNull()
     }
 
     @Test
@@ -96,8 +97,8 @@ class SamsungStoreProductTest {
         assertThat(copiedProduct.period).isEqualTo(product.period)
         assertThat(copiedProduct.subscriptionOptions).isEqualTo(product.subscriptionOptions)
         assertThat(copiedProduct.defaultOption).isEqualTo(product.defaultOption)
-        assertThat(copiedProduct.presentedOfferingContext).isEqualTo(newPresentedOfferingContext)
-        assertThat(product.presentedOfferingContext).isEqualTo(originalPresentedOfferingContext)
+        assertThat(requireNotNull(copiedProduct.presentedOfferingContext)).isEqualTo(newPresentedOfferingContext)
+        assertThat(requireNotNull(product.presentedOfferingContext)).isEqualTo(originalPresentedOfferingContext)
     }
 
     @Test
@@ -113,7 +114,7 @@ class SamsungStoreProductTest {
         val copiedProduct = product.copyWithPresentedOfferingContext(null) as SamsungStoreProduct
 
         assertThat(copiedProduct.presentedOfferingContext).isNull()
-        assertThat(product.presentedOfferingContext!!.offeringIdentifier).isEqualTo("originalOfferingId")
+        assertThat(requireNotNull(product.presentedOfferingContext).offeringIdentifier).isEqualTo("originalOfferingId")
     }
 
     private fun createProduct(
