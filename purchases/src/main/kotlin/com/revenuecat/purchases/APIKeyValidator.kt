@@ -4,10 +4,17 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.ConfigureStrings
+import kotlin.text.indexOf
+import kotlin.text.substring
 
 private const val GOOGLE_API_KEY_PREFIX = "goog_"
 private const val AMAZON_API_KEY_PREFIX = "amzn_"
 private const val TEST_API_KEY_PREFIX = "test_"
+
+// For API Key redaction
+private const val REMAINDER_START_LENGTH = 2
+private const val REMAINDER_END_LENGTH = 4
+private const val REDACTION_PLACEHOLDER = "********"
 
 internal class APIKeyValidator {
 
@@ -71,5 +78,29 @@ internal class APIKeyValidator {
             !apiKey.contains('_') -> APIKeyPlatform.LEGACY
             else -> APIKeyPlatform.OTHER_PLATFORM
         }
+    }
+
+    fun redactApiKey(apiKey: String): String {
+        val underscoreIndex = apiKey.indexOf('_')
+        val prefix: String
+        val remainder: String
+        if (underscoreIndex == -1) {
+            prefix = ""
+            remainder = apiKey
+        } else {
+            prefix = apiKey.take(underscoreIndex + 1) // includes underscore
+            remainder = apiKey.substring(underscoreIndex + 1)
+        }
+
+        // If fewer than 6 chars after underscore → do not redact
+        val minimumLengthToRedact = REMAINDER_START_LENGTH + REMAINDER_END_LENGTH
+        if (remainder.length < minimumLengthToRedact) {
+            return apiKey
+        }
+
+        val start = remainder.take(REMAINDER_START_LENGTH)
+        val end = remainder.takeLast(REMAINDER_END_LENGTH)
+
+        return prefix + start + REDACTION_PLACEHOLDER + end
     }
 }

@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
@@ -146,5 +148,56 @@ class AdTrackerTest {
         )
 
         assertThat(eventSlot.captured.precision).isEqualTo(AdRevenuePrecision.ESTIMATED)
+    }
+
+    @Test
+    fun `trackAdLoaded tracks loaded event`() {
+        val eventSlot = slot<AdEvent.Loaded>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdLoaded(
+            data = AdLoadedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "interstitial_level_complete",
+                adUnitId = "ca-app-pub-789012",
+                impressionId = "impression-456",
+            ),
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.Loaded>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
+        assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.LOADED)
+    }
+
+    @Test
+    fun `trackAdFailedToLoad tracks failed to load event`() {
+        val eventSlot = slot<AdEvent.FailedToLoad>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdFailedToLoad(
+            data = AdFailedToLoadData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "interstitial_level_complete",
+                adUnitId = "ca-app-pub-789012",
+                mediatorErrorCode = 123L,
+            ),
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.FailedToLoad>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
+        assertThat(eventSlot.captured.impressionId).isNull()
+        assertThat(eventSlot.captured.mediatorErrorCode).isEqualTo(123L)
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.FAILED_TO_LOAD)
     }
 }
