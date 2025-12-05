@@ -70,7 +70,8 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.SIMULATED_STORE -> "Test Store"
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
-        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE -> null
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        -> null
     }
 }
 
@@ -85,6 +86,7 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.SIMULATED_STORE -> "a" // "a Test Store API key"
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
-        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE -> "a"
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        -> "a"
     }
 }
