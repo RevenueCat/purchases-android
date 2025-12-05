@@ -185,6 +185,7 @@ internal fun previewStackComponentStyle(
         countdownDate = null,
         countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     )
 }
 
@@ -227,6 +228,7 @@ internal fun previewTextComponentStyle(
         countFrom = CountdownComponent.CountFrom.DAYS,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,
+        evaluateUnknownConditionsAs = null,
     )
 }
 
@@ -274,6 +276,7 @@ internal fun previewIconComponentStyle(
     rcPackage = null,
     tabIndex = null,
     overrides = emptyList(),
+    evaluateUnknownConditionsAs = null,
 )
 
 @Composable

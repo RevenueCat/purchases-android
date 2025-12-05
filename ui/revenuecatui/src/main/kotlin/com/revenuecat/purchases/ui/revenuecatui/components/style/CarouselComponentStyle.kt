@@ -64,6 +64,8 @@ internal data class CarouselComponentStyle(
     val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedCarouselPartial>>,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle {
     @Immutable
     data class PageControlStyles(

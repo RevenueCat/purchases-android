@@ -413,6 +413,7 @@ private fun previewStyle(
         rcPackage = null,
         tabIndex = null,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     )
 }
 

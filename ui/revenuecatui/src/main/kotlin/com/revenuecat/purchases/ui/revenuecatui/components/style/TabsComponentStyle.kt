@@ -65,6 +65,8 @@ internal data class TabsComponentStyle(
     val tabs: NonEmptyList<Tab>,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedTabsPartial>>,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle {
 
     @Immutable

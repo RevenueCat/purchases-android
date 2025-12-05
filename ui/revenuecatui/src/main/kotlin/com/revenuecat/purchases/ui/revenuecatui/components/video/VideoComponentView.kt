@@ -104,6 +104,7 @@ private fun rememberVideoContentState(
                     tabIndex = style.tabIndex,
                     overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
                     ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                    evaluateUnknownConditionsAs = null,
                 ),
             )
         } else {

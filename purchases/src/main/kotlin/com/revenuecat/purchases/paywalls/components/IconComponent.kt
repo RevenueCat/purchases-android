@@ -48,6 +48,9 @@ class IconComponent(
     val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent {
 
     @Poko

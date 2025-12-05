@@ -60,6 +60,9 @@ class StackComponent(
     val overflow: Overflow? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)

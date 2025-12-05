@@ -286,6 +286,7 @@ private fun previewButtonComponentStyle(
         countdownDate = null,
         countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
+        evaluateUnknownConditionsAs = null,
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,
 ): ButtonComponentStyle {

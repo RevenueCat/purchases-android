@@ -55,6 +55,9 @@ class ImageComponent(
     val shadow: Shadow? = null,
     @get:JvmSynthetic
     val overrides: List<ComponentOverride<PartialImageComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("evaluate_unknown_conditions_as")
+    val evaluateUnknownConditionsAs: Boolean? = null,
 ) : PaywallComponent
 
 @Suppress("LongParameterList")

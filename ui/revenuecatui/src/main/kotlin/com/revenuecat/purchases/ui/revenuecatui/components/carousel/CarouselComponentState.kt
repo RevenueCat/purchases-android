@@ -104,6 +104,7 @@ internal class CarouselComponentState(
             introOfferSnapshot = introOfferSnapshot,
             state = componentState,
             selectedPackageIdentifier = applicablePackage?.identifier,
+            evaluateUnknownConditionsAs = style.evaluateUnknownConditionsAs
         )
     }
 

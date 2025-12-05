@@ -60,6 +60,8 @@ internal class IconComponentStyle(
     val tabIndex: Int?,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedIconPartial>>,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle {
     @Immutable
     internal class Background(

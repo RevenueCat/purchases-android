@@ -57,4 +57,6 @@ internal data class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val ignoreTopWindowInsets: Boolean = false,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle

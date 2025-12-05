@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import dev.drewhamilton.poko.Poko
+import kotlin.Boolean
 
 /**
  * Partial components transformed and ready for presentation.
@@ -83,6 +84,7 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
+    evaluateUnknownConditionsAs: Boolean?,
 ): T? {
     var partial: T? = null
     for (override in this) {
@@ -92,6 +94,7 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
                 introOfferSnapshot,
                 state,
                 selectedPackageIdentifier,
+                evaluateUnknownConditionsAs
             )
         ) {
             partial = partial.combineOrReplace(override.properties)
@@ -106,21 +109,31 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
+    evaluateUnknownConditionsAs: Boolean?,
 ): Boolean = this.conditions.all { condition ->
-    conditionMatches(condition, screenCondition, introOfferSnapshot, state, selectedPackageIdentifier)
+    conditionMatches(
+        condition,
+        screenCondition,
+        introOfferSnapshot,
+        state,
+        selectedPackageIdentifier,
+        evaluateUnknownConditionsAs
+    )
 }
 
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongParameterList")
 private fun conditionMatches(
     condition: ComponentOverride.Condition,
     screenCondition: ScreenCondition,
     introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
     selectedPackageIdentifier: String?,
+    evaluateUnknownConditionsAs: Boolean?
 ): Boolean = when (condition) {
     is ComponentOverride.Condition.MultipleIntroOffers -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.eligibility.hasMultipleIntroOffers() == condition.value
+
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferSnapshot.eligibility.hasMultipleIntroOffers() != condition.value
     }
@@ -128,6 +141,7 @@ private fun conditionMatches(
     is ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage == condition.value
+
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage != condition.value
     }
@@ -135,11 +149,12 @@ private fun conditionMatches(
     ComponentOverride.Condition.Selected ->
         state == ComponentViewState.SELECTED
 
-    ComponentOverride.Condition.Unsupported -> true // Ignore case and render partial
+    ComponentOverride.Condition.Unsupported -> evaluateUnknownConditionsAs ?: true
 
     is ComponentOverride.Condition.IntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.eligibility.isEligible() == condition.value
+
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferSnapshot.eligibility.isEligible() != condition.value
     }
@@ -147,6 +162,7 @@ private fun conditionMatches(
     is ComponentOverride.Condition.AnyPackageContainsIntroOffer -> when (condition.operator) {
         ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
             introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage == condition.value
+
         ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
             introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage != condition.value
     }
@@ -169,6 +185,7 @@ private fun matchesOrientation(
     return when (condition.operator) {
         ComponentOverride.Condition.ArrayOperatorType.IN ->
             activeOrientation != null && condition.orientations.contains(activeOrientation)
+
         ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
             activeOrientation == null || !condition.orientations.contains(activeOrientation)
     }
@@ -182,6 +199,7 @@ private fun matchesScreenSize(
     return when (condition.operator) {
         ComponentOverride.Condition.ArrayOperatorType.IN ->
             condition.sizes.contains(activeName)
+
         ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
             !condition.sizes.contains(activeName)
     }
@@ -195,6 +213,7 @@ private fun matchesSelectedPackage(
     return when (condition.operator) {
         ComponentOverride.Condition.ArrayOperatorType.IN ->
             condition.packages.contains(selected)
+
         ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
             !condition.packages.contains(selected)
     }

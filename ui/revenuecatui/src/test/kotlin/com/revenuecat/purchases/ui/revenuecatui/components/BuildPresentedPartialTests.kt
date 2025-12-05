@@ -34,6 +34,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val selectedPackageIdentifier: String? = null,
         val hasAnyIntroOfferEligiblePackage: Boolean = false,
         val hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
+        val evaluateUnknownConditionsAs: Boolean? = null,
     )
 
     @Suppress("LargeClass")
@@ -459,7 +460,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should ignore unsupported condition",
+                "should ignore unsupported condition by default (evaluateUnknownConditionsAs = null)",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -471,6 +472,76 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "should apply override with unsupported condition when evaluateUnknownConditionsAs = true",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    evaluateUnknownConditionsAs = true,
+                ),
+            ),
+            arrayOf(
+                "should reject override with unsupported condition when evaluateUnknownConditionsAs = false",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    evaluateUnknownConditionsAs = false,
+                ),
+            ),
+            arrayOf(
+                "should reject override when unsupported condition combined with matching condition and evaluateUnknownConditionsAs = false",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Unsupported,
+                                ComponentOverride.Condition.Selected,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = SELECTED,
+                    expected = null,
+                    evaluateUnknownConditionsAs = false,
+                ),
+            ),
+            arrayOf(
+                "should apply override when unsupported condition combined with matching condition and evaluateUnknownConditionsAs = true",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Unsupported,
+                                ComponentOverride.Condition.Selected,
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = SELECTED,
+                    expected = compactPartial,
+                    evaluateUnknownConditionsAs = true,
                 ),
             ),
             arrayOf(
@@ -882,6 +953,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             ),
             state = args.state,
             selectedPackageIdentifier = args.selectedPackageIdentifier,
+            evaluateUnknownConditionsAs = args.evaluateUnknownConditionsAs,
         )
 
         // Assert

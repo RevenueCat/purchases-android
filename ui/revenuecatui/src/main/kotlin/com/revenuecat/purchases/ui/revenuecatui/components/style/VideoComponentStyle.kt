@@ -68,4 +68,6 @@ internal data class VideoComponentStyle(
     val ignoreTopWindowInsets: Boolean = false,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedVideoPartial>>,
+    @get:JvmSynthetic
+    val evaluateUnknownConditionsAs: Boolean?,
 ) : ComponentStyle
