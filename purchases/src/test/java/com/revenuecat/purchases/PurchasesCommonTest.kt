@@ -841,6 +841,56 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `when making a deferred product change, completion is called if transaction returns new product`() {
+        val newProductId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
+        val oldPurchase = mockPurchaseFound()
+        val newPurchase = getMockedStoreTransaction(
+            productId = newProductId.first(),
+            purchaseToken = "new_purchase_token",
+            productType = ProductType.SUBS,
+        )
+        mockQueryingProductDetails(newPurchase.productIds.first(), ProductType.SUBS, null)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                newPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(newPurchase, mockk(relaxed = true))
+        }
+
+        val productChangeParams = getPurchaseParams(
+            storeProduct.first().subscriptionOptions!!.first(),
+            oldPurchase.productIds.first(),
+            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+        )
+        var callCount = 0
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ ->
+                fail("should be successful")
+            },
+        ) { purchase, _ ->
+            callCount++
+            assertThat(purchase).isEqualTo(newPurchase)
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(newPurchase))
+        assertThat(callCount).isEqualTo(1)
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = newPurchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
