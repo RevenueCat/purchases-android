@@ -26,6 +26,7 @@ class StoreTest {
         assertThat(Store.fromString("paddle")).isEqualTo(Store.PADDLE)
         assertThat(Store.fromString("test_store")).isEqualTo(Store.TEST_STORE)
         assertThat(Store.fromString("unknown")).isEqualTo(Store.UNKNOWN_STORE)
+        assertThat(Store.fromString("samsung")).isEqualTo(Store.SAMSUNG_STORE)
         assertThat(Store.fromString("invalid_store")).isEqualTo(Store.UNKNOWN_STORE)
     }
 
