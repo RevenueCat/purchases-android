@@ -52,16 +52,13 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.BillingStrings
-import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockInstallmentPlandetails
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
-import com.revenuecat.purchases.utils.mockQueryPurchases
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
@@ -70,11 +67,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -83,6 +78,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1794,6 +1790,8 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync with AIDL for INAPP falls back to billing library when query exception occurs`() = runTest {
+        assumeRunningBc8()
+
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -1845,6 +1843,8 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync with AIDL for INAPP disconnects even when disconnect fails and fallback works`() = runTest {
+        assumeRunningBc8()
+
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -1867,6 +1867,7 @@ class BillingWrapperTest {
             emptyList(),
             fallbackPurchases
         )
+
 
         var receivedTransactions: List<StoreTransaction>? = null
         var receivedError: PurchasesError? = null
@@ -1933,6 +1934,8 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync with AIDL does fallback when connection fails`() = runTest {
+        assumeRunningBc8()
+
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -1980,6 +1983,8 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync with AIDL fallback handles billing library errors`() = runTest {
+        assumeRunningBc8()
+
         setupBillingWrapper(isAIDLEnabled = true)
 
         coEvery {
@@ -2139,5 +2144,9 @@ class BillingWrapperTest {
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
         every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
+    }
+
+    private fun assumeRunningBc8() {
+        assumeTrue(!BuildConfig.BILLING_CLIENT_VERSION.startsWith("7.") )
     }
 }
