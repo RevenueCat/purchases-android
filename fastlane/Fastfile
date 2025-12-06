@@ -776,7 +776,7 @@ DESC
       record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
       # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
       sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
-        if file_path =~ /\>\>(.*?)\<\</
+        if file_path =~ /\_\_\_(.*?)\_\_\_/
           offering_id = $1
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
           sh("mkdir -p \"#{target_dir}\"")

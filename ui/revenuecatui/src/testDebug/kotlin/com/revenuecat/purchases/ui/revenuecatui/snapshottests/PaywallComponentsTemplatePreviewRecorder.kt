@@ -38,8 +38,8 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
 
     companion object {
         @JvmStatic
-        // Placing the offering ID in inverted double diamond brackets so we can easily parse it later.
-        @Parameters(name = ">>{0}<<")
+        // Placing the offering ID between triple underscores so we can easily parse it later.
+        @Parameters(name = "___{0}___")
         fun data(): List<Array<Any>> {
             // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
             // We have to replace the log handler, as the default one uses android.util.Log, which gives an

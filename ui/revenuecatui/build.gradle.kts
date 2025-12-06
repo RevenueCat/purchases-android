@@ -65,6 +65,13 @@ android {
     }
 }
 
+tasks.withType<Test> {
+    // This is needed because of an incompatibility between Robolectric and Paparazzi:
+    // https://github.com/cashapp/paparazzi/issues/1979
+    forkEvery = 1
+    maxParallelForks = 5
+}
+
 metalava {
     hiddenAnnotations.add("com.revenuecat.purchases.InternalRevenueCatAPI")
     arguments.addAll(listOf("--hide", "ReferencesHidden"))
