@@ -686,14 +686,14 @@ class PurchaseInformationTest {
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = true,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = true,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -711,7 +711,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             product = null,
             isSubscription = true,
             isExpired = false,
@@ -730,14 +730,14 @@ class PurchaseInformationTest {
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = false,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = false,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -755,7 +755,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             product = null,
             isSubscription = true,
             isExpired = false,
@@ -774,14 +774,14 @@ class PurchaseInformationTest {
         val entitlementInfo = createEntitlementInfo(
             isActive = false,
             willRenew = false,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
             willRenew = false,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -799,7 +799,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.GALAXY_STORE,
+            store = Store.GALAXY,
             product = null,
             isSubscription = true,
             isExpired = true,

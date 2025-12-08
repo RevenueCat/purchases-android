@@ -1018,7 +1018,7 @@ class EntitlementInfosTests {
             }
         )
 
-        verifyStore(Store.GALAXY_STORE)
+        verifyStore(Store.GALAXY)
     }
 
     @Test
