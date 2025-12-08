@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import com.revenuecat.purchases.PostReceiptInitiationSource
@@ -15,7 +15,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 
 @Suppress("TooManyFunctions")
-internal class SamsungBillingWrapper(
+internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {

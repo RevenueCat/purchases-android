@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -10,7 +10,7 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class SamsungStoreProduct(
+class GalaxyStoreProduct(
 
     /**
      * The productId for this product.
@@ -29,17 +29,17 @@ class SamsungStoreProduct(
     override val price: Price,
 
     /**
-     * Name of the product. This will match the name for Samsung products.
+     * Name of the product. This will match the name for Galaxy products.
      */
     override val name: String,
 
     /**
-     * Name of the product. This will match the name for Samsung products.
+     * Name of the product. This will match the name for Galaxy products.
      */
     override val title: String,
 
     /**
-     * Name of the product. This will match the item description for Samsung products.
+     * Name of the product. This will match the item description for Galaxy products.
      */
     override val description: String,
 
@@ -51,12 +51,12 @@ class SamsungStoreProduct(
     override val period: Period?,
 
     /**
-     * Always null for SamsungStoreProduct
+     * Always null for GalaxyStoreProduct
      */
     override val subscriptionOptions: SubscriptionOptions?,
 
     /**
-     * Always null for SamsungStoreProduct
+     * Always null for GalaxyStoreProduct
      */
     override val defaultOption: SubscriptionOption?,
 
@@ -84,7 +84,7 @@ class SamsungStoreProduct(
     }
 
     override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
-        return SamsungStoreProduct(
+        return GalaxyStoreProduct(
             id = this.id,
             type = this.type,
             price = this.price,
@@ -101,11 +101,11 @@ class SamsungStoreProduct(
     /**
      * Contains only data that is required to make the purchase.
      */
-    override val purchasingData: SamsungPurchasingData
-        get() = SamsungPurchasingData.Product(this)
+    override val purchasingData: GalaxyPurchasingData
+        get() = GalaxyPurchasingData.Product(this)
 
     /**
-     * The offering ID this `SamsungStoreProduct` was returned from.
+     * The offering ID this `GalaxyStoreProduct` was returned from.
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */

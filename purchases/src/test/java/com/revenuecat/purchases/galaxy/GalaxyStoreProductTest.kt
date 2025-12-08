@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class SamsungStoreProductTest {
+class GalaxyStoreProductTest {
 
     private val price = Price(
         formatted = "$1.00",
@@ -33,7 +33,7 @@ class SamsungStoreProductTest {
         val product = createProduct(originalPresentedOfferingContext)
 
         val expectedOfferingId = "newOfferingId"
-        val copiedProduct = product.copyWithOfferingId(expectedOfferingId) as SamsungStoreProduct
+        val copiedProduct = product.copyWithOfferingId(expectedOfferingId) as GalaxyStoreProduct
 
         assertThat(copiedProduct.id).isEqualTo(product.id)
         assertThat(copiedProduct.type).isEqualTo(product.type)
@@ -57,7 +57,7 @@ class SamsungStoreProductTest {
         val product = createProduct(presentedOfferingContext = null)
 
         val expectedOfferingId = "newOfferingId"
-        val copiedProduct = product.copyWithOfferingId(expectedOfferingId) as SamsungStoreProduct
+        val copiedProduct = product.copyWithOfferingId(expectedOfferingId) as GalaxyStoreProduct
 
         val copiedContext = requireNotNull(copiedProduct.presentedOfferingContext)
         assertThat(copiedContext.offeringIdentifier).isEqualTo(expectedOfferingId)
@@ -86,7 +86,7 @@ class SamsungStoreProductTest {
                 ruleId = "new-rule-id",
             ),
         )
-        val copiedProduct = product.copyWithPresentedOfferingContext(newPresentedOfferingContext) as SamsungStoreProduct
+        val copiedProduct = product.copyWithPresentedOfferingContext(newPresentedOfferingContext) as GalaxyStoreProduct
 
         assertThat(copiedProduct.id).isEqualTo(product.id)
         assertThat(copiedProduct.type).isEqualTo(product.type)
@@ -111,7 +111,7 @@ class SamsungStoreProductTest {
             ),
         )
 
-        val copiedProduct = product.copyWithPresentedOfferingContext(null) as SamsungStoreProduct
+        val copiedProduct = product.copyWithPresentedOfferingContext(null) as GalaxyStoreProduct
 
         assertThat(copiedProduct.presentedOfferingContext).isNull()
         assertThat(requireNotNull(product.presentedOfferingContext).offeringIdentifier).isEqualTo("originalOfferingId")
@@ -119,7 +119,7 @@ class SamsungStoreProductTest {
 
     private fun createProduct(
         presentedOfferingContext: PresentedOfferingContext? = null,
-    ) = SamsungStoreProduct(
+    ) = GalaxyStoreProduct(
         id = "productId",
         type = ProductType.SUBS,
         price = price,
