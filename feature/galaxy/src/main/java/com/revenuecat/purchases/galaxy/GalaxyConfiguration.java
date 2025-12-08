@@ -4,11 +4,11 @@
  *
  * If written in Kotlin this wouldn't work:
  *
- * PurchasesConfiguration.Builder builder = new AmazonConfiguration.Builder(this, "");
+ * PurchasesConfiguration.Builder builder = new GalaxyConfiguration.Builder(this, "");
  *
  * And this either:
  *
- * AmazonConfiguration.Builder builder = new AmazonConfiguration.Builder(this, "");
+ * GalaxyConfiguration.Builder builder = new GalaxyConfiguration.Builder(this, "");
  * builder.build();
  */
 package com.revenuecat.purchases.galaxy;
