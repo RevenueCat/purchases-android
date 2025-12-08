@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon
+package com.revenuecat.purchases.samsung
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -14,50 +14,57 @@ import com.revenuecat.purchases.samsung.SamsungBillingMode
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @RunWith(AndroidJUnit4::class)
-class BillingFactoryAmazonTest {
-
+class BillingFactorySamsungTest {
     @Test
-    fun `AmazonBilling can be created`() {
+    fun `SamsungBillingWrapper gets created when store is Samsung`() {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
         val mockBackend = mockk<Backend>(relaxed = true)
 
-        BillingFactory.createBilling(
-            Store.AMAZON,
+        val simulatedBilling = BillingFactory.createBilling(
+            // TODO: Make this Store.Samsung after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
+            Store.TEST_STORE,
             mockApplication,
             mockBackendHelper,
             mockCache,
             finishTransactions = true,
             mockDiagnosticsTracker,
-            stateProvider = PurchasesStateCache(PurchasesState()),
+            PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             SamsungBillingMode.TEST,
             backend = mockBackend,
         )
+        assertIs<SamsungBillingWrapper>(simulatedBilling)
     }
 
     @Test
-    fun `AmazonBilling can be created without diagnostics tracker`() {
+    fun `SamsungBillingWrapper gets created with SamsungBillingMode from function params`() {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
         val mockBackend = mockk<Backend>(relaxed = true)
 
-        BillingFactory.createBilling(
-            Store.AMAZON,
+        val samsungWrapper = BillingFactory.createBilling(
+            // TODO: Make this Store.Samsung after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
+            Store.TEST_STORE,
             mockApplication,
             mockBackendHelper,
             mockCache,
             finishTransactions = true,
-            diagnosticsTrackerIfEnabled = null,
-            stateProvider = PurchasesStateCache(PurchasesState()),
+            mockDiagnosticsTracker,
+            PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
             SamsungBillingMode.TEST,
             backend = mockBackend,
         )
+        assertIs<SamsungBillingWrapper>(samsungWrapper)
+        assertEquals(SamsungBillingMode.TEST, samsungWrapper.billingMode)
     }
 }

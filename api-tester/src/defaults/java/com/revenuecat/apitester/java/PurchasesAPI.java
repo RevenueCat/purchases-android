@@ -27,6 +27,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
+import com.revenuecat.purchases.samsung.SamsungBillingMode;
+import com.revenuecat.purchases.samsung.SamsungConfiguration;
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
@@ -175,6 +177,23 @@ final class PurchasesAPI {
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
+                .purchasesAreCompletedBy(purchaseCompleter)
+                .service(executorService)
+                .diagnosticsEnabled(true)
+                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+                .showInAppMessagesAutomatically(true)
+                .build();
+    }
+
+    static void checkSamsungConfiguration(final Context context,
+                                         final ExecutorService executorService,
+                                         final PurchasesAreCompletedBy purchaseCompleter) {
+        PurchasesConfiguration samsungConfiguration = new SamsungConfiguration.Builder(
+                context,
+                "",
+                SamsungBillingMode.PRODUCTION
+        )
+                .appUserID("")
                 .purchasesAreCompletedBy(purchaseCompleter)
                 .service(executorService)
                 .diagnosticsEnabled(true)

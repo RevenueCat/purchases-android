@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.samsung
 
 import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -13,17 +16,30 @@ import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
+import com.samsung.android.sdk.iap.lib.helper.IapHelper
 
 @Suppress("TooManyFunctions")
 internal class SamsungBillingWrapper(
+    private val applicationContext: Context,
+    val billingMode: SamsungBillingMode,
+    private val mainHandler: Handler,
     stateProvider: PurchasesStateProvider,
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
+
+    private var connected = false
+    private lateinit var iapHelper: IapHelper
+
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        TODO("Not yet implemented")
+        runOnUIThread {
+            startConnection()
+        }
     }
 
     override fun startConnection() {
-        TODO("Not yet implemented")
+        if (connected) { return }
+        this.iapHelper = IapHelper.getInstance(this.applicationContext)
+        this.iapHelper.setOperationMode(this.billingMode.toSamsungOperationMode())
+        connected = true
     }
 
     override fun endConnection() {
@@ -102,5 +118,13 @@ internal class SamsungBillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         TODO("Not yet implemented")
+    }
+
+    private fun runOnUIThread(runnable: Runnable) {
+        if (Looper.getMainLooper().thread == Thread.currentThread()) {
+            runnable.run()
+        } else {
+            mainHandler.post(runnable)
+        }
     }
 }

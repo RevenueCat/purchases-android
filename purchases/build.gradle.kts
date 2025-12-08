@@ -13,6 +13,10 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
+val samsungIapSdkPath = providers.gradleProperty("samsungIapSdkPath")
+    .orElse("/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar")
+    .map { file(it) }
+
 android {
     namespace = "com.revenuecat.purchases.api"
 
@@ -69,6 +73,8 @@ android {
                 it.exclude("com/revenuecat/purchases/backend_integration_tests/**")
             }
         }
+        // Avoid merging Android manifests for JVM unit tests to prevent minSdk conflicts from optional AARs.
+        unitTests.isIncludeAndroidResources = false
     }
 }
 
@@ -167,6 +173,7 @@ dependencies {
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
+    compileOnly(files(samsungIapSdkPath))
     compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
@@ -182,6 +189,7 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)
+    testImplementation(files(samsungIapSdkPath))
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)

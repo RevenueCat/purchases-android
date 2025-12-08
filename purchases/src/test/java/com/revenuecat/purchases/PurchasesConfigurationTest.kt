@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.samsung.SamsungBillingMode
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -158,5 +159,17 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.context.isDeviceProtectedStorageCompat).isTrue()
         assertThat(purchasesConfiguration.context).isEqualTo(context)
         assertThat(purchasesConfiguration.context).isNotEqualTo(applicationContext)
+    }
+
+    @Test
+    fun `PurchasesConfiguration samsungBillingMode defaults to production`() {
+        val purchasesConfiguration = builder.build()
+        assertThat(purchasesConfiguration.samsungBillingMode).isEqualTo(SamsungBillingMode.PRODUCTION)
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets samsungBillingMode correctly`() {
+        val purchasesConfiguration = builder.samsungBillingMode(SamsungBillingMode.TEST).build()
+        assertThat(purchasesConfiguration.samsungBillingMode).isEqualTo(SamsungBillingMode.TEST)
     }
 }

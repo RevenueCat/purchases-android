@@ -10,6 +10,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.samsung.SamsungBillingMode
+import com.revenuecat.purchases.samsung.SamsungBillingWrapper
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
@@ -24,6 +26,7 @@ internal object BillingFactory {
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
+        samsungBillingMode: SamsungBillingMode,
         backend: Backend,
     ): BillingAbstract {
         return when (store) {
@@ -53,6 +56,20 @@ internal object BillingFactory {
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-amazon is added as dependency" }
+                    throw e
+                }
+            }
+            // TODO: Make this Store.Samsung after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
+            Store.AMAZON -> {
+                try {
+                    SamsungBillingWrapper(
+                        applicationContext = application.applicationContext,
+                        billingMode = samsungBillingMode,
+                        stateProvider = stateProvider,
+                        mainHandler = Handler(application.mainLooper)
+                    )
+                } catch (e: NoClassDefFoundError) {
+                    errorLog(e) { "Make sure purchases-samsung is added as dependency" }
                     throw e
                 }
             }

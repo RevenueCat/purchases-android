@@ -210,6 +210,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                configuration.samsungBillingMode,
                 backend,
             )
 
