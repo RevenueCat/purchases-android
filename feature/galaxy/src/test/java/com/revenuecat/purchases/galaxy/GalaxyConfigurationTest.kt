@@ -3,6 +3,7 @@ package com.revenuecat.purchases.galaxy
 import android.content.Context
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk

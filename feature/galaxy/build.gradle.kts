@@ -41,7 +41,6 @@ val samsungIapSdkPath = providers.provider {
     providers.gradleProperty("samsungIapSdkPath").orNull
         ?: providers.environmentVariable("SAMSUNG_IAP_SDK_PATH").orNull
         ?: localProperties.getProperty("samsungIapSdkPath")
-        ?: "/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar"
 }.map { path ->
     val aar = file(path)
     check(aar.exists()) {
