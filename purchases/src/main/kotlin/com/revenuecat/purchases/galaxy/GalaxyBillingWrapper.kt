@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
@@ -19,9 +19,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 
 @Suppress("TooManyFunctions")
-internal class SamsungBillingWrapper(
+internal class GalaxyBillingWrapper(
     private val applicationContext: Context,
-    val billingMode: SamsungBillingMode,
+    val billingMode: GalaxyBillingMode,
     private val mainHandler: Handler,
     stateProvider: PurchasesStateProvider,
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {

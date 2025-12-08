@@ -1,7 +1,7 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 /**
- * Represents the operation mode used by the Samsung Store.
+ * Represents the operation mode used by the Galaxy Store.
  *
  * This enum allows you to specify whether the app should operate in
  * real production mode, test mode, or a mode that forces failures for
@@ -13,9 +13,9 @@ package com.revenuecat.purchases.samsung
  * Refer to https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html
  * for more information.
  */
-enum class SamsungBillingMode {
+enum class GalaxyBillingMode {
     /**
-     * Use the live Samsung IAP production environment. Financial transactions occur for successful requests.
+     * Process purchases with the production environment. Financial transactions occur for successful requests.
      * Use this mode when submitting your app for beta or production distribution.
      */
     PRODUCTION,

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.revenuecat.purchases.samsung"
+    namespace = "com.revenuecat.purchases.galaxy"
 
     // billingclient dimension is added for bc7/bc8 support
     flavorDimensions += "billingclient"

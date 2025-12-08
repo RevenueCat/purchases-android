@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import org.junit.Test
@@ -10,7 +10,7 @@ class BillingModeConversionsTest {
     fun `production maps to production operation mode`() {
         assertEquals(
             HelperDefine.OperationMode.OPERATION_MODE_PRODUCTION,
-            SamsungBillingMode.PRODUCTION.toSamsungOperationMode(),
+            GalaxyBillingMode.PRODUCTION.toSamsungOperationMode(),
         )
     }
 
@@ -18,7 +18,7 @@ class BillingModeConversionsTest {
     fun `test maps to test operation mode`() {
         assertEquals(
             HelperDefine.OperationMode.OPERATION_MODE_TEST,
-            SamsungBillingMode.TEST.toSamsungOperationMode(),
+            GalaxyBillingMode.TEST.toSamsungOperationMode(),
         )
     }
 
@@ -26,7 +26,7 @@ class BillingModeConversionsTest {
     fun `always fail maps to test failure operation mode`() {
         assertEquals(
             HelperDefine.OperationMode.OPERATION_MODE_TEST_FAILURE,
-            SamsungBillingMode.ALWAYS_FAIL.toSamsungOperationMode(),
+            GalaxyBillingMode.ALWAYS_FAIL.toSamsungOperationMode(),
         )
     }
 }

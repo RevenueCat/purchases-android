@@ -27,8 +27,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
-import com.revenuecat.purchases.samsung.SamsungBillingMode;
-import com.revenuecat.purchases.samsung.SamsungConfiguration;
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode;
+import com.revenuecat.purchases.galaxy.GalaxyConfiguration;
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
@@ -185,13 +185,13 @@ final class PurchasesAPI {
                 .build();
     }
 
-    static void checkSamsungConfiguration(final Context context,
+    static void checkGalaxyConfiguration(final Context context,
                                          final ExecutorService executorService,
                                          final PurchasesAreCompletedBy purchaseCompleter) {
-        PurchasesConfiguration samsungConfiguration = new SamsungConfiguration.Builder(
+        PurchasesConfiguration galaxyConfiguration = new GalaxyConfiguration.Builder(
                 context,
                 "",
-                SamsungBillingMode.PRODUCTION
+                GalaxyBillingMode.PRODUCTION
         )
                 .appUserID("")
                 .purchasesAreCompletedBy(purchaseCompleter)

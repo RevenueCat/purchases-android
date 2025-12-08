@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.samsung
+package com.revenuecat.purchases.galaxy
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.content.Context
@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class SamsungBillingWrapperTest {
+class GalaxyBillingWrapperTest {
     private val applicationContext: Context = mockk(relaxed = true)
     private val mainHandler: Handler = mockk(relaxed = true)
     private val stateProvider = PurchasesStateCache(PurchasesState())
@@ -41,9 +41,9 @@ class SamsungBillingWrapperTest {
         val instanceHelper = mockk<IapHelper>(relaxed = true)
         every { IapHelper.getInstance(applicationContext) } returns instanceHelper
 
-        val wrapper = SamsungBillingWrapper(
+        val wrapper = GalaxyBillingWrapper(
             applicationContext = applicationContext,
-            billingMode = SamsungBillingMode.PRODUCTION,
+            billingMode = GalaxyBillingMode.PRODUCTION,
             mainHandler = mainHandler,
             stateProvider = stateProvider,
         )
@@ -73,9 +73,9 @@ class SamsungBillingWrapperTest {
             true
         }
 
-        val wrapper = SamsungBillingWrapper(
+        val wrapper = GalaxyBillingWrapper(
             applicationContext = applicationContext,
-            billingMode = SamsungBillingMode.TEST,
+            billingMode = GalaxyBillingMode.TEST,
             mainHandler = mainHandler,
             stateProvider = stateProvider,
         )
@@ -98,9 +98,9 @@ class SamsungBillingWrapperTest {
         every { Looper.getMainLooper() } returns mockMainLooper
         every { mockMainLooper.thread } returns Thread.currentThread()
 
-        val wrapper = SamsungBillingWrapper(
+        val wrapper = GalaxyBillingWrapper(
             applicationContext = applicationContext,
-            billingMode = SamsungBillingMode.TEST,
+            billingMode = GalaxyBillingMode.TEST,
             mainHandler = mainHandler,
             stateProvider = stateProvider,
         )
@@ -117,15 +117,15 @@ class SamsungBillingWrapperTest {
         val instanceHelper = mockk<IapHelper>(relaxed = true)
         every { IapHelper.getInstance(applicationContext) } returns instanceHelper
 
-        val wrapper = SamsungBillingWrapper(
+        val wrapper = GalaxyBillingWrapper(
             applicationContext = applicationContext,
-            billingMode = SamsungBillingMode.TEST,
+            billingMode = GalaxyBillingMode.TEST,
             mainHandler = mainHandler,
             stateProvider = stateProvider,
         )
 
         wrapper.startConnection()
 
-        verify(exactly = 1) { instanceHelper.setOperationMode(SamsungBillingMode.TEST.toSamsungOperationMode()) }
+        verify(exactly = 1) { instanceHelper.setOperationMode(GalaxyBillingMode.TEST.toSamsungOperationMode()) }
     }
 }

@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
-import com.revenuecat.purchases.samsung.SamsungBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService
 
 /**
@@ -37,7 +37,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
     val automaticDeviceIdentifierCollectionEnabled: Boolean
     val preferredUILocaleOverride: String?
-    val samsungBillingMode: SamsungBillingMode
+    val galaxyBillingMode: GalaxyBillingMode
 
     init {
         this.context =
@@ -59,7 +59,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
-        this.samsungBillingMode = builder.samsungBillingMode
+        this.galaxyBillingMode = builder.galaxyBillingMode
     }
 
     internal fun copy(
@@ -79,7 +79,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
-            .samsungBillingMode(samsungBillingMode)
+            .galaxyBillingMode(galaxyBillingMode)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -126,7 +126,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var preferredUILocaleOverride: String? = null
 
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var samsungBillingMode: SamsungBillingMode = SamsungBillingMode.PRODUCTION
+        internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
 
         /**
          * A unique id for identifying the user
@@ -203,11 +203,11 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * The billing mode used by the Samsung Store. Only applicable if using the Samsung Store.
-         * @see SamsungBillingMode
+         * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
+         * @see GalaxyBillingMode
          */
-        fun samsungBillingMode(samsungBillingMode: SamsungBillingMode) = apply {
-            this.samsungBillingMode = samsungBillingMode
+        fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
+            this.galaxyBillingMode = galaxyBillingMode
         }
 
         /**

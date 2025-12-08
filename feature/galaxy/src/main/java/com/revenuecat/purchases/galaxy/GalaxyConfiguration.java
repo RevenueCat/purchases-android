@@ -4,14 +4,14 @@
  *
  * If written in Kotlin this wouldn't work:
  *
- * PurchasesConfiguration.Builder builder = new SamsungConfiguration.Builder(this, "");
+ * PurchasesConfiguration.Builder builder = new GalaxyConfiguration.Builder(this, "");
  *
  * And this either:
  *
- * SamsungConfiguration.Builder builder = new SamsungConfiguration.Builder(this, "");
+ * GalaxyConfiguration.Builder builder = new GalaxyConfiguration.Builder(this, "");
  * builder.build();
  */
-package com.revenuecat.purchases.samsung;
+package com.revenuecat.purchases.galaxy;
 
 import android.content.Context;
 
@@ -21,12 +21,12 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.Store;
 
 /**
- * Holds parameters to initialize the SDK for the Samsung Store. Create an instance of this class using the [Builder]
+ * Holds parameters to initialize the SDK for the Galaxy Store. Create an instance of this class using the [Builder]
  * and pass it to [Purchases.configure].
  */
-public final class SamsungConfiguration extends PurchasesConfiguration {
+public final class GalaxyConfiguration extends PurchasesConfiguration {
 
-    public SamsungConfiguration(@NonNull Builder builder) {
+    public GalaxyConfiguration(@NonNull Builder builder) {
         super(builder);
     }
 
@@ -35,11 +35,11 @@ public final class SamsungConfiguration extends PurchasesConfiguration {
         public Builder(
                 @NonNull Context context,
                 @NonNull String apiKey,
-                @NonNull SamsungBillingMode samsungBillingMode
+                @NonNull GalaxyBillingMode galaxyBillingMode
         ) {
             super(context, apiKey);
 
-            // TODO: Make this SAMSUNG after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
+            // TODO: Make this GALAXY after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
             this.store(Store.AMAZON);
         }
 

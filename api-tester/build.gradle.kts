@@ -39,7 +39,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
-    implementation(project(":feature:samsung"))
+    implementation(project(":feature:galaxy"))
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
 
