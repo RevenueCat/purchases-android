@@ -643,6 +643,7 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.Store AMAZON;
     enum_constant public static final com.revenuecat.purchases.Store APP_STORE;
     enum_constant public static final com.revenuecat.purchases.Store EXTERNAL;
+    enum_constant public static final com.revenuecat.purchases.Store GALAXY;
     enum_constant public static final com.revenuecat.purchases.Store MAC_APP_STORE;
     enum_constant public static final com.revenuecat.purchases.Store PADDLE;
     enum_constant public static final com.revenuecat.purchases.Store PLAY_STORE;
