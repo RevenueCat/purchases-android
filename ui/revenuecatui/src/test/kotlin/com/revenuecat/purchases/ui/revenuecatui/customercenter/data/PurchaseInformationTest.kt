@@ -679,21 +679,21 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test PurchaseInformation with samsung entitlement`() {
+    fun `test PurchaseInformation with galaxy entitlement`() {
         val expiresDate = oneDayAgo
         setupDateFormatter(expiresDate, "3 Oct 2063")
 
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = true,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = true,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -711,7 +711,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             product = null,
             isSubscription = true,
             isExpired = false,
@@ -723,21 +723,21 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test PurchaseInformation with non-renewing samsung entitlement`() {
+    fun `test PurchaseInformation with non-renewing galaxy entitlement`() {
         val expiresDate = oneDayAgo
         setupDateFormatter(expiresDate, "3 Oct 2063")
 
         val entitlementInfo = createEntitlementInfo(
             isActive = true,
             willRenew = false,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = true,
             willRenew = false,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -755,7 +755,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             product = null,
             isSubscription = true,
             isExpired = false,
@@ -767,21 +767,21 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test PurchaseInformation with expired samsung entitlement`() {
+    fun `test PurchaseInformation with expired galaxy entitlement`() {
         val expiresDate = oneDayAgo
         setupDateFormatter(expiresDate, "3 Oct 2063")
 
         val entitlementInfo = createEntitlementInfo(
             isActive = false,
             willRenew = false,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expirationDate = expiresDate
         )
         val transaction = createTransactionDetails(
             isActive = false,
             willRenew = false,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             productIdentifier = "com.revenuecat.product",
             expiresDate = expiresDate
         )
@@ -799,7 +799,7 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Subscription",
             price = PriceDetails.Unknown,
-            store = Store.SAMSUNG_STORE,
+            store = Store.GALAXY_STORE,
             product = null,
             isSubscription = true,
             isExpired = true,

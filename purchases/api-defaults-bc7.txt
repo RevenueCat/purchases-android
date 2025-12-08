@@ -643,12 +643,12 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.Store AMAZON;
     enum_constant public static final com.revenuecat.purchases.Store APP_STORE;
     enum_constant public static final com.revenuecat.purchases.Store EXTERNAL;
+    enum_constant public static final com.revenuecat.purchases.Store GALAXY_STORE;
     enum_constant public static final com.revenuecat.purchases.Store MAC_APP_STORE;
     enum_constant public static final com.revenuecat.purchases.Store PADDLE;
     enum_constant public static final com.revenuecat.purchases.Store PLAY_STORE;
     enum_constant public static final com.revenuecat.purchases.Store PROMOTIONAL;
     enum_constant public static final com.revenuecat.purchases.Store RC_BILLING;
-    enum_constant public static final com.revenuecat.purchases.Store SAMSUNG_STORE;
     enum_constant public static final com.revenuecat.purchases.Store STRIPE;
     enum_constant public static final com.revenuecat.purchases.Store TEST_STORE;
     enum_constant public static final com.revenuecat.purchases.Store UNKNOWN_STORE;

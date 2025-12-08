@@ -73,7 +73,7 @@ final class EntitlementInfoAPI {
             case EXTERNAL:
             case PADDLE:
             case TEST_STORE:
-            case SAMSUNG_STORE:
+            case GALAXY_STORE:
         }
     }
 

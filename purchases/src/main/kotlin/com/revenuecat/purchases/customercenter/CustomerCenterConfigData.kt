@@ -247,8 +247,8 @@ data class CustomerCenterConfigData(
             @SerialName("amazon_store")
             AMAZON_STORE,
 
-            @SerialName("samsung_store")
-            SAMSUNG_STORE,
+            @SerialName("galaxy_store")
+            GALAXY_STORE,
 
             @SerialName("web_store")
             WEB_STORE,
@@ -406,7 +406,7 @@ data class CustomerCenterConfigData(
                     MAC_APP_STORE -> "Mac App Store"
                     GOOGLE_PLAY_STORE -> "Google Play Store"
                     AMAZON_STORE -> "Amazon Store"
-                    SAMSUNG_STORE -> "Samsung Store"
+                    GALAXY_STORE -> "Galaxy Store"
                     WEB_STORE -> "Web"
                     UNKNOWN_STORE -> "Unknown"
                     TEST_STORE -> "Test Store"

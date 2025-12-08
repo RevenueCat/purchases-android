@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -1013,13 +1012,13 @@ class EntitlementInfosTests {
                         put("is_sandbox", false)
                         put("original_purchase_date", "2019-07-26T23:45:40Z")
                         put("purchase_date", "2019-07-26T23:45:40Z")
-                        put("store", "samsung")
+                        put("store", "galaxy")
                     })
                 })
             }
         )
 
-        verifyStore(Store.SAMSUNG_STORE)
+        verifyStore(Store.GALAXY_STORE)
     }
 
     @Test

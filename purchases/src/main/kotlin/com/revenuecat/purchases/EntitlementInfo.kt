@@ -236,9 +236,9 @@ enum class Store {
     TEST_STORE,
 
     /**
-     * For entitlement granted via the Samsung store.
+     * For entitlement granted via the Galaxy store.
      */
-    SAMSUNG_STORE,
+    GALAXY_STORE,
     ;
 
     internal val stringValue: String
@@ -254,7 +254,7 @@ enum class Store {
             EXTERNAL -> "external"
             PADDLE -> "paddle"
             TEST_STORE -> "test_store"
-            SAMSUNG_STORE -> "samsung"
+            GALAXY_STORE -> "galaxy"
         }
 
     internal companion object {
@@ -271,7 +271,7 @@ enum class Store {
                 "external" -> EXTERNAL
                 "paddle" -> PADDLE
                 "test_store" -> TEST_STORE
-                "samsung" -> SAMSUNG_STORE
+                "galaxy" -> GALAXY_STORE
                 else -> UNKNOWN_STORE
             }
         }
