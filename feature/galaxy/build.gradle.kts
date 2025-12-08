@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("revenuecat-public-library")
 }
@@ -29,15 +32,23 @@ android {
     }
 }
 
-val samsungIapSdkPath = providers.gradleProperty("samsungIapSdkPath")
-    .orElse("/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar")
-    .map { path ->
-        val aar = file(path)
-        check(aar.exists()) {
-            "Samsung IAP SDK AAR not found at $path. Override with -PsamsungIapSdkPath=/path/to/samsung-iap.aar"
-        }
-        aar
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
+
+// TODO: Bring the Samsung SDK in from somewhere else
+val samsungIapSdkPath = providers.provider {
+    providers.gradleProperty("samsungIapSdkPath").orNull
+        ?: providers.environmentVariable("SAMSUNG_IAP_SDK_PATH").orNull
+        ?: localProperties.getProperty("samsungIapSdkPath")
+        ?: "/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar"
+}.map { path ->
+    val aar = file(path)
+    check(aar.exists()) {
+        "Samsung IAP SDK AAR not found at $path. Override with samsungIapSdkPath property, SAMSUNG_IAP_SDK_PATH env var, or local.properties"
     }
+    aar
+}
 
 dependencies {
     implementation(project(":purchases"))

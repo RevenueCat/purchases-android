@@ -13,9 +13,12 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
-val samsungIapSdkPath = providers.gradleProperty("samsungIapSdkPath")
-    .orElse("/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar")
-    .map { file(it) }
+val samsungIapSdkPath = providers.provider {
+    providers.gradleProperty("samsungIapSdkPath").orNull
+        ?: providers.environmentVariable("SAMSUNG_IAP_SDK_PATH").orNull
+        ?: localProperties.getProperty("samsungIapSdkPath")
+        ?: "/Users/willtaylor/Developer/sdks/SamsungInAppPurchaseSDK_v6.5.0/Libs/samsung-iap-6.5.0.aar"
+}.map { file(it) }
 
 android {
     namespace = "com.revenuecat.purchases.api"
