@@ -6,10 +6,13 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
@@ -94,13 +97,19 @@ internal class GalaxyBillingWrapper(
         inAppMessageTypes: List<InAppMessageType>,
         subscriptionStatusChange: () -> Unit,
     ) {
-        TODO("Not yet implemented")
+        // No-op: Galaxy Store doesn't have in-app messages
     }
 
     override fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
-        TODO("Not yet implemented")
+        log(LogIntent.GALAXY_ERROR) { GalaxyStrings.STOREFRONT_NOT_SUPPORTED }
+        onError(
+            PurchasesError(
+                code = PurchasesErrorCode.UnsupportedError,
+                underlyingErrorMessage = GalaxyStrings.STOREFRONT_NOT_SUPPORTED,
+            ),
+        )
     }
 }
