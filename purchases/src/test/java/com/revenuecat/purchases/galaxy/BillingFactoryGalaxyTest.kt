@@ -27,8 +27,7 @@ class BillingFactoryGalaxyTest {
         val mockBackend = mockk<Backend>(relaxed = true)
 
         val simulatedBilling = BillingFactory.createBilling(
-            // TODO: Make this Store.Galaxy after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
-            Store.TEST_STORE,
+            Store.GALAXY,
             mockApplication,
             mockBackendHelper,
             mockCache,
@@ -51,8 +50,7 @@ class BillingFactoryGalaxyTest {
         val mockBackend = mockk<Backend>(relaxed = true)
 
         val galaxyBillingWrapper = BillingFactory.createBilling(
-            // TODO: Make this Store.Galaxy after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
-            Store.TEST_STORE,
+            Store.GALAXY,
             mockApplication,
             mockBackendHelper,
             mockCache,

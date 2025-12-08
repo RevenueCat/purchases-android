@@ -35,6 +35,5 @@ enum class GalaxyBillingMode {
     /**
      * All IAP requests fail in this mode. Useful for testing error scenarios.
      */
-    ALWAYS_FAIL
+    ALWAYS_FAIL,
 }
-

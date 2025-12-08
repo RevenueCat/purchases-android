@@ -8,7 +8,8 @@ private class GalaxyBillingModeAPI {
         when (galaxyBillingMode) {
             GalaxyBillingMode.PRODUCTION,
             GalaxyBillingMode.TEST,
-            GalaxyBillingMode.ALWAYS_FAIL -> {
+            GalaxyBillingMode.ALWAYS_FAIL,
+            -> {
             }
         }.exhaustive
     }

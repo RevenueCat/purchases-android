@@ -9,14 +9,14 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.revenuecat.purchases.galaxy.GalaxyBillingWrapper
+import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun createBilling(
         store: Store,
         application: Application,
@@ -59,14 +59,13 @@ internal object BillingFactory {
                     throw e
                 }
             }
-            // TODO: Make this Store.Galaxy after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
-            Store.AMAZON -> {
+            Store.GALAXY -> {
                 try {
                     GalaxyBillingWrapper(
                         applicationContext = application.applicationContext,
                         billingMode = galaxyBillingMode,
                         stateProvider = stateProvider,
-                        mainHandler = Handler(application.mainLooper)
+                        mainHandler = Handler(application.mainLooper),
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
