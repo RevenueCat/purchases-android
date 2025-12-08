@@ -38,9 +38,8 @@ public final class GalaxyConfiguration extends PurchasesConfiguration {
                 @NonNull GalaxyBillingMode galaxyBillingMode
         ) {
             super(context, apiKey);
-
-            // TODO: Make this GALAXY after https://github.com/RevenueCat/purchases-android/pull/2900 is merged
-            this.store(Store.AMAZON);
+            this.store(Store.GALAXY);
+            this.galaxyBillingMode(galaxyBillingMode);
         }
 
     }

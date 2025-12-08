@@ -21,6 +21,12 @@ android {
     defaultConfig {
         missingDimensionStrategy("apis", "defaults")
     }
+
+    testOptions {
+        // TODO: Remove this?
+        // Avoid merging Android manifests for JVM unit tests to prevent minSdk conflicts from optional AARs.
+        unitTests.isIncludeAndroidResources = false
+    }
 }
 
 val samsungIapSdkPath = providers.gradleProperty("samsungIapSdkPath")
@@ -37,4 +43,5 @@ dependencies {
     implementation(project(":purchases"))
 
     implementation(files(samsungIapSdkPath))
+    testImplementation(libs.bundles.test)
 }
