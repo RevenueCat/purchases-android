@@ -1,0 +1,4 @@
+-dontwarn com.samsung.**
+-keep class com.samsung.** {*;}
+-keepattributes *Annotation*
+-dontoptimize
