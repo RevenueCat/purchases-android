@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService
 
 /**
@@ -37,6 +38,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
     val automaticDeviceIdentifierCollectionEnabled: Boolean
     val preferredUILocaleOverride: String?
+    val galaxyBillingMode: GalaxyBillingMode
 
     init {
         this.context =
@@ -58,6 +60,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+        this.galaxyBillingMode = builder.galaxyBillingMode
     }
 
     internal fun copy(
@@ -77,6 +80,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
+            .galaxyBillingMode(galaxyBillingMode)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -121,6 +125,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
 
         /**
          * A unique id for identifying the user
@@ -301,6 +308,14 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
+         * @see GalaxyBillingMode
+         */
+        fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
+            this.galaxyBillingMode = galaxyBillingMode
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         open fun build(): PurchasesConfiguration {
@@ -325,6 +340,7 @@ open class PurchasesConfiguration(builder: Builder) {
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+        if (galaxyBillingMode != other.galaxyBillingMode) return false
 
         return true
     }
@@ -341,6 +357,7 @@ open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+        result = 31 * result + (galaxyBillingMode.hashCode())
         return result
     }
 }

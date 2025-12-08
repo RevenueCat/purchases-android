@@ -21,7 +21,7 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.Store;
 
 /**
- * Holds parameters to initialize the SDK for the Amazon Store. Create an instance of this class using the [Builder]
+ * Holds parameters to initialize the SDK for the Galaxy Store. Create an instance of this class using the [Builder]
  * and pass it to [Purchases.configure].
  */
 public final class GalaxyConfiguration extends PurchasesConfiguration {
@@ -32,9 +32,14 @@ public final class GalaxyConfiguration extends PurchasesConfiguration {
 
     public static final class Builder extends PurchasesConfiguration.Builder {
 
-        public Builder(@NonNull Context context, @NonNull String apiKey) {
+        public Builder(
+                @NonNull Context context,
+                @NonNull String apiKey,
+                @NonNull GalaxyBillingMode galaxyBillingMode
+        ) {
             super(context, apiKey);
             this.store(Store.GALAXY);
+            this.galaxyBillingMode(galaxyBillingMode);
         }
 
     }
