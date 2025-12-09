@@ -19,7 +19,6 @@ internal class GalaxySerialRequestExecutor {
     fun executeSerially(request: GalaxySerialRequest) {
         val shouldStartNext = synchronized(lock) {
             pendingRequests.addLast(request)
-            println("GalaxySerialRequestExecutor: enqueued request; total queued=${pendingRequests.size}")
             if (!hasActiveRequest) {
                 hasActiveRequest = true
                 true
@@ -42,7 +41,6 @@ internal class GalaxySerialRequestExecutor {
         }
 
         val hasFinished = AtomicBoolean(false)
-        println("GalaxySerialRequestExecutor: executing next request; remaining queued=${pendingRequests.size}")
         nextRequest {
             if (hasFinished.compareAndSet(false, true)) {
                 onRequestFinished()
@@ -63,10 +61,7 @@ internal class GalaxySerialRequestExecutor {
         }
 
         if (hasNextRequest) {
-            println("GalaxySerialRequestExecutor: advancing to next request; remaining queued=${pendingRequests.size}")
             executeNextRequest()
-        } else {
-            println("GalaxySerialRequestExecutor: queue drained; no pending requests")
         }
     }
 }

@@ -70,6 +70,16 @@ internal class ProductDataHandler(
         synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
             if (productDataCache.keys.containsAll(productIds)) {
                 val cachedProducts = productIds.mapNotNull(productDataCache::get)
+
+                synchronized(this) {
+                    this.inFlightRequest = Request(
+                        productIds = productIds,
+                        productType = productType,
+                        onReceive = onReceive,
+                        onError = onError,
+                    )
+                }
+
                 handleSuccessfulProductsResponse(
                     products = cachedProducts,
                 )
@@ -85,14 +95,13 @@ internal class ProductDataHandler(
                     onGetProductsDetailsListener = this,
                 )
 
-                val request = Request(
-                    productIds = productIds,
-                    productType = productType,
-                    onReceive = onReceive,
-                    onError = onError,
-                )
                 synchronized(this) {
-                    this.inFlightRequest = request
+                    this.inFlightRequest = Request(
+                        productIds = productIds,
+                        productType = productType,
+                        onReceive = onReceive,
+                        onError = onError,
+                    )
                     addTimeoutToProductDataRequest()
                 }
             }
@@ -122,8 +131,9 @@ internal class ProductDataHandler(
             .map { it.toStoreProduct() }
             .filter { it.type == inFlightRequest?.productType }
 
-        inFlightRequest?.onReceive?.invoke(storeProducts)
+        val onReceive = inFlightRequest?.onReceive
         clearInFlightRequest()
+        onReceive?.invoke(storeProducts)
     }
 
     private fun handleUnsuccessfulProductDataResponse(
@@ -138,8 +148,9 @@ internal class ProductDataHandler(
         }
 
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
-        inFlightRequest?.onError?.invoke(purchasesError)
+        val onError = inFlightRequest?.onError
         clearInFlightRequest()
+        onError?.invoke(purchasesError)
     }
 
     private fun clearInFlightRequest() {
@@ -147,21 +158,21 @@ internal class ProductDataHandler(
     }
 
     private fun addTimeoutToProductDataRequest() {
-        mainHandler.postDelayed(
-            {
-                val request = synchronized(this) {
-                    inFlightRequest?.also { clearInFlightRequest() }
-                } ?: return@postDelayed
-
-                val errorString = GalaxyStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DETAILS.format(request)
-                log(LogIntent.GALAXY_ERROR) { errorString }
-                val error = PurchasesError(
-                    code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = errorString,
-                )
-                request.onError(error)
-            },
-            GET_PRODUCT_DATA_TIMEOUT_MILLIS,
-        )
+//        mainHandler.postDelayed(
+//            {
+//                val request = synchronized(this) {
+//                    inFlightRequest?.also { clearInFlightRequest() }
+//                } ?: return@postDelayed
+//
+//                val errorString = GalaxyStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DETAILS.format(request)
+//                log(LogIntent.GALAXY_ERROR) { errorString }
+//                val error = PurchasesError(
+//                    code = PurchasesErrorCode.UnknownError,
+//                    underlyingErrorMessage = errorString,
+//                )
+//                request.onError(error)
+//            },
+//            GET_PRODUCT_DATA_TIMEOUT_MILLIS,
+//        )
     }
 }

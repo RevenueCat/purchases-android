@@ -3,7 +3,6 @@ package com.revenuecat.purchases.galaxy
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
-import android.os.Looper
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -16,13 +15,13 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
@@ -43,15 +42,15 @@ internal class GalaxyBillingWrapper(
     private val serialRequestExecutor = GalaxySerialRequestExecutor()
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.startConnectionOnMainThread" }
     }
 
     override fun startConnection() {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.startConnection" }
     }
 
     override fun endConnection() {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.endConnection" }
     }
 
     override fun queryAllPurchases(
@@ -59,7 +58,8 @@ internal class GalaxyBillingWrapper(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.queryAllPurchases" }
+        onReceivePurchaseHistory(emptyList())
     }
 
     override fun queryProductDetailsAsync(
@@ -71,27 +71,20 @@ internal class GalaxyBillingWrapper(
         if (purchasesUpdatedListener == null) return
 
         serialRequestExecutor.executeSerially { finish ->
-            executeRequestOnUIThread { connectionError ->
-                if (connectionError == null) {
-                    @Suppress("ForbiddenComment")
-                    // TODO: Diagnostics tracking
-                    productDataHandler.getProductDetails(
-                        productIds = productIds,
-                        productType = productType,
-                        onReceive = {
-                            onReceive(it)
-                            finish()
-                        },
-                        onError = {
-                            onError(it)
-                            finish()
-                        },
-                    )
-                } else {
-                    onError(connectionError)
+            @Suppress("ForbiddenComment")
+            // TODO: Record diagnostics
+            productDataHandler.getProductDetails(
+                productIds = productIds,
+                productType = productType,
+                onReceive = {
+                    onReceive(it)
                     finish()
-                }
-            }
+                },
+                onError = {
+                    onError(it)
+                    finish()
+                },
+            )
         }
     }
 
@@ -101,7 +94,7 @@ internal class GalaxyBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.consumeAndSave" }
     }
 
     override fun findPurchaseInPurchaseHistory(
@@ -111,7 +104,8 @@ internal class GalaxyBillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.findPurchaseInPurchaseHistory" }
+        onError(PurchasesError(code = PurchasesErrorCode.UnknownError))
     }
 
     override fun makePurchaseAsync(
@@ -122,7 +116,7 @@ internal class GalaxyBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.makePurchaseAsync" }
     }
 
     override fun isConnected(): Boolean = true
@@ -132,7 +126,8 @@ internal class GalaxyBillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.queryPurchases" }
+        onSuccess(emptyMap())
     }
 
     override fun showInAppMessagesIfNeeded(
@@ -154,36 +149,5 @@ internal class GalaxyBillingWrapper(
                 underlyingErrorMessage = GalaxyStrings.STOREFRONT_NOT_SUPPORTED,
             ),
         )
-    }
-
-    private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
-
-    @Synchronized
-    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
-        if (purchasesUpdatedListener != null) {
-            serviceRequests.add(request)
-            if (!isConnected()) {
-                startConnectionOnMainThread()
-            } else {
-                executePendingRequests()
-            }
-        }
-    }
-
-    private fun executePendingRequests() {
-        synchronized(this@GalaxyBillingWrapper) {
-            while (isConnected() && !serviceRequests.isEmpty()) {
-                val serviceRequest = serviceRequests.remove()
-                runOnUIThread { serviceRequest(null) }
-            }
-        }
-    }
-
-    private fun runOnUIThread(runnable: Runnable) {
-        if (Looper.getMainLooper().thread == Thread.currentThread()) {
-            runnable.run()
-        } else {
-            mainHandler.post(runnable)
-        }
     }
 }
