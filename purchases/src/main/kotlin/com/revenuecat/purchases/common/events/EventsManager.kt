@@ -42,6 +42,7 @@ internal class EventsManager(
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
         EventsRequest,
+        Delay,
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
@@ -195,7 +196,7 @@ internal class EventsManager(
      * Initiates flushing of stored events to the backend.
      */
     @Synchronized
-    fun flushEvents() {
+    fun flushEvents(delay: Delay = Delay.DEFAULT) {
         enqueue {
             if (flushInProgress.getAndSet(true)) {
                 debugLog { "Flush already in progress." }
@@ -207,7 +208,7 @@ internal class EventsManager(
                 flushLegacyEvents()
             }
 
-            flushNextBatch(batchNumber = 1)
+            flushNextBatch(batchNumber = 1, delay = delay)
         }
     }
 
@@ -216,7 +217,7 @@ internal class EventsManager(
      *
      * @param batchNumber The current batch number being flushed.
      */
-    private fun flushNextBatch(batchNumber: Int) {
+    private fun flushNextBatch(batchNumber: Int, delay: Delay) {
         if (batchNumber > MAX_FLUSH_BATCHES) {
             verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
             flushInProgress.set(false)
@@ -235,12 +236,13 @@ internal class EventsManager(
         verboseLog { "New event flush (batch $batchNumber): posting ${storedEvents.size} events." }
         postEvents(
             EventsRequest(storedEvents.map { it.toBackendEvent() }),
+            delay,
             {
                 verboseLog { "New event flush (batch $batchNumber): success." }
                 enqueue {
                     fileHelper.clear(storedEventsWithNullValues.size)
                     // Continue flushing next batch
-                    flushNextBatch(batchNumber + 1)
+                    flushNextBatch(batchNumber + 1, delay)
                 }
             },
             { error, shouldMarkAsSynced ->
@@ -275,6 +277,7 @@ internal class EventsManager(
             verboseLog { "Legacy event flush: posting ${storedBackendEvents.size} events." }
             postEvents(
                 EventsRequest(storedBackendEvents.map { it.toBackendEvent() }),
+                Delay.LONG,
                 {
                     verboseLog { "Legacy event flush: success." }
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }

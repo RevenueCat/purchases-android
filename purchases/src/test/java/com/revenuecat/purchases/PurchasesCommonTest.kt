@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
@@ -1154,7 +1155,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 onSuccess = any(),
                 onError = any()
             )
-            mockEventsManager.flushEvents()
+            mockEventsManager.flushEvents(Delay.DEFAULT)
         }
     }
 
@@ -2304,14 +2305,14 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verify(exactly = 0) { mockEventsManager.flushEvents() }
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        verify(exactly = 1) { mockEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents(Delay.DEFAULT) }
     }
 
     @Test
     fun `paywall events synced on app backgrounded`() {
         verify(exactly = 0) { mockEventsManager.flushEvents() }
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
-        verify(exactly = 1) { mockEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents(Delay.NONE) }
     }
 
     // endregion
