@@ -47,6 +47,7 @@ internal class APIKeyValidator {
         return validationResult
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun validate(apiKey: String, configuredStore: Store): ValidationResult {
         val apiKeyPlatform = getApiKeyPlatform(apiKey)
         return when {
