@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
+import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -13,10 +15,12 @@ import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
+    private val mainHandler: Handler,
     val billingMode: GalaxyBillingMode,
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
@@ -45,7 +49,13 @@ internal class GalaxyBillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        TODO("Not yet implemented")
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                // TODO: Diagnostics tracking
+            } else {
+                onError(connectionError)
+            }
+        }
     }
 
     override fun consumeAndSave(
@@ -103,5 +113,35 @@ internal class GalaxyBillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         TODO("Not yet implemented")
+    }
+
+    private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+    @Synchronized
+    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+        if (purchasesUpdatedListener != null) {
+            serviceRequests.add(request)
+            if (!isConnected()) {
+                startConnectionOnMainThread()
+            } else {
+                executePendingRequests()
+            }
+        }
+    }
+
+    private fun executePendingRequests() {
+        synchronized(this@GalaxyBillingWrapper) {
+            while (isConnected() && !serviceRequests.isEmpty()) {
+                val serviceRequest = serviceRequests.remove()
+                runOnUIThread { serviceRequest(null) }
+            }
+        }
+    }
+
+    private fun runOnUIThread(runnable: Runnable) {
+        if (Looper.getMainLooper().thread == Thread.currentThread()) {
+            runnable.run()
+        } else {
+            mainHandler.post(runnable)
+        }
     }
 }
