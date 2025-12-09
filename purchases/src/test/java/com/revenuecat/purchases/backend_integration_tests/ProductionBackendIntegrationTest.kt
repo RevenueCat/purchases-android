@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.ads.events.AdEventType
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
@@ -207,6 +208,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.postEvents(
                 request,
                 baseURL = AppConfig.paywallEventsURL,
+                delay = Delay.NONE,
                 onSuccessHandler = {
                     latch.countDown()
                 },
@@ -249,6 +251,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.postEvents(
                 request,
                 baseURL = AppConfig.adEventsURL,
+                delay = Delay.NONE,
                 onSuccessHandler = {
                     latch.countDown()
                 },
