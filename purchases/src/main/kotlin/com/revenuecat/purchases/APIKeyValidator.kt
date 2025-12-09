@@ -31,11 +31,11 @@ internal class APIKeyValidator {
     enum class ValidationResult {
         VALID,
         GOOGLE_KEY_AMAZON_STORE,
-        AMAZON_KEY_GOOGLE_STORE,
         GOOGLE_KEY_GALAXY_STORE,
+        AMAZON_KEY_GOOGLE_STORE,
+        AMAZON_KEY_GALAXY_STORE,
         GALAXY_KEY_GOOGLE_STORE,
         GALAXY_KEY_AMAZON_STORE,
-        AMAZON_KEY_GALAXY_STORE,
         LEGACY,
         SIMULATED_STORE,
         OTHER_PLATFORM,
