@@ -59,7 +59,7 @@ internal class ProductDataHandler(
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.ANOTHER_GET_PRODUCT_DETAILS_REQUEST_IN_FLIGHT }
             val error = PurchasesError(
                 code = PurchasesErrorCode.OperationAlreadyInProgressError,
-                underlyingErrorMessage = "Only one Galaxy Store product request is allowed at a time."
+                underlyingErrorMessage = "Only one Galaxy Store product request is allowed at a time.",
             )
             onError(error)
             return
@@ -72,7 +72,7 @@ internal class ProductDataHandler(
             if (productDataCache.keys.containsAll(productIds)) {
                 val cachedProducts = productIds.mapNotNull(productDataCache::get)
                 handleSuccessfulProductsResponse(
-                    products = cachedProducts
+                    products = cachedProducts,
                 )
             } else {
                 // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
@@ -83,7 +83,7 @@ internal class ProductDataHandler(
                 val productIdRequestString = productIds.joinToString(separator = ",")
                 iapHelper.getProductsDetails(
                     productIdRequestString,
-                    this
+                    this,
                 )
 
                 val request = Request(
@@ -110,9 +110,8 @@ internal class ProductDataHandler(
         }
     }
 
-
     private fun handleSuccessfulProductsResponse(
-        products: List<ProductVo>
+        products: List<ProductVo>,
     ) {
         synchronized(this) {
             products.forEach { product ->
@@ -135,7 +134,7 @@ internal class ProductDataHandler(
         log(LogIntent.GALAXY_ERROR) {
             GalaxyStrings.GET_PRODUCT_DETAILS_REQUEST_ERRORED.format(
                 inFlightRequest?.productIds?.joinToString() ?: "[none]",
-                underlyingErrorMessage
+                underlyingErrorMessage,
             )
         }
 

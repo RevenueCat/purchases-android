@@ -4,12 +4,12 @@ import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 
 internal class DefaultIAPHelperProvider(
-    val iapHelper: IapHelper
-): IAPHelperProvider {
+    val iapHelper: IapHelper,
+) : IAPHelperProvider {
 
     override fun getProductsDetails(
         productIDs: String,
-        onGetProductsDetailsListener: OnGetProductsDetailsListener
+        onGetProductsDetailsListener: OnGetProductsDetailsListener,
     ) {
         iapHelper.getProductsDetails(
             productIDs,

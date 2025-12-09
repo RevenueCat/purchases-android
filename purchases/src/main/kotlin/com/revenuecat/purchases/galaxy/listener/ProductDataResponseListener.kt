@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.listener
 
-
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct

@@ -26,7 +26,7 @@ internal fun ProductVo.toStoreProduct(): StoreProduct {
         period = period,
         subscriptionOptions = null,
         defaultOption = null,
-        presentedOfferingContext = null
+        presentedOfferingContext = null,
     )
 }
 
@@ -37,7 +37,7 @@ private fun ProductVo.createPrice(): Price =
         // This way, we can get strings like "$3.00" instead of "$3"
         formatted = "%s%.2f".format(currencyUnit, itemPrice),
         amountMicros = (itemPrice * 1_000_000L).toLong(),
-        currencyCode = currencyCode
+        currencyCode = currencyCode,
     )
 
 @SuppressWarnings("MagicNumber")
@@ -46,7 +46,7 @@ private fun ProductVo.createPeriod(): Period? {
     // 1YEAR, 2MONTH, 4WEEK. We need to extract that leading integer to use as the
     // period's value.
     val periodValue = extractLeadingInt(input = this.subscriptionDurationMultiplier)
-    if(periodValue == null) {
+    if (periodValue == null) {
         log(LogIntent.GALAXY_ERROR) {
             GalaxyStrings.CANNOT_PARSE_LEADING_INT_FROM_SUBSCRIPTION_DURATION_MULTIPLIER
                 .format(this.subscriptionDurationMultiplier)
@@ -67,14 +67,14 @@ private fun ProductVo.createPeriod(): Period? {
     return Period(
         value = periodValue,
         unit = unit,
-        iso8601 = "P${periodValue}${isoUnit}"
+        iso8601 = "P${periodValue}$isoUnit",
     )
 }
 
 private fun String.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitString(): Period.Unit? {
     // Valid values are YEAR, MONTH, and WEEK
     // https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html#Get-in-app-product-details
-    return when(this.lowercase()) {
+    return when (this.lowercase()) {
         "year" -> Period.Unit.YEAR
         "month" -> Period.Unit.MONTH
         "week" -> Period.Unit.WEEK
@@ -101,7 +101,7 @@ private fun extractLeadingInt(input: String): Int? {
 }
 
 private fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
-    return when(this.lowercase()) {
+    return when (this.lowercase()) {
         "item" -> ProductType.INAPP
         "subscription" -> ProductType.SUBS
         else -> {

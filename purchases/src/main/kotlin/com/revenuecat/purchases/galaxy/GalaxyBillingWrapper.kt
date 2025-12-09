@@ -31,13 +31,13 @@ internal class GalaxyBillingWrapper(
     private val mainHandler: Handler,
     val billingMode: GalaxyBillingMode,
     private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
-        iapHelper = IapHelper.getInstance(context)
+        iapHelper = IapHelper.getInstance(context),
     ),
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(
             iapHelper = iapHelperProvider,
-            mainHandler = mainHandler
-        )
+            mainHandler = mainHandler,
+        ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         TODO("Not yet implemented")
@@ -72,7 +72,7 @@ internal class GalaxyBillingWrapper(
                     productIds = productIds,
                     productType = productType,
                     onReceive = onReceive,
-                    onError = onError
+                    onError = onError,
                 )
             } else {
                 onError(connectionError)
@@ -142,6 +142,7 @@ internal class GalaxyBillingWrapper(
     }
 
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+
     @Synchronized
     private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
