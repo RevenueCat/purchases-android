@@ -9,6 +9,7 @@ import kotlin.text.substring
 
 private const val GOOGLE_API_KEY_PREFIX = "goog_"
 private const val AMAZON_API_KEY_PREFIX = "amzn_"
+private const val GALAXY_API_KEY_PREFIX = "galx_"
 private const val TEST_API_KEY_PREFIX = "test_"
 
 // For API Key redaction
@@ -21,6 +22,7 @@ internal class APIKeyValidator {
     private enum class APIKeyPlatform {
         GOOGLE,
         AMAZON,
+        GALAXY,
         LEGACY,
         TEST,
         OTHER_PLATFORM,
@@ -30,6 +32,10 @@ internal class APIKeyValidator {
         VALID,
         GOOGLE_KEY_AMAZON_STORE,
         AMAZON_KEY_GOOGLE_STORE,
+        GOOGLE_KEY_GALAXY_STORE,
+        GALAXY_KEY_GOOGLE_STORE,
+        GALAXY_KEY_AMAZON_STORE,
+        AMAZON_KEY_GALAXY_STORE,
         LEGACY,
         SIMULATED_STORE,
         OTHER_PLATFORM,
@@ -47,11 +53,24 @@ internal class APIKeyValidator {
             apiKeyPlatform == APIKeyPlatform.TEST -> ValidationResult.SIMULATED_STORE
             apiKeyPlatform == APIKeyPlatform.GOOGLE && configuredStore == Store.PLAY_STORE -> ValidationResult.VALID
             apiKeyPlatform == APIKeyPlatform.AMAZON && configuredStore == Store.AMAZON -> ValidationResult.VALID
+            apiKeyPlatform == APIKeyPlatform.GALAXY && configuredStore == Store.GALAXY -> ValidationResult.VALID
             apiKeyPlatform == APIKeyPlatform.GOOGLE && configuredStore == Store.AMAZON -> {
                 ValidationResult.GOOGLE_KEY_AMAZON_STORE
             }
             apiKeyPlatform == APIKeyPlatform.AMAZON && configuredStore == Store.PLAY_STORE -> {
                 ValidationResult.AMAZON_KEY_GOOGLE_STORE
+            }
+            apiKeyPlatform == APIKeyPlatform.GOOGLE && configuredStore == Store.GALAXY -> {
+                ValidationResult.GOOGLE_KEY_GALAXY_STORE
+            }
+            apiKeyPlatform == APIKeyPlatform.GALAXY && configuredStore == Store.PLAY_STORE -> {
+                ValidationResult.GALAXY_KEY_GOOGLE_STORE
+            }
+            apiKeyPlatform == APIKeyPlatform.GALAXY && configuredStore == Store.AMAZON -> {
+                ValidationResult.GALAXY_KEY_AMAZON_STORE
+            }
+            apiKeyPlatform == APIKeyPlatform.AMAZON && configuredStore == Store.GALAXY -> {
+                ValidationResult.AMAZON_KEY_GALAXY_STORE
             }
             apiKeyPlatform == APIKeyPlatform.LEGACY -> ValidationResult.LEGACY
             apiKeyPlatform == APIKeyPlatform.OTHER_PLATFORM -> ValidationResult.OTHER_PLATFORM
@@ -63,6 +82,10 @@ internal class APIKeyValidator {
         when (validationResult) {
             ValidationResult.AMAZON_KEY_GOOGLE_STORE -> errorLog { ConfigureStrings.AMAZON_API_KEY_GOOGLE_STORE }
             ValidationResult.GOOGLE_KEY_AMAZON_STORE -> errorLog { ConfigureStrings.GOOGLE_API_KEY_AMAZON_STORE }
+            ValidationResult.GALAXY_KEY_GOOGLE_STORE -> errorLog { ConfigureStrings.GALAXY_API_KEY_GOOGLE_STORE }
+            ValidationResult.GOOGLE_KEY_GALAXY_STORE -> errorLog { ConfigureStrings.GOOGLE_API_KEY_GALAXY_STORE }
+            ValidationResult.GALAXY_KEY_AMAZON_STORE -> errorLog { ConfigureStrings.GALAXY_API_KEY_AMAZON_STORE }
+            ValidationResult.AMAZON_KEY_GALAXY_STORE -> errorLog { ConfigureStrings.AMAZON_API_KEY_GALAXY_STORE }
             ValidationResult.LEGACY -> debugLog { ConfigureStrings.LEGACY_API_KEY }
             ValidationResult.OTHER_PLATFORM -> errorLog { ConfigureStrings.INVALID_API_KEY }
             ValidationResult.SIMULATED_STORE -> warnLog { ConfigureStrings.SIMULATED_STORE_API_KEY }
@@ -74,6 +97,7 @@ internal class APIKeyValidator {
         return when {
             apiKey.startsWith(GOOGLE_API_KEY_PREFIX) -> APIKeyPlatform.GOOGLE
             apiKey.startsWith(AMAZON_API_KEY_PREFIX) -> APIKeyPlatform.AMAZON
+            apiKey.startsWith(GALAXY_API_KEY_PREFIX) -> APIKeyPlatform.GALAXY
             apiKey.startsWith(TEST_API_KEY_PREFIX) -> APIKeyPlatform.TEST
             !apiKey.contains('_') -> APIKeyPlatform.LEGACY
             else -> APIKeyPlatform.OTHER_PLATFORM
