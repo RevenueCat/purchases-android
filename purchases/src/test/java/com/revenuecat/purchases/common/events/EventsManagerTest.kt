@@ -116,11 +116,12 @@ class EventsManagerTest {
             fileHelper,
             identityManager,
             paywallEventsDispatcher,
-            postEvents = { request, onSuccess, onError ->
+            postEvents = { request, delay, onSuccess, onError ->
                 postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
                     baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
@@ -222,6 +223,7 @@ class EventsManagerTest {
                 any(),
                 any(),
                 any(),
+                any(),
             )
         }
     }
@@ -230,7 +232,7 @@ class EventsManagerTest {
     fun `flushEvents without events, does not call backend`() {
         eventsManager.flushEvents()
         verify(exactly = 0) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -246,7 +248,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(0)
         // Verify backend was called twice (once for each batch)
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -275,7 +277,7 @@ class EventsManagerTest {
     @Test
     fun `flushEvents multiple times only executes once`() {
         every {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -283,7 +285,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -291,7 +293,7 @@ class EventsManagerTest {
     fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
         val successSlot = slot<() -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), any())
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -299,7 +301,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -309,7 +311,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -346,7 +348,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(0)
         // Verify backend was called twice (once for each batch of 50 lines)
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -376,7 +378,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             if (success) {
                 successSlot.captured.invoke()
@@ -393,6 +395,7 @@ class EventsManagerTest {
         verify(exactly = 1) {
             backend.postEvents(
                 expectedRequest,
+                any(),
                 any(),
                 any(),
                 any(),
@@ -569,7 +572,7 @@ class EventsManagerTest {
 
         checkFileContents("")
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -628,7 +631,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(50)
         // Verify backend was called exactly 10 times (the maximum)
         verify(exactly = 10) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -639,7 +642,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             callCount++
             if (callCount == 1) {
@@ -661,7 +664,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(150)
         // Verify backend was called only once (stopped after first failure)
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
