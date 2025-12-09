@@ -6,6 +6,7 @@ package com.revenuecat.purchases.galaxy {
   }
 
   public static final class GalaxyConfiguration.Builder extends com.revenuecat.purchases.PurchasesConfiguration.Builder {
+    ctor public GalaxyConfiguration.Builder(android.content.Context, String);
     ctor public GalaxyConfiguration.Builder(android.content.Context, String, com.revenuecat.purchases.galaxy.GalaxyBillingMode);
   }
 

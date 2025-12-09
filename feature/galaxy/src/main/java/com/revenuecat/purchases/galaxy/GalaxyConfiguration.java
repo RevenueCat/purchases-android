@@ -34,6 +34,15 @@ public final class GalaxyConfiguration extends PurchasesConfiguration {
 
         public Builder(
                 @NonNull Context context,
+                @NonNull String apiKey
+        ) {
+            super(context, apiKey);
+            this.store(Store.GALAXY);
+            this.galaxyBillingMode(GalaxyBillingMode.PRODUCTION);
+        }
+
+        public Builder(
+                @NonNull Context context,
                 @NonNull String apiKey,
                 @NonNull GalaxyBillingMode galaxyBillingMode
         ) {
