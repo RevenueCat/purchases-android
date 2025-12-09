@@ -5,6 +5,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -100,6 +101,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = {},
             onErrorHandler = { _, _ -> },
         )
@@ -132,6 +134,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { successCalled = true },
             onErrorHandler = { _, _ -> fail("Expected success") },
         )
@@ -145,6 +148,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, _ -> errorCalled = true },
         )
@@ -158,6 +162,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -174,6 +179,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -190,6 +196,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -217,6 +224,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -234,6 +242,7 @@ class BackendPaywallEventTest {
         backend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse()
@@ -250,12 +259,14 @@ class BackendPaywallEventTest {
         asyncBackend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
         asyncBackend.postEvents(
             paywallEventRequest,
             baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )

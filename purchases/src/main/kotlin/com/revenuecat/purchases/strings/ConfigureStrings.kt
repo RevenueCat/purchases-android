@@ -15,7 +15,8 @@ internal object ConfigureStrings {
     const val PACKAGE_NAME = "Package name - %s"
     const val LEGACY_API_KEY = "Looks like you're using a legacy API key.\n" +
         "This is still supported, but it's recommended to migrate to using platform-specific API key, " +
-        "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +
+        "which should look like 'goog_1a2b3c4d5e6f7h', 'amzn_1a2b3c4d5e6f7h', " +
+        "or 'galx_1a2b3c4d5e6f7h'.\n" +
         "See https://rev.cat/auth for more details."
     const val AMAZON_API_KEY_GOOGLE_STORE = "Looks like you're using an Amazon API key but have configured the SDK " +
         "for the Google play store.\nEither use a Google API key which should look like 'goog_1a2b3c4d5e6f7h' or " +
@@ -23,6 +24,19 @@ internal object ConfigureStrings {
     const val GOOGLE_API_KEY_AMAZON_STORE = "Looks like you're using a Google API key but have configured the SDK " +
         "for the Amazon app store.\nEither use an Amazon API key which should look like 'amzn_1a2b3c4d5e6f7h' or " +
         "configure the SDK to use Google.\nSee https://rev.cat/auth for more details."
+    const val GALAXY_API_KEY_GOOGLE_STORE = "Looks like you're using a Galaxy Store API key but have configured the " +
+        "SDK for the Google Play Store.\nEither use a Google API key which should look like 'goog_1a2b3c4d5e6f7h' or " +
+        "configure the SDK to use the Galaxy Store.\nSee https://rev.cat/auth for more details."
+    const val GOOGLE_API_KEY_GALAXY_STORE = "Looks like you're using a Google API key but have configured the SDK " +
+        "for the Galaxy Store.\nEither use a Galaxy Store API key which should look like 'galx_1a2b3c4d5e6f7h' or " +
+        "configure the SDK to use the Play Store.\nSee https://rev.cat/auth for more details."
+    const val GALAXY_API_KEY_AMAZON_STORE = "Looks like you're using a Galaxy Store API key but have configured " +
+        "the SDK for the Amazon App Store.\nEither use an Amazon API key which should look like " +
+        "'amzn_1a2b3c4d5e6f7h' or configure the SDK to use the Galaxy Store.\nSee https://rev.cat/auth for " +
+        "more details."
+    const val AMAZON_API_KEY_GALAXY_STORE = "Looks like you're using an Amazon API key but have configured the SDK " +
+        "for the Galaxy Store.\nEither use a Galaxy Store API key which should look like 'galx_1a2b3c4d5e6f7h' or " +
+        "configure the SDK to use Amazon.\nSee https://rev.cat/auth for more details."
     const val SIMULATED_STORE_API_KEY = "Using a Test Store API key.\n" +
         "The Test Store is for development only. Never use a Test Store API key in production. " +
         "Our SDK will crash if using it in production. Test Store purchases are simulated, " +
@@ -30,7 +44,8 @@ internal object ConfigureStrings {
         "Apps submitted with a Test Store API key will be rejected during App Review."
     const val INVALID_API_KEY = "The specified API Key is not recognized.\n" +
         "Ensure that you are using the public app-specific API key, " +
-        "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +
+        "which should look like 'goog_1a2b3c4d5e6f7h', 'amzn_1a2b3c4d5e6f7h', " +
+        "or 'galx_1a2b3c4d5e6f7h'.\n" +
         "See https://rev.cat/auth for more details."
     const val AUTO_SYNC_PURCHASES_DISABLED = "Automatic syncing of purchases has been disabled. \n" +
         "RevenueCat won’t observe the new purchases from the store, and it will not sync any purchase \n" +
