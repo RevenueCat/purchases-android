@@ -69,6 +69,10 @@ android {
                 it.exclude("com/revenuecat/purchases/backend_integration_tests/**")
             }
         }
+
+        // TODO: Remove this when we figure out how to properly integrate the Samsung SDK
+        // Avoid merging Android manifests for JVM unit tests to prevent minSdk conflicts from optional AARs.
+        unitTests.isIncludeAndroidResources = false
     }
 }
 

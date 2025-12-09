@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
+import com.revenuecat.purchases.galaxy.toStoreProduct
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
@@ -42,6 +43,25 @@ internal class ProductDataHandler(
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        if (productIds.isEmpty()) {
+            // Note: This early exit is more than just an optimization. If we call iapHelper.getProductsDetails
+            // with an empty string param (this would happen if productIds is empty), then iapHelper.getProductsDetails
+            // returns all products for the app, which wouldn't give us the product we want (none).
+            // TODO: Log a message
+            onReceive(emptyList())
+            return
+        }
+
+        if (inFlightRequest != null) {
+            // TODO: Log a message about there already being a request in flight
+            val error = PurchasesError(
+                code = PurchasesErrorCode.OperationAlreadyInProgressError,
+                underlyingErrorMessage = "Only one Galaxy Store product request is allowed at a time."
+            )
+            onError(error)
+            return
+        }
+
         // TODO: Use a GalaxyStrings string
         log(LogIntent.DEBUG) { AmazonStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
@@ -66,7 +86,7 @@ internal class ProductDataHandler(
                 val request = Request(productIds = productIds, onReceive = onReceive, onError = onError)
                 synchronized(this) {
                     this.inFlightRequest = request
-                    addTimeoutToProductDataRequest(productIds)
+                    addTimeoutToProductDataRequest()
                 }
             }
         }
@@ -94,9 +114,10 @@ internal class ProductDataHandler(
 
 
         val storeProducts: List<StoreProduct> = products
-            .mapNotNull { it }
+            .map { it.toStoreProduct() }
 
-        inFlightRequest?.onReceive
+        inFlightRequest?.onReceive?.invoke(storeProducts)
+        clearInFlightRequest()
     }
 
     private fun handleUnsuccessfulProductDataResponse(
@@ -105,7 +126,7 @@ internal class ProductDataHandler(
         val underlyingErrorMessage = error.errorString
         // TODO: Log error string
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
-        inFlightRequest?.onError(purchasesError)
+        inFlightRequest?.onError?.invoke(purchasesError)
         clearInFlightRequest()
     }
 
@@ -117,7 +138,7 @@ internal class ProductDataHandler(
         mainHandler.postDelayed(
             {
                 val request = synchronized(this) {
-                    inFlightRequest?.also { inFlightRequest = null }
+                    inFlightRequest?.also { clearInFlightRequest() }
                 } ?: return@postDelayed
 
                 val error = PurchasesError(
