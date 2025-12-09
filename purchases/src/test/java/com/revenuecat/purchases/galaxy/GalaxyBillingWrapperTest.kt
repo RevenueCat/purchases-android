@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy
 
+import android.os.Handler
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -15,13 +16,20 @@ import kotlin.test.fail
 class GalaxyBillingWrapperTest {
 
     private val stateProvider = mockk<PurchasesStateProvider>(relaxed = true)
-    private val wrapper = GalaxyBillingWrapper(stateProvider, GalaxyBillingMode.TEST)
+    private var handler = mockk<Handler>()
+    private lateinit var wrapper: GalaxyBillingWrapper
     private var previousLogHandler: LogHandler? = null
 
     @Before
     fun setUp() {
         previousLogHandler = currentLogHandler
         currentLogHandler = mockk(relaxed = true)
+
+        wrapper = GalaxyBillingWrapper(
+            stateProvider,
+            mainHandler = handler,
+            billingMode = GalaxyBillingMode.TEST
+        )
     }
 
     @After

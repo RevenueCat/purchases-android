@@ -2,67 +2,69 @@ package com.revenuecat.purchases.galaxy
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
-import com.samsung.android.sdk.iap.lib.vo.ProductVo
+import com.revenuecat.purchases.models.Period
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class StoreProductConversionsTest {
+class StoreProductConversionsTest : GalaxyStoreTest() {
 
-    // region createRevenueCatProductTypeFromSamsungIAPTypeString
+    // region toStoreProduct type mapping
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString maps item to INAPP`() {
-        val productType = "item".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct maps item type to INAPP`() {
+        val storeProduct = createProductVo(
+            type = "item"
+        ).toStoreProduct()
 
-        assertThat(productType).isEqualTo(ProductType.INAPP)
+        assertThat(storeProduct.type).isEqualTo(ProductType.INAPP)
     }
 
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString maps subscription to SUBS`() {
-        val productType = "subscription".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct maps subscription type to SUBS`() {
+        val storeProduct = createProductVo(type = "subscription").toStoreProduct()
 
-        assertThat(productType).isEqualTo(ProductType.SUBS)
+        assertThat(storeProduct.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString handles uppercase values`() {
-        val upperCaseItem = "ITEM".createRevenueCatProductTypeFromSamsungIAPTypeString()
-        val upperCaseSubscription = "SUBSCRIPTION".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct handles uppercase type values`() {
+        val upperCaseItem = createProductVo(type = "ITEM").toStoreProduct()
+        val upperCaseSubscription = createProductVo(type = "SUBSCRIPTION").toStoreProduct()
 
-        assertThat(upperCaseItem).isEqualTo(ProductType.INAPP)
-        assertThat(upperCaseSubscription).isEqualTo(ProductType.SUBS)
+        assertThat(upperCaseItem.type).isEqualTo(ProductType.INAPP)
+        assertThat(upperCaseSubscription.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString handles mixed case values`() {
-        val mixedCaseItem = "ItEm".createRevenueCatProductTypeFromSamsungIAPTypeString()
-        val mixedCaseSubscription = "SubScription".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct handles mixed case type values`() {
+        val mixedCaseItem = createProductVo(type = "ItEm").toStoreProduct()
+        val mixedCaseSubscription = createProductVo(type = "SubScription").toStoreProduct()
 
-        assertThat(mixedCaseItem).isEqualTo(ProductType.INAPP)
-        assertThat(mixedCaseSubscription).isEqualTo(ProductType.SUBS)
+        assertThat(mixedCaseItem.type).isEqualTo(ProductType.INAPP)
+        assertThat(mixedCaseSubscription.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString returns UNKNOWN for unexpected value`() {
-        val productType = "unknown-type".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct returns UNKNOWN type for unexpected value`() {
+        val storeProduct = createProductVo(type = "unknown-type").toStoreProduct()
 
-        assertThat(productType).isEqualTo(ProductType.UNKNOWN)
+        assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
     }
 
     @Test
-    fun `createRevenueCatProductTypeFromSamsungIAPTypeString returns UNKNOWN for empty string`() {
-        val productType = "".createRevenueCatProductTypeFromSamsungIAPTypeString()
+    fun `toStoreProduct returns UNKNOWN type for empty string`() {
+        val storeProduct = createProductVo(type = "").toStoreProduct()
 
-        assertThat(productType).isEqualTo(ProductType.UNKNOWN)
+        assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
     }
 
     // endregion
 
-    // region createPrice
+    // region toStoreProduct price creation
 
     @Test
-    fun `createPrice builds formatted string with two decimals when itemPriceString omits them`() {
+    fun `toStoreProduct builds formatted price with two decimals when itemPriceString omits them`() {
         val productVo = createProductVo(
             itemPrice = 3.0,
             currencyUnit = "$",
@@ -70,63 +72,129 @@ class StoreProductConversionsTest {
             itemPriceString = "$3",
         )
 
-        val price = productVo.createPrice()
+        val storeProduct = productVo.toStoreProduct()
 
-        assertThat(price.formatted).isEqualTo("$3.00")
-        assertThat(price.amountMicros).isEqualTo(3_000_000)
-        assertThat(price.currencyCode).isEqualTo("USD")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3.00")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(3_000_000)
+        assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
 
     @Test
-    fun `createPrice uses itemPrice to compute micros and preserves currency info`() {
+    fun `toStoreProduct uses itemPrice to compute micros and preserves currency info`() {
         val productVo = createProductVo(
             itemPrice = 3.25,
             currencyUnit = "$",
             currencyCode = "USD",
         )
 
-        val price = productVo.createPrice()
+        val storeProduct = productVo.toStoreProduct()
 
-        assertThat(price.formatted).isEqualTo("$3.25")
-        assertThat(price.amountMicros).isEqualTo(3_250_000)
-        assertThat(price.currencyCode).isEqualTo("USD")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3.25")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(3_250_000)
+        assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
 
     @Test
-    fun `createPrice rounds formatted price but keeps raw micros multiplication`() {
+    fun `toStoreProduct rounds formatted price but keeps raw micros multiplication`() {
         val productVo = createProductVo(
             itemPrice = 1.2345,
             currencyUnit = "$",
             currencyCode = "USD",
         )
 
-        val price = productVo.createPrice()
+        val storeProduct = productVo.toStoreProduct()
 
-        assertThat(price.formatted).isEqualTo("$1.23")
-        assertThat(price.amountMicros).isEqualTo(1_234_500)
+        assertThat(storeProduct.price.formatted).isEqualTo("$1.23")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(1_234_500)
     }
 
     // endregion
 
-    private fun createProductVo(
-        itemPrice: Double,
-        currencyUnit: String,
-        currencyCode: String,
-        itemPriceString: String = "$currencyUnit$itemPrice",
-    ): ProductVo {
-        val json = """
-            {
-                "mItemId": "product_id",
-                "mItemName": "Test Product",
-                "mItemPrice": $itemPrice,
-                "mItemPriceString": "$itemPriceString",
-                "mCurrencyUnit": "$currencyUnit",
-                "mCurrencyCode": "$currencyCode",
-                "mItemDesc": "Test product description",
-                "mType": "item"
-            }
-        """.trimIndent()
+    // region toStoreProduct period creation
 
-        return ProductVo(json)
+    @Test
+    fun `toStoreProduct builds period for supported subscription duration units`() {
+        data class ExpectedPeriod(
+            val multiplier: String,
+            val unit: String,
+            val expectedValue: Int,
+            val expectedUnit: Period.Unit,
+            val expectedIso8601: String,
+        )
+
+        val expectedPeriods = listOf(
+            ExpectedPeriod(
+                multiplier = "1YEAR",
+                unit = "YEAR",
+                expectedValue = 1,
+                expectedUnit = Period.Unit.YEAR,
+                expectedIso8601 = "P1Y",
+            ),
+            ExpectedPeriod(
+                multiplier = "6month",
+                unit = "month",
+                expectedValue = 6,
+                expectedUnit = Period.Unit.MONTH,
+                expectedIso8601 = "P6M",
+            ),
+            ExpectedPeriod(
+                multiplier = "3Week",
+                unit = "Week",
+                expectedValue = 3,
+                expectedUnit = Period.Unit.WEEK,
+                expectedIso8601 = "P3W",
+            ),
+        )
+
+        expectedPeriods.forEach { expectation ->
+            val storeProduct = createProductVo(
+                type = "subscription",
+                subscriptionDurationMultiplier = expectation.multiplier,
+                subscriptionDurationUnit = expectation.unit,
+            ).toStoreProduct()
+
+            val period = storeProduct.period
+            assertThat(period)
+                .describedAs("subscriptionDurationMultiplier=%s", expectation.multiplier)
+                .isNotNull
+            assertThat(period!!.value).isEqualTo(expectation.expectedValue)
+            assertThat(period.unit).isEqualTo(expectation.expectedUnit)
+            assertThat(period.iso8601).isEqualTo(expectation.expectedIso8601)
+        }
     }
+
+    @Test
+    fun `toStoreProduct returns null period when multiplier has no leading number`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "MONTH6",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+    }
+
+    @Test
+    fun `toStoreProduct returns null period when duration unit is unsupported`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "3MONTH",
+            subscriptionDurationUnit = "DAY",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+    }
+
+    @Test
+    fun `toStoreProduct returns null period when subscription duration is missing`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "",
+            subscriptionDurationUnit = "",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+    }
+
+    // endregion
 }

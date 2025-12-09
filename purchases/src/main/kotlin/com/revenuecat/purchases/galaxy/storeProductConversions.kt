@@ -7,14 +7,21 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 
 internal fun ProductVo.toStoreProduct(): StoreProduct {
+    val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
+    val period: Period? = if (type == ProductType.SUBS) {
+        this.createPeriod()
+    } else {
+        null
+    }
+
     return GalaxyStoreProduct(
         id = this.itemId,
-        type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString(),
+        type = type,
         price = this.createPrice(),
         name = this.itemName,
         title = this.itemName,
         description = this.itemDesc,
-        period = this.createPeriod(),
+        period = period,
         subscriptionOptions = null,
         defaultOption = null,
         presentedOfferingContext = null
@@ -68,8 +75,6 @@ private fun String.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitStr
         }
     }
 }
-
-//internal String
 
 private fun extractLeadingInt(input: String): Int? {
     // A regular expression that matches one or more digits (\d+)
