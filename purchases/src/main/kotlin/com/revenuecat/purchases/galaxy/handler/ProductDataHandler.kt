@@ -26,9 +26,10 @@ internal class ProductDataHandler(
     }
 
     @get:Synchronized
-    private var productRequestsCache = mutableMapOf<Set<String>, MutableSet<Request>>()
+    private var inFlightRequest: Request? = null
 
     private data class Request(
+        val productIds: Set<String>,
         val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback,
     )
@@ -46,10 +47,9 @@ internal class ProductDataHandler(
 
         synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
             if (productDataCache.keys.containsAll(productIds)) {
-                val cachedProducts: Map<String, ProductVo> = productDataCache.filterKeys { productIds.contains(it) }
-                handleSuccessfulProductDataResponse(
-                    productData = cachedProducts,
-                    onReceive = onReceive,
+                val cachedProducts = productIds.mapNotNull(productDataCache::get)
+                handleSuccessfulProductsResponse(
+                    products = cachedProducts
                 )
             } else {
                 // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
@@ -63,11 +63,9 @@ internal class ProductDataHandler(
                     this
                 )
 
-                val request = Request(onReceive = onReceive, onError = onError)
-                val existingRequests = productRequestsCache[productIds] ?: mutableSetOf()
-                existingRequests.add(request)
+                val request = Request(productIds = productIds, onReceive = onReceive, onError = onError)
                 synchronized(this) {
-                    productRequestsCache[productIds] = existingRequests
+                    this.inFlightRequest = request
                     addTimeoutToProductDataRequest(productIds)
                 }
             }
@@ -78,48 +76,57 @@ internal class ProductDataHandler(
         super.onGetProducts(error, products)
 
         if (error.isError()) {
-            handleUnsuccessfulProductDataResponse(error = error, productIds)
+            handleUnsuccessfulProductDataResponse(error = error)
+        } else {
+            handleSuccessfulProductsResponse(products = products)
         }
     }
 
 
-    private fun handleSuccessfulProductDataResponse(
-        productData: Map<String, ProductVo>,
-        onReceive: StoreProductsCallback,
+    private fun handleSuccessfulProductsResponse(
+        products: List<ProductVo>
     ) {
+        synchronized(this) {
+            products.forEach { product ->
+                productDataCache[product.itemId] = product
+            }
+        }
 
+
+        val storeProducts: List<StoreProduct> = products
+            .mapNotNull { it }
+
+        inFlightRequest?.onReceive
     }
 
     private fun handleUnsuccessfulProductDataResponse(
         error: ErrorVo,
-        productIds: Set<String>,
     ) {
         val underlyingErrorMessage = error.errorString
         // TODO: Log error string
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
-        val requests = productRequestsCache[productIds] ?: return
-
-        for (request in requests) {
-            request.onError(purchasesError)
-        }
+        inFlightRequest?.onError(purchasesError)
+        clearInFlightRequest()
     }
 
-    private fun addTimeoutToProductDataRequest(requestId: Set<String>) {
+    private fun clearInFlightRequest() {
+        inFlightRequest = null
+    }
+
+    private fun addTimeoutToProductDataRequest() {
         mainHandler.postDelayed(
             {
-//                val requests = getRequest(requestId) ?: return@postDelayed
-//                val error = PurchasesError(
-//                    PurchasesErrorCode.UnknownError,
-//                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request.skuList.toString()),
-//                )
-//                request.onError(error)
+                val request = synchronized(this) {
+                    inFlightRequest?.also { inFlightRequest = null }
+                } ?: return@postDelayed
+
+                val error = PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request),
+                )
+                request.onError(error)
             },
             GET_PRODUCT_DATA_TIMEOUT_MILLIS,
         )
-    }
-
-    @Synchronized
-    private fun getRequest(requestId: Set<String>): Set<Request>? {
-        return productRequestsCache[requestId]
     }
 }
