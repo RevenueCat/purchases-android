@@ -40,7 +40,7 @@ private fun ProductVo.createPrice(): Price =
         currencyCode = currencyCode,
     )
 
-@SuppressWarnings("MagicNumber")
+@SuppressWarnings("MagicNumber", "ReturnCount")
 private fun ProductVo.createPeriod(): Period? {
     // subscriptionDurationMultiplier returns a string in the format $INT$STRING, like
     // 1YEAR, 2MONTH, 4WEEK. We need to extract that leading integer to use as the

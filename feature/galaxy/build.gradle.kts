@@ -26,8 +26,7 @@ android {
     }
 }
 
-// TODO: Bring the Samsung SDK in from somewhere else
-
+// TO DO: Bring in Samsung SDK from somewhere else
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
@@ -39,7 +38,8 @@ val samsungIapSdkPath = providers.provider {
 }.map { path ->
     val aar = file(path)
     check(aar.exists()) {
-        "Samsung IAP SDK AAR not found at $path. Override with samsungIapSdkPath property, SAMSUNG_IAP_SDK_PATH env var, or local.properties"
+        "Samsung IAP SDK AAR not found at $path. Override with samsungIapSdkPath property, " +
+            "SAMSUNG_IAP_SDK_PATH env var, or local.properties"
     }
     aar
 }

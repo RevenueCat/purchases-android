@@ -67,6 +67,7 @@ internal class GalaxyBillingWrapper(
     ) {
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
+                @Suppress("ForbiddenComment")
                 // TODO: Diagnostics tracking
                 productDataHandler.getProductDetails(
                     productIds = productIds,
