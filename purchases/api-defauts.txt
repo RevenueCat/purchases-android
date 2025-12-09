@@ -526,6 +526,7 @@ package com.revenuecat.purchases {
     method public final android.content.Context getContext();
     method public final com.revenuecat.purchases.DangerousSettings getDangerousSettings();
     method public final boolean getDiagnosticsEnabled();
+    method public final com.revenuecat.purchases.galaxy.GalaxyBillingMode getGalaxyBillingMode();
     method @Deprecated public final boolean getObserverMode();
     method public final boolean getPendingTransactionsForPrepaidPlansEnabled();
     method public final String? getPreferredUILocaleOverride();
@@ -540,6 +541,7 @@ package com.revenuecat.purchases {
     property public final android.content.Context context;
     property public final com.revenuecat.purchases.DangerousSettings dangerousSettings;
     property public final boolean diagnosticsEnabled;
+    property public final com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode;
     property @Deprecated public final boolean observerMode;
     property public final boolean pendingTransactionsForPrepaidPlansEnabled;
     property public final String? preferredUILocaleOverride;
@@ -558,6 +560,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder dangerousSettings(com.revenuecat.purchases.DangerousSettings dangerousSettings);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder diagnosticsEnabled(boolean diagnosticsEnabled);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder entitlementVerificationMode(com.revenuecat.purchases.EntitlementVerificationMode verificationMode);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder galaxyBillingMode(com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode);
     method @Deprecated @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PurchasesConfiguration.Builder informationalVerificationModeAndDiagnosticsEnabled(boolean enabled);
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
@@ -863,6 +866,12 @@ package com.revenuecat.purchases.data {
 }
 
 package com.revenuecat.purchases.galaxy {
+
+  public enum GalaxyBillingMode {
+    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
+    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
+    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
+  }
 
   public abstract sealed class GalaxyPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
   }
