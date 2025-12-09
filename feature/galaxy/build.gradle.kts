@@ -25,4 +25,6 @@ android {
 
 dependencies {
     implementation(project(":purchases"))
+
+    testImplementation(libs.bundles.test)
 }
