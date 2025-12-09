@@ -9,12 +9,14 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyBillingWrapper
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun createBilling(
         store: Store,
         application: Application,
@@ -24,6 +26,7 @@ internal object BillingFactory {
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
+        galaxyBillingMode: GalaxyBillingMode,
         backend: Backend,
     ): BillingAbstract {
         return when (store) {
@@ -53,6 +56,17 @@ internal object BillingFactory {
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-amazon is added as dependency" }
+                    throw e
+                }
+            }
+            Store.GALAXY -> {
+                try {
+                    GalaxyBillingWrapper(
+                        billingMode = galaxyBillingMode,
+                        stateProvider = stateProvider,
+                    )
+                } catch (e: NoClassDefFoundError) {
+                    errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
                     throw e
                 }
             }

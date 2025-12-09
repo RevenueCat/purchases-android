@@ -17,6 +17,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
+    val billingMode: GalaxyBillingMode,
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         TODO("Not yet implemented")
