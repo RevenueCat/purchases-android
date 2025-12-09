@@ -1155,7 +1155,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 onSuccess = any(),
                 onError = any()
             )
-            mockEventsManager.flushEvents(Delay.DEFAULT)
+            mockEventsManager.flushEvents(any())
         }
     }
 
