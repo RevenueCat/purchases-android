@@ -10,6 +10,55 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StoreProductConversionsTest : GalaxyStoreTest() {
 
+    // region toStoreProduct basic fields
+
+    @Test
+    fun `toStoreProduct maps id from ProductVo`() {
+        val productId = "custom_id"
+
+        val storeProduct = createProductVo(itemId = productId).toStoreProduct()
+
+        assertThat(storeProduct.id).isEqualTo(productId)
+    }
+
+    @Test
+    fun `toStoreProduct maps name from ProductVo`() {
+        val productName = "Custom Name"
+
+        val storeProduct = createProductVo(itemName = productName).toStoreProduct()
+
+        assertThat(storeProduct.name).isEqualTo(productName)
+    }
+
+    @Test
+    fun `toStoreProduct maps title from ProductVo`() {
+        val productTitle = "Custom Title"
+
+        val storeProduct = createProductVo(itemName = productTitle).toStoreProduct()
+
+        assertThat(storeProduct.title).isEqualTo(productTitle)
+    }
+
+    @Test
+    fun `toStoreProduct maps description from ProductVo`() {
+        val productDescription = "Custom Description"
+
+        val storeProduct = createProductVo(itemDescription = productDescription).toStoreProduct()
+
+        assertThat(storeProduct.description).isEqualTo(productDescription)
+    }
+
+    @Test
+    fun `toStoreProduct sets subscriptionOptions, defaultOption, and presentedOfferingContext to null`() {
+        val storeProduct = createProductVo().toStoreProduct()
+
+        assertThat(storeProduct.subscriptionOptions).isNull()
+        assertThat(storeProduct.defaultOption).isNull()
+        assertThat(storeProduct.presentedOfferingContext).isNull()
+    }
+
+    // endregion
+
     // region toStoreProduct type mapping
     @Test
     fun `toStoreProduct maps item type to INAPP`() {

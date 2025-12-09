@@ -7,6 +7,9 @@ import com.samsung.android.sdk.iap.lib.vo.ProductVo
  */
 open class GalaxyStoreTest {
     fun createProductVo(
+        itemId: String = "product_id",
+        itemName: String = "Test Product",
+        itemDescription: String = "Test product description",
         itemPrice: Double = 0.99,
         currencyUnit: String = "$",
         currencyCode: String = "USD",
@@ -17,13 +20,13 @@ open class GalaxyStoreTest {
     ): ProductVo {
         val json = """
             {
-                "mItemId": "product_id",
-                "mItemName": "Test Product",
+                "mItemId": "$itemId",
+                "mItemName": "$itemName",
                 "mItemPrice": $itemPrice,
                 "mItemPriceString": "$itemPriceString",
                 "mCurrencyUnit": "$currencyUnit",
                 "mCurrencyCode": "$currencyCode",
-                "mItemDesc": "Test product description",
+                "mItemDesc": "$itemDescription",
                 "mType": "$type",
                 "mSubscriptionDurationMultiplier": "$subscriptionDurationMultiplier",
                 "mSubscriptionDurationUnit": "$subscriptionDurationUnit"
