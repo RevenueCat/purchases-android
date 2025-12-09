@@ -14,13 +14,13 @@ private class GalaxyConfigurationAPI {
     ) {
         val builder1: GalaxyConfiguration.Builder = GalaxyConfiguration.Builder(
             context,
-            apiKey
+            apiKey,
         )
 
         val builder2: GalaxyConfiguration.Builder = GalaxyConfiguration.Builder(
             context,
             apiKey,
-            galaxyBillingMode
+            galaxyBillingMode,
         )
 
         val config1: PurchasesConfiguration = builder1.build()
@@ -34,10 +34,9 @@ private class GalaxyConfigurationAPI {
     ) {
         val config: PurchasesConfiguration = GalaxyConfiguration.Builder(
             context,
-            apiKey
+            apiKey,
         )
             .galaxyBillingMode(galaxyBillingMode = galaxyBillingMode)
             .build()
     }
 }
-
