@@ -140,14 +140,20 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     }
 
     private fun initViewTreeOwners() {
-        val windowRoot = findWindowRoot()
-        if (windowRoot == null || windowRoot.findViewTreeLifecycleOwner() != null) return
+        val windowRoot = findWindowRoot() ?: return
 
-        windowRoot.setViewTreeLifecycleOwner(this)
-        windowRoot.setViewTreeSavedStateRegistryOwner(this)
-        windowRoot.setViewTreeViewModelStoreOwner(this)
-
-        isManagingViewTree = true
+        if (windowRoot.findViewTreeLifecycleOwner() == null) {
+            windowRoot.setViewTreeLifecycleOwner(this)
+            isManagingViewTree = true
+        }
+        if (windowRoot.findViewTreeSavedStateRegistryOwner() == null) {
+            windowRoot.setViewTreeSavedStateRegistryOwner(this)
+            isManagingViewTree = true
+        }
+        if (windowRoot.findViewTreeViewModelStoreOwner() == null) {
+            windowRoot.setViewTreeViewModelStoreOwner(this)
+            isManagingViewTree = true
+        }
     }
 
     private fun deinitViewTreeOwners() {
