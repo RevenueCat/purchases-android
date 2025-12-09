@@ -71,7 +71,7 @@ private fun String.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitStr
         "week" -> Period.Unit.WEEK
         else -> {
             // TODO: Log
-            null
+            Period.Unit.UNKNOWN
         }
     }
 }

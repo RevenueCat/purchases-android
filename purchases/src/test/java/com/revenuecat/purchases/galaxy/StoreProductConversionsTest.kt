@@ -224,11 +224,33 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     }
 
     @Test
+    fun `toStoreProduct returns null period when multiplier is non numeric`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "abcMONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+    }
+
+    @Test
     fun `toStoreProduct returns null period when duration unit is unsupported`() {
         val storeProduct = createProductVo(
             type = "subscription",
             subscriptionDurationMultiplier = "3MONTH",
             subscriptionDurationUnit = "DAY",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+    }
+
+    @Test
+    fun `toStoreProduct returns null period when duration unit maps to unknown`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "2UNKNOWN",
+            subscriptionDurationUnit = "UNKNOWN",
         ).toStoreProduct()
 
         assertThat(storeProduct.period).isNull()
