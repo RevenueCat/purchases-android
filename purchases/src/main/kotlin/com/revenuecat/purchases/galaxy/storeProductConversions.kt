@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -43,7 +45,14 @@ private fun ProductVo.createPeriod(): Period? {
     // subscriptionDurationMultiplier returns a string in the format $INT$STRING, like
     // 1YEAR, 2MONTH, 4WEEK. We need to extract that leading integer to use as the
     // period's value.
-    val periodValue = extractLeadingInt(input = this.subscriptionDurationMultiplier) ?: return null
+    val periodValue = extractLeadingInt(input = this.subscriptionDurationMultiplier)
+    if(periodValue == null) {
+        log(LogIntent.GALAXY_ERROR) {
+            GalaxyStrings.CANNOT_PARSE_LEADING_INT_FROM_SUBSCRIPTION_DURATION_MULTIPLIER
+                .format(this.subscriptionDurationMultiplier)
+        }
+        return null
+    }
     val unit = this.subscriptionDurationUnit.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitString()
         ?: return null
 
@@ -70,7 +79,9 @@ private fun String.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitStr
         "month" -> Period.Unit.MONTH
         "week" -> Period.Unit.WEEK
         else -> {
-            // TODO: Log
+            log(LogIntent.GALAXY_WARNING) {
+                GalaxyStrings.UNKNOWN_SUBSCRIPTION_DURATION_UNIT.format(this)
+            }
             Period.Unit.UNKNOWN
         }
     }
@@ -86,11 +97,7 @@ private fun extractLeadingInt(input: String): Int? {
 
     // If a match is found, convert the matched string (value) to an Int.
     // If no match is found (e.g., input is "MONTH2"), it returns null.
-    val value = matchResult?.value?.toIntOrNull()
-    if (value == null)  {
-        // TODO: Log
-    }
-    return value
+    return matchResult?.value?.toIntOrNull()
 }
 
 private fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
@@ -98,7 +105,9 @@ private fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): Produc
         "item" -> ProductType.INAPP
         "subscription" -> ProductType.SUBS
         else -> {
-            // TODO: Log
+            log(LogIntent.GALAXY_WARNING) {
+                GalaxyStrings.UNKNOWN_GALAXY_IAP_TYPE_STRING.format(this)
+            }
             ProductType.UNKNOWN
         }
     }

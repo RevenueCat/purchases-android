@@ -4,10 +4,10 @@ import android.os.Handler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.toStoreProduct
 import com.revenuecat.purchases.galaxy.utils.isError
@@ -47,13 +47,13 @@ internal class ProductDataHandler(
             // Note: This early exit is more than just an optimization. If we call iapHelper.getProductsDetails
             // with an empty string param (this would happen if productIds is empty), then iapHelper.getProductsDetails
             // returns all products for the app, which wouldn't give us the product we want (none).
-            // TODO: Log a message
+            log(LogIntent.DEBUG) { GalaxyStrings.EMPTY_GET_PRODUCT_DETAILS_REQUEST }
             onReceive(emptyList())
             return
         }
 
         if (inFlightRequest != null) {
-            // TODO: Log a message about there already being a request in flight
+            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.ANOTHER_GET_PRODUCT_DETAILS_REQUEST_IN_FLIGHT }
             val error = PurchasesError(
                 code = PurchasesErrorCode.OperationAlreadyInProgressError,
                 underlyingErrorMessage = "Only one Galaxy Store product request is allowed at a time."
@@ -63,7 +63,7 @@ internal class ProductDataHandler(
         }
 
         // TODO: Use a GalaxyStrings string
-        log(LogIntent.DEBUG) { AmazonStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
+        log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
         synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
             if (productDataCache.keys.containsAll(productIds)) {
@@ -124,7 +124,13 @@ internal class ProductDataHandler(
         error: ErrorVo,
     ) {
         val underlyingErrorMessage = error.errorString
-        // TODO: Log error string
+        log(LogIntent.GALAXY_ERROR) {
+            GalaxyStrings.GET_PRODUCT_DETAILS_REQUEST_ERRORED.format(
+                inFlightRequest?.productIds?.joinToString() ?: "[none]",
+                underlyingErrorMessage
+            )
+        }
+
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
         inFlightRequest?.onError?.invoke(purchasesError)
         clearInFlightRequest()
@@ -141,9 +147,11 @@ internal class ProductDataHandler(
                     inFlightRequest?.also { clearInFlightRequest() }
                 } ?: return@postDelayed
 
+                val errorString = GalaxyStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DETAILS.format(request)
+                log(LogIntent.GALAXY_ERROR) { errorString }
                 val error = PurchasesError(
-                    PurchasesErrorCode.UnknownError,
-                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request),
+                    code = PurchasesErrorCode.UnknownError,
+                    underlyingErrorMessage = errorString,
                 )
                 request.onError(error)
             },

@@ -10,7 +10,7 @@ import java.util.ArrayList
 
 internal interface ProductDataResponseListener : OnGetProductsDetailsListener {
     override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo>) {
-        /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
+        /* intentionally ignored. Use ProductDataHandler instead */
     }
 
     fun getProductDetails(
