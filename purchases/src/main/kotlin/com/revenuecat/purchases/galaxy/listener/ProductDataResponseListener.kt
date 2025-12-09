@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy.listener
 
 
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
@@ -15,6 +16,7 @@ internal interface ProductDataResponseListener : OnGetProductsDetailsListener {
 
     fun getProductDetails(
         productIds: Set<String>,
+        productType: ProductType,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

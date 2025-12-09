@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import android.os.Handler
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -8,17 +9,17 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.toStoreProduct
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.models.StoreProduct
-import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import java.util.ArrayList
 
 internal class ProductDataHandler(
-    private val iapHelper: IapHelper,
+    private val iapHelper: IAPHelperProvider,
     private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
@@ -31,6 +32,7 @@ internal class ProductDataHandler(
 
     private data class Request(
         val productIds: Set<String>,
+        val productType: ProductType,
         val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback,
     )
@@ -40,6 +42,7 @@ internal class ProductDataHandler(
 
     override fun getProductDetails(
         productIds: Set<String>,
+        productType: ProductType,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -83,7 +86,12 @@ internal class ProductDataHandler(
                     this
                 )
 
-                val request = Request(productIds = productIds, onReceive = onReceive, onError = onError)
+                val request = Request(
+                    productIds = productIds,
+                    productType = productType,
+                    onReceive = onReceive,
+                    onError = onError,
+                )
                 synchronized(this) {
                     this.inFlightRequest = request
                     addTimeoutToProductDataRequest()
@@ -112,9 +120,9 @@ internal class ProductDataHandler(
             }
         }
 
-
         val storeProducts: List<StoreProduct> = products
             .map { it.toStoreProduct() }
+            .filter { it.type == inFlightRequest?.productType }
 
         inFlightRequest?.onReceive?.invoke(storeProducts)
         clearInFlightRequest()

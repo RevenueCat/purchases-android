@@ -63,6 +63,7 @@ internal object BillingFactory {
                 try {
                     GalaxyBillingWrapper(
                         stateProvider = stateProvider,
+                        context = application.applicationContext,
                         mainHandler = Handler(application.mainLooper),
                         billingMode = galaxyBillingMode,
                     )

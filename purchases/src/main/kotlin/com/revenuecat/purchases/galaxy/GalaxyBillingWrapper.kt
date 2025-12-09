@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.PostReceiptInitiationSource
@@ -15,16 +16,28 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
+import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
+import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
+    private val context: Context,
     private val mainHandler: Handler,
     val billingMode: GalaxyBillingMode,
+    private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
+        iapHelper = IapHelper.getInstance(context)
+    ),
+    private val productDataHandler: ProductDataResponseListener =
+        ProductDataHandler(
+            iapHelper = iapHelperProvider,
+            mainHandler = mainHandler
+        )
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         TODO("Not yet implemented")
@@ -55,6 +68,12 @@ internal class GalaxyBillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 // TODO: Diagnostics tracking
+                productDataHandler.getProductDetails(
+                    productIds = productIds,
+                    productType = productType,
+                    onReceive = onReceive,
+                    onError = onError
+                )
             } else {
                 onError(connectionError)
             }
@@ -91,9 +110,7 @@ internal class GalaxyBillingWrapper(
         TODO("Not yet implemented")
     }
 
-    override fun isConnected(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isConnected(): Boolean = true
 
     override fun queryPurchases(
         appUserID: String,
