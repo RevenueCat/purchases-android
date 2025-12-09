@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Before
 import kotlin.test.Test
 import kotlin.test.fail
+import com.revenuecat.purchases.models.StoreProduct
 
 class GalaxyBillingWrapperTest {
 
@@ -84,12 +85,12 @@ class GalaxyBillingWrapperTest {
 
         val productIds = setOf("prod_1", "prod_2")
         val expectedType = ProductType.SUBS
-        val onReceive: (List<com.revenuecat.purchases.models.StoreProduct>) -> Unit = { fail("not called here") }
-        val onError: (PurchasesError) -> Unit = { fail("not expected") }
+        val onReceive = mockk<(List<StoreProduct>) -> Unit>(relaxed = true)
+        val onError = mockk<(PurchasesError) -> Unit>(relaxed = true)
 
         val idsSlot = slot<Set<String>>()
         val typeSlot = slot<ProductType>()
-        val onReceiveSlot = slot<(List<com.revenuecat.purchases.models.StoreProduct>) -> Unit>()
+        val onReceiveSlot = slot<(List<StoreProduct>) -> Unit>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
 
         wrapper.queryProductDetailsAsync(
@@ -110,8 +111,14 @@ class GalaxyBillingWrapperTest {
 
         assertThat(idsSlot.captured).containsExactlyInAnyOrderElementsOf(productIds)
         assertThat(typeSlot.captured).isEqualTo(expectedType)
-        assertThat(onReceiveSlot.captured).isSameAs(onReceive)
-        assertThat(onErrorSlot.captured).isSameAs(onError)
+
+        val expectedProducts = listOf(mockk<StoreProduct>())
+        onReceiveSlot.captured(expectedProducts)
+        verify(exactly = 1) { onReceive(expectedProducts) }
+
+        val expectedError = mockk<PurchasesError>()
+        onErrorSlot.captured(expectedError)
+        verify(exactly = 1) { onError(expectedError) }
     }
 
     @Test

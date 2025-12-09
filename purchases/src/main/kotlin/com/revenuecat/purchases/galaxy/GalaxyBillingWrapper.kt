@@ -39,6 +39,9 @@ internal class GalaxyBillingWrapper(
             mainHandler = mainHandler,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
+
+    private val serialRequestExecutor = GalaxySerialRequestExecutor()
+
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         TODO("Not yet implemented")
     }
@@ -65,18 +68,29 @@ internal class GalaxyBillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                @Suppress("ForbiddenComment")
-                // TODO: Diagnostics tracking
-                productDataHandler.getProductDetails(
-                    productIds = productIds,
-                    productType = productType,
-                    onReceive = onReceive,
-                    onError = onError,
-                )
-            } else {
-                onError(connectionError)
+        if (purchasesUpdatedListener == null) return
+
+        serialRequestExecutor.executeSerially { finish ->
+            executeRequestOnUIThread { connectionError ->
+                if (connectionError == null) {
+                    @Suppress("ForbiddenComment")
+                    // TODO: Diagnostics tracking
+                    productDataHandler.getProductDetails(
+                        productIds = productIds,
+                        productType = productType,
+                        onReceive = {
+                            onReceive(it)
+                            finish()
+                        },
+                        onError = {
+                            onError(it)
+                            finish()
+                        },
+                    )
+                } else {
+                    onError(connectionError)
+                    finish()
+                }
             }
         }
     }
