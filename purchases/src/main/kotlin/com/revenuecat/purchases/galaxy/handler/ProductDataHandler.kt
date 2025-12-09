@@ -65,7 +65,6 @@ internal class ProductDataHandler(
             return
         }
 
-        // TODO: Use a GalaxyStrings string
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
         synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
