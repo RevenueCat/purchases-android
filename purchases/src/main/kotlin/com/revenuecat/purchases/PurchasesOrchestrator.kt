@@ -275,7 +275,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
-        flushPaywallEvents()
+        flushPaywallEvents(Delay.NONE)
     }
 
     /** @suppress */
@@ -311,7 +311,7 @@ internal class PurchasesOrchestrator(
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushPaywallEvents()
+            flushPaywallEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
@@ -1299,7 +1299,7 @@ internal class PurchasesOrchestrator(
                 )
 
                 // Synchronize paywall events after a new purchase
-                flushPaywallEvents()
+                flushPaywallEvents(Delay.NONE)
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
@@ -1576,9 +1576,9 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
-    private fun flushPaywallEvents() {
-        eventsManager.flushEvents()
-        adEventsManager.flushEvents()
+    private fun flushPaywallEvents(delay: Delay) {
+        eventsManager.flushEvents(delay)
+        adEventsManager.flushEvents(delay)
     }
 
     private fun createCallbackWithDiagnosticsIfNeeded(
