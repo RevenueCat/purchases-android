@@ -2,7 +2,7 @@
 agp = "8.13.1"
 androidxNavigation = "2.6.0"
 kotlin = "1.9.0"
-purchases = "9.16.0-SNAPSHOT"
+purchases = "9.16.0-beta02"
 lifecycle = "2.6.1"
 androidxCore = "1.10.1"
 
