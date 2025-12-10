@@ -68,15 +68,16 @@ internal class ProductDataHandler(
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
         synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
+            val request = Request(
+                productIds = productIds,
+                productType = productType,
+                onReceive = onReceive,
+                onError = onError,
+            )
+
             if (productDataCache.keys.containsAll(productIds)) {
                 val cachedProducts = productIds.mapNotNull(productDataCache::get)
 
-                val request = Request(
-                    productIds = productIds,
-                    productType = productType,
-                    onReceive = onReceive,
-                    onError = onError,
-                )
                 synchronized(this) {
                     this.inFlightRequest = request
                 }
@@ -94,13 +95,6 @@ internal class ProductDataHandler(
                 iapHelper.getProductsDetails(
                     productIDs = productIdRequestString,
                     onGetProductsDetailsListener = this,
-                )
-
-                val request = Request(
-                    productIds = productIds,
-                    productType = productType,
-                    onReceive = onReceive,
-                    onError = onError,
                 )
 
                 synchronized(this) {
