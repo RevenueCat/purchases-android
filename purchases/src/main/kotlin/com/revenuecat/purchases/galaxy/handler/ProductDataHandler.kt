@@ -38,7 +38,7 @@ internal class ProductDataHandler(
     )
 
     @get:Synchronized
-    internal val productDataCache = mutableMapOf<String, ProductVo>()
+    internal val productsCache = mutableMapOf<String, StoreProduct>()
 
     override fun getProductDetails(
         productIds: Set<String>,
@@ -67,7 +67,7 @@ internal class ProductDataHandler(
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
-        synchronized(lock = this) { productDataCache.toMap() }.let { productDataCache ->
+        synchronized(lock = this) { productsCache.toMap() }.let { productsCache ->
             val request = Request(
                 productIds = productIds,
                 productType = productType,
@@ -75,15 +75,15 @@ internal class ProductDataHandler(
                 onError = onError,
             )
 
-            if (productDataCache.keys.containsAll(productIds)) {
-                val cachedProducts = productIds.mapNotNull(productDataCache::get)
+            if (productsCache.keys.containsAll(productIds)) {
+                val cachedProducts = productIds.mapNotNull(productsCache::get)
 
                 synchronized(this) {
                     this.inFlightRequest = request
                 }
 
-                handleSuccessfulProductsResponse(
-                    products = cachedProducts,
+                handleStoreProducts(
+                    storeProducts = cachedProducts,
                 )
             } else {
                 // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
@@ -118,19 +118,23 @@ internal class ProductDataHandler(
     private fun handleSuccessfulProductsResponse(
         products: List<ProductVo>,
     ) {
+        val storeProducts: List<StoreProduct> = products
+            .map { it.toStoreProduct() }
+
         synchronized(this) {
-            products.forEach { product ->
-                productDataCache[product.itemId] = product
+            storeProducts.forEach { product ->
+                productsCache[product.id] = product
             }
         }
 
-        val storeProducts: List<StoreProduct> = products
-            .map { it.toStoreProduct() }
-            .filter { it.type == inFlightRequest?.productType }
+        handleStoreProducts(storeProducts = storeProducts)
+    }
 
+    private fun handleStoreProducts(storeProducts: List<StoreProduct>) {
+        val storeProductsOfMatchingType = storeProducts.filter { it.type == inFlightRequest?.productType }
         val onReceive = inFlightRequest?.onReceive
         clearInFlightRequest()
-        onReceive?.invoke(storeProducts)
+        onReceive?.invoke(storeProductsOfMatchingType)
     }
 
     private fun handleUnsuccessfulProductDataResponse(
