@@ -22,6 +22,16 @@ internal object AttributionFetcherFactory {
                 throw e
             }
         }
+        Store.GALAXY -> {
+            try {
+                Class.forName("com.revenuecat.purchases.galaxy.attribution.GalaxyDeviceIdentifiersFetcher")
+                    .getConstructor()
+                    .newInstance() as DeviceIdentifiersFetcher
+            } catch (e: ClassNotFoundException) {
+                errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
+                throw e
+            }
+        }
         else -> {
             errorLog { "Incompatible store ($store) used" }
             throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
