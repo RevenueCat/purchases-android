@@ -1,14 +1,14 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.utils
 
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal typealias GalaxySerialRequest = (finish: () -> Unit) -> Unit
+internal typealias SerialRequest = (finish: () -> Unit) -> Unit
 
-internal class GalaxySerialRequestExecutor {
+internal class SerialRequestExecutor {
 
     private val lock = Any()
-    private val pendingRequests = ArrayDeque<GalaxySerialRequest>()
+    private val pendingRequests = ArrayDeque<SerialRequest>()
     private var hasActiveRequest: Boolean = false
 
     /**
@@ -16,7 +16,7 @@ internal class GalaxySerialRequestExecutor {
      * **must** be called exactly once by the request, from either its success or error path, to allow
      * the next queued request to start.
      */
-    fun executeSerially(request: GalaxySerialRequest) {
+    fun executeSerially(request: SerialRequest) {
         val shouldStartNext = synchronized(lock) {
             pendingRequests.addLast(request)
             if (!hasActiveRequest) {

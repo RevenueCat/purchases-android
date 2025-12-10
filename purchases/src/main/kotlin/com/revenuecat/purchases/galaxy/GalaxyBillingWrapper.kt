@@ -21,6 +21,7 @@ import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.SerialRequestExecutor
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 
 @Suppress("TooManyFunctions")
@@ -39,7 +40,7 @@ internal class GalaxyBillingWrapper(
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
-    private val serialRequestExecutor = GalaxySerialRequestExecutor()
+    private val serialRequestExecutor = SerialRequestExecutor()
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         warnLog { "Unimplemented: GalaxyBillingWrapper.startConnectionOnMainThread" }

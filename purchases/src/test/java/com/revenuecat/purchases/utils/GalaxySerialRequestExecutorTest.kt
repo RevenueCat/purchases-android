@@ -1,17 +1,17 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.utils
 
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.Test
 
-class GalaxySerialRequestExecutorTest {
+class SerialRequestExecutorTest {
 
     @Test
     fun `next request waits for previous success`() {
-        val executor = GalaxySerialRequestExecutor()
+        val executor = SerialRequestExecutor()
         val finishFirst = AtomicReference<() -> Unit>()
         val secondStarted = CountDownLatch(1)
 
@@ -24,16 +24,16 @@ class GalaxySerialRequestExecutorTest {
             finish()
         }
 
-        assertThat(secondStarted.await(100, TimeUnit.MILLISECONDS)).isFalse
+        Assertions.assertThat(secondStarted.await(100, TimeUnit.MILLISECONDS)).isFalse
 
         finishFirst.get()?.invoke()
 
-        assertThat(secondStarted.await(1, TimeUnit.SECONDS)).isTrue
+        Assertions.assertThat(secondStarted.await(1, TimeUnit.SECONDS)).isTrue
     }
 
     @Test
     fun `error completion also advances queue`() {
-        val executor = GalaxySerialRequestExecutor()
+        val executor = SerialRequestExecutor()
         val completedRequests = CopyOnWriteArrayList<String>()
         val finished = CountDownLatch(1)
 
@@ -48,7 +48,7 @@ class GalaxySerialRequestExecutorTest {
             finished.countDown()
         }
 
-        assertThat(finished.await(1, TimeUnit.SECONDS)).isTrue
-        assertThat(completedRequests).containsExactly("first", "second")
+        Assertions.assertThat(finished.await(1, TimeUnit.SECONDS)).isTrue
+        Assertions.assertThat(completedRequests).containsExactly("first", "second")
     }
 }
