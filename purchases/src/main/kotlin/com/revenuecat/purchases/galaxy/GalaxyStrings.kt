@@ -19,4 +19,6 @@ internal object GalaxyStrings {
     const val CANNOT_PARSE_LEADING_INT_FROM_SUBSCRIPTION_DURATION_MULTIPLIER = "Cannot parse period value from the " +
         "SubscriptionDurationMultiple from the Galaxy Store: %s"
     const val UNKNOWN_GALAXY_IAP_TYPE_STRING = "Detected an unknown IAP Type string from the Galaxy Store: %s"
+    const val CANNOT_PARSE_GALAXY_PRODUCT_SUBSCRIPTION_PERIOD = "Could not parse period for Galaxy Store subscription. " +
+        "Product's subscriptionDurationMultiplier is %s"
 }
