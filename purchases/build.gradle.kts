@@ -59,7 +59,7 @@ android {
         buildConfigField(
             type = "boolean",
             name = "ENABLE_QUERY_PURCHASE_HISTORY_AIDL",
-            value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "false"),
+            value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
         )
 
         packagingOptions.resources.excludes.addAll(
