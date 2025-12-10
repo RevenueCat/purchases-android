@@ -43,15 +43,15 @@ internal class GalaxyBillingWrapper(
     private val serialRequestExecutor = SerialRequestExecutor()
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.startConnectionOnMainThread" }
+        // No-op
     }
 
     override fun startConnection() {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.startConnection" }
+        // No-op
     }
 
     override fun endConnection() {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.endConnection" }
+        // No-op
     }
 
     override fun queryAllPurchases(
