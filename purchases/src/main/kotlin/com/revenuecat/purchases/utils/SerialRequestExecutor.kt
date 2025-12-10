@@ -34,11 +34,12 @@ internal class SerialRequestExecutor {
 
     private fun executeNextRequest() {
         val nextRequest = synchronized(lock) {
-            pendingRequests.firstOrNull()
-        } ?: run {
-            synchronized(lock) { hasActiveRequest = false }
-            return
-        }
+            pendingRequests.firstOrNull().also { request ->
+                if (request == null) {
+                    hasActiveRequest = false
+                }
+            }
+        } ?: return
 
         val hasFinished = AtomicBoolean(false)
         nextRequest {
