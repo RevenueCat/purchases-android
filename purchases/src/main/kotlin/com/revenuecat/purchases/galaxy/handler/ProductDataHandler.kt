@@ -23,10 +23,6 @@ internal class ProductDataHandler(
     private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
-    companion object {
-        private const val GET_PRODUCT_DATA_TIMEOUT_MILLIS = 10_000L
-    }
-
     @get:Synchronized
     private var inFlightRequest: Request? = null
 
@@ -99,7 +95,6 @@ internal class ProductDataHandler(
 
                 synchronized(this) {
                     this.inFlightRequest = request
-                    addTimeoutToProductDataRequest(request)
                 }
             }
         }
@@ -156,31 +151,5 @@ internal class ProductDataHandler(
 
     private fun clearInFlightRequest() {
         inFlightRequest = null
-    }
-
-    private fun addTimeoutToProductDataRequest(request: Request) {
-        mainHandler.postDelayed(
-            {
-                val shouldHandleTimeout = synchronized(this) {
-                    if (inFlightRequest === request) {
-                        clearInFlightRequest()
-                        true
-                    } else {
-                        false
-                    }
-                }
-                if (!shouldHandleTimeout) return@postDelayed
-
-                val errorString = GalaxyStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DETAILS
-                    .format(request.productIds.joinToString())
-                log(LogIntent.GALAXY_ERROR) { errorString }
-                val error = PurchasesError(
-                    code = PurchasesErrorCode.UnknownError,
-                    underlyingErrorMessage = errorString,
-                )
-                request.onError(error)
-            },
-            GET_PRODUCT_DATA_TIMEOUT_MILLIS,
-        )
     }
 }

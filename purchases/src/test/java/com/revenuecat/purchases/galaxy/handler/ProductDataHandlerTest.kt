@@ -29,17 +29,13 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
     private lateinit var mainHandler: Handler
     private lateinit var productDataHandler: ProductDataHandler
 
-    private lateinit var timeoutRunnableSlot: CapturingSlot<Runnable>
-
     private val unexpectedOnReceive: (List<StoreProduct>) -> Unit = { fail("Expected onError to be called") }
     private val unexpectedOnError: (PurchasesError) -> Unit = { fail("Expected onReceive to be called") }
 
     @Before
     fun setup() {
-        timeoutRunnableSlot = slot()
         iapHelperProvider = mockk(relaxed = true)
         mainHandler = mockk(relaxed = true)
-        every { mainHandler.postDelayed(capture(timeoutRunnableSlot), any()) } returns true
         productDataHandler = ProductDataHandler(iapHelperProvider, mainHandler)
     }
 
@@ -135,30 +131,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("next"),
             productType = ProductType.INAPP,
-            onReceive = unexpectedOnReceive,
-            onError = unexpectedOnError,
-        )
-        verify(exactly = 2) { iapHelperProvider.getProductsDetails(any(), any()) }
-    }
-
-    @Test
-    fun `timeout invokes onError with unknown error and clears request`() {
-        var receivedError: PurchasesError? = null
-        productDataHandler.getProductDetails(
-            productIds = setOf("timeout"),
-            productType = ProductType.INAPP,
-            onReceive = unexpectedOnReceive,
-            onError = { receivedError = it },
-        )
-
-        val timeoutRunnable = timeoutRunnableSlot.captured
-        timeoutRunnable.run()
-
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
-
-        productDataHandler.getProductDetails(
-            productIds = setOf("next"),
-            productType = ProductType.SUBS,
             onReceive = unexpectedOnReceive,
             onError = unexpectedOnError,
         )
