@@ -106,7 +106,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
         assertThat(receivedProducts).isNotNull
         assertThat(receivedProducts!!.map { it.id }).containsExactly("sub")
-        assertThat(productDataHandler.productDataCache).containsKeys("iap", "sub")
+        assertThat(productDataHandler.productsCache).containsKeys("iap", "sub")
     }
 
     @Test
