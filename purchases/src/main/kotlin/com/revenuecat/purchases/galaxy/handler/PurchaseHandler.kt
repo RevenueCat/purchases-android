@@ -11,7 +11,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
-internal class PurchaseDataHandler(
+internal class PurchaseHandler(
     private val iapHelper: IAPHelperProvider,
 ) : PurchaseResponseListener {
 
@@ -48,6 +48,8 @@ internal class PurchaseDataHandler(
         }
         val requestWasDispatched = iapHelper.startPayment(
             itemId = storeProduct.id,
+            obfuscatedAccountId = TODO(),
+            obfuscatedProfileId = TODO(),
             onPaymentListener = this,
         )
 

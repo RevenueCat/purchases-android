@@ -2,9 +2,6 @@ package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
-import android.os.Handler
-import com.amazon.device.iap.model.Receipt
-import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -21,7 +18,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
-import com.revenuecat.purchases.galaxy.handler.PurchaseDataHandler
+import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.models.InAppMessageType
@@ -46,8 +43,8 @@ internal class GalaxyBillingWrapper(
         ProductDataHandler(
             iapHelper = iapHelperProvider,
         ),
-    private val purchaseDataHandler: PurchaseResponseListener =
-        PurchaseDataHandler(
+    private val purchaseHandler: PurchaseResponseListener =
+        PurchaseHandler(
             iapHelper = iapHelperProvider,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
@@ -86,7 +83,7 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             @Suppress("ForbiddenComment")
             // TODO: Record diagnostics
-            val requestWasDispatched = productDataHandler.getProductDetails(
+            productDataHandler.getProductDetails(
                 productIds = productIds,
                 productType = productType,
                 onReceive = {
@@ -152,7 +149,7 @@ internal class GalaxyBillingWrapper(
         }
 
         serialRequestExecutor.executeSerially { finish ->
-            purchaseDataHandler.purchase(
+            purchaseHandler.purchase(
                 appUserID = appUserID,
                 storeProduct = storeProduct,
                 onSuccess = { purchase ->

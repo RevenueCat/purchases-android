@@ -20,6 +20,8 @@ internal class DefaultIAPHelperProvider(
 
     override fun startPayment(
         itemId: String,
+        obfuscatedAccountId: String?,
+        obfuscatedProfileId: String?,
         onPaymentListener: OnPaymentListener,
     ): Boolean {
         // Return values:
@@ -28,6 +30,8 @@ internal class DefaultIAPHelperProvider(
         // false: The request was not sent to server and was not processed.
         return iapHelper.startPayment(
             itemId,
+            obfuscatedAccountId,
+            obfuscatedProfileId,
             onPaymentListener,
         )
     }
