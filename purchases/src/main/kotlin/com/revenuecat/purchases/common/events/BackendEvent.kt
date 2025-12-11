@@ -123,7 +123,7 @@ internal sealed class BackendEvent : Event {
 
         // Failed to load event only fields
         @SerialName("mediator_error_code")
-        val mediatorErrorCode: Long? = null,
+        val mediatorErrorCode: Int? = null,
     ) : BackendEvent()
 
     /**

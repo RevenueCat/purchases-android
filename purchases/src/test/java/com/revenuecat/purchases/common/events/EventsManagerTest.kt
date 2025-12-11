@@ -517,7 +517,7 @@ class EventsManagerTest {
             mediatorName = AdMediatorName.AD_MOB,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
-            mediatorErrorCode = 123L,
+            mediatorErrorCode = 123,
         )
 
         eventsManager.track(adEvent)
