@@ -77,7 +77,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     val presentedOfferingContext: PresentedOfferingContext?,
 
     /**
-     * Amazon's store user id. Null for Google
+     * Amazon's store user id. Null for Google and Galaxy
      */
     val storeUserID: String?,
 
@@ -87,7 +87,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     val purchaseType: PurchaseType,
 
     /**
-     * Amazon's marketplace. Null for Google
+     * Amazon's marketplace. Null for Google and Galaxy
      */
     val marketplace: String?,
 
@@ -264,4 +264,5 @@ enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,
+    GALAXY_PURCHASE,
 }

@@ -107,7 +107,7 @@ private fun extractLeadingInt(input: String): Int? {
     return matchResult?.value?.toIntOrNull()
 }
 
-private fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
+internal fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
     return when (this.lowercase()) {
         "item" -> ProductType.INAPP
         "subscription" -> ProductType.SUBS

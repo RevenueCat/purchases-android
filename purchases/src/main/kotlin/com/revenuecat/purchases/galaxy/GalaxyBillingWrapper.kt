@@ -23,6 +23,7 @@ import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.InAppMessageType
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -120,6 +121,7 @@ internal class GalaxyBillingWrapper(
         onError(PurchasesError(code = PurchasesErrorCode.UnknownError))
     }
 
+    @OptIn(GalaxySerialOperation::class)
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -154,9 +156,9 @@ internal class GalaxyBillingWrapper(
             purchaseHandler.purchase(
                 appUserID = appUserID,
                 storeProduct = storeProduct,
-                onSuccess = { purchase ->
-                    handlePurchase(
-                        purchase = purchase,
+                onSuccess = { receipt ->
+                    handleReceipt(
+                        receipt = receipt,
                         storeProduct = storeProduct,
                         presentedOfferingContext = presentedOfferingContext,
                     )
@@ -170,12 +172,18 @@ internal class GalaxyBillingWrapper(
         }
     }
 
-    private fun handlePurchase(
-        purchase: PurchaseVo,
+    private fun handleReceipt(
+        receipt: PurchaseVo,
         storeProduct: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
+        val storeTransaction = receipt.toStoreTransaction(
+            productId = storeProduct.id,
+            presentedOfferingContext = presentedOfferingContext,
+            purchaseState = PurchaseState.PURCHASED,
+        )
 
+        purchasesUpdatedListener?.onPurchasesUpdated(purchases = listOf(storeTransaction))
     }
 
     override fun isConnected(): Boolean = true

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy.listener
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
@@ -12,7 +13,7 @@ internal interface PurchaseResponseListener : OnPaymentListener {
         /* intentionally ignored. Use PurchaseDataHandler instead */
     }
 
-    @SuppressWarnings("LongParameterList")
+    @GalaxySerialOperation
     fun purchase(
         appUserID: String,
         storeProduct: StoreProduct,

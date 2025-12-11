@@ -6,10 +6,8 @@ internal object GalaxyStrings {
     // Product Fetching
     const val EMPTY_GET_PRODUCT_DETAILS_REQUEST = "Received a request for 0 products. Returning an empty list."
     const val ANOTHER_GET_PRODUCT_DETAILS_REQUEST_IN_FLIGHT = "A request to fetch products from the Galaxy Store" +
-        "is already in progress. Please wait until that request completes and then try again."
+        " is already in progress. Please wait until that request completes and then try again."
     const val REQUESTING_PRODUCTS = "Requesting Galaxy products with identifiers: %s"
-    const val ERROR_TIMEOUT_GETTING_PRODUCT_DETAILS = "Timeout error trying to get Galaxy product details for " +
-        "products: %s. Please check that the product IDs are correct."
     const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product IDs" +
         "%s from the Galaxy Store. Error: %s"
 
@@ -23,7 +21,13 @@ internal object GalaxyStrings {
         "Product's subscriptionDurationMultiplier is %s"
 
     // Purchasing
+    const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
+        " is already in progress. Please wait until that request completes and then try again."
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
         "request for processing. No transactions have occurred."
+    const val PURCHASE_REQUEST_ERRORED = "An error occurred while purchasing product with ID %s with the " +
+        "Galaxy Store. Error: %s"
+    const val PURCHASE_RETURNED_SUCCESS_BUT_NO_PURCHASE_RESULT = "The purchase request returned no error, but also " +
+        "returned no purchase result. This is likely an issue with the Galaxy Store."
 }

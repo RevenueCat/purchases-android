@@ -55,6 +55,7 @@ class GalaxyBillingWrapperTest {
             stateProvider,
             context = context,
             billingMode = GalaxyBillingMode.TEST,
+            finishTransactions = true,
             iapHelperProvider = iapHelperProvider,
             productDataHandler = productDataHandler,
         )
