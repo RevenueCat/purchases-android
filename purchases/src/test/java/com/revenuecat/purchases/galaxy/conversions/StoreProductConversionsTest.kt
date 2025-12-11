@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.models.Period
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -19,7 +19,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = createProductVo(itemId = productId).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.id).isEqualTo(productId)
+        assertThat(storeProduct.id).isEqualTo(productId)
     }
 
     @Test
@@ -28,7 +28,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = createProductVo(itemName = productName).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.name).isEqualTo(productName)
+        assertThat(storeProduct.name).isEqualTo(productName)
     }
 
     @Test
@@ -37,7 +37,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = createProductVo(itemName = productTitle).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.title).isEqualTo(productTitle)
+        assertThat(storeProduct.title).isEqualTo(productTitle)
     }
 
     @Test
@@ -46,16 +46,16 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = createProductVo(itemDescription = productDescription).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.description).isEqualTo(productDescription)
+        assertThat(storeProduct.description).isEqualTo(productDescription)
     }
 
     @Test
     fun `toStoreProduct sets subscriptionOptions, defaultOption, and presentedOfferingContext to null`() {
         val storeProduct = createProductVo().toStoreProduct()
 
-        Assertions.assertThat(storeProduct.subscriptionOptions).isNull()
-        Assertions.assertThat(storeProduct.defaultOption).isNull()
-        Assertions.assertThat(storeProduct.presentedOfferingContext).isNull()
+        assertThat(storeProduct.subscriptionOptions).isNull()
+        assertThat(storeProduct.defaultOption).isNull()
+        assertThat(storeProduct.presentedOfferingContext).isNull()
     }
 
     // endregion
@@ -67,14 +67,14 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             type = "item"
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.type).isEqualTo(ProductType.INAPP)
+        assertThat(storeProduct.type).isEqualTo(ProductType.INAPP)
     }
 
     @Test
     fun `toStoreProduct maps subscription type to SUBS`() {
         val storeProduct = createProductVo(type = "subscription").toStoreProduct()
 
-        Assertions.assertThat(storeProduct.type).isEqualTo(ProductType.SUBS)
+        assertThat(storeProduct.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
@@ -82,8 +82,8 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         val upperCaseItem = createProductVo(type = "ITEM").toStoreProduct()
         val upperCaseSubscription = createProductVo(type = "SUBSCRIPTION").toStoreProduct()
 
-        Assertions.assertThat(upperCaseItem.type).isEqualTo(ProductType.INAPP)
-        Assertions.assertThat(upperCaseSubscription.type).isEqualTo(ProductType.SUBS)
+        assertThat(upperCaseItem.type).isEqualTo(ProductType.INAPP)
+        assertThat(upperCaseSubscription.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
@@ -91,22 +91,22 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         val mixedCaseItem = createProductVo(type = "ItEm").toStoreProduct()
         val mixedCaseSubscription = createProductVo(type = "SubScription").toStoreProduct()
 
-        Assertions.assertThat(mixedCaseItem.type).isEqualTo(ProductType.INAPP)
-        Assertions.assertThat(mixedCaseSubscription.type).isEqualTo(ProductType.SUBS)
+        assertThat(mixedCaseItem.type).isEqualTo(ProductType.INAPP)
+        assertThat(mixedCaseSubscription.type).isEqualTo(ProductType.SUBS)
     }
 
     @Test
     fun `toStoreProduct returns UNKNOWN type for unexpected value`() {
         val storeProduct = createProductVo(type = "unknown-type").toStoreProduct()
 
-        Assertions.assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
+        assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
     }
 
     @Test
     fun `toStoreProduct returns UNKNOWN type for empty string`() {
         val storeProduct = createProductVo(type = "").toStoreProduct()
 
-        Assertions.assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
+        assertThat(storeProduct.type).isEqualTo(ProductType.UNKNOWN)
     }
 
     // endregion
@@ -124,9 +124,9 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        Assertions.assertThat(storeProduct.price.formatted).isEqualTo("$3.00")
-        Assertions.assertThat(storeProduct.price.amountMicros).isEqualTo(3_000_000)
-        Assertions.assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3.00")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(3_000_000)
+        assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
 
     @Test
@@ -139,9 +139,9 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        Assertions.assertThat(storeProduct.price.formatted).isEqualTo("$3.25")
-        Assertions.assertThat(storeProduct.price.amountMicros).isEqualTo(3_250_000)
-        Assertions.assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3.25")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(3_250_000)
+        assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
 
     @Test
@@ -154,8 +154,8 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        Assertions.assertThat(storeProduct.price.formatted).isEqualTo("$1.23")
-        Assertions.assertThat(storeProduct.price.amountMicros).isEqualTo(1_234_500)
+        assertThat(storeProduct.price.formatted).isEqualTo("$1.23")
+        assertThat(storeProduct.price.amountMicros).isEqualTo(1_234_500)
     }
 
     // endregion
@@ -204,12 +204,12 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             ).toStoreProduct()
 
             val period = storeProduct.period
-            Assertions.assertThat(period)
+            assertThat(period)
                 .describedAs("subscriptionDurationMultiplier=%s", expectation.multiplier)
                 .isNotNull
-            Assertions.assertThat(period!!.value).isEqualTo(expectation.expectedValue)
-            Assertions.assertThat(period.unit).isEqualTo(expectation.expectedUnit)
-            Assertions.assertThat(period.iso8601).isEqualTo(expectation.expectedIso8601)
+            assertThat(period!!.value).isEqualTo(expectation.expectedValue)
+            assertThat(period.unit).isEqualTo(expectation.expectedUnit)
+            assertThat(period.iso8601).isEqualTo(expectation.expectedIso8601)
         }
     }
 
@@ -221,7 +221,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "MONTH",
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.period).isNull()
     }
 
     @Test
@@ -232,7 +232,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "MONTH",
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.period).isNull()
     }
 
     @Test
@@ -243,7 +243,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "DAY",
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.period).isNull()
     }
 
     @Test
@@ -254,7 +254,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "UNKNOWN",
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.period).isNull()
     }
 
     @Test
@@ -265,7 +265,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "",
         ).toStoreProduct()
 
-        Assertions.assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.period).isNull()
     }
 
     // endregion
