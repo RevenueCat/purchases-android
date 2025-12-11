@@ -8,7 +8,7 @@ import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 internal interface IAPHelperProvider {
 
     fun setOperationMode(
-        mode: HelperDefine.OperationMode
+        mode: HelperDefine.OperationMode,
     )
 
     @GalaxySerialOperation
@@ -36,6 +36,6 @@ internal interface IAPHelperProvider {
         itemId: String,
         obfuscatedAccountId: String?,
         obfuscatedProfileId: String?,
-        onPaymentListener: OnPaymentListener
+        onPaymentListener: OnPaymentListener,
     ): Boolean
 }

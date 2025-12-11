@@ -21,8 +21,6 @@ internal class PurchaseHandler(
     @get:Synchronized
     private var inFlightRequest: Request? = null
 
-    private val lock = Any()
-
     private data class Request(
         val storeProduct: StoreProduct,
         val onSuccess: (PurchaseVo) -> Unit,
@@ -61,13 +59,13 @@ internal class PurchaseHandler(
             onPaymentListener = this,
         )
 
-        if(!requestWasDispatched) {
+        if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST }
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
-                    underlyingErrorMessage = "The Galaxy Store failed to accept the purchase request."
-                )
+                    underlyingErrorMessage = "The Galaxy Store failed to accept the purchase request.",
+                ),
             )
             clearInFlightRequest()
             return
@@ -111,8 +109,7 @@ internal class PurchaseHandler(
             )
         }
 
-        @Suppress("ForbiddenComment")
-        // TODO: Map galaxy errors to PurchaseErrors so we can give better errors
+        // TO DO: Map galaxy errors to PurchaseErrors so we can give better errors
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
         val onError = inFlightRequest?.onError
         clearInFlightRequest()

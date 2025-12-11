@@ -13,7 +13,7 @@ internal class DefaultIAPHelperProvider(
 ) : IAPHelperProvider {
 
     override fun setOperationMode(
-        mode: HelperDefine.OperationMode
+        mode: HelperDefine.OperationMode,
     ) {
         log(LogIntent.DEBUG) { GalaxyStrings.SETTING_OPERATION_MODE.format(mode.description()) }
         iapHelper.setOperationMode(mode)

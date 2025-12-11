@@ -42,12 +42,20 @@ open class GalaxyStoreTest {
         paymentId: String,
         purchaseId: String,
         orderId: String,
+        purchaseDate: String? = null,
+        type: String? = null,
+        itemId: String? = null,
+        udpSignature: String? = null,
     ): PurchaseVo {
         val productVo = createProductVo()
         val purchaseJson = JSONObject(productVo.jsonString).apply {
             put("mPaymentId", paymentId)
             put("mPurchaseId", purchaseId)
             put("mOrderId", orderId)
+            purchaseDate?.let { put("mPurchaseDate", it) }
+            type?.let { put("mType", it) }
+            itemId?.let { put("mItemId", it) }
+            udpSignature?.let { put("mUDPVerificationKey", it) }
         }
         return PurchaseVo(purchaseJson.toString())
     }

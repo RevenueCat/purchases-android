@@ -34,7 +34,7 @@ import com.revenuecat.purchases.utils.SerialRequestExecutor
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
     private val context: Context,
@@ -127,6 +127,7 @@ internal class GalaxyBillingWrapper(
         onError(PurchasesError(code = PurchasesErrorCode.UnknownError))
     }
 
+    @Suppress("ReturnCount")
     @OptIn(GalaxySerialOperation::class)
     override fun makePurchaseAsync(
         activity: Activity,
@@ -173,7 +174,7 @@ internal class GalaxyBillingWrapper(
                 onError = { purchasesError ->
                     onPurchaseError(error = purchasesError)
                     finish()
-                }
+                },
             )
         }
     }
@@ -196,7 +197,7 @@ internal class GalaxyBillingWrapper(
 
             val error = PurchasesError(
                 code = PurchasesErrorCode.InvalidReceiptError,
-                underlyingErrorMessage = errorMessage
+                underlyingErrorMessage = errorMessage,
             )
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
         }
