@@ -62,7 +62,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
-     * the developer. Always null for Amazon.
+     * the developer. Always null for Amazon and Galaxy.
      */
     val signature: String?,
 
@@ -103,7 +103,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
      *
      * In Google, this will be calculated from the basePlanId and offerId
      * Null in Google for restored transactions and purchases initiated outside of the app.
-     * Null for Amazon purchases.
+     * Null for Amazon and Galaxy purchases.
      */
     // We've marked this with @get:JvmSynthetic because its synthesized
     // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
@@ -117,7 +117,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
-     * This is not available for Amazon purchases.
+     * This is not available for Amazon and Galaxy purchases.
      */
     val replacementMode: ReplacementMode?,
 ) : Parcelable {

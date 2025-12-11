@@ -30,7 +30,7 @@ internal fun PurchaseVo.toStoreTransaction(
         purchaseToken = this.orderId,
         purchaseState = purchaseState,
         isAutoRenewing = type == ProductType.SUBS,
-        signature = this.udpSignature,
+        signature = null,
         originalJson = JSONObject(this.jsonString),
         presentedOfferingContext = presentedOfferingContext,
         storeUserID = null,
