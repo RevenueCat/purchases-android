@@ -24,6 +24,8 @@ import org.junit.Before
 import kotlin.test.Test
 import kotlin.test.fail
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
+import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 
 class GalaxyBillingWrapperTest {
 
@@ -65,6 +67,30 @@ class GalaxyBillingWrapperTest {
     fun tearDown() {
         unmockkStatic(Looper::class)
         previousLogHandler?.let { currentLogHandler = it }
+    }
+
+    @Test
+    fun `init sets operation mode with billing mode`() {
+        val customBillingMode = GalaxyBillingMode.ALWAYS_FAIL
+        val customIapHelperProvider = mockk<IAPHelperProvider>(relaxed = true)
+        val customProductDataHandler = mockk<ProductDataResponseListener>(relaxed = true)
+        val customPurchaseHandler = mockk<PurchaseResponseListener>(relaxed = true)
+
+        GalaxyBillingWrapper(
+            stateProvider = stateProvider,
+            context = context,
+            finishTransactions = true,
+            billingMode = customBillingMode,
+            iapHelperProvider = customIapHelperProvider,
+            productDataHandler = customProductDataHandler,
+            purchaseHandler = customPurchaseHandler,
+        )
+
+        verify(exactly = 1) {
+            customIapHelperProvider.setOperationMode(
+                mode = customBillingMode.toSamsungIAPOperationMode(),
+            )
+        }
     }
 
     @Test

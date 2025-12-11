@@ -17,6 +17,8 @@ import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
+import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
@@ -52,6 +54,10 @@ internal class GalaxyBillingWrapper(
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
     private val serialRequestExecutor = SerialRequestExecutor()
+
+    init {
+        iapHelperProvider.setOperationMode(mode = billingMode.toSamsungIAPOperationMode())
+    }
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
         // No-op
@@ -177,13 +183,23 @@ internal class GalaxyBillingWrapper(
         storeProduct: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        val storeTransaction = receipt.toStoreTransaction(
-            productId = storeProduct.id,
-            presentedOfferingContext = presentedOfferingContext,
-            purchaseState = PurchaseState.PURCHASED,
-        )
+        try {
+            val storeTransaction = receipt.toStoreTransaction(
+                productId = storeProduct.id,
+                presentedOfferingContext = presentedOfferingContext,
+                purchaseState = PurchaseState.PURCHASED,
+            )
+            purchasesUpdatedListener?.onPurchasesUpdated(purchases = listOf(storeTransaction))
+        } catch (e: IllegalArgumentException) {
+            val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+            log(LogIntent.GALAXY_ERROR) { errorMessage }
 
-        purchasesUpdatedListener?.onPurchasesUpdated(purchases = listOf(storeTransaction))
+            val error = PurchasesError(
+                code = PurchasesErrorCode.InvalidReceiptError,
+                underlyingErrorMessage = errorMessage
+            )
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+        }
     }
 
     override fun isConnected(): Boolean = true

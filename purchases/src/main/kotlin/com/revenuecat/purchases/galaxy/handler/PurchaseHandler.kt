@@ -97,7 +97,9 @@ internal class PurchaseHandler(
             return
         }
 
-
+        val onSuccess = inFlightRequest?.onSuccess
+        clearInFlightRequest()
+        onSuccess?.invoke(purchase)
     }
 
     private fun handleUnsuccessfulPurchaseResponse(error: ErrorVo) {
@@ -109,6 +111,7 @@ internal class PurchaseHandler(
             )
         }
 
+        @Suppress("ForbiddenComment")
         // TODO: Map galaxy errors to PurchaseErrors so we can give better errors
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
         val onError = inFlightRequest?.onError

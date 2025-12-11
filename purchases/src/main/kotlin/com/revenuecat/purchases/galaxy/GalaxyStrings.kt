@@ -1,6 +1,10 @@
 package com.revenuecat.purchases.galaxy
 
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
+
 internal object GalaxyStrings {
+    // Configuration
+    const val SETTING_OPERATION_MODE = "Setting the Galaxy Store's operation mode to %s."
     const val STOREFRONT_NOT_SUPPORTED = "Fetching the storefront is not supported for the Galaxy Store."
 
     // Product Fetching
@@ -30,4 +34,14 @@ internal object GalaxyStrings {
         "Galaxy Store. Error: %s"
     const val PURCHASE_RETURNED_SUCCESS_BUT_NO_PURCHASE_RESULT = "The purchase request returned no error, but also " +
         "returned no purchase result. This is likely an issue with the Galaxy Store."
+    const val ERROR_CANNOT_PARSE_PURCHASE_RESULT = "Could not parse the purchase result for a Galaxy Store purchase. " +
+        "This is likely an issue with the Galaxy Store. Error: %s."
+    const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
+        "date string: %s"
+}
+
+internal fun HelperDefine.OperationMode.description(): String = when (this) {
+    HelperDefine.OperationMode.OPERATION_MODE_PRODUCTION -> "PRODUCTION"
+    HelperDefine.OperationMode.OPERATION_MODE_TEST -> "TEST"
+    HelperDefine.OperationMode.OPERATION_MODE_TEST_FAILURE -> "TEST_FAILURE"
 }

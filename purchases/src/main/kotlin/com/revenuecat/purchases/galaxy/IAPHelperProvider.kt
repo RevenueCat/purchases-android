@@ -1,10 +1,15 @@
 package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 
 internal interface IAPHelperProvider {
+
+    fun setOperationMode(
+        mode: HelperDefine.OperationMode
+    )
 
     @GalaxySerialOperation
     fun getProductsDetails(

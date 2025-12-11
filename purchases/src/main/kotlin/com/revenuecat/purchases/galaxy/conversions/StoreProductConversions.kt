@@ -1,8 +1,10 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.galaxy.conversions
 
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.GalaxyStoreProduct
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
