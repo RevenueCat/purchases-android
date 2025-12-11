@@ -3,10 +3,10 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
-## RevenueCat SDK
-### 🐞 Bugfixes
-* Fix missing events tracking by removing delay to flush when backgrounding app (#2907) via Toni Rico (@tonidero)
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix custom schemes on paywall purchase buttons (#2914) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
-* Update Golden File for Galaxy Store (#2902) via Will Taylor (@fire-at-will)
-* Improve log message for no products of specific store in any offerings (#2897) via Antonio Pallares (@ajpallares)
+* Bump fastlane-plugin-revenuecat_internal from `efca663` to `76a3a08` (#2915) via dependabot[bot] (@dependabot[bot])
