@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
+import com.revenuecat.purchases.galaxy.attribution.GalaxyDeviceIdentifiersFetcher
 import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetcher
 
 internal object AttributionFetcherFactory {
@@ -22,16 +23,7 @@ internal object AttributionFetcherFactory {
                 throw e
             }
         }
-        Store.GALAXY -> {
-            try {
-                Class.forName("com.revenuecat.purchases.galaxy.attribution.GalaxyDeviceIdentifiersFetcher")
-                    .getConstructor()
-                    .newInstance() as DeviceIdentifiersFetcher
-            } catch (e: ClassNotFoundException) {
-                errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
-                throw e
-            }
-        }
+        Store.GALAXY -> GalaxyDeviceIdentifiersFetcher()
         else -> {
             errorLog { "Incompatible store ($store) used" }
             throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
