@@ -11,6 +11,7 @@ import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
@@ -49,6 +50,8 @@ internal class PurchaseHandler(
             onSuccess = onSuccess,
             onError = onError,
         )
+
+        log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id) }
 
         // startPayment returns false if the request was not sent to server and was not processed. When this happens,
         // the onPaymentListener is never invoked.
