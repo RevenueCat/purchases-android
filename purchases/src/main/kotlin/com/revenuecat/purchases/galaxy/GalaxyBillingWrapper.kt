@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
+import android.content.Context
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -13,25 +14,42 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
+import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.SerialRequestExecutor
+import com.samsung.android.sdk.iap.lib.helper.IapHelper
 
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
+    private val context: Context,
     val billingMode: GalaxyBillingMode,
+    private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
+        iapHelper = IapHelper.getInstance(context),
+    ),
+    private val productDataHandler: ProductDataResponseListener =
+        ProductDataHandler(
+            iapHelper = iapHelperProvider,
+        ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
+
+    private val serialRequestExecutor = SerialRequestExecutor()
+
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        TODO("Not yet implemented")
+        // No-op
     }
 
     override fun startConnection() {
-        TODO("Not yet implemented")
+        // No-op
     }
 
     override fun endConnection() {
-        TODO("Not yet implemented")
+        // No-op
     }
 
     override fun queryAllPurchases(
@@ -39,16 +57,35 @@ internal class GalaxyBillingWrapper(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.queryAllPurchases" }
+        onReceivePurchaseHistory(emptyList())
     }
 
+    @OptIn(GalaxySerialOperation::class)
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        TODO("Not yet implemented")
+        if (purchasesUpdatedListener == null) return
+
+        serialRequestExecutor.executeSerially { finish ->
+            @Suppress("ForbiddenComment")
+            // TODO: Record diagnostics
+            productDataHandler.getProductDetails(
+                productIds = productIds,
+                productType = productType,
+                onReceive = {
+                    onReceive(it)
+                    finish()
+                },
+                onError = {
+                    onError(it)
+                    finish()
+                },
+            )
+        }
     }
 
     override fun consumeAndSave(
@@ -57,7 +94,7 @@ internal class GalaxyBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.consumeAndSave" }
     }
 
     override fun findPurchaseInPurchaseHistory(
@@ -67,7 +104,8 @@ internal class GalaxyBillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.findPurchaseInPurchaseHistory" }
+        onError(PurchasesError(code = PurchasesErrorCode.UnknownError))
     }
 
     override fun makePurchaseAsync(
@@ -78,19 +116,18 @@ internal class GalaxyBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.makePurchaseAsync" }
     }
 
-    override fun isConnected(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isConnected(): Boolean = true
 
     override fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        TODO("Not yet implemented")
+        warnLog { "Unimplemented: GalaxyBillingWrapper.queryPurchases" }
+        onSuccess(emptyMap())
     }
 
     override fun showInAppMessagesIfNeeded(

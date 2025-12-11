@@ -62,8 +62,9 @@ internal object BillingFactory {
             Store.GALAXY -> {
                 try {
                     GalaxyBillingWrapper(
-                        billingMode = galaxyBillingMode,
                         stateProvider = stateProvider,
+                        context = application.applicationContext,
+                        billingMode = galaxyBillingMode,
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
