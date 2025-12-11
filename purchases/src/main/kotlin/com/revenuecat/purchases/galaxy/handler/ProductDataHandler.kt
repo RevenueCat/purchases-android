@@ -20,7 +20,6 @@ import java.util.ArrayList
 
 internal class ProductDataHandler(
     private val iapHelper: IAPHelperProvider,
-    private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
     @get:Synchronized

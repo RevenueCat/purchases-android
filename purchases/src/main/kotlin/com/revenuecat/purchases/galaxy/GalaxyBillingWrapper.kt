@@ -3,6 +3,8 @@ package com.revenuecat.purchases.galaxy
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import com.amazon.device.iap.model.Receipt
+import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -10,25 +12,32 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
+import com.revenuecat.purchases.galaxy.handler.PurchaseDataHandler
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
+import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.SerialRequestExecutor
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
+import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
 @Suppress("TooManyFunctions")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
     private val context: Context,
-    private val mainHandler: Handler,
+    private val finishTransactions: Boolean,
     val billingMode: GalaxyBillingMode,
     private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
         iapHelper = IapHelper.getInstance(context),
@@ -36,7 +45,10 @@ internal class GalaxyBillingWrapper(
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(
             iapHelper = iapHelperProvider,
-            mainHandler = mainHandler,
+        ),
+    private val purchaseDataHandler: PurchaseResponseListener =
+        PurchaseDataHandler(
+            iapHelper = iapHelperProvider,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
@@ -74,7 +86,7 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             @Suppress("ForbiddenComment")
             // TODO: Record diagnostics
-            productDataHandler.getProductDetails(
+            val requestWasDispatched = productDataHandler.getProductDetails(
                 productIds = productIds,
                 productType = productType,
                 onReceive = {
@@ -117,7 +129,54 @@ internal class GalaxyBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.makePurchaseAsync" }
+        val galaxyPurchaseInfo = purchasingData as? GalaxyPurchasingData.Product
+        if (galaxyPurchaseInfo == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Galaxy",
+                    "GalaxyPurchasingData",
+                ),
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+        val storeProduct = galaxyPurchaseInfo.storeProduct
+
+        if (!shouldFinishTransactions()) { return }
+
+        if (replaceProductInfo != null) {
+            log(LogIntent.GALAXY_WARNING) { GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
+            return
+        }
+
+        serialRequestExecutor.executeSerially { finish ->
+            purchaseDataHandler.purchase(
+                appUserID = appUserID,
+                storeProduct = storeProduct,
+                onSuccess = { purchase ->
+                    handlePurchase(
+                        purchase = purchase,
+                        storeProduct = storeProduct,
+                        presentedOfferingContext = presentedOfferingContext,
+                    )
+                    finish()
+                },
+                onError = { purchasesError ->
+                    onPurchaseError(error = purchasesError)
+                    finish()
+                }
+            )
+        }
+    }
+
+    private fun handlePurchase(
+        purchase: PurchaseVo,
+        storeProduct: StoreProduct,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+
     }
 
     override fun isConnected(): Boolean = true
@@ -150,5 +209,18 @@ internal class GalaxyBillingWrapper(
                 underlyingErrorMessage = GalaxyStrings.STOREFRONT_NOT_SUPPORTED,
             ),
         )
+    }
+
+    private fun onPurchaseError(error: PurchasesError) {
+        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+    }
+
+    private fun shouldFinishTransactions(): Boolean {
+        return if (finishTransactions) {
+            true
+        } else {
+            log(LogIntent.AMAZON_WARNING) { AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS }
+            false
+        }
     }
 }

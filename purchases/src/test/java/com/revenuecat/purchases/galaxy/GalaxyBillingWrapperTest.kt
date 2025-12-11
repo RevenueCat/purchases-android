@@ -1,28 +1,32 @@
 package com.revenuecat.purchases.galaxy
 
+import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
-import android.os.Looper
-import io.mockk.mockk
-import io.mockk.slot
+import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.strings.PurchaseStrings
 import io.mockk.every
-import io.mockk.verify
+import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import kotlin.test.Test
 import kotlin.test.fail
-import com.revenuecat.purchases.models.StoreProduct
 
 class GalaxyBillingWrapperTest {
 
@@ -54,6 +58,7 @@ class GalaxyBillingWrapperTest {
             stateProvider,
             context = context,
             mainHandler = handler,
+            finishTransactions = true,
             billingMode = GalaxyBillingMode.TEST,
             iapHelperProvider = iapHelperProvider,
             productDataHandler = productDataHandler,
@@ -133,5 +138,50 @@ class GalaxyBillingWrapperTest {
         )
 
         verify(exactly = 0) { productDataHandler.getProductDetails(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `makePurchaseAsync with non Galaxy purchasing data forwards error`() {
+        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
+        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
+
+        val invalidPurchasingData = mockk<PurchasingData>()
+
+        wrapper.makePurchaseAsync(
+            activity = mockk<Activity>(),
+            appUserID = "appUserId",
+            purchasingData = invalidPurchasingData,
+            replaceProductInfo = null,
+            presentedOfferingContext = null,
+            isPersonalizedPrice = null,
+        )
+
+        val errorSlot = slot<PurchasesError>()
+        verify(exactly = 1) { currentLogHandler.e(any(), any(), any()) }
+        verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
+        assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(errorSlot.captured.underlyingErrorMessage).isEqualTo(
+            PurchaseStrings.INVALID_PURCHASE_TYPE.format("Galaxy", "GalaxyPurchasingData"),
+        )
+    }
+
+    @Test
+    fun `makePurchaseAsync with Galaxy purchasing data does nothing yet`() {
+        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
+        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
+
+        val galaxyPurchasingData = GalaxyPurchasingData.Product(mockk(relaxed = true))
+
+        wrapper.makePurchaseAsync(
+            activity = mockk<Activity>(),
+            appUserID = "appUserId",
+            purchasingData = galaxyPurchasingData,
+            replaceProductInfo = null,
+            presentedOfferingContext = null,
+            isPersonalizedPrice = null,
+        )
+
+        verify(exactly = 0) { purchasesUpdatedListener.onPurchasesFailedToUpdate(any()) }
+        verify(exactly = 0) { purchasesUpdatedListener.onPurchasesUpdated(any()) }
     }
 }

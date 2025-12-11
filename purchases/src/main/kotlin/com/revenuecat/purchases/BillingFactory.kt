@@ -66,6 +66,7 @@ internal object BillingFactory {
                         context = application.applicationContext,
                         mainHandler = Handler(application.mainLooper),
                         billingMode = galaxyBillingMode,
+                        finishTransactions = finishTransactions,
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-galaxy is added as dependency" }

@@ -21,4 +21,9 @@ internal object GalaxyStrings {
     const val UNKNOWN_GALAXY_IAP_TYPE_STRING = "Detected an unknown IAP Type string from the Galaxy Store: %s"
     const val CANNOT_PARSE_GALAXY_PRODUCT_SUBSCRIPTION_PERIOD = "Could not parse period for Galaxy Store subscription. " +
         "Product's subscriptionDurationMultiplier is %s"
+
+    // Purchasing
+    const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
+        "request for processing. No transactions have occurred."
 }
