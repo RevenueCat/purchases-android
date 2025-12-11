@@ -1,8 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -59,24 +56,20 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
     @Test
     fun templateFooter() {
         screenshotTest {
-            Column(modifier = Modifier.fillMaxSize()) {
-                InternalPaywall(
-                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
-                    viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = testConfig.offering),
-                )
-            }
+            InternalPaywall(
+                options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = testConfig.offering),
+            )
         }
     }
 
     @Test
     fun templateCondensedFooter() {
         screenshotTest {
-            Column(modifier = Modifier.fillMaxSize()) {
-                InternalPaywall(
-                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
-                    viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = testConfig.offering),
-                )
-            }
+            InternalPaywall(
+                options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = testConfig.offering),
+            )
         }
     }
 }
