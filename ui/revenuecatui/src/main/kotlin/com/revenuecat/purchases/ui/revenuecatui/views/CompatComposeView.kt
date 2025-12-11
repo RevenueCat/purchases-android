@@ -50,6 +50,8 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     }
 
     private var isManagingViewTree = false
+    private var isManagingSavedState = false
+    private var isManagingViewModelStore = false
     private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this).apply {
         currentState = Lifecycle.State.INITIALIZED
     }
@@ -66,18 +68,18 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     override fun onSaveInstanceState(): Parcelable? {
         val state = super.onSaveInstanceState()
-        if (isManagingViewTree) performSave(state)
+        if (isManagingSavedState) performSave(state)
         return state
     }
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(state)
-        if (isManagingViewTree) performRestore(state)
+        if (isManagingSavedState) performRestore(state)
     }
 
     override fun onAttachedToWindow() {
         initViewTreeOwners()
-        if (isManagingViewTree) {
+        if (isManagingSavedState) {
             savedStateRegistryController.performAttach()
             performRestore(null)
         }
@@ -113,7 +115,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override fun onDetachedFromWindow() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        if (isManagingViewTree) viewModelStore.clear()
+        if (isManagingViewModelStore) viewModelStore.clear()
         deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
@@ -142,6 +144,10 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     private fun initViewTreeOwners() {
         val windowRoot = findWindowRoot() ?: return
 
+        // Depending on the host environment, some of these may already be set up. E.g. in Expo < 54 all three are
+        // null, so we set up all of them. In Expo 54+, LifecycleOwner is already set up, but SavedStateRegistryOwner
+        // and ViewModelStoreOwner are not. We track each one separately to avoid performing operations on owners we
+        // didn't set up.
         if (windowRoot.findViewTreeLifecycleOwner() == null) {
             windowRoot.setViewTreeLifecycleOwner(this)
             isManagingViewTree = true
@@ -149,10 +155,12 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         if (windowRoot.findViewTreeSavedStateRegistryOwner() == null) {
             windowRoot.setViewTreeSavedStateRegistryOwner(this)
             isManagingViewTree = true
+            isManagingSavedState = true
         }
         if (windowRoot.findViewTreeViewModelStoreOwner() == null) {
             windowRoot.setViewTreeViewModelStoreOwner(this)
             isManagingViewTree = true
+            isManagingViewModelStore = true
         }
     }
 
