@@ -44,8 +44,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.net.MalformedURLException
-import java.net.URL
+import java.net.URI
+import java.net.URISyntaxException
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -193,18 +193,18 @@ internal class PaywallViewModelImpl(
                 null to null
         }
         if (customUrl != null) {
-            val url = try {
-                URL(customUrl)
-            } catch (e: MalformedURLException) {
-                Logger.e("Invalid custom URL: $customUrl", e)
+            val uri = try {
+                URI(customUrl)
+            } catch (e: URISyntaxException) {
+                Logger.e("Invalid custom URI: $customUrl", e)
                 return null
             }
-            val finalUrl = if (packageParam != null && packageToUse != null) {
-                url.appendQueryParameter(packageParam, packageToUse.identifier)
+            val finalUri = if (packageParam != null && packageToUse != null) {
+                uri.appendQueryParameter(packageParam, packageToUse.identifier)
             } else {
-                url
+                uri
             }
-            return finalUrl.toString()
+            return finalUri.toString()
         }
         return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
     }

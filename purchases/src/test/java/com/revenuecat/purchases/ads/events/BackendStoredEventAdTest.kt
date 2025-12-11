@@ -204,4 +204,63 @@ class BackendStoredEventAdTest {
         val adStoredEvent = storedEvent as BackendStoredEvent.Ad
         assertThat(adStoredEvent.event.mediatorName).isEqualTo("CustomMediator")
     }
+
+    @Test
+    fun `AdEvent Loaded converts correctly`() {
+        val revenueEvent = AdEvent.Loaded(
+            id = "event-id-789",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+
+        val storedEvent = revenueEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.id).isEqualTo("event-id-789")
+        assertThat(adStoredEvent.event.version).isEqualTo(BackendEvent.AD_EVENT_SCHEMA_VERSION)
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_loaded")
+        assertThat(adStoredEvent.event.timestamp).isEqualTo(1111111111L)
+        assertThat(adStoredEvent.event.networkName).isEqualTo("Google AdMob")
+        assertThat(adStoredEvent.event.mediatorName).isEqualTo("AdMob")
+        assertThat(adStoredEvent.event.placement).isEqualTo("rewarded_video")
+        assertThat(adStoredEvent.event.adUnitId).isEqualTo("ad-unit-999")
+        assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
+        assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
+        assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+    }
+
+    @Test
+    fun `AdEvent FailedToLoad converts correctly`() {
+        val revenueEvent = AdEvent.FailedToLoad(
+            id = "event-id-789",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            mediatorErrorCode = 123L,
+        )
+
+        val storedEvent = revenueEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.id).isEqualTo("event-id-789")
+        assertThat(adStoredEvent.event.version).isEqualTo(BackendEvent.AD_EVENT_SCHEMA_VERSION)
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_failed_to_load")
+        assertThat(adStoredEvent.event.timestamp).isEqualTo(1111111111L)
+        assertThat(adStoredEvent.event.networkName).isEqualTo("Google AdMob")
+        assertThat(adStoredEvent.event.mediatorName).isEqualTo("AdMob")
+        assertThat(adStoredEvent.event.placement).isEqualTo("rewarded_video")
+        assertThat(adStoredEvent.event.adUnitId).isEqualTo("ad-unit-999")
+        assertThat(adStoredEvent.event.mediatorErrorCode).isEqualTo(123L)
+        assertThat(adStoredEvent.event.impressionId).isNull()
+        assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
+        assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+    }
 }

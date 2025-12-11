@@ -3,7 +3,7 @@
   "headers": {
     "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "9117",
+    "Content-Length": "9147",
     "Content-Type": "application\/json",
     "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
@@ -72,6 +72,7 @@
           "free_trial_single_payment_then_price": "{{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
           "free_trial_then_price": "{{ sub_offer_duration }} free, then {{ price }}",
           "free_trial_until_date": "Free trial until {{ date }}",
+          "galaxy_store": "Galaxy Store",
           "going_to_check_purchases": "Let’s take a look! We’re going to check your account for missing purchases.",
           "google_play_store": "Google Play Store",
           "google_subscription_manage": "You have an active subscription from the Google Play Store",

@@ -116,11 +116,12 @@ class EventsManagerTest {
             fileHelper,
             identityManager,
             paywallEventsDispatcher,
-            postEvents = { request, onSuccess, onError ->
+            postEvents = { request, delay, onSuccess, onError ->
                 postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
                     baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
@@ -222,6 +223,7 @@ class EventsManagerTest {
                 any(),
                 any(),
                 any(),
+                any(),
             )
         }
     }
@@ -230,7 +232,7 @@ class EventsManagerTest {
     fun `flushEvents without events, does not call backend`() {
         eventsManager.flushEvents()
         verify(exactly = 0) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -246,7 +248,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(0)
         // Verify backend was called twice (once for each batch)
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -275,7 +277,7 @@ class EventsManagerTest {
     @Test
     fun `flushEvents multiple times only executes once`() {
         every {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -283,7 +285,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -291,7 +293,7 @@ class EventsManagerTest {
     fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
         val successSlot = slot<() -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), any())
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -299,7 +301,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -309,7 +311,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -346,7 +348,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(0)
         // Verify backend was called twice (once for each batch of 50 lines)
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -376,7 +378,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             if (success) {
                 successSlot.captured.invoke()
@@ -393,6 +395,7 @@ class EventsManagerTest {
         verify(exactly = 1) {
             backend.postEvents(
                 expectedRequest,
+                any(),
                 any(),
                 any(),
                 any(),
@@ -487,6 +490,45 @@ class EventsManagerTest {
     }
 
     @Test
+    fun `tracking ad loaded events adds them to file`() {
+        val adEvent = AdEvent.Loaded(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad failed to load events adds them to file`() {
+        val adEvent = AdEvent.FailedToLoad(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            mediatorErrorCode = 123L,
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+        )
+    }
+
+
+    @Test
     fun `tracking mixed events with ad events adds them to file`() {
         val adEvent = AdEvent.Displayed(
             id = "ad-event-id-123",
@@ -530,7 +572,7 @@ class EventsManagerTest {
 
         checkFileContents("")
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -589,7 +631,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(50)
         // Verify backend was called exactly 10 times (the maximum)
         verify(exactly = 10) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -600,7 +642,7 @@ class EventsManagerTest {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             callCount++
             if (callCount == 1) {
@@ -622,7 +664,7 @@ class EventsManagerTest {
         checkFileNumberOfEvents(150)
         // Verify backend was called only once (stopped after first failure)
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
