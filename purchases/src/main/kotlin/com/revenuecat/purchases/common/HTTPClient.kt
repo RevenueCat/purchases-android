@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -105,7 +106,14 @@ internal class HTTPClient(
                 is IOException,
                 -> {
                     log(LogIntent.WARNING) { NetworkStrings.PROBLEM_CONNECTING.format(e.message) }
-                    connection.errorStream
+                    try {
+                        connection.errorStream
+                    } catch (e: NullPointerException) {
+                        // We've received some reports on issues reading from the errorStream in what seems to be a
+                        // Android/device specific issue: https://github.com/RevenueCat/purchases-android/issues/2606.
+                        // This attempts to handle this gracefully.
+                        throw NullPointerReadingErrorStreamException(e.message, e)
+                    }
                 }
 
                 else -> throw e

@@ -3,22 +3,15 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.mavenPublish)
-    alias(libs.plugins.dokka)
+    id("revenuecat-public-library")
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
-    alias(libs.plugins.metalava)
-    alias(libs.plugins.baselineprofile)
 }
 
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
-
-apply(from = "${rootProject.projectDir}/library.gradle")
 
 android {
     namespace = "com.revenuecat.purchases.api"
@@ -27,14 +20,10 @@ android {
         buildConfig = true
     }
 
-    flavorDimensions += "apis"
+    // billingclient dimension is added for bc7/bc8 support
     flavorDimensions += "billingclient"
 
     productFlavors {
-        create("defaults") {
-            dimension = "apis"
-            isDefault = true
-        }
         create("customEntitlementComputation") {
             dimension = "apis"
         }
@@ -61,11 +50,6 @@ android {
         testApplicationId = obtainTestApplicationId()
         testBuildType = obtainTestBuildType()
 
-        buildConfigField(
-            type = "boolean",
-            name = "ENABLE_VIDEO_COMPONENT",
-            value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
-        )
         buildConfigField(
             type = "boolean",
             name = "ENABLE_EXTRA_REQUEST_LOGGING",

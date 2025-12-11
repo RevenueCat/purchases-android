@@ -219,3 +219,50 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
         ),
     )
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.Loaded.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            mediatorErrorCode = mediatorErrorCode,
+        ),
+    )
+}

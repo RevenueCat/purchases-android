@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DefaultLocaleProvider
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.events.EventsManager
@@ -242,10 +243,10 @@ class SubscriberAttributesPurchasesTests {
     @Test
     fun `on app backgrounded attributes are synced`() {
         every {
-            eventsManagerMock.flushEvents()
+            eventsManagerMock.flushEvents(Delay.NONE)
         } just Runs
         every {
-            adEventsManagerMock.flushEvents()
+            adEventsManagerMock.flushEvents(Delay.NONE)
         } just Runs
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)

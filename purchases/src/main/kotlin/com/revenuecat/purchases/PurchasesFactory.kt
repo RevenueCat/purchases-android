@@ -57,6 +57,7 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.delay
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -337,7 +338,7 @@ internal class PurchasesFactory(
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
-                OfferingsFactory(billing, offeringParser, dispatcher),
+                OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
@@ -427,10 +428,11 @@ internal class PurchasesFactory(
             fileHelper = fileHelper,
             identityManager = identityManager,
             eventsDispatcher = eventsDispatcher,
-            postEvents = { request, onSuccess, onError ->
+            postEvents = { request, delay, onSuccess, onError ->
                 backend.postEvents(
                     paywallEventRequest = request,
                     baseURL = baseURL,
+                    delay = delay,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
@@ -452,16 +454,18 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
+                val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
                 errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
-                        underlyingErrorMessage = "Test Store API key used in release build. Please configure the " +
-                            "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
-                            "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
+                        underlyingErrorMessage = "Test Store API key used in release build: $redactedApiKey. " +
+                            "Please configure the Play Store/Amazon app on the RevenueCat dashboard " +
+                            "and use its corresponding API key before releasing. " +
+                            "Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
                 )
-                TestStoreErrorDialogActivity.show(context)
-                // TestStoreErrorDialogActivity will crash the app when the user dismisses it.
+                SimulatedStoreErrorDialogActivity.show(context, redactedApiKey)
+                // SimulatedStoreErrorDialogActivity will crash the app when the user dismisses it.
                 return apiKeyValidationResult
             }
 
@@ -489,7 +493,7 @@ internal class PurchasesFactory(
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 r?.let {
-                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
                     r.run()
                 }
             }

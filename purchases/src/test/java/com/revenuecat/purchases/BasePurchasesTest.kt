@@ -141,10 +141,10 @@ internal open class BasePurchasesTest {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
         every {
-            mockEventsManager.flushEvents()
+            mockEventsManager.flushEvents(any())
         } just Runs
         every {
-            mockAdEventsManager.flushEvents()
+            mockAdEventsManager.flushEvents(any())
         } just Runs
         every {
             mockLifecycleOwner.lifecycle

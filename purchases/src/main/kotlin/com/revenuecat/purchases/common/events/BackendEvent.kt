@@ -109,7 +109,7 @@ internal sealed class BackendEvent : Event {
         @SerialName("ad_unit_id")
         val adUnitId: String,
         @SerialName("impression_id")
-        val impressionId: String,
+        val impressionId: String?,
         @SerialName("app_user_id")
         val appUserID: String,
         @SerialName("app_session_id")
@@ -120,6 +120,10 @@ internal sealed class BackendEvent : Event {
         val revenueMicros: Long? = null,
         val currency: String? = null,
         val precision: String? = null,
+
+        // Failed to load event only fields
+        @SerialName("mediator_error_code")
+        val mediatorErrorCode: Long? = null,
     ) : BackendEvent()
 
     /**

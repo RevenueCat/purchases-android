@@ -1,267 +1,211 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:bind="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/package_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/padding_small"
+        android:padding="@dimen/padding_small"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <data>
-
-        <import type="android.view.View" />
-
-        <variable
-                name="currentPackage"
-                type="com.revenuecat.purchases.Package" />
-
-        <variable
-                name="isActive"
-                type="Boolean" />
-
-        <variable
-                name="isSubscription"
-                type="Boolean" />
-
-        <variable
-                name="isPlayStore"
-                type="Boolean" />
-
-        <variable
-                name="isAddOnMode"
-                type="Boolean" />
-
-        <variable
-                name="isSelected"
-                type="Boolean" />
-
-    </data>
-
-    <com.google.android.material.card.MaterialCardView
-            android:id="@+id/package_card"
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/package_card_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/padding_small"
-            android:padding="@dimen/padding_small"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:padding="@dimen/padding_small">
+
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/package_product_title"
+                style="@style/TextAppearance.AppCompat.Medium"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:Text="Introductory Price (PurchasesSample)" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/package_product_description"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_tiny"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_product_title"
+                tools:text="Product with an introductory price" />
+
+        <include
+                android:id="@+id/package_product_sku"
+                layout="@layout/row_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_tiny"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_product_description"
+                tools:text="$rc_monthly" />
+
+        <include
+                android:id="@+id/package_type"
+                layout="@layout/row_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_tiny"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_product_sku"
+                tools:text="$rc_monthly" />
+
+        <include
+                android:id="@+id/package_one_time_price"
+                layout="@layout/row_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_tiny"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_type"
+                tools:text="$1.99" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/package_subscription_option_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_tiny"
+                android:paddingHorizontal="4dp"
+                android:text="@string/subscription_options"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/package_one_time_price" />
+
+        <RadioGroup
+                android:id="@+id/package_subscription_option_group"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:divider="?android:attr/dividerHorizontal"
+                android:showDividers="middle"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/package_subscription_option_title"/>
+
+        <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/package_card_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="start"
+                app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button, wpl_buy_button" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/buy_option_checkbox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Buy Option"
+                app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/base_product_checkbox"/>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/base_product_checkbox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Base Item"
+                app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/buy_option_checkbox"
+                app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/is_upgrade_checkbox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Is product change?"
+                app:layout_constraintStart_toStartOf="@+id/package_buy_button"
+                app:layout_constraintEnd_toEndOf="@id/package_buy_button"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/is_personalized_checkbox"/>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/is_personalized_checkbox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Is personalized price?"
+                app:layout_constraintStart_toStartOf="@+id/package_buy_button"
+                app:layout_constraintEnd_toEndOf="@id/package_buy_button"
+                app:layout_constraintTop_toTopOf="@id/is_upgrade_checkbox"
+                app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/package_buy_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Buy package (default option)"
+                android:textSize="10dp"
+                app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/is_personalized_checkbox"
+                app:layout_constraintStart_toStartOf="@+id/option_buy_button"/>
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/product_buy_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textSize="10dp"
+                android:text="Buy product (default option)"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_buy_button"
+                app:layout_constraintStart_toStartOf="@+id/option_buy_button" />
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/option_buy_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Buy option"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/wpl_buy_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Buy WPL"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/option_buy_button"
+                app:layout_constraintTop_toBottomOf="@+id/option_buy_button" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/package_card_content"
-                android:layout_width="match_parent"
+                android:id="@+id/package_details_container"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small">
-
-            <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_product_title"
-                    style="@style/TextAppearance.AppCompat.Medium"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    android:text="@{currentPackage.product.title + (isActive ? ` (active)` : ``)}"
-                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:Text="Introductory Price (PurchasesSample)" />
-
-            <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_product_description"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    android:text="@{currentPackage.product.description}"
-                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_product_title"
-                    tools:text="Product with an introductory price" />
+                android:layout_marginStart="@dimen/padding_tiny"
+                android:layout_marginEnd="@dimen/padding_tiny"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/package_subscription_option_group"
+                app:layout_constraintVertical_bias="0">
 
             <include
-                    android:id="@+id/package_product_sku"
+                    android:id="@+id/package_details_json_object"
                     layout="@layout/row_view"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_product_description"
-                    bind:detail="@{currentPackage.product.id}"
-                    bind:header="@{`Sku:`}"
-                    tools:text="$rc_monthly" />
-
-            <include
-                    android:id="@+id/package_type"
-                    layout="@layout/row_view"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_product_sku"
-                    bind:header="@{`Package Type:`}"
-                    tools:text="$rc_monthly" />
-
-            <include
-                    android:id="@+id/package_one_time_price"
-                    layout="@layout/row_view"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    android:visibility="@{isSubscription ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_type"
-                    bind:detail="@{currentPackage.product.price.formatted}"
-                    bind:header="@{`One Time Price:`}"
-                    tools:text="$1.99" />
-
-            <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_subscription_option_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/padding_tiny"
-                    android:paddingHorizontal="4dp"
-                    android:text="@string/subscription_options"
-                    android:textStyle="bold"
-                    android:visibility="@{isSubscription &amp;&amp; isPlayStore ? View.VISIBLE : View.GONE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/package_one_time_price" />
-
-            <RadioGroup
-                    android:id="@+id/package_subscription_option_group"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:divider="?android:attr/dividerHorizontal"
-                    android:showDividers="middle"
-                    android:visibility="@{isSubscription &amp;&amp; isPlayStore ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/package_subscription_option_title"/>
-
-            <androidx.constraintlayout.widget.Barrier
-                    android:id="@+id/package_card_barrier"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:barrierDirection="start"
-                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button, wpl_buy_button" />
-
-            <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/buy_option_checkbox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Buy Option"
-                    android:checked="@{isSelected}"
-                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toTopOf="@+id/base_product_checkbox"/>
-
-            <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/base_product_checkbox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Base Item"
-                    android:visibility="@{isAddOnMode ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintStart_toStartOf="@+id/package_card_barrier"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/buy_option_checkbox"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
-
-            <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/is_upgrade_checkbox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Is product change?"
-                    android:enabled="@{isPlayStore}"
-                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintStart_toStartOf="@+id/package_buy_button"
-                    app:layout_constraintEnd_toEndOf="@id/package_buy_button"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toTopOf="@+id/is_personalized_checkbox"/>
-
-            <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/is_personalized_checkbox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Is personalized price?"
-                    android:enabled="@{isPlayStore}"
-                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintStart_toStartOf="@+id/package_buy_button"
-                    app:layout_constraintEnd_toEndOf="@id/package_buy_button"
-                    app:layout_constraintTop_toTopOf="@id/is_upgrade_checkbox"
-                    app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
-
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/package_buy_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Buy package (default option)"
-                    android:textSize="10dp"
-                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/is_personalized_checkbox"
-                    app:layout_constraintStart_toStartOf="@+id/option_buy_button"/>
-
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/product_buy_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:textSize="10dp"
-                    android:text="Buy product (default option)"
-                    android:visibility="@{isAddOnMode ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_buy_button"
-                    app:layout_constraintStart_toStartOf="@+id/option_buy_button" />
-
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/option_buy_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Buy option"
-                    android:visibility="@{isPlayStore &amp;&amp; !isAddOnMode ? View.VISIBLE : View.INVISIBLE}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
-
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/wpl_buy_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Buy WPL"
-                    android:visibility="@{currentPackage.webCheckoutURL == null ? View.GONE : View.VISIBLE}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="@id/option_buy_button"
-                    app:layout_constraintTop_toBottomOf="@+id/option_buy_button" />
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/package_details_container"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:layout_marginEnd="@dimen/padding_tiny"
-                    android:visibility="gone"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_subscription_option_group"
-                    app:layout_constraintVertical_bias="0">
-
-                <include
-                        android:id="@+id/package_details_json_object"
-                        layout="@layout/row_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        bind:header="@{`Product JSON`}" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                    app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-</layout>
+</com.google.android.material.card.MaterialCardView>

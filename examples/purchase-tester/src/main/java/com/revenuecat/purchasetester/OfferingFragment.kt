@@ -36,6 +36,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -87,15 +88,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun setupAddOnPurchaseUI() {
-        binding.isAddOnPurchaseMode = false
-        binding.isPurchaseButtonEnabled = false
+        updateAddOnPurchaseModeUI(isAddOnPurchaseMode = false, false)
 
         binding.addOnPurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
-            binding.isAddOnPurchaseMode = isChecked
+            updateAddOnPurchaseModeUI(isAddOnPurchaseMode = isChecked, false)
             packageCardAdapter?.setAddOnMode(isChecked)
             // Force refresh the adapter to update UI
             packageCardAdapter?.notifyDataSetChanged()
-            updatePurchaseButtonState(false, false) // Reset button state when mode changes
+            updatePurchaseButtonState(false, false, isChecked) // Reset button state when mode changes
         }
 
         binding.isAddOnPurchaseUpgradeCheckbox.setOnCheckedChangeListener { _, isChecked ->
@@ -128,7 +128,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun populateOfferings(offerings: Offerings) {
         val offering = offerings.getOffering(offeringId) ?: return
-        binding.offering = offering
+
+        // Manually update offering views
+        binding.offeringDetailsName.text = offering.identifier
+        binding.offeringDetailsServerDescription.updateRowView("Description:", offering.serverDescription)
+        binding.offeringDetailsOpenWplButton.visibility =
+            if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
 
@@ -145,6 +150,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             val intent = Intent(Intent.ACTION_VIEW, webCheckoutUrl.toString().toUri())
             startActivity(intent)
         }
+    }
+
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = detail ?: "None"
     }
 
     override fun onPurchasePackageClicked(
@@ -194,12 +204,23 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
-        updatePurchaseButtonState(hasSelectedPackages, hasValidBaseProduct)
+        val isAddOnPurchaseMode = binding.addOnPurchaseCheckbox.isChecked
+        updatePurchaseButtonState(hasSelectedPackages, hasValidBaseProduct, isAddOnPurchaseMode)
     }
 
-    private fun updatePurchaseButtonState(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
-        val isEnabled = binding.isAddOnPurchaseMode == true && hasSelectedPackages && hasValidBaseProduct
-        binding.isPurchaseButtonEnabled = isEnabled
+    private fun updatePurchaseButtonState(
+        hasSelectedPackages: Boolean,
+        hasValidBaseProduct: Boolean,
+        isAddOnPurchaseMode: Boolean,
+    ) {
+        val isEnabled = isAddOnPurchaseMode && hasSelectedPackages && hasValidBaseProduct
+        binding.purchaseAllButton.isEnabled = isEnabled
+    }
+
+    private fun updateAddOnPurchaseModeUI(isAddOnPurchaseMode: Boolean, isPurchaseButtonEnabled: Boolean) {
+        binding.isAddOnPurchaseUpgradeCheckbox.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE
+        binding.purchaseAllButton.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE
+        binding.purchaseAllButton.isEnabled = isPurchaseButtonEnabled
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

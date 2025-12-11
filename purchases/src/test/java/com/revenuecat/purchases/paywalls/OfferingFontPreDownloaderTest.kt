@@ -209,4 +209,53 @@ class OfferingFontPreDownloaderTest {
             fontLoader.getCachedFontFamilyOrStartDownload(any())
         }
     }
+
+    @Test
+    fun `preDownloadOfferingFontsIfNeeded still downloads when first offering lacks paywall components`() {
+        val downloadableFont = FontsConfig(
+            android = FontInfo.Name(
+                value = "remoteFont",
+                family = "test-family",
+                weight = 400,
+                style = FontStyle.NORMAL,
+                url = "https://example.com/font.ttf",
+                hash = "hash123",
+            ),
+        )
+        val offeringWithPaywall = Offering(
+            identifier = "with-paywall",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(
+                uiConfig = UiConfig(
+                    app = AppConfig(
+                        fonts = mapOf(FontAlias("downloadableFont") to downloadableFont)
+                    )
+                ),
+                data = mockk(),
+            ),
+        )
+        val offeringWithoutPaywall = Offering(
+            identifier = "no-paywall",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = null,
+        )
+
+        preDownloader.preDownloadOfferingFontsIfNeeded(
+            Offerings(
+                current = null,
+                all = linkedMapOf(
+                    "no-paywall" to offeringWithoutPaywall,
+                    "with-paywall" to offeringWithPaywall,
+                ),
+            )
+        )
+
+        verify(exactly = 1) {
+            fontLoader.getCachedFontFamilyOrStartDownload(downloadableFont.android as FontInfo.Name)
+        }
+    }
 } 

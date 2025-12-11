@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
@@ -72,6 +73,7 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                     )
                 ),
                 baseURL = AppConfig.paywallEventsURL,
+                delay = Delay.NONE,
                 onSuccessHandler = {
                     latch.countDown()
                 },

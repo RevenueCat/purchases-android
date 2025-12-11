@@ -3,5 +3,10 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix custom schemes on paywall purchase buttons (#2914) via Toni Rico (@tonidero)
+
 ### 🔄 Other Changes
-* Add BC7 version of the SDKs  (#2839) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `efca663` to `76a3a08` (#2915) via dependabot[bot] (@dependabot[bot])

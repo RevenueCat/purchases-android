@@ -588,6 +588,7 @@ internal class Backend(
     fun postEvents(
         paywallEventRequest: EventsRequest,
         baseURL: URL,
+        delay: Delay,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
@@ -640,7 +641,7 @@ internal class Backend(
                 eventsDispatcher,
                 paywallEventRequest.cacheKey,
                 onSuccessHandler to onErrorHandler,
-                Delay.LONG,
+                delay,
             )
         }
     }

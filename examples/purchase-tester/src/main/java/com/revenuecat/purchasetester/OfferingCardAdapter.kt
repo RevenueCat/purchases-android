@@ -31,8 +31,13 @@ class OfferingCardAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(offering: Offering, isCurrent: Boolean) {
-            binding.offering = offering
-            binding.isCurrent = isCurrent
+            binding.offeringName.text = "${offering.serverDescription}${if (isCurrent) " (current)" else ""}"
+
+            binding.offeringIdentifier.headerView.text = "Identifier: "
+            binding.offeringIdentifier.value.text = offering.identifier
+
+            binding.offeringNumPackages.text = "${offering.availablePackages.size} packages included"
+
             binding.root.setOnClickListener {
                 listener.onOfferingClicked(binding.root, offering)
             }
