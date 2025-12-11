@@ -1,15 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import org.junit.Test
@@ -62,7 +59,7 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
     @Test
     fun templateFooter() {
         screenshotTest {
-            Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 InternalPaywall(
                     options = PaywallOptions.Builder(dismissRequest = {}).build(),
                     viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = testConfig.offering),
@@ -74,7 +71,7 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
     @Test
     fun templateCondensedFooter() {
         screenshotTest {
-            Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 InternalPaywall(
                     options = PaywallOptions.Builder(dismissRequest = {}).build(),
                     viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = testConfig.offering),
