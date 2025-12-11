@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import android.os.Looper
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.every
@@ -53,7 +54,6 @@ class GalaxyBillingWrapperTest {
         wrapper = GalaxyBillingWrapper(
             stateProvider,
             context = context,
-            mainHandler = handler,
             billingMode = GalaxyBillingMode.TEST,
             iapHelperProvider = iapHelperProvider,
             productDataHandler = productDataHandler,
@@ -79,6 +79,7 @@ class GalaxyBillingWrapperTest {
         assertThat(receivedError?.underlyingErrorMessage).isEqualTo(GalaxyStrings.STOREFRONT_NOT_SUPPORTED)
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `queryProductDetailsAsync delegates to ProductDataHandler when listener set`() {
         wrapper.purchasesUpdatedListener = mockk(relaxed = true)
@@ -121,6 +122,7 @@ class GalaxyBillingWrapperTest {
         verify(exactly = 1) { onError(expectedError) }
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `queryProductDetailsAsync is ignored when purchasesUpdatedListener is null`() {
         wrapper.purchasesUpdatedListener = null

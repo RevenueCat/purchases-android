@@ -8,10 +8,10 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
-import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -36,9 +36,10 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
     fun setup() {
         iapHelperProvider = mockk(relaxed = true)
         mainHandler = mockk(relaxed = true)
-        productDataHandler = ProductDataHandler(iapHelperProvider, mainHandler)
+        productDataHandler = ProductDataHandler(iapHelperProvider)
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `getProductDetails returns empty list for empty request`() {
         var receivedProducts: List<StoreProduct>? = null
@@ -54,6 +55,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         verify(exactly = 0) { iapHelperProvider.getProductsDetails(any(), any()) }
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `getProductDetails errors when another request is in flight`() {
         val productIds = setOf("in_flight")
@@ -77,6 +79,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         verify(exactly = 1) { iapHelperProvider.getProductsDetails(any(), any()) }
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `successful product response caches products and forwards only matching type`() {
         val capturedListener = slot<OnGetProductsDetailsListener>()
@@ -105,6 +108,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         assertThat(productDataHandler.productsCache).containsKeys("iap", "sub")
     }
 
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `unsuccessful product response forwards store problem error and clears in flight`() {
         val capturedListener = slot<OnGetProductsDetailsListener>()

@@ -64,7 +64,6 @@ internal object BillingFactory {
                     GalaxyBillingWrapper(
                         stateProvider = stateProvider,
                         context = application.applicationContext,
-                        mainHandler = Handler(application.mainLooper),
                         billingMode = galaxyBillingMode,
                     )
                 } catch (e: NoClassDefFoundError) {

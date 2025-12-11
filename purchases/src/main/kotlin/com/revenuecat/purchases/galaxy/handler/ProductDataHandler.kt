@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.handler
 
-import android.os.Handler
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -12,6 +11,7 @@ import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.toStoreProduct
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
@@ -20,7 +20,6 @@ import java.util.ArrayList
 
 internal class ProductDataHandler(
     private val iapHelper: IAPHelperProvider,
-    private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
     @get:Synchronized
@@ -36,6 +35,7 @@ internal class ProductDataHandler(
     @get:Synchronized
     internal val productsCache = mutableMapOf<String, StoreProduct>()
 
+    @GalaxySerialOperation
     override fun getProductDetails(
         productIds: Set<String>,
         productType: ProductType,
@@ -63,40 +63,33 @@ internal class ProductDataHandler(
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
-        synchronized(lock = this) { productsCache.toMap() }.let { productsCache ->
-            val request = Request(
-                productIds = productIds,
-                productType = productType,
-                onReceive = onReceive,
-                onError = onError,
+        val request = Request(
+            productIds = productIds,
+            productType = productType,
+            onReceive = onReceive,
+            onError = onError,
+        )
+
+        if (productsCache.keys.containsAll(productIds)) {
+            val cachedProducts = productIds.mapNotNull(productsCache::get)
+            this.inFlightRequest = request
+
+            handleStoreProducts(
+                storeProducts = cachedProducts,
+            )
+        } else {
+            // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
+            // the following contents product the following results:
+            // - An empty string: queries all products
+            // - A string with one product ID in it: queries for that one product
+            // - A string with multiple product IDs in it, delimited by a comma
+            val productIdRequestString = productIds.joinToString(separator = ",")
+            iapHelper.getProductsDetails(
+                productIDs = productIdRequestString,
+                onGetProductsDetailsListener = this,
             )
 
-            if (productsCache.keys.containsAll(productIds)) {
-                val cachedProducts = productIds.mapNotNull(productsCache::get)
-
-                synchronized(this) {
-                    this.inFlightRequest = request
-                }
-
-                handleStoreProducts(
-                    storeProducts = cachedProducts,
-                )
-            } else {
-                // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
-                // the following contents product the following results:
-                // - An empty string: queries all products
-                // - A string with one product ID in it: queries for that one product
-                // - A string with multiple product IDs in it, delimited by a comma
-                val productIdRequestString = productIds.joinToString(separator = ",")
-                iapHelper.getProductsDetails(
-                    productIDs = productIdRequestString,
-                    onGetProductsDetailsListener = this,
-                )
-
-                synchronized(this) {
-                    this.inFlightRequest = request
-                }
-            }
+            this.inFlightRequest = request
         }
     }
 
@@ -116,10 +109,8 @@ internal class ProductDataHandler(
         val storeProducts: List<StoreProduct> = products
             .map { it.toStoreProduct() }
 
-        synchronized(this) {
-            storeProducts.forEach { product ->
-                productsCache[product.id] = product
-            }
+        storeProducts.forEach { product ->
+            productsCache[product.id] = product
         }
 
         handleStoreProducts(storeProducts = storeProducts)

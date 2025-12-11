@@ -12,7 +12,7 @@ internal fun ProductVo.toStoreProduct(): StoreProduct {
     val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
     val period: Period? = if (type == ProductType.SUBS) {
         val period = this.createPeriod()
-        if(period == null) {
+        if (period == null) {
             log(LogIntent.GALAXY_WARNING) {
                 GalaxyStrings.CANNOT_PARSE_GALAXY_PRODUCT_SUBSCRIPTION_PERIOD
                     .format(this.subscriptionDurationMultiplier)

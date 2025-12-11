@@ -2,7 +2,6 @@ package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
-import android.os.Handler
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -18,6 +17,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
+import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
@@ -28,7 +28,6 @@ import com.samsung.android.sdk.iap.lib.helper.IapHelper
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
     private val context: Context,
-    private val mainHandler: Handler,
     val billingMode: GalaxyBillingMode,
     private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
         iapHelper = IapHelper.getInstance(context),
@@ -36,7 +35,6 @@ internal class GalaxyBillingWrapper(
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(
             iapHelper = iapHelperProvider,
-            mainHandler = mainHandler,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
@@ -63,6 +61,7 @@ internal class GalaxyBillingWrapper(
         onReceivePurchaseHistory(emptyList())
     }
 
+    @OptIn(GalaxySerialOperation::class)
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
