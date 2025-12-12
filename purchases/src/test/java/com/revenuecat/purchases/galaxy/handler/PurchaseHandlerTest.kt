@@ -200,7 +200,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.onPayment(errorVo, purchase = null)
 
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PurchaseCancelledError)
         assertThat(receivedError?.underlyingErrorMessage).isEqualTo("User canceled")
 
         purchaseHandler.purchase(
@@ -211,5 +211,33 @@ class PurchaseHandlerTest {
         )
 
         verify(exactly = 2) { iapHelperProvider.startPayment(any(), any(), any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `onPayment network error maps to NetworkError`() {
+        every { iapHelperProvider.startPayment(
+            any(), any(),
+            any(),
+            any())
+        } returns true
+        var receivedError: PurchasesError? = null
+
+        purchaseHandler.purchase(
+            appUserID = appUserId,
+            storeProduct = storeProduct,
+            onSuccess = onUnexpectedSuccess,
+            onError = { receivedError = it },
+        )
+
+        val errorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NETWORK_NOT_AVAILABLE.code
+            every { errorString } returns "no network"
+        }
+
+        purchaseHandler.onPayment(errorVo, purchase = null)
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(receivedError?.underlyingErrorMessage).isEqualTo("no network")
     }
 }

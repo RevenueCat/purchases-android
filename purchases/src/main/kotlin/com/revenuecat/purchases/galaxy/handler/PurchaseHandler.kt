@@ -10,6 +10,7 @@ import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
+import com.revenuecat.purchases.galaxy.utils.toPurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
@@ -112,8 +113,11 @@ internal class PurchaseHandler(
             )
         }
 
-        // TO DO: Map galaxy errors to PurchaseErrors so we can give better errors
-        val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
+        val purchasesError = error.toPurchasesError() ?: PurchasesError(
+            code = PurchasesErrorCode.UnknownError,
+            underlyingErrorMessage = "We were unable to parse a PurchaseError for the Galaxy Store's " +
+                "error code ${error.errorCode}.",
+        )
         val onError = inFlightRequest?.onError
         clearInFlightRequest()
         onError?.invoke(purchasesError)

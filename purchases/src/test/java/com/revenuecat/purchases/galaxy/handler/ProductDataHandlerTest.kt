@@ -129,7 +129,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         }
         capturedListener.captured.onGetProducts(failingErrorVo, arrayListOf())
 
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PurchaseCancelledError)
 
         // Next request should proceed because the in-flight one was cleared
         productDataHandler.getProductDetails(
@@ -139,5 +139,33 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             onError = unexpectedOnError,
         )
         verify(exactly = 2) { iapHelperProvider.getProductsDetails(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `unsuccessful product response maps network errors to NetworkError`() {
+        val capturedListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedListener))
+        } returns Unit
+
+        var receivedError: PurchasesError? = null
+
+        productDataHandler.getProductDetails(
+            productIds = setOf("iap"),
+            productType = ProductType.INAPP,
+            onReceive = unexpectedOnReceive,
+            onError = { receivedError = it },
+        )
+
+        val failingErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NETWORK_NOT_AVAILABLE.code
+            every { errorString } returns "no network"
+        }
+        capturedListener.captured.onGetProducts(failingErrorVo, arrayListOf())
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(receivedError?.underlyingErrorMessage).isEqualTo("no network")
     }
 }
