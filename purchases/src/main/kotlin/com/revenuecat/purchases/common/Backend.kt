@@ -251,6 +251,7 @@ internal class Backend(
         marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        originalObserverMode: Boolean? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -267,7 +268,7 @@ internal class Backend(
         val body = mapOf(
             FETCH_TOKEN to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
-            "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
+            "platform_product_ids" to receiptInfo.platformProductIds,
             APP_USER_ID to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
@@ -285,6 +286,7 @@ internal class Backend(
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "original_observer_mode" to originalObserverMode,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
@@ -293,7 +295,7 @@ internal class Backend(
         )
 
         val extraHeaders = mapOf(
-            "price_string" to receiptInfo.storeProduct?.price?.formatted,
+            "price_string" to receiptInfo.formattedPrice,
             "marketplace" to marketplace,
         ).filterNotNullValues()
 

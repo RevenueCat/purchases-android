@@ -1,54 +1,42 @@
 package com.revenuecat.purchases.common
 
+import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ReplacementMode
-import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
-@SuppressWarnings("LongParameterList")
-internal class ReceiptInfo
-@OptIn(InternalRevenueCatAPI::class)
-constructor(
+@Serializable
+@Parcelize
+internal data class ReceiptInfo(
     val productIDs: List<String>,
     val presentedOfferingContext: PresentedOfferingContext? = null,
-    val subscriptionOptionId: String? = null,
-    val subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>? = null,
-    val storeProduct: StoreProduct? = null,
-
-    val price: Double? = storeProduct?.price?.amountMicros?.div(MICRO_MULTIPLIER),
-    val currency: String? = storeProduct?.price?.currencyCode,
+    val price: Double? = null,
+    val formattedPrice: String? = null,
+    val currency: String? = null,
+    val period: Period? = null,
+    val pricingPhases: List<PricingPhase>? = null,
     val replacementMode: ReplacementMode? = null,
-) {
+    val platformProductIds: List<Map<String, String?>> = emptyList(),
+) : Parcelable {
+    companion object {
+        @OptIn(InternalRevenueCatAPI::class)
+        fun from(
+            storeTransaction: StoreTransaction,
+            storeProduct: StoreProduct?,
+            subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>?,
+        ): ReceiptInfo {
+            val subscriptionOption = storeProduct?.subscriptionOptions
+                ?.firstOrNull { it.id == storeTransaction.subscriptionOptionId }
 
-    val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }
-
-    private val subscriptionOption: SubscriptionOption? =
-        storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }
-    val pricingPhases: List<PricingPhase>? =
-        subscriptionOption?.pricingPhases
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as ReceiptInfo
-
-        if (productIDs != other.productIDs) return false
-        if (presentedOfferingContext != other.presentedOfferingContext) return false
-        if (storeProduct != other.storeProduct) return false
-        if (price != other.price) return false
-        if (currency != other.currency) return false
-        if (subscriptionOptionId != other.subscriptionOptionId) return false
-
-        return true
-    }
-
-    internal val platformProductIds: List<PlatformProductId>?
-        get() {
             val storeProductPlatformProductId =
                 subscriptionOption?.platformProductId() ?: storeProduct?.platformProductId()
 
@@ -60,46 +48,55 @@ constructor(
             // To simplify backend processing when handling a subscription purchase with add-ons,
             // we want to use the same order as the products returned from purchase, so that the base item
             // is first in the list.
-            val platformProductIds: List<PlatformProductId> = productIDs
+            val platformProductIds = storeTransaction.productIds
                 .map { productId ->
-                    if (storeProductPlatformProductId != null && productId == storeProductPlatformProductId.productId) {
-                        storeProductPlatformProductId
+                    if (productId == storeProductPlatformProductId?.productId) {
+                        storeProductPlatformProductId.asMap
                     } else {
                         subscriptionOptionsForProductIDs
-                            ?.get(productId)?.platformProductId()
-                            ?: PlatformProductId(productId)
+                            ?.get(productId)?.platformProductId()?.asMap
+                            ?: PlatformProductId(productId).asMap
                     }
                 }
 
-            return platformProductIds
+            return ReceiptInfo(
+                productIDs = storeTransaction.productIds,
+                presentedOfferingContext = storeTransaction.presentedOfferingContext,
+                price = storeProduct?.price?.amountMicros?.div(SharedConstants.MICRO_MULTIPLIER),
+                formattedPrice = storeProduct?.price?.formatted,
+                currency = storeProduct?.price?.currencyCode,
+                period = storeProduct?.period,
+                pricingPhases = subscriptionOption?.pricingPhases,
+                platformProductIds = platformProductIds,
+            )
         }
-
-    override fun hashCode(): Int {
-        var result = productIDs.hashCode()
-        result = 31 * result + (presentedOfferingContext?.hashCode() ?: 0)
-        result = 31 * result + (storeProduct?.hashCode() ?: 0)
-        result = 31 * result + (subscriptionOptionId?.hashCode() ?: 0)
-        return result
     }
 
-    override fun toString(): String {
-        return "ReceiptInfo(" +
-            "productIDs='${productIDs.joinToString()}', " +
-            "presentedOfferingContext=$presentedOfferingContext, " +
-            "storeProduct=$storeProduct, " +
-            "subscriptionOptionId=$subscriptionOptionId, " +
-            "pricingPhases=$pricingPhases, " +
-            "price=$price, " +
-            "currency=$currency, " +
-            "duration=$duration)"
+    @IgnoredOnParcel
+    val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
+
+    fun merge(receiptInfo: ReceiptInfo): ReceiptInfo {
+        return ReceiptInfo(
+            productIDs = this.productIDs,
+            presentedOfferingContext = this.presentedOfferingContext ?: receiptInfo.presentedOfferingContext,
+            price = this.price ?: receiptInfo.price,
+            formattedPrice = this.formattedPrice ?: receiptInfo.formattedPrice,
+            currency = this.currency ?: receiptInfo.currency,
+            period = this.period ?: receiptInfo.period,
+            pricingPhases = this.pricingPhases ?: receiptInfo.pricingPhases,
+            replacementMode = this.replacementMode ?: receiptInfo.replacementMode,
+            platformProductIds = this.platformProductIds.ifEmpty {
+                receiptInfo.platformProductIds
+            },
+        )
     }
 }
 
-internal fun StoreProduct.platformProductId(): PlatformProductId {
+private fun StoreProduct.platformProductId(): PlatformProductId {
     return PlatformProductId(id)
 }
 
-internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
+private fun SubscriptionOption.platformProductId(): PlatformProductId? {
     return when (this) {
         is GoogleSubscriptionOption -> GooglePlatformProductId(
             productId,
@@ -110,14 +107,14 @@ internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
     }
 }
 
-internal open class PlatformProductId(open val productId: String) {
+private open class PlatformProductId(open val productId: String) {
     open val asMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId,
         )
 }
 
-internal class GooglePlatformProductId(
+private class GooglePlatformProductId(
     override val productId: String,
     val basePlanId: String? = null,
     val offerId: String? = null,

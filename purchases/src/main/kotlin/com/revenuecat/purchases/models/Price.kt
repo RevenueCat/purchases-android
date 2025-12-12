@@ -3,9 +3,12 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Parcelize
 @Poko
+@Serializable
 class Price(
 
     /**
@@ -19,6 +22,7 @@ class Price(
      * For example, if price is "€7.99", price_amount_micros is 7,990,000. This value represents
      * the localized, rounded price for a particular currency.
      */
+    @SerialName("amount_micros")
     val amountMicros: Long,
 
     /**
@@ -28,5 +32,6 @@ class Price(
      *
      * If currency code cannot be determined, currency symbol is returned.
      */
+    @SerialName("currency_code")
     val currencyCode: String,
 ) : Parcelable

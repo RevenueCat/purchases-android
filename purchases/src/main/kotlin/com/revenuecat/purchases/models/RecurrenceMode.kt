@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import kotlinx.serialization.Serializable
 
 /**
  * Recurrence mode for a pricing phase
  */
 @SuppressWarnings("MagicNumber")
+@Serializable
 enum class RecurrenceMode(@ProductDetails.RecurrenceMode val identifier: Int?) {
 
     // Pricing phase repeats infinitely until cancellation

@@ -7,6 +7,8 @@ import com.revenuecat.purchases.utils.pricePerWeek
 import com.revenuecat.purchases.utils.pricePerYear
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.Locale
 
 /**
@@ -14,21 +16,25 @@ import java.util.Locale
  */
 @Parcelize
 @Poko
+@Serializable
 class PricingPhase(
     /**
      * Billing period for which the [PricingPhase] applies.
      */
+    @SerialName("billing_period")
     val billingPeriod: Period,
 
     /**
      * [RecurrenceMode] of the [PricingPhase]
      */
+    @SerialName("recurrence_mode")
     val recurrenceMode: RecurrenceMode,
 
     /**
      * Number of cycles for which the pricing phase applies.
      * Null for INFINITE_RECURRING or NON_RECURRING recurrence modes.
      */
+    @SerialName("billing_cycle_count")
     val billingCycleCount: Int?,
 
     /**
