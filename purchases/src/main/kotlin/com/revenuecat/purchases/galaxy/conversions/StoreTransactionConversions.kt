@@ -27,7 +27,7 @@ internal fun PurchaseVo.toStoreTransaction(
         productIds = listOf(productId),
         type = type,
         purchaseTime = purchaseDate.time,
-        purchaseToken = this.orderId,
+        purchaseToken = this.purchaseId,
         purchaseState = purchaseState,
         isAutoRenewing = type == ProductType.SUBS,
         signature = null,

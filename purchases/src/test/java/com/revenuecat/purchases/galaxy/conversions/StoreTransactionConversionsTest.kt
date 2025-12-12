@@ -25,6 +25,7 @@ class StoreTransactionConversionsTest {
     private val purchaseDateString = "2024-01-15 13:45:20"
     private val presentedOfferingContext = PresentedOfferingContext("offering_id")
     private val defaultOrderId = "order-123"
+    private val defaultPurchaseId = "purchase-456"
     private lateinit var originalTimeZone: TimeZone
 
     @BeforeTest
@@ -43,6 +44,7 @@ class StoreTransactionConversionsTest {
         val productId = "expected_product_id"
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = purchaseDateString,
             type = "item",
             itemId = "original_item_id",
@@ -55,7 +57,7 @@ class StoreTransactionConversionsTest {
         )
 
         assertThat(storeTransaction.orderId).isEqualTo(defaultOrderId)
-        assertThat(storeTransaction.purchaseToken).isEqualTo(defaultOrderId)
+        assertThat(storeTransaction.purchaseToken).isEqualTo(defaultPurchaseId)
         assertThat(storeTransaction.productIds).containsExactly(productId)
         assertThat(storeTransaction.purchaseState).isEqualTo(PurchaseState.PURCHASED)
         assertThat(storeTransaction.purchaseTime)
@@ -75,6 +77,7 @@ class StoreTransactionConversionsTest {
     fun `toStoreTransaction uses provided product id`() {
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = purchaseDateString,
             type = "subscription",
             itemId = "original_item_id",
@@ -94,6 +97,7 @@ class StoreTransactionConversionsTest {
     fun `toStoreTransaction maps subscription type and sets auto renewing`() {
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = purchaseDateString,
             type = "subscription",
         )
@@ -112,6 +116,7 @@ class StoreTransactionConversionsTest {
     fun `toStoreTransaction maps inapp type and disables auto renewing`() {
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = purchaseDateString,
             type = "item",
         )
@@ -130,6 +135,7 @@ class StoreTransactionConversionsTest {
     fun `toStoreTransaction maps unknown type to UNKNOWN product type`() {
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = purchaseDateString,
             type = "weird_type",
         )
@@ -148,6 +154,7 @@ class StoreTransactionConversionsTest {
     fun `toStoreTransaction throws IllegalArgumentException for invalid purchase date`() {
         val purchaseVo = createMockPurchaseVo(
             orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
             purchaseDate = "not-a-date",
             type = "item",
         )
@@ -163,6 +170,7 @@ class StoreTransactionConversionsTest {
 
     private fun createMockPurchaseVo(
         orderId: String,
+        purchaseId: String,
         purchaseDate: String,
         type: String,
         itemId: String = "item_id",
@@ -170,9 +178,11 @@ class StoreTransactionConversionsTest {
         every { this@mockk.type } returns type
         every { this@mockk.purchaseDate } returns purchaseDate
         every { this@mockk.orderId } returns orderId
+        every { this@mockk.purchaseId } returns purchaseId
         every { this@mockk.jsonString } returns """
             {
                 "mOrderId": "$orderId",
+                "mPurchaseId": "$purchaseId",
                 "mPurchaseDate": "$purchaseDate",
                 "mType": "$type",
                 "mItemId": "$itemId"

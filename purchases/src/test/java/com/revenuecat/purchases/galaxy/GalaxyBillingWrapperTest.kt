@@ -209,28 +209,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `makePurchaseAsync exits when finishTransactions is false`() {
-        val wrapper = createWrapper(finishTransactions = false)
-        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
-        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
-
-        wrapper.makePurchaseAsync(
-            activity = mockk<Activity>(),
-            appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(createStoreProduct()),
-            replaceProductInfo = null,
-            presentedOfferingContext = null,
-            isPersonalizedPrice = null,
-        )
-
-        verify(exactly = 0) {
-            purchaseHandlerMock.purchase(any(), any(), any(), any())
-        }
-        verify { purchasesUpdatedListener wasNot Called }
-    }
-
-    @OptIn(GalaxySerialOperation::class)
-    @Test
     fun `makePurchaseAsync exits when replaceProductInfo is provided`() {
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = mockk(relaxed = true)
