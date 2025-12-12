@@ -18,8 +18,16 @@ function start(filename) {
 function stop(filename, outputDir) {
     var name = normalizeFilename(filename);
 
-    var pid = output.recordingPids ? output.recordingPids[name] : null;
+    // Gracefully stop screenrecord on the emulator (sends SIGINT, like Ctrl+C)
+    // This allows screenrecord to properly finalize the video file
+    output.shell.run('adb shell pkill -INT screenrecord');
 
+    // Wait for screenrecord to finalize the file (2 seconds)
+    var waitUntil = Date.now() + 2000;
+    while (Date.now() < waitUntil) {}
+
+    // Clean up the host-side adb process if it's still tracked
+    var pid = output.recordingPids ? output.recordingPids[name] : null;
     if (pid && pid !== -1) {
         output.shell.stop(pid);
         delete output.recordingPids[name];
