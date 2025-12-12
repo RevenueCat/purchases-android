@@ -19,5 +19,5 @@ class AdFailedToLoadData(
     val mediatorName: AdMediatorName,
     val placement: String?,
     val adUnitId: String,
-    val mediatorErrorCode: Long?,
+    val mediatorErrorCode: Int?,
 )
