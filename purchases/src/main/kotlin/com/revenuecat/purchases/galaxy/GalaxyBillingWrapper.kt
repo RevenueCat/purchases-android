@@ -9,7 +9,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
-import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
@@ -152,8 +151,6 @@ internal class GalaxyBillingWrapper(
         }
         val storeProduct = galaxyPurchaseInfo.storeProduct
 
-        if (!shouldFinishTransactions()) { return }
-
         if (replaceProductInfo != null) {
             log(LogIntent.GALAXY_WARNING) { GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
             return
@@ -237,14 +234,5 @@ internal class GalaxyBillingWrapper(
 
     private fun onPurchaseError(error: PurchasesError) {
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-    }
-
-    private fun shouldFinishTransactions(): Boolean {
-        return if (finishTransactions) {
-            true
-        } else {
-            log(LogIntent.AMAZON_WARNING) { AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS }
-            false
-        }
     }
 }
