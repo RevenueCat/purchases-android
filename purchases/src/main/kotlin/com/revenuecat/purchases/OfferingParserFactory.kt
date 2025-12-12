@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.galaxy.GalaxyOfferingParser
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
@@ -22,6 +23,7 @@ internal object OfferingParserFactory {
                     throw e
                 }
             }
+            Store.GALAXY -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }
                 throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
