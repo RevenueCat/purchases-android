@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.galaxy
 
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
+import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
+import org.json.JSONObject
 
 /**
  * Contains helper utilities that are useful when testing the Galaxy Store.
@@ -34,5 +36,27 @@ open class GalaxyStoreTest {
         """.trimIndent()
 
         return ProductVo(json)
+    }
+
+    fun createPurchaseVo(
+        paymentId: String,
+        purchaseId: String,
+        orderId: String,
+        purchaseDate: String? = null,
+        type: String? = null,
+        itemId: String? = null,
+        udpSignature: String? = null,
+    ): PurchaseVo {
+        val productVo = createProductVo()
+        val purchaseJson = JSONObject(productVo.jsonString).apply {
+            put("mPaymentId", paymentId)
+            put("mPurchaseId", purchaseId)
+            put("mOrderId", orderId)
+            purchaseDate?.let { put("mPurchaseDate", it) }
+            type?.let { put("mType", it) }
+            itemId?.let { put("mItemId", it) }
+            udpSignature?.let { put("mUDPVerificationKey", it) }
+        }
+        return PurchaseVo(purchaseJson.toString())
     }
 }

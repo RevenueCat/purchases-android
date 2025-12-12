@@ -1,7 +1,8 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.models.Period
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test

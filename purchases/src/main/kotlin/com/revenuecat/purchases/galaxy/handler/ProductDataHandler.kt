@@ -9,8 +9,8 @@ import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
+import com.revenuecat.purchases.galaxy.conversions.toStoreProduct
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
-import com.revenuecat.purchases.galaxy.toStoreProduct
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.models.StoreProduct
