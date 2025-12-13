@@ -396,9 +396,12 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+                    val purchaseParamBuilder = PurchaseParams.Builder(activity, packageToPurchase)
+                    options.replaceProductData?.let {
+                        purchaseParamBuilder.oldProductId(it.oldProductId)
+                        purchaseParamBuilder.googleReplacementMode(it.googleReplacementMode)
+                    }
+                    val purchaseResult = purchases.awaitPurchase(purchaseParamBuilder)
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()
