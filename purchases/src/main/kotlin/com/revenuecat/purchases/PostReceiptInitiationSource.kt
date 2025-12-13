@@ -1,5 +1,8 @@
 package com.revenuecat.purchases
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 internal enum class PostReceiptInitiationSource {
     RESTORE,
     PURCHASE,

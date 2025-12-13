@@ -6,9 +6,13 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.caching.CachedPurchaseData
+import com.revenuecat.purchases.common.caching.CachedPurchaseDataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -27,6 +31,7 @@ internal class PostReceiptHelper(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
+    private val cachedPurchaseDataCache: CachedPurchaseDataCache,
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -54,6 +59,7 @@ internal class PostReceiptHelper(
             storeUserID,
             marketplace,
             initiationSource,
+            purchaseState = PurchaseState.UNSPECIFIED_STATE,
             onSuccess = { postReceiptResponse ->
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess(postReceiptResponse.customerInfo)
@@ -90,13 +96,10 @@ internal class PostReceiptHelper(
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
-        val receiptInfo = ReceiptInfo(
-            productIDs = purchase.productIds,
-            presentedOfferingContext = purchase.presentedOfferingContext,
+        val receiptInfo = ReceiptInfo.from(
+            storeTransaction = purchase,
             storeProduct = storeProduct,
-            subscriptionOptionId = purchase.subscriptionOptionId,
             subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
-            replacementMode = purchase.replacementMode,
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,
@@ -106,6 +109,7 @@ internal class PostReceiptHelper(
             storeUserID = purchase.storeUserID,
             marketplace = purchase.marketplace,
             initiationSource = initiationSource,
+            purchaseState = purchase.purchaseState,
             onSuccess = { postReceiptResponse ->
                 // Currently we only support a single token per postReceipt call but multiple product Ids
                 // (for multi-line subscriptions).
@@ -136,6 +140,7 @@ internal class PostReceiptHelper(
         )
     }
 
+    @Suppress("LongMethod")
     @OptIn(InternalRevenueCatAPI::class)
     private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
@@ -145,10 +150,37 @@ internal class PostReceiptHelper(
         storeUserID: String?,
         marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
+        purchaseState: PurchaseState,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
+        val cachedData = cachedPurchaseDataCache.getCachedPurchaseData(purchaseToken)
+
         val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
+        val effectivePaywallData = presentedPaywall?.toPaywallPostReceiptData()
+            ?: cachedData?.paywallPostReceiptData
+        val effectiveReceiptInfo = cachedData?.receiptInfo?.let { receiptInfo.merge(it) } ?: receiptInfo
+
+        if (cachedData == null) {
+            val dataToCache = CachedPurchaseData.from(
+                receiptInfo = receiptInfo,
+                paywallPostReceiptData = effectivePaywallData,
+                observerMode = !finishTransactions,
+            )
+            cachedPurchaseDataCache.cachePurchaseData(purchaseToken, dataToCache)
+        }
+
+        val originalObserverMode = cachedData?.observerMode
+
+        if (purchaseState == PurchaseState.PENDING) {
+            onError(
+                PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) },
+                PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
+                null,
+            )
+            return
+        }
+
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             backend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -156,12 +188,15 @@ internal class PostReceiptHelper(
                 isRestore = isRestore,
                 finishTransactions = finishTransactions,
                 subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = receiptInfo,
+                receiptInfo = effectiveReceiptInfo,
                 storeAppUserID = storeUserID,
                 marketplace = marketplace,
                 initiationSource = initiationSource,
-                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
+                paywallPostReceiptData = effectivePaywallData,
+                originalObserverMode = originalObserverMode,
                 onSuccess = { postReceiptResponse ->
+                    cachedPurchaseDataCache.clearCachedPurchaseData(purchaseToken)
+
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
@@ -174,6 +209,7 @@ internal class PostReceiptHelper(
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
+                        cachedPurchaseDataCache.clearCachedPurchaseData(purchaseToken)
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
                             unsyncedSubscriberAttributesByKey,

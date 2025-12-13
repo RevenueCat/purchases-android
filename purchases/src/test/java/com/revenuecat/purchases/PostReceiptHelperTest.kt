@@ -10,6 +10,8 @@ import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.caching.CachedPurchaseData
+import com.revenuecat.purchases.common.caching.CachedPurchaseDataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
@@ -100,6 +102,7 @@ class PostReceiptHelperTest {
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
+    private lateinit var cachedPurchaseDataCache: CachedPurchaseDataCache
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -113,6 +116,7 @@ class PostReceiptHelperTest {
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
+        cachedPurchaseDataCache = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -124,10 +128,15 @@ class PostReceiptHelperTest {
             deviceCache = deviceCache,
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
-            paywallPresentedCache = paywallPresentedCache
+            paywallPresentedCache = paywallPresentedCache,
+            cachedPurchaseDataCache = cachedPurchaseDataCache,
         )
 
         mockUnsyncedSubscriberAttributes()
+
+        every { cachedPurchaseDataCache.getCachedPurchaseData(any()) } returns null
+        every { cachedPurchaseDataCache.cachePurchaseData(any(), any()) } just Runs
+        every { cachedPurchaseDataCache.clearCachedPurchaseData(any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
     }
@@ -1623,6 +1632,43 @@ class PostReceiptHelperTest {
     }
 
     // endregion purchased products data
+
+    // region cached purchase data
+
+    // Test that verifies that, if there is a cached purchase data, all the info is attached to the posting of the receipt
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded posts cached purchase data`() {
+        val cachedPresentedOfferingContext = PresentedOfferingContext("offering_a")
+        val cachedPurchaseData = CachedPurchaseData(
+            presentedOfferingContext = cachedPresentedOfferingContext,
+            price = 9.99,
+            currency = "EUR"
+        )
+        every {
+            cachedPurchaseDataCache.getCachedPurchaseData(mockStoreTransaction.purchaseToken)
+        } returns cachedPurchaseData
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.storeProduct).isEqualTo(mockStoreProduct)
+        assertThat(postedReceiptInfoSlot.captured.presentedOfferingContext).isEqualTo(cachedPresentedOfferingContext)
+        assertThat(postedReceiptInfoSlot.captured.price).isEqualTo(9.99)
+        assertThat(postedReceiptInfoSlot.captured.currency).isEqualTo("EUR")
+    }
+
+    // endregion cached purchase data
 
     // region helpers
 
