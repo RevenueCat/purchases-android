@@ -41,15 +41,33 @@ internal class ComponentOverridesTests {
                         json = """
                             [
                               {
-                                "conditions": [ { "type": "intro_offer" } ],
+                                "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "intro font"
                                 }
                               },
                               {
-                                "conditions": [ { "type": "multiple_intro_offers" } ],
+                                "conditions": [
+                                  { "type": "multiple_intro_offers", "operator": "=", "value": true }
+                                ],
                                 "properties": {
                                   "font_name": "multiple intros font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  { "type": "introductory_offer_available", "operator": "=", "value": true }
+                                ],
+                                "properties": {
+                                  "font_name": "any intro font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  { "type": "multiple_intro_offers_available", "operator": "=", "value": true }
+                                ],
+                                "properties": {
+                                  "font_name": "any multiple intros font"
                                 }
                               },
                               {
@@ -59,25 +77,7 @@ internal class ComponentOverridesTests {
                                 }
                               },
                               {
-                                "conditions": [ { "type": "expanded" } ],
-                                "properties": {
-                                  "font_name": "expanded font"
-                                }
-                              },
-                              {
-                                "conditions": [ { "type": "medium" } ],
-                                "properties": {
-                                  "font_name": "medium font"
-                                }
-                              },
-                              {
-                                "conditions": [ { "type": "compact" } ],
-                                "properties": {
-                                  "font_name": "compact font"
-                                }
-                              },
-                              {
-                                "conditions": [ { "type": "selected" }, { "type": "intro_offer" } ],
+                                "conditions": [ { "type": "selected" }, { "type": "intro_offer", "operator": "=", "value": true } ],
                                 "properties": {
                                   "font_name": "compact font"
                                 }
@@ -93,38 +93,91 @@ internal class ComponentOverridesTests {
                                 "properties": {
                                   "font_name": "condition with other unknown property"
                                 }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "orientation",
+                                    "operator": "in",
+                                    "orientations": ["portrait"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "orientation font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "screen_size",
+                                    "operator": "not_in",
+                                    "sizes": ["tablet", "desktop"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "screen size font"
+                                }
+                              },
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "selected_package",
+                                    "operator": "in",
+                                    "packages": ["rc_annual"]
+                                  }
+                                ],
+                                "properties": {
+                                  "font_name": "selected package font"
+                                }
                               }
                             ]
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                )),
                                 properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.MultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
                                 properties = PartialTextComponent(fontName = FontAlias("multiple intros font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("any intro font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("any multiple intros font")),
                             ),
                             ComponentOverride(
                                 conditions = listOf(ComponentOverride.Condition.Selected),
                                 properties = PartialTextComponent(fontName = FontAlias("selected font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Expanded),
-                                properties = PartialTextComponent(fontName = FontAlias("expanded font")),
-                            ),
-                            ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Medium),
-                                properties = PartialTextComponent(fontName = FontAlias("medium font")),
-                            ),
-                            ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Compact),
-                                properties = PartialTextComponent(fontName = FontAlias("compact font")),
-                            ),
-                            ComponentOverride(
                                 conditions = listOf(
                                     ComponentOverride.Condition.Selected,
-                                    ComponentOverride.Condition.IntroOffer,
+                                    ComponentOverride.Condition.IntroOffer(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    ),
                                 ),
                                 properties = PartialTextComponent(fontName = FontAlias("compact font")),
                             ),
@@ -137,7 +190,34 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(
                                     fontName = FontAlias("condition with other unknown property"),
                                 ),
-                            )
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.Orientation(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                        orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("orientation font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.ScreenSize(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                        sizes = listOf("tablet", "desktop"),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("screen size font")),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.SelectedPackage(
+                                        operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                        packages = listOf("rc_annual"),
+                                    )
+                                ),
+                                properties = PartialTextComponent(fontName = FontAlias("selected package font")),
+                            ),
                         )
                     )
                 ),
@@ -148,6 +228,36 @@ internal class ComponentOverridesTests {
                         []
                         """.trimIndent(),
                         expected = emptyList()
+                    )
+                ),
+                arrayOf(
+                    "legacy intro_offer without operator/value with visible property",
+                    Args(
+                        json = """
+                            [
+                              {
+                                "conditions": [ { "type": "intro_offer" } ],
+                                "properties": {
+                                  "visible": true,
+                                  "text_lid": "intro_text_key",
+                                  "font_size": 16
+                                }
+                              }
+                            ]
+                        """.trimIndent(),
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                )),
+                                properties = PartialTextComponent(
+                                    visible = true,
+                                    text = LocalizationKey("intro_text_key"),
+                                    fontSize = 16,
+                                ),
+                            ),
+                        )
                     )
                 ),
             )
@@ -187,57 +297,77 @@ internal class ComponentOverridesTests {
                         json = """
                         [
                           {
-                            "conditions": [ { "type": "intro_offer" } ],
+                            "conditions": [ { "type": "intro_offer", "operator": "=", "value": true } ],
                             "properties": { "override_source_lid": "intro" }
                           },
                           {
-                            "conditions": [ { "type": "multiple_intro_offers" } ],
+                            "conditions": [
+                              { "type": "multiple_intro_offers", "operator": "=", "value": true }
+                            ],
                             "properties": { "override_source_lid": "multiple_intros" }
+                          },
+                          {
+                            "conditions": [
+                              { "type": "introductory_offer_available", "operator": "=", "value": true }
+                            ],
+                            "properties": { "override_source_lid": "any_intro" }
+                          },
+                          {
+                            "conditions": [
+                              { "type": "multiple_intro_offers_available", "operator": "=", "value": true }
+                            ],
+                            "properties": { "override_source_lid": "any_multiple" }
                           },
                           {
                             "conditions": [ { "type": "selected" } ],
                             "properties": { "override_source_lid": "selected" }
-                          },
-                          {
-                            "conditions": [ { "type": "compact" } ],
-                            "properties": { "override_source_lid": "compact" }
-                          },
-                          {
-                            "conditions": [ { "type": "medium" } ],
-                            "properties": { "override_source_lid": "medium" }
-                          },
-                          {
-                            "conditions": [ { "type": "expanded" } ],
-                            "properties": { "override_source_lid": "expanded" }
                           }
                         ]
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                )),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(
+                                    ComponentOverride.Condition.MultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
                                 properties = PartialImageComponent(
                                     overrideSourceLid = LocalizationKey("multiple_intros")
                                 ),
                             ),
                             ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
+                                properties = PartialImageComponent(
+                                    overrideSourceLid = LocalizationKey("any_intro"),
+                                ),
+                            ),
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                        value = true,
+                                    )
+                                ),
+                                properties = PartialImageComponent(
+                                    overrideSourceLid = LocalizationKey("any_multiple"),
+                                ),
+                            ),
+                            ComponentOverride(
                                 conditions = listOf(ComponentOverride.Condition.Selected),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("selected")),
-                            ),
-                            ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Compact),
-                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("compact")),
-                            ),
-                            ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Medium),
-                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("medium")),
-                            ),
-                            ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Expanded),
-                                properties = PartialImageComponent(overrideSourceLid = LocalizationKey("expanded")),
                             ),
                         )
                     )
@@ -275,11 +405,64 @@ internal class ComponentOverridesTests {
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
-                arrayOf("{ \"type\": \"compact\" }", ComponentOverride.Condition.Compact),
-                arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
-                arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),
-                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer),
-                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers),
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = false,
+                )),
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"intro_offer\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = false,
+                )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = false,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": true }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = false,
+                )),
+                // Legacy format without operator/value - should default to EQUALS and true
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"introductory_offer_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = false,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"=\", \"value\": true }", ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
+                arrayOf("{ \"type\": \"multiple_intro_offers_available\", \"operator\": \"!=\", \"value\": false }", ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS,
+                    value = false,
+                )),
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),

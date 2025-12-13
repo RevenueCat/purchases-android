@@ -81,7 +81,7 @@ class PartialTextComponent
 @Suppress("LongParameterList")
 constructor(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("text_lid")
     val text: LocalizationKey? = null,

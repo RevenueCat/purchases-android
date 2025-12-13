@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -13,10 +12,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
@@ -45,19 +45,27 @@ internal fun rememberUpdatedTextComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        screenConditionProvider = { paywallState.screenCondition },
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 }
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    screenConditionProvider: () -> ScreenCondition,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): TextComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = screenConditionProvider()
 
     // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->
@@ -66,29 +74,31 @@ internal fun rememberUpdatedTextComponentState(
 
     return remember(style) {
         TextComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            introOfferAvailability = introOfferAvailability,
         )
     }.apply {
         update(
-            windowSize = windowSize,
             countdownTime = countdownState?.countdownTime,
+            screenCondition = screenCondition,
         )
     }
 }
 
 @Stable
 internal class TextComponentState(
-    initialWindowSize: WindowWidthSizeClass,
+    initialScreenCondition: ScreenCondition,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
-    private var windowSize by mutableStateOf(initialWindowSize)
+    private var screenConditionSnapshot by mutableStateOf(initialScreenCondition)
 
     /**
      * The current countdown time, if this text is inside a countdown component.
@@ -126,11 +136,19 @@ internal class TextComponentState(
         get() = style.countFrom
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = screenConditionSnapshot,
+            introOfferSnapshot = introOfferSnapshot,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
 
     @get:JvmSynthetic
@@ -195,10 +213,10 @@ internal class TextComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
         countdownTime: CountdownTime? = this.countdownTime,
+        screenCondition: ScreenCondition? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
+        if (screenCondition != null) this.screenConditionSnapshot = screenCondition
         this.countdownTime = countdownTime
     }
 }

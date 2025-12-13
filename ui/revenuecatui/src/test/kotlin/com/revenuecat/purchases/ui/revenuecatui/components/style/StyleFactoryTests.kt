@@ -243,7 +243,10 @@ class StyleFactoryTests {
             text = baseLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 properties = PartialTextComponent(text = overrideLocalizationKey)
             ))
         )
@@ -287,7 +290,10 @@ class StyleFactoryTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             fontName = fontAliasBase,
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 properties = PartialTextComponent(fontName = fontAliasOverride)
             ))
         )
@@ -352,7 +358,10 @@ class StyleFactoryTests {
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 properties = PartialTextComponent(fontName = missingFontAlias)
             ))
         )
@@ -423,7 +432,7 @@ class StyleFactoryTests {
     fun `Should pair the default image with the default locale if there are no localized images`() {
         val defaultLocale = LocaleId("en_US")
 
-        val expectedSources = (0..5).map { index ->
+        val expectedSources = (0..2).map { index ->
             ThemeImageUrls(
                 light = ImageUrls(
                     original = URL("https://original$index"),
@@ -437,32 +446,20 @@ class StyleFactoryTests {
         val expectedBaseSource = expectedSources[0]
         val expectedIntroSource = expectedSources[1]
         val expectedSelectedSource = expectedSources[2]
-        val expectedCompactSource = expectedSources[3]
-        val expectedMediumSource = expectedSources[4]
-        val expectedExpandedSource = expectedSources[5]
 
         val component = ImageComponent(
             source = expectedBaseSource,
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                     properties = PartialImageComponent(source = expectedIntroSource),
                 ),
                 ComponentOverride(
                     conditions = listOf(ComponentOverride.Condition.Selected),
                     properties = PartialImageComponent(source = expectedSelectedSource),
-                ),
-                ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.Compact),
-                    properties = PartialImageComponent(source = expectedCompactSource),
-                ),
-                ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.Medium),
-                    properties = PartialImageComponent(source = expectedMediumSource),
-                ),
-                ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.Expanded),
-                    properties = PartialImageComponent(source = expectedExpandedSource),
                 ),
             )
         )
@@ -483,23 +480,12 @@ class StyleFactoryTests {
         with(imageComponentStyle) {
             assertThat(sources.size).isEqualTo(1)
             assertThat(sources.getValue(defaultLocale)).isEqualTo(expectedBaseSource)
-            assertThat(overrides).hasSize(5)
+            assertThat(overrides).hasSize(2)
             assertThat(overrides[0].properties.sources?.size).isEqualTo(1)
             assertThat(overrides[0].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedIntroSource)
 
             assertThat(overrides[1].properties.sources?.size).isEqualTo(1)
             assertThat(overrides[1].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedSelectedSource)
-
-            assertThat(overrides[2].properties.sources?.size).isEqualTo(1)
-            assertThat(overrides[2].properties.sources?.getValue(defaultLocale))
-                .isEqualTo(expectedCompactSource)
-
-            assertThat(overrides[3].properties.sources?.size).isEqualTo(1)
-            assertThat(overrides[3].properties.sources?.getValue(defaultLocale)).isEqualTo(expectedMediumSource)
-
-            assertThat(overrides[4].properties.sources?.size).isEqualTo(1)
-            assertThat(overrides[4].properties.sources?.getValue(defaultLocale))
-                .isEqualTo(expectedExpandedSource)
         }
     }
 
