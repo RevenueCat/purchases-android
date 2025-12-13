@@ -23,4 +23,7 @@ class PaywallComponentsConfig(
     @get:JvmSynthetic
     @SerialName("sticky_footer")
     val stickyFooter: StickyFooterComponent? = null,
+    @get:JvmSynthetic
+    @SerialName("exit_paywalls")
+    val exitPaywalls: ExitPaywallsConfiguration? = null,
 )

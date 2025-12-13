@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
@@ -58,10 +59,12 @@ fun PaywallDialog(
             shouldDisplayDialog = false
         }
         val paywallOptions = paywallDialogOptions.toPaywallOptions(dismissRequest)
+        val stableViewModelKey = rememberSaveable { "paywall_dialog_${System.currentTimeMillis()}" }
 
         val viewModel = getPaywallViewModel(
             options = paywallOptions,
             shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock,
+            viewModelKey = stableViewModelKey,
         )
 
         // This is needed because of this issue: https://issuetracker.google.com/issues/246909281.
@@ -77,22 +80,24 @@ fun PaywallDialog(
 
         Dialog(
             onDismissRequest = {
-                dismissRequest()
                 viewModel.closePaywall()
-                paywallDialogOptions.dismissRequest?.invoke()
             },
             properties = DialogProperties(
                 usePlatformDefaultWidth = shouldUsePlatformDefaultWidth(),
                 decorFitsSystemWindows = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
             ),
         ) {
-            DialogScaffold(paywallOptions, dialogBottomPadding)
+            DialogScaffold(paywallOptions, viewModel, dialogBottomPadding)
         }
     }
 }
 
 @Composable
-private fun DialogScaffold(paywallOptions: PaywallOptions, dialogBottomPadding: Dp) {
+private fun DialogScaffold(
+    paywallOptions: PaywallOptions,
+    viewModel: PaywallViewModel,
+    dialogBottomPadding: Dp,
+) {
     Scaffold(
         modifier = Modifier
             .fillMaxWidth()
@@ -111,7 +116,7 @@ private fun DialogScaffold(paywallOptions: PaywallOptions, dialogBottomPadding: 
                 .conditional(Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { padding(paddingValues) }
                 .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
         ) {
-            Paywall(paywallOptions)
+            InternalPaywall(paywallOptions, viewModel)
         }
     }
 }
