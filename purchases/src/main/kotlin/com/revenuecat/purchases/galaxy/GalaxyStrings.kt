@@ -38,6 +38,10 @@ internal object GalaxyStrings {
         "This is likely an issue with the Galaxy Store. Error: %s."
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
+
+    // Misc
+    const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
+        " with an error of IAP_ERROR_NONE."
 }
 
 internal fun HelperDefine.OperationMode.description(): String = when (this) {
