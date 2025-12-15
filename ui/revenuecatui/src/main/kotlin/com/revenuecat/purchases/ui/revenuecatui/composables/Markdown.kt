@@ -567,23 +567,25 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
                 appendMarkdownChildren(child, color, allowLinks, baseFontWeight, state)
                 pop()
             }
-            is HtmlInline -> {
-                // Handle <u> and </u> tags for underline support
-                when (child.literal) {
-                    MarkdownTagDefinitions.UNDERLINE_OPEN_TAG -> {
-                        pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
-                        state.underlineDepth++
-                    }
-                    MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG -> {
-                        if (state.underlineDepth > 0) {
-                            pop()
-                            state.underlineDepth--
-                        }
-                    }
-                }
-            }
+            is HtmlInline -> handleInlineHTML(child.literal, state)
         }
         child = child.next
+    }
+}
+
+private fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
+    // Handle <u> and </u> tags for underline support
+    when (tag) {
+        MarkdownTagDefinitions.UNDERLINE_OPEN_TAG -> {
+            pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+            state.underlineDepth++
+        }
+        MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG -> {
+            if (state.underlineDepth > 0) {
+                pop()
+                state.underlineDepth--
+            }
+        }
     }
 }
 
