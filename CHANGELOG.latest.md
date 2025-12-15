@@ -3,10 +3,15 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies to v8.13.2 (#2929) via RevenueCat Git Bot (@RCGitBot)
+
 ## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Fix custom schemes on paywall purchase buttons (#2914) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Fix `IllegalStateException`: No `ViewModelStoreOwner` was provided via `LocalViewModelStoreOwner` in `CompatComposeView` (#2912) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Bump fastlane-plugin-revenuecat_internal from `efca663` to `76a3a08` (#2915) via dependabot[bot] (@dependabot[bot])
+* Change AdFailedToLoad mediatorErrorCode type from Long to Int (#2924) via Pol Miro (@polmiro)
+* Change paywall preview recorder name template (#2923) via Toni Rico (@tonidero)
+* Don't use reflection to instantiate AmazonDeviceIdentifiersFetcher (#2919) via Will Taylor (@fire-at-will)
