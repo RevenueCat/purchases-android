@@ -50,7 +50,7 @@ internal class AcknowledgePurchaseHandler(
 
         if (!iapHelperProvider.isAcknowledgeAvailable(context = context)) {
             log(LogIntent.GALAXY_WARNING) {
-                GalaxyStrings.WARNING_CANNOT_ACKNOWLEDGE_PURCHASE_INSUFFICIENT_MIN_STORE_VERSION
+                GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
             }
             return
         }
