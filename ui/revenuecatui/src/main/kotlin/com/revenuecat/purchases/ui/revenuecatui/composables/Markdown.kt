@@ -69,11 +69,9 @@ private class MarkdownState {
     var underlineDepth = 0
 }
 
-object MarkdownTagDefinitions {
+private object MarkdownTagDefinitions {
     const val UNDERLINE_OPEN_TAG = "<u>"
     const val UNDERLINE_CLOSE_TAG = "</u>"
-    const val UNDERLINE_OPEN_TAG_LENGTH = 3
-    const val UNDERLINE_CLOSE_TAG_LENGTH = 4
 }
 
 /**
@@ -607,14 +605,14 @@ private fun AnnotatedString.Builder.appendTextWithUnderlines(
             openIdx == 0 -> {
                 pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
                 state.underlineDepth++
-                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG_LENGTH)
+                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG.length)
             }
             closeIdx == 0 -> {
                 if (state.underlineDepth > 0) {
                     pop()
                     state.underlineDepth--
                 }
-                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG_LENGTH)
+                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG.length)
             }
             openIdx > 0 && (closeIdx < 0 || openIdx < closeIdx) -> {
                 append(remaining.substring(0, openIdx))
@@ -663,7 +661,7 @@ private fun MarkdownText(
 @Preview
 @Composable
 @Suppress("MaxLineLength")
-fun PreviewText() {
+private fun PreviewText() {
     Surface {
         Markdown(
             text = "Hello, world\n**bold**\n_italic_ \n`code`\n<u>underline</u>\n<u>**_underlined italic bold_**</u>\n[RevenueCat](https://revenuecat.com)",
