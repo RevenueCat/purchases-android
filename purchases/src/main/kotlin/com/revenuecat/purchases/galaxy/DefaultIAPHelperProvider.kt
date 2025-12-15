@@ -73,7 +73,7 @@ internal class DefaultIAPHelperProvider(
     }
 
     @GalaxySerialOperation
-    override fun consumePurchaseItems(
+    override fun consumePurchasedItems(
         purchaseIds: String,
         onConsumePurchasedItemsListener: OnConsumePurchasedItemsListener,
     ): Boolean {
