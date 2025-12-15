@@ -2,6 +2,9 @@ package com.revenuecat.purchases.galaxy.utils
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 
@@ -9,7 +12,7 @@ internal fun ErrorVo.isError(): Boolean {
     return this.errorCode != GalaxyErrorCode.IAP_ERROR_NONE.code
 }
 
-internal fun ErrorVo.toPurchasesError(): PurchasesError? {
+internal fun ErrorVo.toPurchasesError(): PurchasesError {
     val galaxyErrorCodesByCode = GalaxyErrorCode.values().associateBy { it.code }
     val galaxyErrorCode = galaxyErrorCodesByCode[this.errorCode]
 
@@ -33,7 +36,10 @@ internal fun ErrorVo.toPurchasesError(): PurchasesError? {
         -> PurchasesErrorCode.StoreProblemError
         GalaxyErrorCode.IAP_ERROR_NOT_AVAILABLE_SHOP -> PurchasesErrorCode.PurchaseNotAllowedError
         GalaxyErrorCode.IAP_ERROR_INVALID_ACCESS_TOKEN -> PurchasesErrorCode.InvalidCredentialsError
-        GalaxyErrorCode.IAP_ERROR_NONE -> return null // This means that the ErrorVo isn't an error
+        GalaxyErrorCode.IAP_ERROR_NONE -> {
+            log(LogIntent.GALAXY_WARNING) { GalaxyStrings.CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE }
+            PurchasesErrorCode.UnknownError
+        }
         null -> PurchasesErrorCode.UnknownError
     }
 

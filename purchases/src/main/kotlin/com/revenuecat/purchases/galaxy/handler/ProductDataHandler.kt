@@ -135,15 +135,9 @@ internal class ProductDataHandler(
             )
         }
 
-        val purchasesError = error.toPurchasesError() ?: PurchasesError(
-            code = PurchasesErrorCode.UnknownError,
-            underlyingErrorMessage = "We were unable to parse a PurchaseError for the Galaxy Store's " +
-                "error code ${error.errorCode}.",
-        )
-
         val onError = inFlightRequest?.onError
         clearInFlightRequest()
-        onError?.invoke(purchasesError)
+        onError?.invoke(error.toPurchasesError())
     }
 
     private fun clearInFlightRequest() {

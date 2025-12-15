@@ -36,15 +36,6 @@ class ErrorVoUtilsTest {
     }
 
     @Test
-    fun `toPurchasesError returns null when error code indicates no error`() {
-        val errorVo = mockErrorVo(GalaxyErrorCode.IAP_ERROR_NONE.code, "ok")
-
-        val purchasesError = errorVo.toPurchasesError()
-
-        assertThat(purchasesError).isNull()
-    }
-
-    @Test
     fun `toPurchasesError maps known galaxy error codes to purchases error codes`() {
         val expectedMappings = listOf(
             GalaxyErrorCode.IAP_PAYMENT_IS_CANCELED to PurchasesErrorCode.PurchaseCancelledError,
@@ -63,6 +54,7 @@ class ErrorVoUtilsTest {
             GalaxyErrorCode.IAP_ERROR_CONFIRM_INBOX to PurchasesErrorCode.StoreProblemError,
             GalaxyErrorCode.IAP_ERROR_NOT_AVAILABLE_SHOP to PurchasesErrorCode.PurchaseNotAllowedError,
             GalaxyErrorCode.IAP_ERROR_INVALID_ACCESS_TOKEN to PurchasesErrorCode.InvalidCredentialsError,
+            GalaxyErrorCode.IAP_ERROR_NONE to PurchasesErrorCode.UnknownError,
         )
 
         expectedMappings.forEach { (galaxyCode, purchasesErrorCode) ->
