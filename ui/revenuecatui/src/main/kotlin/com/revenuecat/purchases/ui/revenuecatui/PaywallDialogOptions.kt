@@ -19,6 +19,9 @@ class PaywallDialogOptions internal constructor(
     val purchaseLogic: PurchaseLogic?,
 ) {
 
+    internal val offeringSelection: OfferingSelection
+        get() = offering?.let { OfferingSelection.OfferingType(it) } ?: OfferingSelection.None
+
     constructor(builder: Builder) : this(
         shouldDisplayBlock = builder.shouldDisplayBlock,
         dismissRequest = builder.dismissRequest,

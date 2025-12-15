@@ -129,6 +129,10 @@ class PaywallOptions internal constructor(
             this.offeringSelection = idAndPresentedOfferingContext ?: OfferingSelection.None
         }
 
+        internal fun setOfferingSelection(offeringSelection: OfferingSelection?) = apply {
+            this.offeringSelection = offeringSelection ?: OfferingSelection.None
+        }
+
         /**
          * Sets whether to display a close button on the paywall screen. Only available when using
          * [Paywall] and original template paywalls. Ignored when using [OriginalTemplatePaywallFooter] or

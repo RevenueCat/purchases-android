@@ -222,6 +222,10 @@ private class LoadingViewModel(
     }
 
     override fun clearActionError() = Unit
+
+    override fun updateOptions(options: PaywallOptions) {
+        // no-op
+    }
 }
 
 @Preview(showBackground = true)

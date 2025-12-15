@@ -56,10 +56,12 @@ import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -71,6 +73,7 @@ import java.net.URL
 
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
     private val defaultLocaleIdentifier = LocaleId("en_US")
@@ -1437,6 +1440,18 @@ class PaywallViewModelTest {
     }
 
     // endregion invalidateCustomerInfoCache
+
+    private fun componentsOffering(
+        identifier: String,
+    ): Offering {
+        return Offering(
+            identifier = identifier,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+    }
 
     private fun create(
         offering: Offering? = null,

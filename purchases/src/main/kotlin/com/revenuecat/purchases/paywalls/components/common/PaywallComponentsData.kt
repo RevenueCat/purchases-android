@@ -35,4 +35,7 @@ class PaywallComponentsData(
     @Serializable(with = GoogleListSerializer::class)
     @SerialName("zero_decimal_place_countries")
     val zeroDecimalPlaceCountries: List<String> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("exit_offers")
+    val exitOffers: ExitOffersConfiguration? = null,
 )
