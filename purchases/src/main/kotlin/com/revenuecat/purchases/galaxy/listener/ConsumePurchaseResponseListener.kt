@@ -11,7 +11,7 @@ import java.util.ArrayList
 internal interface ConsumePurchaseResponseListener : OnConsumePurchasedItemsListener {
 
     override fun onConsumePurchasedItems(error: ErrorVo, consumptionResults: ArrayList<ConsumeVo>) {
-        /* intentionally ignored. Use ConsumePurchasesHandler instead */
+        /* intentionally ignored. Use ConsumePurchaseHandler instead */
     }
 
     @GalaxySerialOperation
