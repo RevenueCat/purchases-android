@@ -328,6 +328,44 @@ internal class ComponentsConfigTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "exit offers present",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
+                          "exit_offers": {
+                            "dismiss": "exit-offering"
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary")),
+                                ),
+                            ),
+                            exitOffers = ExitOffersConfiguration(
+                                dismiss = "exit-offering",
+                            ),
+                        )
+                    ),
+                ),
             )
         }
 

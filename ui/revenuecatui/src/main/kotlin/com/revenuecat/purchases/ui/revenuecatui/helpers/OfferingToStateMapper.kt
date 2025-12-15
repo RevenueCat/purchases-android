@@ -6,6 +6,7 @@ import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.ExitOffersConfiguration
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.navigation.ExitOffersSettings
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -188,6 +190,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             variableDataProvider = VariableDataProvider(resourceProvider),
             packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
+            exitOffersSettings = config.exitOffers.toExitOffersSettings(),
         )
     }
 }
@@ -324,6 +327,7 @@ internal fun Offering.toComponentsPaywallState(
         dateProvider = dateProvider,
         packages = validationResult.packages,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        exitOffersSettings = validationResult.exitOffersSettings,
         purchases = purchases,
     )
 }
@@ -388,3 +392,9 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
+
+private fun ExitOffersConfiguration?.toExitOffersSettings(): ExitOffersSettings? {
+    if (this == null) return null
+    val dismissOfferingId = dismiss?.takeIf { it.isNotBlank() } ?: return null
+    return ExitOffersSettings(dismissOfferingId = dismissOfferingId)
+}

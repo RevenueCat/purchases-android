@@ -20,6 +20,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.ExitPaywallConfiguration
+import com.revenuecat.purchases.paywalls.components.common.ExitPaywallPresentation
+import com.revenuecat.purchases.paywalls.components.common.ExitPaywallsConfiguration
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -56,10 +59,12 @@ import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -71,6 +76,7 @@ import java.net.URL
 
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
     private val defaultLocaleIdentifier = LocaleId("en_US")
@@ -1181,6 +1187,97 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue
     }
 
+    @Test
+    fun `closePaywall presents bounce exit paywall when configured`() = runTest {
+        // Arrange
+        dismissInvoked = false
+        val exitOffering = componentsOffering(
+            identifier = "exit-offering",
+            exitPaywallsConfiguration = null,
+        )
+        val initialOffering = componentsOffering(
+            identifier = "primary-offering",
+            exitPaywallsConfiguration = ExitPaywallsConfiguration(
+                bounce = ExitPaywallConfiguration(
+                    offeringId = exitOffering.identifier,
+                    presentation = ExitPaywallPresentation.SHEET,
+                    dismissCurrent = true,
+                ),
+            ),
+        )
+        coEvery {
+            purchases.awaitOfferings()
+        } returns Offerings(
+            current = initialOffering,
+            all = mapOf(
+                initialOffering.identifier to initialOffering,
+                exitOffering.identifier to exitOffering,
+            ),
+        )
+        val model = create(offering = initialOffering)
+        advanceUntilIdle()
+
+        // Act
+        model.closePaywall()
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(dismissInvoked).isFalse()
+        val state = model.state.value as PaywallState.Loaded.Components
+        assertThat(state.offering.identifier).isEqualTo(exitOffering.identifier)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `closePaywall presents abandonment exit paywall after purchase cancellation`() = runTest {
+        // Arrange
+        dismissInvoked = false
+        val exitOffering = componentsOffering(
+            identifier = "exit-offering-abandonment",
+            exitPaywallsConfiguration = null,
+        )
+        val initialOffering = componentsOffering(
+            identifier = "primary-offering-abandonment",
+            exitPaywallsConfiguration = ExitPaywallsConfiguration(
+                abandonment = ExitPaywallConfiguration(
+                    offeringId = exitOffering.identifier,
+                    presentation = ExitPaywallPresentation.FULLSCREEN,
+                    dismissCurrent = true,
+                ),
+            ),
+        )
+        coEvery {
+            purchases.awaitOfferings()
+        } returns Offerings(
+            current = initialOffering,
+            all = mapOf(
+                initialOffering.identifier to initialOffering,
+                exitOffering.identifier to exitOffering,
+            ),
+        )
+        val model = create(offering = initialOffering)
+        advanceUntilIdle()
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        val cancellationError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(cancellationError)
+
+        model.purchaseSelectedPackage(activity)
+        advanceUntilIdle()
+
+        // Act
+        model.closePaywall()
+        advanceUntilIdle()
+
+        // Assert
+        assertThat(dismissInvoked).isFalse()
+        val updatedState = model.state.value as PaywallState.Loaded.Components
+        assertThat(updatedState.offering.identifier).isEqualTo(exitOffering.identifier)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+    }
+
     // region events
 
     @Test
@@ -1437,6 +1534,34 @@ class PaywallViewModelTest {
     }
 
     // endregion invalidateCustomerInfoCache
+
+    private fun componentsOffering(
+        identifier: String,
+        exitPaywallsConfiguration: ExitPaywallsConfiguration?,
+    ): Offering {
+        val baseConfig = emptyPaywallComponentsData.componentsConfig.base
+        val componentsData = PaywallComponentsData(
+            templateName = emptyPaywallComponentsData.templateName,
+            assetBaseURL = emptyPaywallComponentsData.assetBaseURL,
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = baseConfig.stack,
+                    background = baseConfig.background,
+                    stickyFooter = baseConfig.stickyFooter,
+                    exitPaywalls = exitPaywallsConfiguration,
+                ),
+            ),
+            componentsLocalizations = emptyPaywallComponentsData.componentsLocalizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), componentsData),
+        )
+    }
 
     private fun create(
         offering: Offering? = null,

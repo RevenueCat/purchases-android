@@ -374,6 +374,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         ),
         initialLocaleList = LocaleList(deviceLocales.map { Locale(it) }),
         initialSelectedTabIndex = 0,
+        exitPaywallSettings = null,
         purchases = MockPurchasesType(),
     )
 

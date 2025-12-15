@@ -26,6 +26,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.data.navigation.ExitPaywallCoordinator
+import com.revenuecat.purchases.ui.revenuecatui.data.navigation.ExitPaywallCoordinator.NavigationDecision
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -106,6 +108,8 @@ internal class PaywallViewModelImpl(
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
+    private val exitPaywallCoordinator = ExitPaywallCoordinator()
+    private var exitNavigationInProgress = false
 
     private val listener: PaywallListener?
         get() = options.listener
@@ -124,6 +128,9 @@ internal class PaywallViewModelImpl(
     }
 
     fun updateOptions(options: PaywallOptions) {
+        if (exitPaywallCoordinator.hasActivePaywall() && exitPaywallCoordinator.isShowingExitPaywall()) {
+            return
+        }
         val needsUpdateState = this.options.hashCode() != options.hashCode()
         // Some properties not considered for equality (hashCode) may have changed
         // (e.g. the listener may change in some re-renderers)
@@ -172,9 +179,21 @@ internal class PaywallViewModelImpl(
     }
 
     override fun closePaywall() {
-        Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
-        options.dismissRequest()
+        when (val decision = exitPaywallCoordinator.onCloseRequested()) {
+            NavigationDecision.Dismiss -> {
+                exitPaywallCoordinator.reset()
+                options.dismissRequest()
+            }
+            is NavigationDecision.ShowExitPaywall -> {
+                if (exitNavigationInProgress) return
+                exitNavigationInProgress = true
+                viewModelScope.launch {
+                    presentExitPaywall(decision)
+                    exitNavigationInProgress = false
+                }
+            }
+        }
     }
 
     @Suppress("ReturnCount")
@@ -375,6 +394,7 @@ internal class PaywallViewModelImpl(
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is PurchaseLogicResult.Success -> {
+                            exitPaywallCoordinator.onPurchaseCompleted()
                             purchases.syncPurchases()
                             Logger.d("Dismissing paywall after purchase")
                             options.dismissRequest()
@@ -399,6 +419,7 @@ internal class PaywallViewModelImpl(
                     val purchaseResult = purchases.awaitPurchase(
                         PurchaseParams.Builder(activity, packageToPurchase),
                     )
+                    exitPaywallCoordinator.onPurchaseCompleted()
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()
@@ -451,18 +472,22 @@ internal class PaywallViewModelImpl(
                     _state.value = PaywallState.Error(
                         "The RevenueCat dashboard does not have a current offering configured.",
                     )
+                    exitPaywallCoordinator.reset()
                 } else {
-                    _state.value = calculateState(
+                    val newState = calculateState(
                         currentOffering,
                         _colorScheme.value,
                         purchases.storefrontCountryCode,
                         options.mode,
                     )
+                    _state.value = newState
+                    handleNavigationState(newState)
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
                 )
+                exitPaywallCoordinator.reset()
             }
         }
     }
@@ -619,5 +644,41 @@ internal class PaywallViewModelImpl(
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
         )
+    }
+
+    private suspend fun presentExitPaywall(decision: NavigationDecision.ShowExitPaywall) {
+        try {
+            val offerings = purchases.awaitOfferings()
+            val targetOffering = offerings[decision.offeringId]
+            if (targetOffering == null) {
+                Logger.e("Exit paywall offering not found for id ${decision.offeringId}")
+                exitPaywallCoordinator.reset()
+                options.dismissRequest()
+                return
+            }
+            options = options.copy(
+                offeringSelection = OfferingSelection.OfferingType(targetOffering),
+            )
+            paywallPresentationData = null
+            updateState()
+        } catch (e: PurchasesException) {
+            Logger.e("Failed to load exit paywall offering ${decision.offeringId}", e)
+            exitPaywallCoordinator.reset()
+            options.dismissRequest()
+        }
+    }
+
+    private fun handleNavigationState(state: PaywallState) {
+        when (state) {
+            is PaywallState.Loaded.Components -> {
+                exitPaywallCoordinator.onPaywallPresented(
+                    offeringId = state.offering.identifier,
+                    exitSettings = state.exitOffersSettings,
+                )
+            }
+            else -> if (!exitPaywallCoordinator.hasActivePaywall()) {
+                exitPaywallCoordinator.reset()
+            }
+        }
     }
 }

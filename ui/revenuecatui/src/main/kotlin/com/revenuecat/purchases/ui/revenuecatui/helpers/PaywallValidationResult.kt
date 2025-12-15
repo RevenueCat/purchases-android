@@ -6,6 +6,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
+import com.revenuecat.purchases.ui.revenuecatui.data.navigation.ExitOffersSettings
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -45,6 +46,7 @@ internal sealed interface PaywallValidationResult {
         val variableDataProvider: VariableDataProvider,
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
+        val exitOffersSettings: ExitOffersSettings?,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

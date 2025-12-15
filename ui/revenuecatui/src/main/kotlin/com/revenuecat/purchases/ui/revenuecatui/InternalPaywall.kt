@@ -4,9 +4,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -106,21 +110,29 @@ internal fun InternalPaywall(
     }
 
     // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
-    AnimatedVisibility(
-        visible = state is PaywallState.Loaded.Components,
-        enter = fadeIn(animationSpec = defaultAnimation()),
-        exit = fadeOut(animationSpec = defaultAnimation()),
-    ) {
-        if (state is PaywallState.Loaded.Components) {
+    val componentsState = state as? PaywallState.Loaded.Components
+    AnimatedContent(
+        targetState = componentsState,
+        transitionSpec = {
+            val isExitPaywallTransition = initialState != null && targetState != null &&
+                initialState?.offering?.identifier != targetState?.offering?.identifier
+            if (isExitPaywallTransition) {
+                (slideInHorizontally { width -> width } + fadeIn(animationSpec = defaultAnimation()))
+                    .togetherWith(
+                        slideOutHorizontally { width -> -width } + fadeOut(animationSpec = defaultAnimation()),
+                    )
+            } else {
+                fadeIn(animationSpec = defaultAnimation()) togetherWith fadeOut(animationSpec = defaultAnimation())
+            }
+        },
+        contentKey = { it?.offering?.identifier },
+        label = "PaywallComponentsTransition",
+    ) { animatedState ->
+        if (animatedState != null) {
             viewModel.trackPaywallImpressionIfNeeded()
             LoadedPaywallComponents(
-                state = state,
+                state = animatedState,
                 clickHandler = rememberPaywallActionHandler(viewModel),
-            )
-        } else {
-            Logger.e(
-                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
-                    "from being loaded to a different state. This should not happen.",
             )
         }
     }
@@ -211,10 +223,12 @@ private fun TemplatePaywall(state: PaywallState.Loaded.Legacy, viewModel: Paywal
 internal fun getPaywallViewModel(
     options: PaywallOptions,
     shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+    viewModelKey: String? = null,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
+    val key = viewModelKey ?: options.hashCode().toString()
     val viewModel = viewModel<PaywallViewModelImpl>(
-        key = options.hashCode().toString(),
+        key = key,
         factory = PaywallViewModelFactory(
             applicationContext.toResourceProvider(),
             options,
