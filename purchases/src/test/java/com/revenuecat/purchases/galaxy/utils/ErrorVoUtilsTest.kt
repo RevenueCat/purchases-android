@@ -37,7 +37,7 @@ class ErrorVoUtilsTest {
 
     @Test
     fun `toPurchasesError maps known galaxy error codes to purchases error codes`() {
-        val expectedMappings = listOf(
+        val expectedMappings = mapOf(
             GalaxyErrorCode.IAP_PAYMENT_IS_CANCELED to PurchasesErrorCode.PurchaseCancelledError,
             GalaxyErrorCode.IAP_ERROR_ALREADY_PURCHASED to PurchasesErrorCode.ProductAlreadyPurchasedError,
             GalaxyErrorCode.IAP_ERROR_PRODUCT_DOES_NOT_EXIST to PurchasesErrorCode.ProductNotAvailableForPurchaseError,
@@ -57,7 +57,8 @@ class ErrorVoUtilsTest {
             GalaxyErrorCode.IAP_ERROR_NONE to PurchasesErrorCode.UnknownError,
         )
 
-        expectedMappings.forEach { (galaxyCode, purchasesErrorCode) ->
+        GalaxyErrorCode.values().forEach { galaxyCode ->
+            val purchasesErrorCode = expectedMappings.getValue(galaxyCode)
             val message = "message for ${galaxyCode.name}"
             val errorVo = mockErrorVo(galaxyCode.code, message)
 
