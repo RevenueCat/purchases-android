@@ -4,9 +4,14 @@
 
 
 ## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies to v8.13.2 (#2929) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* Fix missing events tracking by removing delay to flush when backgrounding app (#2907) via Toni Rico (@tonidero)
+* Fix `IllegalStateException`: No `ViewModelStoreOwner` was provided via `LocalViewModelStoreOwner` in `CompatComposeView` (#2912) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Update Golden File for Galaxy Store (#2902) via Will Taylor (@fire-at-will)
-* Improve log message for no products of specific store in any offerings (#2897) via Antonio Pallares (@ajpallares)
+* Change AdFailedToLoad mediatorErrorCode type from Long to Int (#2924) via Pol Miro (@polmiro)
+* Change paywall preview recorder name template (#2923) via Toni Rico (@tonidero)
+* Don't use reflection to instantiate AmazonDeviceIdentifiersFetcher (#2919) via Will Taylor (@fire-at-will)
