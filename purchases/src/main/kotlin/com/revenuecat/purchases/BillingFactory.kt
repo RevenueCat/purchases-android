@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.revenuecat.purchases.galaxy.GalaxyBillingWrapper
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
@@ -42,6 +43,7 @@ internal object BillingFactory {
                 cache,
                 diagnosticsTrackerIfEnabled,
                 stateProvider,
+                purchaseHistoryManager = PurchaseHistoryManager(application),
             )
             Store.AMAZON -> {
                 try {
