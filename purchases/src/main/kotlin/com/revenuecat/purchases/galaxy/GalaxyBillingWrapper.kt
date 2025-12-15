@@ -13,16 +13,23 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
+import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
+import com.revenuecat.purchases.galaxy.handler.ConsumePurchaseHandler
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
+import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
+import com.revenuecat.purchases.galaxy.listener.ConsumePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
+import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -37,6 +44,7 @@ import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
     private val context: Context,
+    private val deviceCache: DeviceCache,
     private val finishTransactions: Boolean,
     val billingMode: GalaxyBillingMode,
     private val iapHelperProvider: IAPHelperProvider = DefaultIAPHelperProvider(
@@ -49,6 +57,15 @@ internal class GalaxyBillingWrapper(
     private val purchaseHandler: PurchaseResponseListener =
         PurchaseHandler(
             iapHelper = iapHelperProvider,
+        ),
+    private val consumePurchaseHandler: ConsumePurchaseResponseListener =
+        ConsumePurchaseHandler(
+            iapHelperProvider = iapHelperProvider,
+        ),
+    private val acknowledgePurchaseHandler: AcknowledgePurchaseResponseListener =
+        AcknowledgePurchaseHandler(
+            iapHelperProvider = iapHelperProvider,
+            context = context,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
@@ -112,7 +129,101 @@ internal class GalaxyBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.consumeAndSave" }
+        if (!finishTransactions || purchase.type == ProductType.UNKNOWN) return
+
+        // PENDING purchases should not be fulfilled
+        if (purchase.purchaseState == PurchaseState.PENDING) return
+        val isInAppProduct = purchase.type == ProductType.INAPP
+
+        if (isInAppProduct) {
+            if (shouldConsume) {
+                this.consumePurchase(
+                    storeTransaction = purchase,
+                    onConsumed = deviceCache::addSuccessfullyPostedToken,
+                )
+            } else {
+                log(LogIntent.PURCHASE) {
+                    PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND
+                }
+                acknowledgePurchase(
+                    storeTransaction = purchase,
+                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                )
+            }
+        } else {
+            acknowledgePurchase(
+                storeTransaction = purchase,
+                onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+            )
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    internal fun consumePurchase(
+        storeTransaction: StoreTransaction,
+        onConsumed: (purchaseToken: String) -> Unit,
+    ) {
+        serialRequestExecutor.executeSerially { finish ->
+            consumePurchaseHandler.consumePurchase(
+                transaction = storeTransaction,
+                onSuccess = { consumptionResult ->
+                    val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
+                        code = consumptionResult.statusCode,
+                    )
+
+                    if (resultStatus == null) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUMPTION_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
+                                .format(consumptionResult.statusCode)
+                        }
+                    } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUMPTION_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                .format(consumptionResult.statusCode, consumptionResult.statusString)
+                        }
+                    } else {
+                        onConsumed(storeTransaction.purchaseToken)
+                    }
+
+                    finish()
+                },
+                onError = { _ -> finish() },
+            )
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    internal fun acknowledgePurchase(
+        storeTransaction: StoreTransaction,
+        onAcknowledged: (purchaseToken: String) -> Unit,
+    ) {
+        serialRequestExecutor.executeSerially { finish ->
+            acknowledgePurchaseHandler.acknowledgePurchase(
+                transaction = storeTransaction,
+                onSuccess = { acknowledgementResult ->
+                    val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
+                        code = acknowledgementResult.statusCode,
+                    )
+
+                    if (resultStatus == null) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
+                                .format(acknowledgementResult.statusCode)
+                        }
+                    } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                .format(acknowledgementResult.statusCode, acknowledgementResult.statusString)
+                        }
+                    } else {
+                        onAcknowledged(storeTransaction.purchaseToken)
+                    }
+
+                    finish()
+                },
+                onError = { _ -> finish() },
+            )
+        }
     }
 
     override fun findPurchaseInPurchaseHistory(
