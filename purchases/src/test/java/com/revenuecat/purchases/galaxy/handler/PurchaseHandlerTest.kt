@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -27,6 +28,7 @@ class PurchaseHandlerTest {
     private lateinit var iapHelperProvider: IAPHelperProvider
     private lateinit var purchaseHandler: PurchaseHandler
     private lateinit var storeProduct: StoreProduct
+    private lateinit var context: Context
 
     private val appUserId = "user_id"
     private val onUnexpectedSuccess: (PurchaseVo) -> Unit = { fail("Expected onError to be called") }
@@ -35,7 +37,9 @@ class PurchaseHandlerTest {
     @BeforeTest
     fun setup() {
         iapHelperProvider = mockk(relaxed = true)
-        purchaseHandler = PurchaseHandler(iapHelperProvider)
+        context = mockk(relaxed = true)
+
+        purchaseHandler = PurchaseHandler(iapHelperProvider, context)
         storeProduct = mockk<StoreProduct> {
             every { id } returns "product_id"
         }

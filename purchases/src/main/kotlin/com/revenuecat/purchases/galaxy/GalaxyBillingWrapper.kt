@@ -49,6 +49,7 @@ internal class GalaxyBillingWrapper(
     private val purchaseHandler: PurchaseResponseListener =
         PurchaseHandler(
             iapHelper = iapHelperProvider,
+            context = context,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 

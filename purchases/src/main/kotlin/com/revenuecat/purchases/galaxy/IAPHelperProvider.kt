@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy
 
+import android.content.Context
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
@@ -11,11 +12,30 @@ internal interface IAPHelperProvider {
         mode: HelperDefine.OperationMode,
     )
 
+    /**
+     * Undocumented but public API that tells us if the obfuscated Id functionality is available.
+     */
+    fun isObfuscatedIdAvailable(context: Context): Boolean
+
     @GalaxySerialOperation
     fun getProductsDetails(
         productIDs: String,
         onGetProductsDetailsListener: OnGetProductsDetailsListener,
     )
+
+    /**
+     * Starts a purchase flow for the given product through Samsung IAP.
+     *
+     * @param itemId Galaxy Store product identifier.
+     * @param onPaymentListener Callback that receives purchase success or failure results.
+     * @return `true` if the request was dispatched to the store and a response will arrive
+     * through [OnPaymentListener]; `false` if the request could not be sent.
+     */
+    @GalaxySerialOperation
+    fun startPayment(
+        itemId: String,
+        onPaymentListener: OnPaymentListener
+    ): Boolean
 
     /**
      * Starts a purchase flow for the given product through Samsung IAP.

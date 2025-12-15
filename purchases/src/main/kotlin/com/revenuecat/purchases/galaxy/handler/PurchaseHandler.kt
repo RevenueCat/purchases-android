@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
+import android.content.Context
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.LogIntent
@@ -18,6 +19,7 @@ import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
 internal class PurchaseHandler(
     private val iapHelper: IAPHelperProvider,
+    val context: Context,
 ) : PurchaseResponseListener {
 
     @get:Synchronized
@@ -54,13 +56,9 @@ internal class PurchaseHandler(
 
         log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id) }
 
-        // startPayment returns false if the request was not sent to server and was not processed. When this happens,
-        // the onPaymentListener is never invoked.
-        val requestWasDispatched = iapHelper.startPayment(
-            itemId = storeProduct.id,
-            obfuscatedAccountId = appUserID.sha256(),
-            obfuscatedProfileId = null,
-            onPaymentListener = this,
+        val requestWasDispatched = initiatePurchase(
+            storeProduct = storeProduct,
+            appUserID = appUserID,
         )
 
         if (!requestWasDispatched) {
@@ -83,6 +81,28 @@ internal class PurchaseHandler(
             handleUnsuccessfulPurchaseResponse(error = error)
         } else {
             handleSuccessfulPurchaseResponse(purchase = purchase)
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    private fun initiatePurchase(
+        storeProduct: StoreProduct,
+        appUserID: String
+    ): Boolean {
+        // startPayment returns false if the request was not sent to server and was not processed. When this happens,
+        // the onPaymentListener is never invoked.
+        return if (iapHelper.isObfuscatedIdAvailable(context = context)) {
+            iapHelper.startPayment(
+                itemId = storeProduct.id,
+                obfuscatedAccountId = appUserID.sha256(),
+                obfuscatedProfileId = null,
+                onPaymentListener = this,
+            )
+        } else {
+            iapHelper.startPayment(
+                itemId = storeProduct.id,
+                onPaymentListener = this,
+            )
         }
     }
 
