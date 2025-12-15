@@ -54,7 +54,7 @@ internal class ConsumePurchaseHandler(
         val token = transaction.purchaseToken
         log(LogIntent.PURCHASE) { PurchaseStrings.CONSUMING_PURCHASE.format(token) }
 
-        val requestWasDispatched = iapHelperProvider.consumePurchasedItems(
+        val requestWasDispatched = iapHelperProvider.consumePurchaseItems(
             purchaseIds = token,
             onConsumePurchasedItemsListener = this,
         )

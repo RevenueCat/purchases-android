@@ -73,7 +73,7 @@ internal interface IAPHelperProvider {
      * [OnConsumePurchasedItemsListener]; `false` if the request could not be sent.
      */
     @GalaxySerialOperation
-    fun consumePurchasedItems(
+    fun consumePurchaseItems(
         purchaseIds: String,
         onConsumePurchasedItemsListener: OnConsumePurchasedItemsListener,
     ): Boolean

@@ -38,7 +38,7 @@ class ConsumePurchaseHandlerTest {
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `consumePurchase errors when another request is in flight`() {
-        every { iapHelperProvider.consumePurchasedItems(any(), any()) } returns true
+        every { iapHelperProvider.consumePurchaseItems(any(), any()) } returns true
 
         consumePurchaseHandler.consumePurchase(
             transaction = transactionWithToken("first"),
@@ -54,13 +54,13 @@ class ConsumePurchaseHandlerTest {
         )
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
-        verify(exactly = 1) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+        verify(exactly = 1) { iapHelperProvider.consumePurchaseItems(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `consumePurchase errors when Galaxy Store rejects request`() {
-        every { iapHelperProvider.consumePurchasedItems(any(), any()) } returnsMany listOf(false, true)
+        every { iapHelperProvider.consumePurchaseItems(any(), any()) } returnsMany listOf(false, true)
         var receivedError: PurchasesError? = null
 
         consumePurchaseHandler.consumePurchase(
@@ -71,8 +71,8 @@ class ConsumePurchaseHandlerTest {
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
         assertThat(receivedError?.underlyingErrorMessage)
-            .isEqualTo("The Galaxy Store failed to accept the purchase request.")
-        verify(exactly = 1) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+            .isEqualTo(GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CONSUMPTION_REQUEST)
+        verify(exactly = 1) { iapHelperProvider.consumePurchaseItems(any(), any()) }
 
         consumePurchaseHandler.consumePurchase(
             transaction = transactionWithToken("next-token"),
@@ -80,14 +80,14 @@ class ConsumePurchaseHandlerTest {
             onError = unexpectedOnError,
         )
 
-        verify(exactly = 2) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+        verify(exactly = 2) { iapHelperProvider.consumePurchaseItems(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `successful consume forwards results, clears in-flight request, and sends purchase tokens to be consumed`() {
         val purchaseIdsSlot = slot<String>()
-        every { iapHelperProvider.consumePurchasedItems(capture(purchaseIdsSlot), any()) } returns true
+        every { iapHelperProvider.consumePurchaseItems(capture(purchaseIdsSlot), any()) } returns true
         val onSuccess = mockk<(ConsumeVo) -> Unit>(relaxed = true)
         val transaction = transactionWithToken("token1")
 
@@ -112,13 +112,13 @@ class ConsumePurchaseHandlerTest {
             onSuccess = onSuccess,
             onError = unexpectedOnError,
         )
-        verify(exactly = 2) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+        verify(exactly = 2) { iapHelperProvider.consumePurchaseItems(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `successful consume with empty results forwards store problem error`() {
-        every { iapHelperProvider.consumePurchasedItems(any(), any()) } returns true
+        every { iapHelperProvider.consumePurchaseItems(any(), any()) } returns true
         var receivedError: PurchasesError? = null
 
         consumePurchaseHandler.consumePurchase(
@@ -141,13 +141,13 @@ class ConsumePurchaseHandlerTest {
             onSuccess = mockk(relaxed = true),
             onError = unexpectedOnError,
         )
-        verify(exactly = 2) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+        verify(exactly = 2) { iapHelperProvider.consumePurchaseItems(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `failed consume maps error and clears in-flight`() {
-        every { iapHelperProvider.consumePurchasedItems(any(), any()) } returns true
+        every { iapHelperProvider.consumePurchaseItems(any(), any()) } returns true
         var receivedError: PurchasesError? = null
 
         consumePurchaseHandler.consumePurchase(
@@ -170,13 +170,13 @@ class ConsumePurchaseHandlerTest {
             onSuccess = mockk(relaxed = true),
             onError = unexpectedOnError,
         )
-        verify(exactly = 2) { iapHelperProvider.consumePurchasedItems(any(), any()) }
+        verify(exactly = 2) { iapHelperProvider.consumePurchaseItems(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
     fun `successful consume with multiple results forwards store problem error`() {
-        every { iapHelperProvider.consumePurchasedItems(any(), any()) } returns true
+        every { iapHelperProvider.consumePurchaseItems(any(), any()) } returns true
         var receivedError: PurchasesError? = null
 
         consumePurchaseHandler.consumePurchase(
