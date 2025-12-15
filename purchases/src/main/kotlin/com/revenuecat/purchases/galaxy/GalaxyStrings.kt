@@ -41,7 +41,7 @@ internal object GalaxyStrings {
 
     // Acknowledging Purchases
     const val WARNING_CANNOT_ACKNOWLEDGE_PURCHASE_INSUFFICIENT_MIN_STORE_VERSION = "Cannot acknowledge purchases for " +
-        " transaction IDs %s. Acknowledging purchases is unavailable."
+        " transaction IDs %. Acknowledging purchases is unavailable."
     const val ANOTHER_ACKNOWLEDGE_REQUEST_IN_FLIGHT = "Another acknowledge purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST = "The Galaxy Store did not accept the acknowledge " +
