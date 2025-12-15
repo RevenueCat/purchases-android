@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.galaxy.constants
 
+// See https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html#ErrorVo-and-Response-code
+// for a full list of error codes. There is no documented error with an error code of -1014.
 @SuppressWarnings("MagicNumber")
 internal enum class GalaxyErrorCode(val code: Int) {
     IAP_ERROR_NONE(0),
