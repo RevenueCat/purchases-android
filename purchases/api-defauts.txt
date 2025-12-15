@@ -424,6 +424,7 @@ package com.revenuecat.purchases {
     method public void setAirbridgeDeviceID(String? airbridgeDeviceID);
     method public void setAirshipChannelID(String? airshipChannelID);
     method @Deprecated @kotlin.jvm.Synchronized public void setAllowSharingPlayStoreAccount(boolean);
+    method public void setAppsFlyerAttributionData(java.util.Map<? extends java.lang.Object?,? extends java.lang.Object?>? data);
     method public void setAppsflyerID(String? appsflyerID);
     method public void setAttributes(java.util.Map<java.lang.String,java.lang.String?> attributes);
     method public void setCampaign(String? campaign);

@@ -235,6 +235,42 @@ private class PurchasesAPI {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppsFlyerAttributionData(purchases: Purchases) {
+        val mapStringAny: Map<String, Any> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapStringAny)
+
+        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapNullableKeyAny)
+
+        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableValue)
+
+        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
+        purchases.setAppsFlyerAttributionData(nullableMapNullableKeyNullableValue)
+
+        val nullableMapStringAny: Map<String, Any>? = emptyMap()
+        purchases.setAppsFlyerAttributionData(nullableMapStringAny)
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapStringString)
+
+        val mapStringNullableString: Map<String, String?> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapStringNullableString)
+
+        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableString)
+
+        val mapStringInt: Map<String, Int> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapStringInt)
+
+        val mapStringNullableInt: Map<String, Int?> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapStringNullableInt)
+
+        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
+        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableInt)
+    }
+
     @Suppress("ForbiddenComment")
     fun checkConfiguration(
         purchasesConfiguration: PurchasesConfiguration,

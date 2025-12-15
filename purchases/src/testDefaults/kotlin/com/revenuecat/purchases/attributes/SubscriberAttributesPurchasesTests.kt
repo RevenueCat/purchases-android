@@ -422,6 +422,325 @@ class SubscriberAttributesPurchasesTests {
 
     // endregion
 
+    // region AppsFlyer Attribution Data
+
+    @Test
+    fun `setAppsFlyerAttributionData sets all attributes together`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(
+            mapOf(
+                "media_source" to "facebook",
+                "campaign" to "summer_sale",
+                "adgroup" to "test_adgroup",
+                "af_ad" to "test_ad",
+                "af_keywords" to "test_keywords",
+                "creative" to "test_creative",
+            ),
+        )
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf(
+                    "\$mediaSource" to "facebook",
+                    "\$campaign" to "summer_sale",
+                    "\$adGroup" to "test_adgroup",
+                    "\$ad" to "test_ad",
+                    "\$keyword" to "test_keywords",
+                    "\$creative" to "test_creative",
+                ),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData with null map does nothing`() {
+        underTest.setAppsFlyerAttributionData(null)
+
+        verify(exactly = 0) {
+            subscriberAttributesManagerMock.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData with empty map does nothing`() {
+        underTest.setAppsFlyerAttributionData(emptyMap<String, String>())
+
+        verify(exactly = 0) {
+            subscriberAttributesManagerMock.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData uses fallback fields when primary fields are missing`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(
+            mapOf(
+                "af_status" to "organic",
+                "campaign" to "test_campaign",
+                "adset" to "test_adset",
+                "ad_id" to 12345,
+                "keyword" to "test_keyword",
+                "af_creative" to "test_af_creative",
+            ),
+        )
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf(
+                    "\$mediaSource" to "Organic",
+                    "\$campaign" to "test_campaign",
+                    "\$adGroup" to "test_adset",
+                    "\$ad" to "12345",
+                    "\$keyword" to "test_keyword",
+                    "\$creative" to "test_af_creative",
+                ),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData uses primary fields over fallback fields`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(
+            mapOf(
+                "media_source" to "facebook",
+                "af_status" to "Organic",
+                "campaign" to "test_campaign",
+                "adgroup" to "test_adgroup",
+                "adset" to "test_adset",
+                "af_ad" to "test_ad",
+                "ad_id" to "12345",
+                "af_keywords" to "test_keywords",
+                "keyword" to "test_keyword",
+                "creative" to "test_creative",
+                "af_creative" to "test_af_creative",
+            ),
+        )
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf(
+                    "\$mediaSource" to "facebook",
+                    "\$campaign" to "test_campaign",
+                    "\$adGroup" to "test_adgroup",
+                    "\$ad" to "test_ad",
+                    "\$keyword" to "test_keywords",
+                    "\$creative" to "test_creative",
+                ),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData does not set Organic when af_status is not Organic`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf("af_status" to "Non-organic", "campaign" to "test"))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "test"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles null values in map`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf("media_source" to null, "campaign" to "test"))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "test"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles null keys in map`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf(null to "value", "campaign" to "test"))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "test"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles blank string values`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf("media_source" to "", "campaign" to "test"))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "test"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles whitespace-only string values`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf("media_source" to "   ", "campaign" to "test"))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "test"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles Integer values`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf<String?, Any?>("ad_id" to 12345))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$ad" to "12345"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles Long values`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf<String?, Any?>("ad_id" to 123456789012345L))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$ad" to "123456789012345"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData handles Boolean values`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(mapOf<String?, Any?>("campaign" to true))
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$campaign" to "true"),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData ignores fields with only unrecognized keys`() {
+        underTest.setAppsFlyerAttributionData(mapOf("unknown_field" to "value"))
+
+        verify(exactly = 0) {
+            subscriberAttributesManagerMock.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData with typical AppsFlyer conversion data`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(
+            mapOf<String?, Any?>(
+                "af_status" to "Non-organic",
+                "media_source" to "googleadwords_int",
+                "campaign" to "summer_promo_2024",
+                "adgroup" to "ad_group_1",
+                "adset" to "ad_set_1",
+                "af_ad" to "ad_creative_1",
+                "ad_id" to 12345,
+                "af_keywords" to "fitness app",
+                "creative" to "video_ad_1",
+                "af_click_lookback" to "7d",
+                "install_time" to "2024-01-15 10:30:00",
+                "click_time" to "2024-01-15 10:25:00",
+            ),
+        )
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf(
+                    "\$mediaSource" to "googleadwords_int",
+                    "\$campaign" to "summer_promo_2024",
+                    "\$adGroup" to "ad_group_1",
+                    "\$ad" to "ad_creative_1",
+                    "\$keyword" to "fitness app",
+                    "\$creative" to "video_ad_1",
+                ),
+                appUserId,
+            )
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerAttributionData with organic AppsFlyer conversion data`() {
+        every {
+            subscriberAttributesManagerMock.setAttributes(any(), appUserId)
+        } just Runs
+
+        underTest.setAppsFlyerAttributionData(
+            mapOf<String?, Any?>(
+                "af_status" to "Organic",
+                "install_time" to "2024-01-15 10:30:00",
+            ),
+        )
+
+        verify {
+            subscriberAttributesManagerMock.setAttributes(
+                mapOf("\$mediaSource" to "Organic"),
+                appUserId,
+            )
+        }
+    }
+
+    // endregion
+
     private fun attributionIDTest(
         network: SubscriberAttributeKey.AttributionIds,
         functionToTest: (String) -> Unit,

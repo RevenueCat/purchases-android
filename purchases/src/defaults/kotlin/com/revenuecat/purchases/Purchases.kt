@@ -818,6 +818,26 @@ class Purchases internal constructor(
         purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
     }
 
+    /**
+     * Sets attribution data from AppsFlyer's conversion data.
+     *
+     * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes.
+     *
+     * The following RevenueCat attributes will be set based on the AppsFlyer data:
+     * - `$mediaSource`: From `media_source`, or "Organic" if `af_status` is "Organic"
+     * - `$campaign`: From `campaign`
+     * - `$adGroup`: From `adgroup`, with fallback to `adset`
+     * - `$ad`: From `af_ad`, with fallback to `ad_id`
+     * - `$keyword`: From `af_keywords`, with fallback to `keyword`
+     * - `$creative`: From `creative`, with fallback to `af_creative`
+     *
+     * @param data The conversion data map from AppsFlyer's `onConversionDataSuccess` callback.
+     */
+    fun setAppsFlyerAttributionData(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppsFlyerAttributionData(data)
+    }
+
     // endregion
     // region Campaign parameters
 
