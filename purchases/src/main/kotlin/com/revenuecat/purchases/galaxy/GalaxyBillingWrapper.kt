@@ -138,18 +138,29 @@ internal class GalaxyBillingWrapper(
     ) {
         val galaxyPurchaseInfo = purchasingData as? GalaxyPurchasingData.Product
         if (galaxyPurchaseInfo == null) {
+            val errorMessage = PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                "Galaxy",
+                "GalaxyPurchasingData",
+            )
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
-                    "Galaxy",
-                    "GalaxyPurchasingData",
-                ),
+                errorMessage,
             )
-            errorLog(error)
+            log(LogIntent.GALAXY_ERROR) { errorMessage }
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
         val storeProduct = galaxyPurchaseInfo.storeProduct
+
+        if (storeProduct.type == ProductType.INAPP) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnsupportedError,
+                GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED
+            )
+            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED }
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
 
         if (replaceProductInfo != null) {
             log(LogIntent.GALAXY_WARNING) { GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
