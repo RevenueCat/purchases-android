@@ -162,7 +162,7 @@ internal class PostReceiptHelper(
         val effectiveReceiptInfo = cachedData?.receiptInfo?.let { receiptInfo.merge(it) } ?: receiptInfo
 
         if (cachedData == null) {
-            val dataToCache = CachedPurchaseData.from(
+            val dataToCache = CachedPurchaseData(
                 receiptInfo = receiptInfo,
                 paywallPostReceiptData = effectivePaywallData,
                 observerMode = !finishTransactions,

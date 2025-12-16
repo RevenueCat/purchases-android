@@ -25,17 +25,5 @@ internal data class CachedPurchaseData(
 ) {
     companion object {
         const val SCHEMA_VERSION = 1
-
-        fun from(
-            receiptInfo: ReceiptInfo,
-            paywallPostReceiptData: PaywallPostReceiptData?,
-            observerMode: Boolean,
-        ): CachedPurchaseData {
-            return CachedPurchaseData(
-                receiptInfo = receiptInfo,
-                paywallPostReceiptData = paywallPostReceiptData,
-                observerMode = observerMode,
-            )
-        }
     }
 }

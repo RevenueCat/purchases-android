@@ -67,6 +67,7 @@ internal data class ReceiptInfo(
                 currency = storeProduct?.price?.currencyCode,
                 period = storeProduct?.period,
                 pricingPhases = subscriptionOption?.pricingPhases,
+                replacementMode = storeTransaction.replacementMode,
                 platformProductIds = platformProductIds,
             )
         }

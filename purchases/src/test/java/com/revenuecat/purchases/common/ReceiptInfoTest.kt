@@ -47,11 +47,10 @@ class ReceiptInfoTest {
             )
         )
 
-        val receiptInfo = ReceiptInfo(
-            productIDs = mockStoreTransaction.productIds,
-            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
+        val receiptInfo = ReceiptInfo.from(
+            storeTransaction = mockStoreTransaction,
             storeProduct = mockStoreProduct,
-            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
+            subscriptionOptionsForProductIDs = null,
         )
 
         assertThat(receiptInfo.price).isEqualTo(0.99)
@@ -77,11 +76,10 @@ class ReceiptInfoTest {
             subscriptionOptions = listOf(subscriptionOption)
         )
 
-        val receiptInfo = ReceiptInfo(
-            productIDs = mockStoreTransaction.productIds,
-            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
+        val receiptInfo = ReceiptInfo.from(
+            storeTransaction = mockStoreTransaction,
             storeProduct = mockStoreProduct,
-            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
+            subscriptionOptionsForProductIDs = null,
         )
 
         assertThat(receiptInfo.price).isEqualTo(4.99)
@@ -115,15 +113,20 @@ class ReceiptInfoTest {
         val productIDs = listOf(product1, product2, product3)
 
         val receiptInfo = ReceiptInfo(
-            productIDs = productIDs
+            productIDs = productIDs,
+            platformProductIds = listOf(
+                mapOf("product_id" to product1),
+                mapOf("product_id" to product2),
+                mapOf("product_id" to product3)
+            )
         )
 
         val platformProductIDs = receiptInfo.platformProductIds
         assertThat(platformProductIDs).isNotNull
         assertThat(platformProductIDs!!.size).isEqualTo(3)
-        assertThat(platformProductIDs[0].productId).isEqualTo(product1)
-        assertThat(platformProductIDs[1].productId).isEqualTo(product2)
-        assertThat(platformProductIDs[2].productId).isEqualTo(product3)
+        assertThat(platformProductIDs[0]["product_id"]).isEqualTo(product1)
+        assertThat(platformProductIDs[1]["product_id"]).isEqualTo(product2)
+        assertThat(platformProductIDs[2]["product_id"]).isEqualTo(product3)
     }
 
     private fun makeMockStoreTransaction(purchaseState: PurchaseState, subscriptionOptionId: String?): StoreTransaction {
