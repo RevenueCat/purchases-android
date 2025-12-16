@@ -15,10 +15,10 @@ internal fun <K, V, R : Any> Map<K, V>.mapNotNullKeys(transform: (Map.Entry<K, V
     return destination
 }
 
-internal fun Map<*, *>.getStringValue(key: String): String? {
-    return when (val value = this[key]) {
-        is String -> value.takeIf { it.isNotBlank() }
-        null -> null
-        else -> value.toString().takeIf { it.isNotBlank() }
+internal fun Map<*, *>.getStringValueForPrimitive(key: String): String? {
+    val value = this[key] ?: return null
+    return when (value) {
+        is String, is Number, is Boolean, is Char -> value.toString().takeIf { it.isNotBlank() }
+        else -> null
     }
 }

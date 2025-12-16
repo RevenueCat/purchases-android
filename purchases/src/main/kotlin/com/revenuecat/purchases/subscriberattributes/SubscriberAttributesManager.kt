@@ -11,7 +11,7 @@ import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.utils.getStringValue
+import com.revenuecat.purchases.utils.getStringValueForPrimitive
 import java.util.Observable
 
 @Suppress("TooManyFunctions")
@@ -170,33 +170,33 @@ internal class SubscriberAttributesManager(
 
         val attributes = mutableMapOf<String, String?>()
 
-        val mediaSource = data.getStringValue("media_source")
+        val mediaSource = data.getStringValueForPrimitive("media_source")
         if (mediaSource != null) {
             attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = mediaSource
-        } else if (data.getStringValue("af_status")?.equals("Organic", ignoreCase = true) == true) {
+        } else if (data.getStringValueForPrimitive("af_status")?.equals("Organic", ignoreCase = true) == true) {
             attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = "Organic"
         }
 
-        data.getStringValue("campaign")?.also {
+        data.getStringValueForPrimitive("campaign")?.also {
             attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
         }
 
-        val adGroup = data.getStringValue("adgroup") ?: data.getStringValue("adset")
+        val adGroup = data.getStringValueForPrimitive("adgroup") ?: data.getStringValueForPrimitive("adset")
         adGroup?.also {
             attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
         }
 
-        val ad = data.getStringValue("af_ad") ?: data.getStringValue("ad_id")
+        val ad = data.getStringValueForPrimitive("af_ad") ?: data.getStringValueForPrimitive("ad_id")
         ad?.also {
             attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
         }
 
-        val keyword = data.getStringValue("af_keywords") ?: data.getStringValue("keyword")
+        val keyword = data.getStringValueForPrimitive("af_keywords") ?: data.getStringValueForPrimitive("keyword")
         keyword?.also {
             attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
         }
 
-        val creative = data.getStringValue("creative") ?: data.getStringValue("af_creative")
+        val creative = data.getStringValueForPrimitive("creative") ?: data.getStringValueForPrimitive("af_creative")
         creative?.also {
             attributes[SubscriberAttributeKey.CampaignParameters.Creative.backendKey] = it
         }
