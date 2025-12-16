@@ -121,7 +121,10 @@ internal class GalaxyBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (!finishTransactions || purchase.type == ProductType.UNKNOWN) return
+        if (!finishTransactions || purchase.type == ProductType.UNKNOWN) {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            return
+        }
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return

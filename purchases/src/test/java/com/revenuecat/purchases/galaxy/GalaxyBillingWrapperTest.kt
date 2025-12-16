@@ -322,10 +322,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does nothing when finishTransactions is false`() {
+    fun `consumeAndSave caches token when finishTransactions is false`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
-        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken("token") } returns Unit
 
         wrapper.consumeAndSave(
             finishTransactions = false,
@@ -335,15 +335,15 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token") }
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does nothing for unknown product type`() {
+    fun `consumeAndSave caches token for unknown product type`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
-        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken("token") } returns Unit
 
         wrapper.consumeAndSave(
             finishTransactions = true,
@@ -353,7 +353,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token") }
     }
 
     @OptIn(GalaxySerialOperation::class)
