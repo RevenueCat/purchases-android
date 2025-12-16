@@ -39,6 +39,21 @@ internal object GalaxyStrings {
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
 
+    // Promotion Eligibility
+    const val EMPTY_GET_PROMOTION_ELIGIBILITY_REQUEST = "Received a promotion eligibility request for 0 " +
+        "product IDs. Returning an empty list."
+    const val ANOTHER_GET_PROMOTION_ELIGIBILITY_REQUEST_IN_FLIGHT = "A request to fetch promotion eligibility " +
+        "from the Galaxy Store is already in progress. Please wait until that request completes and then try again."
+    const val REQUESTING_PROMOTION_ELIGIBILITY = "Requesting promotion eligibility from the Galaxy Store for products" +
+        " with identifiers: %s"
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_PROMOTION_ELIGIBILITY_REQUEST = "The Galaxy Store did not " +
+        "accept the promotion eligibility request for processing."
+    const val PROMOTION_ELIGIBILITY_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS = "The promotion eligibility" +
+        " request returned no error, but also returned no eligibility results. This is likely an issue with the " +
+        "Galaxy Store."
+    const val PROMOTION_ELIGIBILITY_REQUEST_ERRORED = "An error occurred while fetching promotion eligibility " +
+        "for product IDs %s from the Galaxy Store. Error: %s"
+
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."

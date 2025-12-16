@@ -11,16 +11,20 @@ import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.conversions.toStoreProduct
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
+import com.revenuecat.purchases.galaxy.listener.PromotionEligibilityResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.galaxy.utils.toPurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
+import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import java.util.ArrayList
 
 internal class ProductDataHandler(
     private val iapHelper: IAPHelperProvider,
+    private val promotionEligibilityResponseListener: PromotionEligibilityResponseListener =
+        PromotionEligibilityHandler(iapHelper = iapHelper)
 ) : ProductDataResponseListener {
 
     @get:Synchronized
@@ -104,17 +108,35 @@ internal class ProductDataHandler(
         }
     }
 
+    @OptIn(GalaxySerialOperation::class)
     private fun handleSuccessfulProductsResponse(
         products: List<ProductVo>,
     ) {
-        val storeProducts: List<StoreProduct> = products
-            .map { it.toStoreProduct() }
+        // The serial execution of this call is an extension of the serial execution of the parent
+        // get products request
+        promotionEligibilityResponseListener.getPromotionEligibilities(
+            productIds = products.map { it.itemId },
+            onSuccess = { promotionalEligibilities ->
+                val promotionalEligibilityMap: Map<String, PromotionEligibilityVo> =
+                    promotionalEligibilities.associateBy { it.itemId }
 
-        storeProducts.forEach { product ->
-            productsCache[product.id] = product
-        }
+                val storeProducts: List<StoreProduct> = products
+                    // TODO: Inject promotional availabilities
+                    .map { it.toStoreProduct() }
 
-        handleStoreProducts(storeProducts = storeProducts)
+                storeProducts.forEach { product ->
+                    productsCache[product.id] = product
+                }
+
+                handleStoreProducts(storeProducts = storeProducts)
+            },
+            onError = { error ->
+                val onError = inFlightRequest?.onError
+                clearInFlightRequest()
+                onError?.invoke(error)
+            }
+        )
+
     }
 
     private fun handleStoreProducts(storeProducts: List<StoreProduct>) {

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
+import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 
 internal class DefaultIAPHelperProvider(
@@ -27,6 +28,21 @@ internal class DefaultIAPHelperProvider(
         iapHelper.getProductsDetails(
             productIDs,
             onGetProductsDetailsListener,
+        )
+    }
+
+    @GalaxySerialOperation
+    override fun getPromotionEligibility(
+        itemIDs: String,
+        onGetPromotionEligibilityListener: OnGetPromotionEligibilityListener,
+    ): Boolean {
+        // Return values:
+        // true: The request was sent to server successfully and the result will be sent
+        //       to OnGetPromotionEligibilityListener interface listener.
+        // false: The request was not sent to server and was not processed.
+        return iapHelper.getPromotionEligibility(
+            itemIDs,
+            onGetPromotionEligibilityListener,
         )
     }
 
