@@ -129,7 +129,7 @@ internal class GalaxyBillingWrapper(
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
 
-        if(purchase.type == ProductType.SUBS) {
+        if (purchase.type == ProductType.SUBS) {
             acknowledgePurchase(
                 storeTransaction = purchase,
                 onAcknowledged = deviceCache::addSuccessfullyPostedToken,

@@ -55,8 +55,8 @@ internal class AcknowledgePurchaseHandler(
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.UnsupportedError,
-                    underlyingErrorMessage = GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
-                )
+                    underlyingErrorMessage = GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE,
+                ),
             )
             return
         }
