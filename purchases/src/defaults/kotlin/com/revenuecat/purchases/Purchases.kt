@@ -471,6 +471,7 @@ class Purchases internal constructor(
      */
     fun close() {
         purchasesOrchestrator.close()
+        backingFieldSharedInstance = null
     }
 
     /**
