@@ -11,6 +11,7 @@ import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.getStringValue
 import java.util.Observable
 
 @Suppress("TooManyFunctions")
@@ -248,14 +249,6 @@ internal class SubscriberAttributesManager(
         deviceIdentifiersFetcher.getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
             completion(deviceIdentifiers)
             obtainingDeviceIdentifiersObservable.numberOfProcesses--
-        }
-    }
-
-    private fun Map<*, *>.getStringValue(key: String): String? {
-        return when (val value = this[key]) {
-            is String -> value.takeIf { it.isNotBlank() }
-            null -> null
-            else -> value.toString().takeIf { it.isNotBlank() }
         }
     }
 
