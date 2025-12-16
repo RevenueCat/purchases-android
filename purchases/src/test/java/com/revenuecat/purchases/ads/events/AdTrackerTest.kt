@@ -186,7 +186,7 @@ class AdTrackerTest {
                 mediatorName = AdMediatorName.AD_MOB,
                 placement = "interstitial_level_complete",
                 adUnitId = "ca-app-pub-789012",
-                mediatorErrorCode = 123L,
+                mediatorErrorCode = 123,
             ),
         )
 
@@ -197,7 +197,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isNull()
-        assertThat(eventSlot.captured.mediatorErrorCode).isEqualTo(123L)
+        assertThat(eventSlot.captured.mediatorErrorCode).isEqualTo(123)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.FAILED_TO_LOAD)
     }
 }

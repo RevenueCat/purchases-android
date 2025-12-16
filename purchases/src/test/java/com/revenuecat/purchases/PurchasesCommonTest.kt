@@ -843,6 +843,65 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `when making a deferred product change with basePlanId in oldProductId, completion is still called`() {
+        val newProductId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
+
+        // The transaction has just the productId, without basePlanId
+        val oldProductId = "oldProductId"
+        val oldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "another_purchase_token",
+            productType = ProductType.SUBS
+        )
+
+        // User passes oldProductId with basePlanId suffix
+        val oldProductIdWithBasePlan = "$oldProductId:basePlan"
+
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                // The SDK should strip the basePlanId when looking up the purchase
+                productId = oldProductId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
+        }
+
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
+        }
+        val productChangeParams = getPurchaseParams(
+            storeProduct.first().subscriptionOptions!!.first(),
+            oldProductIdWithBasePlan,
+            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+        )
+        var callCount = 0
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ ->
+                fail("should be successful")
+            },
+            onSuccess = { purchase, _ ->
+                callCount++
+                assertThat(purchase).isEqualTo(oldPurchase)
+            }
+        )
+        // The transaction returned by Google has just the productId without basePlanId
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
+        // The callback should still be called because we strip the basePlanId when storing the callback
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
     fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
