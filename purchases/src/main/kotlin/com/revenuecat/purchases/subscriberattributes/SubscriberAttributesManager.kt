@@ -170,11 +170,10 @@ internal class SubscriberAttributesManager(
         val attributes = mutableMapOf<String, String?>()
 
         val mediaSource = data.getStringValue("media_source")
-            ?: data.getStringValue("af_status")
-                .takeIf { it.equals("Organic", ignoreCase = true) }
-                ?.let { "Organic" }
-        mediaSource?.also {
+        if (mediaSource != null) {
             attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = mediaSource
+        } else if (data.getStringValue("af_status")?.equals("Organic", ignoreCase = true) == true) {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = "Organic"
         }
 
         data.getStringValue("campaign")?.also {
