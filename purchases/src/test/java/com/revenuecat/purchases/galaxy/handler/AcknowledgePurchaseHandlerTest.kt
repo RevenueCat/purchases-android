@@ -66,16 +66,16 @@ class AcknowledgePurchaseHandlerTest {
     fun `acknowledgePurchase returns early when acknowledgement unavailable`() {
         every { iapHelperProvider.isAcknowledgeAvailable(context) } returns false
 
-        var onSuccessCalled = false
-        var onErrorCalled = false
+        var receivedError: PurchasesError? = null
         acknowledgePurchaseHandler.acknowledgePurchase(
             transaction = transactionWithToken("token"),
-            onSuccess = { onSuccessCalled = true },
-            onError = { onErrorCalled = true },
+            onSuccess = unexpectedOnSuccess,
+            onError = { receivedError = it },
         )
 
-        assertThat(onSuccessCalled).isFalse
-        assertThat(onErrorCalled).isFalse
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(receivedError?.underlyingErrorMessage)
+            .isEqualTo(GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE)
         verify(exactly = 0) { iapHelperProvider.acknowledgePurchases(any(), any()) }
     }
 

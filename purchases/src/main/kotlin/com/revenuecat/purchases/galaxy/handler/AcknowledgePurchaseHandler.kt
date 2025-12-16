@@ -52,6 +52,12 @@ internal class AcknowledgePurchaseHandler(
             log(LogIntent.GALAXY_WARNING) {
                 GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
             }
+            onError(
+                PurchasesError(
+                    code = PurchasesErrorCode.UnsupportedError,
+                    underlyingErrorMessage = GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
+                )
+            )
             return
         }
 
