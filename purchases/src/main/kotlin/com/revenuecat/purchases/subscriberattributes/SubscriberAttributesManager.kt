@@ -13,6 +13,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Observable
 
+@Suppress("TooManyFunctions")
 internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
@@ -158,6 +159,54 @@ internal class SubscriberAttributesManager(
     }
 
     /**
+     * Convenience function to set attribution data from AppsFlyer's conversion data.
+     */
+    @Suppress("CyclomaticComplexMethod")
+    fun setAppsFlyerAttributionData(appUserID: String, data: Map<*, *>?) {
+        if (data == null) {
+            return
+        }
+
+        val attributes = mutableMapOf<String, String?>()
+
+        val mediaSource = data.getStringValue("media_source")
+            ?: data.getStringValue("af_status")
+                .takeIf { it.equals("Organic", ignoreCase = true) }
+                ?.let { "Organic" }
+        mediaSource?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = mediaSource
+        }
+
+        data.getStringValue("campaign")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
+        }
+
+        val adGroup = data.getStringValue("adgroup") ?: data.getStringValue("adset")
+        adGroup?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
+        }
+
+        val ad = data.getStringValue("af_ad") ?: data.getStringValue("ad_id")
+        ad?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
+        }
+
+        val keyword = data.getStringValue("af_keywords") ?: data.getStringValue("keyword")
+        keyword?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
+        }
+
+        val creative = data.getStringValue("creative") ?: data.getStringValue("af_creative")
+        creative?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Creative.backendKey] = it
+        }
+
+        if (attributes.isNotEmpty()) {
+            setAttributes(attributes, appUserID)
+        }
+    }
+
+    /**
      * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
     fun collectDeviceIdentifiers(
@@ -200,6 +249,14 @@ internal class SubscriberAttributesManager(
         deviceIdentifiersFetcher.getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
             completion(deviceIdentifiers)
             obtainingDeviceIdentifiersObservable.numberOfProcesses--
+        }
+    }
+
+    private fun Map<*, *>.getStringValue(key: String): String? {
+        return when (val value = this[key]) {
+            is String -> value.takeIf { it.isNotBlank() }
+            null -> null
+            else -> value.toString().takeIf { it.isNotBlank() }
         }
     }
 
