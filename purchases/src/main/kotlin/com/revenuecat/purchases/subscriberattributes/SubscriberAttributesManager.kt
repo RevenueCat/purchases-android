@@ -163,7 +163,7 @@ internal class SubscriberAttributesManager(
      * Convenience function to set attribution data from AppsFlyer's conversion data.
      */
     @Suppress("CyclomaticComplexMethod")
-    fun setAppsFlyerAttributionData(appUserID: String, data: Map<*, *>?) {
+    fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
         if (data == null) {
             return
         }

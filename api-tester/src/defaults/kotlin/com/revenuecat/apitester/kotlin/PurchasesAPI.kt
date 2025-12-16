@@ -236,39 +236,39 @@ private class PurchasesAPI {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    fun checkSetAppsFlyerAttributionData(purchases: Purchases) {
+    fun checkSetAppsFlyerConversionData(purchases: Purchases) {
         val mapStringAny: Map<String, Any> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapStringAny)
+        purchases.setAppsFlyerConversionData(mapStringAny)
 
         val mapNullableKeyAny: Map<String?, Any> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapNullableKeyAny)
+        purchases.setAppsFlyerConversionData(mapNullableKeyAny)
 
         val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableValue)
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableValue)
 
         val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
-        purchases.setAppsFlyerAttributionData(nullableMapNullableKeyNullableValue)
+        purchases.setAppsFlyerConversionData(nullableMapNullableKeyNullableValue)
 
         val nullableMapStringAny: Map<String, Any>? = emptyMap()
-        purchases.setAppsFlyerAttributionData(nullableMapStringAny)
+        purchases.setAppsFlyerConversionData(nullableMapStringAny)
 
         val mapStringString: Map<String, String> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapStringString)
+        purchases.setAppsFlyerConversionData(mapStringString)
 
         val mapStringNullableString: Map<String, String?> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapStringNullableString)
+        purchases.setAppsFlyerConversionData(mapStringNullableString)
 
         val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableString)
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableString)
 
         val mapStringInt: Map<String, Int> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapStringInt)
+        purchases.setAppsFlyerConversionData(mapStringInt)
 
         val mapStringNullableInt: Map<String, Int?> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapStringNullableInt)
+        purchases.setAppsFlyerConversionData(mapStringNullableInt)
 
         val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
-        purchases.setAppsFlyerAttributionData(mapNullableKeyNullableInt)
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
     }
 
     @Suppress("ForbiddenComment")

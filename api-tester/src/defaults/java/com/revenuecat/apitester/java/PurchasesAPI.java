@@ -161,15 +161,15 @@ final class PurchasesAPI {
 
     static void checkSetAppsFlyerAttributionData(final Purchases purchases) {
         Map<String, Object> mapStringAny = new HashMap<>();
-        purchases.setAppsFlyerAttributionData(mapStringAny);
+        purchases.setAppsFlyerConversionData(mapStringAny);
 
-        purchases.setAppsFlyerAttributionData(null);
+        purchases.setAppsFlyerConversionData(null);
 
         Map<String, String> mapStringString = new HashMap<>();
-        purchases.setAppsFlyerAttributionData(mapStringString);
+        purchases.setAppsFlyerConversionData(mapStringString);
 
         Map<String, Integer> mapStringInt = new HashMap<>();
-        purchases.setAppsFlyerAttributionData(mapStringInt);
+        purchases.setAppsFlyerConversionData(mapStringInt);
     }
 
     static void checkConfiguration(final Context context,

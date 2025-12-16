@@ -834,8 +834,8 @@ class Purchases internal constructor(
      *
      * @param data The conversion data map from AppsFlyer's `onConversionDataSuccess` callback.
      */
-    fun setAppsFlyerAttributionData(data: Map<*, *>?) {
-        purchasesOrchestrator.setAppsFlyerAttributionData(data)
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppsFlyerConversionData(data)
     }
 
     // endregion

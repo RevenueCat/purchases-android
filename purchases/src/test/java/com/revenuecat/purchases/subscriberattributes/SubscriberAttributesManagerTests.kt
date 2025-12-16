@@ -795,10 +795,10 @@ class SubscriberAttributesManagerTests {
     // region AppsFlyer Attribution Data
 
     @Test
-    fun `setAppsFlyerAttributionData sets all attributes together`() {
+    fun `setAppsFlyerConversionData sets all attributes together`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf(
                 "media_source" to "facebook",
@@ -822,8 +822,8 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData with null map does nothing`() {
-        underTest.setAppsFlyerAttributionData(appUserID, null)
+    fun `setAppsFlyerConversionData with null map does nothing`() {
+        underTest.setAppsFlyerConversionData(appUserID, null)
 
         verify(exactly = 0) {
             mockDeviceCache.setAttributes(any(), any())
@@ -831,8 +831,8 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData with empty map does nothing`() {
-        underTest.setAppsFlyerAttributionData(appUserID, emptyMap<String, String>())
+    fun `setAppsFlyerConversionData with empty map does nothing`() {
+        underTest.setAppsFlyerConversionData(appUserID, emptyMap<String, String>())
 
         verify(exactly = 0) {
             mockDeviceCache.setAttributes(any(), any())
@@ -840,10 +840,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData uses fallback fields when primary fields are missing`() {
+    fun `setAppsFlyerConversionData uses fallback fields when primary fields are missing`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf(
                 "af_status" to "organic",
@@ -867,10 +867,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData uses primary fields over fallback fields`() {
+    fun `setAppsFlyerConversionData uses primary fields over fallback fields`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf(
                 "media_source" to "facebook",
@@ -899,10 +899,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData does not set Organic when af_status is not Organic`() {
+    fun `setAppsFlyerConversionData does not set Organic when af_status is not Organic`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf("af_status" to "Non-organic", "campaign" to "test"),
         )
@@ -915,10 +915,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles null values in map`() {
+    fun `setAppsFlyerConversionData handles null values in map`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf("media_source" to null, "campaign" to "test"),
         )
@@ -931,10 +931,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles null keys in map`() {
+    fun `setAppsFlyerConversionData handles null keys in map`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf(null to "value", "campaign" to "test"),
         )
@@ -946,10 +946,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles blank string values`() {
+    fun `setAppsFlyerConversionData handles blank string values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf("media_source" to "", "campaign" to "test"),
         )
@@ -962,10 +962,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles whitespace-only string values`() {
+    fun `setAppsFlyerConversionData handles whitespace-only string values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf("media_source" to "   ", "campaign" to "test"),
         )
@@ -978,10 +978,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles Integer values`() {
+    fun `setAppsFlyerConversionData handles Integer values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf<String?, Any?>("ad_id" to 12345),
         )
@@ -993,10 +993,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles Long values`() {
+    fun `setAppsFlyerConversionData handles Long values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf<String?, Any?>("ad_id" to 123456789012345L),
         )
@@ -1008,10 +1008,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData handles Boolean values`() {
+    fun `setAppsFlyerConversionData handles Boolean values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf<String?, Any?>("campaign" to true),
         )
@@ -1023,8 +1023,8 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData ignores fields with only unrecognized keys`() {
-        underTest.setAppsFlyerAttributionData(appUserID, mapOf("unknown_field" to "value"))
+    fun `setAppsFlyerConversionData ignores fields with only unrecognized keys`() {
+        underTest.setAppsFlyerConversionData(appUserID, mapOf("unknown_field" to "value"))
 
         verify(exactly = 0) {
             mockDeviceCache.setAttributes(any(), any())
@@ -1032,10 +1032,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData with typical AppsFlyer conversion data`() {
+    fun `setAppsFlyerConversionData with typical AppsFlyer conversion data`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf<String?, Any?>(
                 "af_status" to "Non-organic",
@@ -1065,10 +1065,10 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppsFlyerAttributionData with organic AppsFlyer conversion data`() {
+    fun `setAppsFlyerConversionData with organic AppsFlyer conversion data`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
-        underTest.setAppsFlyerAttributionData(
+        underTest.setAppsFlyerConversionData(
             appUserID,
             mapOf<String?, Any?>(
                 "af_status" to "Organic",
