@@ -94,7 +94,7 @@ internal class ProductDataHandler(
         }
     }
 
-    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo>) {
+    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
         super.onGetProducts(error, products)
 
         if (error.isError()) {
@@ -105,9 +105,10 @@ internal class ProductDataHandler(
     }
 
     private fun handleSuccessfulProductsResponse(
-        products: List<ProductVo>,
+        products: List<ProductVo?>,
     ) {
-        val storeProducts: List<StoreProduct> = products
+        val nonNullProducts = products.mapNotNull { it }
+        val storeProducts: List<StoreProduct> = nonNullProducts
             .map { it.toStoreProduct() }
 
         storeProducts.forEach { product ->

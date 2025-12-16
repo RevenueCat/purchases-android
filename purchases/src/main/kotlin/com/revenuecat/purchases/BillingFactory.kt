@@ -66,7 +66,6 @@ internal object BillingFactory {
                     GalaxyBillingWrapper(
                         stateProvider = stateProvider,
                         context = application.applicationContext,
-                        finishTransactions = finishTransactions,
                         billingMode = galaxyBillingMode,
                         deviceCache = cache,
                     )

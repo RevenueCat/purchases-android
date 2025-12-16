@@ -18,7 +18,7 @@ import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import java.util.ArrayList
 
 internal class AcknowledgePurchaseHandler(
-    private val iapHelperProvider: IAPHelperProvider,
+    private val iapHelper: IAPHelperProvider,
     private val context: Context,
 ) : AcknowledgePurchaseResponseListener {
 
@@ -48,7 +48,7 @@ internal class AcknowledgePurchaseHandler(
             return
         }
 
-        if (!iapHelperProvider.isAcknowledgeAvailable(context = context)) {
+        if (!iapHelper.isAcknowledgeAvailable(context = context)) {
             log(LogIntent.GALAXY_WARNING) {
                 GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
             }
@@ -65,7 +65,7 @@ internal class AcknowledgePurchaseHandler(
             PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(transaction.purchaseToken)
         }
 
-        val requestWasDispatched = iapHelperProvider.acknowledgePurchases(
+        val requestWasDispatched = iapHelper.acknowledgePurchases(
             purchaseIds = transaction.purchaseToken,
             onAcknowledgePurchasesListener = this,
         )
@@ -85,7 +85,7 @@ internal class AcknowledgePurchaseHandler(
 
     override fun onAcknowledgePurchases(
         error: ErrorVo,
-        acknowledgementResults: ArrayList<AcknowledgeVo>,
+        acknowledgementResults: ArrayList<AcknowledgeVo?>,
     ) {
         super.onAcknowledgePurchases(error, acknowledgementResults)
 
@@ -96,8 +96,9 @@ internal class AcknowledgePurchaseHandler(
         }
     }
 
-    private fun handleSuccessfulAcknowledgeRequest(acknowledgementResults: ArrayList<AcknowledgeVo>) {
-        if (acknowledgementResults.isEmpty()) {
+    private fun handleSuccessfulAcknowledgeRequest(acknowledgementResults: ArrayList<AcknowledgeVo?>) {
+        val nonNullAcknowledgementResults = acknowledgementResults.mapNotNull { it }
+        if (nonNullAcknowledgementResults.isEmpty()) {
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS
             }
@@ -109,7 +110,7 @@ internal class AcknowledgePurchaseHandler(
             clearInFlightRequest()
             onError?.invoke(purchasesError)
             return
-        } else if (acknowledgementResults.count() > 1) {
+        } else if (nonNullAcknowledgementResults.count() > 1) {
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_MORE_THAN_ONE_RESULT
             }
@@ -125,7 +126,7 @@ internal class AcknowledgePurchaseHandler(
 
         val onSuccess = inFlightRequest?.onSuccess
         clearInFlightRequest()
-        onSuccess?.invoke(acknowledgementResults[0])
+        onSuccess?.invoke(nonNullAcknowledgementResults[0])
     }
 
     private fun handleUnsuccessfulAcknowledgeRequest(error: ErrorVo) {

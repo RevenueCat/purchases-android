@@ -10,7 +10,7 @@ import java.util.ArrayList
 
 internal interface AcknowledgePurchaseResponseListener : OnAcknowledgePurchasesListener {
 
-    override fun onAcknowledgePurchases(error: ErrorVo, acknowledgementResults: ArrayList<AcknowledgeVo>) {
+    override fun onAcknowledgePurchases(error: ErrorVo, acknowledgementResults: ArrayList<AcknowledgeVo?>) {
         /* intentionally ignored. Use AcknowledgePurchaseHandler instead */
     }
 

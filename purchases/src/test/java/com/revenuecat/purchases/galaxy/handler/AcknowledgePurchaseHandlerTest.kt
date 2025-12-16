@@ -153,7 +153,7 @@ class AcknowledgePurchaseHandlerTest {
         val successErrorVo = mockk<ErrorVo> {
             every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
         }
-        acknowledgePurchaseHandler.onAcknowledgePurchases(successErrorVo, arrayListOf<AcknowledgeVo>())
+        acknowledgePurchaseHandler.onAcknowledgePurchases(successErrorVo, arrayListOf())
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
         assertThat(receivedError?.underlyingErrorMessage)
