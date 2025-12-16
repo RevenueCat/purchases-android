@@ -467,7 +467,8 @@ class Purchases internal constructor(
     }
 
     /**
-     * Call close when you are done with this instance of Purchases
+     * Call close when you are done with this instance of Purchases.
+     * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     fun close() {
         purchasesOrchestrator.close()
