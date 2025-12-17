@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.amazon.AmazonOfferingParser
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
@@ -14,15 +15,7 @@ internal object OfferingParserFactory {
         return when (store) {
             Store.TEST_STORE -> SimulatedStoreOfferingParser()
             Store.PLAY_STORE -> GoogleOfferingParser()
-            Store.AMAZON -> {
-                try {
-                    Class.forName("com.revenuecat.purchases.amazon.AmazonOfferingParser")
-                        .getConstructor().newInstance() as OfferingParser
-                } catch (e: ClassNotFoundException) {
-                    errorLog(e) { "Make sure purchases-amazon is added as dependency" }
-                    throw e
-                }
-            }
+            Store.AMAZON -> AmazonOfferingParser()
             Store.GALAXY -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }
