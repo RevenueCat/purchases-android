@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy
 
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
+import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import io.mockk.every
 import io.mockk.mockk
@@ -20,6 +21,7 @@ open class GalaxyStoreTest {
         itemPriceString: String = "$currencyUnit$itemPrice",
         subscriptionDurationMultiplier: String = "",
         subscriptionDurationUnit: String = "",
+        freeTrialPeriod: String = "",
     ): ProductVo {
         return mockk<ProductVo>(relaxed = true).also { productVo ->
             every { productVo.itemId } returns itemId
@@ -32,6 +34,17 @@ open class GalaxyStoreTest {
             every { productVo.type } returns type
             every { productVo.subscriptionDurationMultiplier } returns subscriptionDurationMultiplier
             every { productVo.subscriptionDurationUnit } returns subscriptionDurationUnit
+            every { productVo.freeTrialPeriod } returns freeTrialPeriod
+        }
+    }
+
+    fun createPromotionEligibilityVo(
+        itemId: String,
+        pricing: String,
+    ): PromotionEligibilityVo {
+        return mockk<PromotionEligibilityVo>(relaxed = true).also { vo ->
+            every { vo.itemId } returns itemId
+            every { vo.pricing } returns pricing
         }
     }
 
