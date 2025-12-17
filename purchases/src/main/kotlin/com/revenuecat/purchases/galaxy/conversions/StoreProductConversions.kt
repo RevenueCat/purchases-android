@@ -5,12 +5,17 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.GalaxyStoreProduct
 import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.galaxy.GalaxySubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
+import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 
-internal fun ProductVo.toStoreProduct(): StoreProduct {
+internal fun ProductVo.toStoreProduct(
+    promotionEligibility: PromotionEligibilityVo? = null
+): StoreProduct {
     val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
     val period: Period? = if (type == ProductType.SUBS) {
         val period = this.createPeriod()
@@ -24,6 +29,15 @@ internal fun ProductVo.toStoreProduct(): StoreProduct {
     } else {
         null
     }
+
+    val subscriptionOption: SubscriptionOption = GalaxySubscriptionOption(
+        id = this.itemId,
+        pricingPhases = emptyList(), // TODO
+        tags = emptyList(), // Tags are unsupported on the Galaxy Store
+        presentedOfferingContext = null, // TODO
+        purchasingData = TODO(),
+        installmentsInfo = null
+    )
 
     return GalaxyStoreProduct(
         id = this.itemId,
