@@ -28,6 +28,7 @@ internal object GalaxyStrings {
     const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
+    const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
         "request for processing. No transactions have occurred."
     const val PURCHASE_REQUEST_ERRORED = "An error occurred while purchasing product with ID %s with the " +
@@ -54,9 +55,30 @@ internal object GalaxyStrings {
     const val PROMOTION_ELIGIBILITY_REQUEST_ERRORED = "An error occurred while fetching promotion eligibility " +
         "for product IDs %s from the Galaxy Store. Error: %s"
 
+    // Acknowledging Purchases
+    const val WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE = "Acknowledging purchases is currently unavailable."
+    const val ANOTHER_ACKNOWLEDGE_REQUEST_IN_FLIGHT = "Another acknowledge purchase request with the Galaxy Store" +
+        " is already in progress. Please wait until that request completes and then try again."
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST = "The Galaxy Store did not accept the acknowledge " +
+        "IAP request for processing."
+    const val ACKNOWLEDGE_REQUEST_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS = "The acknowledgement request " +
+        "returned no error, but also returned no acknowledgement results. This is likely an issue with the " +
+        "Galaxy Store."
+    const val ACKNOWLEDGE_REQUEST_RETURNED_MORE_THAN_ONE_RESULT = "The acknowledgement request returned " +
+        "more than one acknowledgement result, only acknowledging one purchase. This is likely an issue " +
+        "with the Galaxy Store."
+    const val ACKNOWLEDGE_REQUEST_ERRORED = "An error occurred while acknowledging product with token %s with the " +
+        "Galaxy Store. Error: %s"
+    const val ACKNOWLEDGE_REQUEST_RETURNED_UNKNOWN_STATUS_CODE = "The acknowledgement request returned " +
+        "an unknown status code %s."
+    const val ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE = "The acknowledgement request returned " +
+        "an error status code %s (%s)."
+
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."
+    const val WARNING_CANNOT_CONSUME_NON_SUBS_PRODUCT_TYPES = "Acknowledging/consuming non-subscription " +
+        "product types is currently unsupported."
 }
 
 internal fun HelperDefine.OperationMode.description(): String = when (this) {

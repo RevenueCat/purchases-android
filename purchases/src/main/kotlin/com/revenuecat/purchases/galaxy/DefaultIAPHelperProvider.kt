@@ -1,13 +1,17 @@
 package com.revenuecat.purchases.galaxy
 
+import android.content.Context
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
+import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
+import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
+import com.samsung.android.sdk.iap.lib.util.HelperUtil
 
 internal class DefaultIAPHelperProvider(
     val iapHelper: IapHelper,
@@ -18,6 +22,10 @@ internal class DefaultIAPHelperProvider(
     ) {
         log(LogIntent.DEBUG) { GalaxyStrings.SETTING_OPERATION_MODE.format(mode.description()) }
         iapHelper.setOperationMode(mode)
+    }
+
+    override fun isAcknowledgeAvailable(context: Context): Boolean {
+        return HelperUtil.isAcknowledgeAvailable(context)
     }
 
     @GalaxySerialOperation
@@ -62,6 +70,36 @@ internal class DefaultIAPHelperProvider(
             obfuscatedAccountId,
             obfuscatedProfileId,
             onPaymentListener,
+        )
+    }
+
+    @GalaxySerialOperation
+    override fun acknowledgePurchases(
+        purchaseIds: String,
+        onAcknowledgePurchasesListener: OnAcknowledgePurchasesListener,
+    ): Boolean {
+        // Return values:
+        // true: The request was sent to server successfully and the result will be sent
+        //       to OnAcknowledgePurchasesListener interface listener.
+        // false: The request was not sent to server and was not processed.
+        return iapHelper.acknowledgePurchases(
+            purchaseIds,
+            onAcknowledgePurchasesListener,
+        )
+    }
+
+    @GalaxySerialOperation
+    override fun consumePurchaseItems(
+        purchaseIds: String,
+        onConsumePurchasedItemsListener: OnConsumePurchasedItemsListener,
+    ): Boolean {
+        // Return values:
+        // true: The request was sent to server successfully and the result will be sent
+        //       to OnConsumePurchasedItemsListener interface listener.
+        // false: The request was not sent to server and was not processed.
+        return iapHelper.consumePurchasedItems(
+            purchaseIds,
+            onConsumePurchasedItemsListener,
         )
     }
 }

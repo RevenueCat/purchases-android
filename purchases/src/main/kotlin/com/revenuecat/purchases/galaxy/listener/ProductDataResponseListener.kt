@@ -10,7 +10,7 @@ import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import java.util.ArrayList
 
 internal interface ProductDataResponseListener : OnGetProductsDetailsListener {
-    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo>) {
+    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
         /* intentionally ignored. Use ProductDataHandler instead */
     }
 

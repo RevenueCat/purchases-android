@@ -98,7 +98,7 @@ internal class ProductDataHandler(
         }
     }
 
-    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo>) {
+    override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
         super.onGetProducts(error, products)
 
         if (error.isError()) {
@@ -110,7 +110,7 @@ internal class ProductDataHandler(
 
     @OptIn(GalaxySerialOperation::class)
     private fun handleSuccessfulProductsResponse(
-        products: List<ProductVo>,
+        products: List<ProductVo?>,
     ) {
         // The serial execution of this call is an extension of the serial execution of the parent
         // get products request
@@ -121,6 +121,7 @@ internal class ProductDataHandler(
                     promotionalEligibilities.associateBy { it.itemId }
 
                 val storeProducts: List<StoreProduct> = products
+                    .mapNotNull { it } 
                     // TODO: Inject promotional availabilities
                     .map { it.toStoreProduct() }
 
@@ -136,7 +137,6 @@ internal class ProductDataHandler(
                 onError?.invoke(error)
             }
         )
-
     }
 
     private fun handleStoreProducts(storeProducts: List<StoreProduct>) {
