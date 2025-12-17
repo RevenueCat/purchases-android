@@ -28,6 +28,7 @@ internal object GalaxyStrings {
     const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
+    const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
         "request for processing. No transactions have occurred."
     const val PURCHASE_REQUEST_ERRORED = "An error occurred while purchasing product with ID %s with the " +

@@ -319,6 +319,30 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
         assertThat(errorSlot.captured).isEqualTo(expectedError)
     }
+    
+    fun `makePurchaseAsync errors when purchasing OTP`() {
+        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
+        val wrapper = createWrapper()
+        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
+
+        val storeProduct = createStoreProduct(type = ProductType.INAPP)
+
+        wrapper.makePurchaseAsync(
+            activity = mockk<Activity>(),
+            appUserID = "user",
+            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            replaceProductInfo = null,
+            presentedOfferingContext = null,
+            isPersonalizedPrice = null,
+        )
+
+        val errorSlot = slot<PurchasesError>()
+        verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
+        assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(errorSlot.captured.underlyingErrorMessage).isEqualTo(GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED)
+
+        verify(exactly = 0) { purchaseHandlerMock.purchase(any(), any(), any(), any()) }
+    }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
@@ -427,10 +451,11 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     private fun createStoreProduct(
         id: String = "productId",
+        type: ProductType = ProductType.SUBS,
         presentedOfferingContext: PresentedOfferingContext? = null,
     ): GalaxyStoreProduct = GalaxyStoreProduct(
         id = id,
-        type = ProductType.SUBS,
+        type = type,
         price = Price(
             formatted = "$1.00",
             amountMicros = 1_000_000,
