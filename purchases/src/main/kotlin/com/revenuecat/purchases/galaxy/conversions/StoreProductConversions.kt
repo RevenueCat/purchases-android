@@ -3,21 +3,28 @@ package com.revenuecat.purchases.galaxy.conversions
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.GalaxyPurchasingData
 import com.revenuecat.purchases.galaxy.GalaxyStoreProduct
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.GalaxySubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
+import java.util.HashSet
 
 internal fun ProductVo.toStoreProduct(
-    promotionEligibility: PromotionEligibilityVo? = null
+    promotionEligibilities: List<PromotionEligibilityVo>? = null,
 ): StoreProduct {
-    val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
-    val period: Period? = if (type == ProductType.SUBS) {
+    val productType = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
+    val productId = this.itemId
+    val standardPrice = this.createPrice()
+    val standardBillingPeriod: Period? = if (productType == ProductType.SUBS) {
         val period = this.createPeriod()
         if (period == null) {
             log(LogIntent.GALAXY_WARNING) {
@@ -30,27 +37,103 @@ internal fun ProductVo.toStoreProduct(
         null
     }
 
-    val subscriptionOption: SubscriptionOption = GalaxySubscriptionOption(
-        id = this.itemId,
-        pricingPhases = emptyList(), // TODO
-        tags = emptyList(), // Tags are unsupported on the Galaxy Store
-        presentedOfferingContext = null, // TODO
-        purchasingData = TODO(),
-        installmentsInfo = null
-    )
+    val subscriptionOptions: SubscriptionOptions?
+    val defaultOption: SubscriptionOption?
+    if (productType == ProductType.SUBS && standardBillingPeriod != null) {
+        val subscriptionOption = GalaxySubscriptionOption(
+            id = this.itemId,
+            pricingPhases = this.createPricingPhases(
+                promotionEligibilities = promotionEligibilities,
+                standardBillingPeriod = standardBillingPeriod,
+                standardPrice = standardPrice,
+            ),
+            tags = emptyList(), // Tags are unsupported on the Galaxy Store
+            presentedOfferingContext = null,
+            purchasingData = GalaxyPurchasingData.Product(productId = productId, productType = productType),
+            installmentsInfo = null
+        )
+
+        subscriptionOptions = SubscriptionOptions(subscriptionOptions = listOf(subscriptionOption))
+        defaultOption = subscriptionOption
+    } else {
+        subscriptionOptions = null
+        defaultOption = null
+    }
 
     return GalaxyStoreProduct(
-        id = this.itemId,
-        type = type,
-        price = this.createPrice(),
+        id = productId,
+        type = productType,
+        price = standardPrice,
         name = this.itemName,
         title = this.itemName,
         description = this.itemDesc,
-        period = period,
-        subscriptionOptions = null,
-        defaultOption = null,
+        period = standardBillingPeriod,
+        subscriptionOptions = subscriptionOptions,
+        defaultOption = defaultOption,
         presentedOfferingContext = null,
     )
+}
+
+private fun ProductVo.createPricingPhases(
+    promotionEligibilities: List<PromotionEligibilityVo>?,
+    standardBillingPeriod: Period,
+    standardPrice: Price,
+): List<PricingPhase> {
+    val pricingPhases: MutableList<PricingPhase> = mutableListOf()
+    val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
+
+    val eligibilityPricings: MutableSet<String> = HashSet()
+    promotionEligibilities
+        ?.filter { it.itemId == this.itemId }
+        ?.mapTo(eligibilityPricings) { it.pricing }
+
+    if (eligibilityPricings.contains("FreeTrial") && eligibilityPricings.contains("TieredPrice")) {
+        // We are temporarily not handling Tiered Pricing price phases when there is both a trial and a tiered
+        // price available
+        log(LogIntent.GALAXY_WARNING) {
+            GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
+        }
+        this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
+    } else if (eligibilityPricings.contains("FreeTrial")) {
+        this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
+    } else if (eligibilityPricings.contains("TieredPrice")) {
+        // We are temporarily ignoring lower tier subscriptions
+        log(LogIntent.GALAXY_WARNING) {
+            GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
+        }
+    }
+
+    val normalPricingPhase = PricingPhase(
+        billingPeriod = standardBillingPeriod,
+        recurrenceMode = if(type == ProductType.SUBS) {
+            RecurrenceMode.INFINITE_RECURRING
+        } else {
+            RecurrenceMode.NON_RECURRING
+        },
+        billingCycleCount = null,
+        price = standardPrice
+    )
+    pricingPhases.addLast(normalPricingPhase)
+    return pricingPhases
+}
+
+private fun ProductVo.createFreeTrialPricingPhase(): PricingPhase? {
+    return this.freeTrialPeriod.toIntOrNull()?.let { freeTrialInDays ->
+        PricingPhase(
+            billingPeriod = Period(
+                value = freeTrialInDays,
+                unit = Period.Unit.DAY,
+                iso8601 = "P${freeTrialInDays}D"
+            ),
+            recurrenceMode = RecurrenceMode.NON_RECURRING,
+            billingCycleCount = null,
+            price = Price(
+                formatted = "%s%.2f".format(currencyUnit, 0.0),
+                amountMicros = 0L,
+                currencyCode = currencyCode,
+            ),
+        )
+    } // This returns null if the string couldn't be parsed to an Int
 }
 
 private fun ProductVo.createPrice(): Price =

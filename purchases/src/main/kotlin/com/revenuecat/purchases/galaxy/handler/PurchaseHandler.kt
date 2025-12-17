@@ -11,7 +11,6 @@ import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.galaxy.utils.toPurchasesError
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -24,7 +23,7 @@ internal class PurchaseHandler(
     private var inFlightRequest: Request? = null
 
     private data class Request(
-        val storeProduct: StoreProduct,
+        val productId: String,
         val onSuccess: (PurchaseVo) -> Unit,
         val onError: (PurchasesError) -> Unit,
     )
@@ -32,7 +31,7 @@ internal class PurchaseHandler(
     @OptIn(GalaxySerialOperation::class)
     override fun purchase(
         appUserID: String,
-        storeProduct: StoreProduct,
+        productId: String,
         onSuccess: (PurchaseVo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -47,17 +46,17 @@ internal class PurchaseHandler(
         }
 
         this.inFlightRequest = Request(
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onSuccess,
             onError = onError,
         )
 
-        log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id) }
+        log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(productId) }
 
         // startPayment returns false if the request was not sent to server and was not processed. When this happens,
         // the onPaymentListener is never invoked.
         val requestWasDispatched = iapHelper.startPayment(
-            itemId = storeProduct.id,
+            itemId = productId,
             obfuscatedAccountId = appUserID.sha256(),
             obfuscatedProfileId = null,
             onPaymentListener = this,
@@ -108,7 +107,7 @@ internal class PurchaseHandler(
         val underlyingErrorMessage = error.errorString
         log(LogIntent.GALAXY_ERROR) {
             GalaxyStrings.PURCHASE_REQUEST_ERRORED.format(
-                inFlightRequest?.storeProduct?.id ?: "[none]",
+                inFlightRequest?.productId ?: "[none]",
                 underlyingErrorMessage,
             )
         }

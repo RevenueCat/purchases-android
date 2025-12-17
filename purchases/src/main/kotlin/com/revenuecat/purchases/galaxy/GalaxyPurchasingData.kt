@@ -7,11 +7,8 @@ import dev.drewhamilton.poko.Poko
 sealed class GalaxyPurchasingData : PurchasingData {
     @Poko
     class Product(
-        val storeProduct: GalaxyStoreProduct,
+        override val productId: String,
+        override val productType: ProductType,
     ) : GalaxyPurchasingData() {
-        override val productId: String
-            get() = storeProduct.id
-        override val productType: ProductType
-            get() = storeProduct.type
     }
 }

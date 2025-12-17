@@ -8,7 +8,6 @@ import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
-import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import io.mockk.every
@@ -26,7 +25,7 @@ class PurchaseHandlerTest {
 
     private lateinit var iapHelperProvider: IAPHelperProvider
     private lateinit var purchaseHandler: PurchaseHandler
-    private lateinit var storeProduct: StoreProduct
+    private val productId = "product_id"
 
     private val appUserId = "user_id"
     private val onUnexpectedSuccess: (PurchaseVo) -> Unit = { fail("Expected onError to be called") }
@@ -36,9 +35,6 @@ class PurchaseHandlerTest {
     fun setup() {
         iapHelperProvider = mockk(relaxed = true)
         purchaseHandler = PurchaseHandler(iapHelperProvider)
-        storeProduct = mockk<StoreProduct> {
-            every { id } returns "product_id"
-        }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -54,7 +50,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onSuccess,
             onError = onError,
         )
@@ -68,7 +64,7 @@ class PurchaseHandlerTest {
             )
         }
 
-        assertThat(itemIdSlot.captured).isEqualTo(storeProduct.id)
+        assertThat(itemIdSlot.captured).isEqualTo(productId)
         assertThat(obfuscatedAccountIdSlot.captured).isEqualTo(appUserId.sha256())
     }
 
@@ -79,7 +75,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = onUnexpectedError,
         )
@@ -87,7 +83,7 @@ class PurchaseHandlerTest {
         var receivedError: PurchasesError? = null
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = { receivedError = it },
         )
@@ -104,7 +100,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = { receivedError = it },
         )
@@ -118,7 +114,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = nextOnSuccess,
             onError = onUnexpectedError,
         )
@@ -135,7 +131,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onSuccess,
             onError = onUnexpectedError,
         )
@@ -149,7 +145,7 @@ class PurchaseHandlerTest {
         // Ensure the request was cleared by allowing another purchase to be dispatched.
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onSuccess,
             onError = onUnexpectedError,
         )
@@ -165,7 +161,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = { receivedError = it },
         )
@@ -188,7 +184,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = { receivedError = it },
         )
@@ -205,7 +201,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = onUnexpectedError,
         )
@@ -225,7 +221,7 @@ class PurchaseHandlerTest {
 
         purchaseHandler.purchase(
             appUserID = appUserId,
-            storeProduct = storeProduct,
+            productId = productId,
             onSuccess = onUnexpectedSuccess,
             onError = { receivedError = it },
         )

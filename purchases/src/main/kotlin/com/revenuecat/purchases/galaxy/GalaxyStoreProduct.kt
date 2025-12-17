@@ -102,7 +102,10 @@ class GalaxyStoreProduct(
      * Contains only data that is required to make the purchase.
      */
     override val purchasingData: GalaxyPurchasingData
-        get() = GalaxyPurchasingData.Product(this)
+        get() = GalaxyPurchasingData.Product(
+            productId = id,
+            productType = type,
+        )
 
     /**
      * The offering ID this `GalaxyStoreProduct` was returned from.

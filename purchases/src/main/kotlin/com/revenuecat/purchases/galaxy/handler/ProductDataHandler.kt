@@ -112,18 +112,20 @@ internal class ProductDataHandler(
     private fun handleSuccessfulProductsResponse(
         products: List<ProductVo?>,
     ) {
+        val nonNullProducts = products.mapNotNull { it }
         // The serial execution of this call is an extension of the serial execution of the parent
         // get products request
         promotionEligibilityResponseListener.getPromotionEligibilities(
-            productIds = products.map { it.itemId },
-            onSuccess = { promotionalEligibilities ->
-                val promotionalEligibilityMap: Map<String, PromotionEligibilityVo> =
-                    promotionalEligibilities.associateBy { it.itemId }
+            productIds = nonNullProducts.map { it.itemId },
+            onSuccess = { promotionEligibilities ->
+                // Map of product IDs to a list of all PromotionEligibilityVos for that product
+                val promotionalEligibilityMap: Map<String, List<PromotionEligibilityVo>> =
+                    promotionEligibilities.groupBy { it.itemId }
 
-                val storeProducts: List<StoreProduct> = products
-                    .mapNotNull { it } 
-                    // TODO: Inject promotional availabilities
-                    .map { it.toStoreProduct() }
+                val storeProducts: List<StoreProduct> = nonNullProducts
+                    .map { it.toStoreProduct(
+                        promotionEligibilities = promotionalEligibilityMap[it.itemId]
+                    ) }
 
                 storeProducts.forEach { product ->
                     productsCache[product.id] = product
