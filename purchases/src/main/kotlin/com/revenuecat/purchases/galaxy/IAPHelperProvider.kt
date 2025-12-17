@@ -1,7 +1,10 @@
 package com.revenuecat.purchases.galaxy
 
+import android.content.Context
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
+import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
+import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 
@@ -11,6 +14,13 @@ internal interface IAPHelperProvider {
         mode: HelperDefine.OperationMode,
     )
 
+    /**
+     * Whether or not purchases can be acknowledged.
+     */
+    fun isAcknowledgeAvailable(
+        context: Context,
+    ): Boolean
+
     @GalaxySerialOperation
     fun getProductsDetails(
         productIDs: String,
@@ -18,7 +28,7 @@ internal interface IAPHelperProvider {
     )
 
     /**
-     * Starts a purchase flow for the given product through Samsung IAP.
+     * Starts a purchase flow for the given product through the Galaxy Store.
      *
      * @param itemId Galaxy Store product identifier.
      * @param obfuscatedAccountId A unique, obfuscated value of up to 64 bytes, tied exclusively to the customer's
@@ -37,5 +47,34 @@ internal interface IAPHelperProvider {
         obfuscatedAccountId: String?,
         obfuscatedProfileId: String?,
         onPaymentListener: OnPaymentListener,
+    ): Boolean
+
+    /**
+     * Sends an acknowledge request for one or more completed purchases.
+     *
+     * @param purchaseIds Comma-separated purchase and payment identifiers for the non-consumable items or
+     * subscriptions being acknowledged.
+     * @param onAcknowledgePurchasesListener Callback that receives the acknowledgement result.
+     * @return `true` if the request was handed off to Galaxy Store and results will arrive via
+     * [OnAcknowledgePurchasesListener]; `false` if the request could not be sent.
+     */
+    @GalaxySerialOperation
+    fun acknowledgePurchases(
+        purchaseIds: String,
+        onAcknowledgePurchasesListener: OnAcknowledgePurchasesListener,
+    ): Boolean
+
+    /**
+     * Sends an consume request for one or more consumable purchases.
+     *
+     * @param purchaseIds Comma-separated purchase and payment identifiers for the consumable items being consumed.
+     * @param onConsumePurchasedItemsListener Callback that receives the consumption result.
+     * @return `true` if the request was handed off to Galaxy Store and results will arrive via
+     * [OnConsumePurchasedItemsListener]; `false` if the request could not be sent.
+     */
+    @GalaxySerialOperation
+    fun consumePurchaseItems(
+        purchaseIds: String,
+        onConsumePurchasedItemsListener: OnConsumePurchasedItemsListener,
     ): Boolean
 }

@@ -2,7 +2,8 @@ package com.revenuecat.purchases.galaxy
 
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
-import org.json.JSONObject
+import io.mockk.every
+import io.mockk.mockk
 
 /**
  * Contains helper utilities that are useful when testing the Galaxy Store.
@@ -20,43 +21,35 @@ open class GalaxyStoreTest {
         subscriptionDurationMultiplier: String = "",
         subscriptionDurationUnit: String = "",
     ): ProductVo {
-        val json = """
-            {
-                "mItemId": "$itemId",
-                "mItemName": "$itemName",
-                "mItemPrice": $itemPrice,
-                "mItemPriceString": "$itemPriceString",
-                "mCurrencyUnit": "$currencyUnit",
-                "mCurrencyCode": "$currencyCode",
-                "mItemDesc": "$itemDescription",
-                "mType": "$type",
-                "mSubscriptionDurationMultiplier": "$subscriptionDurationMultiplier",
-                "mSubscriptionDurationUnit": "$subscriptionDurationUnit"
-            }
-        """.trimIndent()
-
-        return ProductVo(json)
+        return mockk<ProductVo>(relaxed = true).also { productVo ->
+            every { productVo.itemId } returns itemId
+            every { productVo.itemName } returns itemName
+            every { productVo.itemDesc } returns itemDescription
+            every { productVo.itemPrice } returns itemPrice
+            every { productVo.itemPriceString } returns itemPriceString
+            every { productVo.currencyUnit } returns currencyUnit
+            every { productVo.currencyCode } returns currencyCode
+            every { productVo.type } returns type
+            every { productVo.subscriptionDurationMultiplier } returns subscriptionDurationMultiplier
+            every { productVo.subscriptionDurationUnit } returns subscriptionDurationUnit
+        }
     }
 
     fun createPurchaseVo(
         paymentId: String,
         purchaseId: String,
         orderId: String,
-        purchaseDate: String? = null,
-        type: String? = null,
-        itemId: String? = null,
-        udpSignature: String? = null,
+        purchaseDate: String,
+        type: String,
+        itemId: String,
     ): PurchaseVo {
-        val productVo = createProductVo()
-        val purchaseJson = JSONObject(productVo.jsonString).apply {
-            put("mPaymentId", paymentId)
-            put("mPurchaseId", purchaseId)
-            put("mOrderId", orderId)
-            purchaseDate?.let { put("mPurchaseDate", it) }
-            type?.let { put("mType", it) }
-            itemId?.let { put("mItemId", it) }
-            udpSignature?.let { put("mUDPVerificationKey", it) }
+        return mockk<PurchaseVo>(relaxed = true).also { purchaseVo ->
+            every { purchaseVo.paymentId } returns paymentId
+            every { purchaseVo.purchaseId } returns purchaseId
+            every { purchaseVo.orderId } returns orderId
+            every { purchaseVo.purchaseDate } returns purchaseDate
+            every { purchaseVo.type } returns type
+            every { purchaseVo.itemId } returns itemId
         }
-        return PurchaseVo(purchaseJson.toString())
     }
 }
