@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "87466",
+    "Content-Length": "87513",
     "Server": "cloudflare",
     "x-revenuecat-app-id": "appc735cd95ea"
   },
@@ -16,6 +16,7 @@
           "dontdeletethis": "useforintegrationtesting"
         },
         "paywall_components": {
+          "id": "pw13dea1ae2d694a7c",
           "template_name": "components",
           "revision": 2,
           "asset_base_url": "https:\/\/assets.pawwalls.com",
@@ -2109,7 +2110,8 @@
               "rW4YDQIa-j": "30",
               "tWuZkHyp1p": "30"
             }
-          }
+          },
+          "exit_offers": {}
         },
         "packages": [
           {
