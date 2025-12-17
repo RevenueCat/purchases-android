@@ -24,7 +24,7 @@ import java.util.ArrayList
 internal class ProductDataHandler(
     private val iapHelper: IAPHelperProvider,
     private val promotionEligibilityResponseListener: PromotionEligibilityResponseListener =
-        PromotionEligibilityHandler(iapHelper = iapHelper)
+        PromotionEligibilityHandler(iapHelper = iapHelper),
 ) : ProductDataResponseListener {
 
     @get:Synchronized
@@ -123,9 +123,11 @@ internal class ProductDataHandler(
                     promotionEligibilities.groupBy { it.itemId }
 
                 val storeProducts: List<StoreProduct> = nonNullProducts
-                    .map { it.toStoreProduct(
-                        promotionEligibilities = promotionalEligibilityMap[it.itemId]
-                    ) }
+                    .map {
+                        it.toStoreProduct(
+                            promotionEligibilities = promotionalEligibilityMap[it.itemId],
+                        )
+                    }
 
                 storeProducts.forEach { product ->
                     productsCache[product.id] = product
@@ -137,7 +139,7 @@ internal class ProductDataHandler(
                 val onError = inFlightRequest?.onError
                 clearInFlightRequest()
                 onError?.invoke(error)
-            }
+            },
         )
     }
 

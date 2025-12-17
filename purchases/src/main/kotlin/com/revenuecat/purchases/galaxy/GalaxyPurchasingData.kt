@@ -9,6 +9,5 @@ sealed class GalaxyPurchasingData : PurchasingData {
     class Product(
         override val productId: String,
         override val productType: ProductType,
-    ) : GalaxyPurchasingData() {
-    }
+    ) : GalaxyPurchasingData()
 }

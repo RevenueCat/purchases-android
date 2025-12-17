@@ -7,11 +7,12 @@ import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import java.util.ArrayList
 
-internal interface PromotionEligibilityResponseListener: OnGetPromotionEligibilityListener {
+internal interface PromotionEligibilityResponseListener : OnGetPromotionEligibilityListener {
 
     override fun onGetPromotionEligibility(
-        error: ErrorVo, promotionEligibilities:
-        ArrayList<PromotionEligibilityVo>
+        error: ErrorVo,
+        promotionEligibilities:
+        ArrayList<PromotionEligibilityVo>,
     ) {
         /* intentionally ignored. Use PromotionEligibilityHandler instead */
     }

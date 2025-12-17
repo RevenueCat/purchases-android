@@ -16,7 +16,7 @@ import java.util.ArrayList
 
 internal class PromotionEligibilityHandler(
     private val iapHelper: IAPHelperProvider,
-): PromotionEligibilityResponseListener {
+) : PromotionEligibilityResponseListener {
 
     @get:Synchronized
     private var inFlightRequest: Request? = null
@@ -27,6 +27,7 @@ internal class PromotionEligibilityHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
+    @SuppressWarnings("ReturnCount")
     @GalaxySerialOperation
     override fun getPromotionEligibilities(
         productIds: List<String>,
@@ -79,11 +80,11 @@ internal class PromotionEligibilityHandler(
 
     override fun onGetPromotionEligibility(
         error: ErrorVo,
-        promotionEligibilities: ArrayList<PromotionEligibilityVo>
+        promotionEligibilities: ArrayList<PromotionEligibilityVo>,
     ) {
         super.onGetPromotionEligibility(error, promotionEligibilities)
 
-        if(error.isError()) {
+        if (error.isError()) {
             handleUnsuccessfulGetPromotionEligibilityRequest(error = error)
         } else {
             handleSuccessfulGetPromotionEligibilityResponse(promotionEligibilities = promotionEligibilities)
@@ -91,7 +92,7 @@ internal class PromotionEligibilityHandler(
     }
 
     private fun handleSuccessfulGetPromotionEligibilityResponse(
-        promotionEligibilities: ArrayList<PromotionEligibilityVo>
+        promotionEligibilities: ArrayList<PromotionEligibilityVo>,
     ) {
         if (promotionEligibilities.isEmpty()) {
             log(LogIntent.GALAXY_ERROR) {

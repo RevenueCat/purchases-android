@@ -53,7 +53,7 @@ internal fun ProductVo.toStoreProduct(
             tags = emptyList(), // Tags are unsupported on the Galaxy Store
             presentedOfferingContext = null,
             purchasingData = GalaxyPurchasingData.Product(productId = productId, productType = productType),
-            installmentsInfo = null
+            installmentsInfo = null,
         )
 
         subscriptionOptions = SubscriptionOptions(subscriptionOptions = listOf(subscriptionOption))
@@ -111,13 +111,13 @@ private fun ProductVo.createPricingPhases(
 
     val normalPricingPhase = PricingPhase(
         billingPeriod = standardBillingPeriod,
-        recurrenceMode = if(type == ProductType.SUBS) {
+        recurrenceMode = if (type == ProductType.SUBS) {
             RecurrenceMode.INFINITE_RECURRING
         } else {
             RecurrenceMode.NON_RECURRING
         },
         billingCycleCount = null,
-        price = standardPrice
+        price = standardPrice,
     )
     pricingPhases.addLast(normalPricingPhase)
     return pricingPhases
@@ -129,7 +129,7 @@ private fun ProductVo.createFreeTrialPricingPhase(): PricingPhase? {
             billingPeriod = Period(
                 value = freeTrialInDays,
                 unit = Period.Unit.DAY,
-                iso8601 = "P${freeTrialInDays}D"
+                iso8601 = "P${freeTrialInDays}D",
             ),
             recurrenceMode = RecurrenceMode.NON_RECURRING,
             billingCycleCount = null,

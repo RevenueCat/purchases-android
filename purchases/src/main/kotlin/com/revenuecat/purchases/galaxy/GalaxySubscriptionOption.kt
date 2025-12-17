@@ -34,7 +34,7 @@ class GalaxySubscriptionOption(
     /**
      * Always null.
      */
-    override val installmentsInfo: InstallmentsInfo?
+    override val installmentsInfo: InstallmentsInfo?,
 ) : SubscriptionOption {
 
     /**

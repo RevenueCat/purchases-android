@@ -31,7 +31,7 @@ internal interface IAPHelperProvider {
     @GalaxySerialOperation
     fun getPromotionEligibility(
         itemIDs: String,
-        onGetPromotionEligibilityListener: OnGetPromotionEligibilityListener
+        onGetPromotionEligibilityListener: OnGetPromotionEligibilityListener,
     ): Boolean
 
     /**
