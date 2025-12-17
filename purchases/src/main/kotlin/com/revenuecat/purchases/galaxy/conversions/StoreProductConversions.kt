@@ -18,6 +18,9 @@ import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import java.util.HashSet
 
+private const val ELIGIBILITY_PRICING_FREE_TRIAL = "FreeTrial"
+private const val ELIGIBILITY_PRICING_TIERED_PRICE = "TieredPrice"
+
 internal fun ProductVo.toStoreProduct(
     promotionEligibilities: List<PromotionEligibilityVo>? = null,
 ): StoreProduct {
@@ -87,16 +90,19 @@ private fun ProductVo.createPricingPhases(
         ?.filter { it.itemId == this.itemId }
         ?.mapTo(eligibilityPricings) { it.pricing }
 
-    if (eligibilityPricings.contains("FreeTrial") && eligibilityPricings.contains("TieredPrice")) {
+    if (
+        eligibilityPricings.contains(ELIGIBILITY_PRICING_FREE_TRIAL) &&
+        eligibilityPricings.contains(ELIGIBILITY_PRICING_TIERED_PRICE)
+    ) {
         // We are temporarily not handling Tiered Pricing price phases when there is both a trial and a tiered
         // price available
         log(LogIntent.GALAXY_WARNING) {
             GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
         }
         this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
-    } else if (eligibilityPricings.contains("FreeTrial")) {
+    } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_FREE_TRIAL)) {
         this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
-    } else if (eligibilityPricings.contains("TieredPrice")) {
+    } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_TIERED_PRICE)) {
         // We are temporarily ignoring lower tier subscriptions
         log(LogIntent.GALAXY_WARNING) {
             GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
