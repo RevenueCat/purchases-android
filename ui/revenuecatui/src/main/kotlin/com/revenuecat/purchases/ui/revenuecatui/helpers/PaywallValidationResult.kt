@@ -27,6 +27,12 @@ internal sealed interface PaywallValidationResult {
             template = template,
             errors = nonEmptyListOf(error),
         )
+
+        /**
+         * Helper to get the first warning for display in the default paywall.
+         */
+        val warning: PaywallWarning?
+            get() = errors?.head?.let { PaywallWarning.from(it) }
     }
 
     data class Components(
