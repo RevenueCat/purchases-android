@@ -320,6 +320,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         assertThat(errorSlot.captured).isEqualTo(expectedError)
     }
     
+    @OptIn(GalaxySerialOperation::class)
     fun `makePurchaseAsync errors when purchasing OTP`() {
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
         val wrapper = createWrapper()
