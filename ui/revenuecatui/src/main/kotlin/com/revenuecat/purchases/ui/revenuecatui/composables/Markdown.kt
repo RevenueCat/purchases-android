@@ -65,11 +65,11 @@ private val parser = Parser.builder()
  * Tracks state during markdown AST traversal, specifically for handling
  * underline tags that span across multiple AST nodes.
  */
-private class MarkdownState {
+internal class MarkdownState {
     var underlineDepth = 0
 }
 
-private object MarkdownTagDefinitions {
+internal object MarkdownTagDefinitions {
     const val UNDERLINE_OPEN_TAG = "<u>"
     const val UNDERLINE_CLOSE_TAG = "</u>"
 }
@@ -573,7 +573,7 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     }
 }
 
-private fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
+internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
     // Handle <u> and </u> tags for underline support
     when (tag) {
         MarkdownTagDefinitions.UNDERLINE_OPEN_TAG -> {
@@ -594,7 +594,7 @@ private fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: Markdow
  * Pushes/pops underline style when encountering opening/closing tags,
  * allowing underlines to span across multiple AST nodes (e.g., `<u>**bold**</u>`).
  */
-private fun AnnotatedString.Builder.appendTextWithUnderlines(
+internal fun AnnotatedString.Builder.appendTextWithUnderlines(
     text: String,
     state: MarkdownState,
 ) {
