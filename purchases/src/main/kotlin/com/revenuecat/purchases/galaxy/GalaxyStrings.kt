@@ -78,6 +78,17 @@ internal object GalaxyStrings {
     const val ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE = "The acknowledgement request returned " +
         "an error status code %s (%s)."
 
+    // Get Owned Products
+    const val REQUEST_OWNED_LIST_INVALID_PRODUCT_TYPE = "Can only request owned products for subscriptions " +
+        "or INAPP product types from the Galaxy Store."
+    const val ANOTHER_GET_OWNED_LIST_REQUEST_IN_FLIGHT = "Another get owned products request with the Galaxy Store" +
+        " is already in progress. Please wait until that request completes and then try again."
+    const val REQUESTING_OWNED_LIST = "Requesting owned products from the Galaxy Store."
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_OWNED_LIST_REQUEST = "The Galaxy Store did not accept the owned products " +
+        "request for processing."
+    const val GET_OWNED_LIST_REQUEST_ERRORED = "An error occurred while getting the owned products of type %s " +
+        "from the Galaxy Store. Error: %s"
+
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."

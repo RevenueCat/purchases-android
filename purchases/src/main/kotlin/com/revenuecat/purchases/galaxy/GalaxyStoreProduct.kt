@@ -2,7 +2,6 @@ package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct

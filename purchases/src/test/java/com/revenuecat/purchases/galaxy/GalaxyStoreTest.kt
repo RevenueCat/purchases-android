@@ -6,6 +6,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -98,4 +99,19 @@ open class GalaxyStoreTest {
             purchasingData = GalaxyPurchasingData.Product(productId = id, productType = ProductType.SUBS),
             installmentsInfo = null,
         )
+
+    fun createOwnedProductVo(
+        itemId: String,
+        purchaseId: String,
+        type: String,
+        purchaseDate: String,
+        jsonString: String = """{ "itemId": "$itemId" }""",
+    ): OwnedProductVo =
+        mockk(relaxed = true) {
+            every { this@mockk.itemId } returns itemId
+            every { this@mockk.purchaseId } returns purchaseId
+            every { this@mockk.type } returns type
+            every { this@mockk.purchaseDate } returns purchaseDate
+            every { this@mockk.jsonString } returns jsonString
+        }
 }

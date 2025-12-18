@@ -20,9 +20,11 @@ import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatu
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
+import com.revenuecat.purchases.galaxy.handler.GetOwnedListHandler
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
+import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
@@ -31,6 +33,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.SerialRequestExecutor
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -57,6 +60,10 @@ internal class GalaxyBillingWrapper(
             iapHelper = iapHelper,
             context = context,
         ),
+    private val getOwnedListHandler: GetOwnedListResponseListener =
+        GetOwnedListHandler(
+            iapHelper = iapHelper,
+        ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
 
     private val serialRequestExecutor = SerialRequestExecutor()
@@ -77,13 +84,42 @@ internal class GalaxyBillingWrapper(
         // No-op
     }
 
+    @OptIn(GalaxySerialOperation::class)
     override fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.queryAllPurchases" }
-        onReceivePurchaseHistory(emptyList())
+        serialRequestExecutor.executeSerially { finish ->
+            getOwnedListHandler.getOwnedList(
+                productType = null, // Passing null here queries all product types
+                onSuccess = { ownedProducts ->
+                    val storeTransactions = ownedProducts.map {
+                        try {
+                            it.toStoreTransaction(purchaseState = PurchaseState.UNSPECIFIED_STATE)
+                        } catch (e: IllegalArgumentException) {
+                            val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+                            log(LogIntent.GALAXY_ERROR) { errorMessage }
+
+                            val error = PurchasesError(
+                                code = PurchasesErrorCode.InvalidReceiptError,
+                                underlyingErrorMessage = errorMessage,
+                            )
+                            onReceivePurchaseHistoryError(error)
+                            finish()
+                            return@getOwnedList
+                        }
+                    }
+
+                    onReceivePurchaseHistory(storeTransactions)
+                    finish()
+                },
+                onError = { error ->
+                    onReceivePurchaseHistoryError(error)
+                    finish()
+                },
+            )
+        }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -178,8 +214,23 @@ internal class GalaxyBillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.findPurchaseInPurchaseHistory" }
-        onError(PurchasesError(code = PurchasesErrorCode.UnknownError))
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
+        queryAllPurchases(
+            appUserID = appUserID,
+            onReceivePurchaseHistory = { storeTransactions ->
+                val matchingTransaction: StoreTransaction? = storeTransactions.firstOrNull { storeTransaction ->
+                    productId == storeTransaction.productIds.firstOrNull()
+                }
+                if (matchingTransaction != null) {
+                    onCompletion(matchingTransaction)
+                } else {
+                    val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
+                    val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
+                    onError(error)
+                }
+            },
+            onReceivePurchaseHistoryError = onError,
+        )
     }
 
     @Suppress("ReturnCount")
