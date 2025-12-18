@@ -40,7 +40,7 @@ internal fun DefaultPaywallWarning(
     ) {
         // RevenueCat logo
         Image(
-            painter = painterResource(id = R.drawable.revenuecatui_logo_lockup),
+            painter = painterResource(id = R.drawable.visual_ob_create_paywall),
             contentDescription = null,
             modifier = Modifier.height(48.dp),
         )
