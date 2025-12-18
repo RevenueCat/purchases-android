@@ -1,5 +1,11 @@
 package com.revenuecat.purchases.galaxy
 
+import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -65,4 +71,31 @@ open class GalaxyStoreTest {
             every { purchaseVo.itemId } returns itemId
         }
     }
+
+    fun createGalaxySubscriptionOption(
+        id: String = "productId",
+        tags: List<String> = emptyList(),
+        price: Price = Price(
+            formatted = "$1.00",
+            amountMicros = 1_000_000,
+            currencyCode = "USD",
+        ),
+        period: Period = Period.create("P1M"),
+        presentedOfferingContext: PresentedOfferingContext? = null,
+    ): GalaxySubscriptionOption =
+        GalaxySubscriptionOption(
+            id = id,
+            pricingPhases = listOf(
+                PricingPhase(
+                    billingPeriod = period,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                    billingCycleCount = null,
+                    price = price,
+                ),
+            ),
+            tags = tags,
+            presentedOfferingContext = presentedOfferingContext,
+            purchasingData = GalaxyPurchasingData.Product(productId = id, productType = ProductType.SUBS),
+            installmentsInfo = null,
+        )
 }

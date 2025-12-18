@@ -2,6 +2,7 @@ package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -84,6 +85,17 @@ class GalaxyStoreProduct(
     }
 
     override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+        val subscriptionOptionsWithContext = subscriptionOptions?.mapNotNull {
+            (it as? GalaxySubscriptionOption)?.let { galaxyOption ->
+                GalaxySubscriptionOption(
+                    subscriptionOption = galaxyOption,
+                    presentedOfferingContext = presentedOfferingContext,
+                )
+            }
+        }
+
+        val defaultOptionWithContext = subscriptionOptionsWithContext?.firstOrNull()
+
         return GalaxyStoreProduct(
             id = this.id,
             type = this.type,
@@ -92,8 +104,8 @@ class GalaxyStoreProduct(
             title = this.title,
             description = this.description,
             period = this.period,
-            subscriptionOptions = this.subscriptionOptions,
-            defaultOption = this.defaultOption,
+            subscriptionOptions = subscriptionOptionsWithContext?.let { SubscriptionOptions(it) },
+            defaultOption = defaultOptionWithContext,
             presentedOfferingContext = presentedOfferingContext,
         )
     }

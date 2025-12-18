@@ -37,6 +37,19 @@ class GalaxySubscriptionOption(
     override val installmentsInfo: InstallmentsInfo?,
 ) : SubscriptionOption {
 
+    internal constructor(
+        subscriptionOption: GalaxySubscriptionOption,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) :
+        this(
+            id = subscriptionOption.id,
+            pricingPhases = subscriptionOption.pricingPhases,
+            tags = subscriptionOption.tags,
+            presentedOfferingContext = presentedOfferingContext,
+            purchasingData = subscriptionOption.purchasingData,
+            installmentsInfo = subscriptionOption.installmentsInfo,
+        )
+
     /**
      * The offering ID this `GalaxySubscriptionOption` was returned from.
      *
