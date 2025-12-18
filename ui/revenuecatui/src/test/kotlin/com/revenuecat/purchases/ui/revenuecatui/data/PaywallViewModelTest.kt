@@ -11,11 +11,13 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -38,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.ReplaceProductData
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -53,6 +56,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
@@ -818,6 +822,81 @@ class PaywallViewModelTest {
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
     }
+    
+    @Test
+    fun `purchasePackage default does not change replacement mode`() {
+        val model = create()
+
+        val state = model.state.value as PaywallState.Loaded.Legacy
+        val transaction = mockk<StoreTransaction>()
+        val selectedPackage = state.selectedPackage.value
+
+        coEvery {
+            purchases.awaitPurchase(any<PurchaseParams.Builder>())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        assertThat(dismissInvoked).isFalse
+
+        model.purchaseSelectedPackage(activity)
+
+        val purchaseParamsSlot = slot<PurchaseParams.Builder>()
+        coVerify {
+            purchases.awaitPurchase(capture(purchaseParamsSlot))
+        }
+
+        verifyOrder {
+            listener.onPurchaseStarted(selectedPackage.rcPackage)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+
+        val purchaseParams = purchaseParamsSlot.captured.build()
+
+        assertThat(purchaseParams.oldProductId).isNull()
+        assertThat(purchaseParams.googleReplacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+    }
+
+    @Test
+    fun `purchasePackage with ReplaceProductData in paywall options, changes replacement mode and oldProductId`() {
+        val model = create(
+            replaceProductData = ReplaceProductData(
+                oldProductId = "old-product-id",
+                googleReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+            )
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Legacy
+        val transaction = mockk<StoreTransaction>()
+        val selectedPackage = state.selectedPackage.value
+
+        coEvery {
+            purchases.awaitPurchase(any<PurchaseParams.Builder>())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        assertThat(dismissInvoked).isFalse
+
+        model.purchaseSelectedPackage(activity)
+
+        val purchaseParamsSlot = slot<PurchaseParams.Builder>()
+        coVerify {
+            purchases.awaitPurchase(capture(purchaseParamsSlot))
+        }
+
+        verifyOrder {
+            listener.onPurchaseStarted(selectedPackage.rcPackage)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+
+        val purchaseParams = purchaseParamsSlot.captured.build()
+
+        assertThat(purchaseParams.oldProductId).isEqualTo("old-product-id")
+        assertThat(purchaseParams.googleReplacementMode).isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+    }
 
     @Test
     fun `handlePackagePurchase purchases selected package`(): Unit = runBlocking {
@@ -1442,6 +1521,7 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
+        replaceProductData: ReplaceProductData? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         return PaywallViewModelImpl(
@@ -1452,6 +1532,7 @@ class PaywallViewModelTest {
                 .setOffering(offering)
                 .setPurchaseLogic(customPurchaseLogic)
                 .setMode(mode)
+                .setReplaceProductData(replaceProductData)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
