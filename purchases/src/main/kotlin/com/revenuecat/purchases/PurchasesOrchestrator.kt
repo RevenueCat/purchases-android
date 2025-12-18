@@ -1044,6 +1044,11 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
+        subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
+    }
+
     // endregion
 
     /**
@@ -1486,8 +1491,16 @@ internal class PurchasesOrchestrator(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
+                // We also need to normalize oldProductId by stripping any basePlanId suffix
+                // (e.g., "productId:basePlanId" becomes "productId") to ensure the callback key matches the productId
+                // in the transaction returned by Google Play, which only contains the product ID without the base plan.
                 val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
-                    oldProductId
+                    if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                        warnLog {
+                            PurchaseStrings.DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID.format(oldProductId)
+                        }
+                    }
+                    oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
                 } else {
                     purchasingData.productId
                 }

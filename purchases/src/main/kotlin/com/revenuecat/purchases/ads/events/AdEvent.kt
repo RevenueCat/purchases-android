@@ -90,6 +90,6 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
-        val mediatorErrorCode: Long?,
+        val mediatorErrorCode: Int?,
     ) : AdEvent
 }
