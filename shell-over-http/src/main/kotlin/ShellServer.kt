@@ -103,12 +103,15 @@ private data class ErrorResponse(
 }
 
 private fun executeSync(cmd: String): CommandResponse {
+    println("[executeSync] Received command: $cmd")
     val process = ProcessBuilder("sh", "-c", cmd)
         .start()
     val stdout = process.inputStream.bufferedReader().readText()
     val stderr = process.errorStream.bufferedReader().readText()
     val exitCode = process.waitFor()
-    return CommandResponse(exitCode, stdout, stderr)
+    val response = CommandResponse(exitCode, stdout, stderr)
+    println("[executeSync] Response: exitCode=$exitCode, stdout=${stdout.take(500)}${if (stdout.length > 500) "..." else ""}, stderr=${stderr.take(500)}${if (stderr.length > 500) "..." else ""}")
+    return response
 }
 
 private fun startAsync(cmd: String): Long {
