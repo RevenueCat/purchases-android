@@ -2,8 +2,10 @@ package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.galaxy.GalaxyPurchasingData
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.RecurrenceMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,12 +52,62 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     }
 
     @Test
-    fun `toStoreProduct sets subscriptionOptions, defaultOption, and presentedOfferingContext to null`() {
+    fun `toStoreProduct sets presentedOfferingContext to null`() {
         val storeProduct = createProductVo().toStoreProduct()
+
+        assertThat(storeProduct.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `toStoreProduct sets subscriptionOptions and defaultOption to null for INAPP products`() {
+        val storeProduct = createProductVo(type = "item").toStoreProduct()
 
         assertThat(storeProduct.subscriptionOptions).isNull()
         assertThat(storeProduct.defaultOption).isNull()
-        assertThat(storeProduct.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `toStoreProduct creates subscriptionOptions and defaultOption for subscriptions with parsable period`() {
+        val productId = "sub_product"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.type).isEqualTo(ProductType.SUBS)
+        assertThat(storeProduct.period).isNotNull
+
+        val subscriptionOptions = storeProduct.subscriptionOptions
+        assertThat(subscriptionOptions).isNotNull
+        assertThat(subscriptionOptions!!).hasSize(1)
+
+        val option = subscriptionOptions.first()
+        assertThat(option.id).isEqualTo(productId)
+        assertThat(option.tags).isEmpty()
+        assertThat(option.presentedOfferingContext).isNull()
+        assertThat(option.purchasingData).isEqualTo(
+            GalaxyPurchasingData.Product(
+                productId = productId,
+                productType = ProductType.SUBS,
+            ),
+        )
+
+        assertThat(storeProduct.defaultOption).isSameAs(option)
+    }
+
+    @Test
+    fun `toStoreProduct keeps subscriptionOptions null for subscriptions with unparseable period`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            subscriptionDurationMultiplier = "MONTH6",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.subscriptionOptions).isNull()
+        assertThat(storeProduct.defaultOption).isNull()
     }
 
     // endregion
@@ -266,6 +318,150 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         ).toStoreProduct()
 
         assertThat(storeProduct.period).isNull()
+    }
+
+    // endregion
+
+    // region toStoreProduct pricing phases (subscriptions)
+
+    @Test
+    fun `toStoreProduct creates a single pricing phase for a sub when there are no promotion eligibilities`() {
+        val storeProduct = createProductVo(
+            type = "subscription",
+            itemPrice = 3.0,
+            currencyUnit = "$",
+            currencyCode = "USD",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(promotionEligibilities = null)
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(1)
+
+        val normalPhase = pricingPhases.single()
+        assertThat(normalPhase.billingPeriod).isEqualTo(storeProduct.period)
+        assertThat(normalPhase.recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+        assertThat(normalPhase.billingCycleCount).isNull()
+        assertThat(normalPhase.price).isEqualTo(storeProduct.price)
+    }
+
+    @Test
+    fun `toStoreProduct adds a free trial pricing phase for a sub before the normal phase when eligible`() {
+        val productId = "trial_sub"
+        val promotionEligibilities = listOf(
+            createPromotionEligibilityVo(itemId = productId, pricing = "FreeTrial"),
+        )
+
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            itemPrice = 5.0,
+            currencyUnit = "$",
+            currencyCode = "USD",
+            freeTrialPeriod = "7",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(promotionEligibilities = promotionEligibilities)
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(2)
+
+        val trialPhase = pricingPhases.first()
+        assertThat(trialPhase.billingPeriod).isEqualTo(
+            Period(
+                value = 7,
+                unit = Period.Unit.DAY,
+                iso8601 = "P7D",
+            ),
+        )
+        assertThat(trialPhase.recurrenceMode).isEqualTo(RecurrenceMode.NON_RECURRING)
+        assertThat(trialPhase.billingCycleCount).isNull()
+        assertThat(trialPhase.price.amountMicros).isEqualTo(0L)
+        assertThat(trialPhase.price.currencyCode).isEqualTo("USD")
+        assertThat(trialPhase.price.formatted).isEqualTo("$0.00")
+
+        val normalPhase = pricingPhases.last()
+        assertThat(normalPhase.billingPeriod).isEqualTo(storeProduct.period)
+        assertThat(normalPhase.recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+        assertThat(normalPhase.price).isEqualTo(storeProduct.price)
+    }
+
+    @Test
+    fun `toStoreProduct ignores free trial eligibility for sub when freeTrialPeriod cannot be parsed`() {
+        val productId = "trial_bad_period"
+        val promotionEligibilities = listOf(
+            createPromotionEligibilityVo(itemId = productId, pricing = "FreeTrial"),
+        )
+
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            freeTrialPeriod = "_-_-_-_-_asdf_-_-_-_-_",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(promotionEligibilities = promotionEligibilities)
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(1)
+        assertThat(pricingPhases.single().recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+    }
+
+    @Test
+    fun `toStoreProduct ignores promotion eligibilities for different products`() {
+        val storeProduct = createProductVo(
+            itemId = "sub_a",
+            type = "subscription",
+            freeTrialPeriod = "7",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = "sub_b", pricing = "FreeTrial"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(1)
+    }
+
+    @Test
+    fun `toStoreProduct ignores tiered pricing eligibility and only includes the normal phase`() {
+        val productId = "tiered_sub"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "TieredPrice"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(1)
+    }
+
+    @Test
+    fun `toStoreProduct includes free trial phase when both free trial and tiered pricing are present`() {
+        val productId = "trial_and_tiered"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            freeTrialPeriod = "14",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "FreeTrial"),
+                createPromotionEligibilityVo(itemId = productId, pricing = "TieredPrice"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(2)
+        assertThat(pricingPhases.first().price.amountMicros).isEqualTo(0L)
+        assertThat(pricingPhases.last().recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
     }
 
     // endregion

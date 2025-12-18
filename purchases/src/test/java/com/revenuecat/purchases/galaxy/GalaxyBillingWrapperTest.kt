@@ -216,10 +216,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = mockk(relaxed = true)
 
+        val storeProduct = createStoreProduct()
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(createStoreProduct()),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = mockk<ReplaceProductInfo>(),
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
@@ -248,7 +252,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = null,
             presentedOfferingContext = storeProduct.presentedOfferingContext,
             isPersonalizedPrice = null,
@@ -267,7 +274,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) {
             purchaseHandlerMock.purchase(
                 appUserID = "user",
-                storeProduct = storeProduct,
+                productId = storeProduct.id,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -297,7 +304,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = null,
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
@@ -309,7 +319,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) {
             purchaseHandlerMock.purchase(
                 appUserID = "user",
-                storeProduct = storeProduct,
+                productId = storeProduct.id,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -321,17 +331,17 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     }
     
     @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `makePurchaseAsync errors when purchasing OTP`() {
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = purchasesUpdatedListener
 
-        val storeProduct = createStoreProduct(type = ProductType.INAPP)
 
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product("productId", productType = ProductType.INAPP),
             replaceProductInfo = null,
             presentedOfferingContext = null,
             isPersonalizedPrice = null,

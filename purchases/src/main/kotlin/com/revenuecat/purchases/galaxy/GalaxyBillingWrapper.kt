@@ -29,7 +29,6 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.SerialRequestExecutor
@@ -207,12 +206,10 @@ internal class GalaxyBillingWrapper(
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
-        val storeProduct = galaxyPurchaseInfo.storeProduct
-
-        if (storeProduct.type == ProductType.INAPP) {
+        if (galaxyPurchaseInfo.productType == ProductType.INAPP) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnsupportedError,
-                GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED
+                GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED,
             )
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED }
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
@@ -225,13 +222,14 @@ internal class GalaxyBillingWrapper(
         }
 
         serialRequestExecutor.executeSerially { finish ->
+            val productId = galaxyPurchaseInfo.productId
             purchaseHandler.purchase(
                 appUserID = appUserID,
-                storeProduct = storeProduct,
+                productId = productId,
                 onSuccess = { receipt ->
                     handleReceipt(
                         receipt = receipt,
-                        storeProduct = storeProduct,
+                        productId = productId,
                         presentedOfferingContext = presentedOfferingContext,
                     )
                     finish()
@@ -246,12 +244,12 @@ internal class GalaxyBillingWrapper(
 
     private fun handleReceipt(
         receipt: PurchaseVo,
-        storeProduct: StoreProduct,
+        productId: String,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         try {
             val storeTransaction = receipt.toStoreTransaction(
-                productId = storeProduct.id,
+                productId = productId,
                 presentedOfferingContext = presentedOfferingContext,
                 purchaseState = PurchaseState.PURCHASED,
             )
