@@ -94,19 +94,23 @@ private fun ProductVo.createPricingPhases(
         eligibilityPricings.contains(ELIGIBILITY_PRICING_FREE_TRIAL) &&
         eligibilityPricings.contains(ELIGIBILITY_PRICING_TIERED_PRICE)
     ) {
-        // We are temporarily not handling Tiered Pricing price phases when there is both a trial and a tiered
-        // price available
-        log(LogIntent.GALAXY_WARNING) {
-            GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
-        }
-        this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
+        this.createFreeTrialPricingPhase()?.let { pricingPhases.add(it) }
+        this.createTieredSubscriptionPricingPhase()?.let { pricingPhases.add(it) }
     } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_FREE_TRIAL)) {
-        this.createFreeTrialPricingPhase()?.let { pricingPhases.addFirst(it) }
-    } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_TIERED_PRICE)) {
-        // We are temporarily ignoring lower tier subscriptions
-        log(LogIntent.GALAXY_WARNING) {
-            GalaxyStrings.PARSING_INTRO_PRICING_PHASES_FOR_SUBS_TIERED_PRICING_NOT_SUPPORTED
+        this.createFreeTrialPricingPhase()?.let { pricingPhases.add(it) }
+
+        if(this.hasTieredSubscription()) {
+            // When a Galaxy product has both a trial and a tiered subscription, and the user is eligible for both,
+            // IapHelper.getPromotionEligibility only returns a value stating that the user is eligible for the trial.
+            // However, when the user proceeds to purchase the option, both the trial and tiered subscription are
+            // applied to the purchase (trial first, then tiered subscription). Due to this quirk in the IapHelper's
+            // APIs, we make an assumption that if the product has a tiered subscription, and the user is eligible
+            // for the product's trial, that the user is also eligible for the tiered subscription, since you must
+            // redeem them both together at once.
+            this.createTieredSubscriptionPricingPhase()?.let { pricingPhases.add(it) }
         }
+    } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_TIERED_PRICE)) {
+        this.createTieredSubscriptionPricingPhase()?.let { pricingPhases.add(it) }
     }
 
     val normalPricingPhase = PricingPhase(
@@ -119,11 +123,12 @@ private fun ProductVo.createPricingPhases(
         billingCycleCount = null,
         price = standardPrice,
     )
-    pricingPhases.addLast(normalPricingPhase)
+    pricingPhases.add(normalPricingPhase)
     return pricingPhases
 }
 
 private fun ProductVo.createFreeTrialPricingPhase(): PricingPhase? {
+    // Free trials are always measured in days for Galaxy Products
     return this.freeTrialPeriod.toIntOrNull()?.let { freeTrialInDays ->
         PricingPhase(
             billingPeriod = Period(
@@ -142,8 +147,49 @@ private fun ProductVo.createFreeTrialPricingPhase(): PricingPhase? {
     } // This returns null if the string couldn't be parsed to an Int
 }
 
-private fun ProductVo.createPrice(): Price =
-    Price(
+private fun ProductVo.createTieredSubscriptionPricingPhase(): PricingPhase? {
+
+    if (!this.hasTieredSubscription()) { return null }
+    val tieredPrice = this.tieredPrice.toDoubleOrNull() ?: return null
+
+    // tieredSubscriptionCount: If a tiered subscription is available, the number of lower-tier subscription periods
+    val tieredSubscriptionCount = this.tieredSubscriptionCount.toIntOrNull() ?: return null
+    val billingPeriod = createPeriodFromGalaxyData(
+        durationMultiplier = this.tieredSubscriptionDurationMultiplier,
+        durationUnit = this.tieredSubscriptionDurationUnit
+    ) ?: return null
+
+    return PricingPhase(
+        billingPeriod = billingPeriod,
+        recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+        billingCycleCount = tieredSubscriptionCount,
+        price = createPriceFromGalaxyData(
+            currencyUnit = this.currencyUnit,
+            currencyCode = this.currencyCode,
+            itemPrice = tieredPrice
+        ),
+    )
+}
+
+private fun ProductVo.createPrice(): Price = createPriceFromGalaxyData(
+    currencyUnit = this.currencyUnit,
+    currencyCode = this.currencyCode,
+    itemPrice = this.itemPrice,
+)
+
+private fun ProductVo.hasTieredSubscription(): Boolean {
+    // ProductVo.tieredSubscriptionYN: For subscriptions only, whether or not the subscription has two-tiered pricing
+    // "Y": The subscription has one or more lower-price subscription periods followed by regular-price periods
+    // "N": The subscription only has regular-price subscription periods
+    return this.tieredSubscriptionYN == "Y"
+}
+
+private fun createPriceFromGalaxyData(
+    currencyUnit: String,
+    currencyCode: String,
+    itemPrice: Double,
+): Price {
+    return Price(
         // Here, we manually build the formatted string instead of using ProductVo.itemPriceString
         // because itemPriceString doesn't include the decimal values if the amount is an integer with no decimal value.
         // This way, we can get strings like "$3.00" instead of "$3"
@@ -151,21 +197,30 @@ private fun ProductVo.createPrice(): Price =
         amountMicros = (itemPrice * 1_000_000L).toLong(),
         currencyCode = currencyCode,
     )
+}
 
 @SuppressWarnings("MagicNumber", "ReturnCount")
-private fun ProductVo.createPeriod(): Period? {
+private fun ProductVo.createPeriod(): Period? = createPeriodFromGalaxyData(
+    durationMultiplier = this.subscriptionDurationMultiplier,
+    durationUnit = this.subscriptionDurationUnit,
+)
+
+private fun createPeriodFromGalaxyData(
+    durationMultiplier: String,
+    durationUnit: String,
+): Period? {
     // subscriptionDurationMultiplier returns a string in the format $INT$STRING, like
     // 1YEAR, 2MONTH, 4WEEK. We need to extract that leading integer to use as the
     // period's value.
-    val periodValue = extractLeadingInt(input = this.subscriptionDurationMultiplier)
+    val periodValue = extractLeadingInt(input = durationMultiplier)
     if (periodValue == null) {
         log(LogIntent.GALAXY_ERROR) {
             GalaxyStrings.CANNOT_PARSE_LEADING_INT_FROM_SUBSCRIPTION_DURATION_MULTIPLIER
-                .format(this.subscriptionDurationMultiplier)
+                .format(durationMultiplier)
         }
         return null
     }
-    val unit = this.subscriptionDurationUnit.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitString()
+    val unit = durationUnit.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitString()
         ?: return null
 
     val isoUnit = when (unit) {
