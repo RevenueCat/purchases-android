@@ -3,7 +3,7 @@
   "headers": {
     "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "85308",
+    "Content-Length": "85402",
     "Content-Type": "application\/json",
     "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
@@ -22,6 +22,7 @@
           "dontdeletethis": "useforintegrationtesting"
         },
         "paywall_components": {
+          "id": "pweafd4630898c454c",
           "template_name": "components",
           "revision": 2,
           "asset_base_url": "https:\/\/assets.pawwalls.com",
@@ -1709,7 +1710,8 @@
               "ynMUOHsUhc": "Restore purchases",
               "zGa_rSME8E": "{{ product.price_per_period_abbreviated }}"
             }
-          }
+          },
+          "exit_offers": {}
         },
         "packages": [
           {
@@ -1728,6 +1730,7 @@
         "description": "an alternative offering",
         "metadata": null,
         "paywall": {
+          "id": "pw2fe69b42dccf4c9e",
           "template_name": "1",
           "revision": 1,
           "asset_base_url": "https:\/\/assets.pawwalls.com",
@@ -1788,7 +1791,8 @@
               "call_to_action": "Continue"
             }
           },
-          "localized_strings_by_tier": {}
+          "localized_strings_by_tier": {},
+          "exit_offers": {}
         },
         "packages": [
           {
