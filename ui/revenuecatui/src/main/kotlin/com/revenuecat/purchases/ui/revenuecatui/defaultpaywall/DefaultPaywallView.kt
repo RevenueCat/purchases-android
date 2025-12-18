@@ -48,9 +48,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.selectColorWithBestContrast
 
+@Suppress("MagicNumber")
 private val RevenueCatBrandRed = Color(0xFFF2545B)
 
 @Composable
+@Suppress("LongMethod")
 internal fun DefaultPaywallView(
     packages: List<Package>,
     warning: PaywallWarning?,
@@ -141,7 +143,7 @@ internal fun DefaultPaywallView(
 
             // Content area - either warning or app icon
             if (shouldShowWarning && warning != null) {
-                DefaultPaywallWarning(warning = warning)
+                DefaultPaywallWarning(warning = warning, warningColor = RevenueCatBrandRed)
             } else {
                 AppIconSection(
                     bitmap = appIconBitmap,

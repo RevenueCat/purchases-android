@@ -29,7 +29,7 @@ internal object AppStyleExtractor {
             val packageManager = context.packageManager
             val drawable = context.applicationInfo.loadIcon(packageManager)
             drawable.toBitmap(config = Bitmap.Config.ARGB_8888)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception) {
             null
         }
     }
@@ -62,7 +62,7 @@ internal object AppStyleExtractor {
         return extractProminentColors(bitmap, count)
     }
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "ReturnCount")
     private fun extractProminentColors(bitmap: Bitmap?, count: Int): List<Color> {
         if (bitmap == null) return emptyList()
 
@@ -81,7 +81,9 @@ internal object AppStyleExtractor {
         val pixels = IntArray(totalPixels)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
+        @Suppress("MagicNumber")
         for (pixel in pixels.indices step sampleStep) {
+            // Bit shifting and applying the max color component value to each channel
             val color = pixels[pixel]
             val alpha = (color shr 24) and 0xFF
             val red = (color shr 16) and 0xFF
@@ -120,6 +122,7 @@ internal object AppStyleExtractor {
         val white = Triple(1.0, 1.0, 1.0)
 
         for ((colorKey, _) in sortedColors) {
+            // bit shifting and converting to double
             val red = ((colorKey shr 16) and 0xFF) / 255.0
             val green = ((colorKey shr 8) and 0xFF) / 255.0
             val blue = (colorKey and 0xFF) / 255.0

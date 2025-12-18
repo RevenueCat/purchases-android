@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.ui.graphics.Color
