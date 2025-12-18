@@ -18,7 +18,7 @@ class GalaxySubscriptionOption(
     override val pricingPhases: List<PricingPhase>,
 
     /**
-     * Always empty.
+     * Always empty for Galaxy products.
      */
     override val tags: List<String>,
 
