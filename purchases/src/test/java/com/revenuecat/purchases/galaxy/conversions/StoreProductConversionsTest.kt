@@ -166,7 +166,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     // region toStoreProduct price creation
 
     @Test
-    fun `toStoreProduct builds formatted price with two decimals when itemPriceString omits them`() {
+    fun `toStoreProduct uses itemPriceString even when decimals are missing`() {
         val productVo = createProductVo(
             itemPrice = 3.0,
             currencyUnit = "$",
@@ -176,7 +176,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        assertThat(storeProduct.price.formatted).isEqualTo("$3.00")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3")
         assertThat(storeProduct.price.amountMicros).isEqualTo(3_000_000)
         assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
@@ -197,7 +197,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     }
 
     @Test
-    fun `toStoreProduct rounds formatted price but keeps raw micros multiplication`() {
+    fun `toStoreProduct keeps itemPriceString formatting even with extra decimals`() {
         val productVo = createProductVo(
             itemPrice = 1.2345,
             currencyUnit = "$",
@@ -206,7 +206,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        assertThat(storeProduct.price.formatted).isEqualTo("$1.23")
+        assertThat(storeProduct.price.formatted).isEqualTo("$1.2345")
         assertThat(storeProduct.price.amountMicros).isEqualTo(1_234_500)
     }
 
@@ -462,6 +462,179 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         assertThat(pricingPhases).hasSize(2)
         assertThat(pricingPhases.first().price.amountMicros).isEqualTo(0L)
         assertThat(pricingPhases.last().recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+    }
+
+    @Test
+    fun `toStoreProduct adds tiered pricing phase before normal phase when user is eligible`() {
+        val productId = "tiered_with_data"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            itemPrice = 9.99,
+            currencyUnit = "$",
+            currencyCode = "USD",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+            tieredSubscriptionYN = "Y",
+            tieredPrice = "4.99",
+            tieredPriceString = "$4.99",
+            tieredSubscriptionCount = "2",
+            tieredSubscriptionDurationMultiplier = "1MONTH",
+            tieredSubscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "TieredPrice"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(2)
+
+        val tieredPhase = pricingPhases.first()
+        assertThat(tieredPhase.billingPeriod).isEqualTo(
+            Period(
+                value = 1,
+                unit = Period.Unit.MONTH,
+                iso8601 = "P1M",
+            ),
+        )
+        assertThat(tieredPhase.recurrenceMode).isEqualTo(RecurrenceMode.FINITE_RECURRING)
+        assertThat(tieredPhase.billingCycleCount).isEqualTo(2)
+        assertThat(tieredPhase.price.formatted).isEqualTo("$4.99")
+        assertThat(tieredPhase.price.amountMicros).isEqualTo(4_990_000)
+
+        val normalPhase = pricingPhases.last()
+        assertThat(normalPhase.billingPeriod).isEqualTo(storeProduct.period)
+        assertThat(normalPhase.recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+        assertThat(normalPhase.price.formatted).isEqualTo("$9.99")
+    }
+
+    @Test
+    fun `toStoreProduct adds free trial and tiered phases when eligible for both`() {
+        val productId = "trial_and_tiered_with_data"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            itemPrice = 12.99,
+            currencyUnit = "$",
+            currencyCode = "USD",
+            freeTrialPeriod = "14",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+            tieredSubscriptionYN = "Y",
+            tieredPrice = "6.99",
+            tieredSubscriptionCount = "5",
+            tieredSubscriptionDurationMultiplier = "1MONTH",
+            tieredSubscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "FreeTrial"),
+                createPromotionEligibilityVo(itemId = productId, pricing = "TieredPrice"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(3)
+
+        val trialPhase = pricingPhases[0]
+        assertThat(trialPhase.price.amountMicros).isEqualTo(0)
+        assertThat(trialPhase.billingPeriod).isEqualTo(
+            Period(
+                value = 14,
+                unit = Period.Unit.DAY,
+                iso8601 = "P14D",
+            ),
+        )
+        assertThat(trialPhase.recurrenceMode).isEqualTo(RecurrenceMode.NON_RECURRING)
+
+        val tieredPhase = pricingPhases[1]
+        assertThat(tieredPhase.recurrenceMode).isEqualTo(RecurrenceMode.FINITE_RECURRING)
+        assertThat(tieredPhase.billingCycleCount).isEqualTo(5)
+        assertThat(tieredPhase.price.formatted).isEqualTo("$6.99")
+
+        val normalPhase = pricingPhases[2]
+        assertThat(normalPhase.recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+        assertThat(normalPhase.price.formatted).isEqualTo("$12.99")
+    }
+
+    @Test
+    fun `toStoreProduct assumes tiered pricing eligibility when free trial is eligible and product supports tiering`() {
+        val productId = "trial_and_tiered_implied"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            itemPrice = 7.99,
+            currencyUnit = "$",
+            currencyCode = "USD",
+            freeTrialPeriod = "7",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+            tieredSubscriptionYN = "Y",
+            tieredPrice = "2.99",
+            tieredSubscriptionCount = "3",
+            tieredSubscriptionDurationMultiplier = "1MONTH",
+            tieredSubscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "FreeTrial"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(3)
+
+        val trialPhase = pricingPhases[0]
+        assertThat(trialPhase.recurrenceMode).isEqualTo(RecurrenceMode.NON_RECURRING)
+        assertThat(trialPhase.billingPeriod).isEqualTo(
+            Period(
+                value = 7,
+                unit = Period.Unit.DAY,
+                iso8601 = "P7D",
+            ),
+        )
+        assertThat(trialPhase.price.amountMicros).isEqualTo(0L)
+
+        val tieredPhase = pricingPhases[1]
+        assertThat(tieredPhase.recurrenceMode).isEqualTo(RecurrenceMode.FINITE_RECURRING)
+        assertThat(tieredPhase.billingCycleCount).isEqualTo(3)
+        assertThat(tieredPhase.billingPeriod).isEqualTo(
+            Period(
+                value = 1,
+                unit = Period.Unit.MONTH,
+                iso8601 = "P1M",
+            ),
+        )
+        assertThat(tieredPhase.price.formatted).isEqualTo("$2.99")
+        assertThat(tieredPhase.price.amountMicros).isEqualTo(2_990_000)
+
+        val normalPhase = pricingPhases[2]
+        assertThat(normalPhase.recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
+        assertThat(normalPhase.billingPeriod).isEqualTo(storeProduct.period)
+        assertThat(normalPhase.price.formatted).isEqualTo("$7.99")
+    }
+
+    @Test
+    fun `toStoreProduct skips tiered pricing when data cannot be parsed`() {
+        val productId = "tiered_with_invalid_data"
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "subscription",
+            subscriptionDurationMultiplier = "1MONTH",
+            subscriptionDurationUnit = "MONTH",
+            tieredSubscriptionYN = "Y",
+            tieredPrice = "not_a_price",
+            tieredSubscriptionCount = "two",
+            tieredSubscriptionDurationMultiplier = "1MONTH",
+            tieredSubscriptionDurationUnit = "MONTH",
+        ).toStoreProduct(
+            promotionEligibilities = listOf(
+                createPromotionEligibilityVo(itemId = productId, pricing = "TieredPrice"),
+            ),
+        )
+
+        val pricingPhases = storeProduct.defaultOption!!.pricingPhases
+        assertThat(pricingPhases).hasSize(1)
+        assertThat(pricingPhases.single().recurrenceMode).isEqualTo(RecurrenceMode.INFINITE_RECURRING)
     }
 
     // endregion
