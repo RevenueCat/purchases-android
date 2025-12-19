@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ExperimentalRevenueCatAPI
 
 /**
  * Common ad revenue precision values.
  */
-@InternalRevenueCatAPI
+@ExperimentalRevenueCatAPI
 @JvmInline
 value class AdRevenuePrecision internal constructor(internal val value: String) {
     companion object {
