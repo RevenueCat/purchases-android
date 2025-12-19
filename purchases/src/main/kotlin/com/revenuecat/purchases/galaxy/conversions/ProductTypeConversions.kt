@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.galaxy.conversions
 
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.GalaxyStrings
-import com.revenuecat.purchases.ProductType
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 
 internal fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
@@ -18,4 +18,3 @@ internal fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): Produ
         }
     }
 }
-      

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.listener
 
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.listener.OnGetOwnedListListener
