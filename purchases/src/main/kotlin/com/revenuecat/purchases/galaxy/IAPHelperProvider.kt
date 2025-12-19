@@ -5,6 +5,7 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
 import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
+import com.samsung.android.sdk.iap.lib.listener.OnGetOwnedListListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
@@ -72,7 +73,7 @@ internal interface IAPHelperProvider {
     ): Boolean
 
     /**
-     * Sends an consume request for one or more consumable purchases.
+     * Sends a consume request for one or more consumable purchases.
      *
      * @param purchaseIds Comma-separated purchase and payment identifiers for the consumable items being consumed.
      * @param onConsumePurchasedItemsListener Callback that receives the consumption result.
@@ -83,5 +84,15 @@ internal interface IAPHelperProvider {
     fun consumePurchaseItems(
         purchaseIds: String,
         onConsumePurchasedItemsListener: OnConsumePurchasedItemsListener,
+    ): Boolean
+
+    /**
+     * Send a request to determine which products a user currently owns, for all product types.
+     *
+     * @param onGetOwnedListListener Callback that receives the result.
+     */
+    @GalaxySerialOperation
+    fun getOwnedList(
+        onGetOwnedListListener: OnGetOwnedListListener,
     ): Boolean
 }

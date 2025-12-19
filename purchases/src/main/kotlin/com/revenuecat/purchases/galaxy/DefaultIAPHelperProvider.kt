@@ -8,6 +8,7 @@ import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
 import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
+import com.samsung.android.sdk.iap.lib.listener.OnGetOwnedListListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
@@ -100,6 +101,20 @@ internal class DefaultIAPHelperProvider(
         return iapHelper.consumePurchasedItems(
             purchaseIds,
             onConsumePurchasedItemsListener,
+        )
+    }
+
+    @GalaxySerialOperation
+    override fun getOwnedList(
+        onGetOwnedListListener: OnGetOwnedListListener,
+    ): Boolean {
+        // Return values:
+        // true: The request was sent to server successfully and the result will be sent
+        //       to OnGetOwnedListListener interface listener.
+        // false: The request was not sent to server and was not processed.
+        return iapHelper.getOwnedList(
+            HelperDefine.PRODUCT_TYPE_ALL,
+            onGetOwnedListListener,
         )
     }
 }
