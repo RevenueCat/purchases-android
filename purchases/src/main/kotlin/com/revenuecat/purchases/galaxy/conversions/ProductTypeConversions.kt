@@ -18,12 +18,4 @@ internal fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): Produ
         }
     }
 }
-
-internal fun ProductType.toGalaxyProductTypeString(): String? {
-    return when (this) {
-        ProductType.SUBS -> HelperDefine.PRODUCT_TYPE_SUBSCRIPTION
-        ProductType.INAPP -> HelperDefine.PRODUCT_TYPE_ITEM
-        ProductType.UNKNOWN -> null
-    }
-}
       
