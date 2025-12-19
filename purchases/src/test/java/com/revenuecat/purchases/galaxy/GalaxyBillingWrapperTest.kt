@@ -39,6 +39,7 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
@@ -631,8 +632,16 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     fun `consumeAndSave acknowledges subscriptions`() {
         val ackTransactionSlot = slot<StoreTransaction>()
         val ackCallbackSlot = slot<(AcknowledgeVo) -> Unit>()
+        val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>()
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(ownedListSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
         every {
             acknowledgePurchaseHandler.acknowledgePurchase(
                 capture(ackTransactionSlot),
@@ -646,17 +655,77 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             }
             ackCallbackSlot.captured(acknowledgementResult)
         }
-        val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
 
+        val productId = "productId"
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = storeTransaction("token-sub", type = ProductType.SUBS),
+            purchase = storeTransaction("token-sub", type = ProductType.SUBS, productId = productId),
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
         )
 
+        ownedListSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = productId,
+                    purchaseId = "token-sub",
+                    type = "subscription",
+                    purchaseDate = "2024-02-02 00:00:00",
+                ),
+            ),
+        )
+
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-sub")
         verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub") }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `consumeAndSave does not acknowledge already acknowledged subscriptions`() {
+        val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(ownedListSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
+
+        val productId = "productId"
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = storeTransaction("token-sub", type = ProductType.SUBS, productId = productId),
+            shouldConsume = true,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+        )
+
+        ownedListSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = productId,
+                    purchaseId = "token-sub",
+                    type = "subscription",
+                    purchaseDate = "2024-02-02 00:00:00",
+                    acknowledgedStatus = HelperDefine.AcknowledgedStatus.ACKNOWLEDGED,
+                ),
+            ),
+        )
+
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+        verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
     private fun createWrapper(
@@ -704,12 +773,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         token: String,
         type: ProductType = ProductType.INAPP,
         state: PurchaseState = PurchaseState.PURCHASED,
+        productId: String = "productId",
     ) = mockk<StoreTransaction> {
         every { purchaseToken } returns token
         every { this@mockk.type } returns type
         every { purchaseState } returns state
         every { purchaseType } returns PurchaseType.GALAXY_PURCHASE
         every { signature } returns null
+        every { productIds } returns listOf(productId)
     }
 
 }

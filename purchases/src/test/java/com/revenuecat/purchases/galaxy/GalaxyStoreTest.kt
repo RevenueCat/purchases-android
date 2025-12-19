@@ -6,6 +6,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
@@ -118,6 +119,7 @@ open class GalaxyStoreTest {
         type: String,
         purchaseDate: String,
         jsonString: String = """{ "itemId": "$itemId" }""",
+        acknowledgedStatus: HelperDefine.AcknowledgedStatus = HelperDefine.AcknowledgedStatus.NOT_ACKNOWLEDGED,
     ): OwnedProductVo =
         mockk(relaxed = true) {
             every { this@mockk.itemId } returns itemId
@@ -125,5 +127,6 @@ open class GalaxyStoreTest {
             every { this@mockk.type } returns type
             every { this@mockk.purchaseDate } returns purchaseDate
             every { this@mockk.jsonString } returns jsonString
+            every { this@mockk.acknowledgedStatus } returns acknowledgedStatus
         }
 }
