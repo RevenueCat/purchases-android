@@ -13,7 +13,10 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light">
 
-        <!-- AdMob Test App ID -->
+        <!-- AdMob Test App ID
+             ⚠️ IMPORTANT: If you're using production ad unit IDs for native ads (because test
+             IDs don't work reliably), you also need to replace this test app ID with your
+             production AdMob app ID from https://admob.google.com -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>

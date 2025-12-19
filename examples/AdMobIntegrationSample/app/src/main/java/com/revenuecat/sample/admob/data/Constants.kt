@@ -38,6 +38,13 @@ object Constants {
          * Native Ad Test Unit ID
          * Test ID for native ads (text + images).
          * Official Google test ID for Native Advanced ads.
+         *
+         * ⚠️ IMPORTANT: This test ID does not work reliably for native ads.
+         * Google's test IDs for native ads often fail to load or behave inconsistently.
+         * For reliable testing:
+         * 1. Use a production ad unit ID from your AdMob account
+         * 2. Update the AdMob app ID in AndroidManifest.xml with your production app ID
+         * 3. Configure your device as a test device
          */
         const val NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
 
@@ -45,6 +52,13 @@ object Constants {
          * Native Video Ad Test Unit ID
          * Test ID for native ads with video content.
          * Official Google test ID for Native Advanced Video ads.
+         *
+         * ⚠️ IMPORTANT: This test ID does not work reliably for native video ads.
+         * Google's test IDs for native ads often fail to load or behave inconsistently.
+         * For reliable testing:
+         * 1. Use a production ad unit ID from your AdMob account
+         * 2. Update the AdMob app ID in AndroidManifest.xml with your production app ID
+         * 3. Configure your device as a test device
          */
         const val NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/1044960115"
 
