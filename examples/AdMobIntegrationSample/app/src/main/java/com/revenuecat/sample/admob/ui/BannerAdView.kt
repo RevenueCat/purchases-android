@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.sample.admob.ui
 
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -6,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.sample.admob.manager.AdMobManager
 
 /**
@@ -23,6 +26,7 @@ import com.revenuecat.sample.admob.manager.AdMobManager
  * @param adMobManager The manager instance for tracking events
  * @param placement Placement identifier for analytics
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 fun BannerAdView(
     adSize: AdSize = AdSize.BANNER,

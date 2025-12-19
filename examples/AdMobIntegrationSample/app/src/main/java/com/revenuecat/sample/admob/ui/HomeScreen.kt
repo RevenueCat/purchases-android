@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.sample.admob.ui
 
 import android.app.Activity
@@ -30,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.nativead.NativeAd
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.sample.admob.data.Constants
 import com.revenuecat.sample.admob.manager.AdMobManager
 
@@ -50,6 +53,7 @@ import com.revenuecat.sample.admob.manager.AdMobManager
  * - trackAdRevenue (via OnPaidEventListener)
  * - trackAdFailedToLoad (for error scenarios)
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 fun HomeScreen(
     activity: Activity,

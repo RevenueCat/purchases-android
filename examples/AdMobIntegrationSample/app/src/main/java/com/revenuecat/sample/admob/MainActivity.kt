@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.sample.admob
 
 import android.os.Bundle
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.sample.admob.manager.AdMobManager
 import com.revenuecat.sample.admob.ui.HomeScreen
 
@@ -19,6 +22,7 @@ import com.revenuecat.sample.admob.ui.HomeScreen
  * 3. Displays the HomeScreen with all ad examples
  * 4. Cleans up resources on destroy
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainActivity : ComponentActivity() {
 
     private lateinit var adMobManager: AdMobManager
