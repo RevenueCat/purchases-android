@@ -185,20 +185,16 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `queryAllPurchases requests all product types and returns mapped transactions`() {
+    fun `queryAllPurchases requests owned list and returns mapped transactions`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        var capturedProductType: ProductType? = ProductType.INAPP
         val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = capture(onSuccessSlot),
                 onError = capture(onErrorSlot),
             )
-        } answers {
-            capturedProductType = firstArg()
-        }
+        } answers { }
         val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
 
         var receivedTransactions: List<StoreTransaction>? = null
@@ -217,13 +213,12 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
         onSuccessSlot.captured.invoke(arrayListOf(ownedProduct))
 
-        assertThat(capturedProductType).isNull()
         assertThat(receivedError).isNull()
         val transactions = receivedTransactions
         assertThat(transactions).isNotNull
         assertThat(transactions!!.map { it.purchaseToken }).containsExactly("token")
         assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS)
-        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any(), any()) }
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -233,7 +228,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = any(),
                 onError = capture(onErrorSlot),
             )
@@ -251,7 +245,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         onErrorSlot.captured.invoke(error)
 
         assertThat(receivedError).isEqualTo(error)
-        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any(), any()) }
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -261,7 +255,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = capture(onSuccessSlot),
                 onError = any(),
             )
@@ -286,7 +279,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
         assertThat(receivedError?.underlyingErrorMessage)
             .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
-        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any(), any()) }
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -296,7 +289,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = capture(onSuccessSlot),
                 onError = any(),
             )
@@ -331,9 +323,9 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         assertThat(receivedError).isNull()
-        assertThat(receivedTransaction).isNotNull
-        assertThat(receivedTransaction!!.purchaseToken).isEqualTo("match_token")
-        assertThat(receivedTransaction.productIds).containsExactly("target_product")
+        val transaction = receivedTransaction ?: fail("Expected transaction")
+        assertThat(transaction.purchaseToken).isEqualTo("match_token")
+        assertThat(transaction.productIds).containsExactly("target_product")
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -343,7 +335,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = capture(onSuccessSlot),
                 onError = any(),
             )
@@ -384,7 +375,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
         every {
             getOwnedListHandler.getOwnedList(
-                productType = any(),
                 onSuccess = any(),
                 onError = capture(onErrorSlot),
             )

@@ -24,7 +24,6 @@ internal class GetOwnedListHandler(
     private var inFlightRequest: Request? = null
 
     private data class Request(
-        val productType: ProductType?,
         val onSuccess: (ArrayList<OwnedProductVo>) -> Unit,
         val onError: (PurchasesError) -> Unit,
     )
@@ -32,7 +31,6 @@ internal class GetOwnedListHandler(
     @SuppressWarnings("ReturnCount")
     @GalaxySerialOperation
     override fun getOwnedList(
-        productType: ProductType?,
         onSuccess: (ArrayList<OwnedProductVo>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -46,30 +44,13 @@ internal class GetOwnedListHandler(
             return
         }
 
-        val productTypeString = if (productType == null) {
-            HelperDefine.PRODUCT_TYPE_ALL
-        } else {
-            productType.toGalaxyProductTypeString()
-        }
-        if (productTypeString == null) {
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.REQUEST_OWNED_LIST_INVALID_PRODUCT_TYPE }
-            val error = PurchasesError(
-                code = PurchasesErrorCode.UnsupportedError,
-                underlyingErrorMessage = GalaxyStrings.REQUEST_OWNED_LIST_INVALID_PRODUCT_TYPE,
-            )
-            onError(error)
-            return
-        }
-
         this.inFlightRequest = Request(
-            productType = productType,
             onSuccess = onSuccess,
             onError = onError,
         )
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_OWNED_LIST }
         val requestWasDispatched = iapHelper.getOwnedList(
-            productType = productTypeString,
             onGetOwnedListListener = this,
         )
 
@@ -106,10 +87,7 @@ internal class GetOwnedListHandler(
     private fun handleUnsuccessfulGetOwnedProductsRequest(error: ErrorVo) {
         val underlyingErrorMessage = error.errorString
         log(LogIntent.GALAXY_ERROR) {
-            GalaxyStrings.GET_OWNED_LIST_REQUEST_ERRORED.format(
-                inFlightRequest?.productType?.toGalaxyProductTypeString() ?: "[none]",
-                underlyingErrorMessage,
-            )
+            GalaxyStrings.GET_OWNED_LIST_REQUEST_ERRORED.format(underlyingErrorMessage)
         }
 
         val onError = inFlightRequest?.onError

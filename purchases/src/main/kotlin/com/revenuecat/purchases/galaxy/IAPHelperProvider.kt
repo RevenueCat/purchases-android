@@ -87,14 +87,12 @@ internal interface IAPHelperProvider {
     ): Boolean
 
     /**
-     * Send a request to determine which products a user currently owns, given a certain product type.
+     * Send a request to determine which products a user currently owns, for all product types.
      *
-     * @param productType The product type to query for. Must be "item", "subscription", or "all".
      * @param onGetOwnedListListener Callback that receives the result.
      */
     @GalaxySerialOperation
     fun getOwnedList(
-        productType: String,
         onGetOwnedListListener: OnGetOwnedListListener,
     ): Boolean
 }

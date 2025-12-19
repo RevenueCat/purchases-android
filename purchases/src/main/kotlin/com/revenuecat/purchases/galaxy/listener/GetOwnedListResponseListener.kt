@@ -15,7 +15,6 @@ internal interface GetOwnedListResponseListener : OnGetOwnedListListener {
 
     @GalaxySerialOperation
     fun getOwnedList(
-        productType: ProductType?,
         onSuccess: (ArrayList<OwnedProductVo>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

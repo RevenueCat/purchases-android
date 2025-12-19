@@ -106,7 +106,6 @@ internal class DefaultIAPHelperProvider(
 
     @GalaxySerialOperation
     override fun getOwnedList(
-        productType: String,
         onGetOwnedListListener: OnGetOwnedListListener,
     ): Boolean {
         // Return values:
@@ -114,7 +113,7 @@ internal class DefaultIAPHelperProvider(
         //       to OnGetOwnedListListener interface listener.
         // false: The request was not sent to server and was not processed.
         return iapHelper.getOwnedList(
-            productType,
+            HelperDefine.PRODUCT_TYPE_ALL,
             onGetOwnedListListener,
         )
     }

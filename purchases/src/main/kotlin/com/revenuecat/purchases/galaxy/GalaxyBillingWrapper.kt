@@ -92,7 +92,6 @@ internal class GalaxyBillingWrapper(
     ) {
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
-                productType = null, // Passing null here queries all product types
                 onSuccess = { ownedProducts ->
                     val storeTransactions = ownedProducts.map {
                         try {
