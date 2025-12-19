@@ -58,7 +58,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     private var currentOfferingSelection by mutableStateOf<OfferingSelection?>(null)
     private var preloadedExitOfferId: String? = null
 
-    // Launcher for exit offer activities - when the exit offer finishes, we forward its result
     private val exitOfferLauncher: ActivityResultLauncher<PaywallActivityArgs> =
         registerForActivityResult(PaywallContract()) { result ->
             // Forward the exit offer's result and finish this activity
@@ -102,7 +101,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         }
     }
 
-    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
