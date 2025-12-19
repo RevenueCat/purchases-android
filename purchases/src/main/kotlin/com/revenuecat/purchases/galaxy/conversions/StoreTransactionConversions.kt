@@ -7,6 +7,7 @@ import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
+import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import org.json.JSONObject
 
@@ -17,7 +18,7 @@ internal fun PurchaseVo.toStoreTransaction(
     presentedOfferingContext: PresentedOfferingContext?,
     purchaseState: PurchaseState,
 ): StoreTransaction {
-    val type = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
+    val productType = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
 
     // throws IllegalArgumentException if the string is an invalid format
     val purchaseDate = this.purchaseDate.parseDateFromGalaxyDateString()
@@ -25,14 +26,44 @@ internal fun PurchaseVo.toStoreTransaction(
     return StoreTransaction(
         orderId = this.orderId,
         productIds = listOf(productId),
-        type = type,
+        type = productType,
         purchaseTime = purchaseDate.time,
         purchaseToken = this.purchaseId,
         purchaseState = purchaseState,
-        isAutoRenewing = type == ProductType.SUBS,
+        isAutoRenewing = productType == ProductType.SUBS,
         signature = null,
         originalJson = JSONObject(this.jsonString),
         presentedOfferingContext = presentedOfferingContext,
+        storeUserID = null,
+        purchaseType = PurchaseType.GALAXY_PURCHASE,
+        marketplace = null,
+        subscriptionOptionId = null,
+        subscriptionOptionIdForProductIDs = null,
+        replacementMode = null,
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Throws(IllegalArgumentException::class)
+internal fun OwnedProductVo.toStoreTransaction(
+    purchaseState: PurchaseState,
+): StoreTransaction {
+    val productType = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
+
+    // throws IllegalArgumentException if the string is an invalid format
+    val purchaseDate = this.purchaseDate.parseDateFromGalaxyDateString()
+
+    return StoreTransaction(
+        orderId = null,
+        productIds = listOf(this.itemId),
+        type = productType,
+        purchaseTime = purchaseDate.time,
+        purchaseToken = this.purchaseId,
+        purchaseState = purchaseState,
+        isAutoRenewing = productType == ProductType.SUBS,
+        signature = null,
+        originalJson = JSONObject(this.jsonString),
+        presentedOfferingContext = null,
         storeUserID = null,
         purchaseType = PurchaseType.GALAXY_PURCHASE,
         marketplace = null,

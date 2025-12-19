@@ -2,7 +2,6 @@ package com.revenuecat.purchases.galaxy.listener
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
-import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnPaymentListener
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -16,7 +15,7 @@ internal interface PurchaseResponseListener : OnPaymentListener {
     @GalaxySerialOperation
     fun purchase(
         appUserID: String,
-        storeProduct: StoreProduct,
+        productId: String,
         onSuccess: (PurchaseVo) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

@@ -769,13 +769,11 @@ package com.revenuecat.purchases.galaxy {
   }
 
   @dev.drewhamilton.poko.Poko public static final class GalaxyPurchasingData.Product extends com.revenuecat.purchases.galaxy.GalaxyPurchasingData {
-    ctor public GalaxyPurchasingData.Product(com.revenuecat.purchases.galaxy.GalaxyStoreProduct storeProduct);
+    ctor public GalaxyPurchasingData.Product(String productId, com.revenuecat.purchases.ProductType productType);
     method public String getProductId();
     method public com.revenuecat.purchases.ProductType getProductType();
-    method public com.revenuecat.purchases.galaxy.GalaxyStoreProduct getStoreProduct();
     property public String productId;
     property public com.revenuecat.purchases.ProductType productType;
-    property public final com.revenuecat.purchases.galaxy.GalaxyStoreProduct storeProduct;
   }
 
   @dev.drewhamilton.poko.Poko public final class GalaxyStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
@@ -1400,4 +1398,3 @@ package com.revenuecat.purchases.virtualcurrencies {
   }
 
 }
-

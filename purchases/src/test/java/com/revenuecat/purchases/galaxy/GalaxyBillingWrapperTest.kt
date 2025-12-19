@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import android.os.Looper
 import io.mockk.mockk
@@ -38,6 +39,8 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
+import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
 import com.samsung.android.sdk.iap.lib.vo.AcknowledgeVo
@@ -183,6 +186,221 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
+    fun `queryAllPurchases requests owned list and returns mapped transactions`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = capture(onErrorSlot),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryAllPurchases(
+            appUserID = "app_user",
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it },
+        )
+
+        val ownedProduct = createOwnedProductVo(
+            itemId = "product",
+            purchaseId = "token",
+            type = "subscription",
+            purchaseDate = "2023-02-01 00:00:00",
+        )
+        onSuccessSlot.captured.invoke(arrayListOf(ownedProduct))
+
+        assertThat(receivedError).isNull()
+        val transactions = receivedTransactions
+        assertThat(transactions).isNotNull
+        assertThat(transactions!!.map { it.purchaseToken }).containsExactly("token")
+        assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS)
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryAllPurchases forwards errors from getOwnedList`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = any(),
+                onError = capture(onErrorSlot),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryAllPurchases(
+            appUserID = "app_user",
+            onReceivePurchaseHistory = { fail("Expected error callback") },
+            onReceivePurchaseHistoryError = { receivedError = it },
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        onErrorSlot.captured.invoke(error)
+
+        assertThat(receivedError).isEqualTo(error)
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryAllPurchases returns InvalidReceiptError when conversion fails`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryAllPurchases(
+            appUserID = "app_user",
+            onReceivePurchaseHistory = { fail("Expected error callback") },
+            onReceivePurchaseHistoryError = { receivedError = it },
+        )
+
+        val invalidOwnedProduct = createOwnedProductVo(
+            itemId = "product",
+            purchaseId = "token",
+            type = "subscription",
+            purchaseDate = "invalid-date",
+        )
+        onSuccessSlot.captured.invoke(arrayListOf(invalidOwnedProduct))
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
+        assertThat(receivedError?.underlyingErrorMessage)
+            .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `findPurchaseInPurchaseHistory returns matching transaction`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedTransaction: StoreTransaction? = null
+        var receivedError: PurchasesError? = null
+        wrapper.findPurchaseInPurchaseHistory(
+            appUserID = "app_user",
+            productType = ProductType.SUBS,
+            productId = "target_product",
+            onCompletion = { receivedTransaction = it },
+            onError = { receivedError = it },
+        )
+
+        onSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = "other_product",
+                    purchaseId = "other_token",
+                    type = "subscription",
+                    purchaseDate = "2023-02-01 00:00:00",
+                ),
+                createOwnedProductVo(
+                    itemId = "target_product",
+                    purchaseId = "match_token",
+                    type = "subscription",
+                    purchaseDate = "2023-02-02 00:00:00",
+                ),
+            ),
+        )
+
+        assertThat(receivedError).isNull()
+        val transaction = receivedTransaction ?: fail("Expected transaction")
+        assertThat(transaction.purchaseToken).isEqualTo("match_token")
+        assertThat(transaction.productIds).containsExactly("target_product")
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `findPurchaseInPurchaseHistory returns PurchaseInvalidError when no match`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var completionCalled = false
+        var receivedError: PurchasesError? = null
+        wrapper.findPurchaseInPurchaseHistory(
+            appUserID = "app_user",
+            productType = ProductType.SUBS,
+            productId = "missing_product",
+            onCompletion = { completionCalled = true },
+            onError = { receivedError = it },
+        )
+
+        onSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = "other_product",
+                    purchaseId = "other_token",
+                    type = "subscription",
+                    purchaseDate = "2023-02-01 00:00:00",
+                ),
+            ),
+        )
+
+        assertThat(completionCalled).isFalse()
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(receivedError?.underlyingErrorMessage)
+            .isEqualTo(PurchaseStrings.NO_EXISTING_PURCHASE.format("missing_product"))
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `findPurchaseInPurchaseHistory forwards errors from queryAllPurchases`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = any(),
+                onError = capture(onErrorSlot),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var completionCalled = false
+        var receivedError: PurchasesError? = null
+        wrapper.findPurchaseInPurchaseHistory(
+            appUserID = "app_user",
+            productType = ProductType.SUBS,
+            productId = "product",
+            onCompletion = { completionCalled = true },
+            onError = { receivedError = it },
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        onErrorSlot.captured.invoke(error)
+
+        assertThat(completionCalled).isFalse()
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `makePurchaseAsync errors for non-Galaxy purchasing data`() {
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
         val wrapper = createWrapper()
@@ -216,10 +434,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = mockk(relaxed = true)
 
+        val storeProduct = createStoreProduct()
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(createStoreProduct()),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = mockk<ReplaceProductInfo>(),
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
@@ -248,7 +470,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = null,
             presentedOfferingContext = storeProduct.presentedOfferingContext,
             isPersonalizedPrice = null,
@@ -267,7 +492,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) {
             purchaseHandlerMock.purchase(
                 appUserID = "user",
-                storeProduct = storeProduct,
+                productId = storeProduct.id,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -297,7 +522,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
             replaceProductInfo = null,
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
@@ -309,7 +537,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) {
             purchaseHandlerMock.purchase(
                 appUserID = "user",
-                storeProduct = storeProduct,
+                productId = storeProduct.id,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -321,17 +549,17 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     }
     
     @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `makePurchaseAsync errors when purchasing OTP`() {
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = purchasesUpdatedListener
 
-        val storeProduct = createStoreProduct(type = ProductType.INAPP)
 
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
-            purchasingData = GalaxyPurchasingData.Product(storeProduct),
+            purchasingData = GalaxyPurchasingData.Product("productId", productType = ProductType.INAPP),
             replaceProductInfo = null,
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
@@ -404,8 +632,16 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     fun `consumeAndSave acknowledges subscriptions`() {
         val ackTransactionSlot = slot<StoreTransaction>()
         val ackCallbackSlot = slot<(AcknowledgeVo) -> Unit>()
+        val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>()
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(ownedListSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
         every {
             acknowledgePurchaseHandler.acknowledgePurchase(
                 capture(ackTransactionSlot),
@@ -419,17 +655,77 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             }
             ackCallbackSlot.captured(acknowledgementResult)
         }
-        val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
 
+        val productId = "productId"
         wrapper.consumeAndSave(
             finishTransactions = true,
-            purchase = storeTransaction("token-sub", type = ProductType.SUBS),
+            purchase = storeTransaction("token-sub", type = ProductType.SUBS, productId = productId),
             shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
         )
 
+        ownedListSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = productId,
+                    purchaseId = "token-sub",
+                    type = "subscription",
+                    purchaseDate = "2024-02-02 00:00:00",
+                ),
+            ),
+        )
+
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-sub")
         verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub") }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `consumeAndSave does not acknowledge already acknowledged subscriptions`() {
+        val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(ownedListSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
+
+        val productId = "productId"
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = storeTransaction("token-sub", type = ProductType.SUBS, productId = productId),
+            shouldConsume = true,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+        )
+
+        ownedListSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = productId,
+                    purchaseId = "token-sub",
+                    type = "subscription",
+                    purchaseDate = "2024-02-02 00:00:00",
+                    acknowledgedStatus = HelperDefine.AcknowledgedStatus.ACKNOWLEDGED,
+                ),
+            ),
+        )
+
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+        verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
     private fun createWrapper(
@@ -437,6 +733,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         billingMode: GalaxyBillingMode = GalaxyBillingMode.TEST,
         purchaseHandler: PurchaseResponseListener = purchaseHandlerMock,
         acknowledgePurchaseHandler: AcknowledgePurchaseResponseListener = mockk(relaxed = true),
+        getOwnedListHandler: GetOwnedListResponseListener = mockk(relaxed = true),
     ): GalaxyBillingWrapper {
         return GalaxyBillingWrapper(
             stateProvider,
@@ -447,6 +744,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             purchaseHandler = purchaseHandler,
             deviceCache = deviceCache,
             acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
         )
     }
 
@@ -475,11 +773,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         token: String,
         type: ProductType = ProductType.INAPP,
         state: PurchaseState = PurchaseState.PURCHASED,
+        productId: String = "productId",
     ) = mockk<StoreTransaction> {
         every { purchaseToken } returns token
         every { this@mockk.type } returns type
         every { purchaseState } returns state
         every { purchaseType } returns PurchaseType.GALAXY_PURCHASE
         every { signature } returns null
+        every { productIds } returns listOf(productId)
     }
+
 }

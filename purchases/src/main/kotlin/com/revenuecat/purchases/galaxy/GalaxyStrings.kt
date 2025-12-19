@@ -28,7 +28,8 @@ internal object GalaxyStrings {
     const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
-    const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the Galaxy Store."
+    const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the " +
+        "Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
         "request for processing. No transactions have occurred."
     const val PURCHASE_REQUEST_ERRORED = "An error occurred while purchasing product with ID %s with the " +
@@ -39,6 +40,21 @@ internal object GalaxyStrings {
         "This is likely an issue with the Galaxy Store. Error: %s."
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
+
+    // Promotion Eligibility
+    const val EMPTY_GET_PROMOTION_ELIGIBILITY_REQUEST = "Received a promotion eligibility request for 0 " +
+        "product IDs. Returning an empty list."
+    const val ANOTHER_GET_PROMOTION_ELIGIBILITY_REQUEST_IN_FLIGHT = "A request to fetch promotion eligibility " +
+        "from the Galaxy Store is already in progress. Please wait until that request completes and then try again."
+    const val REQUESTING_PROMOTION_ELIGIBILITY = "Requesting promotion eligibility from the Galaxy Store for products" +
+        " with identifiers: %s"
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_PROMOTION_ELIGIBILITY_REQUEST = "The Galaxy Store did not " +
+        "accept the promotion eligibility request for processing."
+    const val PROMOTION_ELIGIBILITY_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS = "The promotion eligibility" +
+        " request returned no error, but also returned no eligibility results. This is likely an issue with the " +
+        "Galaxy Store."
+    const val PROMOTION_ELIGIBILITY_REQUEST_ERRORED = "An error occurred while fetching promotion eligibility " +
+        "for product IDs %s from the Galaxy Store. Error: %s"
 
     // Acknowledging Purchases
     const val WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE = "Acknowledging purchases is currently unavailable."
@@ -58,6 +74,17 @@ internal object GalaxyStrings {
         "an unknown status code %s."
     const val ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE = "The acknowledgement request returned " +
         "an error status code %s (%s)."
+    const val NOT_ACKNOWLEDGING_TRANSACTION_BECAUSE_ALREADY_ACKNOWLEDGED = "Will not acknowledge transaction with " +
+        "product ID %s because it has already been acknowledged."
+
+    // Get Owned Products
+    const val ANOTHER_GET_OWNED_LIST_REQUEST_IN_FLIGHT = "Another get owned products request with the Galaxy Store" +
+        " is already in progress. Please wait until that request completes and then try again."
+    const val REQUESTING_OWNED_LIST = "Requesting owned products from the Galaxy Store."
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_OWNED_LIST_REQUEST = "The Galaxy Store did not accept the owned products " +
+        "request for processing."
+    const val GET_OWNED_LIST_REQUEST_ERRORED = "An error occurred while getting the owned products " +
+        "from the Galaxy Store. Error: %s"
 
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +

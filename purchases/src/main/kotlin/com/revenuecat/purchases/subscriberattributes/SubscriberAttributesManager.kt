@@ -11,8 +11,10 @@ import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.getStringValueForPrimitive
 import java.util.Observable
 
+@Suppress("TooManyFunctions")
 internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
@@ -155,6 +157,53 @@ internal class SubscriberAttributesManager(
         }
 
         deviceCache.setAttributes(appUserID, attributesToBeSet)
+    }
+
+    /**
+     * Convenience function to set attribution data from AppsFlyer's conversion data.
+     */
+    @Suppress("CyclomaticComplexMethod")
+    fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
+        if (data == null) {
+            return
+        }
+
+        val attributes = mutableMapOf<String, String?>()
+
+        val mediaSource = data.getStringValueForPrimitive("media_source")
+        if (mediaSource != null) {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = mediaSource
+        } else if (data.getStringValueForPrimitive("af_status")?.equals("Organic", ignoreCase = true) == true) {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = "Organic"
+        }
+
+        data.getStringValueForPrimitive("campaign")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
+        }
+
+        val adGroup = data.getStringValueForPrimitive("adgroup") ?: data.getStringValueForPrimitive("adset")
+        adGroup?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
+        }
+
+        val ad = data.getStringValueForPrimitive("af_ad") ?: data.getStringValueForPrimitive("ad_id")
+        ad?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
+        }
+
+        val keyword = data.getStringValueForPrimitive("af_keywords") ?: data.getStringValueForPrimitive("keyword")
+        keyword?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
+        }
+
+        val creative = data.getStringValueForPrimitive("creative") ?: data.getStringValueForPrimitive("af_creative")
+        creative?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Creative.backendKey] = it
+        }
+
+        if (attributes.isNotEmpty()) {
+            setAttributes(attributes, appUserID)
+        }
     }
 
     /**

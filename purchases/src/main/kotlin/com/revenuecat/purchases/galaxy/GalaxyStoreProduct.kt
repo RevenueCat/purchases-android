@@ -84,6 +84,17 @@ class GalaxyStoreProduct(
     }
 
     override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+        val subscriptionOptionsWithContext = subscriptionOptions?.mapNotNull {
+            (it as? GalaxySubscriptionOption)?.let { galaxyOption ->
+                GalaxySubscriptionOption(
+                    subscriptionOption = galaxyOption,
+                    presentedOfferingContext = presentedOfferingContext,
+                )
+            }
+        }
+
+        val defaultOptionWithContext = subscriptionOptionsWithContext?.firstOrNull()
+
         return GalaxyStoreProduct(
             id = this.id,
             type = this.type,
@@ -92,8 +103,8 @@ class GalaxyStoreProduct(
             title = this.title,
             description = this.description,
             period = this.period,
-            subscriptionOptions = this.subscriptionOptions,
-            defaultOption = this.defaultOption,
+            subscriptionOptions = subscriptionOptionsWithContext?.let { SubscriptionOptions(it) },
+            defaultOption = defaultOptionWithContext,
             presentedOfferingContext = presentedOfferingContext,
         )
     }
@@ -102,7 +113,10 @@ class GalaxyStoreProduct(
      * Contains only data that is required to make the purchase.
      */
     override val purchasingData: GalaxyPurchasingData
-        get() = GalaxyPurchasingData.Product(this)
+        get() = GalaxyPurchasingData.Product(
+            productId = id,
+            productType = type,
+        )
 
     /**
      * The offering ID this `GalaxyStoreProduct` was returned from.

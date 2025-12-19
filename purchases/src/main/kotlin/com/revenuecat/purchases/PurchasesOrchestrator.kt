@@ -1044,6 +1044,11 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
+        subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
+    }
+
     // endregion
 
     /**
