@@ -7,10 +7,12 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.nativead.NativeAd
@@ -334,7 +336,7 @@ class AdMobManager(private val context: Context) {
     private fun trackAdLoaded(
         adUnitId: String,
         placement: String,
-        responseInfo: com.google.android.gms.ads.ResponseInfo?
+        responseInfo: ResponseInfo?
     ) {
         try {
             val data = AdLoadedData(
@@ -359,7 +361,7 @@ class AdMobManager(private val context: Context) {
     private fun trackAdDisplayed(
         adUnitId: String,
         placement: String,
-        responseInfo: com.google.android.gms.ads.ResponseInfo?
+        responseInfo: ResponseInfo?
     ) {
         try {
             val data = AdDisplayedData(
@@ -384,7 +386,7 @@ class AdMobManager(private val context: Context) {
     private fun trackAdOpened(
         adUnitId: String,
         placement: String,
-        responseInfo: com.google.android.gms.ads.ResponseInfo?
+        responseInfo: ResponseInfo?
     ) {
         try {
             val data = AdOpenedData(
@@ -413,8 +415,8 @@ class AdMobManager(private val context: Context) {
     private fun trackAdRevenue(
         adUnitId: String,
         placement: String,
-        responseInfo: com.google.android.gms.ads.ResponseInfo?,
-        adValue: com.google.android.gms.ads.AdValue
+        responseInfo: ResponseInfo?,
+        adValue: AdValue
     ) {
         try {
             val data = AdRevenueData(
@@ -474,11 +476,11 @@ class AdMobManager(private val context: Context) {
      */
     private fun mapAdMobPrecisionToRevenueCat(precisionType: Int): AdRevenuePrecision {
         return when (precisionType) {
-            com.google.android.gms.ads.AdValue.PrecisionType.PRECISE ->
+            AdValue.PrecisionType.PRECISE ->
                 AdRevenuePrecision.EXACT
-            com.google.android.gms.ads.AdValue.PrecisionType.ESTIMATED ->
+            AdValue.PrecisionType.ESTIMATED ->
                 AdRevenuePrecision.ESTIMATED
-            com.google.android.gms.ads.AdValue.PrecisionType.PUBLISHER_PROVIDED ->
+            AdValue.PrecisionType.PUBLISHER_PROVIDED ->
                 AdRevenuePrecision.PUBLISHER_DEFINED
             else ->
                 AdRevenuePrecision.UNKNOWN
