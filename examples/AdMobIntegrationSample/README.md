@@ -92,7 +92,7 @@ Before running the sample:
    - Get your project API key from the [RevenueCat Dashboard](https://app.revenuecat.com/)
 
 2. **AdMob Setup** (Optional for testing)
-   - This sample uses **production AdMob ad unit IDs** configured for test devices (see below)
+   - This sample uses **Google's official test ad unit IDs** (see below)
    - No AdMob account needed to run the sample as-is
    - For production use, create an [AdMob account](https://admob.google.com/) and replace with your own ad unit IDs
 
@@ -140,21 +140,35 @@ D/AdMobManager: ✅ Tracked: Ad Revenue - $0.00015 USD (precision: EXACT) - plac
 
 ## AdMob Ad Unit IDs
 
-This sample uses **production AdMob ad unit IDs** configured to serve test ads to test devices:
+This sample uses **Google's official test ad unit IDs**:
 
 | Ad Format | Ad Unit ID | Usage | Status |
 |-----------|----------------|-------|--------|
-| **Banner** | `ca-app-pub-8714904180834987/6310284055` | Production banner ad for test device | ✅ Working |
-| **Interstitial** | `ca-app-pub-8714904180834987/6738477707` | Production interstitial ad for test device | ✅ Working |
-| **Native** | `ca-app-pub-8714904180834987/8951268572` | Production native ad (text + images) for test device | ✅ Working |
-| **Native Video** | `ca-app-pub-8714904180834987/1044960115` | Production native video ad for test device | ⚠️ May need replacement |
+| **Banner** | `ca-app-pub-3940256099942544/9214589741` | Google's test banner ad | ✅ Working |
+| **Interstitial** | `ca-app-pub-3940256099942544/1033173712` | Google's test interstitial ad | ✅ Working |
+| **Native** | `ca-app-pub-3940256099942544/2247696110` | Google's test native ad (text + images) | ⚠️ Unreliable |
+| **Native Video** | `ca-app-pub-3940256099942544/1044960115` | Google's test native video ad | ⚠️ Unreliable |
 | **Error Testing** | `"invalid-ad-unit-id"` | Triggers load failures for error handling demo | ✅ Working |
 
 ### About These Ad Units
 
-✅ **Production ad units** - Real ad unit IDs from a production AdMob account
-✅ **Test device configured** - Device/emulator serves test ads without affecting metrics
-✅ **Consistent behavior** - Reliable for development and testing
+✅ **Official test IDs** - Provided by Google for development and testing
+✅ **Always serve test ads** - No risk of affecting production metrics
+⚠️ **Native ad limitation** - Test IDs for native ads don't work reliably (see below)
+
+### ⚠️ Important: Native Ads and Test Ad Unit IDs
+
+**Google's official test ad unit IDs do not work reliably with native ads.**
+
+While Google provides test ad unit IDs for banner and interstitial ads (like `ca-app-pub-3940256099942544/9214589741`), the official test IDs for native ads often fail to load or behave inconsistently.
+
+**Recommended approach for testing native ads:**
+1. Create production ad units in your AdMob account
+2. Update the AdMob app ID in `AndroidManifest.xml` (line 18-19) with your production app ID
+3. Update the ad unit IDs in `Constants.kt` with your production ad unit IDs
+4. Configure your test device in AdMob settings (or use an emulator which is automatically treated as a test device)
+
+This ensures you receive test ads (no real impressions) while having reliable ad loading behavior during development.
 
 ### Setting Up Your Own Ad Units
 
@@ -272,6 +286,24 @@ Different ad formats track events at different times:
 1. **No internet connection** - Ensure device/emulator has internet access
 2. **AdMob SDK still initializing** - Wait a few seconds after app launch
 3. **Test device not configured** - Emulators are automatically test devices; real devices may take 15 minutes to 24 hours to be recognized
+
+### Issue: Native ads not loading with test ad unit IDs
+
+**Cause:** Google's official test ad unit IDs for native ads (e.g., `ca-app-pub-3940256099942544/2247696110`) do not work reliably. They often fail to load or behave inconsistently.
+
+**Solution:** Use production ad unit IDs configured with test devices:
+1. Create native and native video ad units in your [AdMob account](https://admob.google.com)
+2. Update the AdMob app ID in `app/src/main/AndroidManifest.xml`:
+   ```xml
+   <meta-data
+       android:name="com.google.android.gms.ads.APPLICATION_ID"
+       android:value="ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY"/>
+   ```
+3. Replace the test IDs in `Constants.kt` with your production ad unit IDs
+4. Configure your device as a test device in AdMob settings (emulators are automatically test devices)
+5. You'll receive test ads without affecting your production metrics
+
+This limitation only affects native and native video ad formats. Banner and interstitial test IDs work as expected.
 
 ### Issue: "Invalid request" error on real device
 
