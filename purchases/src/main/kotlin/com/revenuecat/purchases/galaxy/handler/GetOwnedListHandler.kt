@@ -12,6 +12,7 @@ import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.galaxy.utils.toPurchasesError
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 
@@ -46,7 +47,7 @@ internal class GetOwnedListHandler(
         }
 
         val productTypeString = if (productType == null) {
-            "all"
+            HelperDefine.PRODUCT_TYPE_ALL
         } else {
             productType.toGalaxyProductTypeString()
         }
