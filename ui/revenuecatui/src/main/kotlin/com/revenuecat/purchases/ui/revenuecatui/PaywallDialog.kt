@@ -59,7 +59,6 @@ fun PaywallDialog(
         }
     }
 
-    // Track current dialog offering and pending exit offering
     var currentDialogOffering by remember {
         mutableStateOf<OfferingSelection?>(
             if (shouldDisplayDialog) paywallDialogOptions.offeringSelection else null,
@@ -67,7 +66,6 @@ fun PaywallDialog(
     }
     var pendingExitOffering by remember { mutableStateOf<OfferingSelection?>(null) }
 
-    // When shouldDisplayDialog becomes true, show the initial offering
     LaunchedEffect(shouldDisplayDialog) {
         if (shouldDisplayDialog && currentDialogOffering == null) {
             currentDialogOffering = paywallDialogOptions.offeringSelection
@@ -175,6 +173,51 @@ private fun PreloadExitOffering(
 }
 
 @Composable
+private fun PaywallDialogScaffold(
+    handleCloseRequest: () -> Unit,
+    paywallOptions: PaywallOptions,
+) {
+    val dialogBottomPadding = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+            WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    } else {
+        0.dp
+    }
+
+    Dialog(
+        onDismissRequest = handleCloseRequest,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = shouldUsePlatformDefaultWidth(),
+            decorFitsSystemWindows = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+        ),
+    ) {
+        Scaffold(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(getDialogMaxHeightPercentage()),
+            // This is needed for Android 35+ but using an older version of Compose. In those cases,
+            // the dialog doesn't properly extend edge to edge, leaving some spacing at the bottom since we changed
+            // the decorFitsSystemWindows setting of the Dialog. This is added to mimick the dim effect that we get
+            // at the top of the dialog in this case. This should be removed once we update Compose in the next major.
+            containerColor = Color.Black.copy(alpha = 0.4f),
+        ) { paddingValues ->
+            val shouldApplyDialogBottomPadding = paddingValues.calculateBottomPadding() == 0.dp &&
+                paddingValues.calculateTopPadding() == 0.dp
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .conditional(
+                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                    ) { padding(paddingValues) }
+                    .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
+            ) {
+                Paywall(paywallOptions)
+            }
+        }
+    }
+}
+
+@Composable
 private fun HandlePendingDismiss(
     exitOfferState: ExitOfferState,
     pendingDismiss: Boolean,
@@ -274,51 +317,6 @@ private fun createPaywallListener(
 
     override fun onRestoreError(error: com.revenuecat.purchases.PurchasesError) {
         paywallDialogOptions.listener?.onRestoreError(error)
-    }
-}
-
-@Composable
-private fun PaywallDialogScaffold(
-    handleCloseRequest: () -> Unit,
-    paywallOptions: PaywallOptions,
-) {
-    val dialogBottomPadding = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-            WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    } else {
-        0.dp
-    }
-
-    Dialog(
-        onDismissRequest = handleCloseRequest,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = shouldUsePlatformDefaultWidth(),
-            decorFitsSystemWindows = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-        ),
-    ) {
-        Scaffold(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(getDialogMaxHeightPercentage()),
-            // This is needed for Android 35+ but using an older version of Compose. In those cases,
-            // the dialog doesn't properly extend edge to edge, leaving some spacing at the bottom since we changed
-            // the decorFitsSystemWindows setting of the Dialog. This is added to mimick the dim effect that we get
-            // at the top of the dialog in this case. This should be removed once we update Compose in the next major.
-            containerColor = Color.Black.copy(alpha = 0.4f),
-        ) { paddingValues ->
-            val shouldApplyDialogBottomPadding = paddingValues.calculateBottomPadding() == 0.dp &&
-                paddingValues.calculateTopPadding() == 0.dp
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .conditional(
-                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                    ) { padding(paddingValues) }
-                    .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
-            ) {
-                Paywall(paywallOptions)
-            }
-        }
     }
 }
 
