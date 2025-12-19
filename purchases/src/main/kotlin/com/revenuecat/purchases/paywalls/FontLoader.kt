@@ -33,8 +33,8 @@ internal class FontLoader(
 ) {
     private var hasCheckedFoldersExist: AtomicBoolean = AtomicBoolean(false)
 
-    private val cacheDirectory by lazy(LazyThreadSafetyMode.NONE) {
-        providedCacheDir ?: File(context.cacheDir, "rc_paywall_fonts")
+    private val cacheDirectory: File? by lazy(LazyThreadSafetyMode.NONE) {
+        providedCacheDir ?: context.cacheDir?.let { File(it, "rc_paywall_fonts") }
     }
 
     private val md: MessageDigest by lazy {
@@ -74,11 +74,16 @@ internal class FontLoader(
         val expectedMd5 = fontInfo.expectedMd5
 
         ioScope.launch {
-            ensureFoldersExist()
+            val cacheDir = cacheDirectory
+            if (cacheDir == null) {
+                errorLog { "Cannot download font: cache directory is not available" }
+                return@launch
+            }
+            ensureFoldersExist(cacheDir)
 
             val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
-            val cachedFile = File(cacheDirectory, "$urlHash.$extension")
+            val cachedFile = File(cacheDir, "$urlHash.$extension")
 
             synchronized(lock) {
                 val fontInfosListeningToHash = fontInfosForHash[urlHash]
@@ -102,6 +107,7 @@ internal class FontLoader(
                     expectedMd5 = expectedMd5,
                     urlHash = urlHash,
                     extension = extension,
+                    cacheDir = cacheDir,
                 )
                 result
                     .onSuccess { file ->
@@ -158,13 +164,13 @@ internal class FontLoader(
         }
     }
 
-    private fun ensureFoldersExist() {
+    private fun ensureFoldersExist(cacheDir: File) {
         if (hasCheckedFoldersExist.getAndSet(true)) return
 
-        if (!cacheDirectory.exists() && !cacheDirectory.mkdirs()) {
-            errorLog { "Unable to create cache directory for remote fonts: ${cacheDirectory.absolutePath}" }
-        } else if (!cacheDirectory.isDirectory) {
-            errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDirectory.absolutePath}" }
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            errorLog { "Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}" }
+        } else if (!cacheDir.isDirectory) {
+            errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}" }
         }
     }
 
@@ -175,10 +181,11 @@ internal class FontLoader(
         expectedMd5: String,
         urlHash: String,
         extension: String,
+        cacheDir: File,
     ): Result<File> {
-        val cachedFile = File(cacheDirectory, "$urlHash.$extension")
+        val cachedFile = File(cacheDir, "$urlHash.$extension")
 
-        val tempFile = File.createTempFile("rc_paywall_font_download_", ".$extension", cacheDirectory)
+        val tempFile = File.createTempFile("rc_paywall_font_download_", ".$extension", cacheDir)
         try {
             downloadToFile(url, tempFile)
 
