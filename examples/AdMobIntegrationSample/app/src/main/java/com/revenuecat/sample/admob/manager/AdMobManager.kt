@@ -24,7 +24,7 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.sample.admob.data.Constants
 
 /**
@@ -41,12 +41,12 @@ import com.revenuecat.sample.admob.data.Constants
  * 3. Map AdMob data to RevenueCat event data structures
  * 4. Handle errors and edge cases
  *
- * IMPORTANT: This uses RevenueCat's Internal API (@InternalRevenueCatAPI) which:
+ * IMPORTANT: This uses RevenueCat's Internal API (@ExperimentalPreviewRevenueCatPurchasesAPI) which:
  * - Requires opt-in annotation
  * - May change without notice
  * - Has no compatibility guarantees
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class AdMobManager(private val context: Context) {
 
     private var interstitialAd: InterstitialAd? = null
