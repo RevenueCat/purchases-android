@@ -182,11 +182,11 @@ internal class GalaxyBillingWrapper(
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
                     val productIdToAcknowledge = storeTransaction.productIds.firstOrNull() ?: return@getOwnedList
-                    val purchaseHasBeenAcknowledgeAlready: Boolean =
+                    val purchaseHasBeenAcknowledgedAlready: Boolean =
                         ownedProducts.firstOrNull { it.itemId == productIdToAcknowledge }
                             ?.acknowledgedStatus == HelperDefine.AcknowledgedStatus.ACKNOWLEDGED
 
-                    if (!purchaseHasBeenAcknowledgeAlready) {
+                    if (!purchaseHasBeenAcknowledgedAlready) {
                         acknowledgePurchaseHandler.acknowledgePurchase(
                             transaction = storeTransaction,
                             onSuccess = { acknowledgementResult ->
