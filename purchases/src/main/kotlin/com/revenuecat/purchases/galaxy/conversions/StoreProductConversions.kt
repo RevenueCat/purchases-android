@@ -99,7 +99,7 @@ private fun ProductVo.createPricingPhases(
     } else if (eligibilityPricings.contains(ELIGIBILITY_PRICING_FREE_TRIAL)) {
         this.createFreeTrialPricingPhase()?.let { pricingPhases.add(it) }
 
-        if(this.hasTieredSubscription()) {
+        if (this.hasTieredSubscription()) {
             // When a Galaxy product has both a trial and a tiered subscription, and the user is eligible for both,
             // IapHelper.getPromotionEligibility only returns a value stating that the user is eligible for the trial.
             // However, when the user proceeds to purchase the option, both the trial and tiered subscription are
@@ -147,8 +147,8 @@ private fun ProductVo.createFreeTrialPricingPhase(): PricingPhase? {
     } // This returns null if the string couldn't be parsed to an Int
 }
 
+@SuppressWarnings("ReturnCount")
 private fun ProductVo.createTieredSubscriptionPricingPhase(): PricingPhase? {
-
     if (!this.hasTieredSubscription()) { return null }
     val tieredPrice = this.tieredPrice.toDoubleOrNull() ?: return null
 
@@ -156,7 +156,7 @@ private fun ProductVo.createTieredSubscriptionPricingPhase(): PricingPhase? {
     val tieredSubscriptionCount = this.tieredSubscriptionCount.toIntOrNull() ?: return null
     val billingPeriod = createPeriodFromGalaxyData(
         durationMultiplier = this.tieredSubscriptionDurationMultiplier,
-        durationUnit = this.tieredSubscriptionDurationUnit
+        durationUnit = this.tieredSubscriptionDurationUnit,
     ) ?: return null
 
     return PricingPhase(
@@ -202,6 +202,7 @@ private fun ProductVo.createPeriod(): Period? = createPeriodFromGalaxyData(
     durationUnit = this.subscriptionDurationUnit,
 )
 
+@SuppressWarnings("ReturnCount")
 private fun createPeriodFromGalaxyData(
     durationMultiplier: String,
     durationUnit: String,
@@ -209,6 +210,19 @@ private fun createPeriodFromGalaxyData(
     // subscriptionDurationMultiplier returns a string in the format $INT$STRING, like
     // 1YEAR, 2MONTH, 4WEEK. We need to extract that leading integer to use as the
     // period's value.
+    fun extractLeadingInt(input: String): Int? {
+        // A regular expression that matches one or more digits (\d+)
+        // at the beginning of the string (^).
+        val regex = "^\\d+".toRegex()
+
+        // Find the first match of the regex in the input string.
+        val matchResult = regex.find(input)
+
+        // If a match is found, convert the matched string (value) to an Int.
+        // If no match is found (e.g., input is "MONTH2"), it returns null.
+        return matchResult?.value?.toIntOrNull()
+    }
+
     val periodValue = extractLeadingInt(input = durationMultiplier)
     if (periodValue == null) {
         log(LogIntent.GALAXY_ERROR) {
@@ -247,32 +261,6 @@ private fun String.createRevenueCatUnitFromSamsungIAPSubscriptionDurationUnitStr
                 GalaxyStrings.UNKNOWN_SUBSCRIPTION_DURATION_UNIT.format(this)
             }
             Period.Unit.UNKNOWN
-        }
-    }
-}
-
-private fun extractLeadingInt(input: String): Int? {
-    // A regular expression that matches one or more digits (\d+)
-    // at the beginning of the string (^).
-    val regex = "^\\d+".toRegex()
-
-    // Find the first match of the regex in the input string.
-    val matchResult = regex.find(input)
-
-    // If a match is found, convert the matched string (value) to an Int.
-    // If no match is found (e.g., input is "MONTH2"), it returns null.
-    return matchResult?.value?.toIntOrNull()
-}
-
-internal fun String.createRevenueCatProductTypeFromSamsungIAPTypeString(): ProductType {
-    return when (this.lowercase()) {
-        "item" -> ProductType.INAPP
-        "subscription" -> ProductType.SUBS
-        else -> {
-            log(LogIntent.GALAXY_WARNING) {
-                GalaxyStrings.UNKNOWN_GALAXY_IAP_TYPE_STRING.format(this)
-            }
-            ProductType.UNKNOWN
         }
     }
 }
