@@ -21,6 +21,7 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/AdMobIntegrationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
