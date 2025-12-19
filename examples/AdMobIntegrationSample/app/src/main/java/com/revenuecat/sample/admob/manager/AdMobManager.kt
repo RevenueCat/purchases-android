@@ -256,8 +256,11 @@ class AdMobManager(private val context: Context) {
                     )
                 }
 
-                // Note: Native ad click tracking would require implementing
-                // a custom NativeAdView to capture click events
+                // Set up click listener for tracking ad opened events
+                nativeAd.setOnNativeAdClickedListener {
+                    Log.d(TAG, "Native ad clicked (opened)")
+                    trackAdOpened(adUnitId, placement, nativeAd.responseInfo)
+                }
 
                 onAdLoaded?.invoke(nativeAd)
             }
