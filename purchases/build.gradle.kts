@@ -160,23 +160,6 @@ fun obtainTestBuildType(): String =
         "debug"
     }
 
-// TO DO: Bring in Samsung SDK from somewhere else
-val samsungIapAar: File? =
-    sequenceOf(
-        providers.gradleProperty("samsungIapSdkPath").orNull,
-        providers.environmentVariable("SAMSUNG_IAP_SDK_PATH").orNull,
-        rootProject.file("../samsung-iap-6.5.0.aar").takeIf { it.exists() }?.path,
-    )
-        .firstOrNull { !it.isNullOrBlank() }
-        ?.let { path ->
-            val aar = file(path)
-            check(aar.exists()) {
-                "Samsung IAP SDK AAR not found at $path. Override with samsungIapSdkPath property, " +
-                    "SAMSUNG_IAP_SDK_PATH env var, or local.properties"
-            }
-            aar
-        }
-
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
@@ -195,7 +178,7 @@ dependencies {
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly(files(samsungIapAar))
+    compileOnly("com.samsung.iap:samsung-iap:6.5.0@aar")
     compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
@@ -208,7 +191,7 @@ dependencies {
     "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
-    samsungIapAar?.let { testImplementation(files(it)) }
+    testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)
