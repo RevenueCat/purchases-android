@@ -33,6 +33,7 @@ open class GalaxyStoreTest {
         tieredSubscriptionCount: String = "",
         tieredSubscriptionDurationMultiplier: String = "",
         tieredSubscriptionDurationUnit: String = "",
+        tieredPriceString: String = tieredPrice.takeIf { it.isNotEmpty() }?.let { "$currencyUnit$it" } ?: "",
     ): ProductVo {
         return mockk<ProductVo>(relaxed = true).also { productVo ->
             every { productVo.itemId } returns itemId
@@ -51,6 +52,7 @@ open class GalaxyStoreTest {
             every { productVo.tieredSubscriptionCount } returns tieredSubscriptionCount
             every { productVo.tieredSubscriptionDurationMultiplier } returns tieredSubscriptionDurationMultiplier
             every { productVo.tieredSubscriptionDurationUnit } returns tieredSubscriptionDurationUnit
+            every { productVo.tieredPriceString } returns tieredPriceString
         }
     }
 

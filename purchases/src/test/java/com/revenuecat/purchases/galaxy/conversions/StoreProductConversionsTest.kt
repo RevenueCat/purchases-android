@@ -166,7 +166,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     // region toStoreProduct price creation
 
     @Test
-    fun `toStoreProduct builds formatted price with two decimals when itemPriceString omits them`() {
+    fun `toStoreProduct uses itemPriceString even when decimals are missing`() {
         val productVo = createProductVo(
             itemPrice = 3.0,
             currencyUnit = "$",
@@ -176,7 +176,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        assertThat(storeProduct.price.formatted).isEqualTo("$3.00")
+        assertThat(storeProduct.price.formatted).isEqualTo("$3")
         assertThat(storeProduct.price.amountMicros).isEqualTo(3_000_000)
         assertThat(storeProduct.price.currencyCode).isEqualTo("USD")
     }
@@ -197,7 +197,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
     }
 
     @Test
-    fun `toStoreProduct rounds formatted price but keeps raw micros multiplication`() {
+    fun `toStoreProduct keeps itemPriceString formatting even with extra decimals`() {
         val productVo = createProductVo(
             itemPrice = 1.2345,
             currencyUnit = "$",
@@ -206,7 +206,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
         val storeProduct = productVo.toStoreProduct()
 
-        assertThat(storeProduct.price.formatted).isEqualTo("$1.23")
+        assertThat(storeProduct.price.formatted).isEqualTo("$1.2345")
         assertThat(storeProduct.price.amountMicros).isEqualTo(1_234_500)
     }
 
@@ -477,6 +477,7 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
             subscriptionDurationUnit = "MONTH",
             tieredSubscriptionYN = "Y",
             tieredPrice = "4.99",
+            tieredPriceString = "$4.99",
             tieredSubscriptionCount = "2",
             tieredSubscriptionDurationMultiplier = "1MONTH",
             tieredSubscriptionDurationUnit = "MONTH",

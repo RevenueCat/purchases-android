@@ -164,17 +164,17 @@ private fun ProductVo.createTieredSubscriptionPricingPhase(): PricingPhase? {
         recurrenceMode = RecurrenceMode.FINITE_RECURRING,
         billingCycleCount = tieredSubscriptionCount,
         price = createPriceFromGalaxyData(
-            currencyUnit = this.currencyUnit,
             currencyCode = this.currencyCode,
-            itemPrice = tieredPrice
+            itemPrice = tieredPrice,
+            formattedString = this.tieredPriceString,
         ),
     )
 }
 
 private fun ProductVo.createPrice(): Price = createPriceFromGalaxyData(
-    currencyUnit = this.currencyUnit,
     currencyCode = this.currencyCode,
     itemPrice = this.itemPrice,
+    formattedString = this.itemPriceString,
 )
 
 private fun ProductVo.hasTieredSubscription(): Boolean {
@@ -185,15 +185,12 @@ private fun ProductVo.hasTieredSubscription(): Boolean {
 }
 
 private fun createPriceFromGalaxyData(
-    currencyUnit: String,
     currencyCode: String,
     itemPrice: Double,
+    formattedString: String,
 ): Price {
     return Price(
-        // Here, we manually build the formatted string instead of using ProductVo.itemPriceString
-        // because itemPriceString doesn't include the decimal values if the amount is an integer with no decimal value.
-        // This way, we can get strings like "$3.00" instead of "$3"
-        formatted = "%s%.2f".format(currencyUnit, itemPrice),
+        formatted = formattedString,
         amountMicros = (itemPrice * 1_000_000L).toLong(),
         currencyCode = currencyCode,
     )
