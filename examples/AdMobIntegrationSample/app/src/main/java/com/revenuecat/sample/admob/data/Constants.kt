@@ -35,11 +35,18 @@ object Constants {
         const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
 
         /**
+         * Native Ad Test Unit ID
+         * Test ID for native ads (text + images).
+         * Official Google test ID for Native Advanced ads.
+         */
+        const val NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
+
+        /**
          * Native Video Ad Test Unit ID
          * Test ID for native ads with video content.
-         * More reliable than the standard native ad test ID.
+         * Official Google test ID for Native Advanced Video ads.
          */
-        const val NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/1044960115"
+        const val NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/1044960115"
 
         /**
          * Invalid Ad Unit ID - Used for Error Testing

@@ -4,7 +4,7 @@ This sample app demonstrates how to integrate Google AdMob with RevenueCat's ad 
 
 ## Overview
 
-This example shows how to track **all 5 RevenueCat ad events** across three different AdMob ad formats:
+This example shows how to track **all 5 RevenueCat ad events** across four different AdMob ad formats:
 
 ### Ad Events Tracked
 1. ✅ **Ad Loaded** - When an ad successfully loads
@@ -16,6 +16,7 @@ This example shows how to track **all 5 RevenueCat ad events** across three diff
 ### Ad Formats Demonstrated
 - **Banner Ads** - Always visible at the top of the screen
 - **Interstitial Ads** - Full-screen ads triggered by user action
+- **Native Ads** - Custom-styled ads with text and images integrated into the app's UI
 - **Native Video Ads** - Custom-styled ads with video content integrated into the app's UI
 
 ---
@@ -91,9 +92,9 @@ Before running the sample:
    - Get your project API key from the [RevenueCat Dashboard](https://app.revenuecat.com/)
 
 2. **AdMob Setup** (Optional for testing)
-   - This sample uses **official AdMob test ad unit IDs** (see below)
-   - No AdMob account needed to run the sample
-   - For production use, create an [AdMob account](https://admob.google.com/) and replace test IDs
+   - This sample uses **production AdMob ad unit IDs** configured for test devices (see below)
+   - No AdMob account needed to run the sample as-is
+   - For production use, create an [AdMob account](https://admob.google.com/) and replace with your own ad unit IDs
 
 ### 2. Configure the App
 
@@ -137,34 +138,31 @@ D/AdMobManager: ✅ Tracked: Ad Revenue - $0.00015 USD (precision: EXACT) - plac
 
 ---
 
-## AdMob Test Ad Unit IDs
+## AdMob Ad Unit IDs
 
-This sample uses **official Google AdMob test ad unit IDs** that are safe for development:
+This sample uses **production AdMob ad unit IDs** configured to serve test ads to test devices:
 
-| Ad Format | Test Ad Unit ID | Usage | Status |
+| Ad Format | Ad Unit ID | Usage | Status |
 |-----------|----------------|-------|--------|
-| **Banner** | `ca-app-pub-3940256099942544/9214589741` | Always loads test banner ads | ✅ Working |
-| **Interstitial** | `ca-app-pub-3940256099942544/1033173712` | Always loads test interstitial ads | ✅ Working |
-| **Native Video** | `ca-app-pub-3940256099942544/1044960115` | Test native ads with video content | ⚠️ See note below |
-| **App ID** | `ca-app-pub-3940256099942544~3347511713` | Test application ID (in manifest) | ✅ Working |
+| **Banner** | `ca-app-pub-8714904180834987/6310284055` | Production banner ad for test device | ✅ Working |
+| **Interstitial** | `ca-app-pub-8714904180834987/6738477707` | Production interstitial ad for test device | ✅ Working |
+| **Native** | `ca-app-pub-8714904180834987/8951268572` | Production native ad (text + images) for test device | ✅ Working |
+| **Native Video** | `ca-app-pub-8714904180834987/1044960115` | Production native video ad for test device | ⚠️ May need replacement |
 | **Error Testing** | `"invalid-ad-unit-id"` | Triggers load failures for error handling demo | ✅ Working |
 
-### About Test Ads
+### About These Ad Units
 
-✅ **Safe to use** - No risk of invalid traffic to your AdMob account
-✅ **Always return test ads** - Consistent behavior for development
-✅ **Labeled as "Test Ad"** - Easy to identify in the UI
+✅ **Production ad units** - Real ad unit IDs from a production AdMob account
+✅ **Test device configured** - Device/emulator serves test ads without affecting metrics
+✅ **Consistent behavior** - Reliable for development and testing
 
-### ⚠️ Known Limitation: Native Video Ad Test IDs
+### Setting Up Your Own Ad Units
 
-**Native video ad test unit IDs provided by Google have reliability issues:**
-- Native video ad test ID: `ca-app-pub-3940256099942544/1044960115` - ❌ Fails with internal server error
-
--**To test native ads with working ads:**
--1. Create a free AdMob account at [admob.google.com](https://admob.google.com)
--2. Create your own native ad unit (takes ~2 minutes)
--3. Replace `NATIVE_AD_UNIT_ID` in `Constants.kt` with your ad unit ID
--4. Configure your test device in AdMob settings to receive test ads without affecting metrics
+To use your own AdMob ad units:
+1. Create a free AdMob account at [admob.google.com](https://admob.google.com)
+2. Create ad units for each format you want to test
+3. Replace the ad unit IDs in `Constants.kt`
+4. Configure your test device in AdMob settings to receive test ads without affecting metrics
 
 ### Error Testing Note
 
@@ -251,11 +249,13 @@ Different ad formats track events at different times:
 - `Opened`: `FullScreenContentCallback.onAdClicked()`
 - `Revenue`: `OnPaidEventListener`
 
-**Native Ads:**
+**Native Ads (both regular and video):**
 - `Loaded`: `AdLoader.forNativeAd()` callback
 - `Displayed`: **Manual** - Call `trackNativeAdDisplayed()` after rendering
 - `Opened`: `AdListener.onAdClicked()` callback
 - `Revenue`: `setOnPaidEventListener()`
+
+**Note:** Native and native video ads use the same tracking mechanisms. The only difference is the ad unit ID used and the content returned (with or without video).
 
 ---
 
