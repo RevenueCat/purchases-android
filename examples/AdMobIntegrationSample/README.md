@@ -254,7 +254,7 @@ Different ad formats track events at different times:
 **Native Ads:**
 - `Loaded`: `AdLoader.forNativeAd()` callback
 - `Displayed`: **Manual** - Call `trackNativeAdDisplayed()` after rendering
-- `Opened`: `setOnNativeAdClickedListener()`
+- `Opened`: `AdListener.onAdClicked()` callback
 - `Revenue`: `setOnPaidEventListener()`
 
 ---

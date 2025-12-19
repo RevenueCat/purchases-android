@@ -256,15 +256,16 @@ class AdMobManager(private val context: Context) {
                     )
                 }
 
-                // Set up click listener for tracking ad opened events
-                nativeAd.setOnNativeAdClickedListener {
-                    Log.d(TAG, "Native ad clicked (opened)")
-                    trackAdOpened(adUnitId, placement, nativeAd.responseInfo)
-                }
-
                 onAdLoaded?.invoke(nativeAd)
             }
             .withAdListener(object : AdListener() {
+                override fun onAdClicked() {
+                    Log.d(TAG, "Native ad clicked (opened)")
+                    currentNativeAd?.let { nativeAd ->
+                        trackAdOpened(adUnitId, placement, nativeAd.responseInfo)
+                    }
+                }
+
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     Log.e(TAG, "Native ad failed to load: ${loadAdError.message}")
                     trackAdFailedToLoad(adUnitId, placement, loadAdError)
