@@ -623,6 +623,23 @@ jobs:
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
       - android/save_build_cache
 
+  emerge_size_analysis_tests:
+    description: "Emerge size analysis tests"
+    <<: *android-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
+      - run:
+          name: Upload size testing app to emerge
+          command: |
+            bundle exec fastlane android emerge_sdk_side_tests
+      - android/save_build_cache
+
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
     executor: gcp-cli/google
@@ -970,6 +987,9 @@ workflows:
           requires:
             - prepare-tests
       - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
+      - emerge_size_analysis_tests:
           requires:
             - prepare-tests
       - run-maestro-e2e-tests:
