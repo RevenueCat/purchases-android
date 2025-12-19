@@ -181,7 +181,12 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val productIdToAcknowledge = storeTransaction.productIds.firstOrNull() ?: return@getOwnedList
+                    val productIdToAcknowledge = storeTransaction.productIds.firstOrNull()
+                    if (productIdToAcknowledge == null) {
+                        finish()
+                        return@getOwnedList
+                    }
+
                     val purchaseHasBeenAcknowledgedAlready: Boolean =
                         ownedProducts.firstOrNull { it.itemId == productIdToAcknowledge }
                             ?.acknowledgedStatus == HelperDefine.AcknowledgedStatus.ACKNOWLEDGED
