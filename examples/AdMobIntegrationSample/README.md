@@ -234,35 +234,6 @@ Different ad formats track events at different times:
 
 ---
 
-## Project Structure
-
-```
-AdMobIntegrationSample/
-├── app/
-│   ├── src/main/
-│   │   ├── java/com/revenuecat/sample/admob/
-│   │   │   ├── MainApplication.kt          # SDK initialization
-│   │   │   ├── MainActivity.kt             # Compose setup
-│   │   │   ├── data/
-│   │   │   │   └── Constants.kt            # API keys & ad unit IDs
-│   │   │   ├── manager/
-│   │   │   │   └── AdMobManager.kt         # Ad loading & tracking logic
-│   │   │   └── ui/
-│   │   │       ├── HomeScreen.kt           # Main UI with all ad examples
-│   │   │       ├── BannerAdView.kt         # Banner ad Composable
-│   │   │       └── NativeAdView.kt         # Native ad Composable
-│   │   ├── res/
-│   │   │   └── values/
-│   │   │       └── strings.xml
-│   │   └── AndroidManifest.xml             # AdMob app ID configuration
-│   └── build.gradle.kts                    # App dependencies
-├── gradle/
-│   └── libs.versions.toml                  # Dependency versions
-├── build.gradle.kts                        # Root build config
-└── README.md                               # This file
-```
-
----
 
 ## Common Issues & Troubleshooting
 
