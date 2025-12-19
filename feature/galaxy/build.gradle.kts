@@ -46,6 +46,6 @@ val samsungIapAar: File? =
 dependencies {
     implementation(project(":purchases"))
 
-    implementation(files(samsungIapAar))
+    compileOnly(files(samsungIapAar))
     testImplementation(libs.bundles.test)
 }
