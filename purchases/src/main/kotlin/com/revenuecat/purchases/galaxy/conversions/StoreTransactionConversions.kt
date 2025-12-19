@@ -44,6 +44,7 @@ internal fun PurchaseVo.toStoreTransaction(
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Throws(IllegalArgumentException::class)
 internal fun OwnedProductVo.toStoreTransaction(
     purchaseState: PurchaseState,
 ): StoreTransaction {
