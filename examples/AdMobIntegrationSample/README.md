@@ -20,13 +20,38 @@ This example shows how to track **all 5 RevenueCat ad events** across three diff
 
 ---
 
-## 🚨 Important Notice: Internal API
+## 🚨 Important Notice: Experimental API
 
-**This sample uses RevenueCat's `@InternalRevenueCatAPI` for ad tracking.**
+**This sample uses RevenueCat's `@ExperimentalPreviewRevenueCatPurchasesAPI` for ad tracking.**
 
 ⚠️ **What this means:**
-- Requires `@OptIn(InternalRevenueCatAPI::class)` annotation
-- Designed for internal RevenueCat use and experimental features
+- This is an experimental API that may change without warning
+- No compatibility guarantees are provided
+- Designed for internal RevenueCat use and preview features
+
+### Required Setup
+
+To use this API, you need to opt-in both at the code and build level:
+
+**1. Code-level opt-in** (already done in `AdMobManager.kt`):
+```kotlin
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+class AdMobManager(private val context: Context) {
+    // ...
+}
+```
+
+**2. Module-level opt-in** (in `app/build.gradle.kts`):
+```kotlin
+kotlinOptions {
+    jvmTarget = "1.8"
+    freeCompilerArgs += listOf(
+        "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI"
+    )
+}
+```
+
+This suppresses the "internal RevenueCat API" warnings during compilation.
 
 ---
 
@@ -260,12 +285,13 @@ Different ad formats track events at different times:
 
 **Note:** Revenue tracking works reliably in production with real ads. Test ads may have inconsistent revenue event behavior.
 
-### Issue: Build errors about `@InternalRevenueCatAPI`
+### Issue: Build errors or warnings about `@ExperimentalPreviewRevenueCatPurchasesAPI`
 
-**Solution:** Make sure you have the latest RevenueCat SDK (9.17.0-SNAPSHOT or later) and the `@OptIn` annotation is present:
-```kotlin
-@OptIn(InternalRevenueCatAPI::class)
-```
+**Solution:** Make sure you have:
+1. The latest RevenueCat SDK (9.17.0-SNAPSHOT or later)
+2. Both code-level and module-level opt-in configured
+
+See the [Required Setup](#required-setup) section above for detailed instructions on configuring the opt-in.
 
 ---
 
