@@ -639,7 +639,7 @@ internal class MockViewModel(
         private set
     var updateOptionsParams = mutableListOf<PaywallOptions>()
         private set
-    override fun updateOptions(options: PaywallOptions) {
+    fun updateOptions(options: PaywallOptions) {
         updateOptionsCallCount++
         updateOptionsParams.add(options)
     }
