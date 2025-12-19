@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.sample.admob.data.Constants
 import com.revenuecat.sample.admob.manager.AdMobManager
 
@@ -54,7 +55,7 @@ fun HomeScreen(
     adMobManager: AdMobManager
 ) {
     val context = LocalContext.current
-    var nativeAdState by remember { mutableStateOf<com.google.android.gms.ads.nativead.NativeAd?>(null) }
+    var nativeAdState by remember { mutableStateOf<NativeAd?>(null) }
     var interstitialStatus by remember { mutableStateOf("Not Loaded") }
 
     Column(
