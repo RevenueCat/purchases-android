@@ -32,19 +32,6 @@ class PaywallDialogOptions internal constructor(
         purchaseLogic = builder.purchaseLogic,
     )
 
-    internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
-        return PaywallOptions.Builder {
-            dismissRequest()
-            this.dismissRequest?.invoke()
-        }
-            .setOffering(offering)
-            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
-            .setFontProvider(fontProvider)
-            .setListener(listener)
-            .setPurchaseLogic(purchaseLogic)
-            .build()
-    }
-
     class Builder {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         internal var dismissRequest: (() -> Unit)? = null
