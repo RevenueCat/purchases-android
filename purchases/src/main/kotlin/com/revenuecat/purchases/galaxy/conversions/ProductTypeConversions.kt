@@ -23,4 +23,6 @@ internal fun ProductType.toGalaxyProductTypeString(): String? {
         ProductType.SUBS -> "subscription"
         ProductType.INAPP -> "item"
         ProductType.UNKNOWN -> null
+    }
+}
       
