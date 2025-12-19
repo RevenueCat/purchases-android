@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    val compileVersion = 35
+    val compileVersion = 36
     compileSdk = compileVersion
 
     defaultConfig {
         applicationId = "com.revenuecat.sample.admob"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = rootProject.extra.get("versionCode")?.toString()?.toInt()
         versionName = rootProject.extra.get("versionName")?.toString()
 
