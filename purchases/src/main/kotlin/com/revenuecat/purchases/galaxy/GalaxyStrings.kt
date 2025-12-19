@@ -74,6 +74,8 @@ internal object GalaxyStrings {
         "an unknown status code %s."
     const val ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE = "The acknowledgement request returned " +
         "an error status code %s (%s)."
+    const val NOT_ACKNOWLEDGING_TRANSACTION_BECAUSE_ALREADY_ACKNOWLEDGED = "Will not acknowledge transaction with " +
+        "product ID %s because it has already been acknowledged."
 
     // Get Owned Products
     const val ANOTHER_GET_OWNED_LIST_REQUEST_IN_FLIGHT = "Another get owned products request with the Galaxy Store" +

@@ -35,6 +35,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.SerialRequestExecutor
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
@@ -178,30 +179,53 @@ internal class GalaxyBillingWrapper(
         onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
         serialRequestExecutor.executeSerially { finish ->
-            acknowledgePurchaseHandler.acknowledgePurchase(
-                transaction = storeTransaction,
-                onSuccess = { acknowledgementResult ->
-                    val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
-                        code = acknowledgementResult.statusCode,
-                    )
+            getOwnedListHandler.getOwnedList(
+                onSuccess = { ownedProducts ->
+                    val productIdToAcknowledge = storeTransaction.productIds.firstOrNull() ?: return@getOwnedList
+                    val purchaseHasBeenAcknowledgedAlready: Boolean =
+                        ownedProducts.firstOrNull { it.itemId == productIdToAcknowledge }
+                            ?.acknowledgedStatus == HelperDefine.AcknowledgedStatus.ACKNOWLEDGED
 
-                    if (resultStatus == null) {
-                        log(LogIntent.GALAXY_ERROR) {
-                            GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
-                                .format(acknowledgementResult.statusCode)
-                        }
-                    } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
-                        log(LogIntent.GALAXY_ERROR) {
-                            GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE
-                                .format(acknowledgementResult.statusCode, acknowledgementResult.statusString)
-                        }
+                    if (!purchaseHasBeenAcknowledgedAlready) {
+                        acknowledgePurchaseHandler.acknowledgePurchase(
+                            transaction = storeTransaction,
+                            onSuccess = { acknowledgementResult ->
+                                val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
+                                    code = acknowledgementResult.statusCode,
+                                )
+
+                                if (resultStatus == null) {
+                                    log(LogIntent.GALAXY_ERROR) {
+                                        GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
+                                            .format(acknowledgementResult.statusCode)
+                                    }
+                                } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
+                                    log(LogIntent.GALAXY_ERROR) {
+                                        GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                            .format(
+                                                acknowledgementResult.statusCode,
+                                                acknowledgementResult.statusString,
+                                            )
+                                    }
+                                } else {
+                                    onAcknowledged(storeTransaction.purchaseToken)
+                                }
+
+                                finish()
+                            },
+                            onError = { _ -> finish() },
+                        )
                     } else {
-                        onAcknowledged(storeTransaction.purchaseToken)
+                        log(LogIntent.DEBUG) {
+                            GalaxyStrings.NOT_ACKNOWLEDGING_TRANSACTION_BECAUSE_ALREADY_ACKNOWLEDGED
+                                .format(storeTransaction.productIds.firstOrNull() ?: "none")
+                        }
+                        finish()
                     }
-
+                },
+                onError = { _ ->
                     finish()
                 },
-                onError = { _ -> finish() },
             )
         }
     }
