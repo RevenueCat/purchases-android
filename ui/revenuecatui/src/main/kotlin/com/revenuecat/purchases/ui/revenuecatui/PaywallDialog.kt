@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -183,6 +184,8 @@ private fun PaywallDialogScaffold(
     } else {
         0.dp
     }
+
+    BackHandler(onBack = handleCloseRequest)
 
     Dialog(
         onDismissRequest = handleCloseRequest,
