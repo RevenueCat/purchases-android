@@ -48,6 +48,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.launchPaywallWindow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -349,6 +350,10 @@ private fun DisplayOfferingMenu(
         DropdownMenuItem(
             text = { Text(text = "Display paywall as footer view in an activity") },
             onClick = { activity.launchPaywallFooterViewAsActivity(offering) },
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Display paywall in new window") },
+            onClick = { launchPaywallWindow(activity, offering) },
         )
     }
 }
