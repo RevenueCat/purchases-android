@@ -121,7 +121,10 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                     ) {
                         val selection = currentOfferingSelection
 
-                        val paywallOptions = PaywallOptions.Builder(dismissRequest = {})
+                        // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
+                        val paywallOptions = PaywallOptions.Builder(
+                            dismissRequest = {},
+                        )
                             .setOfferingSelection(selection)
                             .setFontProvider(getFontProvider())
                             .setShouldDisplayDismissButton(
