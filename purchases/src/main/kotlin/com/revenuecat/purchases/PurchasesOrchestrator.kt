@@ -275,7 +275,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
-        flushPaywallEvents(Delay.NONE)
+        flushEvents(Delay.NONE)
     }
 
     /** @suppress */
@@ -311,7 +311,7 @@ internal class PurchasesOrchestrator(
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushPaywallEvents(Delay.DEFAULT)
+            flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
@@ -322,6 +322,10 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        flushEvents(Delay.NONE)
     }
 
     fun redeemWebPurchase(
@@ -1304,7 +1308,7 @@ internal class PurchasesOrchestrator(
                 )
 
                 // Synchronize paywall events after a new purchase
-                flushPaywallEvents(Delay.NONE)
+                flushEvents(Delay.NONE)
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
@@ -1589,7 +1593,7 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
-    private fun flushPaywallEvents(delay: Delay) {
+    private fun flushEvents(delay: Delay) {
         eventsManager.flushEvents(delay)
         adEventsManager.flushEvents(delay)
     }
