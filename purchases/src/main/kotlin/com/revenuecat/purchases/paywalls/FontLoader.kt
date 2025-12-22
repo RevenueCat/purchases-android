@@ -169,17 +169,19 @@ internal class FontLoader(
     private fun ensureFoldersExist(cacheDir: File): Boolean {
         if (hasCheckedFoldersExist.get()) return true
 
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            errorLog { "Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}" }
-            hasCheckedFoldersExist.set(false)
-            return false
-        } else if (!cacheDir.isDirectory) {
-            errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}" }
-            hasCheckedFoldersExist.set(false)
-            return false
+        val success = when {
+            !cacheDir.exists() && !cacheDir.mkdirs() -> {
+                errorLog { "Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}" }
+                false
+            }
+            !cacheDir.isDirectory -> {
+                errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}" }
+                false
+            }
+            else -> true
         }
-        hasCheckedFoldersExist.set(true)
-        return true
+        hasCheckedFoldersExist.set(success)
+        return success
     }
 
     @Throws(IOException::class)
