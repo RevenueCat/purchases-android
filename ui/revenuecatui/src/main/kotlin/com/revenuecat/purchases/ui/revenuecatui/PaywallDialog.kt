@@ -108,7 +108,10 @@ private fun PaywallDialogContent(
         )
     }
 
-    val viewModel = getPaywallViewModel(paywallOptions)
+    val viewModel = getPaywallViewModel(
+        options = paywallOptions,
+        shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock,
+    )
 
     LaunchedEffect(Unit) {
         viewModel.preloadExitOffering()
