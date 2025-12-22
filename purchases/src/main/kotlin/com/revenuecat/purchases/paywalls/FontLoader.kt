@@ -79,7 +79,9 @@ internal class FontLoader(
                 errorLog { "Cannot download font: cache directory is not available" }
                 return@launch
             }
-            ensureFoldersExist(cacheDir)
+            if (!ensureFoldersExist(cacheDir)) {
+                return@launch
+            }
 
             val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
@@ -164,14 +166,20 @@ internal class FontLoader(
         }
     }
 
-    private fun ensureFoldersExist(cacheDir: File) {
-        if (hasCheckedFoldersExist.getAndSet(true)) return
+    private fun ensureFoldersExist(cacheDir: File): Boolean {
+        if (hasCheckedFoldersExist.get()) return true
 
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
             errorLog { "Unable to create cache directory for remote fonts: ${cacheDir.absolutePath}" }
+            hasCheckedFoldersExist.set(false)
+            return false
         } else if (!cacheDir.isDirectory) {
             errorLog { "Remote fonts cache path exists but is not a directory: ${cacheDir.absolutePath}" }
+            hasCheckedFoldersExist.set(false)
+            return false
         }
+        hasCheckedFoldersExist.set(true)
+        return true
     }
 
     @Throws(IOException::class)
