@@ -8,14 +8,14 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ExitOffersConfiguration(
-    val dismiss: ExitOfferConfiguration? = null,
+class ExitOffers(
+    val dismiss: ExitOffer? = null,
 )
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ExitOfferConfiguration(
+class ExitOffer(
     @SerialName("offering_id")
     val offeringId: String,
 )

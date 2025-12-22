@@ -300,8 +300,8 @@ internal class PaywallComponentsDataTests(
                         ),
                         defaultLocaleIdentifier = LocaleId("en_US"),
                         revision = 0,
-                        exitOffers = ExitOffersConfiguration(
-                            dismiss = ExitOfferConfiguration(
+                        exitOffers = ExitOffers(
+                            dismiss = ExitOffer(
                                 offeringId = "exit-offering-id",
                             ),
                         ),

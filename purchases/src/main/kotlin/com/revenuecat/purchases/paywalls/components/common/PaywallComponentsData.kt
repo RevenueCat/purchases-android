@@ -37,5 +37,5 @@ class PaywallComponentsData(
     val zeroDecimalPlaceCountries: List<String> = emptyList(),
     @get:JvmSynthetic
     @SerialName("exit_offers")
-    val exitOffers: ExitOffersConfiguration? = null,
+    val exitOffers: ExitOffers? = null,
 )
