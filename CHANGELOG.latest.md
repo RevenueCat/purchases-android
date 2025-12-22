@@ -4,14 +4,13 @@
 
 
 ## RevenueCat SDK
-### 📦 Dependency Updates
-* [RENOVATE] Update build-dependencies to v8.13.2 (#2929) via RevenueCat Git Bot (@RCGitBot)
+### 🐞 Bugfixes
+* Remove deprecated API usage (#2957) via Toni Rico (@tonidero)
 
 ## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix `IllegalStateException`: No `ViewModelStoreOwner` was provided via `LocalViewModelStoreOwner` in `CompatComposeView` (#2912) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix crash when context.cacheDir is null in FontLoader (#2961) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Change AdFailedToLoad mediatorErrorCode type from Long to Int (#2924) via Pol Miro (@polmiro)
-* Change paywall preview recorder name template (#2923) via Toni Rico (@tonidero)
-* Don't use reflection to instantiate AmazonDeviceIdentifiersFetcher (#2919) via Will Taylor (@fire-at-will)
+* Bump fastlane from 2.229.1 to 2.230.0 (#2951) via dependabot[bot] (@dependabot[bot])

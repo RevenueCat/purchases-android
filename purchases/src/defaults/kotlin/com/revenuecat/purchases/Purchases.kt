@@ -467,10 +467,12 @@ class Purchases internal constructor(
     }
 
     /**
-     * Call close when you are done with this instance of Purchases
+     * Call close when you are done with this instance of Purchases.
+     * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     fun close() {
         purchasesOrchestrator.close()
+        backingFieldSharedInstance = null
     }
 
     /**
@@ -814,6 +816,28 @@ class Purchases internal constructor(
      */
     fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
         purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
+    }
+
+    /**
+     * Sets attribution data from AppsFlyer's conversion data.
+     *
+     * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
+     * this method will never unset any attributes, even if passed `null`. To unset attributes, call the setter method
+     * for the individual attribute that should be unset with a `null` value.
+     *
+     * The following RevenueCat attributes will be set based on the AppsFlyer data:
+     * - `$mediaSource`: From `media_source`, or "Organic" if `af_status` is "Organic"
+     * - `$campaign`: From `campaign`
+     * - `$adGroup`: From `adgroup`, with fallback to `adset`
+     * - `$ad`: From `af_ad`, with fallback to `ad_id`
+     * - `$keyword`: From `af_keywords`, with fallback to `keyword`
+     * - `$creative`: From `creative`, with fallback to `af_creative`
+     *
+     * @param data The conversion data map from AppsFlyer's `onConversionDataSuccess` callback.
+     */
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppsFlyerConversionData(data)
     }
 
     // endregion
