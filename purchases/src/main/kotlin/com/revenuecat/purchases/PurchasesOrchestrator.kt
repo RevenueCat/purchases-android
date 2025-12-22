@@ -155,6 +155,7 @@ internal class PurchasesOrchestrator(
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
