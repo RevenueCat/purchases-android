@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.Font
@@ -51,8 +50,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         const val ARGS_EXTRA = "paywall_args"
         const val RESULT_EXTRA = "paywall_result"
     }
-
-    private var currentOfferingSelection by mutableStateOf<OfferingSelection?>(null)
 
     private val exitOfferLauncher: ActivityResultLauncher<PaywallActivityArgs> =
         registerForActivityResult(PaywallContract()) { result ->
@@ -107,7 +104,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             enableEdgeToEdge()
         }
 
-        currentOfferingSelection = args?.offeringIdAndPresentedOfferingContext
+        val offeringSelection = args?.offeringIdAndPresentedOfferingContext
 
         setContent {
             MaterialTheme {
@@ -119,13 +116,11 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                                 padding(paddingValues)
                             },
                     ) {
-                        val selection = currentOfferingSelection
-
                         // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
                         val paywallOptions = PaywallOptions.Builder(
                             dismissRequest = {},
                         )
-                            .setOfferingSelection(selection)
+                            .setOfferingSelection(offeringSelection)
                             .setFontProvider(getFontProvider())
                             .setShouldDisplayDismissButton(
                                 args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
