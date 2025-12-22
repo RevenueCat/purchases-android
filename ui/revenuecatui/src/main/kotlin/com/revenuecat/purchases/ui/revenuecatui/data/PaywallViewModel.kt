@@ -210,7 +210,14 @@ internal class PaywallViewModelImpl(
                     ?.data?.exitOffers?.dismiss?.offeringId
                 _preloadedExitOffering.value = if (exitOfferingId != null) {
                     val offerings = purchases.awaitOfferings()
-                    offerings[exitOfferingId]
+                    offerings[exitOfferingId].also { exitOffering ->
+                        if (exitOffering == null) {
+                            Logger.e(
+                                "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
+                                    "Exit offer will not be displayed.",
+                            )
+                        }
+                    }
                 } else {
                     null
                 }
