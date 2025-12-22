@@ -34,16 +34,23 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import android.util.Base64
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
 import com.samsung.android.sdk.iap.lib.vo.AcknowledgeVo
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
@@ -63,10 +70,16 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         currentLogHandler = mockk(relaxed = true)
 
         mockkStatic(Looper::class)
+        mockkStatic(Base64::class)
         val mockMainLooper = mockk<Looper> {
             every { thread } returns Thread.currentThread()
         }
         every { Looper.getMainLooper() } returns mockMainLooper
+
+        every { Base64.encode(any(), any()) } answers {
+            val data = it.invocation.args[0] as ByteArray
+            java.util.Base64.getEncoder().encode(data)
+        }
 
         every { handler.post(any()) } answers {
             (it.invocation.args[0] as Runnable).run()
@@ -86,6 +99,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     @After
     fun tearDown() {
         unmockkStatic(Looper::class)
+        unmockkStatic(Base64::class)
         previousLogHandler?.let { currentLogHandler = it }
     }
 
@@ -397,6 +411,157 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         assertThat(completionCalled).isFalse()
         assertThat(receivedError).isEqualTo(error)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryPurchases filters expired subscriptions and hashes tokens`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val now = parseGalaxyDate("2024-02-10 00:00:00")
+        val wrapper = createWrapper(
+            getOwnedListHandler = getOwnedListHandler,
+            dateProvider = FixedDateProvider(now),
+        )
+
+        var receivedMap: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { receivedMap = it },
+            onError = { fail("Expected success") },
+        )
+
+        val activeOwnedProduct = createOwnedProductVo(
+            itemId = "active_product",
+            purchaseId = "active_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "2024-02-20 00:00:00"
+        }
+        val expiredOwnedProduct = createOwnedProductVo(
+            itemId = "expired_product",
+            purchaseId = "expired_token",
+            type = "subscription",
+            purchaseDate = "2024-01-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "2024-02-05 00:00:00"
+        }
+
+        onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, expiredOwnedProduct))
+
+        val purchases = receivedMap ?: fail("Expected purchases")
+        assertThat(purchases.keys).containsExactly("active_token".sha1())
+        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryPurchases returns empty map when all subscriptions are expired`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val now = parseGalaxyDate("2024-02-10 00:00:00")
+        val wrapper = createWrapper(
+            getOwnedListHandler = getOwnedListHandler,
+            dateProvider = FixedDateProvider(now),
+        )
+
+        var receivedMap: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { receivedMap = it },
+            onError = { fail("Expected success") },
+        )
+
+        val expiredOwnedProduct = createOwnedProductVo(
+            itemId = "expired_product",
+            purchaseId = "expired_token",
+            type = "subscription",
+            purchaseDate = "2024-01-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "2024-02-01 00:00:00"
+        }
+        onSuccessSlot.captured.invoke(arrayListOf(expiredOwnedProduct))
+
+        val purchases = receivedMap ?: fail("Expected purchases")
+        assertThat(purchases).isEmpty()
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryPurchases forwards errors from getOwnedList`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = any(),
+                onError = capture(onErrorSlot),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { fail("Expected error callback") },
+            onError = { receivedError = it },
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        onErrorSlot.captured.invoke(error)
+
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryPurchases returns InvalidReceiptError when conversion fails`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val now = parseGalaxyDate("2024-02-10 00:00:00")
+        val wrapper = createWrapper(
+            getOwnedListHandler = getOwnedListHandler,
+            dateProvider = FixedDateProvider(now),
+        )
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { fail("Expected error callback") },
+            onError = { receivedError = it },
+        )
+
+        val invalidOwnedProduct = createOwnedProductVo(
+            itemId = "product",
+            purchaseId = "token",
+            type = "subscription",
+            purchaseDate = "invalid-date",
+        ).also {
+            every { it.subscriptionEndDate } returns "2024-02-20 00:00:00"
+        }
+        onSuccessSlot.captured.invoke(arrayListOf(invalidOwnedProduct))
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
+        assertThat(receivedError?.underlyingErrorMessage)
+            .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -743,10 +908,17 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             productDataHandler = productDataHandler,
             purchaseHandler = purchaseHandler,
             deviceCache = deviceCache,
+            dateProvider = dateProvider,
             acknowledgePurchaseHandler = acknowledgePurchaseHandler,
             getOwnedListHandler = getOwnedListHandler,
         )
     }
+
+    private fun parseGalaxyDate(dateString: String): Date {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(dateString)!!
+    }
+
+    ) : DateProvider
 
     private fun createStoreProduct(
         id: String = "productId",

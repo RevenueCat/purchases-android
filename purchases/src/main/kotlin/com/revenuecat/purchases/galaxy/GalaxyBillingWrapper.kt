@@ -10,12 +10,14 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
@@ -28,6 +30,7 @@ import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
+import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -45,6 +48,7 @@ internal class GalaxyBillingWrapper(
     private val context: Context,
     private val deviceCache: DeviceCache,
     val billingMode: GalaxyBillingMode,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     private val iapHelper: IAPHelperProvider = DefaultIAPHelperProvider(
         iapHelper = IapHelper.getInstance(context),
     ),
@@ -297,6 +301,11 @@ internal class GalaxyBillingWrapper(
 
         if (replaceProductInfo != null) {
             log(LogIntent.GALAXY_WARNING) { GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
+            val error = PurchasesError(
+                PurchasesErrorCode.UnsupportedError,
+                GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED,
+            )
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
 
@@ -347,13 +356,49 @@ internal class GalaxyBillingWrapper(
 
     override fun isConnected(): Boolean = true
 
+    @OptIn(GalaxySerialOperation::class)
     override fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        warnLog { "Unimplemented: GalaxyBillingWrapper.queryPurchases" }
-        onSuccess(emptyMap())
+        serialRequestExecutor.executeSerially { finish ->
+            getOwnedListHandler.getOwnedList(
+                onSuccess = { ownedProducts ->
+                    val storeTransactions = ownedProducts
+                        .filter {
+                            // TO DO: Find out what this returns for OTPs when we support OTPs
+                            it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
+                        }
+                        .map {
+                            try {
+                                it.toStoreTransaction(purchaseState = PurchaseState.UNSPECIFIED_STATE)
+                            } catch (e: IllegalArgumentException) {
+                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+                                log(LogIntent.GALAXY_ERROR) { errorMessage }
+
+                                val error = PurchasesError(
+                                    code = PurchasesErrorCode.InvalidReceiptError,
+                                    underlyingErrorMessage = errorMessage,
+                                )
+                                onError(error)
+                                finish()
+                                return@getOwnedList
+                            }
+                        }
+
+                    val purchasesMap = storeTransactions.associateBy { storeTransaction ->
+                        storeTransaction.purchaseToken.sha1()
+                    }
+                    onSuccess(purchasesMap)
+                    finish()
+                },
+                onError = { error ->
+                    onError(error)
+                    finish()
+                },
+            )
+        }
     }
 
     override fun showInAppMessagesIfNeeded(
