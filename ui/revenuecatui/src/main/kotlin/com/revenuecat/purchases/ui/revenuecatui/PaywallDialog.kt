@@ -120,6 +120,12 @@ private fun PaywallDialogContent(
     val purchaseCompleted by viewModel.purchaseCompleted
     val preloadedExitOffering by viewModel.preloadedExitOffering
 
+    LaunchedEffect(purchaseCompleted) {
+        if (purchaseCompleted) {
+            onDismissRequest(null)
+        }
+    }
+
     val handleCloseRequest: () -> Unit = {
         val exitOffering = if (!purchaseCompleted && preloadedExitOffering != null) {
             OfferingSelection.OfferingType(preloadedExitOffering!!)
