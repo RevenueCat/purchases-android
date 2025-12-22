@@ -18,7 +18,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -81,15 +80,15 @@ fun PaywallDialog(
         PaywallDialogContent(
             paywallDialogOptions = paywallDialogOptions,
             offeringSelection = offeringSelection,
-            onDismissWithExitOffer = { exitOffering ->
-                pendingExitOffering = exitOffering
-                currentDialogOffering = null
-            },
-            onDismiss = {
-                currentDialogOffering = null
-                shouldDisplayDialog = false
-                // Now invoke the user's dismiss request since we're truly dismissing
-                paywallDialogOptions.dismissRequest?.invoke()
+            onDismissRequest = { exitOffering ->
+                if (exitOffering != null) {
+                    pendingExitOffering = exitOffering
+                    currentDialogOffering = null
+                } else {
+                    currentDialogOffering = null
+                    shouldDisplayDialog = false
+                    paywallDialogOptions.dismissRequest?.invoke()
+                }
             },
         )
     }
@@ -99,12 +98,8 @@ fun PaywallDialog(
 private fun PaywallDialogContent(
     paywallDialogOptions: PaywallDialogOptions,
     offeringSelection: OfferingSelection,
-    onDismissWithExitOffer: (OfferingSelection) -> Unit,
-    onDismiss: () -> Unit,
+    onDismissRequest: (OfferingSelection?) -> Unit,
 ) {
-    val currentOnDismissWithExitOffer by rememberUpdatedState(onDismissWithExitOffer)
-    val currentOnDismiss by rememberUpdatedState(onDismiss)
-
     val paywallOptions = remember(paywallDialogOptions, offeringSelection) {
         buildPaywallOptions(
             paywallDialogOptions = paywallDialogOptions,
@@ -128,12 +123,7 @@ private fun PaywallDialogContent(
         } else {
             null
         }
-
-        if (exitOffering != null) {
-            currentOnDismissWithExitOffer(exitOffering)
-        } else {
-            currentOnDismiss()
-        }
+        onDismissRequest(exitOffering)
     }
 
     val paywallOptionsWithDismiss = paywallOptions.copy(dismissRequest = handleCloseRequest)
