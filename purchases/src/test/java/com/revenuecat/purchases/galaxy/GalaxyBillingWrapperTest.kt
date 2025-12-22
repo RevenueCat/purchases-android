@@ -896,6 +896,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     private fun createWrapper(
         finishTransactions: Boolean = true,
         billingMode: GalaxyBillingMode = GalaxyBillingMode.TEST,
+        dateProvider: DateProvider = DefaultDateProvider(),
         purchaseHandler: PurchaseResponseListener = purchaseHandlerMock,
         acknowledgePurchaseHandler: AcknowledgePurchaseResponseListener = mockk(relaxed = true),
         getOwnedListHandler: GetOwnedListResponseListener = mockk(relaxed = true),
@@ -918,6 +919,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(dateString)!!
     }
 
+    private class FixedDateProvider(
+        override val now: Date,
     ) : DateProvider
 
     private fun createStoreProduct(

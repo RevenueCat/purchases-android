@@ -362,6 +362,7 @@ internal class GalaxyBillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE }
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
