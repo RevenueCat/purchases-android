@@ -24,11 +24,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
@@ -39,7 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
@@ -54,13 +52,10 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         const val RESULT_EXTRA = "paywall_result"
     }
 
-    private var purchaseCompleted = false
     private var currentOfferingSelection by mutableStateOf<OfferingSelection?>(null)
-    private var preloadedExitOfferId: String? = null
 
     private val exitOfferLauncher: ActivityResultLauncher<PaywallActivityArgs> =
         registerForActivityResult(PaywallContract()) { result ->
-            // Forward the exit offer's result and finish this activity
             setResult(RESULT_OK, createResultIntent(result))
             finish()
         }
@@ -124,32 +119,23 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                                 padding(paddingValues)
                             },
                     ) {
-                        // Preload exit offer ID so it's ready when dismiss is called
                         val selection = currentOfferingSelection
-                        val offeringId = selection?.offeringIdentifier
-                        LaunchedEffect(offeringId) {
-                            try {
-                                val offerings = Purchases.sharedInstance.awaitOfferings()
-                                val currentOffering = if (offeringId != null) {
-                                    offerings[offeringId]
-                                } else {
-                                    offerings.current
-                                }
-                                preloadedExitOfferId = currentOffering?.paywallComponents
-                                    ?.data?.exitOffers?.dismiss?.offeringId
-                            } catch (e: PurchasesException) {
-                                Logger.e("Failed to preload exit offer ID", e)
-                            }
-                        }
 
-                        val paywallOptions = PaywallOptions.Builder(dismissRequest = ::handleDismissRequest)
+                        val paywallOptions = PaywallOptions.Builder(dismissRequest = {})
                             .setOfferingSelection(selection)
                             .setFontProvider(getFontProvider())
                             .setShouldDisplayDismissButton(
                                 args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
                             )
                             .setListener(this@PaywallActivity)
+                            .setDismissRequestWithExitOffering(::onDismissRequest)
                             .build()
+                        val viewModel = getPaywallViewModel(paywallOptions)
+
+                        LaunchedEffect(Unit) {
+                            viewModel.preloadExitOffering()
+                        }
+
                         Paywall(paywallOptions)
                     }
                 }
@@ -157,21 +143,15 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         }
     }
 
-    private fun handleDismissRequest() {
-        if (purchaseCompleted) {
-            finish()
-            return
-        }
-
-        val exitOfferId = preloadedExitOfferId
-        if (exitOfferId != null && exitOfferId.isNotBlank()) {
-            launchExitOfferActivity(exitOfferId)
+    private fun onDismissRequest(exitOffering: Offering?) {
+        if (exitOffering != null) {
+            launchExitOfferActivity(exitOffering)
         } else {
             finish()
         }
     }
 
-    private fun launchExitOfferActivity(exitOfferId: String) {
+    private fun launchExitOfferActivity(exitOffering: Offering) {
         val currentArgs = getArgs() ?: run {
             finish()
             return
@@ -180,7 +160,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         // When it finishes, exitOfferLauncher callback will forward its result and finish this activity
         val exitOfferArgs = currentArgs.copy(
             offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                offeringId = exitOfferId,
+                offeringId = exitOffering.identifier,
                 presentedOfferingContext = null,
             ),
         )
@@ -193,7 +173,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     }
 
     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-        purchaseCompleted = true
         setResult(RESULT_OK, createResultIntent(PaywallResult.Purchased(customerInfo)))
         finish()
     }
@@ -202,7 +181,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
         val requiredEntitlementIdentifier = getArgs()?.requiredEntitlementIdentifier ?: return
         if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
-            purchaseCompleted = true
             finish()
         }
     }

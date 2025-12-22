@@ -59,6 +59,8 @@ internal interface PaywallViewModel {
     val resourceProvider: ResourceProvider
     val actionInProgress: State<Boolean>
     val actionError: State<PurchasesError?>
+    val purchaseCompleted: State<Boolean>
+    val preloadedExitOffering: State<Offering?>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
@@ -80,6 +82,7 @@ internal interface PaywallViewModel {
     suspend fun handleRestorePurchases()
 
     fun clearActionError()
+    fun preloadExitOffering()
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -100,10 +103,16 @@ internal class PaywallViewModelImpl(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val purchaseCompleted: State<Boolean>
+        get() = _purchaseCompleted
+    override val preloadedExitOffering: State<Offering?>
+        get() = _preloadedExitOffering
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+    private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
+    private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -174,7 +183,41 @@ internal class PaywallViewModelImpl(
     override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
-        options.dismissRequest()
+        val dismissWithExitOffering = options.dismissRequestWithExitOffering
+        if (dismissWithExitOffering != null) {
+            val exitOffering = if (!_purchaseCompleted.value) {
+                _preloadedExitOffering.value
+            } else {
+                null
+            }
+            dismissWithExitOffering(exitOffering)
+        } else {
+            options.dismissRequest()
+        }
+    }
+
+    override fun preloadExitOffering() {
+        viewModelScope.launch {
+            try {
+                val currentState = _state.value
+                val currentOffering = when (currentState) {
+                    is PaywallState.Loaded.Legacy -> currentState.offering
+                    is PaywallState.Loaded.Components -> currentState.offering
+                    else -> null
+                }
+
+                val exitOfferingId = currentOffering?.paywallComponents
+                    ?.data?.exitOffers?.dismiss?.offeringId
+                _preloadedExitOffering.value = if (exitOfferingId != null) {
+                    val offerings = purchases.awaitOfferings()
+                    offerings[exitOfferingId]
+                } else {
+                    null
+                }
+            } catch (e: PurchasesException) {
+                Logger.e("Failed to preload exit offering", e)
+            }
+        }
     }
 
     @Suppress("ReturnCount")
@@ -262,6 +305,7 @@ internal class PaywallViewModelImpl(
 
                             shouldDisplayBlock?.let {
                                 if (!it(customerInfo)) {
+                                    _purchaseCompleted.value = true
                                     Logger.d(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
@@ -294,6 +338,7 @@ internal class PaywallViewModelImpl(
 
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
+                            _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             options.dismissRequest()
                         }
@@ -376,6 +421,7 @@ internal class PaywallViewModelImpl(
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
+                            _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after purchase")
                             options.dismissRequest()
                         }
@@ -399,6 +445,7 @@ internal class PaywallViewModelImpl(
                     val purchaseResult = purchases.awaitPurchase(
                         PurchaseParams.Builder(activity, packageToPurchase),
                     )
+                    _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()

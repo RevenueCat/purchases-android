@@ -501,6 +501,8 @@ internal class MockViewModel(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
+    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()
@@ -633,6 +635,12 @@ internal class MockViewModel(
     override fun clearActionError() {
         clearActionErrorCallCount++
         _actionError.value = null
+    }
+
+    var preloadExitOfferingCallCount = 0
+        private set
+    override fun preloadExitOffering() {
+        preloadExitOfferingCallCount++
     }
 
     var updateOptionsCallCount = 0

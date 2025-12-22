@@ -50,6 +50,7 @@ class PaywallOptions internal constructor(
     val purchaseLogic: PurchaseLogic?,
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
+    internal val dismissRequestWithExitOffering: ((exitOffering: Offering?) -> Unit)? = null,
 ) {
     companion object {
         private const val hashMultiplier = 31
@@ -63,6 +64,7 @@ class PaywallOptions internal constructor(
         purchaseLogic = builder.purchaseLogic,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
+        dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -98,6 +100,7 @@ class PaywallOptions internal constructor(
         purchaseLogic: PurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
+        dismissRequestWithExitOffering: ((Offering?) -> Unit)? = this.dismissRequestWithExitOffering,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -106,6 +109,7 @@ class PaywallOptions internal constructor(
         purchaseLogic = purchaseLogic,
         mode = mode,
         dismissRequest = dismissRequest,
+        dismissRequestWithExitOffering = dismissRequestWithExitOffering,
     )
 
     class Builder(
@@ -117,6 +121,7 @@ class PaywallOptions internal constructor(
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
+        internal var dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -160,6 +165,10 @@ class PaywallOptions internal constructor(
 
         internal fun setMode(mode: PaywallMode) = apply {
             this.mode = mode
+        }
+
+        internal fun setDismissRequestWithExitOffering(dismissRequestWithExitOffering: ((Offering?) -> Unit)?) = apply {
+            this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
         }
 
         fun build(): PaywallOptions {
