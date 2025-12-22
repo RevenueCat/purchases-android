@@ -26,11 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
@@ -99,11 +95,6 @@ fun PaywallDialog(
     }
 }
 
-private sealed class ExitOfferState {
-    object Loading : ExitOfferState()
-    data class Loaded(val exitOffering: OfferingSelection.OfferingType?) : ExitOfferState()
-}
-
 @Composable
 private fun PaywallDialogContent(
     paywallDialogOptions: PaywallDialogOptions,
@@ -111,66 +102,43 @@ private fun PaywallDialogContent(
     onDismissWithExitOffer: (OfferingSelection) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Use rememberUpdatedState to safely reference lambdas in LaunchedEffect
     val currentOnDismissWithExitOffer by rememberUpdatedState(onDismissWithExitOffer)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
 
-    var purchaseCompleted by remember { mutableStateOf(false) }
-    var exitOfferState by remember { mutableStateOf<ExitOfferState>(ExitOfferState.Loading) }
-    var pendingDismiss by remember { mutableStateOf(false) }
+    val paywallOptions = remember(paywallDialogOptions, offeringSelection) {
+        buildPaywallOptions(
+            paywallDialogOptions = paywallDialogOptions,
+            offeringSelection = offeringSelection,
+            dismissRequest = {},
+        )
+    }
 
-    PreloadExitOffering(offeringSelection) { state -> exitOfferState = state }
+    val viewModel = getPaywallViewModel(paywallOptions)
 
-    HandlePendingDismiss(
-        exitOfferState = exitOfferState,
-        pendingDismiss = pendingDismiss,
-        onHandle = { pendingDismiss = false },
-        onDismissWithExitOffer = currentOnDismissWithExitOffer,
-        onDismiss = currentOnDismiss,
-    )
+    LaunchedEffect(Unit) {
+        viewModel.preloadExitOffering()
+    }
 
-    val handleCloseRequest = createCloseRequestHandler(
-        purchaseCompleted = purchaseCompleted,
-        exitOfferState = exitOfferState,
-        onPendingDismiss = { pendingDismiss = true },
-        onDismissWithExitOffer = onDismissWithExitOffer,
-        onDismiss = onDismiss,
-    )
+    val purchaseCompleted by viewModel.purchaseCompleted
+    val preloadedExitOffering by viewModel.preloadedExitOffering
 
-    val paywallOptions = buildPaywallOptions(
-        paywallDialogOptions = paywallDialogOptions,
-        offeringSelection = offeringSelection,
-        handleCloseRequest = handleCloseRequest,
-        onPurchaseCompleted = { purchaseCompleted = true },
-    )
+    val handleCloseRequest: () -> Unit = {
+        val exitOffering = if (!purchaseCompleted && preloadedExitOffering != null) {
+            OfferingSelection.OfferingType(preloadedExitOffering!!)
+        } else {
+            null
+        }
 
-    PaywallDialogScaffold(handleCloseRequest, paywallOptions)
-}
-
-@Composable
-private fun PreloadExitOffering(
-    offeringSelection: OfferingSelection,
-    onStateChange: (ExitOfferState) -> Unit,
-) {
-    val currentOnStateChange by rememberUpdatedState(onStateChange)
-    LaunchedEffect(offeringSelection) {
-        currentOnStateChange(ExitOfferState.Loading)
-        try {
-            val offerings = Purchases.sharedInstance.awaitOfferings()
-            val offeringId = offeringSelection.offeringIdentifier
-            val currentOffering = if (offeringId != null) offerings[offeringId] else offerings.current
-            val exitOfferId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
-            val exitOffering = if (exitOfferId != null && exitOfferId.isNotBlank()) {
-                offerings[exitOfferId]?.let { OfferingSelection.OfferingType(it) }
-            } else {
-                null
-            }
-            currentOnStateChange(ExitOfferState.Loaded(exitOffering))
-        } catch (e: PurchasesException) {
-            Logger.e("Failed to preload exit offering", e)
-            currentOnStateChange(ExitOfferState.Loaded(null))
+        if (exitOffering != null) {
+            currentOnDismissWithExitOffer(exitOffering)
+        } else {
+            currentOnDismiss()
         }
     }
+
+    val paywallOptionsWithDismiss = paywallOptions.copy(dismissRequest = handleCloseRequest)
+
+    PaywallDialogScaffold(handleCloseRequest, paywallOptionsWithDismiss)
 }
 
 @Composable
@@ -200,7 +168,7 @@ private fun PaywallDialogScaffold(
                 .fillMaxHeight(getDialogMaxHeightPercentage()),
             // This is needed for Android 35+ but using an older version of Compose. In those cases,
             // the dialog doesn't properly extend edge to edge, leaving some spacing at the bottom since we changed
-            // the decorFitsSystemWindows setting of the Dialog. This is added to mimick the dim effect that we get
+            // the decorFitsSystemWindows setting of the Dialog. This is added to mimic the dim effect that we get
             // at the top of the dialog in this case. This should be removed once we update Compose in the next major.
             containerColor = Color.Black.copy(alpha = 0.4f),
         ) { paddingValues ->
@@ -220,107 +188,18 @@ private fun PaywallDialogScaffold(
     }
 }
 
-@Composable
-private fun HandlePendingDismiss(
-    exitOfferState: ExitOfferState,
-    pendingDismiss: Boolean,
-    onHandle: () -> Unit,
-    onDismissWithExitOffer: (OfferingSelection) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val currentOnHandle by rememberUpdatedState(onHandle)
-    val currentOnDismissWithExitOffer by rememberUpdatedState(onDismissWithExitOffer)
-    val currentOnDismiss by rememberUpdatedState(onDismiss)
-    LaunchedEffect(exitOfferState, pendingDismiss) {
-        if (pendingDismiss && exitOfferState is ExitOfferState.Loaded) {
-            currentOnHandle()
-            val exitOffering = exitOfferState.exitOffering
-            if (exitOffering != null) {
-                currentOnDismissWithExitOffer(exitOffering)
-            } else {
-                currentOnDismiss()
-            }
-        }
-    }
-}
-
-private fun createCloseRequestHandler(
-    purchaseCompleted: Boolean,
-    exitOfferState: ExitOfferState,
-    onPendingDismiss: () -> Unit,
-    onDismissWithExitOffer: (OfferingSelection) -> Unit,
-    onDismiss: () -> Unit,
-): () -> Unit = {
-    if (purchaseCompleted) {
-        onDismiss()
-    } else {
-        when (exitOfferState) {
-            is ExitOfferState.Loading -> onPendingDismiss()
-            is ExitOfferState.Loaded -> {
-                val exitOffering = exitOfferState.exitOffering
-                if (exitOffering != null) {
-                    onDismissWithExitOffer(exitOffering)
-                } else {
-                    onDismiss()
-                }
-            }
-        }
-    }
-}
-
 private fun buildPaywallOptions(
     paywallDialogOptions: PaywallDialogOptions,
     offeringSelection: OfferingSelection,
-    handleCloseRequest: () -> Unit,
-    onPurchaseCompleted: () -> Unit,
+    dismissRequest: () -> Unit,
 ): PaywallOptions {
-    return PaywallOptions.Builder(dismissRequest = handleCloseRequest)
-        .setOffering(paywallDialogOptions.offering)
+    return PaywallOptions.Builder(dismissRequest = dismissRequest)
+        .setOfferingSelection(offeringSelection)
         .setShouldDisplayDismissButton(paywallDialogOptions.shouldDisplayDismissButton)
         .setFontProvider(paywallDialogOptions.fontProvider)
+        .setListener(paywallDialogOptions.listener)
         .setPurchaseLogic(paywallDialogOptions.purchaseLogic)
         .build()
-        .copy(
-            offeringSelection = offeringSelection,
-            listener = createPaywallListener(paywallDialogOptions, onPurchaseCompleted),
-        )
-}
-
-private fun createPaywallListener(
-    paywallDialogOptions: PaywallDialogOptions,
-    onPurchaseCompleted: () -> Unit,
-): PaywallListener = object : PaywallListener {
-    override fun onPurchaseStarted(rcPackage: com.revenuecat.purchases.Package) {
-        paywallDialogOptions.listener?.onPurchaseStarted(rcPackage)
-    }
-
-    override fun onPurchaseCompleted(
-        customerInfo: com.revenuecat.purchases.CustomerInfo,
-        storeTransaction: com.revenuecat.purchases.models.StoreTransaction,
-    ) {
-        onPurchaseCompleted()
-        paywallDialogOptions.listener?.onPurchaseCompleted(customerInfo, storeTransaction)
-    }
-
-    override fun onPurchaseError(error: com.revenuecat.purchases.PurchasesError) {
-        paywallDialogOptions.listener?.onPurchaseError(error)
-    }
-
-    override fun onPurchaseCancelled() {
-        paywallDialogOptions.listener?.onPurchaseCancelled()
-    }
-
-    override fun onRestoreStarted() {
-        paywallDialogOptions.listener?.onRestoreStarted()
-    }
-
-    override fun onRestoreCompleted(customerInfo: com.revenuecat.purchases.CustomerInfo) {
-        paywallDialogOptions.listener?.onRestoreCompleted(customerInfo)
-    }
-
-    override fun onRestoreError(error: com.revenuecat.purchases.PurchasesError) {
-        paywallDialogOptions.listener?.onRestoreError(error)
-    }
 }
 
 @Composable

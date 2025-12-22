@@ -41,16 +41,21 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.revenuecat.purchases.Package as RCPackage
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -237,6 +242,34 @@ private fun OfferingsListScreen(
             PaywallDialogOptions.Builder()
                 .setDismissRequest { displayPaywallDialogOffering = null }
                 .setOffering(displayPaywallDialogOffering)
+                .setListener(object : PaywallListener {
+                    override fun onPurchaseStarted(rcPackage: RCPackage) {
+                        android.util.Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
+                    }
+
+                    override fun onPurchaseCompleted(
+                        customerInfo: CustomerInfo,
+                        storeTransaction: StoreTransaction,
+                    ) {
+                        android.util.Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
+                    }
+
+                    override fun onPurchaseError(error: PurchasesError) {
+                        android.util.Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
+                    }
+
+                    override fun onRestoreStarted() {
+                        android.util.Log.d("PaywallDialog", "onRestoreStarted")
+                    }
+
+                    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                        android.util.Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
+                    }
+
+                    override fun onRestoreError(error: PurchasesError) {
+                        android.util.Log.e("PaywallDialog", "onRestoreError: ${error.message}")
+                    }
+                })
                 .build(),
         )
     }
