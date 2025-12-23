@@ -3,14 +3,13 @@
 > Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
 
 
-## RevenueCat SDK
-### 🐞 Bugfixes
-* Remove deprecated API usage (#2957) via Toni Rico (@tonidero)
-
 ## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Retry creation of font folder (#2965) via Cesar de la Vega (@vegaro)
 ### Paywallv2
-#### 🐞 Bugfixes
-* Fix crash when context.cacheDir is null in FontLoader (#2961) via Cesar de la Vega (@vegaro)
+#### ✨ New Features
+* Add exit offers support to PaywallActivity and PaywallDialog (#2938) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Bump fastlane from 2.229.1 to 2.230.0 (#2951) via dependabot[bot] (@dependabot[bot])
+* Improve event tracking reliability (#2968) via Toni Rico (@tonidero)
+* Use @ExperimentalPreviewRevenueCatPurchasesAPI for non subscription tracking API (#2962) via Pol Miro (@polmiro)
