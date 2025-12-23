@@ -75,7 +75,7 @@ platform :android do
        "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
        "RELEASE_SIGNING_ENABLED" => true
      }
-     gradle(task: ":publishToMavenLocal", properties: gradle_properties)
+     gradle(task: "publishToMavenLocal", properties: gradle_properties)
      Dir.chdir("../test-apps/sdksizetesting/app") do
          gradle(task: "emergeUploadReleaseApk")
      end
