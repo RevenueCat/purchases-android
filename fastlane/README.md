@@ -39,10 +39,10 @@ Setup development environment
 
 Emerge snapshot tests
 
-### android emerge_sdk_side_tests
+### android emerge_sdk_size_tests
 
 ```sh
-[bundle exec] fastlane android emerge_sdk_side_tests
+[bundle exec] fastlane android emerge_sdk_size_tests
 ```
 
 Emerge size tests

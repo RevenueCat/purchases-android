@@ -637,7 +637,7 @@ jobs:
       - run:
           name: Upload size testing app to emerge
           command: |
-            bundle exec fastlane android emerge_sdk_side_tests
+            bundle exec fastlane android emerge_sdk_size_tests
       - android/save_build_cache
 
   run-firebase-tests:

@@ -68,9 +68,15 @@ platform :android do
   end
 
   desc "Emerge size tests"
-  lane :emerge_sdk_side_tests do
-     gradle(task: ":purchases:publishToMavenLocal")
-     gradle(task: ":ui:revenuecatui:publishToMavenLocal")
+  lane :emerge_sdk_size_tests do
+     gradle_properties = {
+       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+       "RELEASE_SIGNING_ENABLED" => true
+     }
+     gradle(task: ":purchases:publishToMavenLocal", properties: gradle_properties)
+     gradle(task: ":ui:revenuecatui:publishToMavenLocal", properties: gradle_properties)
      Dir.chdir("../test-apps/sdksizetesting/app") do
          gradle(task: "emergeUploadReleaseApk")
      end
