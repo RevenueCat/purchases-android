@@ -71,7 +71,7 @@ platform :android do
   lane :emerge_sdk_side_tests do
      gradle(task: ":purchases:publishToMavenLocal")
      gradle(task: ":ui:revenuecatui:publishToMavenLocal")
-     Dir.chdir("test-apps/sdksizetesting") do
+     Dir.chdir("../test-apps/sdksizetesting/app") do
          gradle(task: "emergeUploadReleaseApk")
      end
   end
