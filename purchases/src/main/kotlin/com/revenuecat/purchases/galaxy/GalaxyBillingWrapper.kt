@@ -100,7 +100,7 @@ internal class GalaxyBillingWrapper(
                 onSuccess = { ownedProducts ->
                     val storeTransactions = ownedProducts.map {
                         try {
-                            it.toStoreTransaction(purchaseState = PurchaseState.UNSPECIFIED_STATE)
+                            it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
                         } catch (e: IllegalArgumentException) {
                             val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
                             log(LogIntent.GALAXY_ERROR) { errorMessage }
@@ -373,7 +373,7 @@ internal class GalaxyBillingWrapper(
                         }
                         .map {
                             try {
-                                it.toStoreTransaction(purchaseState = PurchaseState.UNSPECIFIED_STATE)
+                                it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
                             } catch (e: IllegalArgumentException) {
                                 val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
                                 log(LogIntent.GALAXY_ERROR) { errorMessage }
