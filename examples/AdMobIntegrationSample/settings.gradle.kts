@@ -21,11 +21,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "AdMobIntegrationSample"
 include(":app")
-
-// Using local version of the SDK since 9.17.0-SNAPSHOT isn't published yet
-includeBuild("../..") {
-   dependencySubstitution {
-       substitute(module("com.revenuecat.purchases:purchases"))
-           .using(project(":purchases"))
-   }
-}
