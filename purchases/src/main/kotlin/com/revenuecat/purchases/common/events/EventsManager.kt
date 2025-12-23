@@ -204,12 +204,12 @@ internal class EventsManager(
                 return@enqueue
             }
 
+            flushNextBatch(batchNumber = 1, delay = delay)
+
             if (!legacyFlushTriggered) {
                 legacyFlushTriggered = true
                 flushLegacyEvents()
             }
-
-            flushNextBatch(batchNumber = 1, delay = delay)
         }
     }
 
