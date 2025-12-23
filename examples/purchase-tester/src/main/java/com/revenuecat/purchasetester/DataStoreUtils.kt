@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.revenuecat.purchases.Store
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -18,6 +19,7 @@ class DataStoreUtils(
     private val apiKeyKey = stringPreferencesKey("last_sdk_api_key")
     private val proxyUrlKey = stringPreferencesKey("last_proxy_url_key")
     private val useAmazonKey = booleanPreferencesKey("last_use_amazon_key")
+    private val storeKey = stringPreferencesKey("last_store_key")
 
     suspend fun saveSdkConfig(
         sdkConfiguration: SdkConfiguration,
@@ -29,16 +31,21 @@ class DataStoreUtils(
             } else {
                 preferences[proxyUrlKey] = sdkConfiguration.proxyUrl
             }
-            preferences[useAmazonKey] = sdkConfiguration.useAmazon
+            preferences[storeKey] = sdkConfiguration.store.name
+            preferences.remove(useAmazonKey)
         }
     }
 
     fun getSdkConfig(): Flow<SdkConfiguration> {
         return dataStore.data.map { preferences ->
+            val storedStore = preferences[storeKey]?.let { storeName ->
+                runCatching { Store.valueOf(storeName) }.getOrNull()
+            }
+            val legacyStore = if (preferences[useAmazonKey] == true) Store.AMAZON else Store.PLAY_STORE
             SdkConfiguration(
                 apiKey = preferences[apiKeyKey] ?: "",
                 proxyUrl = preferences[proxyUrlKey],
-                useAmazon = preferences[useAmazonKey] ?: false,
+                store = storedStore ?: legacyStore,
             )
         }
     }

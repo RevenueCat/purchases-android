@@ -74,6 +74,8 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    implementation(project(":feature:galaxy"))
+    implementation("com.samsung.iap:samsung-iap:6.5.0@aar")
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
