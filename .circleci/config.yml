@@ -633,6 +633,7 @@ jobs:
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
+      - prepare-signing-key
       - android/restore_gradle_cache
       - run:
           name: Upload size testing app to emerge
