@@ -181,6 +181,8 @@ private class LoadingViewModel(
 
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
+    override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
+    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit
     override fun refreshStateIfLocaleChanged() = Unit
@@ -222,6 +224,8 @@ private class LoadingViewModel(
     }
 
     override fun clearActionError() = Unit
+
+    override fun preloadExitOffering() = Unit
 }
 
 @Preview(showBackground = true)
