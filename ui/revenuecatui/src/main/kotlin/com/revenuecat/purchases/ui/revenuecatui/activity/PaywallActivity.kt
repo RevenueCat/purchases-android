@@ -7,11 +7,15 @@ import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -19,9 +23,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -30,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
+import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
@@ -41,9 +48,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 internal class PaywallActivity : ComponentActivity(), PaywallListener {
     companion object {
         const val ARGS_EXTRA = "paywall_args"
-
         const val RESULT_EXTRA = "paywall_result"
     }
+
+    private val exitOfferLauncher: ActivityResultLauncher<PaywallActivityArgs> =
+        registerForActivityResult(PaywallContract()) { result ->
+            setResult(RESULT_OK, createResultIntent(result))
+            finish()
+        }
 
     private fun getArgs(): PaywallActivityArgs? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -85,17 +97,15 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         restoreSdkConfigurationIfNeeded(this, savedInstanceState)
+
         val args = getArgs()
         val edgeToEdge = args?.edgeToEdge == true
         if (edgeToEdge) {
             enableEdgeToEdge()
         }
-        val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
-            .setOfferingIdAndPresentedOfferingContext(args?.offeringIdAndPresentedOfferingContext)
-            .setFontProvider(getFontProvider())
-            .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
-            .setListener(this)
-            .build()
+
+        val offeringSelection = args?.offeringIdAndPresentedOfferingContext
+
         setContent {
             MaterialTheme {
                 Scaffold { paddingValues ->
@@ -106,11 +116,53 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                                 padding(paddingValues)
                             },
                     ) {
+                        // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
+                        val paywallOptions = PaywallOptions.Builder(
+                            dismissRequest = {},
+                        )
+                            .setOfferingSelection(offeringSelection)
+                            .setFontProvider(getFontProvider())
+                            .setShouldDisplayDismissButton(
+                                args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
+                            )
+                            .setListener(this@PaywallActivity)
+                            .setDismissRequestWithExitOffering(::onDismissRequest)
+                            .build()
+                        val viewModel = getPaywallViewModel(paywallOptions)
+
+                        LaunchedEffect(Unit) {
+                            viewModel.preloadExitOffering()
+                        }
+
                         Paywall(paywallOptions)
                     }
                 }
             }
         }
+    }
+
+    private fun onDismissRequest(exitOffering: Offering?) {
+        if (exitOffering != null) {
+            launchExitOfferActivity(exitOffering)
+        } else {
+            finish()
+        }
+    }
+
+    private fun launchExitOfferActivity(exitOffering: Offering) {
+        val currentArgs = getArgs() ?: run {
+            finish()
+            return
+        }
+        // Launch the exit offer activity on top of this one
+        // When it finishes, exitOfferLauncher callback will forward its result and finish this activity
+        val exitOfferArgs = currentArgs.copy(
+            offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = exitOffering.identifier,
+                presentedOfferingContext = null,
+            ),
+        )
+        exitOfferLauncher.launch(exitOfferArgs)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

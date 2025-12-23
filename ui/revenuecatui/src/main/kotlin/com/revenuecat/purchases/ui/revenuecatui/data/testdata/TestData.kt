@@ -23,6 +23,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -500,6 +501,8 @@ internal class MockViewModel(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
+    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()
@@ -632,6 +635,21 @@ internal class MockViewModel(
     override fun clearActionError() {
         clearActionErrorCallCount++
         _actionError.value = null
+    }
+
+    var preloadExitOfferingCallCount = 0
+        private set
+    override fun preloadExitOffering() {
+        preloadExitOfferingCallCount++
+    }
+
+    var updateOptionsCallCount = 0
+        private set
+    var updateOptionsParams = mutableListOf<PaywallOptions>()
+        private set
+    fun updateOptions(options: PaywallOptions) {
+        updateOptionsCallCount++
+        updateOptionsParams.add(options)
     }
 
     private fun simulateActionInProgress() {
