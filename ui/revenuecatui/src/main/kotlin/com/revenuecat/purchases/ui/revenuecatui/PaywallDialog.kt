@@ -18,10 +18,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -31,8 +29,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 private object UIDialogConstants {
@@ -72,11 +68,27 @@ fun PaywallDialog(
         }
     }
 
-    // When current dialog is dismissed and there's a pending exit offering, show it
+    val dismissDialog: () -> Unit = {
+        currentDialogOffering = null
+        shouldDisplayDialog = false
+        paywallDialogOptions.dismissRequest?.invoke()
+    }
+
+    // When current dialog is dismissed and there's a pending exit offering, check shouldDisplayBlock before showing
     LaunchedEffect(currentDialogOffering, pendingExitOffering) {
         if (currentDialogOffering == null && pendingExitOffering != null) {
-            currentDialogOffering = pendingExitOffering
-            pendingExitOffering = null
+            if (shouldDisplayBlock != null) {
+                val shouldShow = shouldDisplayPaywall(shouldDisplayBlock)
+                if (shouldShow) {
+                    currentDialogOffering = pendingExitOffering
+                } else {
+                    dismissDialog()
+                }
+                pendingExitOffering = null
+            } else {
+                currentDialogOffering = pendingExitOffering
+                pendingExitOffering = null
+            }
         }
     }
 
@@ -89,9 +101,7 @@ fun PaywallDialog(
                     pendingExitOffering = exitOffering
                     currentDialogOffering = null
                 } else {
-                    currentDialogOffering = null
-                    shouldDisplayDialog = false
-                    paywallDialogOptions.dismissRequest?.invoke()
+                    dismissDialog()
                 }
             },
         )
@@ -123,18 +133,6 @@ private fun PaywallDialogContent(
 
     val purchaseCompleted by viewModel.purchaseCompleted
     val preloadedExitOffering by viewModel.preloadedExitOffering
-
-    val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
-    LaunchedEffect(Unit) {
-        snapshotFlow { purchaseCompleted }
-            .distinctUntilChanged()
-            .drop(1)
-            .collect { completed ->
-                if (completed) {
-                    currentOnDismissRequest(null)
-                }
-            }
-    }
 
     val handleCloseRequest: () -> Unit = {
         val exitOffering = if (!purchaseCompleted && preloadedExitOffering != null) {
