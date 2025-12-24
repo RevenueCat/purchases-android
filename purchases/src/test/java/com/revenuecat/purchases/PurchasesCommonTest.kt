@@ -10,9 +10,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
-import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
@@ -28,11 +26,11 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
+import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOTPOffering
@@ -1094,7 +1092,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
 
-        val packageToPurchase = stubOTPOffering[expectedOfferingIdentifier]!!.availablePackages.get(0)
+        val packageToPurchase = stubOTPOffering[expectedOfferingIdentifier]!!.availablePackages[0]
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
             packageToPurchase
@@ -1121,7 +1119,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             PresentedOfferingContext(expectedOfferingIdentifier),
         )
 
-        val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
+        stubOTPOffering(stubOtpProduct)
 
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
@@ -1341,7 +1339,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         try {
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
             capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
-        } catch (e: ConcurrentModificationException) {
+        } catch (_: ConcurrentModificationException) {
             fail("Test throws ConcurrentModificationException")
         }
     }
@@ -2554,10 +2552,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingAbstract.purchasesUpdatedListener = null
         }
-    }
-
-    private fun Int.buildResult(): BillingResult {
-        return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
     private fun mockQueryingProductDetails(
