@@ -871,7 +871,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
         }
 
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
