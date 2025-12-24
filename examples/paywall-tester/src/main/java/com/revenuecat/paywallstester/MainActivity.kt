@@ -20,9 +20,11 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.ShowCustomerCenter
 
 class MainActivity : ComponentActivity(), PaywallResultHandler {
     private lateinit var paywallActivityLauncher: PaywallActivityLauncher
+    private val customerCenter = registerForActivityResult(ShowCustomerCenter()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,10 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
 
     fun launchPaywall(offering: Offering? = null, edgeToEdge: Boolean = false) {
         paywallActivityLauncher.launch(offering, edgeToEdge = edgeToEdge)
+    }
+
+    fun launchCustomerCenter() {
+        customerCenter.launch(Unit)
     }
 
     fun launchPaywallFooterViewAsActivity(offering: Offering? = null) {

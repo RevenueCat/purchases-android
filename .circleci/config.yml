@@ -354,7 +354,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.17.0-SNAPSHOT s3://purchases-docs/android/9.17.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.19.0-SNAPSHOT s3://purchases-docs/android/9.19.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -621,6 +621,24 @@ jobs:
           name: Build and run purchases ui snapshot tests
           command: |
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
+      - android/save_build_cache
+
+  emerge_size_analysis_tests:
+    description: "Emerge size analysis tests"
+    <<: *android-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - prepare-signing-key
+      - android/restore_gradle_cache
+      - run:
+          name: Upload size testing app to emerge
+          command: |
+            bundle exec fastlane android emerge_sdk_size_tests
       - android/save_build_cache
 
   run-firebase-tests:
@@ -970,6 +988,9 @@ workflows:
           requires:
             - prepare-tests
       - emerge_purchases_ui_snapshot_tests:
+          requires:
+            - prepare-tests
+      - emerge_size_analysis_tests:
           requires:
             - prepare-tests
       - run-maestro-e2e-tests:

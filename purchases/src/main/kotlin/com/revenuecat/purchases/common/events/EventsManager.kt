@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -142,7 +143,7 @@ internal class EventsManager(
      *
      * @param event The event to be tracked.
      */
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
@@ -203,12 +204,12 @@ internal class EventsManager(
                 return@enqueue
             }
 
+            flushNextBatch(batchNumber = 1, delay = delay)
+
             if (!legacyFlushTriggered) {
                 legacyFlushTriggered = true
                 flushLegacyEvents()
             }
-
-            flushNextBatch(batchNumber = 1, delay = delay)
         }
     }
 

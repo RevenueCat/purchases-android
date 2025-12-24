@@ -497,7 +497,7 @@ internal class PurchasesFactory(
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 r?.let {
-                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+                    android.os.Process.setThreadPriority(Thread.NORM_PRIORITY)
                     r.run()
                 }
             }

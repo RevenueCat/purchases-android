@@ -1,3 +1,42 @@
+## 9.18.0
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Retry creation of font folder (#2965) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### ✨ New Features
+* Add exit offers support to PaywallActivity and PaywallDialog (#2938) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Improve event tracking reliability (#2968) via Toni Rico (@tonidero)
+* Use @ExperimentalPreviewRevenueCatPurchasesAPI for non subscription tracking API (#2962) via Pol Miro (@polmiro)
+
+## 9.17.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Remove deprecated API usage (#2957) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix crash when context.cacheDir is null in FontLoader (#2961) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump fastlane from 2.229.1 to 2.230.0 (#2951) via dependabot[bot] (@dependabot[bot])
+
+## 9.17.0
+## RevenueCat SDK
+### ✨ New Features
+* Adds `setAppsFlyerConversionData` to conveniently track AppsFlyer conversion data (#2931) via JayShortway (@JayShortway)
+### 🐞 Bugfixes
+* Make close() method also clear the shared instance of the SDK (#2940) via Toni Rico (@tonidero)
+* Fix purchase callback not firing for DEFERRED product changes with baePlanId in oldProductId (#2937) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* [AUTOMATIC] Update golden test files for backend integration tests (#2949) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2944) via RevenueCat Git Bot (@RCGitBot)
+* Adds `.kotlin` to `.gitignore` (#2941) via JayShortway (@JayShortway)
+* Dont use reflection to instantiate AmazonOfferingParser (#2934) via Will Taylor (@fire-at-will)
+
 ## 9.16.0
 
 ### 🔄 Other Changes
