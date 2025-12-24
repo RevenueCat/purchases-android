@@ -27,6 +27,27 @@ enum class PaywallEventType(val value: String) {
      * The paywall was dismissed.
      */
     CLOSE("paywall_close"),
+
+    /**
+     * An exit offer will be shown to the user.
+     */
+    EXIT_OFFER("paywall_exit_offer"),
+}
+
+/**
+ * Types of exit offers. Meant for RevenueCatUI use.
+ */
+@InternalRevenueCatAPI
+enum class ExitOfferType(val value: String) {
+    /**
+     * An exit offer shown when the user attempts to dismiss the paywall without interacting.
+     */
+    DISMISS("dismiss"),
+
+    /**
+     * An exit offer shown when the user dismisses the paywall after some interaction (e.g., cancelling a purchase).
+     */
+    ABANDONMENT("abandonment"),
 }
 
 /**
@@ -57,6 +78,8 @@ data class PaywallEvent(
         val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
         val localeIdentifier: String,
         val darkMode: Boolean,
+        val exitOfferType: ExitOfferType? = null,
+        val exitOfferingIdentifier: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
