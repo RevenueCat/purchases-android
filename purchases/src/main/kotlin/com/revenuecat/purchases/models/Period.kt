@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
 
 private object PeriodConstants {
@@ -21,6 +22,7 @@ private object PeriodConstants {
  */
 @Parcelize
 @Poko
+@Serializable
 class Period(
     /**
      * The number of period units.
@@ -55,6 +57,7 @@ class Period(
     }
 
     @SuppressWarnings("MagicNumber")
+    @Serializable
     enum class Unit {
         DAY,
         WEEK,

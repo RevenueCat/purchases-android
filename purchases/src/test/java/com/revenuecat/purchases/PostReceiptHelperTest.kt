@@ -9,13 +9,17 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.caching.CachedPurchaseData
+import com.revenuecat.purchases.common.caching.CachedPurchaseDataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -67,8 +71,12 @@ class PostReceiptHelperTest {
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
         presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "test-offering-identifier"),
-        subscriptionOptionId = subscriptionOptionId,
-        storeProduct = mockStoreProduct
+        price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+        currency = mockStoreProduct.price.currencyCode,
+        period = mockStoreProduct.period,
+        pricingPhases = mockStoreProduct.defaultOption?.pricingPhases,
+        replacementMode = null,
+        platformProductIds = emptyList(),
     )
     private val defaultFinishTransactions = true
     private val defaultCustomerInfo = CustomerInfoFactory.buildCustomerInfo(
@@ -100,6 +108,7 @@ class PostReceiptHelperTest {
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
+    private lateinit var cachedPurchaseDataCache: CachedPurchaseDataCache
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -113,6 +122,7 @@ class PostReceiptHelperTest {
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
+        cachedPurchaseDataCache = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -124,10 +134,15 @@ class PostReceiptHelperTest {
             deviceCache = deviceCache,
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
-            paywallPresentedCache = paywallPresentedCache
+            paywallPresentedCache = paywallPresentedCache,
+            cachedPurchaseDataCache = cachedPurchaseDataCache,
         )
 
         mockUnsyncedSubscriberAttributes()
+
+        every { cachedPurchaseDataCache.getCachedPurchaseData(any()) } returns null
+        every { cachedPurchaseDataCache.cachePurchaseData(any(), any()) } just Runs
+        every { cachedPurchaseDataCache.clearCachedPurchaseData(any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
     }
@@ -151,11 +166,10 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
 
-        val expectedReceiptInfo = ReceiptInfo(
-            productIDs = mockStoreTransaction.productIds,
-            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
-            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId,
-            storeProduct = mockStoreProduct
+        val expectedReceiptInfo = ReceiptInfo.from(
+            storeTransaction = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = emptyMap(),
         )
 
         verify(exactly = 1) {
@@ -711,24 +725,6 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded posts subscriptionOptionId`() {
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = true,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.subscriptionOptionId).isEqualTo(subscriptionOptionId)
-    }
-
-    @Test
     fun `postTransactionAndConsumeIfNeeded sends null durations when posting inapps to backend`() {
         mockPostReceiptSuccess()
 
@@ -798,25 +794,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded posts storeProduct`() {
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = true,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.storeProduct).isEqualTo(mockStoreProduct)
-    }
-
-    @Test
-    fun `postTransactionAndConsumeIfNeeded posts price and currency`() {
+    fun `postTransactionAndConsumeIfNeeded posts storeProduct info`() {
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -832,6 +810,9 @@ class PostReceiptHelperTest {
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
         assertThat(postedReceiptInfoSlot.captured.price).isEqualTo(4.99)
         assertThat(postedReceiptInfoSlot.captured.currency).isEqualTo("USD")
+        assertThat(postedReceiptInfoSlot.captured.period).isEqualTo(
+            Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+        )
     }
 
     @Test
@@ -1624,6 +1605,50 @@ class PostReceiptHelperTest {
 
     // endregion purchased products data
 
+    // region cached purchase data
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded posts cached purchase data`() {
+        val cachedPresentedOfferingContext = PresentedOfferingContext("offering_a")
+        val cachedReceiptInfo = ReceiptInfo(
+            productIDs = mockGooglePurchase.products,
+            price = 9.99,
+            currency = "EUR",
+            presentedOfferingContext = cachedPresentedOfferingContext,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            platformProductIds = mockGooglePurchase.products.map { mapOf("product_id" to it) },
+        )
+        val cachedPaywallData = event.toPaywallPostReceiptData()
+        val cachedPurchaseData = CachedPurchaseData(
+            receiptInfo = cachedReceiptInfo,
+            paywallPostReceiptData = cachedPaywallData,
+            observerMode = true,
+        )
+        every {
+            cachedPurchaseDataCache.getCachedPurchaseData(mockStoreTransaction.purchaseToken)
+        } returns cachedPurchaseData
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured).isEqualTo(cachedReceiptInfo)
+        assertThat(postedReceiptInfoSlot.captured.presentedOfferingContext).isEqualTo(cachedPresentedOfferingContext)
+        assertThat(postedReceiptInfoSlot.captured.price).isEqualTo(9.99)
+        assertThat(postedReceiptInfoSlot.captured.currency).isEqualTo("EUR")
+    }
+
+    // endregion cached purchase data
+
     // region helpers
 
     private enum class PostType {
@@ -1658,6 +1683,7 @@ class PostReceiptHelperTest {
                 marketplace = any(),
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
+                originalObserverMode = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
