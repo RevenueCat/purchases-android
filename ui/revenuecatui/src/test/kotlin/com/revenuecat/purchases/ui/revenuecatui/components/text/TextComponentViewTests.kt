@@ -457,7 +457,10 @@ class TextComponentViewTests {
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                        value = true,
+                    )),
                     properties = PartialTextComponent(
                         text = singleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
@@ -465,7 +468,12 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(
+                        ComponentOverride.Condition.MultipleIntroOffers(
+                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                            value = true,
+                        )
+                    ),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -522,7 +530,10 @@ class TextComponentViewTests {
             backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                        operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                        value = true,
+                    )),
                     properties = PartialTextComponent(
                         text = singleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedSingleEligibleTextColor.toArgb())),
@@ -530,7 +541,12 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(
+                        ComponentOverride.Condition.MultipleIntroOffers(
+                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                            value = true,
+                        )
+                    ),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -697,7 +713,10 @@ class TextComponentViewTests {
             text = ineligibleLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                    value = true,
+                )),
                 properties = PartialTextComponent(
                     text = singleEligibleLocalizationKey,
                 ),
