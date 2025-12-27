@@ -29,6 +29,12 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 
+    val samsungIapSdkDir: File = run {
+        val fromProp = gradle.startParameter.projectProperties["samsungIapSdkDir"]
+        val fromEnv = System.getenv("SAMSUNG_IAP_SDK_DIR")
+        file(fromProp ?: fromEnv ?: "$rootDir/libs")
+    }
+
     repositories {
         // fetch plugins from google maven (https://maven.google.com)
         google {
@@ -49,10 +55,16 @@ dependencyResolutionManagement {
 
         // fallback for the rest of the dependencies
         mavenCentral()
+
+        // Local Samsung IAP SDK AAR
+        flatDir {
+            dirs(samsungIapSdkDir)
+        }
     }
 }
 
 include(":feature:amazon")
+include(":feature:galaxy")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")

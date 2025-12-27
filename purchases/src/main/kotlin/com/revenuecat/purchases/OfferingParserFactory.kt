@@ -4,6 +4,7 @@ import com.revenuecat.purchases.amazon.AmazonOfferingParser
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.galaxy.GalaxyOfferingParser
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
@@ -15,6 +16,7 @@ internal object OfferingParserFactory {
             Store.TEST_STORE -> SimulatedStoreOfferingParser()
             Store.PLAY_STORE -> GoogleOfferingParser()
             Store.AMAZON -> AmazonOfferingParser()
+            Store.GALAXY -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }
                 throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
