@@ -204,7 +204,7 @@ internal sealed interface PaywallState {
                 private set
 
             private val initialSelectedPackage = initialSelectedPackageOutsideTabs
-                ?: initialSelectedTabIndex?.let { selectedPackageByTab[it] }
+                ?: selectedPackageByTab[selectedTabIndex]
 
             private var selectedPackage by mutableStateOf(initialSelectedPackage)
 
