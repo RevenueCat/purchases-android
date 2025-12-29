@@ -3,7 +3,7 @@
   "headers": {
     "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "85402",
+    "Content-Length": "85383",
     "Content-Type": "application\/json",
     "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
@@ -1791,8 +1791,7 @@
               "call_to_action": "Continue"
             }
           },
-          "localized_strings_by_tier": {},
-          "exit_offers": {}
+          "localized_strings_by_tier": {}
         },
         "packages": [
           {
