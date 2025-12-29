@@ -1,8 +1,3 @@
-//  Purchases
-//
-//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
-//
-
 package com.revenuecat.purchases.common.caching
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -323,7 +318,7 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
 
         verify(exactly = 1) {
             deviceCache.putString("local_transaction_metadata", any())
@@ -335,10 +330,47 @@ class LocalTransactionMetadataCacheTest {
     }
 
     @Test
+    fun `clearLocalTransactionMetadata removes all given tokens`() {
+        val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = purchaseToken,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+
+        val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = purchaseToken2,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+
+        val cachedData = LocalTransactionMetadata(
+            purchaseDataByTokenHash = mapOf(
+                purchaseToken.sha1() to transactionMetadata1,
+                purchaseToken2.sha1() to transactionMetadata2
+            )
+        )
+        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
+        every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
+
+        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken, purchaseToken2))
+
+        verify(exactly = 1) {
+            deviceCache.putString("local_transaction_metadata", any())
+        }
+
+        assertThat(localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)).isNull()
+        assertThat(localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken2)).isNull()
+    }
+
+    @Test
     fun `clearLocalTransactionMetadata does nothing when no data cached`() {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
 
         verify(exactly = 0) {
             deviceCache.putString(any(), any())
@@ -363,7 +395,7 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata("non_existent_token")
+        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf("non_existent_token"))
 
         verify(exactly = 0) {
             deviceCache.putString(any(), any())
@@ -392,7 +424,7 @@ class LocalTransactionMetadataCacheTest {
         localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
 
         // Clear the data
-        localTransactionMetadataCache.clearLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
 
         // Verify it's gone from in-memory cache
         val result = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)

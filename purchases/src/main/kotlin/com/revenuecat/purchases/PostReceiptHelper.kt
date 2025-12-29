@@ -154,12 +154,11 @@ internal class PostReceiptHelper(
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val hadCachedTransactionMetadata =
-            localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken) != null
+        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(purchaseToken, initiationSource)
 
         val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
 
-        if (!hadCachedTransactionMetadata) {
+        if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
                 userID = appUserID,
                 token = purchaseToken,
@@ -192,8 +191,8 @@ internal class PostReceiptHelper(
                 initiationSource = initiationSource,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 onSuccess = { postReceiptResponse ->
-                    if (!hadCachedTransactionMetadata) {
-                        localTransactionMetadataCache.clearLocalTransactionMetadata(purchaseToken)
+                    if (shouldCacheTransactionMetadata) {
+                        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                     }
 
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
@@ -208,8 +207,8 @@ internal class PostReceiptHelper(
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                        if (!hadCachedTransactionMetadata) {
-                            localTransactionMetadataCache.clearLocalTransactionMetadata(purchaseToken)
+                        if (shouldCacheTransactionMetadata) {
+                            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
@@ -259,5 +258,12 @@ internal class PostReceiptHelper(
                 onError(error)
             },
         )
+    }
+
+    private fun shouldCacheTransactionMetadata(purchaseToken: String, source: PostReceiptInitiationSource): Boolean {
+        val hadCachedTransactionMetadata =
+            localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken) != null
+
+        return !hadCachedTransactionMetadata && source == PostReceiptInitiationSource.PURCHASE
     }
 }

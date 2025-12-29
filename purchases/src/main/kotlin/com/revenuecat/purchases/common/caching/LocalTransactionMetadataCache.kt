@@ -52,24 +52,38 @@ internal class LocalTransactionMetadataCache(
     }
 
     @Synchronized
-    fun clearLocalTransactionMetadata(purchaseToken: String) {
+    fun clearLocalTransactionMetadata(purchaseTokens: List<String>) {
         val existingData = getCachedData() ?: return
-        if (!existingData.purchaseDataByTokenHash.containsKey(getTokenHash(purchaseToken))) {
-            debugLog { "Transaction metadata not found when trying to clear it from local cache. Ignoring" }
+
+        val tokenHashesToClear = purchaseTokens.map { getTokenHash(it) }.toSet()
+        val existingTokenHashes = existingData.purchaseDataByTokenHash.keys
+
+        val tokensNotFound = tokenHashesToClear - existingTokenHashes
+        if (tokensNotFound.isNotEmpty()) {
+            debugLog {
+                "Some transaction metadata not found in cache when trying to clear: ${tokensNotFound.size} tokens. " +
+                    "Ignoring."
+            }
+        }
+
+        val tokensToRemove = tokenHashesToClear.intersect(existingTokenHashes)
+        if (tokensToRemove.isEmpty()) {
+            debugLog { "No transaction metadata found to clear from local cache." }
             return
         }
+
         existingData
             .copy(
                 purchaseDataByTokenHash = existingData
                     .purchaseDataByTokenHash
-                    .filter { it.key != getTokenHash(purchaseToken) },
+                    .filter { it.key !in tokensToRemove },
             )
             .let { updatedData ->
                 try {
                     val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), updatedData)
                     deviceCache.putString(CACHE_KEY, jsonString)
                     cachedData.set(updatedData)
-                    verboseLog { "Cleared local transaction metadata for specific token" }
+                    verboseLog { "Cleared local transaction metadata for ${tokensToRemove.size} token(s)" }
                 } catch (e: SerializationException) {
                     errorLog(e) { "Failed to serialize updated local transaction metadata when clearing cached data." }
                 }
