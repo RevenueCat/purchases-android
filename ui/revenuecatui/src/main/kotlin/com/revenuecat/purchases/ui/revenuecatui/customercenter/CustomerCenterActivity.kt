@@ -36,7 +36,7 @@ internal class CustomerCenterActivity : ComponentActivity() {
             throw IllegalStateException(
                 "CustomerCenterActivity was not launched through the SDK. " +
                     "Please use the SDK methods to open the Customer Center. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to customers.",
+                    "This might happen on some Google automated testing, but shouldn't happen to users.",
             )
         }
 

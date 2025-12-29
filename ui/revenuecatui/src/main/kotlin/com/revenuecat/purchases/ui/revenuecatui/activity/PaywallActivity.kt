@@ -105,7 +105,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             throw IllegalStateException(
                 "PaywallActivity was not launched through the SDK. " +
                     "Please use the SDK methods to open the Paywall. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to customers.",
+                    "This might happen on some Google automated testing, but shouldn't happen to users.",
             )
         }
 

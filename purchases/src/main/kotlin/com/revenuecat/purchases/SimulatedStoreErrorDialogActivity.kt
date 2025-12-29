@@ -61,7 +61,7 @@ internal class SimulatedStoreErrorDialogActivity : Activity() {
             throw IllegalStateException(
                 "SimulatedStoreErrorDialogActivity was not launched through the SDK. " +
                     "Please use the SDK methods to open the SimulatedStoreErrorDialogActivity. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to customers.",
+                    "This might happen on some Google automated testing, but shouldn't happen to users.",
             )
         }
     }
