@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -57,12 +58,23 @@ class PostReceiptHelperTest {
     private val mockGooglePurchase = stubGooglePurchase(
         productIds = listOf("lifetime_product", "dos")
     )
+    private val mockPendingPurchase = stubGooglePurchase(
+        productIds = listOf("lifetime_product", "dos"),
+        purchaseToken = "pending-purchase-token",
+        purchaseState = Purchase.PurchaseState.PENDING,
+    )
     private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
     private val postToken = "test-post-token"
     private val storeUserId = "test-store-user-id"
     private val initiationSource = PostReceiptInitiationSource.PURCHASE
     private val marketplace = "test-marketplace"
     private val mockStoreTransaction = mockGooglePurchase.toStoreTransaction(
+        ProductType.SUBS,
+        null,
+        subscriptionOptionId,
+        replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
+    )
+    private val mockPendingStoreTransaction = mockPendingPurchase.toStoreTransaction(
         ProductType.SUBS,
         null,
         subscriptionOptionId,
@@ -1653,6 +1665,9 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded caches transaction metadata before posting`() {
+        val expectedPaywallData = event.toPaywallPostReceiptData()
+
+        paywallPresentedCache.cachePresentedPaywall(event)
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -1669,7 +1684,7 @@ class PostReceiptHelperTest {
             userID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
-            paywallPostReceiptData = null,
+            paywallPostReceiptData = expectedPaywallData,
             observerMode = false,
         )
         verify(exactly = 1) {
@@ -1680,7 +1695,84 @@ class PostReceiptHelperTest {
         }
     }
 
+    fun `postTransactionAndConsumeIfNeeded caches transaction metadata for pending purchases`() {
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should fail") },
+            onError = { _, _ -> }
+        )
+        val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockPendingStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+                mockPendingStoreTransaction.purchaseToken,
+                expectedTransactionMetadata,
+            )
+        }
+    }
+
     // endregion cached purchase data
+
+    // region pending transactions
+
+    @Test
+    fun `if pending transaction, error callback is called`() {
+        var receivedError: PurchasesError? = null
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, error -> receivedError = error }
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PaymentPendingError)
+    }
+
+    @Test
+    fun `if pending transaction, transaction is not posted`() {
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
+
+        var errorCallCount = 0
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> errorCallCount++ }
+        )
+
+        assertThat(errorCallCount).isEqualTo(1)
+        verify(exactly = 0) {
+            backend.postReceiptData(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+    }
+
+    // endregion pending transactions
 
     // region helpers
 
