@@ -1695,7 +1695,11 @@ class PostReceiptHelperTest {
         }
     }
 
+    @Test
     fun `postTransactionAndConsumeIfNeeded caches transaction metadata for pending purchases`() {
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockPendingStoreTransaction,
             storeProduct = mockStoreProduct,
@@ -1718,6 +1722,93 @@ class PostReceiptHelperTest {
                 mockPendingStoreTransaction.purchaseToken,
                 expectedTransactionMetadata,
             )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists`() {
+        // Mock that metadata already exists for this token
+        val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded clears cache on SHOULD_BE_MARKED_SYNCED error`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(mockStoreTransaction.purchaseToken)
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not clear cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
+        // Mock that metadata already exists for this token
+        val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+
+        // Should not clear cache if metadata was already cached (from a previous attempt)
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(mockStoreTransaction.purchaseToken)
         }
     }
 

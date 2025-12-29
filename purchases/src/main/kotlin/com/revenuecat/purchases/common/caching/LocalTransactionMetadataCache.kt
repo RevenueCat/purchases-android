@@ -38,6 +38,7 @@ internal class LocalTransactionMetadataCache(
         try {
             val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), updatedData)
             deviceCache.putString(CACHE_KEY, jsonString)
+            cachedData.set(updatedData)
 
             debugLog { "Local transaction metadata cache updated" }
         } catch (e: SerializationException) {
