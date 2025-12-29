@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common
 
-import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ReplacementMode
@@ -11,11 +10,9 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Parcelize
 internal data class ReceiptInfo(
     val productIDs: List<String>,
     val presentedOfferingContext: PresentedOfferingContext? = null,
@@ -26,7 +23,7 @@ internal data class ReceiptInfo(
     val pricingPhases: List<PricingPhase>? = null,
     val replacementMode: ReplacementMode? = null,
     val platformProductIds: List<Map<String, String?>> = emptyList(),
-) : Parcelable {
+) {
     companion object {
         @OptIn(InternalRevenueCatAPI::class)
         fun from(
