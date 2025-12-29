@@ -50,11 +50,23 @@ internal class SimulatedStoreErrorDialogActivity : Activity() {
     }
 
     private fun crashApp() {
-        throw PurchasesException(
-            error = PurchasesError(code = PurchasesErrorCode.ConfigurationError),
-            overridenMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
-                "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
-                "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
-        )
+        if (wasLaunchedThroughSDK()) {
+            throw PurchasesException(
+                error = PurchasesError(code = PurchasesErrorCode.ConfigurationError),
+                overridenMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
+                    "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
+                    "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
+            )
+        } else {
+            throw IllegalStateException(
+                "SimulatedStoreErrorDialogActivity was not launched through the SDK. " +
+                    "Please use the SDK methods to open the SimulatedStoreErrorDialogActivity. " +
+                    "This might happen on some Google automated testing, but shouldn't happen to customers.",
+            )
+        }
+    }
+
+    private fun wasLaunchedThroughSDK(): Boolean {
+        return intent.hasExtra(redactedApiKeyExtra)
     }
 }
