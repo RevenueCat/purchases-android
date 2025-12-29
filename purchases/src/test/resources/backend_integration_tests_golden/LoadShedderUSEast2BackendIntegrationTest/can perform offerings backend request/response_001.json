@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "85402",
+    "Content-Length": "85383",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "server": "envoy",
@@ -1789,8 +1789,7 @@
               "call_to_action": "Continue"
             }
           },
-          "localized_strings_by_tier": {},
-          "exit_offers": {}
+          "localized_strings_by_tier": {}
         },
         "packages": [
           {
