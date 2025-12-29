@@ -185,16 +185,17 @@ internal class PaywallViewModelImpl(
     override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
+        val exitOffering = if (!_purchaseCompleted.value) {
+            _preloadedExitOffering.value
+        } else {
+            null
+        }
+        if (exitOffering != null) {
+            trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
+        }
+        paywallPresentationData = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            val exitOffering = if (!_purchaseCompleted.value) {
-                _preloadedExitOffering.value
-            } else {
-                null
-            }
-            if (exitOffering != null) {
-                trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
-            }
             dismissWithExitOffering(exitOffering)
         } else {
             options.dismissRequest()
@@ -627,7 +628,6 @@ internal class PaywallViewModelImpl(
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
-            paywallPresentationData = null
         }
     }
 
