@@ -1812,6 +1812,52 @@ class PostReceiptHelperTest {
         }
     }
 
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache transaction metadata when initiationSource is RESTORE`() {
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache transaction metadata when initiationSource is UNSYNCED_ACTIVE_PURCHASES`() {
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
     // endregion cached purchase data
 
     // region pending transactions
@@ -1919,7 +1965,7 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 purchase = mockStoreTransaction,
                 shouldConsume = any(),
-                initiationSource = initiationSource
+                initiationSource = postReceiptInitiationSource
             )
             } just Runs
         } else {
