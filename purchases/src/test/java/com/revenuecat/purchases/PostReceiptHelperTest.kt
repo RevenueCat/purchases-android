@@ -11,8 +11,8 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.caching.CachedPurchaseData
-import com.revenuecat.purchases.common.caching.CachedPurchaseDataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
@@ -108,7 +108,7 @@ class PostReceiptHelperTest {
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
-    private lateinit var cachedPurchaseDataCache: CachedPurchaseDataCache
+    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -122,7 +122,7 @@ class PostReceiptHelperTest {
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
-        cachedPurchaseDataCache = mockk()
+        localTransactionMetadataCache = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -135,14 +135,14 @@ class PostReceiptHelperTest {
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
             paywallPresentedCache = paywallPresentedCache,
-            cachedPurchaseDataCache = cachedPurchaseDataCache,
+            localTransactionMetadataCache = localTransactionMetadataCache,
         )
 
         mockUnsyncedSubscriberAttributes()
 
-        every { cachedPurchaseDataCache.getCachedPurchaseData(any()) } returns null
-        every { cachedPurchaseDataCache.cachePurchaseData(any(), any()) } just Runs
-        every { cachedPurchaseDataCache.clearCachedPurchaseData(any()) } just Runs
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(any()) } returns null
+        every { localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any()) } just Runs
+        every { localTransactionMetadataCache.clearLocalTransactionMetadata(any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
     }
@@ -1608,26 +1608,7 @@ class PostReceiptHelperTest {
     // region cached purchase data
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded posts cached purchase data`() {
-        val cachedPresentedOfferingContext = PresentedOfferingContext("offering_a")
-        val cachedReceiptInfo = ReceiptInfo(
-            productIDs = mockGooglePurchase.products,
-            price = 9.99,
-            currency = "EUR",
-            presentedOfferingContext = cachedPresentedOfferingContext,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
-            platformProductIds = mockGooglePurchase.products.map { mapOf("product_id" to it) },
-        )
-        val cachedPaywallData = event.toPaywallPostReceiptData()
-        val cachedPurchaseData = CachedPurchaseData(
-            receiptInfo = cachedReceiptInfo,
-            paywallPostReceiptData = cachedPaywallData,
-            observerMode = true,
-        )
-        every {
-            cachedPurchaseDataCache.getCachedPurchaseData(mockStoreTransaction.purchaseToken)
-        } returns cachedPurchaseData
-
+    fun `postTransactionAndConsumeIfNeeded clears purchaseData after successful post`() {
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -1640,11 +1621,63 @@ class PostReceiptHelperTest {
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
-        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured).isEqualTo(cachedReceiptInfo)
-        assertThat(postedReceiptInfoSlot.captured.presentedOfferingContext).isEqualTo(cachedPresentedOfferingContext)
-        assertThat(postedReceiptInfoSlot.captured.price).isEqualTo(9.99)
-        assertThat(postedReceiptInfoSlot.captured.currency).isEqualTo("EUR")
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(mockStoreTransaction.purchaseToken)
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not clear purchaseData after failed post`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(mockStoreTransaction.purchaseToken)
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded caches transaction metadata before posting`() {
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+                mockStoreTransaction.purchaseToken,
+                expectedTransactionMetadata,
+            )
+        }
     }
 
     // endregion cached purchase data
@@ -1683,7 +1716,6 @@ class PostReceiptHelperTest {
                 marketplace = any(),
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
-                originalObserverMode = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )

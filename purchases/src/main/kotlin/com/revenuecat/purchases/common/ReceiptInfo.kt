@@ -75,37 +75,6 @@ internal data class ReceiptInfo(
 
     @IgnoredOnParcel
     val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
-
-    fun merge(receiptInfo: ReceiptInfo): ReceiptInfo {
-        fun PresentedOfferingContext?.merge(
-            presentedOfferingContext: PresentedOfferingContext?,
-        ): PresentedOfferingContext? {
-            if (this == null) {
-                return presentedOfferingContext
-            }
-            return if (offeringIdentifier == presentedOfferingContext?.offeringIdentifier) {
-                copy(
-                    placementIdentifier = placementIdentifier ?: presentedOfferingContext.placementIdentifier,
-                    targetingContext = targetingContext ?: presentedOfferingContext.targetingContext,
-                )
-            } else {
-                this
-            }
-        }
-        return ReceiptInfo(
-            productIDs = this.productIDs,
-            presentedOfferingContext = this.presentedOfferingContext.merge(receiptInfo.presentedOfferingContext),
-            price = this.price ?: receiptInfo.price,
-            formattedPrice = this.formattedPrice ?: receiptInfo.formattedPrice,
-            currency = this.currency ?: receiptInfo.currency,
-            period = this.period ?: receiptInfo.period,
-            pricingPhases = this.pricingPhases ?: receiptInfo.pricingPhases,
-            replacementMode = this.replacementMode ?: receiptInfo.replacementMode,
-            platformProductIds = this.platformProductIds.ifEmpty {
-                receiptInfo.platformProductIds
-            },
-        )
-    }
 }
 
 private fun StoreProduct.platformProductId(): PlatformProductId {

@@ -19,8 +19,8 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
-import com.revenuecat.purchases.common.caching.CachedPurchaseDataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
@@ -58,7 +58,6 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.delay
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -267,7 +266,7 @@ internal class PurchasesFactory(
 
             val paywallPresentedCache = PaywallPresentedCache()
 
-            val cachedPurchaseDataCache = CachedPurchaseDataCache(cache)
+            val localTransactionMetadataCache = LocalTransactionMetadataCache(cache)
 
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
@@ -278,7 +277,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
                 paywallPresentedCache,
-                cachedPurchaseDataCache,
+                localTransactionMetadataCache,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(

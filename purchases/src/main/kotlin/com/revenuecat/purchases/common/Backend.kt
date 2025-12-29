@@ -251,7 +251,6 @@ internal class Backend(
         marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
-        originalObserverMode: Boolean? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -286,7 +285,6 @@ internal class Backend(
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
-            "original_observer_mode" to originalObserverMode,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
