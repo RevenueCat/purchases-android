@@ -17,7 +17,7 @@ internal data class LocalTransactionMetadata(
     @SerialName("schema_version")
     val schemaVersion: Int = SCHEMA_VERSION,
 ) {
-    companion object Companion {
+    companion object {
         const val SCHEMA_VERSION = 1
     }
 
