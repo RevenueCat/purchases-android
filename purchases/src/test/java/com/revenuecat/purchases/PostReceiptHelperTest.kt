@@ -12,6 +12,8 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
@@ -118,6 +120,7 @@ class PostReceiptHelperTest {
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
+    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -131,6 +134,7 @@ class PostReceiptHelperTest {
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
+        localTransactionMetadataCache = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -143,9 +147,14 @@ class PostReceiptHelperTest {
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
             paywallPresentedCache = paywallPresentedCache,
+            localTransactionMetadataCache = localTransactionMetadataCache,
         )
 
         mockUnsyncedSubscriberAttributes()
+
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(any()) } returns null
+        every { localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any()) } just Runs
+        every { localTransactionMetadataCache.clearLocalTransactionMetadata(any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
     }
@@ -1608,6 +1617,249 @@ class PostReceiptHelperTest {
 
     // endregion purchased products data
 
+    // region cached purchase data
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded clears purchaseData after successful post`() {
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not clear purchaseData after failed post`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded caches transaction metadata before posting`() {
+        val expectedPaywallData = event.toPaywallPostReceiptData()
+
+        paywallPresentedCache.cachePresentedPaywall(event)
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = expectedPaywallData,
+            observerMode = false,
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+                mockStoreTransaction.purchaseToken,
+                expectedTransactionMetadata,
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded caches transaction metadata for pending purchases`() {
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should fail") },
+            onError = { _, _ -> }
+        )
+        val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockPendingStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+                mockPendingStoreTransaction.purchaseToken,
+                expectedTransactionMetadata,
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists`() {
+        // Mock that metadata already exists for this token
+        val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded clears cache on SHOULD_BE_MARKED_SYNCED error`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not clear cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
+        // Mock that metadata already exists for this token
+        val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+
+        // Should not clear cache if metadata was already cached (from a previous attempt)
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache transaction metadata when initiationSource is RESTORE`() {
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache transaction metadata when initiationSource is UNSYNCED_ACTIVE_PURCHASES`() {
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 0) {
+            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        }
+    }
+
+    // endregion cached purchase data
+
     // region pending transactions
 
     @Test
@@ -1713,7 +1965,7 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 purchase = mockStoreTransaction,
                 shouldConsume = any(),
-                initiationSource = initiationSource
+                initiationSource = postReceiptInitiationSource
             )
             } just Runs
         } else {
