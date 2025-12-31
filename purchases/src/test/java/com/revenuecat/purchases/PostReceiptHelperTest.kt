@@ -89,6 +89,8 @@ class PostReceiptHelperTest {
         pricingPhases = mockStoreProduct.defaultOption?.pricingPhases,
         replacementMode = null,
         platformProductIds = emptyList(),
+        storeUserID = storeUserId,
+        marketplace = marketplace,
     )
     private val defaultFinishTransactions = true
     private val defaultCustomerInfo = CustomerInfoFactory.buildCustomerInfo(
@@ -192,14 +194,14 @@ class PostReceiptHelperTest {
                 finishTransactions = defaultFinishTransactions,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = expectedReceiptInfo,
-                storeAppUserID = mockStoreTransaction.storeUserID,
-                marketplace = mockStoreTransaction.marketplace,
                 initiationSource = PostReceiptInitiationSource.PURCHASE,
                 paywallPostReceiptData = null,
                 onSuccess = any(),
                 onError = any()
             )
         }
+        assertThat(expectedReceiptInfo.storeUserID).isEqualTo(mockStoreTransaction.storeUserID)
+        assertThat(expectedReceiptInfo.marketplace).isEqualTo(mockStoreTransaction.marketplace)
     }
 
     @Test
@@ -226,8 +228,6 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
                 receiptInfo = any(),
-                storeAppUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = null,
                 onSuccess = any(),
@@ -870,11 +870,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = allowSharingPlayStoreAccount,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = PostReceiptInitiationSource.RESTORE,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -888,8 +886,6 @@ class PostReceiptHelperTest {
                 finishTransactions = defaultFinishTransactions,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = testReceiptInfo,
-                storeAppUserID = storeUserId,
-                marketplace = marketplace,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
                 paywallPostReceiptData = null,
                 onSuccess = any(),
@@ -905,11 +901,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -923,8 +917,6 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
                 receiptInfo = any(),
-                storeAppUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = null,
                 onSuccess = any(),
@@ -940,11 +932,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -965,11 +955,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -987,11 +975,9 @@ class PostReceiptHelperTest {
         var receivedCustomerInfo: CustomerInfo? = null
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should succeed") }
@@ -1009,11 +995,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1031,11 +1015,9 @@ class PostReceiptHelperTest {
         var successCalledCount = 0
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { successCalledCount++ },
             onError = { fail("Should succeed") }
@@ -1054,11 +1036,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
@@ -1083,11 +1063,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
@@ -1111,11 +1089,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
@@ -1135,11 +1111,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
@@ -1160,11 +1134,9 @@ class PostReceiptHelperTest {
         var purchasesError: PurchasesError? = null
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { purchasesError = it }
@@ -1179,11 +1151,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1208,11 +1178,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
@@ -1236,11 +1204,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1260,11 +1226,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Expected error") },
             onError = { }
@@ -1289,11 +1253,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { fail("Expected error") },
             onError = { }
@@ -1324,11 +1286,9 @@ class PostReceiptHelperTest {
         var successCallCount = 0
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { successCallCount++ },
             onError = { fail("Should succeed") }
@@ -1356,11 +1316,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1388,11 +1346,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1430,11 +1386,9 @@ class PostReceiptHelperTest {
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
-            storeUserID = storeUserId,
             receiptInfo = testReceiptInfo,
             isRestore = true,
             appUserID = appUserID,
-            marketplace = marketplace,
             initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
@@ -1474,8 +1428,6 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 subscriberAttributes = any(),
                 receiptInfo = any(),
-                storeAppUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = expectedPaywallData,
                 onSuccess = any(),
@@ -1858,6 +1810,237 @@ class PostReceiptHelperTest {
         }
     }
 
+    @Test
+    fun `postTransactionAndConsumeIfNeeded uses cached paywall data when present paywall is null`() {
+        val cachedPaywallData = event.toPaywallPostReceiptData()
+        val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = testReceiptInfo,
+            paywallPostReceiptData = cachedPaywallData,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = cachedPaywallData,
+                originalObserverMode = false,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded uses present paywall data over cached when both exist`() {
+        val cachedPaywallData = event.toPaywallPostReceiptData()
+        val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = testReceiptInfo,
+            paywallPostReceiptData = cachedPaywallData,
+            observerMode = false,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
+
+        val presentedEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = PaywallEvent.Data(
+                "different_offering",
+                20,
+                UUID.randomUUID(),
+                "header",
+                "en_US",
+                true,
+            ),
+            type = PaywallEventType.IMPRESSION,
+        )
+        val presentedPaywallData = presentedEvent.toPaywallPostReceiptData()
+        paywallPresentedCache.cachePresentedPaywall(presentedEvent)
+
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = presentedPaywallData,
+                originalObserverMode = false,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded merges receipt info with cached receipt info`() {
+        val cachedReceiptInfo = ReceiptInfo(
+            productIDs = listOf("cached-product"),
+            presentedOfferingContext = PresentedOfferingContext("cached-offering"),
+            price = 9.99,
+            formattedPrice = "$9.99",
+            currency = "USD",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            pricingPhases = null,
+            replacementMode = GoogleReplacementMode.DEFERRED,
+            platformProductIds = listOf(mapOf("product_id" to "cached-product")),
+        )
+        val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = cachedReceiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = true,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
+
+        val currentReceiptInfo = ReceiptInfo.from(
+            storeTransaction = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionsForProductIDs = emptyMap(),
+        )
+        val expectedMergedReceiptInfo = currentReceiptInfo.merge(cachedReceiptInfo)
+
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = expectedMergedReceiptInfo,
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                originalObserverMode = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded passes originalObserverMode from cached metadata`() {
+        val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = mockStoreTransaction.purchaseToken,
+            receiptInfo = testReceiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = true,
+        )
+        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
+
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                originalObserverMode = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded passes null originalObserverMode when no cached metadata`() {
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                originalObserverMode = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
     // endregion cached purchase data
 
     // region pending transactions
@@ -1904,7 +2087,7 @@ class PostReceiptHelperTest {
         assertThat(errorCallCount).isEqualTo(1)
         verify(exactly = 0) {
             backend.postReceiptData(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             )
         }
     }
@@ -1941,10 +2124,9 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedReceiptInfoSlot),
-                storeAppUserID = any(),
-                marketplace = any(),
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
+                originalObserverMode = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -1985,10 +2167,9 @@ class PostReceiptHelperTest {
                 finishTransactions = any(),
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedReceiptInfoSlot),
-                storeAppUserID = any(),
-                marketplace = any(),
                 initiationSource = initiationSource,
                 paywallPostReceiptData = any(),
+                originalObserverMode = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )

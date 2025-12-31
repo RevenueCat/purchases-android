@@ -42,11 +42,9 @@ internal class PostReceiptHelper(
      */
     fun postTokenWithoutConsuming(
         purchaseToken: String,
-        storeUserID: String?,
         receiptInfo: ReceiptInfo,
         isRestore: Boolean,
         appUserID: String,
-        marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -56,8 +54,6 @@ internal class PostReceiptHelper(
             purchaseToken,
             isRestore,
             receiptInfo,
-            storeUserID,
-            marketplace,
             initiationSource,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
             onSuccess = { postReceiptResponse ->
@@ -106,8 +102,6 @@ internal class PostReceiptHelper(
             purchaseToken = purchase.purchaseToken,
             isRestore = isRestore,
             receiptInfo = receiptInfo,
-            storeUserID = purchase.storeUserID,
-            marketplace = purchase.marketplace,
             initiationSource = initiationSource,
             purchaseState = purchase.purchaseState,
             onSuccess = { postReceiptResponse ->
@@ -147,16 +141,20 @@ internal class PostReceiptHelper(
         purchaseToken: String,
         isRestore: Boolean,
         receiptInfo: ReceiptInfo,
-        storeUserID: String?,
-        marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
         purchaseState: PurchaseState,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(purchaseToken, initiationSource)
+        val cachedTransactionMetadata = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
 
         val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
+        val effectivePaywallData = presentedPaywall?.toPaywallPostReceiptData()
+            ?: cachedTransactionMetadata?.paywallPostReceiptData
+        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.merge(it) }
+            ?: receiptInfo
+        val originalObserverMode = cachedTransactionMetadata?.observerMode
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
@@ -185,11 +183,10 @@ internal class PostReceiptHelper(
                 isRestore = isRestore,
                 finishTransactions = finishTransactions,
                 subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = receiptInfo,
-                storeAppUserID = storeUserID,
-                marketplace = marketplace,
+                receiptInfo = effectiveReceiptInfo,
                 initiationSource = initiationSource,
-                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
+                paywallPostReceiptData = effectivePaywallData,
+                originalObserverMode = originalObserverMode,
                 onSuccess = { postReceiptResponse ->
                     if (shouldCacheTransactionMetadata) {
                         localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
@@ -260,10 +257,10 @@ internal class PostReceiptHelper(
         )
     }
 
-    private fun shouldCacheTransactionMetadata(purchaseToken: String, source: PostReceiptInitiationSource): Boolean {
-        val hadCachedTransactionMetadata =
-            localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken) != null
-
-        return !hadCachedTransactionMetadata && source == PostReceiptInitiationSource.PURCHASE
+    private fun shouldCacheTransactionMetadata(
+        cachedTransactionMetadata: LocalTransactionMetadata.TransactionMetadata?,
+        source: PostReceiptInitiationSource,
+    ): Boolean {
+        return cachedTransactionMetadata == null && source == PostReceiptInitiationSource.PURCHASE
     }
 }

@@ -246,11 +246,9 @@ internal class Backend(
         finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?,
-        @SuppressWarnings("UnusedPrivateMember")
-        marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        originalObserverMode: Boolean? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -261,7 +259,6 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID,
         )
 
         val body = mapOf(
@@ -280,11 +277,12 @@ internal class Backend(
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID,
+            "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "original_observer_mode" to originalObserverMode,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
@@ -294,7 +292,7 @@ internal class Backend(
 
         val extraHeaders = mapOf(
             "price_string" to receiptInfo.formattedPrice,
-            "marketplace" to marketplace,
+            "marketplace" to receiptInfo.marketplace,
         ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {

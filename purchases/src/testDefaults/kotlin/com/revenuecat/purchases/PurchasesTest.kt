@@ -922,16 +922,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -979,16 +979,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1010,11 +1010,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1057,15 +1055,17 @@ internal class PurchasesTest : BasePurchasesTest() {
             isoCurrencyCode = null
         )
 
-        val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            storeUserID = amazonUserID,
+            marketplace = null,
+        )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1111,16 +1111,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             currency = null,
-            price = null
+            price = null,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1193,15 +1193,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
@@ -1252,15 +1252,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
