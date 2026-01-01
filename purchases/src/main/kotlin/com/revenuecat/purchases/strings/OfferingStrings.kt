@@ -64,6 +64,7 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "Play Store"
             Store.AMAZON -> "Amazon Appstore"
+            Store.GALAXY -> "Galaxy Store"
             else -> null
         }
         APIKeyValidator.ValidationResult.LEGACY -> "Play Store"
@@ -71,6 +72,10 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> null
     }
 }
@@ -80,6 +85,7 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "a" // "a Play Store API key"
             Store.AMAZON -> "an" // "an Amazon Appstore API key"
+            Store.GALAXY -> "a" // "a Galaxy Store API key"
             else -> "a"
         }
         APIKeyValidator.ValidationResult.LEGACY -> "a" // "a Play Store API key"
@@ -87,6 +93,10 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> "a"
     }
 }

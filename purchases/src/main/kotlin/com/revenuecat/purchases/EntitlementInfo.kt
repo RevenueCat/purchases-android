@@ -234,6 +234,11 @@ enum class Store {
      * For entitlements granted via RevenueCat's Test Store.
      */
     TEST_STORE,
+
+    /**
+     * For entitlement granted via the Galaxy store.
+     */
+    GALAXY,
     ;
 
     internal val stringValue: String
@@ -249,6 +254,7 @@ enum class Store {
             EXTERNAL -> "external"
             PADDLE -> "paddle"
             TEST_STORE -> "test_store"
+            GALAXY -> "galaxy"
         }
 
     internal companion object {
@@ -265,6 +271,7 @@ enum class Store {
                 "external" -> EXTERNAL
                 "paddle" -> PADDLE
                 "test_store" -> TEST_STORE
+                "galaxy" -> GALAXY
                 else -> UNKNOWN_STORE
             }
         }

@@ -211,6 +211,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                configuration.galaxyBillingMode,
                 backend,
             )
 

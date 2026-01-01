@@ -10,4 +10,5 @@ internal object Emojis {
     const val PERSON = "👤"
     const val WARNING = "⚠️"
     const val BOX = "📦"
+    const val STARS = "✨"
 }
