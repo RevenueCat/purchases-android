@@ -34,6 +34,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
@@ -108,12 +109,14 @@ private class PurchasesCommonAPI {
 
         val oldProductId = "old"
         val replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION
+        val galaxyReplacementMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE
         val isPersonalizedPrice = true
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         purchasePackageBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
@@ -122,6 +125,7 @@ private class PurchasesCommonAPI {
         purchaseProductBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
@@ -130,6 +134,7 @@ private class PurchasesCommonAPI {
         purchaseOptionBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
