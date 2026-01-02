@@ -31,7 +31,7 @@ internal class ChangeSubscriptionPlanHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
-    @OptIn(GalaxySerialOperation::class)
+    @GalaxySerialOperation
     override fun changeSubscriptionPlan(
         appUserID: String,
         oldPurchase: StoreTransaction,
