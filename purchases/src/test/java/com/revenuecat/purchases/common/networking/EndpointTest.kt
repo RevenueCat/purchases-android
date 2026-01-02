@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +24,8 @@ class EndpointTest {
         Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
-        Endpoint.AliasUsers("test-user-id")
+        Endpoint.AliasUsers("test-user-id"),
+        Endpoint.WebBillingGetProducts("test-user-id", setOf("product-1", "product-2"))
     )
 
     @Test
@@ -207,6 +210,15 @@ class EndpointTest {
             assertThat(endpoint.needsNonceToPerformSigning)
                 .withFailMessage { "Endpoint $endpoint expected to not require nonce for signing" }
                 .isFalse
+        }
+    }
+
+    @Test
+    fun `all endpoints can be serialized and deserialized`() {
+        allEndpoints.forEach { endpoint ->
+            val encoded = Json.encodeToString(endpoint)
+            val decoded = Json.decodeFromString<Endpoint>(encoded)
+            assertThat(decoded).isEqualTo(endpoint)
         }
     }
 }
