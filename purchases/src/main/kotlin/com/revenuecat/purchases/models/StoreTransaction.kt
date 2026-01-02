@@ -117,7 +117,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
-     * This is not available for Amazon and Galaxy purchases.
+     * This is not available for Amazon purchases.
      */
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
