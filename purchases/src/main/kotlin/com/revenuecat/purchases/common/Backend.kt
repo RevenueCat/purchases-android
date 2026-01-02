@@ -11,6 +11,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -23,7 +24,6 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -282,7 +282,7 @@ internal class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
+            "proration_mode" to receiptInfo.replacementMode?.backendName,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
         ).filterNotNullValues()
@@ -1103,23 +1103,3 @@ internal fun PricingPhase.toMap(): Map<String, Any?> {
         "priceCurrencyCode" to this.price.currencyCode,
     )
 }
-
-/**
- * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
- */
-private enum class LegacyProrationMode {
-    IMMEDIATE_WITHOUT_PRORATION,
-    IMMEDIATE_WITH_TIME_PRORATION,
-    IMMEDIATE_AND_CHARGE_FULL_PRICE,
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
-    DEFERRED,
-}
-
-private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
-    }
