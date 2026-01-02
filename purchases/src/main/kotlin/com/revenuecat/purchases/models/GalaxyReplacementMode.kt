@@ -4,6 +4,8 @@ import android.os.Parcel
 import android.os.Parcelable
 import com.revenuecat.purchases.ReplacementMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
+import kotlinx.parcelize.Parcelize
+
 /**
  * Enum of possible replacement modes to be passed to a Samsung Galaxy Store subscription change.
  * Ignored for Google Play and Amazon purchases.
@@ -11,8 +13,9 @@ import com.samsung.android.sdk.iap.lib.constants.HelperDefine
  * See https://developer.samsung.com/iap/subscription-guide/manage-subscription-plan/proration-modes.html
  * for more details.
  */
+@Parcelize
 enum class GalaxyReplacementMode(
-    val samsungProrationMode: HelperDefine.ProrationMode,
+    internal val samsungProrationMode: HelperDefine.ProrationMode,
 ) : ReplacementMode {
     /**
      * The current subscription is instantly changed and the customer can start using the new subscription
@@ -21,8 +24,6 @@ enum class GalaxyReplacementMode(
      * period are changed based on this calculation.
      *
      * This mode can be used for both upgrades and downgrades.
-     *
-     * This is the default behavior.
      */
     INSTANT_PRORATED_DATE(HelperDefine.ProrationMode.INSTANT_PRORATED_DATE),
 
@@ -40,6 +41,8 @@ enum class GalaxyReplacementMode(
      * start using the new subscription immediately. The new subscription rate is not applied until the current
      * subscription period ends. The payment (renewal) date remains the same. There are no extra charges to use
      * the upgraded subscription during the current subscription period.
+     *
+     * This is the default behavior.
      */
     INSTANT_NO_PRORATION(HelperDefine.ProrationMode.INSTANT_NO_PRORATION),
 
@@ -53,32 +56,10 @@ enum class GalaxyReplacementMode(
     DEFERRED(HelperDefine.ProrationMode.DEFERRED),
     ;
 
-    override fun describeContents(): Int {
-        return 0
-    }
-
-    override fun writeToParcel(out: Parcel, flags: Int) {
-        out.writeString(this.name)
-    }
-
-    companion object CREATOR : Parcelable.Creator<GalaxyReplacementMode?> {
+    companion object {
         /**
          * The default replacement mode for Galaxy Store subscription changes.
          */
-        val default: GalaxyReplacementMode = INSTANT_PRORATED_DATE
-
-        fun fromSamsungProrationMode(samsungProrationMode: HelperDefine.ProrationMode?): GalaxyReplacementMode? {
-            return samsungProrationMode?.let { mode ->
-                values().firstOrNull { mode == it.samsungProrationMode }
-            }
-        }
-
-        override fun createFromParcel(`in`: Parcel): GalaxyReplacementMode? {
-            return `in`.readString()?.let { GalaxyReplacementMode.valueOf(it) }
-        }
-
-        override fun newArray(size: Int): Array<GalaxyReplacementMode?> {
-            return arrayOfNulls(size)
-        }
+        internal val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
     }
 }
