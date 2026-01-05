@@ -292,6 +292,10 @@ tasks.dokkaHtmlPartial.configure {
     }
 }
 
+tasks.named("preBuild") {
+    dependsOn(rootProject.tasks.named("getSamsungIapSdk"))
+}
+
 // Remove afterEvaluate
 // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
 afterEvaluate {

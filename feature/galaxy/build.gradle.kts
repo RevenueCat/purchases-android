@@ -31,3 +31,7 @@ dependencies {
     testImplementation(libs.bundles.test)
     testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
 }
+
+tasks.named("preBuild") {
+    dependsOn(rootProject.tasks.named("getSamsungIapSdk"))
+}
