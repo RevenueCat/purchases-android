@@ -6,6 +6,8 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -19,7 +21,6 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +38,8 @@ class PostPendingTransactionsHelperTest {
     private lateinit var dispatcher: Dispatcher
     private lateinit var identityManager: IdentityManager
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
+    private lateinit var postReceiptHelper: PostReceiptHelper
+    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
 
     private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
@@ -50,6 +53,10 @@ class PostPendingTransactionsHelperTest {
             every { currentAppUserID } returns appUserId
         }
         postTransactionWithProductDetailsHelper = mockk()
+        postReceiptHelper = mockk()
+        localTransactionMetadataCache = mockk<LocalTransactionMetadataCache>().apply {
+            every { getAllLocalTransactionMetadata() } returns emptyList()
+        }
 
         changeBillingConnected()
         changeAutoSyncEnabled(true)
@@ -61,6 +68,8 @@ class PostPendingTransactionsHelperTest {
             dispatcher,
             identityManager,
             postTransactionWithProductDetailsHelper,
+            postReceiptHelper,
+            localTransactionMetadataCache,
         )
     }
 
@@ -404,5 +413,398 @@ class PostPendingTransactionsHelperTest {
             },
         )
         assertThat(successCallCount).isEqualTo(1)
+    }
+
+    // region postNotFoundTransactionMetadata tests
+
+    @Test
+    fun `when there are no cached transaction metadata, onNoTransactionsToSync is called`() {
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns emptyList()
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+
+        verify(exactly = 0) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = any(),
+                receiptInfo = any(),
+                isRestore = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when there is one cached transaction metadata, it is posted successfully`() {
+        val metadata = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTokenWithoutConsumingSuccessful(customerInfoMock, listOf(metadata))
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = metadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when there are multiple cached transaction metadata, all are posted successfully`() {
+        val metadata1 = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        val metadata2 = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_2"
+        )
+        val metadata3 = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_3"
+        )
+        val allMetadata = listOf(metadata1, metadata2, metadata3)
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns allMetadata
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTokenWithoutConsumingSuccessful(customerInfoMock, allMetadata)
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 3) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = any(),
+                receiptInfo = any(),
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = any(),
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when posting cached transaction metadata fails, error callback is invoked`() {
+        val metadata = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
+        every {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = metadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured(error)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
+    }
+
+    @Test
+    fun `when posting multiple cached metadata and first one fails, error is returned`() {
+        val metadata1 = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        val metadata2 = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_2"
+        )
+        val allMetadata = listOf(metadata1, metadata2)
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns allMetadata
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
+        val customerInfoMock = mockk<CustomerInfo>()
+
+        val successSlot = slot<(CustomerInfo) -> Unit>()
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+
+        every {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = any(),
+                receiptInfo = any(),
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = any(),
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot)
+            )
+        } answers {
+            val token = firstArg<String>()
+            if (token == metadata1.token) {
+                errorSlot.captured.invoke(error)
+            } else {
+                successSlot.captured.invoke(customerInfoMock)
+            }
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
+    }
+
+    @Test
+    fun `when regular transactions succeed, cached metadata is also posted`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val metadata = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(activePurchase))
+        mockPostTokenWithoutConsumingSuccessful(customerInfoMock, listOf(metadata))
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = any()
+            )
+        }
+
+        verify(exactly = 1) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = metadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when regular transactions fail, cached metadata is still attempted and can succeed`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val metadata = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda()
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(activePurchase, regularTransactionError)
+        }
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTokenWithoutConsumingSuccessful(customerInfoMock, listOf(metadata))
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = metadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when regular transactions fail and cached metadata also fails, regular transaction error is returned`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val metadata = createTransactionMetadata(
+            userID = appUserId,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Regular transaction failed")
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda()
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(activePurchase, regularTransactionError)
+        }
+
+        val metadataError = PurchasesError(PurchasesErrorCode.NetworkError, "Metadata post failed")
+        every {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = metadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured(metadataError)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(regularTransactionError))
+    }
+
+    @Test
+    fun `when cached metadata has different user ID than current user, cached user ID is used`() {
+        val cachedUserID = "cached-user-id"
+        val metadata = createTransactionMetadata(
+            userID = cachedUserID,
+            token = "cached_token_1"
+        )
+        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTokenWithoutConsumingSuccessful(customerInfoMock, listOf(metadata))
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = cachedUserID,  // Verify cached user ID is used, not current user ID
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        // Verify that the current app user ID is NOT used for cached metadata
+        verify(exactly = 0) {
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = metadata.token,
+                receiptInfo = metadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = appUserId,  // Should NOT be called with current app user ID
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    // endregion
+
+    // Helper methods for cached transaction metadata tests
+
+    private fun createTransactionMetadata(
+        userID: String,
+        token: String
+    ): LocalTransactionMetadata.TransactionMetadata {
+        return LocalTransactionMetadata.TransactionMetadata(
+            userID = userID,
+            token = token,
+            receiptInfo = mockk(relaxed = true),
+            paywallPostReceiptData = null,
+            observerMode = null
+        )
+    }
+
+    private fun mockPostTokenWithoutConsumingSuccessful(
+        customerInfo: CustomerInfo?,
+        metadata: List<LocalTransactionMetadata.TransactionMetadata>
+    ) {
+        for (transaction in metadata) {
+            every {
+                postReceiptHelper.postTokenWithoutConsuming(
+                    purchaseToken = transaction.token,
+                    receiptInfo = transaction.receiptInfo,
+                    isRestore = allowSharingPlayStoreAccount,
+                    appUserID = transaction.userID,
+                    initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                    onSuccess = captureLambda(),
+                    onError = any()
+                )
+            } answers {
+                lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfo!!)
+            }
+        }
     }
 }

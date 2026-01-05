@@ -289,6 +289,123 @@ class LocalTransactionMetadataCacheTest {
 
     // endregion
 
+    // region getAllLocalTransactionMetadata
+
+    @Test
+    fun `getAllLocalTransactionMetadata returns empty list when no data cached`() {
+        every { deviceCache.getJSONObjectOrNull(any()) } returns null
+
+        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getAllLocalTransactionMetadata returns single item when one transaction cached`() {
+        val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = purchaseToken,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = paywallData,
+            observerMode = false,
+        )
+
+        val cachedData = LocalTransactionMetadata(
+            purchaseDataByTokenHash = mapOf(
+                purchaseToken.sha1() to transactionMetadata
+            )
+        )
+        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
+        every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
+
+        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+
+        assertThat(result).hasSize(1)
+        assertThat(result[0]).isEqualTo(transactionMetadata)
+    }
+
+    @Test
+    fun `getAllLocalTransactionMetadata returns all items when multiple transactions cached`() {
+        val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
+            userID = appUserID,
+            token = purchaseToken,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = paywallData,
+            observerMode = false,
+        )
+
+        val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
+            userID = "another_user",
+            token = purchaseToken2,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = true,
+        )
+
+        val cachedData = LocalTransactionMetadata(
+            purchaseDataByTokenHash = mapOf(
+                purchaseToken.sha1() to transactionMetadata1,
+                purchaseToken2.sha1() to transactionMetadata2
+            )
+        )
+        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
+        every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
+
+        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+
+        assertThat(result).hasSize(2)
+        assertThat(result).containsExactlyInAnyOrder(transactionMetadata1, transactionMetadata2)
+    }
+
+    @Test
+    fun `getAllLocalTransactionMetadata returns data with correct user IDs`() {
+        val userId1 = "user_1"
+        val userId2 = "user_2"
+        val userId3 = "user_3"
+
+        val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
+            userID = userId1,
+            token = "token_1",
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+
+        val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
+            userID = userId2,
+            token = "token_2",
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            observerMode = false,
+        )
+
+        val transactionMetadata3 = LocalTransactionMetadata.TransactionMetadata(
+            userID = userId3,
+            token = "token_3",
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = paywallData,
+            observerMode = true,
+        )
+
+        val cachedData = LocalTransactionMetadata(
+            purchaseDataByTokenHash = mapOf(
+                "token_1".sha1() to transactionMetadata1,
+                "token_2".sha1() to transactionMetadata2,
+                "token_3".sha1() to transactionMetadata3
+            )
+        )
+        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
+        every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
+
+        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+
+        assertThat(result).hasSize(3)
+        assertThat(result.map { it.userID }).containsExactlyInAnyOrder(userId1, userId2, userId3)
+        assertThat(result.map { it.token }).containsExactlyInAnyOrder("token_1", "token_2", "token_3")
+    }
+
+    // endregion
+
     // region clearLocalTransactionMetadata
 
     @Test

@@ -5,6 +5,8 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.models.StoreTransaction
@@ -19,6 +21,7 @@ internal sealed class SyncPendingPurchaseResult {
     object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
 }
 
+@Suppress("LongParameterList")
 internal class PostPendingTransactionsHelper(
     private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
@@ -26,8 +29,11 @@ internal class PostPendingTransactionsHelper(
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
+    private val postReceiptHelper: PostReceiptHelper,
+    private val localTransactionMetadataCache: LocalTransactionMetadataCache,
 ) {
 
+    @Suppress("LongMethod")
     fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
         callback: ((SyncPendingPurchaseResult) -> Unit)? = null,
@@ -55,13 +61,48 @@ internal class PostPendingTransactionsHelper(
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
-                            callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+                            postNotFoundTransactionMetadata(
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                onNoTransactionsToSync = {
+                                    callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+                                },
+                                onError = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
+                                },
+                                onSuccess = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                },
+                            )
                         },
                         onError = { error ->
-                            callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                            postNotFoundTransactionMetadata(
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                onNoTransactionsToSync = {
+                                    log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
+                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                                },
+                                onError = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                                },
+                                onSuccess = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                },
+                            )
                         },
                         onSuccess = { customerInfo ->
-                            callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
+                            postNotFoundTransactionMetadata(
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                onNoTransactionsToSync = {
+                                    log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
+                                    callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
+                                },
+                                onError = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
+                                },
+                                onSuccess = {
+                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                },
+                            )
                         },
                     )
                 },
@@ -101,6 +142,68 @@ internal class PostPendingTransactionsHelper(
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
                 },
             )
+        }
+    }
+
+    private fun postNotFoundTransactionMetadata(
+        allowSharingPlayStoreAccount: Boolean,
+        onNoTransactionsToSync: () -> Unit,
+        onError: ((PurchasesError) -> Unit),
+        onSuccess: ((CustomerInfo) -> Unit),
+    ) {
+        val results: MutableList<Result<CustomerInfo, PurchasesError>> = mutableListOf()
+        val transactionMetadataToSync = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        if (transactionMetadataToSync.isEmpty()) {
+            onNoTransactionsToSync()
+            return
+        }
+        transactionMetadataToSync.forEach { transactionMetadata ->
+            // Cached paywall data is retrieved from the cache when posting the receipt.
+            postReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = transactionMetadata.token,
+                receiptInfo = transactionMetadata.receiptInfo,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = transactionMetadata.userID,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                onSuccess = {
+                    // This is safe since all requests are performed in the same dispatcher serial queue.
+                    results.add(Result.Success(it))
+                    callTransactionMetadataCompletionFromResults(
+                        transactionMetadataToSync,
+                        results,
+                        onError,
+                        onSuccess,
+                    )
+                },
+                onError = {
+                    // This is safe since all requests are performed in the same dispatcher serial queue.
+                    results.add(Result.Error(it))
+                    callTransactionMetadataCompletionFromResults(
+                        transactionMetadataToSync,
+                        results,
+                        onError,
+                        onSuccess,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun callTransactionMetadataCompletionFromResults(
+        transactionMetadataToSync: List<LocalTransactionMetadata.TransactionMetadata>,
+        results: List<Result<CustomerInfo, PurchasesError>>,
+        onError: ((PurchasesError) -> Unit)? = null,
+        onSuccess: ((CustomerInfo) -> Unit)? = null,
+    ) {
+        if (transactionMetadataToSync.size == results.size) {
+            results.forEachIndexed { index, result ->
+                if (result is Result.Error) {
+                    onError?.invoke(result.value)
+                    return
+                } else if (index == results.size - 1) {
+                    onSuccess?.invoke((result as Result.Success).value)
+                }
+            }
         }
     }
 

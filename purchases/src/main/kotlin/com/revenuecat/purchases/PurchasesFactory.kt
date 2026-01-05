@@ -292,6 +292,8 @@ internal class PurchasesFactory(
                 backendDispatcher,
                 identityManager,
                 postTransactionWithProductDetailsHelper,
+                postReceiptHelper,
+                localTransactionMetadataCache,
             )
 
             val customerInfoHelper = CustomerInfoHelper(
