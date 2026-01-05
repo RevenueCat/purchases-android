@@ -452,6 +452,9 @@ package com.revenuecat.purchases {
     method public static void setProxyURL(java.net.URL?);
     method @kotlin.jvm.Synchronized public void setPurchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy);
     method public void setPushToken(String? fcmToken);
+    method public void setSolarEngineAccountId(String? solarEngineAccountId);
+    method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
+    method public void setSolarEngineVisitorId(String? solarEngineVisitorId);
     method public void setTenjinAnalyticsInstallationID(String? tenjinAnalyticsInstallationID);
     method @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
