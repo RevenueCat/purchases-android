@@ -819,6 +819,36 @@ class Purchases internal constructor(
     }
 
     /**
+     * Subscriber attribute associated with the Solar Engine Distinct ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineDistinctId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        purchasesOrchestrator.setSolarEngineDistinctId(solarEngineDistinctId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Account ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineAccountId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        purchasesOrchestrator.setSolarEngineAccountId(solarEngineAccountId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Visitor ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineVisitorId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        purchasesOrchestrator.setSolarEngineVisitorId(solarEngineVisitorId)
+    }
+
+    /**
      * Sets attribution data from AppsFlyer's conversion data.
      *
      * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
