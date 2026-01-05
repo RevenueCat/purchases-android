@@ -272,7 +272,7 @@ internal class Backend(
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
-            "observer_mode" to !finishTransactions,
+            "observer_mode" to (originalObserverMode ?: !finishTransactions),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
@@ -282,7 +282,6 @@ internal class Backend(
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
-            "original_observer_mode" to originalObserverMode,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
