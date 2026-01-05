@@ -188,7 +188,7 @@ internal class PostReceiptHelper(
                 paywallPostReceiptData = effectivePaywallData,
                 originalObserverMode = originalObserverMode,
                 onSuccess = { postReceiptResponse ->
-                    if (shouldCacheTransactionMetadata) {
+                    if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
                         localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                     }
 
@@ -204,7 +204,7 @@ internal class PostReceiptHelper(
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                        if (shouldCacheTransactionMetadata) {
+                        if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
                             localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(

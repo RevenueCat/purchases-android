@@ -1678,7 +1678,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists`() {
+    fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists but clears it on success`() {
         // Mock that metadata already exists for this token
         val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
             userID = appUserID,
@@ -1705,8 +1705,8 @@ class PostReceiptHelperTest {
         verify(exactly = 0) {
             localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
         }
-        verify(exactly = 0) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+        verify(exactly = 1) {
+            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1734,8 +1734,8 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded does not clear cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
-        // Mock that metadata already exists for this token
+    fun `postTransactionAndConsumeIfNeeded clears cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
+        // Mock that metadata already exists for this token (from a previous attempt)
         val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
             userID = appUserID,
             token = mockStoreTransaction.purchaseToken,
@@ -1758,8 +1758,8 @@ class PostReceiptHelperTest {
             onError = { _, _ -> }
         )
 
-        // Should not clear cache if metadata was already cached (from a previous attempt)
-        verify(exactly = 0) {
+        // Should clear cache if metadata was already cached from a previous attempt
+        verify(exactly = 1) {
             localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
         }
     }
