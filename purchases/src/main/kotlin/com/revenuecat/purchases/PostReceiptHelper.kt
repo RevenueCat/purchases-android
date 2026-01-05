@@ -154,6 +154,7 @@ internal class PostReceiptHelper(
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
+        val hasCachedTransactionMetadata = hasCachedTransactionMetadata(purchaseToken)
         val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(purchaseToken, initiationSource)
 
         val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
@@ -191,7 +192,7 @@ internal class PostReceiptHelper(
                 initiationSource = initiationSource,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 onSuccess = { postReceiptResponse ->
-                    if (shouldCacheTransactionMetadata) {
+                    if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
                         localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                     }
 
@@ -207,7 +208,7 @@ internal class PostReceiptHelper(
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                        if (shouldCacheTransactionMetadata) {
+                        if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
                             localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
@@ -261,9 +262,10 @@ internal class PostReceiptHelper(
     }
 
     private fun shouldCacheTransactionMetadata(purchaseToken: String, source: PostReceiptInitiationSource): Boolean {
-        val hadCachedTransactionMetadata =
-            localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken) != null
+        return !hasCachedTransactionMetadata(purchaseToken) && source == PostReceiptInitiationSource.PURCHASE
+    }
 
-        return !hadCachedTransactionMetadata && source == PostReceiptInitiationSource.PURCHASE
+    private fun hasCachedTransactionMetadata(purchaseToken: String): Boolean {
+        return localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken) != null
     }
 }
