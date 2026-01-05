@@ -106,6 +106,8 @@ internal data class ReceiptInfo(
             platformProductIds = this.platformProductIds.ifEmpty {
                 receiptInfo.platformProductIds
             },
+            storeUserID = this.storeUserID ?: receiptInfo.storeUserID,
+            marketplace = this.marketplace ?: receiptInfo.marketplace,
         )
     }
 }
