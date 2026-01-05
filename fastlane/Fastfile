@@ -305,7 +305,7 @@ platform :android do
       task: ':purchases:testDefaultsBc8DebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true,
-        "minSdkVersion" => 21,
+        "minSdkVersion" => 23,
       }
     )
   end
@@ -690,7 +690,7 @@ DESC
       version_name_new = "purchaseTesterVersionName=#{version_code}"
       sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{version_name_old}/#{version_name_new}/' {} \\;")
 
-      min_sdk_version_old = "purchaseTesterMinSdkVersion=21"
+      min_sdk_version_old = "purchaseTesterMinSdkVersion=23"
       min_sdk_version_new = "purchaseTesterMinSdkVersion=#{min_sdk_version}"
       sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{min_sdk_version_old}/#{min_sdk_version_new}/' {} \\;")
 
@@ -921,7 +921,7 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
     properties: {
       "testApplicationId" => package_name,
       "testBuildType" => build_type,
-      "minSdkVersion" => 21
+      "minSdkVersion" => 23
     }
   )
   new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
