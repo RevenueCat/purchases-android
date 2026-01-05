@@ -151,6 +151,9 @@ final class PurchasesAPI {
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
         purchases.setAirbridgeDeviceID("");
+        purchases.setSolarEngineDistinctId("");
+        purchases.setSolarEngineAccountId("");
+        purchases.setSolarEngineVisitorId("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");
