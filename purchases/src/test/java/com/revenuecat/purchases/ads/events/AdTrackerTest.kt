@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
@@ -18,6 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class AdTrackerTest {
 
     private lateinit var eventsManager: EventsManager

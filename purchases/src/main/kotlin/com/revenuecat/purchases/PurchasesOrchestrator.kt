@@ -155,6 +155,7 @@ internal class PurchasesOrchestrator(
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -275,7 +276,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
-        flushPaywallEvents(Delay.NONE)
+        flushEvents(Delay.NONE)
     }
 
     /** @suppress */
@@ -311,7 +312,7 @@ internal class PurchasesOrchestrator(
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushPaywallEvents(Delay.DEFAULT)
+            flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
@@ -322,6 +323,10 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        flushEvents(Delay.NONE)
     }
 
     fun redeemWebPurchase(
@@ -1044,6 +1049,36 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineDistinctId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId,
+            solarEngineDistinctId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineAccountId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineAccountId,
+            solarEngineAccountId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineVisitorId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
+            solarEngineVisitorId,
+            appUserID,
+            application,
+        )
+    }
+
     fun setAppsFlyerConversionData(data: Map<*, *>?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
@@ -1304,7 +1339,7 @@ internal class PurchasesOrchestrator(
                 )
 
                 // Synchronize paywall events after a new purchase
-                flushPaywallEvents(Delay.NONE)
+                flushEvents(Delay.NONE)
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
@@ -1589,7 +1624,7 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
-    private fun flushPaywallEvents(delay: Delay) {
+    private fun flushEvents(delay: Delay) {
         eventsManager.flushEvents(delay)
         adEventsManager.flushEvents(delay)
     }

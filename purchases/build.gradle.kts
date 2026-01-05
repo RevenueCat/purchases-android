@@ -137,6 +137,7 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     if (name.contains("UnitTest") || name.contains("AndroidTest")) {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
+            freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI")
         }
     }
 }
