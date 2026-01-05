@@ -13,7 +13,7 @@ internal class LocalTransactionMetadataCache(
     private val deviceCache: DeviceCache,
     private val json: Json = JsonTools.json,
 ) {
-    private companion object Companion {
+    private companion object {
         const val CACHE_KEY = "local_transaction_metadata"
     }
 
