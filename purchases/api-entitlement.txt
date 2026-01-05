@@ -928,6 +928,24 @@ package com.revenuecat.purchases.galaxy {
     property public com.revenuecat.purchases.ProductType type;
   }
 
+  public final class GalaxySubscriptionOption implements com.revenuecat.purchases.models.SubscriptionOption {
+    ctor public GalaxySubscriptionOption(String id, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, com.revenuecat.purchases.models.PurchasingData purchasingData, com.revenuecat.purchases.models.InstallmentsInfo? installmentsInfo);
+    method public String getId();
+    method public com.revenuecat.purchases.models.InstallmentsInfo? getInstallmentsInfo();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
+    method @Deprecated public String? getPresentedOfferingIdentifier();
+    method public java.util.List<com.revenuecat.purchases.models.PricingPhase> getPricingPhases();
+    method public com.revenuecat.purchases.models.PurchasingData getPurchasingData();
+    method public java.util.List<java.lang.String> getTags();
+    property public String id;
+    property public com.revenuecat.purchases.models.InstallmentsInfo? installmentsInfo;
+    property public com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
+    property @Deprecated public String? presentedOfferingIdentifier;
+    property public java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases;
+    property public com.revenuecat.purchases.models.PurchasingData purchasingData;
+    property public java.util.List<java.lang.String> tags;
+  }
+
 }
 
 package com.revenuecat.purchases.interfaces {
@@ -1269,6 +1287,7 @@ package com.revenuecat.purchases.models {
 
   public enum PurchaseType {
     enum_constant public static final com.revenuecat.purchases.models.PurchaseType AMAZON_PURCHASE;
+    enum_constant public static final com.revenuecat.purchases.models.PurchaseType GALAXY_PURCHASE;
     enum_constant public static final com.revenuecat.purchases.models.PurchaseType GOOGLE_PURCHASE;
     enum_constant public static final com.revenuecat.purchases.models.PurchaseType GOOGLE_RESTORED_PURCHASE;
   }
@@ -1518,3 +1537,4 @@ package com.revenuecat.purchases.virtualcurrencies {
   }
 
 }
+
