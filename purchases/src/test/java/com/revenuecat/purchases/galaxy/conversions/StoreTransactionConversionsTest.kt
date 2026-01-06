@@ -5,6 +5,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -71,6 +72,26 @@ class StoreTransactionConversionsTest {
         assertThat(storeTransaction.subscriptionOptionId).isNull()
         assertThat(storeTransaction.subscriptionOptionIdForProductIDs).isNull()
         assertThat(storeTransaction.replacementMode).isNull()
+    }
+
+    @Test
+    fun `toStoreTransaction maps replacement mode when provided`() {
+        val purchaseVo = createMockPurchaseVo(
+            orderId = defaultOrderId,
+            purchaseId = defaultPurchaseId,
+            purchaseDate = purchaseDateString,
+            type = "subscription",
+        )
+        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+
+        val storeTransaction = purchaseVo.toStoreTransaction(
+            productId = "product",
+            presentedOfferingContext = null,
+            purchaseState = PurchaseState.PURCHASED,
+            replacementMode = replacementMode,
+        )
+
+        assertThat(storeTransaction.replacementMode).isEqualTo(replacementMode)
     }
 
     @Test
