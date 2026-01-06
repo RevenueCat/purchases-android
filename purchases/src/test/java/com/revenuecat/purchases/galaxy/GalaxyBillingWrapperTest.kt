@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseListener
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import android.os.Looper
@@ -33,6 +34,8 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -43,6 +46,7 @@ import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListe
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import android.util.Base64
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -52,6 +56,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     private val stateProvider = mockk<PurchasesStateProvider>(relaxed = true)
@@ -595,11 +600,33 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `makePurchaseAsync exits when replaceProductInfo is provided`() {
-        val wrapper = createWrapper()
-        wrapper.purchasesUpdatedListener = mockk(relaxed = true)
+    fun `makePurchaseAsync dispatches change subscription plan when replaceProductInfo is provided`() {
+        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
+        val changeSubscriptionPlanHandler = mockk<ChangeSubscriptionPlanResponseListener>(relaxed = true)
+        val wrapper = createWrapper(changeSubscriptionPlanHandler = changeSubscriptionPlanHandler)
+        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
 
         val storeProduct = createStoreProduct()
+        val oldPurchase = storeTransaction(
+            token = "old-token",
+            type = ProductType.SUBS,
+            productId = "old-product",
+        )
+        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE
+        val onSuccessSlot = slot<(PurchaseVo) -> Unit>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+
+        every {
+            changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                any(),
+                capture(onSuccessSlot),
+                capture(onErrorSlot),
+            )
+        } answers { }
+
         wrapper.makePurchaseAsync(
             activity = mockk<Activity>(),
             appUserID = "user",
@@ -607,14 +634,138 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                 productId = storeProduct.id,
                 productType = storeProduct.type,
             ),
-            replaceProductInfo = mockk<ReplaceProductInfo>(),
+            replaceProductInfo = ReplaceProductInfo(
+                oldPurchase = oldPurchase,
+                replacementMode = replacementMode,
+            ),
             presentedOfferingContext = null,
             isPersonalizedPrice = null,
         )
 
+        verify(exactly = 1) {
+            changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                appUserID = "user",
+                oldPurchase = oldPurchase,
+                newProductId = storeProduct.id,
+                prorationMode = replacementMode,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
         verify(exactly = 0) {
             purchaseHandlerMock.purchase(any(), any(), any(), any())
         }
+
+        val purchaseVo = createPurchaseVo(
+            paymentId = "paymentId",
+            purchaseId = "purchaseId",
+            orderId = "orderId",
+            purchaseDate = "2024-01-15 13:45:20",
+            type = "subscription",
+            itemId = storeProduct.id,
+        )
+        onSuccessSlot.captured(purchaseVo)
+
+        val transactionsSlot = slot<List<StoreTransaction>>()
+        verify(exactly = 1) { purchasesUpdatedListener.onPurchasesUpdated(capture(transactionsSlot)) }
+        val transaction = transactionsSlot.captured.single()
+        assertThat(transaction.productIds).containsExactly(storeProduct.id)
+        assertThat(transaction.replacementMode).isEqualTo(replacementMode)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `makePurchaseAsync defaults to GalaxyReplacementMode default when non-Galaxy replacement mode provided`() {
+        val changeSubscriptionPlanHandler = mockk<ChangeSubscriptionPlanResponseListener>(relaxed = true)
+        val wrapper = createWrapper(changeSubscriptionPlanHandler = changeSubscriptionPlanHandler)
+        wrapper.purchasesUpdatedListener = mockk(relaxed = true)
+
+        val storeProduct = createStoreProduct()
+        val oldPurchase = storeTransaction(
+            token = "old-token",
+            type = ProductType.SUBS,
+            productId = "old-product",
+        )
+        val prorationModeSlot = slot<GalaxyReplacementMode>()
+
+        every {
+            changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                capture(prorationModeSlot),
+                any(),
+                any(),
+            )
+        } answers { }
+
+        wrapper.makePurchaseAsync(
+            activity = mockk<Activity>(),
+            appUserID = "user",
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
+            replaceProductInfo = ReplaceProductInfo(
+                oldPurchase = oldPurchase,
+                replacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
+            ),
+            presentedOfferingContext = null,
+            isPersonalizedPrice = null,
+        )
+
+        assertThat(prorationModeSlot.captured).isEqualTo(GalaxyReplacementMode.default)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `makePurchaseAsync forwards errors from change subscription plan handler`() {
+        val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
+        val changeSubscriptionPlanHandler = mockk<ChangeSubscriptionPlanResponseListener>(relaxed = true)
+        val wrapper = createWrapper(changeSubscriptionPlanHandler = changeSubscriptionPlanHandler)
+        wrapper.purchasesUpdatedListener = purchasesUpdatedListener
+
+        val storeProduct = createStoreProduct()
+        val oldPurchase = storeTransaction(
+            token = "old-token",
+            type = ProductType.SUBS,
+            productId = "old-product",
+        )
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+
+        every {
+            changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                capture(onErrorSlot),
+            )
+        } answers { }
+
+        wrapper.makePurchaseAsync(
+            activity = mockk<Activity>(),
+            appUserID = "user",
+            purchasingData = GalaxyPurchasingData.Product(
+                productId = storeProduct.id,
+                productType = storeProduct.type,
+            ),
+            replaceProductInfo = ReplaceProductInfo(oldPurchase = oldPurchase),
+            presentedOfferingContext = null,
+            isPersonalizedPrice = null,
+        )
+
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "failure")
+        onErrorSlot.captured(expectedError)
+
+        verify(exactly = 0) {
+            purchaseHandlerMock.purchase(any(), any(), any(), any())
+        }
+
+        val errorSlot = slot<PurchasesError>()
+        verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
+        assertThat(errorSlot.captured).isEqualTo(expectedError)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -900,6 +1051,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         purchaseHandler: PurchaseResponseListener = purchaseHandlerMock,
         acknowledgePurchaseHandler: AcknowledgePurchaseResponseListener = mockk(relaxed = true),
         getOwnedListHandler: GetOwnedListResponseListener = mockk(relaxed = true),
+        changeSubscriptionPlanHandler: ChangeSubscriptionPlanResponseListener = mockk(relaxed = true),
     ): GalaxyBillingWrapper {
         return GalaxyBillingWrapper(
             stateProvider,
@@ -912,6 +1064,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             dateProvider = dateProvider,
             acknowledgePurchaseHandler = acknowledgePurchaseHandler,
             getOwnedListHandler = getOwnedListHandler,
+            changeSubscriptionPlanHandler = changeSubscriptionPlanHandler,
         )
     }
 
