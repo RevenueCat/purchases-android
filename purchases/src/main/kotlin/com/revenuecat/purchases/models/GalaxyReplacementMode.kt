@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
 
 /**
  * Enum of possible replacement modes to be passed to a Samsung Galaxy Store subscription change.
- * Ignored for Google Play and Amazon purchases.
+ * Not used for Google Play and Amazon purchases.
  *
  * See https://developer.samsung.com/iap/subscription-guide/manage-subscription-plan/proration-modes.html
  * for more details.
