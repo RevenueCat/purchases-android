@@ -64,7 +64,7 @@ internal class ChangeSubscriptionPlanHandler(
             return
         }
 
-        this.inFlightRequest = Request(
+       inFlightRequest = Request(
             newProductId = newProductId,
             oldProductId = oldProductId,
             onSuccess = onSuccess,
