@@ -94,6 +94,7 @@ private class PurchasesCommonAPI {
         purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
     fun checkPurchasing(
         purchases: Purchases,
