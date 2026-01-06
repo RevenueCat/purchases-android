@@ -5,9 +5,11 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -91,6 +93,7 @@ final class PurchasesCommonAPI {
         purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList);
     }
 
+    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void checkPurchasing(final Purchases purchases,
                                 final Activity activity,
                                 final StoreProduct storeProduct,
