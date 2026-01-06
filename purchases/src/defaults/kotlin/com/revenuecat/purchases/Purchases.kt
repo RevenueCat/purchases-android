@@ -173,7 +173,7 @@ class Purchases internal constructor(
      * The AdTracker used to track ad attribution data.
      */
     @get:JvmSynthetic
-    @InternalRevenueCatAPI
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
 
@@ -822,6 +822,36 @@ class Purchases internal constructor(
      */
     fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
         purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Distinct ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineDistinctId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        purchasesOrchestrator.setSolarEngineDistinctId(solarEngineDistinctId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Account ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineAccountId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        purchasesOrchestrator.setSolarEngineAccountId(solarEngineAccountId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Visitor ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineVisitorId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        purchasesOrchestrator.setSolarEngineVisitorId(solarEngineVisitorId)
     }
 
     /**

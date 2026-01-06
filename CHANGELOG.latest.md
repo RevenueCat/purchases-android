@@ -1,12 +1,13 @@
 ## RevenueCat SDK
-### ✨ New Features
-* Adds `setAppsFlyerConversionData` to conveniently track AppsFlyer conversion data (#2931) via JayShortway (@JayShortway)
-### 🐞 Bugfixes
-* Make close() method also clear the shared instance of the SDK (#2940) via Toni Rico (@tonidero)
-* Fix purchase callback not firing for DEFERRED product changes with baePlanId in oldProductId (#2937) via Facundo Menzella (@facumenzella)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.3 (#2977) via RevenueCat Git Bot (@RCGitBot)
 
 ### 🔄 Other Changes
-* [AUTOMATIC] Update golden test files for backend integration tests (#2949) via RevenueCat Git Bot (@RCGitBot)
-* [AUTOMATIC] Update golden test files for backend integration tests (#2944) via RevenueCat Git Bot (@RCGitBot)
-* Adds `.kotlin` to `.gitignore` (#2941) via JayShortway (@JayShortway)
-* Dont use reflection to instantiate AmazonOfferingParser (#2934) via Will Taylor (@fire-at-will)
+* Bump uri from 1.0.3 to 1.0.4 (#2984) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update golden test files for backend integration tests (#2985) via RevenueCat Git Bot (@RCGitBot)
+* Add better error message when opening SimulatedStoreErrorDialogActivity from non-supported sources (#2980) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2978) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `76a3a08` to `e6454e3` (#2976) via dependabot[bot] (@dependabot[bot])
+* Improve error messages when displaying `CustomerCenterActivity` or `PaywallActivity` from other sources (#2974) via Toni Rico (@tonidero)
+* Fix SDK size testing app version (#2973) via Toni Rico (@tonidero)
+* Add size testing app and related CI tasks (#2956) via Toni Rico (@tonidero)

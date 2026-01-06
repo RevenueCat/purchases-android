@@ -1,8 +1,9 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, com.revenuecat.purchases.InternalRevenueCatAPI::class)
 @file:Suppress("LongParameterList")
 
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision

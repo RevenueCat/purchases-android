@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -11,7 +12,8 @@ import com.revenuecat.purchases.common.events.EventsManager
 /**
  * Tracks ad-related events such as ad displays, opens, and revenue.
  */
-@InternalRevenueCatAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@ExperimentalPreviewRevenueCatPurchasesAPI
 class AdTracker internal constructor(
     private val eventsManager: EventsManager,
 ) {

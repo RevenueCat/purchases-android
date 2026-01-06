@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.ads.events.types.AdMediatorName

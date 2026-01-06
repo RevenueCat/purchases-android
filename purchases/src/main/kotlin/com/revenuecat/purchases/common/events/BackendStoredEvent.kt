@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
@@ -148,7 +149,7 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
@@ -171,7 +172,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Displayed.toBackendStoredEvent(
     appUserID: String,
@@ -194,7 +195,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Revenue.toBackendStoredEvent(
     appUserID: String,
@@ -220,7 +221,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Loaded.toBackendStoredEvent(
     appUserID: String,
@@ -243,7 +244,7 @@ internal fun AdEvent.Loaded.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
     appUserID: String,

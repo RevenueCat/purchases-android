@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.CustomerInfoOriginalSource

@@ -21,6 +21,7 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
@@ -64,6 +65,20 @@ platform :android do
   desc "Emerge snapshot tests"
   lane :emerge_purchases_ui_snapshot_tests do
     gradle(task: ":test-apps:testpurchasesuiandroidcompatibility:emergeUploadSnapshotBundleDebug")
+  end
+
+  desc "Emerge size tests"
+  lane :emerge_sdk_size_tests do
+     gradle_properties = {
+       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+       "RELEASE_SIGNING_ENABLED" => true
+     }
+     gradle(task: "publishToMavenLocal", properties: gradle_properties)
+     Dir.chdir("../test-apps/sdksizetesting/app") do
+         gradle(task: "emergeUploadReleaseApk")
+     end
   end
 
   desc "Replaces version numbers, updates changelog and creates PR"
