@@ -12,6 +12,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) // For galaxyReplacementMode
 @Poko
 class PurchaseParams(val builder: Builder) {
 
@@ -150,6 +151,7 @@ class PurchaseParams(val builder: Builder) {
          *
          * Only applied for Galaxy Store product changes. Ignored for Google Play and Amazon Appstore purchases.
          */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         fun galaxyReplacementMode(galaxyReplacementMode: GalaxyReplacementMode) = apply {
             this.galaxyReplacementMode = galaxyReplacementMode
         }

@@ -587,6 +587,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,

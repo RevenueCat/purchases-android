@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.LogIntent
@@ -31,6 +32,8 @@ internal class ChangeSubscriptionPlanHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Suppress("ReturnCount")
     @GalaxySerialOperation
     override fun changeSubscriptionPlan(
         appUserID: String,
@@ -88,7 +91,8 @@ internal class ChangeSubscriptionPlanHandler(
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
-                    underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST,
+                    underlyingErrorMessage = GalaxyStrings
+                        .GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST,
                 ),
             )
             clearInFlightRequest()

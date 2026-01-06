@@ -40,6 +40,7 @@ private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
  * For [GoogleReplacementMode], this returns the legacy proration mode name.
  * For [GalaxyReplacementMode], this returns the enum name directly.
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal val ReplacementMode.backendName: String
     get() = when (this) {
         is GoogleReplacementMode -> this.asLegacyProrationMode.name

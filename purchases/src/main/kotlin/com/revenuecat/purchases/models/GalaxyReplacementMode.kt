@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.models
 
-import android.os.Parcel
-import android.os.Parcelable
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ReplacementMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import kotlinx.parcelize.Parcelize
@@ -13,6 +12,7 @@ import kotlinx.parcelize.Parcelize
  * See https://developer.samsung.com/iap/subscription-guide/manage-subscription-plan/proration-modes.html
  * for more details.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Parcelize
 enum class GalaxyReplacementMode(
     internal val samsungProrationMode: HelperDefine.ProrationMode,

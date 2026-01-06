@@ -4,8 +4,8 @@ import android.content.Context
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
-import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
 import com.samsung.android.sdk.iap.lib.listener.OnChangeSubscriptionPlanListener
+import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetOwnedListListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
@@ -112,10 +112,12 @@ internal interface IAPHelperProvider {
      * @param obfuscatedProfileId An obfuscated value (up to 64 bytes) that is strictly associated with a customer's
      * profile in your app. If this value is set, the obfuscatedAccountId must also be set.
      * If your app supports multiple profiles under one account, use this parameter for the obfuscated profile ID.
-     * @param onChangeSubscriptionPlanListener Callback that receives the subscription change success or failure results.
+     * @param onChangeSubscriptionPlanListener Callback that receives the subscription change success or failure
+     * results.
      * @return `true` if the request was dispatched to the store and a response will arrive
      * through [OnChangeSubscriptionPlanListener]; `false` if the request could not be sent.
      */
+    @Suppress("LongParameterList")
     @GalaxySerialOperation
     fun changeSubscriptionPlan(
         oldItemId: String,

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -272,8 +273,8 @@ internal class GalaxyBillingWrapper(
         )
     }
 
-    @Suppress("ReturnCount")
-    @OptIn(GalaxySerialOperation::class)
+    @Suppress("ReturnCount", "LongMethod")
+    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -357,6 +358,7 @@ internal class GalaxyBillingWrapper(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun handleReceipt(
         receipt: PurchaseVo,
         productId: String,

@@ -12,8 +12,8 @@ internal object GalaxyStrings {
     const val ANOTHER_GET_PRODUCT_DETAILS_REQUEST_IN_FLIGHT = "A request to fetch products from the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val REQUESTING_PRODUCTS = "Requesting Galaxy products with identifiers: %s"
-    const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product IDs " +
-        "%s from the Galaxy Store. Error: %s"
+    const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product " +
+        "IDs %s from the Galaxy Store. Error: %s"
 
     // Product Parsing
     const val UNKNOWN_SUBSCRIPTION_DURATION_UNIT = "Detected an unknown SubscriptionDurationUnit from the " +
