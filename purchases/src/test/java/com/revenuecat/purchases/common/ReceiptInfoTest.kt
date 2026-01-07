@@ -6,20 +6,25 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.android.gms.common.util.JsonUtils
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.TargetingContextSerializer
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PeriodSerializer
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PriceSerializer
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PricingPhaseSerializer
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalSerializationApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class ReceiptInfoTest {
@@ -420,5 +426,200 @@ class ReceiptInfoTest {
 
         assertThat(decoded).isEqualTo(original)
         assertThat(decoded.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `PresentedOfferingContextSerializer includes all constructor parameters`() {
+        // Get all constructors from PresentedOfferingContext using Java reflection
+        val constructors = PresentedOfferingContext::class.java.constructors
+        // Find the constructor with the most parameters (the primary constructor)
+        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
+            ?: error("PresentedOfferingContext must have at least one constructor")
+
+        val constructorParamCount = primaryConstructor.parameterCount
+
+        // Get the descriptor from the serializer
+        val descriptor = PresentedOfferingContextSerializer.descriptor
+
+        // Verify the number of fields matches
+        assertThat(descriptor.elementsCount)
+            .withFailMessage(
+                "PresentedOfferingContextSerializer has ${descriptor.elementsCount} fields, " +
+                    "but PresentedOfferingContext constructor has $constructorParamCount parameters. " +
+                    "Did you forget to update the serializer?"
+            )
+            .isEqualTo(constructorParamCount)
+
+        // Get expected field names from the descriptor
+        val expectedFields = setOf("offeringIdentifier", "placementIdentifier", "targetingContext")
+
+        // Verify each expected field is in the descriptor
+        expectedFields.forEach { fieldName ->
+            val hasField = (0 until descriptor.elementsCount).any { index ->
+                descriptor.getElementName(index) == fieldName
+            }
+            assertThat(hasField)
+                .withFailMessage(
+                    "PresentedOfferingContextSerializer is missing field '$fieldName'. " +
+                        "Please add it to the serializer."
+                )
+                .isTrue()
+        }
+    }
+
+    @Test
+    fun `TargetingContextSerializer includes all constructor parameters`() {
+        // Get all constructors from TargetingContext using Java reflection
+        val constructors = PresentedOfferingContext.TargetingContext::class.java.constructors
+        // Find the constructor with the most parameters (the primary constructor)
+        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
+            ?: error("TargetingContext must have at least one constructor")
+
+        val constructorParamCount = primaryConstructor.parameterCount
+
+        // Get the descriptor from the serializer
+        val descriptor = TargetingContextSerializer.descriptor
+
+        // Verify the number of fields matches
+        assertThat(descriptor.elementsCount)
+            .withFailMessage(
+                "TargetingContextSerializer has ${descriptor.elementsCount} fields, " +
+                    "but TargetingContext constructor has $constructorParamCount parameters. " +
+                    "Did you forget to update the serializer?"
+            )
+            .isEqualTo(constructorParamCount)
+
+        // Get expected field names from the descriptor
+        val expectedFields = setOf("revision", "ruleId")
+
+        // Verify each expected field is in the descriptor
+        expectedFields.forEach { fieldName ->
+            val hasField = (0 until descriptor.elementsCount).any { index ->
+                descriptor.getElementName(index) == fieldName
+            }
+            assertThat(hasField)
+                .withFailMessage(
+                    "TargetingContextSerializer is missing field '$fieldName'. " +
+                        "Please add it to the serializer."
+                )
+                .isTrue()
+        }
+    }
+
+    @Test
+    fun `PeriodSerializer includes all constructor parameters`() {
+        // Get all constructors from Period using Java reflection
+        val constructors = Period::class.java.constructors
+        // Find the constructor with the most parameters (the primary constructor)
+        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
+            ?: error("Period must have at least one constructor")
+
+        val constructorParamCount = primaryConstructor.parameterCount
+
+        // Get the descriptor from the serializer
+        val descriptor = PeriodSerializer.descriptor
+
+        // Verify the number of fields matches
+        assertThat(descriptor.elementsCount)
+            .withFailMessage(
+                "PeriodSerializer has ${descriptor.elementsCount} fields, " +
+                    "but Period constructor has $constructorParamCount parameters. " +
+                    "Did you forget to update the serializer?"
+            )
+            .isEqualTo(constructorParamCount)
+
+        // Get expected field names from the descriptor
+        val expectedFields = setOf("value", "unit", "iso8601")
+
+        // Verify each expected field is in the descriptor
+        expectedFields.forEach { fieldName ->
+            val hasField = (0 until descriptor.elementsCount).any { index ->
+                descriptor.getElementName(index) == fieldName
+            }
+            assertThat(hasField)
+                .withFailMessage(
+                    "PeriodSerializer is missing field '$fieldName'. " +
+                        "Please add it to the serializer."
+                )
+                .isTrue()
+        }
+    }
+
+    @Test
+    fun `PriceSerializer includes all constructor parameters`() {
+        // Get all constructors from Price using Java reflection
+        val constructors = Price::class.java.constructors
+        // Find the constructor with the most parameters (the primary constructor)
+        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
+            ?: error("Price must have at least one constructor")
+
+        val constructorParamCount = primaryConstructor.parameterCount
+
+        // Get the descriptor from the serializer
+        val descriptor = PriceSerializer.descriptor
+
+        // Verify the number of fields matches
+        assertThat(descriptor.elementsCount)
+            .withFailMessage(
+                "PriceSerializer has ${descriptor.elementsCount} fields, " +
+                    "but Price constructor has $constructorParamCount parameters. " +
+                    "Did you forget to update the serializer?"
+            )
+            .isEqualTo(constructorParamCount)
+
+        // Get expected field names from the descriptor
+        val expectedFields = setOf("formatted", "amount_micros", "currency_code")
+
+        // Verify each expected field is in the descriptor
+        expectedFields.forEach { fieldName ->
+            val hasField = (0 until descriptor.elementsCount).any { index ->
+                descriptor.getElementName(index) == fieldName
+            }
+            assertThat(hasField)
+                .withFailMessage(
+                    "PriceSerializer is missing field '$fieldName'. " +
+                        "Please add it to the serializer."
+                )
+                .isTrue()
+        }
+    }
+
+    @Test
+    fun `PricingPhaseSerializer includes all constructor parameters`() {
+        // Get all constructors from PricingPhase using Java reflection
+        val constructors = PricingPhase::class.java.constructors
+        // Find the constructor with the most parameters (the primary constructor)
+        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
+            ?: error("PricingPhase must have at least one constructor")
+
+        val constructorParamCount = primaryConstructor.parameterCount
+
+        // Get the descriptor from the serializer
+        val descriptor = PricingPhaseSerializer.descriptor
+
+        // Verify the number of fields matches
+        assertThat(descriptor.elementsCount)
+            .withFailMessage(
+                "PricingPhaseSerializer has ${descriptor.elementsCount} fields, " +
+                    "but PricingPhase constructor has $constructorParamCount parameters. " +
+                    "Did you forget to update the serializer?"
+            )
+            .isEqualTo(constructorParamCount)
+
+        // Get expected field names from the descriptor
+        val expectedFields = setOf("billing_period", "recurrence_mode", "billing_cycle_count", "price")
+
+        // Verify each expected field is in the descriptor
+        expectedFields.forEach { fieldName ->
+            val hasField = (0 until descriptor.elementsCount).any { index ->
+                descriptor.getElementName(index) == fieldName
+            }
+            assertThat(hasField)
+                .withFailMessage(
+                    "PricingPhaseSerializer is missing field '$fieldName'. " +
+                        "Please add it to the serializer."
+                )
+                .isTrue()
+        }
     }
 }
