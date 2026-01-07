@@ -1030,7 +1030,7 @@ package com.revenuecat.purchases.models {
     property public final String token;
   }
 
-  @kotlinx.serialization.Serializable public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+  public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
     method public int describeContents();
     method public int getPlayBillingClientMode();
     method public void writeToParcel(android.os.Parcel out, int flags);
@@ -1142,7 +1142,7 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.OfferPaymentMode SINGLE_PAYMENT;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class Period implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class Period implements android.os.Parcelable {
     ctor public Period(int value, com.revenuecat.purchases.models.Period.Unit unit, String iso8601);
     method public String getIso8601();
     method public com.revenuecat.purchases.models.Period.Unit getUnit();
@@ -1162,7 +1162,7 @@ package com.revenuecat.purchases.models {
     method public com.revenuecat.purchases.models.Period create(String iso8601);
   }
 
-  @kotlinx.serialization.Serializable public enum Period.Unit {
+  public enum Period.Unit {
     enum_constant public static final com.revenuecat.purchases.models.Period.Unit DAY;
     enum_constant public static final com.revenuecat.purchases.models.Period.Unit MONTH;
     enum_constant public static final com.revenuecat.purchases.models.Period.Unit UNKNOWN;
@@ -1170,8 +1170,8 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.Period.Unit YEAR;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class Price implements android.os.Parcelable {
-    ctor public Price(String formatted, @kotlinx.serialization.SerialName("amount_micros") long amountMicros, @kotlinx.serialization.SerialName("currency_code") String currencyCode);
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class Price implements android.os.Parcelable {
+    ctor public Price(String formatted, long amountMicros, String currencyCode);
     method public long getAmountMicros();
     method public String getCurrencyCode();
     method public String getFormatted();
@@ -1180,8 +1180,8 @@ package com.revenuecat.purchases.models {
     property public final String formatted;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class PricingPhase implements android.os.Parcelable {
-    ctor public PricingPhase(@kotlinx.serialization.SerialName("billing_period") com.revenuecat.purchases.models.Period billingPeriod, @kotlinx.serialization.SerialName("recurrence_mode") com.revenuecat.purchases.models.RecurrenceMode recurrenceMode, @kotlinx.serialization.SerialName("billing_cycle_count") Integer? billingCycleCount, com.revenuecat.purchases.models.Price price);
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PricingPhase implements android.os.Parcelable {
+    ctor public PricingPhase(com.revenuecat.purchases.models.Period billingPeriod, com.revenuecat.purchases.models.RecurrenceMode recurrenceMode, Integer? billingCycleCount, com.revenuecat.purchases.models.Price price);
     method @Deprecated public String formattedPriceInMonths();
     method @Deprecated public String formattedPriceInMonths(optional java.util.Locale locale);
     method public Integer? getBillingCycleCount();
@@ -1228,7 +1228,7 @@ package com.revenuecat.purchases.models {
     property public abstract DataType rawData;
   }
 
-  @kotlinx.serialization.Serializable public enum RecurrenceMode {
+  public enum RecurrenceMode {
     method public Integer? getIdentifier();
     property public final Integer? identifier;
     enum_constant public static final com.revenuecat.purchases.models.RecurrenceMode FINITE_RECURRING;
