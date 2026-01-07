@@ -1853,7 +1853,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded uses present paywall data over cached when both exist`() {
+    fun `postTransactionAndConsumeIfNeeded uses cached data over presented when both exist and does not remove cached`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
             userID = appUserID,
@@ -1892,6 +1892,9 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
 
+        // Verify we have not removed presented cache event when using cached value
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNotNull
+
         verify(exactly = 1) {
             backend.postReceiptData(
                 purchaseToken = any(),
@@ -1901,7 +1904,7 @@ class PostReceiptHelperTest {
                 subscriberAttributes = any(),
                 receiptInfo = any(),
                 initiationSource = any(),
-                paywallPostReceiptData = presentedPaywallData,
+                paywallPostReceiptData = cachedPaywallData,
                 originalObserverMode = false,
                 onSuccess = any(),
                 onError = any()
@@ -1936,7 +1939,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             subscriptionOptionsForProductIDs = emptyMap(),
         )
-        val expectedMergedReceiptInfo = currentReceiptInfo.merge(cachedReceiptInfo)
+        val expectedMergedReceiptInfo = currentReceiptInfo.mergeWith(cachedReceiptInfo)
 
         mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
 

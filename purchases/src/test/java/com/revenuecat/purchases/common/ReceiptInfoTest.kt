@@ -154,7 +154,7 @@ class ReceiptInfoTest {
             replacementMode = GoogleReplacementMode.DEFERRED,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.productIDs).isEqualTo(listOf("product1"))
         assertThat(merged.price).isEqualTo(9.99)
@@ -184,7 +184,7 @@ class ReceiptInfoTest {
             replacementMode = GoogleReplacementMode.DEFERRED,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.productIDs).isEqualTo(listOf("product1"))
         assertThat(merged.price).isEqualTo(4.99)
@@ -210,7 +210,7 @@ class ReceiptInfoTest {
             platformProductIds = cachedPlatformProductIds,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.platformProductIds).isEqualTo(cachedPlatformProductIds)
     }
@@ -234,7 +234,7 @@ class ReceiptInfoTest {
             platformProductIds = cachedPlatformProductIds,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.platformProductIds).isEqualTo(currentPlatformProductIds)
     }
@@ -257,7 +257,7 @@ class ReceiptInfoTest {
             presentedOfferingContext = cachedContext,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.presentedOfferingContext).isEqualTo(cachedContext)
     }
@@ -285,7 +285,7 @@ class ReceiptInfoTest {
             presentedOfferingContext = cachedContext,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.presentedOfferingContext).isEqualTo(currentContext)
     }
@@ -314,7 +314,7 @@ class ReceiptInfoTest {
             presentedOfferingContext = cachedContext,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.presentedOfferingContext?.offeringIdentifier).isEqualTo("offering1")
         assertThat(merged.presentedOfferingContext?.placementIdentifier).isEqualTo("placement1")
@@ -345,7 +345,7 @@ class ReceiptInfoTest {
             presentedOfferingContext = cachedContext,
         )
 
-        val merged = current.merge(cached)
+        val merged = current.mergeWith(cached)
 
         assertThat(merged.presentedOfferingContext?.offeringIdentifier).isEqualTo("offering1")
         assertThat(merged.presentedOfferingContext?.placementIdentifier).isEqualTo("placement1")

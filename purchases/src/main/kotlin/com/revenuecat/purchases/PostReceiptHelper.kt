@@ -149,10 +149,14 @@ internal class PostReceiptHelper(
         val cachedTransactionMetadata = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
         val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
 
-        val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
-        val effectivePaywallData = presentedPaywall?.toPaywallPostReceiptData()
-            ?: cachedTransactionMetadata?.paywallPostReceiptData
-        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.merge(it) }
+        val presentedPaywall = if (cachedTransactionMetadata == null) {
+            paywallPresentedCache.getAndRemovePresentedEvent()
+        } else {
+            null
+        }
+        val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
+            ?: presentedPaywall?.toPaywallPostReceiptData()
+        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.mergeWith(it) }
             ?: receiptInfo
         val originalObserverMode = cachedTransactionMetadata?.observerMode
 
