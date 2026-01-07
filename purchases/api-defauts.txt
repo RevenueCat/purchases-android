@@ -304,9 +304,9 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("trial") public static final com.revenuecat.purchases.PeriodType TRIAL;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public final class PresentedOfferingContext implements android.os.Parcelable {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PresentedOfferingContext implements android.os.Parcelable {
     ctor public PresentedOfferingContext(String offeringIdentifier);
-    ctor public PresentedOfferingContext(@kotlinx.serialization.SerialName("offering_identifier") String offeringIdentifier, @kotlinx.serialization.SerialName("placement_identifier") String? placementIdentifier, @kotlinx.serialization.SerialName("targeting_context") com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
+    ctor public PresentedOfferingContext(String offeringIdentifier, String? placementIdentifier, com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
     method public String getOfferingIdentifier();
     method public String? getPlacementIdentifier();
     method public com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? getTargetingContext();
@@ -315,8 +315,8 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext;
   }
 
-  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.serialization.Serializable public static final class PresentedOfferingContext.TargetingContext implements android.os.Parcelable {
-    ctor public PresentedOfferingContext.TargetingContext(int revision, @kotlinx.serialization.SerialName("rule_id") String ruleId);
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public static final class PresentedOfferingContext.TargetingContext implements android.os.Parcelable {
+    ctor public PresentedOfferingContext.TargetingContext(int revision, String ruleId);
     method public int getRevision();
     method public String getRuleId();
     property public final int revision;

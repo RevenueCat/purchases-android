@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.ReplacementModeSerializer
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -18,6 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ReceiptInfo(
     val productIDs: List<String>,
+    @Serializable(with = PresentedOfferingContextSerializer::class)
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val price: Double? = null,
     val formattedPrice: String? = null,

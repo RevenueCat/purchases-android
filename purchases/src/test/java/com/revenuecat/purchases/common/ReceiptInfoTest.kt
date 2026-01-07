@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.common.util.JsonUtils
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Price
@@ -338,5 +339,86 @@ class ReceiptInfoTest {
 
         assertThat(decoded.productIDs).isEqualTo(original.productIDs)
         assertThat(decoded.replacementMode).isEqualTo(expectedReplacementMode)
+    }
+
+    @Test
+    fun `ReceiptInfo with PresentedOfferingContext can be serialized and deserialized`() {
+        val targetingContext = PresentedOfferingContext.TargetingContext(
+            revision = 5,
+            ruleId = "rule123"
+        )
+        val presentedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = targetingContext
+        )
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            presentedOfferingContext = presentedContext,
+            price = 4.99,
+            currency = "USD"
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "presentedOfferingContext":{
+                    "offeringIdentifier":"offering1",
+                    "placementIdentifier":"placement1",
+                    "targetingContext":{
+                        "revision":5,
+                        "ruleId":"rule123"
+                    }
+                },
+                "price":4.99,
+                "currency":"USD"
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(decoded).isEqualTo(receiptInfo)
+        assertThat(encoded).isEqualTo(expectedJson)
+    }
+
+    @Test
+    fun `ReceiptInfo with PresentedOfferingContext without targeting context can be serialized`() {
+        val presentedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = null
+        )
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            presentedOfferingContext = presentedContext,
+            price = 4.99,
+            currency = "USD"
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        assertThat(decoded).isEqualTo(receiptInfo)
+        assertThat(decoded.presentedOfferingContext?.targetingContext).isNull()
+    }
+
+    @Test
+    fun `ReceiptInfo with null PresentedOfferingContext can be serialized and deserialized`() {
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            presentedOfferingContext = null,
+            price = 1.99,
+            currency = "USD"
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        assertThat(decoded).isEqualTo(original)
+        assertThat(decoded.presentedOfferingContext).isNull()
     }
 }
