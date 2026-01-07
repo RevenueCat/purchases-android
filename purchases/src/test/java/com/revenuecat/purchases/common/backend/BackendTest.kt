@@ -692,6 +692,43 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt posts original_observer_mode`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            originalObserverMode = true,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("original_observer_mode")
+        assertThat(requestBodySlot.captured["original_observer_mode"]).isEqualTo(true)
+    }
+
+    @Test
+    fun `postReceipt does not post original_observer_mode if not available`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            originalObserverMode = null,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).doesNotContain("original_observer_mode")
+    }
+
+    @Test
     fun postReceiptCallsFailsFor4XX() {
         mockPostReceiptResponseAndPost(
             backend,
@@ -2974,6 +3011,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        originalObserverMode: Boolean? = null,
         onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -2993,6 +3031,7 @@ class BackendTest {
             appUserID = appUserID,
             isRestore = isRestore,
             finishTransactions = finishTransactions,
+            originalObserverMode = originalObserverMode,
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,

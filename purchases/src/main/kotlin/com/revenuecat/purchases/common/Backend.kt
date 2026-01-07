@@ -272,7 +272,8 @@ internal class Backend(
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
-            "observer_mode" to (originalObserverMode ?: !finishTransactions),
+            "observer_mode" to !finishTransactions,
+            "original_observer_mode" to originalObserverMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
