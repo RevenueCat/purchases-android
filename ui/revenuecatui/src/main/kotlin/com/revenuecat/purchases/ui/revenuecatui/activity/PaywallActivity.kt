@@ -24,6 +24,7 @@ import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -99,6 +100,15 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         restoreSdkConfigurationIfNeeded(this, savedInstanceState)
 
         val args = getArgs()
+        val wasLaunchedThroughSDK = args?.wasLaunchedThroughSDK ?: false
+        if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
+            throw IllegalStateException(
+                "PaywallActivity was not launched through the SDK. " +
+                    "Please use the SDK methods to open the Paywall. " +
+                    "This might happen on some Google automated testing, but shouldn't happen to users.",
+            )
+        }
+
         val edgeToEdge = args?.edgeToEdge == true
         if (edgeToEdge) {
             enableEdgeToEdge()
