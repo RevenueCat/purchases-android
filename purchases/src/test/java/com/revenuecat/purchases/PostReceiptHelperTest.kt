@@ -169,10 +169,19 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
 
-        val expectedReceiptInfo = ReceiptInfo.from(
-            storeTransaction = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionsForProductIDs = emptyMap(),
+        val expectedReceiptInfo = ReceiptInfo(
+            productIDs = mockStoreTransaction.productIds,
+            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
+            price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+            formattedPrice = mockStoreProduct.price.formatted,
+            currency = mockStoreProduct.price.currencyCode,
+            period = mockStoreProduct.period,
+            pricingPhases = null,
+            replacementMode = mockStoreTransaction.replacementMode,
+            platformProductIds = listOf(
+                mapOf("product_id" to "lifetime_product"),
+                mapOf("product_id" to "dos"),
+            ),
         )
 
         verify(exactly = 1) {
