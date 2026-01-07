@@ -6,14 +6,21 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.android.gms.common.util.JsonUtils
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -25,6 +32,7 @@ import org.robolectric.annotation.Config
 class ReceiptInfoTest {
 
     private val productIdentifier = "com.myproduct"
+    private val json = Json.Default
 
     private val mockGooglePurchase = stubGooglePurchase(
         productIds = listOf("productIdentifier")
@@ -147,5 +155,188 @@ class ReceiptInfoTest {
             subscriptionOptionId = subscriptionOptionId,
             replacementMode = null
         )
+    }
+
+    @Test
+    fun `ReceiptInfo with Period can be serialized and deserialized`() {
+        val period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 4.99,
+            currency = "USD",
+            period = period
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":4.99,
+                "currency":"USD",
+                "period":{
+                    "value":1,
+                    "unit":"MONTH",
+                    "iso8601":"P1M"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+        assertThat(encoded).isEqualTo(expectedJson)
+        assertThat(decoded).isEqualTo(receiptInfo)
+    }
+
+    @Test
+    fun `ReceiptInfo with PricingPhase can be serialized and deserialized`() {
+        val period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+        val price = Price(formatted = "$4.99", amountMicros = 4990000, currencyCode = "USD")
+        val pricingPhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = null,
+            price = price
+        )
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 4.99,
+            currency = "USD",
+            period = period,
+            pricingPhases = listOf(pricingPhase)
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":4.99,
+                "currency":"USD",
+                "period":{
+                    "value":1,
+                    "unit":"MONTH",
+                    "iso8601":"P1M"
+                },
+                "pricingPhases":[
+                    {
+                        "billing_period":{
+                            "value":1,
+                            "unit":"MONTH",
+                            "iso8601":"P1M"
+                        },
+                        "recurrence_mode":{
+                            "name":"INFINITE_RECURRING"
+                        },
+                        "billing_cycle_count":null,
+                        "price":{
+                            "formatted":"$4.99",
+                            "amount_micros":4990000,
+                            "currency_code":"USD"
+                        }
+                    }
+                ]
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
+        assertThat(decoded).isEqualTo(receiptInfo)
+    }
+
+    @Test
+    fun `ReceiptInfo with PricingPhase and billingCycleCount can be serialized`() {
+        val period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
+        val price = Price(formatted = "$0.99", amountMicros = 990000, currencyCode = "USD")
+        val pricingPhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 3,
+            price = price
+        )
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            pricingPhases = listOf(pricingPhase)
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "pricingPhases":[
+                    {
+                        "billing_period":{
+                            "value":1,
+                            "unit":"WEEK",
+                            "iso8601":"P1W"
+                        },
+                        "recurrence_mode":{
+                            "name":"FINITE_RECURRING"
+                        },
+                        "billing_cycle_count":3,
+                        "price":{
+                            "formatted":"$0.99",
+                            "amount_micros":990000,
+                            "currency_code":"USD"
+                        }
+                    }
+                ]
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
+
+        assertThat(decoded.pricingPhases).isNotNull
+        assertThat(decoded.pricingPhases!!.size).isEqualTo(1)
+        val decodedPricingPhase = decoded.pricingPhases[0]
+        assertThat(decodedPricingPhase.billingCycleCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `ReceiptInfo with null period and pricingPhases can be serialized and deserialized`() {
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            period = null,
+            pricingPhases = null
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        assertThat(decoded.productIDs).isEqualTo(original.productIDs)
+        assertThat(decoded.price).isEqualTo(original.price)
+        assertThat(decoded.currency).isEqualTo(original.currency)
+        assertThat(decoded.period).isNull()
+        assertThat(decoded.pricingPhases).isNull()
+    }
+
+    @Test
+    fun `ReceiptInfo with replacement mode can be serialized and deserialized`() {
+        val expectedReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            period = null,
+            pricingPhases = null,
+            replacementMode = expectedReplacementMode,
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        assertThat(decoded.productIDs).isEqualTo(original.productIDs)
+        assertThat(decoded.replacementMode).isEqualTo(expectedReplacementMode)
     }
 }
