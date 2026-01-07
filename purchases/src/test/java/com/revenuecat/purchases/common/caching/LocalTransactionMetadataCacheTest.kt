@@ -468,9 +468,9 @@ class LocalTransactionMetadataCacheTest {
                        "product_id"
                     ],
                     "presentedOfferingContext":{
-                       "offering_identifier":"offering_id",
-                       "placement_identifier":null,
-                       "targeting_context":null
+                       "offeringIdentifier":"offering_id",
+                       "placementIdentifier":null,
+                       "targetingContext":null
                     },
                     "price":4.99,
                     "formattedPrice":"$4.99",

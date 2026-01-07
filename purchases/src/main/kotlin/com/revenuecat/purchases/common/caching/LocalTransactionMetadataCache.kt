@@ -7,7 +7,6 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.verboseLog
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import java.util.concurrent.atomic.AtomicReference
 
 internal class LocalTransactionMetadataCache(
     private val deviceCache: DeviceCache,
@@ -17,7 +16,7 @@ internal class LocalTransactionMetadataCache(
         const val CACHE_KEY = "local_transaction_metadata"
     }
 
-    private var cachedData: AtomicReference<LocalTransactionMetadata?> = AtomicReference(null)
+    private var cachedData: LocalTransactionMetadata? = null
 
     @Synchronized
     fun cacheLocalTransactionMetadata(
@@ -38,7 +37,7 @@ internal class LocalTransactionMetadataCache(
         try {
             val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), updatedData)
             deviceCache.putString(CACHE_KEY, jsonString)
-            cachedData.set(updatedData)
+            cachedData = updatedData
 
             debugLog { "Local transaction metadata cache updated" }
         } catch (e: SerializationException) {
@@ -46,7 +45,6 @@ internal class LocalTransactionMetadataCache(
         }
     }
 
-    @Synchronized
     fun getLocalTransactionMetadata(purchaseToken: String): LocalTransactionMetadata.TransactionMetadata? {
         return getCachedData()?.purchaseDataByTokenHash?.get(getTokenHash(purchaseToken))
     }
@@ -82,7 +80,7 @@ internal class LocalTransactionMetadataCache(
                 try {
                     val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), updatedData)
                     deviceCache.putString(CACHE_KEY, jsonString)
-                    cachedData.set(updatedData)
+                    cachedData = updatedData
                     verboseLog { "Cleared local transaction metadata for ${tokensToRemove.size} token(s)" }
                 } catch (e: SerializationException) {
                     errorLog(e) { "Failed to serialize updated local transaction metadata when clearing cached data." }
@@ -98,7 +96,7 @@ internal class LocalTransactionMetadataCache(
 
     @Suppress("ReturnCount")
     private fun getCachedData(): LocalTransactionMetadata? {
-        cachedData.get()?.let {
+        cachedData?.let {
             return it
         }
         val jsonString = deviceCache.getJSONObjectOrNull(CACHE_KEY)?.toString()
@@ -106,7 +104,7 @@ internal class LocalTransactionMetadataCache(
 
         return try {
             val localTransactionMetadata = json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
-            cachedData.set(localTransactionMetadata)
+            cachedData = localTransactionMetadata
             localTransactionMetadata
         } catch (e: SerializationException) {
             errorLog(e) { "Failed to deserialize local transaction metadata. Clearing cache." }

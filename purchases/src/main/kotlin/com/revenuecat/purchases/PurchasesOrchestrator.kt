@@ -1049,6 +1049,36 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineDistinctId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId,
+            solarEngineDistinctId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineAccountId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineAccountId,
+            solarEngineAccountId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineVisitorId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
+            solarEngineVisitorId,
+            appUserID,
+            application,
+        )
+    }
+
     fun setAppsFlyerConversionData(data: Map<*, *>?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
