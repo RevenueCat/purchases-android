@@ -193,7 +193,7 @@ internal class PostReceiptHelper(
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 onSuccess = { postReceiptResponse ->
                     if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
-                        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+                        localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(purchaseToken))
                     }
 
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
@@ -209,7 +209,7 @@ internal class PostReceiptHelper(
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
-                            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+                            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
                             appUserID,

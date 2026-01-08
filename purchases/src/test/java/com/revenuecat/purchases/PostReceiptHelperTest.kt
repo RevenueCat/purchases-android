@@ -12,9 +12,9 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -1646,7 +1646,7 @@ class PostReceiptHelperTest {
             localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1763,7 +1763,7 @@ class PostReceiptHelperTest {
             localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1786,7 +1786,7 @@ class PostReceiptHelperTest {
             localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1817,7 +1817,7 @@ class PostReceiptHelperTest {
 
         // Should clear cache if metadata was already cached from a previous attempt
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
