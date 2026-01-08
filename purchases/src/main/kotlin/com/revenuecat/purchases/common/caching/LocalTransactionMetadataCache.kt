@@ -51,7 +51,6 @@ internal class LocalTransactionMetadataCache(
         return getCachedData()?.purchaseDataByTokenHash?.get(getTokenHash(purchaseToken))
     }
 
-    @Synchronized
     fun getAllLocalTransactionMetadata(): List<LocalTransactionMetadata.TransactionMetadata> {
         return getCachedData()?.purchaseDataByTokenHash?.values?.toList() ?: emptyList()
     }
