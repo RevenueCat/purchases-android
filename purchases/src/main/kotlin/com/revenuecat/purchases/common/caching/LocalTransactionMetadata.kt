@@ -37,6 +37,6 @@ internal data class LocalTransactionMetadata(
         val paywallPostReceiptData: PaywallPostReceiptData? = null,
 
         @SerialName("purchases_are_completed_by")
-        val purchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
+        val purchasesAreCompletedBy: PurchasesAreCompletedBy,
     )
 }

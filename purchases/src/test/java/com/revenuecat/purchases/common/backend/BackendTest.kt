@@ -695,7 +695,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
             receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
             initiationSource = initiationSource,
         )
@@ -703,24 +703,6 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("purchase_completed_by")
         assertThat(requestBodySlot.captured["purchase_completed_by"]).isEqualTo("my_app")
-    }
-
-    @Test
-    fun `postReceipt does not post purchase_completed_by if not available`() {
-        mockPostReceiptResponseAndPost(
-            backend,
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            finishTransactions = false,
-            originalPurchasesAreCompletedBy = null,
-            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
-            initiationSource = initiationSource,
-        )
-
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).doesNotContain("purchase_completed_by")
     }
 
     @Test
@@ -3006,7 +2988,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
-        originalPurchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
+        purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -3026,7 +3008,7 @@ class BackendTest {
             appUserID = appUserID,
             isRestore = isRestore,
             finishTransactions = finishTransactions,
-            originalPurchasesAreCompletedBy = originalPurchasesAreCompletedBy,
+            purchasesAreCompletedBy = purchasesAreCompletedBy,
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,

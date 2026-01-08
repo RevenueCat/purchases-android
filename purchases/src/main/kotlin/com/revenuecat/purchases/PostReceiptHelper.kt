@@ -136,7 +136,7 @@ internal class PostReceiptHelper(
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     @OptIn(InternalRevenueCatAPI::class)
     private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
@@ -160,7 +160,8 @@ internal class PostReceiptHelper(
             ?: presentedPaywall?.toPaywallPostReceiptData()
         val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.mergeWith(it) }
             ?: receiptInfo
-        val originalPurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
+        val effectivePurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
+            ?: purchasesAreCompletedBy
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
@@ -192,7 +193,7 @@ internal class PostReceiptHelper(
                 receiptInfo = effectiveReceiptInfo,
                 initiationSource = initiationSource,
                 paywallPostReceiptData = effectivePaywallData,
-                originalPurchasesAreCompletedBy = originalPurchasesAreCompletedBy,
+                purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
                 onSuccess = { postReceiptResponse ->
                     if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
                         localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
