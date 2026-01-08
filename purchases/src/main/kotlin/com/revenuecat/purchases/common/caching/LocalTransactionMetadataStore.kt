@@ -8,11 +8,11 @@ import com.revenuecat.purchases.common.verboseLog
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
-internal class LocalTransactionMetadataCache(
+internal class LocalTransactionMetadataStore(
     private val deviceCache: DeviceCache,
     private val json: Json = JsonTools.json,
 ) {
-    private companion object {
+    private companion object Companion {
         const val CACHE_KEY = "local_transaction_metadata"
     }
 
@@ -54,7 +54,7 @@ internal class LocalTransactionMetadataCache(
     }
 
     @Synchronized
-    fun clearLocalTransactionMetadata(purchaseTokens: List<String>) {
+    fun clearLocalTransactionMetadata(purchaseTokens: Set<String>) {
         val existingData = getCachedData() ?: return
 
         val tokenHashesToClear = purchaseTokens.map { getTokenHash(it) }.toSet()

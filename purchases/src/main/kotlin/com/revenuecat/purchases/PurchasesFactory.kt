@@ -20,7 +20,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
@@ -266,7 +266,7 @@ internal class PurchasesFactory(
 
             val paywallPresentedCache = PaywallPresentedCache()
 
-            val localTransactionMetadataCache = LocalTransactionMetadataCache(cache)
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(cache)
 
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
@@ -277,7 +277,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
                 paywallPresentedCache,
-                localTransactionMetadataCache,
+                localTransactionMetadataStore,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
