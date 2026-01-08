@@ -14,7 +14,7 @@ import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -120,7 +120,7 @@ class PostReceiptHelperTest {
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
-    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
+    private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -134,7 +134,7 @@ class PostReceiptHelperTest {
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
-        localTransactionMetadataCache = mockk()
+        localTransactionMetadataStore = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -147,14 +147,14 @@ class PostReceiptHelperTest {
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
             paywallPresentedCache = paywallPresentedCache,
-            localTransactionMetadataCache = localTransactionMetadataCache,
+            localTransactionMetadataStore = localTransactionMetadataStore,
         )
 
         mockUnsyncedSubscriberAttributes()
 
-        every { localTransactionMetadataCache.getLocalTransactionMetadata(any()) } returns null
-        every { localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any()) } just Runs
-        every { localTransactionMetadataCache.clearLocalTransactionMetadata(any()) } just Runs
+        every { localTransactionMetadataStore.getLocalTransactionMetadata(any()) } returns null
+        every { localTransactionMetadataStore.cacheLocalTransactionMetadata(any(), any()) } just Runs
+        every { localTransactionMetadataStore.clearLocalTransactionMetadata(any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
     }
@@ -1643,10 +1643,10 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         verify(exactly = 1) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1665,10 +1665,10 @@ class PostReceiptHelperTest {
             onError = { _, _ -> }
         )
         verify(exactly = 1) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
         }
         verify(exactly = 0) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+            localTransactionMetadataStore.clearLocalTransactionMetadata(any())
         }
     }
 
@@ -1697,7 +1697,7 @@ class PostReceiptHelperTest {
             observerMode = false,
         )
         verify(exactly = 1) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
                 mockStoreTransaction.purchaseToken,
                 expectedTransactionMetadata,
             )
@@ -1727,7 +1727,7 @@ class PostReceiptHelperTest {
             observerMode = false,
         )
         verify(exactly = 1) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
                 mockPendingStoreTransaction.purchaseToken,
                 expectedTransactionMetadata,
             )
@@ -1744,7 +1744,7 @@ class PostReceiptHelperTest {
             paywallPostReceiptData = null,
             observerMode = false,
         )
-        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+        every { localTransactionMetadataStore.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
 
         mockPostReceiptSuccess()
 
@@ -1760,10 +1760,10 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(any(), any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1783,10 +1783,10 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(mockStoreTransaction.purchaseToken, any())
         }
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1800,7 +1800,7 @@ class PostReceiptHelperTest {
             paywallPostReceiptData = null,
             observerMode = false,
         )
-        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
+        every { localTransactionMetadataStore.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns existingMetadata
 
         mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
 
@@ -1817,7 +1817,7 @@ class PostReceiptHelperTest {
 
         // Should clear cache if metadata was already cached from a previous attempt
         verify(exactly = 1) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(mockStoreTransaction.purchaseToken))
         }
     }
 
@@ -1837,10 +1837,10 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(any(), any())
         }
         verify(exactly = 0) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+            localTransactionMetadataStore.clearLocalTransactionMetadata(any())
         }
     }
 
@@ -1860,10 +1860,10 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(any(), any())
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(any(), any())
         }
         verify(exactly = 0) {
-            localTransactionMetadataCache.clearLocalTransactionMetadata(any())
+            localTransactionMetadataStore.clearLocalTransactionMetadata(any())
         }
     }
 
