@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.models.StoreTransaction
@@ -30,7 +30,7 @@ internal class PostPendingTransactionsHelper(
     private val identityManager: IdentityManager,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
     private val postReceiptHelper: PostReceiptHelper,
-    private val localTransactionMetadataCache: LocalTransactionMetadataCache,
+    private val localTransactionMetadataStore: LocalTransactionMetadataStore,
 ) {
 
     @Suppress("LongMethod")
@@ -152,7 +152,7 @@ internal class PostPendingTransactionsHelper(
         onSuccess: ((CustomerInfo) -> Unit),
     ) {
         val results: MutableList<Result<CustomerInfo, PurchasesError>> = mutableListOf()
-        val transactionMetadataToSync = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
         if (transactionMetadataToSync.isEmpty()) {
             onNoTransactionsToSync()
             return

@@ -23,7 +23,7 @@ import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -59,7 +59,7 @@ class SubscriberAttributesPurchasesTests {
     private val customerInfoUpdateHandlerMock = mockk<CustomerInfoUpdateHandler>()
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
-    private val localTransactionMetadataCache = mockk<LocalTransactionMetadataCache>()
+    private val localTransactionMetadataStore = mockk<LocalTransactionMetadataStore>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontLoaderMock = mockk<FontLoader>()
     private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
@@ -98,7 +98,7 @@ class SubscriberAttributesPurchasesTests {
             identityManager,
             postTransactionHelper,
             postReceiptHelperMock,
-            localTransactionMetadataCache,
+            localTransactionMetadataStore,
         )
 
         val context = mockk<Application>(relaxed = true).also { applicationMock = it }
@@ -144,7 +144,7 @@ class SubscriberAttributesPurchasesTests {
             customerInfoUpdateHandlerMock,
             offeringsManagerMock,
             fontLoaderMock,
-            localTransactionMetadataCache,
+            localTransactionMetadataStore,
             postReceiptHelperMock,
         )
     }

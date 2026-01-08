@@ -292,7 +292,7 @@ class LocalTransactionMetadataStoreTest {
     fun `getAllLocalTransactionMetadata returns empty list when no data cached`() {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
-        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        val result = localTransactionMetadataStore.getAllLocalTransactionMetadata()
 
         assertThat(result).isEmpty()
     }
@@ -315,7 +315,7 @@ class LocalTransactionMetadataStoreTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        val result = localTransactionMetadataStore.getAllLocalTransactionMetadata()
 
         assertThat(result).hasSize(1)
         assertThat(result[0]).isEqualTo(transactionMetadata)
@@ -348,7 +348,7 @@ class LocalTransactionMetadataStoreTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        val result = localTransactionMetadataStore.getAllLocalTransactionMetadata()
 
         assertThat(result).hasSize(2)
         assertThat(result).containsExactlyInAnyOrder(transactionMetadata1, transactionMetadata2)
@@ -394,7 +394,7 @@ class LocalTransactionMetadataStoreTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
+        val result = localTransactionMetadataStore.getAllLocalTransactionMetadata()
 
         assertThat(result).hasSize(3)
         assertThat(result.map { it.appUserID }).containsExactlyInAnyOrder(userId1, userId2, userId3)

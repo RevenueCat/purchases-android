@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -39,7 +39,7 @@ class PostPendingTransactionsHelperTest {
     private lateinit var identityManager: IdentityManager
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
     private lateinit var postReceiptHelper: PostReceiptHelper
-    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
+    private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
 
     private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
@@ -54,7 +54,7 @@ class PostPendingTransactionsHelperTest {
         }
         postTransactionWithProductDetailsHelper = mockk()
         postReceiptHelper = mockk()
-        localTransactionMetadataCache = mockk<LocalTransactionMetadataCache>().apply {
+        localTransactionMetadataStore = mockk<LocalTransactionMetadataStore>().apply {
             every { getAllLocalTransactionMetadata() } returns emptyList()
         }
 
@@ -69,7 +69,7 @@ class PostPendingTransactionsHelperTest {
             identityManager,
             postTransactionWithProductDetailsHelper,
             postReceiptHelper,
-            localTransactionMetadataCache,
+            localTransactionMetadataStore,
         )
     }
 
@@ -419,7 +419,7 @@ class PostPendingTransactionsHelperTest {
 
     @Test
     fun `when there are no cached transaction metadata, onNoTransactionsToSync is called`() {
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns emptyList()
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns emptyList()
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
@@ -447,7 +447,7 @@ class PostPendingTransactionsHelperTest {
             userID = appUserId,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
@@ -487,7 +487,7 @@ class PostPendingTransactionsHelperTest {
             token = "cached_token_3"
         )
         val allMetadata = listOf(metadata1, metadata2, metadata3)
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns allMetadata
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns allMetadata
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
@@ -518,7 +518,7 @@ class PostPendingTransactionsHelperTest {
             userID = appUserId,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
@@ -554,7 +554,7 @@ class PostPendingTransactionsHelperTest {
             token = "cached_token_2"
         )
         val allMetadata = listOf(metadata1, metadata2)
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns allMetadata
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns allMetadata
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
@@ -601,7 +601,7 @@ class PostPendingTransactionsHelperTest {
             userID = appUserId,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         val customerInfoMock = mockk<CustomerInfo>()
         mockPostTransactionsSuccessful(customerInfoMock, listOf(activePurchase))
@@ -645,7 +645,7 @@ class PostPendingTransactionsHelperTest {
             userID = appUserId,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
         every {
@@ -691,7 +691,7 @@ class PostPendingTransactionsHelperTest {
             userID = appUserId,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Regular transaction failed")
         every {
@@ -732,7 +732,7 @@ class PostPendingTransactionsHelperTest {
             userID = cachedUserID,
             token = "cached_token_1"
         )
-        every { localTransactionMetadataCache.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
 
         mockSuccessfulQueryPurchases(
             purchasesByHashedToken = emptyMap(),
