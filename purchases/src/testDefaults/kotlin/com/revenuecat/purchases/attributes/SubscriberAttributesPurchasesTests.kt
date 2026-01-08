@@ -332,6 +332,27 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setSolarEngineDistinctId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId) { parameter ->
+            underTest.setSolarEngineDistinctId(parameter)
+        }
+    }
+
+    @Test
+    fun `setSolarEngineAccountId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineAccountId) { parameter ->
+            underTest.setSolarEngineAccountId(parameter)
+        }
+    }
+
+    @Test
+    fun `setSolarEngineVisitorId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId) { parameter ->
+            underTest.setSolarEngineVisitorId(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs

@@ -2,10 +2,14 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ReplacementMode
+import com.revenuecat.purchases.ReplacementModeSerializer
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PeriodSerializer
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PricingPhaseSerializer
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -15,12 +19,18 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ReceiptInfo(
     val productIDs: List<String>,
+    @Serializable(with = PresentedOfferingContextSerializer::class)
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val price: Double? = null,
     val formattedPrice: String? = null,
     val currency: String? = null,
+    @Serializable(with = PeriodSerializer::class)
     val period: Period? = null,
-    val pricingPhases: List<PricingPhase>? = null,
+    val pricingPhases: List<
+        @Serializable(with = PricingPhaseSerializer::class)
+        PricingPhase,
+        >? = null,
+    @Serializable(with = ReplacementModeSerializer::class)
     val replacementMode: ReplacementMode? = null,
     val platformProductIds: List<Map<String, String?>> = emptyList(),
     // Amazon-only fields
@@ -78,8 +88,12 @@ internal data class ReceiptInfo(
     @IgnoredOnParcel
     val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
 
-    fun merge(receiptInfo: ReceiptInfo): ReceiptInfo {
-        fun PresentedOfferingContext?.merge(
+    /**
+     * Merges this [ReceiptInfo] with another [ReceiptInfo], giving precedence to the values in this
+     * instance when there are conflicts.
+     */
+    fun mergeWith(receiptInfo: ReceiptInfo): ReceiptInfo {
+        fun PresentedOfferingContext?.mergeWith(
             presentedOfferingContext: PresentedOfferingContext?,
         ): PresentedOfferingContext? {
             if (this == null) {
@@ -96,10 +110,10 @@ internal data class ReceiptInfo(
         }
         return ReceiptInfo(
             productIDs = this.productIDs,
-            presentedOfferingContext = this.presentedOfferingContext.merge(receiptInfo.presentedOfferingContext),
+            presentedOfferingContext = this.presentedOfferingContext.mergeWith(receiptInfo.presentedOfferingContext),
             price = this.price ?: receiptInfo.price,
-            formattedPrice = this.formattedPrice ?: receiptInfo.formattedPrice,
-            currency = this.currency ?: receiptInfo.currency,
+            formattedPrice = this.formattedPrice?.takeUnless { it.isBlank() } ?: receiptInfo.formattedPrice,
+            currency = this.currency?.takeUnless { it.isBlank() } ?: receiptInfo.currency,
             period = this.period ?: receiptInfo.period,
             pricingPhases = this.pricingPhases ?: receiptInfo.pricingPhases,
             replacementMode = this.replacementMode ?: receiptInfo.replacementMode,

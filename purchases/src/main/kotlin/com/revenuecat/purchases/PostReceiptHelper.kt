@@ -35,6 +35,8 @@ internal class PostReceiptHelper(
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
+    private val purchasesAreCompletedBy: PurchasesAreCompletedBy
+        get() = appConfig.purchasesAreCompletedBy
 
     /**
      * This method will post a token and receiptInfo to the backend without consuming any purchases.
@@ -149,12 +151,16 @@ internal class PostReceiptHelper(
         val cachedTransactionMetadata = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
         val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
 
-        val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
-        val effectivePaywallData = presentedPaywall?.toPaywallPostReceiptData()
-            ?: cachedTransactionMetadata?.paywallPostReceiptData
-        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.merge(it) }
+        val presentedPaywall = if (cachedTransactionMetadata == null) {
+            paywallPresentedCache.getAndRemovePresentedEvent()
+        } else {
+            null
+        }
+        val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
+            ?: presentedPaywall?.toPaywallPostReceiptData()
+        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.mergeWith(it) }
             ?: receiptInfo
-        val originalObserverMode = cachedTransactionMetadata?.observerMode
+        val originalPurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
@@ -162,7 +168,7 @@ internal class PostReceiptHelper(
                 token = purchaseToken,
                 receiptInfo = receiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
-                observerMode = !finishTransactions,
+                purchasesAreCompletedBy = purchasesAreCompletedBy,
             )
             localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
         }
@@ -186,7 +192,7 @@ internal class PostReceiptHelper(
                 receiptInfo = effectiveReceiptInfo,
                 initiationSource = initiationSource,
                 paywallPostReceiptData = effectivePaywallData,
-                originalObserverMode = originalObserverMode,
+                originalPurchasesAreCompletedBy = originalPurchasesAreCompletedBy,
                 onSuccess = { postReceiptResponse ->
                     if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
                         localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))

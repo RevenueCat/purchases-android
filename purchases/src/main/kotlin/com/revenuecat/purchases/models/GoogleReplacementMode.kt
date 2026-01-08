@@ -4,7 +4,6 @@ import android.os.Parcel
 import android.os.Parcelable
 import com.android.billingclient.api.BillingFlowParams
 import com.revenuecat.purchases.ReplacementMode
-import kotlinx.serialization.Serializable
 
 /**
  * Enum of possible replacement modes to be passed to a Google Play purchase.
@@ -12,7 +11,6 @@ import kotlinx.serialization.Serializable
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-@Serializable
 enum class GoogleReplacementMode(
     @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
 ) : ReplacementMode {

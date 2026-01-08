@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -37,21 +37,16 @@ import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMap
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.common.toMap
 import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.GoogleStoreProduct
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
-import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubStoreProduct
-import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
@@ -689,6 +684,43 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("initiation_source")
         assertThat(requestBodySlot.captured["initiation_source"]).isEqualTo(initiationSource.postReceiptFieldValue)
+    }
+
+    @Test
+    fun `postReceipt posts purchase_completed_by`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("purchase_completed_by")
+        assertThat(requestBodySlot.captured["purchase_completed_by"]).isEqualTo("my_app")
+    }
+
+    @Test
+    fun `postReceipt does not post purchase_completed_by if not available`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            originalPurchasesAreCompletedBy = null,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).doesNotContain("purchase_completed_by")
     }
 
     @Test
@@ -2974,6 +3006,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        originalPurchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
         onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -2993,6 +3026,7 @@ class BackendTest {
             appUserID = appUserID,
             isRestore = isRestore,
             finishTransactions = finishTransactions,
+            originalPurchasesAreCompletedBy = originalPurchasesAreCompletedBy,
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,
