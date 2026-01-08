@@ -293,7 +293,7 @@ internal class PurchasesFactory(
                 identityManager,
                 postTransactionWithProductDetailsHelper,
                 postReceiptHelper,
-                localTransactionMetadataCache,
+                localTransactionMetadataStore,
             )
 
             val customerInfoHelper = CustomerInfoHelper(
