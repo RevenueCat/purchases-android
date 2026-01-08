@@ -783,7 +783,7 @@ class PostPendingTransactionsHelperTest {
             token = token,
             receiptInfo = mockk(relaxed = true),
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = null
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
     }
 
