@@ -202,7 +202,7 @@ class PostReceiptHelperTest {
                 appUserID = appUserID,
                 isRestore = allowSharingPlayStoreAccount,
                 finishTransactions = defaultFinishTransactions,
-                originalPurchasesAreCompletedBy = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = expectedReceiptInfo,
                 initiationSource = PostReceiptInitiationSource.PURCHASE,
@@ -237,7 +237,7 @@ class PostReceiptHelperTest {
                 appUserID = any(),
                 isRestore = any(),
                 finishTransactions = any(),
-                originalPurchasesAreCompletedBy = any(),
+                purchasesAreCompletedBy = any(),
                 subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
                 receiptInfo = any(),
                 initiationSource = any(),
@@ -898,7 +898,7 @@ class PostReceiptHelperTest {
                 appUserID = appUserID,
                 isRestore = allowSharingPlayStoreAccount,
                 finishTransactions = defaultFinishTransactions,
-                originalPurchasesAreCompletedBy = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = testReceiptInfo,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
@@ -930,7 +930,7 @@ class PostReceiptHelperTest {
                 appUserID = any(),
                 isRestore = any(),
                 finishTransactions = any(),
-                originalPurchasesAreCompletedBy = any(),
+                purchasesAreCompletedBy = any(),
                 subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
                 receiptInfo = any(),
                 initiationSource = any(),
@@ -1442,7 +1442,7 @@ class PostReceiptHelperTest {
                 appUserID = any(),
                 isRestore = any(),
                 finishTransactions = any(),
-                originalPurchasesAreCompletedBy = any(),
+                purchasesAreCompletedBy = any(),
                 subscriberAttributes = any(),
                 receiptInfo = any(),
                 initiationSource = any(),
@@ -1862,7 +1862,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = cachedPaywallData,
-                originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1922,7 +1922,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = cachedPaywallData,
-                originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1964,49 +1964,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
-    fun `postTransactionAndConsumeIfNeeded does not use cached observer mode value if not available`() {
-        val cachedPaywallData = event.toPaywallPostReceiptData()
-        val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
-            token = mockStoreTransaction.purchaseToken,
-            receiptInfo = testReceiptInfo,
-            paywallPostReceiptData = cachedPaywallData,
-            purchasesAreCompletedBy = null,
-        )
-        every { localTransactionMetadataCache.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
-
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = true,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-
-        verify(exactly = 1) {
-            backend.postReceiptData(
-                purchaseToken = any(),
-                appUserID = any(),
-                isRestore = any(),
-                finishTransactions = any(),
-                subscriberAttributes = any(),
-                receiptInfo = any(),
-                initiationSource = any(),
-                paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2065,7 +2023,7 @@ class PostReceiptHelperTest {
                 receiptInfo = expectedMergedReceiptInfo,
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2073,7 +2031,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded passes originalPurchasesAreCompletedBy from cached metadata`() {
+    fun `postTransactionAndConsumeIfNeeded passes PurchasesAreCompletedBy from cached metadata`() {
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
             userID = appUserID,
             token = mockStoreTransaction.purchaseToken,
@@ -2106,7 +2064,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2114,7 +2072,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded passes null originalPurchasesAreCompletedBy when no cached metadata`() {
+    fun `postTransactionAndConsumeIfNeeded passes current PurchasesAreCompletedBy when no cached metadata`() {
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -2138,7 +2096,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2230,7 +2188,7 @@ class PostReceiptHelperTest {
                 receiptInfo = capture(postedReceiptInfoSlot),
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = any(),
+                purchasesAreCompletedBy = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2273,7 +2231,7 @@ class PostReceiptHelperTest {
                 receiptInfo = capture(postedReceiptInfoSlot),
                 initiationSource = initiationSource,
                 paywallPostReceiptData = any(),
-                originalPurchasesAreCompletedBy = any(),
+                purchasesAreCompletedBy = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )

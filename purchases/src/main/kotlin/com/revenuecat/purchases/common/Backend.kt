@@ -249,7 +249,8 @@ internal class Backend(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
-        originalPurchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
+        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataCache
+        purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -274,7 +275,7 @@ internal class Backend(
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
             "observer_mode" to !finishTransactions,
-            "purchase_completed_by" to originalPurchasesAreCompletedBy?.name?.lowercase(),
+            "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
