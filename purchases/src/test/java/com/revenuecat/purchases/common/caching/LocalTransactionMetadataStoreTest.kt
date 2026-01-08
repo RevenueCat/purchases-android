@@ -19,10 +19,10 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class LocalTransactionMetadataCacheTest {
+class LocalTransactionMetadataStoreTest {
 
     private lateinit var deviceCache: DeviceCache
-    private lateinit var localTransactionMetadataCache: LocalTransactionMetadataCache
+    private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
 
     private val purchaseToken = "test_purchase_token"
     private val purchaseToken2 = "test_purchase_token_2"
@@ -52,7 +52,7 @@ class LocalTransactionMetadataCacheTest {
     @Before
     fun setup() {
         deviceCache = mockk(relaxed = true)
-        localTransactionMetadataCache = LocalTransactionMetadataCache(deviceCache)
+        localTransactionMetadataStore = LocalTransactionMetadataStore(deviceCache)
     }
 
     // region cacheLocalTransactionMetadata
@@ -69,7 +69,7 @@ class LocalTransactionMetadataCacheTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
 
         verify(exactly = 1) {
             deviceCache.putString(
@@ -91,9 +91,9 @@ class LocalTransactionMetadataCacheTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
 
-        val retrieved = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val retrieved = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
         assertThat(retrieved).isNotNull
     }
 
@@ -121,7 +121,7 @@ class LocalTransactionMetadataCacheTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, newTransactionMetadata)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, newTransactionMetadata)
 
         // Should not call putString since it's already cached
         verify(exactly = 0) {
@@ -150,7 +150,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         // Cache first transaction
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata1)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata1)
 
         // Mock the device cache to return the first transaction
         val firstCached = LocalTransactionMetadata(
@@ -162,7 +162,7 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
         // Cache second transaction
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken2, transactionMetadata2)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken2, transactionMetadata2)
 
         verify(atLeast = 2) {
             deviceCache.putString("local_transaction_metadata", any())
@@ -190,9 +190,9 @@ class LocalTransactionMetadataCacheTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
 
-        val retrieved = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val retrieved = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
         assertThat(retrieved?.paywallPostReceiptData).isEqualTo(paywallData)
     }
 
@@ -204,7 +204,7 @@ class LocalTransactionMetadataCacheTest {
     fun `getLocalTransactionMetadata returns null when no data cached`() {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
-        val result = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val result = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
 
         assertThat(result).isNull()
     }
@@ -227,7 +227,7 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        val result = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val result = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
 
         assertThat(result).isEqualTo(transactionMetadata)
     }
@@ -250,7 +250,7 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        val result = localTransactionMetadataCache.getLocalTransactionMetadata("different_token")
+        val result = localTransactionMetadataStore.getLocalTransactionMetadata("different_token")
 
         assertThat(result).isNull()
     }
@@ -274,9 +274,9 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
         // First call
-        localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
         // Second call
-        localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
 
         // Should only call getJSONObjectOrNull once, using cached instance for second call
         verify(exactly = 1) {
@@ -315,14 +315,14 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
 
         verify(exactly = 1) {
             deviceCache.putString("local_transaction_metadata", any())
         }
 
         // Verify second token is still there
-        val result = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken2)
+        val result = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken2)
         assertThat(result).isNotNull
     }
 
@@ -353,21 +353,21 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken, purchaseToken2))
+        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken, purchaseToken2))
 
         verify(exactly = 1) {
             deviceCache.putString("local_transaction_metadata", any())
         }
 
-        assertThat(localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)).isNull()
-        assertThat(localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken2)).isNull()
+        assertThat(localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)).isNull()
+        assertThat(localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken2)).isNull()
     }
 
     @Test
     fun `clearLocalTransactionMetadata does nothing when no data cached`() {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
 
         verify(exactly = 0) {
             deviceCache.putString(any(), any())
@@ -392,7 +392,7 @@ class LocalTransactionMetadataCacheTest {
         val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), cachedData)
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
-        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf("non_existent_token"))
+        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("non_existent_token"))
 
         verify(exactly = 0) {
             deviceCache.putString(any(), any())
@@ -418,13 +418,13 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
         // Get the data to populate in-memory cache
-        localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
 
         // Clear the data
-        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
 
         // Verify it's gone from in-memory cache
-        val result = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val result = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
         assertThat(result).isNull()
     }
 

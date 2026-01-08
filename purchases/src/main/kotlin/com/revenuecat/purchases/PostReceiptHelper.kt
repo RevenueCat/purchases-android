@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
-import com.revenuecat.purchases.common.caching.LocalTransactionMetadataCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -31,7 +31,7 @@ internal class PostReceiptHelper(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
-    private val localTransactionMetadataCache: LocalTransactionMetadataCache,
+    private val localTransactionMetadataStore: LocalTransactionMetadataStore,
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -148,7 +148,7 @@ internal class PostReceiptHelper(
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val cachedTransactionMetadata = localTransactionMetadataCache.getLocalTransactionMetadata(purchaseToken)
+        val cachedTransactionMetadata = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
         val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
 
         val presentedPaywall = if (cachedTransactionMetadata == null) {
@@ -171,7 +171,7 @@ internal class PostReceiptHelper(
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
             )
-            localTransactionMetadataCache.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
         }
 
         if (purchaseState == PurchaseState.PENDING) {
@@ -196,7 +196,7 @@ internal class PostReceiptHelper(
                 purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
                 onSuccess = { postReceiptResponse ->
                     if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
-                        localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+                        localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                     }
 
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
@@ -212,7 +212,7 @@ internal class PostReceiptHelper(
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
-                            localTransactionMetadataCache.clearLocalTransactionMetadata(listOf(purchaseToken))
+                            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
