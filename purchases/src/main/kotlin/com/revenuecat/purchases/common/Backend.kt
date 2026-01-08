@@ -9,6 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -248,7 +249,7 @@ internal class Backend(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
-        originalObserverMode: Boolean? = null,
+        originalPurchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -273,7 +274,7 @@ internal class Backend(
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
             "observer_mode" to !finishTransactions,
-            "original_observer_mode" to originalObserverMode,
+            "purchase_completed_by" to originalPurchasesAreCompletedBy?.name?.lowercase(),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },

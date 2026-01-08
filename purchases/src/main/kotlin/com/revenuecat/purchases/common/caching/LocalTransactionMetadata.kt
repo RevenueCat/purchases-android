@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.caching
 
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import kotlinx.serialization.SerialName
@@ -35,7 +36,7 @@ internal data class LocalTransactionMetadata(
         @SerialName("paywall_data")
         val paywallPostReceiptData: PaywallPostReceiptData? = null,
 
-        @SerialName("observer_mode")
-        val observerMode: Boolean? = null,
+        @SerialName("purchases_are_completed_by")
+        val purchasesAreCompletedBy: PurchasesAreCompletedBy? = null,
     )
 }
