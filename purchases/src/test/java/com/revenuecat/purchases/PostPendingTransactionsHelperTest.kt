@@ -464,7 +464,7 @@ class PostPendingTransactionsHelperTest {
                 purchaseToken = metadata.token,
                 receiptInfo = metadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = metadata.userID,
+                appUserID = metadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = any(),
                 onError = any()
@@ -531,7 +531,7 @@ class PostPendingTransactionsHelperTest {
                 purchaseToken = metadata.token,
                 receiptInfo = metadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = metadata.userID,
+                appUserID = metadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = any(),
                 onError = captureLambda()
@@ -625,7 +625,7 @@ class PostPendingTransactionsHelperTest {
                 purchaseToken = metadata.token,
                 receiptInfo = metadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = metadata.userID,
+                appUserID = metadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = any(),
                 onError = any()
@@ -671,7 +671,7 @@ class PostPendingTransactionsHelperTest {
                 purchaseToken = metadata.token,
                 receiptInfo = metadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = metadata.userID,
+                appUserID = metadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = any(),
                 onError = any()
@@ -713,7 +713,7 @@ class PostPendingTransactionsHelperTest {
                 purchaseToken = metadata.token,
                 receiptInfo = metadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = metadata.userID,
+                appUserID = metadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = any(),
                 onError = captureLambda()
@@ -779,7 +779,7 @@ class PostPendingTransactionsHelperTest {
         token: String
     ): LocalTransactionMetadata.TransactionMetadata {
         return LocalTransactionMetadata.TransactionMetadata(
-            userID = userID,
+            appUserID = userID,
             token = token,
             receiptInfo = mockk(relaxed = true),
             paywallPostReceiptData = null,
@@ -797,7 +797,7 @@ class PostPendingTransactionsHelperTest {
                     purchaseToken = transaction.token,
                     receiptInfo = transaction.receiptInfo,
                     isRestore = allowSharingPlayStoreAccount,
-                    appUserID = transaction.userID,
+                    appUserID = transaction.appUserID,
                     initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                     onSuccess = captureLambda(),
                     onError = any()

@@ -1,16 +1,12 @@
 package com.revenuecat.purchases.common.caching
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
@@ -65,7 +61,7 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -87,7 +83,7 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -105,7 +101,7 @@ class LocalTransactionMetadataCacheTest {
         val existingMetadata = LocalTransactionMetadata(
             purchaseDataByTokenHash = mapOf(
                 purchaseToken.sha1() to LocalTransactionMetadata.TransactionMetadata(
-                    userID = appUserID,
+                    appUserID = appUserID,
                     token = purchaseToken,
                     receiptInfo = receiptInfo,
                     paywallPostReceiptData = null,
@@ -117,7 +113,7 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull("local_transaction_metadata") } returns JSONObject(jsonString)
 
         val newTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = "different_user",
+            appUserID = "different_user",
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -137,7 +133,7 @@ class LocalTransactionMetadataCacheTest {
         every { deviceCache.getJSONObjectOrNull(any()) } returns null
 
         val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -145,7 +141,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -186,7 +182,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -215,7 +211,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `getLocalTransactionMetadata returns cached data`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -238,7 +234,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `getLocalTransactionMetadata returns null for wrong token`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -261,7 +257,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `getLocalTransactionMetadata uses cached instance on subsequent calls`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -303,7 +299,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `getAllLocalTransactionMetadata returns single item when one transaction cached`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -327,7 +323,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `getAllLocalTransactionMetadata returns all items when multiple transactions cached`() {
         val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -335,7 +331,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
-            userID = "another_user",
+            appUserID = "another_user",
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -364,7 +360,7 @@ class LocalTransactionMetadataCacheTest {
         val userId3 = "user_3"
 
         val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
-            userID = userId1,
+            appUserID = userId1,
             token = "token_1",
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -372,7 +368,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
-            userID = userId2,
+            appUserID = userId2,
             token = "token_2",
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -380,7 +376,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata3 = LocalTransactionMetadata.TransactionMetadata(
-            userID = userId3,
+            appUserID = userId3,
             token = "token_3",
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -400,7 +396,7 @@ class LocalTransactionMetadataCacheTest {
         val result = localTransactionMetadataCache.getAllLocalTransactionMetadata()
 
         assertThat(result).hasSize(3)
-        assertThat(result.map { it.userID }).containsExactlyInAnyOrder(userId1, userId2, userId3)
+        assertThat(result.map { it.appUserID }).containsExactlyInAnyOrder(userId1, userId2, userId3)
         assertThat(result.map { it.token }).containsExactlyInAnyOrder("token_1", "token_2", "token_3")
     }
 
@@ -411,7 +407,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `clearLocalTransactionMetadata removes specific token`() {
         val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -419,7 +415,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -449,7 +445,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `clearLocalTransactionMetadata removes all given tokens`() {
         val transactionMetadata1 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -457,7 +453,7 @@ class LocalTransactionMetadataCacheTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -497,7 +493,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `clearLocalTransactionMetadata does nothing when token not found`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -522,7 +518,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `clearLocalTransactionMetadata updates in-memory cache`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -555,7 +551,7 @@ class LocalTransactionMetadataCacheTest {
     @Test
     fun `LocalTransactionMetadata serializes correctly`() {
         val transactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,

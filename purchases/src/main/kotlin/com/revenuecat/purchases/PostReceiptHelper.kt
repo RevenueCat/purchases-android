@@ -158,7 +158,7 @@ internal class PostReceiptHelper(
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
-                userID = appUserID,
+                appUserID = appUserID,
                 token = purchaseToken,
                 receiptInfo = receiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),

@@ -163,7 +163,7 @@ internal class PostPendingTransactionsHelper(
                 purchaseToken = transactionMetadata.token,
                 receiptInfo = transactionMetadata.receiptInfo,
                 isRestore = allowSharingPlayStoreAccount,
-                appUserID = transactionMetadata.userID,
+                appUserID = transactionMetadata.appUserID,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 onSuccess = {
                     // This is safe since all requests are performed in the same dispatcher serial queue.

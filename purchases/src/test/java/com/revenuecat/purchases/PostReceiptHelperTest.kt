@@ -1633,7 +1633,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = expectedPaywallData,
@@ -1663,7 +1663,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> }
         )
         val expectedTransactionMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockPendingStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1681,7 +1681,7 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists but clears it on success`() {
         // Mock that metadata already exists for this token
         val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1737,7 +1737,7 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded clears cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
         // Mock that metadata already exists for this token (from a previous attempt)
         val existingMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1814,7 +1814,7 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded uses cached paywall data when present paywall is null`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = cachedPaywallData,
@@ -1856,7 +1856,7 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded uses present paywall data over cached when both exist`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = cachedPaywallData,
@@ -1923,7 +1923,7 @@ class PostReceiptHelperTest {
             platformProductIds = listOf(mapOf("product_id" to "cached-product")),
         )
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = cachedReceiptInfo,
             paywallPostReceiptData = null,
@@ -1971,7 +1971,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded passes originalObserverMode from cached metadata`() {
         val cachedMetadata = LocalTransactionMetadata.TransactionMetadata(
-            userID = appUserID,
+            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
