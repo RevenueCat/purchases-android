@@ -43,11 +43,6 @@ enum class ExitOfferType(val value: String) {
      * An exit offer shown when the user attempts to dismiss the paywall without interacting.
      */
     DISMISS("dismiss"),
-
-    /**
-     * An exit offer shown when the user dismisses the paywall after some interaction (e.g., cancelling a purchase).
-     */
-    ABANDONMENT("abandonment"),
 }
 
 /**

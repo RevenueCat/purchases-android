@@ -69,7 +69,7 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Paywall.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property localeIdentifier The locale identifier of the device.
-     * @property exitOfferType The type of exit offer shown (dismiss or abandonment). Only for exit offer events.
+     * @property exitOfferType The type of exit offer shown. Only for exit offer events.
      * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
      */
     @Serializable
