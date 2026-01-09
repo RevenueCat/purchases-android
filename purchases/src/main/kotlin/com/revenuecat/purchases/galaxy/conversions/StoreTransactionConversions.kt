@@ -3,6 +3,7 @@ package com.revenuecat.purchases.galaxy.conversions
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
@@ -17,6 +18,7 @@ internal fun PurchaseVo.toStoreTransaction(
     productId: String,
     presentedOfferingContext: PresentedOfferingContext?,
     purchaseState: PurchaseState,
+    replacementMode: ReplacementMode? = null,
 ): StoreTransaction {
     val productType = this.type.createRevenueCatProductTypeFromSamsungIAPTypeString()
 
@@ -39,7 +41,7 @@ internal fun PurchaseVo.toStoreTransaction(
         marketplace = null,
         subscriptionOptionId = null,
         subscriptionOptionIdForProductIDs = null,
-        replacementMode = null,
+        replacementMode = replacementMode,
     )
 }
 

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.listener.OnAcknowledgePurchasesListener
+import com.samsung.android.sdk.iap.lib.listener.OnChangeSubscriptionPlanListener
 import com.samsung.android.sdk.iap.lib.listener.OnConsumePurchasedItemsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetOwnedListListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
@@ -115,6 +116,29 @@ internal class DefaultIAPHelperProvider(
         return iapHelper.getOwnedList(
             HelperDefine.PRODUCT_TYPE_ALL,
             onGetOwnedListListener,
+        )
+    }
+
+    @GalaxySerialOperation
+    override fun changeSubscriptionPlan(
+        oldItemId: String,
+        newItemId: String,
+        prorationMode: HelperDefine.ProrationMode,
+        obfuscatedAccountId: String?,
+        obfuscatedProfileId: String?,
+        onChangeSubscriptionPlanListener: OnChangeSubscriptionPlanListener,
+    ): Boolean {
+        // Return values:
+        // true: The request was sent to server successfully and the result will be sent
+        //       to OnChangeSubscriptionPlanListener interface listener.
+        // false: The request was not sent to server and was not processed.
+        return iapHelper.changeSubscriptionPlan(
+            oldItemId,
+            newItemId,
+            prorationMode,
+            obfuscatedAccountId,
+            obfuscatedProfileId,
+            onChangeSubscriptionPlanListener,
         )
     }
 }

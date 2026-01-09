@@ -12,8 +12,8 @@ internal object GalaxyStrings {
     const val ANOTHER_GET_PRODUCT_DETAILS_REQUEST_IN_FLIGHT = "A request to fetch products from the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val REQUESTING_PRODUCTS = "Requesting Galaxy products with identifiers: %s"
-    const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product IDs" +
-        "%s from the Galaxy Store. Error: %s"
+    const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product " +
+        "IDs %s from the Galaxy Store. Error: %s"
 
     // Product Parsing
     const val UNKNOWN_SUBSCRIPTION_DURATION_UNIT = "Detected an unknown SubscriptionDurationUnit from the " +
@@ -27,7 +27,6 @@ internal object GalaxyStrings {
     // Purchasing
     const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
-    const val PRODUCT_CHANGES_NOT_SUPPORTED = "Product changes are currently unsupported for the Galaxy Store."
     const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the " +
         "Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
@@ -40,6 +39,18 @@ internal object GalaxyStrings {
         "This is likely an issue with the Galaxy Store. Error: %s."
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
+
+    // Subscription Plan Changes
+    const val ANOTHER_CHANGE_SUBSCRIPTION_PLAN_REQUEST_IN_FLIGHT = "Another subscription plan change request with " +
+        "the Galaxy Store is already in progress. Please wait until that request completes and then try again."
+    const val CHANGE_SUBSCRIPTION_PLAN_NO_OLD_PRODUCT_ID = "Cannot change subscription plan: the old purchase " +
+        "does not have a product ID."
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST = "The Galaxy Store did not accept " +
+        "the subscription plan change request for processing."
+    const val CHANGE_SUBSCRIPTION_PLAN_RETURNED_SUCCESS_BUT_NO_RESULT = "The subscription plan change request " +
+        "returned no error, but also returned no result. This is likely an issue with the Galaxy Store."
+    const val CHANGE_SUBSCRIPTION_PLAN_REQUEST_ERRORED = "An error occurred while changing subscription from " +
+        "product ID %s to %s with the Galaxy Store. Error: %s"
 
     // Promotion Eligibility
     const val EMPTY_GET_PROMOTION_ELIGIBILITY_REQUEST = "Received a promotion eligibility request for 0 " +

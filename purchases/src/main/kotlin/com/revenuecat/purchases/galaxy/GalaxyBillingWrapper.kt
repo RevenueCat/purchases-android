@@ -2,6 +2,7 @@ package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -22,15 +23,18 @@ import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatu
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
+import com.revenuecat.purchases.galaxy.handler.ChangeSubscriptionPlanHandler
 import com.revenuecat.purchases.galaxy.handler.GetOwnedListHandler
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
+import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseListener
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -67,6 +71,10 @@ internal class GalaxyBillingWrapper(
         ),
     private val getOwnedListHandler: GetOwnedListResponseListener =
         GetOwnedListHandler(
+            iapHelper = iapHelper,
+        ),
+    private val changeSubscriptionPlanHandler: ChangeSubscriptionPlanResponseListener =
+        ChangeSubscriptionPlanHandler(
             iapHelper = iapHelper,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
@@ -265,8 +273,8 @@ internal class GalaxyBillingWrapper(
         )
     }
 
-    @Suppress("ReturnCount")
-    @OptIn(GalaxySerialOperation::class)
+    @Suppress("ReturnCount", "LongMethod")
+    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -299,18 +307,37 @@ internal class GalaxyBillingWrapper(
             return
         }
 
+        val productId = galaxyPurchaseInfo.productId
+
         if (replaceProductInfo != null) {
-            log(LogIntent.GALAXY_WARNING) { GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED }
-            val error = PurchasesError(
-                PurchasesErrorCode.UnsupportedError,
-                GalaxyStrings.PRODUCT_CHANGES_NOT_SUPPORTED,
-            )
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            val galaxyReplacementMode = replaceProductInfo.replacementMode as? GalaxyReplacementMode
+                ?: GalaxyReplacementMode.default
+
+            serialRequestExecutor.executeSerially { finish ->
+                changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                    appUserID = appUserID,
+                    oldPurchase = replaceProductInfo.oldPurchase,
+                    newProductId = productId,
+                    prorationMode = galaxyReplacementMode,
+                    onSuccess = { receipt ->
+                        handleReceipt(
+                            receipt = receipt,
+                            productId = productId,
+                            presentedOfferingContext = presentedOfferingContext,
+                            replacementMode = galaxyReplacementMode,
+                        )
+                        finish()
+                    },
+                    onError = { purchasesError ->
+                        onPurchaseError(error = purchasesError)
+                        finish()
+                    },
+                )
+            }
             return
         }
 
         serialRequestExecutor.executeSerially { finish ->
-            val productId = galaxyPurchaseInfo.productId
             purchaseHandler.purchase(
                 appUserID = appUserID,
                 productId = productId,
@@ -319,6 +346,7 @@ internal class GalaxyBillingWrapper(
                         receipt = receipt,
                         productId = productId,
                         presentedOfferingContext = presentedOfferingContext,
+                        replacementMode = null,
                     )
                     finish()
                 },
@@ -330,16 +358,19 @@ internal class GalaxyBillingWrapper(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun handleReceipt(
         receipt: PurchaseVo,
         productId: String,
         presentedOfferingContext: PresentedOfferingContext?,
+        replacementMode: GalaxyReplacementMode?,
     ) {
         try {
             val storeTransaction = receipt.toStoreTransaction(
                 productId = productId,
                 presentedOfferingContext = presentedOfferingContext,
                 purchaseState = PurchaseState.PURCHASED,
+                replacementMode = replacementMode,
             )
             purchasesUpdatedListener?.onPurchasesUpdated(purchases = listOf(storeTransaction))
         } catch (e: IllegalArgumentException) {

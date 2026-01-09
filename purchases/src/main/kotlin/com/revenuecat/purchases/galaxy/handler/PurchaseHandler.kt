@@ -28,7 +28,7 @@ internal class PurchaseHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
-    @OptIn(GalaxySerialOperation::class)
+    @GalaxySerialOperation
     override fun purchase(
         appUserID: String,
         productId: String,
