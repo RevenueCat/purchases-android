@@ -465,7 +465,7 @@ platform :android do
     sh "gcloud firebase test android run --type instrumentation \
           --app ../purchases/test_artifacts/#{app_name}-app.apk \
           --test ../purchases/test_artifacts/#{app_name}-test.apk \
-          --timeout 2m \
+          --timeout 10m \
           --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
           --results-bucket cloud-test-#{google_project_id}"
 
