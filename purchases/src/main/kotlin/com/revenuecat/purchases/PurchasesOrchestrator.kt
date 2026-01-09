@@ -193,6 +193,10 @@ internal class PurchasesOrchestrator(
     @set:Synchronized
     var customerCenterListener: CustomerCenterListener? = null
 
+    @get:Synchronized
+    @set:Synchronized
+    var trackedEventListener: TrackedEventListener? = null
+
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
@@ -835,6 +839,8 @@ internal class PurchasesOrchestrator(
         }
 
         eventsManager.track(event)
+
+        trackedEventListener?.onEventTracked(event)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
