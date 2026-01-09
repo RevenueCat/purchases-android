@@ -266,7 +266,7 @@ internal class PurchasesFactory(
 
             val paywallPresentedCache = PaywallPresentedCache()
 
-            val localTransactionMetadataStore = LocalTransactionMetadataStore(cache)
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
 
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,

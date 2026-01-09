@@ -189,7 +189,7 @@ internal class PostReceiptHelper(
     }
 
     private fun callTransactionMetadataCompletionFromResults(
-        transactionMetadataToSync: List<LocalTransactionMetadata.TransactionMetadata>,
+        transactionMetadataToSync: List<LocalTransactionMetadata>,
         results: List<Result<CustomerInfo, PurchasesError>>,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((CustomerInfo) -> Unit)? = null,
@@ -234,7 +234,7 @@ internal class PostReceiptHelper(
             ?: purchasesAreCompletedBy
 
         if (shouldCacheTransactionMetadata) {
-            val dataToCache = LocalTransactionMetadata.TransactionMetadata(
+            val dataToCache = LocalTransactionMetadata(
                 appUserID = appUserID,
                 token = purchaseToken,
                 receiptInfo = receiptInfo,
@@ -364,7 +364,7 @@ internal class PostReceiptHelper(
     }
 
     private fun shouldCacheTransactionMetadata(
-        cachedTransactionMetadata: LocalTransactionMetadata.TransactionMetadata?,
+        cachedTransactionMetadata: LocalTransactionMetadata?,
         source: PostReceiptInitiationSource,
     ): Boolean {
         return cachedTransactionMetadata == null && source == PostReceiptInitiationSource.PURCHASE
