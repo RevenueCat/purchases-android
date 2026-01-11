@@ -98,7 +98,6 @@ class SubscriberAttributesPurchasesTests {
             identityManager,
             postTransactionHelper,
             postReceiptHelperMock,
-            localTransactionMetadataStore,
         )
 
         val context = mockk<Application>(relaxed = true).also { applicationMock = it }
