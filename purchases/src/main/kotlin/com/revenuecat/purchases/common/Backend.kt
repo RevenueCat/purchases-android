@@ -261,6 +261,7 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
+            purchasesAreCompletedBy.toString(),
         )
 
         val body = mapOf(
