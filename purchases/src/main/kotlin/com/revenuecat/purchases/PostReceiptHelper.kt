@@ -218,31 +218,19 @@ internal class PostReceiptHelper(
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val cachedTransactionMetadata = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
-        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
+        val (cachedTransactionMetadata, presentedPaywall, didCacheData) = getOrCacheDataToPostIfNeeded(
+            appUserID,
+            purchaseToken,
+            receiptInfo,
+            initiationSource,
+        )
 
-        val presentedPaywall = if (cachedTransactionMetadata == null) {
-            paywallPresentedCache.getAndRemovePresentedEvent()
-        } else {
-            null
-        }
         val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
             ?: presentedPaywall?.toPaywallPostReceiptData()
         val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.mergeWith(it) }
             ?: receiptInfo
         val effectivePurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
             ?: purchasesAreCompletedBy
-
-        if (shouldCacheTransactionMetadata) {
-            val dataToCache = LocalTransactionMetadata(
-                appUserID = appUserID,
-                token = purchaseToken,
-                receiptInfo = receiptInfo,
-                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
-                purchasesAreCompletedBy = purchasesAreCompletedBy,
-            )
-            localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
-        }
 
         if (purchaseState == PurchaseState.PENDING) {
             onError(
@@ -261,10 +249,56 @@ internal class PostReceiptHelper(
             initiationSource = initiationSource,
             paywallData = effectivePaywallData,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
-            hasCachedTransactionMetadata = cachedTransactionMetadata != null || shouldCacheTransactionMetadata,
+            hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
             paywallEvent = presentedPaywall,
             onSuccess = onSuccess,
             onError = onError,
+        )
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private data class CachedDataToPost(
+        val localTransactionMetadata: LocalTransactionMetadata?,
+        val paywallEvent: PaywallEvent?,
+        val didCacheData: Boolean,
+    )
+
+    /**
+     * Gets cached data for a purchase token, if any cached.
+     * If not, it caches the information, as long as conditions are valid.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @Synchronized
+    private fun getOrCacheDataToPostIfNeeded(
+        appUserID: String,
+        purchaseToken: String,
+        receiptInfo: ReceiptInfo,
+        initiationSource: PostReceiptInitiationSource,
+    ): CachedDataToPost {
+        val cachedTransactionMetadata = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
+        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
+
+        val presentedPaywall = if (cachedTransactionMetadata == null) {
+            paywallPresentedCache.getAndRemovePresentedEvent()
+        } else {
+            null
+        }
+
+        if (shouldCacheTransactionMetadata) {
+            val dataToCache = LocalTransactionMetadata(
+                appUserID = appUserID,
+                token = purchaseToken,
+                receiptInfo = receiptInfo,
+                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
+                purchasesAreCompletedBy = purchasesAreCompletedBy,
+            )
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
+        }
+
+        return CachedDataToPost(
+            localTransactionMetadata = cachedTransactionMetadata,
+            paywallEvent = presentedPaywall,
+            didCacheData = shouldCacheTransactionMetadata,
         )
     }
 
