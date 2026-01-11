@@ -249,7 +249,7 @@ internal class Backend(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
-        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataCache
+        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
@@ -261,6 +261,7 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
+            purchasesAreCompletedBy.toString(),
         )
 
         val body = mapOf(
