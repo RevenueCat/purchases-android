@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.caching
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.edit
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -10,7 +11,6 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.verboseLog
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import androidx.core.content.edit
 
 internal class LocalTransactionMetadataStore(
     context: Context,
