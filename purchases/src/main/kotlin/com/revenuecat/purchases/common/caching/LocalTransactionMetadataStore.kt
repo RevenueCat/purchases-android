@@ -56,14 +56,6 @@ internal class LocalTransactionMetadataStore(
         val tokenHashesToClear = purchaseTokens.map { getTokenHash(it) }.toSet()
         val existingTokenHashes = existingData.purchaseDataByTokenHash.keys
 
-        val tokensNotFound = tokenHashesToClear - existingTokenHashes
-        if (tokensNotFound.isNotEmpty()) {
-            debugLog {
-                "Some transaction metadata not found in cache when trying to clear: ${tokensNotFound.size} tokens. " +
-                    "Ignoring."
-            }
-        }
-
         val tokensToRemove = tokenHashesToClear.intersect(existingTokenHashes)
         if (tokensToRemove.isEmpty()) {
             debugLog { "No transaction metadata found to clear from local cache." }

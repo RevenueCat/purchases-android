@@ -5,10 +5,12 @@
 
 package com.revenuecat.purchases.common
 
+import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.TargetingContextSerializer
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
@@ -25,9 +27,12 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -565,8 +570,63 @@ class ReceiptInfoTest {
         val encoded = json.encodeToString(original)
         val decoded = json.decodeFromString<ReceiptInfo>(encoded)
 
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"GoogleReplacementMode",
+                    "name":"WITH_TIME_PRORATION"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
         assertThat(decoded.productIDs).isEqualTo(original.productIDs)
         assertThat(decoded.replacementMode).isEqualTo(expectedReplacementMode)
+
+        assertThat(encoded).isEqualTo(expectedJson)
+    }
+
+    @Test
+    fun `ReceiptInfo with unknown replacement mode type fails serializing and deserializing`() {
+        val unknownReplacementMode: ReplacementMode = object : ReplacementMode {
+            override val name: String
+                get() = "SOME_NEW_MODE"
+
+            override fun describeContents(): Int {
+                return 0
+            }
+
+            override fun writeToParcel(dest: Parcel, flags: Int) {
+                // No-op
+            }
+        }
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            period = null,
+            pricingPhases = null,
+            replacementMode = unknownReplacementMode,
+        )
+
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy { json.encodeToString(original) }
+
+        // language=JSON
+        val unknownReplacementModeJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"UnknownReplcementMode",
+                    "name":"WITH_TIME_PRORATION"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy { json.decodeFromString<ReceiptInfo>(unknownReplacementModeJson) }
     }
 
     @Test
