@@ -61,7 +61,7 @@ internal class PostPendingTransactionsHelper(
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
-                            postNotFoundTransactionMetadata(
+                            postRemainingTransactionMetadata(
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
@@ -75,7 +75,7 @@ internal class PostPendingTransactionsHelper(
                             )
                         },
                         onError = { error ->
-                            postNotFoundTransactionMetadata(
+                            postRemainingTransactionMetadata(
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
@@ -90,7 +90,7 @@ internal class PostPendingTransactionsHelper(
                             )
                         },
                         onSuccess = { customerInfo ->
-                            postNotFoundTransactionMetadata(
+                            postRemainingTransactionMetadata(
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
@@ -145,7 +145,7 @@ internal class PostPendingTransactionsHelper(
         }
     }
 
-    private fun postNotFoundTransactionMetadata(
+    private fun postRemainingTransactionMetadata(
         allowSharingPlayStoreAccount: Boolean,
         onNoTransactionsToSync: () -> Unit,
         onError: ((PurchasesError) -> Unit),
