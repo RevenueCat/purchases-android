@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.galaxy.utils
 
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.log
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date

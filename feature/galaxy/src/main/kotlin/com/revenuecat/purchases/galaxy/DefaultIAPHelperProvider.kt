@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.galaxy
 
 import android.content.Context
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
+import com.revenuecat.purchases.galaxy.constants.description
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper

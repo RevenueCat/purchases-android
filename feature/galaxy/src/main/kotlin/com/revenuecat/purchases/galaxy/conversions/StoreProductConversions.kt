@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.galaxy.conversions
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.galaxy.GalaxyPurchasingData
 import com.revenuecat.purchases.galaxy.GalaxyStoreProduct
-import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
 import com.revenuecat.purchases.galaxy.GalaxySubscriptionOption
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase

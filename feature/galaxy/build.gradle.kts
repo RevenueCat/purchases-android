@@ -1,6 +1,8 @@
 
 plugins {
     id("revenuecat-public-library")
+    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.poko)
 }
 
 android {

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -9,9 +10,10 @@ import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class ProductEntitlementMapping(
+@InternalRevenueCatStoreAPI
+data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
     val loadedFromCache: Boolean = false,
 ) {
     companion object {

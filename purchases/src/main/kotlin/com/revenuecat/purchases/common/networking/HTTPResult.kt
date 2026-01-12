@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
@@ -15,7 +16,8 @@ private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
-internal data class HTTPResult(
+@InternalRevenueCatStoreAPI
+data class HTTPResult(
     val responseCode: Int,
     val payload: String,
     val origin: Origin,

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.galaxy
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -13,13 +14,12 @@ import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
+import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
@@ -34,7 +34,9 @@ import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
-import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.galaxy.GalaxyReplacementMode
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -46,6 +48,7 @@ import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
@@ -78,6 +81,19 @@ internal class GalaxyBillingWrapper(
             iapHelper = iapHelper,
         ),
 ) : BillingAbstract(purchasesStateProvider = stateProvider) {
+
+    constructor(
+        stateProvider: PurchasesStateProvider,
+        context: Context,
+        billingMode: GalaxyBillingMode,
+        deviceCache: DeviceCache,
+    ) : this(
+        stateProvider = stateProvider,
+        context = context,
+        deviceCache = deviceCache,
+        billingMode = billingMode,
+        dateProvider = DefaultDateProvider()
+    )
 
     private val serialRequestExecutor = SerialRequestExecutor()
 

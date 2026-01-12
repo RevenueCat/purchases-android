@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService
@@ -309,7 +308,7 @@ open class PurchasesConfiguration(builder: Builder) {
 
         /**
          * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
-         * @see GalaxyBillingMode
+         * @see com.revenuecat.purchases.galaxy.constants.GalaxyBillingMode
          */
         fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
             this.galaxyBillingMode = galaxyBillingMode

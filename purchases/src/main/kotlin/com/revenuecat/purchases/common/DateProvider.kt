@@ -1,12 +1,15 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import java.util.Date
 
-internal interface DateProvider {
+@InternalRevenueCatStoreAPI
+interface DateProvider {
     val now: Date
 }
 
-internal class DefaultDateProvider : DateProvider {
+@InternalRevenueCatStoreAPI
+class DefaultDateProvider : DateProvider {
     override val now: Date
         get() = Date()
 }

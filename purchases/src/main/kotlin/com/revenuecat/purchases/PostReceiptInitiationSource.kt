@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
-internal enum class PostReceiptInitiationSource {
+@InternalRevenueCatStoreAPI
+enum class PostReceiptInitiationSource {
     RESTORE,
     PURCHASE,
     UNSYNCED_ACTIVE_PURCHASES,

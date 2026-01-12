@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.models
+package com.revenuecat.purchases.galaxy
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ReplacementMode

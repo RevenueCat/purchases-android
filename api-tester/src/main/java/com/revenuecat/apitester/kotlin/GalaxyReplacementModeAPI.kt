@@ -1,7 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.galaxy.GalaxyReplacementMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 
 @Suppress("unused", "UNUSED_VARIABLE")
