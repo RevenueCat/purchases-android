@@ -1,3 +1,5 @@
+import java.io.File
+import java.net.URL
 
 plugins {
     id("revenuecat-public-library")
@@ -24,6 +26,54 @@ android {
     defaultConfig {
         missingDimensionStrategy("apis", "defaults")
     }
+}
+
+val samsungIapVersion = "6.5.0"
+val samsungIapFileName = "samsung-iap-$samsungIapVersion.aar"
+val samsungIapDestFile = file("libs/$samsungIapFileName")
+
+tasks.register("getSamsungIapSdk") {
+    val downloadUrl = System.getenv("SAMSUNG_IAP_SDK_URL").orEmpty()
+
+    inputs.property("downloadURL", downloadUrl)
+    inputs.property("fileToExtract", samsungIapFileName)
+    outputs.file(samsungIapDestFile)
+
+    doLast {
+        if (samsungIapDestFile.exists()) {
+            return@doLast
+        }
+        if (downloadUrl.isBlank()) {
+            throw GradleException("SAMSUNG_IAP_SDK_URL is not set")
+        }
+
+        logger.lifecycle("Downloading Samsung IAP SDK")
+        samsungIapDestFile.parentFile.mkdirs()
+
+        val downloadFile = File(temporaryDir, "download.zip")
+        URL(downloadUrl).openStream().use { input ->
+            downloadFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        if (downloadUrl.lowercase().endsWith(".zip")) {
+            project.copy {
+                from(
+                    zipTree(downloadFile)
+                        .matching { include("**/$samsungIapFileName") }
+                        .singleFile,
+                )
+                into(samsungIapDestFile.parentFile)
+            }
+        } else {
+            downloadFile.copyTo(samsungIapDestFile, overwrite = true)
+        }
+    }
+}
+
+tasks.register<Delete>("cleanSamsungIapSdk") {
+    delete(samsungIapDestFile)
 }
 
 dependencies {
