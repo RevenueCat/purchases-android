@@ -174,7 +174,6 @@ dependencies {
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly("com.samsung.iap:samsung-iap:6.5.0@aar")
     compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
@@ -187,7 +186,6 @@ dependencies {
     "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
-    testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)

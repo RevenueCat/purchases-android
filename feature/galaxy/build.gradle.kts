@@ -28,9 +28,11 @@ android {
     }
 }
 
-val samsungIapVersion = "6.5.0"
+val samsungIapVersion = libs.versions.samsungIap.get()
 val samsungIapFileName = "samsung-iap-$samsungIapVersion.aar"
 val samsungIapDestFile = file("libs/$samsungIapFileName")
+
+val isCi = System.getenv("CI") == "true"
 
 tasks.register("getSamsungIapSdk") {
     val downloadUrl = System.getenv("SAMSUNG_IAP_SDK_URL").orEmpty()
@@ -76,11 +78,17 @@ tasks.register<Delete>("cleanSamsungIapSdk") {
     delete(samsungIapDestFile)
 }
 
+if (isCi) {
+    tasks.named("preBuild") {
+        dependsOn("getSamsungIapSdk")
+    }
+}
+
 dependencies {
     implementation(project(":purchases"))
 
-    compileOnly("com.samsung.iap:samsung-iap:6.5.0@aar")
+    compileOnly("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
     testImplementation(libs.bundles.test)
     testImplementation(libs.kotlin.test)
-    testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
+    testImplementation("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
 }
