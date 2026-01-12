@@ -2,8 +2,8 @@ package com.revenuecat.purchases.galaxy.utils
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo

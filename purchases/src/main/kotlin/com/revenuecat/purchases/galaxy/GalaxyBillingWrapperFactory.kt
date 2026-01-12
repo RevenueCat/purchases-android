@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 
 internal object GalaxyBillingWrapperFactory {
 
+    @Suppress("ThrowsCount")
     @OptIn(InternalRevenueCatStoreAPI::class)
     fun createGalaxyBillingWrapper(
         stateProvider: PurchasesStateProvider,

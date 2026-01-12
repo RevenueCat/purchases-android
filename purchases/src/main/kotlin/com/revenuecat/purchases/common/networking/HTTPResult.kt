@@ -16,6 +16,7 @@ private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
+@Suppress("ForbiddenPublicDataClass")
 @InternalRevenueCatStoreAPI
 data class HTTPResult(
     val responseCode: Int,

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 
+@Suppress("ForbiddenPublicDataClass")
 @InternalRevenueCatStoreAPI
 data class ReplaceProductInfo(
     val oldPurchase: StoreTransaction,

@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.galaxy.logging
 
 import com.revenuecat.purchases.InternalRevenueCatStoreAPI
-import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.Config
 
 /**
  * Whether debug logs are enabled
@@ -70,7 +70,7 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.SignatureVerificationError,
         PurchasesErrorCode.InvalidSubscriberAttributesError,
         PurchasesErrorCode.TestStoreSimulatedPurchaseError,
-            -> log(LogIntent.RC_ERROR) { error.toString() }
+        -> log(LogIntent.RC_ERROR) { error.toString() }
 
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,
@@ -85,6 +85,6 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.InsufficientPermissionsError,
         PurchasesErrorCode.PaymentPendingError,
         PurchasesErrorCode.InvalidCredentialsError,
-            -> log(LogIntent.GOOGLE_ERROR) { error.toString() }
+        -> log(LogIntent.GOOGLE_ERROR) { error.toString() }
     }
 }

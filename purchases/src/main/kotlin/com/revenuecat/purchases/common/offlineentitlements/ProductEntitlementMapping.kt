@@ -10,6 +10,7 @@ import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
+@Suppress("ForbiddenPublicDataClass")
 @InternalRevenueCatStoreAPI
 data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
@@ -58,6 +59,7 @@ data class ProductEntitlementMapping(
         }
     }
 
+    @Suppress("ForbiddenPublicDataClass")
     data class Mapping(
         val productIdentifier: String,
         val basePlanId: String?,

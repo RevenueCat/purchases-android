@@ -4,6 +4,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 
 @InternalRevenueCatStoreAPI
+@Suppress("ForbiddenPublicDataClass")
 data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,
     val purchaseCallbacksByProductId: Map<String, PurchaseCallback> = emptyMap(),

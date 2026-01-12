@@ -66,7 +66,7 @@ internal class ChangeSubscriptionPlanHandler(
             return
         }
 
-       inFlightRequest = Request(
+        inFlightRequest = Request(
             newProductId = newProductId,
             oldProductId = oldProductId,
             onSuccess = onSuccess,

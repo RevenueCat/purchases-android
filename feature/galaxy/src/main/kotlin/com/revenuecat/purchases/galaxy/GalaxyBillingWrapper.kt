@@ -31,11 +31,11 @@ import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseLi
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.GalaxyReplacementMode
-import com.revenuecat.purchases.galaxy.logging.LogIntent
-import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -91,7 +91,7 @@ internal class GalaxyBillingWrapper(
         context = context,
         deviceCache = deviceCache,
         billingMode = billingMode,
-        dateProvider = DefaultDateProvider()
+        dateProvider = DefaultDateProvider(),
     )
 
     private val serialRequestExecutor = SerialRequestExecutor()

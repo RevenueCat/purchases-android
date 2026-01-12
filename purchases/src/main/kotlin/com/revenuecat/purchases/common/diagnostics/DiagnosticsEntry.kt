@@ -9,7 +9,9 @@ import org.json.JSONObject
 import java.util.Date
 import java.util.UUID
 
-internal data class DiagnosticsEntry @OptIn(InternalRevenueCatStoreAPI::class) constructor(
+internal data class DiagnosticsEntry
+@OptIn(InternalRevenueCatStoreAPI::class)
+constructor(
     val id: UUID = UUID.randomUUID(),
     val name: DiagnosticsEntryName,
     val properties: Map<String, Any>,
