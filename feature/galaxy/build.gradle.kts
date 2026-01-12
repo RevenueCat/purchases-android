@@ -30,7 +30,7 @@ android {
 
 val samsungIapVersion = libs.versions.samsungIap.get()
 val samsungIapFileName = "samsung-iap-$samsungIapVersion.aar"
-val samsungIapDestFile = file("libs/$samsungIapFileName")
+val samsungIapDestFile = rootProject.file("libs/$samsungIapFileName")
 
 val isCi = System.getenv("CI") == "true"
 
