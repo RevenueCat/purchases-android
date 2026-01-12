@@ -212,19 +212,6 @@ class LocalTransactionMetadataStoreTest {
         assertThat(retrieved?.paywallPostReceiptData).isEqualTo(paywallData)
     }
 
-    @Test
-    fun `cacheLocalTransactionMetadata creates correct SharedPreferences file name`() {
-        val apiKeySlot = slot<String>()
-
-        every {
-            context.getSharedPreferences(capture(apiKeySlot), any())
-        } returns sharedPreferences
-
-        LocalTransactionMetadataStore.initializeSharedPreferences(context, apiKey)
-
-        assertThat(apiKeySlot.captured).isEqualTo("com.revenuecat.purchases.transaction_metadata.$apiKey")
-    }
-
     // endregion
 
     // region getLocalTransactionMetadata

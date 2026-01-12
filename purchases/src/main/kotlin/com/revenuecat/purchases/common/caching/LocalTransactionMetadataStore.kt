@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.caching
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.debugLog
@@ -18,11 +17,10 @@ internal class LocalTransactionMetadataStore(
     private val sharedPreferences: SharedPreferences = initializeSharedPreferences(context, apiKey),
     private val json: Json = JsonTools.json,
 ) {
-    internal companion object {
-        private const val KEY_PREFIX = "local_transaction_metadata_"
+    private companion object {
+        const val KEY_PREFIX = "local_transaction_metadata_"
 
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
+        fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
             context.getSharedPreferences(
                 "com.revenuecat.purchases.transaction_metadata.$apiKey",
                 Context.MODE_PRIVATE,
