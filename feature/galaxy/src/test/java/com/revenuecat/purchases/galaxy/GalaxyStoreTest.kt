@@ -86,7 +86,7 @@ open class GalaxyStoreTest {
         }
     }
 
-    fun createGalaxySubscriptionOption(
+    internal fun createGalaxySubscriptionOption(
         id: String = "productId",
         tags: List<String> = emptyList(),
         price: Price = Price(
