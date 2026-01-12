@@ -61,6 +61,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class PurchasesCommonTest: BasePurchasesTest() {
     private var receivedProducts: List<StoreProduct>? = null
 

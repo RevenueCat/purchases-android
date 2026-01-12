@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 
 data class LogMessage(val level: LogLevel, val message: String, val throwable: Throwable? = null)
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
     val previousLogLevel = Config.logLevel
     Config.logLevel = LogLevel.VERBOSE

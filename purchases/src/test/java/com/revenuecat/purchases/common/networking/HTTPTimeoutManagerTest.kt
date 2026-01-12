@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
 import io.mockk.every
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Config(manifest = Config.NONE)
 internal class HTTPTimeoutManagerTest {
 
+    @OptIn(InternalRevenueCatStoreAPI::class)
     private class FakeDateProvider(private val currentTime: AtomicLong = AtomicLong(System.currentTimeMillis())) : DateProvider {
         override val now: Date
             get() = Date(currentTime.get())
@@ -36,6 +38,7 @@ internal class HTTPTimeoutManagerTest {
     private lateinit var timeoutManager: HTTPTimeoutManager
 
     @Before
+    @OptIn(InternalRevenueCatStoreAPI::class)
     fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { runningTests } returns false

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -33,6 +34,7 @@ import org.robolectric.annotation.Config
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 class OfferingsManagerTest {
 
     private val appUserId = "fakeUserID"

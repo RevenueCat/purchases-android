@@ -3,8 +3,6 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
-@file:OptIn(InternalRevenueCatStoreAPI::class)
-
 package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
@@ -55,6 +53,7 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal typealias OfferingsCallback = Pair<
     (JSONObject, HTTPResponseOriginalSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
@@ -83,6 +82,7 @@ internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesEr
 internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -107,7 +107,7 @@ internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_NOT_FALLBACK,
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, InternalRevenueCatStoreAPI::class)
 @Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,

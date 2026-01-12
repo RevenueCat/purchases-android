@@ -46,6 +46,7 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 class PostReceiptHelperTest {
 
     private val appUserID = "test-app-user-id"

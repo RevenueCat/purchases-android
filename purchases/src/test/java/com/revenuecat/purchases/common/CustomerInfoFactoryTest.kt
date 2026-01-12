@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(InternalRevenueCatStoreAPI::class)
 class CustomerInfoFactoryTest {
 
     private val defaultCustomerInfo = CustomerInfoFactory.buildCustomerInfo(

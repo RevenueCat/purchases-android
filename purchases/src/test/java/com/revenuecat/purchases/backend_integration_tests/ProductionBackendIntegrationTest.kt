@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.ads.events.AdEventType
@@ -24,6 +25,7 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 import java.net.URL
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
 

@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.common.BillingAbstract
@@ -26,6 +27,7 @@ import org.junit.After
 import org.junit.Before
 import java.util.Date
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal open class BaseBillingUseCaseTest {
 
     protected companion object {

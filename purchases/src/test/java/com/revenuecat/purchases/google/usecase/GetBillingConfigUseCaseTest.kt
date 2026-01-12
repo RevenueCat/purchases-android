@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingConfig
 import com.android.billingclient.api.BillingConfigResponseListener
 import com.android.billingclient.api.BillingResult
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import io.mockk.Runs
@@ -22,6 +23,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
 
     private val expectedCountryCode = "JP"

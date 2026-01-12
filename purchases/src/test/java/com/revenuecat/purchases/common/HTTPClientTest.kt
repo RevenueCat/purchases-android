@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.api.BuildConfig
@@ -40,6 +41,7 @@ import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Before
@@ -1258,6 +1260,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
     private val statusCode: Int,
@@ -1354,6 +1357,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class ParameterizedConnectionFailureFallbackTest(
     private val endpoint: Endpoint,
 ) : BaseHTTPClientTest() {

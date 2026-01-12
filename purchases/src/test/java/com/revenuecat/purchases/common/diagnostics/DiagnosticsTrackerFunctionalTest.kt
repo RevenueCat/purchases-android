@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.FileHelper
@@ -78,6 +79,7 @@ class DiagnosticsTrackerFunctionalTest {
         }
     }
 
+    @OptIn(InternalRevenueCatStoreAPI::class)
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
         return DiagnosticsEntry(
             name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,

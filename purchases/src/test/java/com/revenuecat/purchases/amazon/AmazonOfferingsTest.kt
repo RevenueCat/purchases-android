@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -26,6 +27,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 class AmazonOfferingsTest {
 
     private val productSku = "com.myproduct"

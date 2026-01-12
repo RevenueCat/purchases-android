@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.QueryPurchaseHistoryParams
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -36,6 +37,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Suppress("MagicNumber", "FunctionNaming", "TooManyFunctions", "LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!

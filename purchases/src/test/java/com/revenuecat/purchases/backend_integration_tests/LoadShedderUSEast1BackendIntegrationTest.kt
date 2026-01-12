@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.backend_integration_tests
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -13,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import java.net.URL
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
 

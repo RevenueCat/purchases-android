@@ -110,7 +110,7 @@ class PurchaseParamsTest {
         assertThat(purchasePackageParams.purchasingData).isEqualTo(expectedPurchasingData)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
     @Test
     fun `initializing defaults galaxyReplacementMode to default`() {
         val storeProduct = stubStoreProduct("abc")

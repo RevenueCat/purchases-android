@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.DateProvider
@@ -22,6 +23,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatStoreAPI::class)
 class ETagManagerTest {
 
     private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT

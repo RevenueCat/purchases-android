@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun createProductEntitlementMapping(
     mappings: Map<String, ProductEntitlementMapping.Mapping> = mapOf(
         "com.revenuecat.foo_1:p1m" to ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_1")),
