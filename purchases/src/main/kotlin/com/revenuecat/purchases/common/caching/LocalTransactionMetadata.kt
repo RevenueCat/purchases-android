@@ -26,11 +26,4 @@ internal data class LocalTransactionMetadata(
 
     @SerialName("purchases_are_completed_by")
     val purchasesAreCompletedBy: PurchasesAreCompletedBy,
-
-    @SerialName("schema_version")
-    val schemaVersion: Int = SCHEMA_VERSION,
-) {
-    companion object {
-        const val SCHEMA_VERSION = 1
-    }
-}
+)
