@@ -95,6 +95,7 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
+        @OptIn(InternalRevenueCatStoreAPI::class)
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var galaxyReplacementMode: GalaxyReplacementMode = GalaxyReplacementMode.default

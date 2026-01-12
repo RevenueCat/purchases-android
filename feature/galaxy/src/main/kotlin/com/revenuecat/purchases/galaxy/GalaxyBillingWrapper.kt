@@ -326,7 +326,7 @@ internal class GalaxyBillingWrapper(
 
         if (replaceProductInfo != null) {
             val galaxyReplacementMode = replaceProductInfo.replacementMode as? GalaxyReplacementMode
-                ?: GalaxyReplacementMode.INSTANT_PRORATED_DATE
+                ?: GalaxyReplacementMode.default
 
             serialRequestExecutor.executeSerially { finish ->
                 changeSubscriptionPlanHandler.changeSubscriptionPlan(

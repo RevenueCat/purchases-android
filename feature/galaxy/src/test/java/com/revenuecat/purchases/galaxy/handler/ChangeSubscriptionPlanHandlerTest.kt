@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
+import com.revenuecat.purchases.galaxy.conversions.toSamsungProrationMode
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -223,7 +224,7 @@ class ChangeSubscriptionPlanHandlerTest {
                 onChangeSubscriptionPlanListener = changeSubscriptionPlanHandler,
             )
         }
-        assertThat(prorationModeSlot.captured).isEqualTo(prorationMode.samsungProrationMode)
+        assertThat(prorationModeSlot.captured).isEqualTo(prorationMode.toSamsungProrationMode())
         assertThat(obfuscatedAccountIdSlot.captured).isEqualTo("user".sha256())
 
         changeSubscriptionPlanHandler.changeSubscriptionPlan(
