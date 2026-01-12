@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.caching
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -14,7 +15,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -24,6 +24,8 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class LocalTransactionMetadataStoreTest {
+
+    private val json = JsonTools.json
 
     private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
@@ -246,7 +248,7 @@ class LocalTransactionMetadataStoreTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
         every { sharedPreferences.getString(key, null) } returns jsonString
 
@@ -265,7 +267,7 @@ class LocalTransactionMetadataStoreTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
         every { sharedPreferences.getString(key, null) } returns jsonString
         every { sharedPreferences.getString(not(eq(key)), any()) } returns null
@@ -285,7 +287,7 @@ class LocalTransactionMetadataStoreTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
         every { sharedPreferences.getString(key, null) } returns jsonString
 
@@ -341,7 +343,7 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
 
         every { sharedPreferences.all } returns mapOf(key to jsonString)
         every { sharedPreferences.getString(key, null) } returns jsonString
@@ -372,8 +374,8 @@ class LocalTransactionMetadataStoreTest {
 
         val key1 = "local_transaction_metadata_${purchaseToken.sha1()}"
         val key2 = "local_transaction_metadata_${purchaseToken2.sha1()}"
-        val jsonString1 = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata1)
-        val jsonString2 = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata2)
+        val jsonString1 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata1)
+        val jsonString2 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata2)
 
         every { sharedPreferences.all } returns mapOf(key1 to jsonString1, key2 to jsonString2)
         every { sharedPreferences.getString(key1, null) } returns jsonString1
@@ -418,9 +420,9 @@ class LocalTransactionMetadataStoreTest {
         val key1 = "local_transaction_metadata_${"token_1".sha1()}"
         val key2 = "local_transaction_metadata_${"token_2".sha1()}"
         val key3 = "local_transaction_metadata_${"token_3".sha1()}"
-        val jsonString1 = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata1)
-        val jsonString2 = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata2)
-        val jsonString3 = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata3)
+        val jsonString1 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata1)
+        val jsonString2 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata2)
+        val jsonString3 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata3)
 
         every { sharedPreferences.all } returns mapOf(
             key1 to jsonString1,
@@ -449,7 +451,7 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
 
         every { sharedPreferences.all } returns mapOf(
             key to jsonString,
@@ -476,7 +478,7 @@ class LocalTransactionMetadataStoreTest {
 
         val key1 = "local_transaction_metadata_${purchaseToken.sha1()}"
         val key2 = "local_transaction_metadata_${purchaseToken2.sha1()}"
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), validMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), validMetadata)
 
         every { sharedPreferences.all } returns mapOf(
             key1 to jsonString,
@@ -575,7 +577,7 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val key = "local_transaction_metadata_${purchaseToken.sha1()}"
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
         every { sharedPreferences.getString(key, null) } returns jsonString
         every { sharedPreferences.contains(key) } returns true
 
@@ -619,23 +621,39 @@ class LocalTransactionMetadataStoreTest {
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
 
-        val jsonString = Json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
-        val deserialized = Json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val deserialized = json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
+
+        // language=json
+        val expectedJson = """
+            {
+                "user_id":"$appUserID",
+                "token":"$purchaseToken",
+                "receipt_info":{
+                    "productIDs":["product_id"],
+                    "presentedOfferingContext":{
+                        "offeringIdentifier":"offering_id",
+                        "placementIdentifier":null,
+                        "targetingContext":null
+                    },
+                    "price":4.99,
+                    "formattedPrice":"$4.99",
+                    "currency":"USD"
+                },
+                "paywall_data":{
+                    "session_id":"session_id",
+                    "revision":1,
+                    "display_mode":"full_screen",
+                    "dark_mode":false,
+                    "locale":"en_US",
+                    "offering_id":"offering_id"
+                },
+                "purchases_are_completed_by":"REVENUECAT"
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+        assertThat(jsonString).isEqualTo(expectedJson)
 
         assertThat(deserialized).isEqualTo(transactionMetadata)
-    }
-
-    @Test
-    fun `LocalTransactionMetadata includes schema version`() {
-        val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
-            token = purchaseToken,
-            receiptInfo = receiptInfo,
-            paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
-        )
-
-        assertThat(transactionMetadata.schemaVersion).isEqualTo(1)
     }
 
     // endregion
