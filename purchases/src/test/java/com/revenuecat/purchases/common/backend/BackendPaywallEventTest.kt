@@ -59,6 +59,26 @@ class BackendPaywallEventTest {
         )
     ).map { it.toBackendEvent() })
 
+    private val exitOfferEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "exit-offer-id",
+                version = 1,
+                type = PaywallEventType.EXIT_OFFER.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallRevision = 3,
+                timestamp = 123456789,
+                displayMode = "fullscreen",
+                darkMode = false,
+                localeIdentifier = "en_US",
+                exitOfferType = "dismiss",
+                exitOfferingID = "exit-offering-id",
+            )
+        )
+    ).map { it.toBackendEvent() })
+
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
 
@@ -121,6 +141,40 @@ class BackendPaywallEventTest {
                         "\"display_mode\":\"footer\"," +
                         "\"dark_mode\":true," +
                         "\"locale\":\"en_US\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
+    fun `postPaywallEvents posts exit offer events correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            exitOfferEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"exit-offer-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_exit_offer\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_revision\":3," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"fullscreen\"," +
+                        "\"dark_mode\":false," +
+                        "\"locale\":\"en_US\"," +
+                        "\"exit_offer_type\":\"dismiss\"," +
+                        "\"exit_offering_id\":\"exit-offering-id\"" +
                     "}" +
                 "]" +
             "}"
