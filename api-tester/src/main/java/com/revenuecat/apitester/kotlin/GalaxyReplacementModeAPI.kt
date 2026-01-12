@@ -1,12 +1,12 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.models.GalaxyReplacementMode
-import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class GalaxyReplacementModeAPI {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
     fun check(mode: GalaxyReplacementMode) {
         when (mode) {
             GalaxyReplacementMode.INSTANT_PRORATED_DATE,
@@ -17,9 +17,5 @@ private class GalaxyReplacementModeAPI {
         }.exhaustive
 
         val defaultMode: GalaxyReplacementMode = GalaxyReplacementMode.default
-        val samsungProrationMode: HelperDefine.ProrationMode = mode.samsungProrationMode
-        val fromMode: GalaxyReplacementMode? = GalaxyReplacementMode.fromSamsungProrationMode(
-            HelperDefine.ProrationMode.INSTANT_PRORATED_DATE,
-        )
     }
 }
