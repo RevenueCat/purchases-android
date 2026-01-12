@@ -31,7 +31,8 @@ private data class CustomerInfoDataResult(
 )
 
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class CustomerInfoHelper(
+@OptIn(InternalRevenueCatStoreAPI::class)
+internal class CustomerInfoHelper constructor(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,

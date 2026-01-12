@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.common.caching
 
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import java.util.Date
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class InMemoryCachedObject<T>(
     internal var lastUpdatedAt: Date? = null,
     private val dateProvider: DateProvider = DefaultDateProvider(),

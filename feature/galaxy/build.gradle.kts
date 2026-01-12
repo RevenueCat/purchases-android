@@ -31,5 +31,6 @@ dependencies {
 
     compileOnly("com.samsung.iap:samsung-iap:6.5.0@aar")
     testImplementation(libs.bundles.test)
+    testImplementation(libs.kotlin.test)
     testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
 }

@@ -20,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.fail
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.runner.RunWith
+import kotlin.code
 
 @RunWith(AndroidJUnit4::class)
 class AcknowledgePurchaseHandlerTest {

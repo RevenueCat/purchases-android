@@ -19,7 +19,6 @@ import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
-import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
@@ -34,7 +33,7 @@ import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
-import com.revenuecat.purchases.galaxy.GalaxyReplacementMode
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.models.InAppMessageType
@@ -327,7 +326,7 @@ internal class GalaxyBillingWrapper(
 
         if (replaceProductInfo != null) {
             val galaxyReplacementMode = replaceProductInfo.replacementMode as? GalaxyReplacementMode
-                ?: GalaxyReplacementMode.default
+                ?: GalaxyReplacementMode.INSTANT_PRORATED_DATE
 
             serialRequestExecutor.executeSerially { finish ->
                 changeSubscriptionPlanHandler.changeSubscriptionPlan(

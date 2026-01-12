@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.collections.get
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductConversionsTest : GalaxyStoreTest() {

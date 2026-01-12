@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.galaxy.constants
+package com.revenuecat.purchases.galaxy
 
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.simulatedstore
 import android.app.Activity
 import android.os.Handler
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -30,6 +31,7 @@ import java.util.Date
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class SimulatedStoreBillingWrapper(
     private val deviceCache: DeviceCache,
     private val mainHandler: Handler,

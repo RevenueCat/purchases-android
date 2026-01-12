@@ -6,9 +6,11 @@ import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import io.mockk.every
 import io.mockk.mockk
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.code
 
 @RunWith(AndroidJUnit4::class)
 class ErrorVoUtilsTest {
@@ -67,7 +69,7 @@ class ErrorVoUtilsTest {
             assertThat(purchasesError)
                 .describedAs("Galaxy code ${galaxyCode.name} should map to $purchasesErrorCode")
                 .isNotNull
-            assertThat(purchasesError!!.code).isEqualTo(purchasesErrorCode)
+            Assertions.assertThat(purchasesError!!.code).isEqualTo(purchasesErrorCode)
             assertThat(purchasesError.underlyingErrorMessage).isEqualTo(message)
         }
     }

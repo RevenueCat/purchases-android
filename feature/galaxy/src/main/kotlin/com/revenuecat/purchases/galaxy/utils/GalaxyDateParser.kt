@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.galaxy.utils
 
-import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import java.text.ParseException

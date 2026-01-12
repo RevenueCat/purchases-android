@@ -1,8 +1,7 @@
-package com.revenuecat.purchases.galaxy.attribution
+package com.revenuecat.purchases.galaxy
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.app.Application
-import com.revenuecat.purchases.galaxy.GalaxyDeviceIdentifiersFetcher
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith

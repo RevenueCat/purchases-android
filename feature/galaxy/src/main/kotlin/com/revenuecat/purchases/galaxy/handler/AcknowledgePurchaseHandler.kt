@@ -4,7 +4,7 @@ import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent

@@ -3,11 +3,14 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
+@file:OptIn(InternalRevenueCatStoreAPI::class)
+
 package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode

@@ -4,6 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -27,6 +28,7 @@ import java.util.Date
 internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)
+    @OptIn(InternalRevenueCatStoreAPI::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         val originalSource = if (httpResult.isLoadShedderResponse == true) {
             CustomerInfoOriginalSource.LOAD_SHEDDER

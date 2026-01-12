@@ -14,6 +14,7 @@ import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
 import com.revenuecat.purchases.AmazonLWAConsentStatus
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
@@ -58,6 +59,7 @@ import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @SuppressWarnings("LongParameterList", "TooManyFunctions")
 internal class AmazonBilling(
     private val applicationContext: Context,

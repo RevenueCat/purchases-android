@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import java.net.URL
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun interface ForceServerErrorStrategy {
     companion object {
         val doNotFail = ForceServerErrorStrategy { _, _ -> false }

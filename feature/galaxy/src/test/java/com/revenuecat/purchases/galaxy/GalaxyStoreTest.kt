@@ -94,7 +94,7 @@ open class GalaxyStoreTest {
             amountMicros = 1_000_000,
             currencyCode = "USD",
         ),
-        period: Period = Period.create("P1M"),
+        period: Period = Period.Factory.create("P1M"),
         presentedOfferingContext: PresentedOfferingContext? = null,
     ): GalaxySubscriptionOption =
         GalaxySubscriptionOption(

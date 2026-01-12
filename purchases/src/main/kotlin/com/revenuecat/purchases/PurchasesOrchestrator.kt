@@ -111,6 +111,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class PurchasesOrchestrator(
     private val application: Application,

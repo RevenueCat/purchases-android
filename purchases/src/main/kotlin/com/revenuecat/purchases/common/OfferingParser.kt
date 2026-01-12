@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.JsonTools.json
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -33,7 +34,7 @@ internal abstract class OfferingParser {
     /**
      * Note: this may return an empty Offerings.
      */
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class, InternalRevenueCatStoreAPI::class)
     @JvmOverloads
     fun createOfferings(
         offeringsJson: JSONObject,

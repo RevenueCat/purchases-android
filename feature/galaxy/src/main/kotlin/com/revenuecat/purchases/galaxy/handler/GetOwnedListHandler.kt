@@ -2,7 +2,7 @@ package com.revenuecat.purchases.galaxy.handler
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
+import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent

@@ -10,6 +10,7 @@ import dev.drewhamilton.poko.Poko
  * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
 @Poko
+@OptIn(InternalRevenueCatStoreAPI::class)
 class Offerings internal constructor(
     val current: Offering?,
     val all: Map<String, Offering>,
@@ -126,7 +127,7 @@ private data class OfferingsComparableData(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, InternalRevenueCatStoreAPI::class)
 internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext

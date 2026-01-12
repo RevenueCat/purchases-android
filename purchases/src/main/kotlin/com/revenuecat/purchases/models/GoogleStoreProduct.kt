@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
@@ -239,6 +240,7 @@ constructor(
         "Use copyWithPresentedOfferingContext instead",
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
     )
+    @OptIn(InternalRevenueCatStoreAPI::class)
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         val newPresentedOfferingContext = presentedOfferingContext?.copy(offeringIdentifier = offeringId)
             ?: PresentedOfferingContext(offeringId)

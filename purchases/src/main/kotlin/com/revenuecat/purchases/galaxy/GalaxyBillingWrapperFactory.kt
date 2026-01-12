@@ -1,12 +1,14 @@
 package com.revenuecat.purchases.galaxy
 
 import android.content.Context
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 
 internal object GalaxyBillingWrapperFactory {
 
+    @OptIn(InternalRevenueCatStoreAPI::class)
     fun createGalaxyBillingWrapper(
         stateProvider: PurchasesStateProvider,
         context: Context,

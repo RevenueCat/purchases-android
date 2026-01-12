@@ -215,7 +215,7 @@ class PurchaseParams(val builder: Builder) {
             attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
         }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
         private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
             if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }

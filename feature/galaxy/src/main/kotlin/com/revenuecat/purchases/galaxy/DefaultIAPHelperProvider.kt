@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.galaxy
 
 import android.content.Context
-import com.revenuecat.purchases.galaxy.constants.GalaxyStrings
-import com.revenuecat.purchases.galaxy.constants.description
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation

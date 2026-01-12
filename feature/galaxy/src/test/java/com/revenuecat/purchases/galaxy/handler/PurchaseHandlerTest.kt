@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha256
@@ -19,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.fail
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.runner.RunWith
+import kotlin.code
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseHandlerTest {
@@ -37,7 +39,7 @@ class PurchaseHandlerTest {
         purchaseHandler = PurchaseHandler(iapHelperProvider)
     }
 
-    @OptIn(GalaxySerialOperation::class)
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatStoreAPI::class)
     @Test
     fun `purchase dispatches payment with obfuscated account id`() {
         every {

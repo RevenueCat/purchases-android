@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
 import java.util.Date
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 internal class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val appConfig: AppConfig,

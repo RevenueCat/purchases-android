@@ -27,7 +27,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
-import com.revenuecat.purchases.galaxy.GalaxyReplacementMode;
+import com.revenuecat.purchases.models.GalaxyReplacementMode;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
