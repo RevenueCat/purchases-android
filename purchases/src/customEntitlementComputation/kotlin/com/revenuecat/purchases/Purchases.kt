@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
@@ -317,6 +318,7 @@ class Purchases internal constructor(
          *
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatStoreAPI::class)
         @JvmStatic
         fun configureInCustomEntitlementsComputationMode(
             configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,
