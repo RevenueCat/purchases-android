@@ -23,6 +23,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Result
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class PostReceiptHelper(
@@ -146,7 +147,7 @@ internal class PostReceiptHelper(
         onError: ((PurchasesError) -> Unit),
         onSuccess: ((CustomerInfo) -> Unit),
     ) {
-        val results: MutableList<Result<CustomerInfo, PurchasesError>> = mutableListOf()
+        val results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>> = ConcurrentLinkedQueue()
         val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
         if (transactionMetadataToSync.isEmpty()) {
             onNoTransactionsToSync()
@@ -165,7 +166,6 @@ internal class PostReceiptHelper(
                 hasCachedTransactionMetadata = true,
                 paywallEvent = null,
                 onSuccess = {
-                    // This is safe since all requests are performed in the same dispatcher serial queue.
                     results.add(Result.Success(it.customerInfo))
                     callTransactionMetadataCompletionFromResults(
                         transactionMetadataToSync,
@@ -175,7 +175,6 @@ internal class PostReceiptHelper(
                     )
                 },
                 onError = { backendError, _, _ ->
-                    // This is safe since all requests are performed in the same dispatcher serial queue.
                     results.add(Result.Error(backendError))
                     callTransactionMetadataCompletionFromResults(
                         transactionMetadataToSync,
@@ -190,7 +189,7 @@ internal class PostReceiptHelper(
 
     private fun callTransactionMetadataCompletionFromResults(
         transactionMetadataToSync: List<LocalTransactionMetadata.TransactionMetadata>,
-        results: List<Result<CustomerInfo, PurchasesError>>,
+        results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>>,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((CustomerInfo) -> Unit)? = null,
     ) {
