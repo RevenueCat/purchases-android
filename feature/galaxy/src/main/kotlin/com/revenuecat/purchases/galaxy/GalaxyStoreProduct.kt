@@ -11,7 +11,7 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class GalaxyStoreProduct(
+internal class GalaxyStoreProduct(
 
     /**
      * The productId for this product.

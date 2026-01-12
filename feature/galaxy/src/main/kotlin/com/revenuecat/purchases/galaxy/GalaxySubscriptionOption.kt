@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 
-class GalaxySubscriptionOption(
+internal class GalaxySubscriptionOption(
     /**
      * The product ID of the Galaxy Store product represented by this option.
      */
