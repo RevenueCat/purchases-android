@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 pluginManagement {
     includeBuild("build-logic")
     repositories {
@@ -26,14 +28,43 @@ pluginManagement {
     }
 }
 
+val samsungIapSdkDir = file("$rootDir/libs")
+
+/**
+ * Includes the Galaxy feature module only when the expected Samsung IAP AAR
+ * (versioned from `gradle/libs.versions.toml`) is present in the SDK directory.
+ */
+fun Settings.includeSamsungIAPSDKIfSamsungAARPresent(samsungIAPSDKDir: File) {
+    if (!samsungIAPSDKDir.exists()) { return }
+
+    val samsungIapVersion = readVersionFromCatalog("samsungIap") ?: return
+    val samsungIapAar = samsungIAPSDKDir.resolve("samsung-iap-$samsungIapVersion.aar")
+    if (samsungIapAar.isFile) {
+        include(":feature:galaxy")
+    }
+}
+
+/**
+ * Reads a version entry from `gradle/libs.versions.toml` without relying on the
+ * version catalog extension (not available during settings evaluation).
+ */
+fun Settings.readVersionFromCatalog(versionKey: String): String? {
+    val catalogFile = rootDir.resolve("gradle/libs.versions.toml")
+    if (!catalogFile.isFile) {
+        return null
+    }
+    val lineRegex = Regex("^\\s*$versionKey\\s*=\\s*\"([^\"]+)\"\\s*$")
+    Files.readAllLines(catalogFile.toPath()).forEach { line ->
+        val match = lineRegex.find(line)
+        if (match != null) {
+            return match.groupValues[1]
+        }
+    }
+    return null
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-
-    val samsungIapSdkDir: File = run {
-        val fromProp = gradle.startParameter.projectProperties["samsungIapSdkDir"]
-        val fromEnv = System.getenv("SAMSUNG_IAP_SDK_DIR")
-        file(fromProp ?: fromEnv ?: "$rootDir/libs")
-    }
 
     repositories {
         // fetch plugins from google maven (https://maven.google.com)
@@ -64,7 +95,7 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
-include(":feature:galaxy")
+includeSamsungIAPSDKIfSamsungAARPresent(samsungIapSdkDir)
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
