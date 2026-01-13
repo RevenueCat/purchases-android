@@ -98,7 +98,7 @@ include(":feature:amazon")
 val hasSamsungIapAar = isSamsungIAPAARPresent(samsungIapSdkDir)
 val shouldIncludeGalaxyModule = hasSamsungIapAar || (
     System.getenv("CI") == "true" && !System.getenv("SAMSUNG_IAP_SDK_URL").isNullOrBlank()
-)
+    )
 gradle.beforeProject {
     if (this == rootProject) {
         extra["hasSamsungIapAar"] = hasSamsungIapAar
