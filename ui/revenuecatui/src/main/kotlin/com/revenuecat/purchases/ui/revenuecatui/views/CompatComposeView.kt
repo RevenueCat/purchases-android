@@ -88,9 +88,11 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         }
     }
 
-    private var isManagingViewTree = false
+    private var isManagingLifecycle = false
     private var isManagingSavedState = false
     private var isManagingViewModelStore = false
+    private val isManagingViewTree: Boolean
+        get() = isManagingLifecycle || isManagingSavedState || isManagingViewModelStore
 
     private val lifecycleOwner: LifecycleOwner = ViewLifecycleOwner()
     private val savedStateRegistryController: SavedStateRegistryController =
@@ -178,16 +180,14 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         // didn't set up.
         if (windowRoot.findViewTreeLifecycleOwner() == null) {
             windowRoot.setViewTreeLifecycleOwner(this)
-            isManagingViewTree = true
+            isManagingLifecycle = true
         }
         if (windowRoot.findViewTreeSavedStateRegistryOwner() == null) {
             windowRoot.setViewTreeSavedStateRegistryOwner(this)
-            isManagingViewTree = true
             isManagingSavedState = true
         }
         if (windowRoot.findViewTreeViewModelStoreOwner() == null) {
             windowRoot.setViewTreeViewModelStoreOwner(this)
-            isManagingViewTree = true
             isManagingViewModelStore = true
         }
     }
