@@ -67,7 +67,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
                 object : Application.ActivityLifecycleCallbacks {
                     override fun onActivityDestroyed(destroyedActivity: Activity) {
                         if (destroyedActivity === act) {
-                            onDestroy()
+                            destroy()
                             act.application?.unregisterActivityLifecycleCallbacks(this)
                         }
                     }
@@ -112,7 +112,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         }
 
-        private fun onDestroy() {
+        fun destroy() {
             if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
             if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
@@ -137,6 +137,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     open fun onBackPressed() {
         (parent as? ViewGroup)?.removeView(this)
+        (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
     }
 
     override fun onSaveInstanceState(): Parcelable? {
@@ -191,6 +192,13 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    /**
+     * Provide a manual destroy signal.
+     */
+    protected fun destroy() {
+        (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
     }
 
     private fun performSave(state: Parcelable?): Bundle {
