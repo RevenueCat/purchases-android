@@ -21,7 +21,7 @@ private class GalaxyConfigurationAPI {
             context,
             apiKey,
             galaxyBillingMode,
-        )
+        )asdf
 
         val config1: PurchasesConfiguration = builder1.build()
         val config2: PurchasesConfiguration = builder2.build()
