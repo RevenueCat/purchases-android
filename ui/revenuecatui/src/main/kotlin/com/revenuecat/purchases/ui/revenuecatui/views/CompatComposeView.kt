@@ -31,8 +31,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  * scenario by acting as its own LifecycleOwner, SavedStateRegistryOwner and ViewModelStoreOwner if required.
  *
  * Note that, in this scenario, this does imply that the ComposeView's lifecycle is tied to its visibility. It ends
- * when it is removed from the view tree. There is no concept of keeping state on a back stack. The ComposeView acts as
- * a modal in this case.
+ * when it is removed from the view tree.
  */
 @Suppress("TooManyFunctions")
 @InternalRevenueCatAPI
@@ -49,16 +48,55 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         private const val KEY_SAVED_INSTANCE_STATE = "com.revenuecat.CompatComposeView.saved_instance_state"
     }
 
+    /**
+     * A LifecycleOwner that derives its lifecycle state from View attachment and visibility callbacks.
+     * Used internally by [CompatComposeView] when no external LifecycleOwner is provided.
+     *
+     * **Note:** there is no destroy signal for Views.
+     */
+    private class ViewLifecycleOwner : LifecycleOwner {
+
+        private val lifecycleRegistry = LifecycleRegistry(this)
+
+        override val lifecycle: Lifecycle
+            get() = lifecycleRegistry
+
+        fun onAttachedToWindow() {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        }
+
+        fun onWindowVisibilityChanged(visibility: Int) {
+            if (visibility == VISIBLE) {
+                lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+            } else {
+                lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            }
+        }
+
+        fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+            if (hasWindowFocus) {
+                lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+            } else {
+                lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+            }
+        }
+
+        fun onDetachedFromWindow() {
+            // Only goes to ON_STOP, not ON_DESTROY as the view might be reattached later.
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        }
+    }
+
     private var isManagingViewTree = false
     private var isManagingSavedState = false
     private var isManagingViewModelStore = false
-    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this).apply {
-        currentState = Lifecycle.State.INITIALIZED
-    }
+
+    private val lifecycleOwner: LifecycleOwner = ViewLifecycleOwner()
     private val savedStateRegistryController: SavedStateRegistryController =
         SavedStateRegistryController.create(this)
 
-    override val lifecycle: Lifecycle = lifecycleRegistry
+    override val lifecycle: Lifecycle = lifecycleOwner.lifecycle
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
@@ -83,38 +121,28 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             savedStateRegistryController.performAttach()
             performRestore(null)
         }
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        (lifecycleOwner as? ViewLifecycleOwner)?.onAttachedToWindow()
         super.onAttachedToWindow()
     }
 
     override fun onWindowVisibilityChanged(visibility: Int) {
         super.onWindowVisibilityChanged(visibility)
-        if (visibility == VISIBLE) {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        } else {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        }
+        (lifecycleOwner as? ViewLifecycleOwner)?.onWindowVisibilityChanged(visibility)
     }
 
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
-        if (hasWindowFocus) {
-            if (isManagingViewTree) {
-                // Make focusable and request focus, to be able to intercept back button presses.
-                isFocusableInTouchMode = true
-                isFocusable = true
-                requestFocus()
-            }
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        } else {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        if (hasWindowFocus && isManagingViewTree) {
+            // Make focusable and request focus, to be able to intercept back button presses.
+            isFocusableInTouchMode = true
+            isFocusable = true
+            requestFocus()
         }
+        (lifecycleOwner as? ViewLifecycleOwner)?.onWindowFocusChanged(hasWindowFocus)
     }
 
     override fun onDetachedFromWindow() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        (lifecycleOwner as? ViewLifecycleOwner)?.onDetachedFromWindow()
         if (isManagingViewModelStore) viewModelStore.clear()
         deinitViewTreeOwners()
         super.onDetachedFromWindow()
