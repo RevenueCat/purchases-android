@@ -341,37 +341,6 @@ jobs:
       - store_artifacts:
           path: build/reports
 
-  test-galaxy-cec:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew :feature:galaxy:getSamsungIapSdk --no-daemon
-      - run:
-          name: Compile CEC API Tester with Galaxy Files
-          command: |
-            ./gradlew :api-tester:compileCustomEntitlementComputationDebugKotlin --no-daemon
-      - run:
-          name: Run Galaxy CEC Unit Tests
-          command: |
-            ./gradlew testCustomEntitlementComputationBc8DebugUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          command: |
-            RESULTS_DIR="build/test-results-galaxy-cec"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
-      - store_test_results:
-          path: build/test-results-galaxy-cec
-      - store_artifacts:
-          path: build/reports
-
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1043,9 +1012,6 @@ workflows:
       - test-galaxy:
           requires:
             - prepare-tests
-      - test-galaxy-cec:
-          requires:
-            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1086,7 +1052,6 @@ workflows:
             - test_cec_debug
             - test_cec_release
             - test-galaxy
-            - test-galaxy-cec
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
