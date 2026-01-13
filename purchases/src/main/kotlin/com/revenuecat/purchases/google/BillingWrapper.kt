@@ -834,6 +834,14 @@ internal class BillingWrapper(
                     debugLog { "Activity is null, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
+                if (activity.isFinishing) {
+                    debugLog { "Activity is finishing, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
+                if (activity.isDestroyed) {
+                    debugLog { "Activity is destroyed, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
                 showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
                     when (val responseCode = inAppMessageResult.responseCode) {
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {

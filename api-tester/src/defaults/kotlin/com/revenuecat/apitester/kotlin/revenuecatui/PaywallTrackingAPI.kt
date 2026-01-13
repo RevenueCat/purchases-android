@@ -48,6 +48,7 @@ private class PaywallTrackingAPI {
             PaywallEventType.IMPRESSION,
             PaywallEventType.CANCEL,
             PaywallEventType.CLOSE,
+            PaywallEventType.EXIT_OFFER,
             -> {}
         }
     }
