@@ -31,17 +31,15 @@ pluginManagement {
 val samsungIapSdkDir = file("$rootDir/libs")
 
 /**
- * Includes the Galaxy feature module only when the expected Samsung IAP AAR
- * (versioned from `gradle/libs.versions.toml`) is present in the SDK directory.
+ * Returns true only when the expected Samsung IAP AAR (versioned from
+ * `gradle/libs.versions.toml`) is present in the SDK directory.
  */
-fun Settings.includeSamsungIAPSDKIfSamsungAARPresent(samsungIAPSDKDir: File) {
-    if (!samsungIAPSDKDir.exists()) { return }
+fun Settings.isSamsungIapAarPresent(samsungIAPSDKDir: File): Boolean {
+    if (!samsungIAPSDKDir.exists()) { return false }
 
-    val samsungIapVersion = readVersionFromCatalog("samsungIap") ?: return
+    val samsungIapVersion = readVersionFromCatalog("samsungIap") ?: return false
     val samsungIapAar = samsungIAPSDKDir.resolve("samsung-iap-$samsungIapVersion.aar")
-    if (samsungIapAar.isFile) {
-        include(":feature:galaxy")
-    }
+    return samsungIapAar.isFile
 }
 
 /**
@@ -95,7 +93,15 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
-includeSamsungIAPSDKIfSamsungAARPresent(samsungIapSdkDir)
+val hasSamsungIapAar = isSamsungIapAarPresent(samsungIapSdkDir)
+gradle.beforeProject {
+    if (this == rootProject) {
+        extra["hasSamsungIapAar"] = hasSamsungIapAar
+    }
+}
+if (hasSamsungIapAar) {
+    include(":feature:galaxy")
+}
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
