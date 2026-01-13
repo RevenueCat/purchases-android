@@ -83,6 +83,8 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            exitOfferType = data.exitOfferType?.value,
+            exitOfferingID = data.exitOfferingIdentifier,
         ),
     )
 }
