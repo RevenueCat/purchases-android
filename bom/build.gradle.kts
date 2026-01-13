@@ -24,6 +24,9 @@ dependencies {
         api(project(":ui:revenuecatui"))
         api(project(":ui:debugview"))
         api(project(":feature:amazon"))
-        api(project(":feature:galaxy"))
+        val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+        if (hasSamsungIapAar) {
+            api(project(":feature:galaxy"))
+        }
     }
 }
