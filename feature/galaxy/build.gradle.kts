@@ -32,8 +32,6 @@ val samsungIapVersion = libs.versions.samsungIap.get()
 val samsungIapFileName = "samsung-iap-$samsungIapVersion.aar"
 val samsungIapDestFile = rootProject.file("libs/$samsungIapFileName")
 
-val isCi = System.getenv("CI") == "true"
-
 tasks.register("getSamsungIapSdk") {
     val downloadUrl = System.getenv("SAMSUNG_IAP_SDK_URL").orEmpty()
 
@@ -71,16 +69,6 @@ tasks.register("getSamsungIapSdk") {
         } else {
             downloadFile.copyTo(samsungIapDestFile, overwrite = true)
         }
-    }
-}
-
-tasks.register<Delete>("cleanSamsungIapSdk") {
-    delete(samsungIapDestFile)
-}
-
-if (isCi) {
-    tasks.named("preBuild") {
-        dependsOn("getSamsungIapSdk")
     }
 }
 

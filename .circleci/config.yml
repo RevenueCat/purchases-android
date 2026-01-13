@@ -327,7 +327,7 @@ jobs:
           command: |
             ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
       - run:
-          name: Run galaxy unit and api tests
+          name: Run Galaxy Unit Tests
           command: |
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
@@ -358,7 +358,7 @@ jobs:
           command: |
             ./gradlew :api-tester:compileCustomEntitlementComputationDebugKotlin --no-daemon
       - run:
-          name: Run galaxy CEC unit and api tests
+          name: Run Galaxy CEC Unit Tests
           command: |
             ./gradlew testCustomEntitlementComputationBc8DebugUnitTest --parallel --no-daemon
       - run:
