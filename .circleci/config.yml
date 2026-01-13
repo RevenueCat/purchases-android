@@ -310,6 +310,60 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew :feature:galaxy:getSamsungIapSdk --no-daemon
+      - run:
+          name: Run galaxy unit and api tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest :feature:galaxy:test :api-tester:testDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
+      - store_artifacts:
+          path: build/reports
+
+  test-galaxy-cec:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew :feature:galaxy:getSamsungIapSdk --no-daemon
+      - run:
+          name: Run galaxy CEC unit and api tests
+          command: |
+            ./gradlew testCustomEntitlementComputationBc8DebugUnitTest :feature:galaxy:test :api-tester:testDebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy-cec"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy-cec
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -978,6 +1032,12 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test-galaxy:
+          requires:
+            - prepare-tests
+      - test-galaxy-cec:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1017,6 +1077,8 @@ workflows:
             - test_defaults_bc7_release
             - test_cec_debug
             - test_cec_release
+            - test-galaxy
+            - test-galaxy-cec
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
