@@ -118,6 +118,7 @@ class GoldenFileRecorder(
             "Vary",
             "Authorization",
             "X-Version",
+            "Server-Timing",
             "Accept-Ranges",
         )
 
