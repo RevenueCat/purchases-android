@@ -34,7 +34,8 @@ val samsungIapSdkDir = file("$rootDir/libs")
  * Returns true only when the expected Samsung IAP AAR (versioned from
  * `gradle/libs.versions.toml`) is present in the SDK directory.
  */
-fun Settings.isSamsungIapAarPresent(samsungIAPSDKDir: File): Boolean {
+@Suppress("ReturnCount")
+fun Settings.isSamsungIAPAARPresent(samsungIAPSDKDir: File): Boolean {
     if (!samsungIAPSDKDir.exists()) { return false }
 
     val samsungIapVersion = readVersionFromCatalog("samsungIap") ?: return false
@@ -46,6 +47,7 @@ fun Settings.isSamsungIapAarPresent(samsungIAPSDKDir: File): Boolean {
  * Reads a version entry from `gradle/libs.versions.toml` without relying on the
  * version catalog extension (not available during settings evaluation).
  */
+@Suppress("ReturnCount")
 fun Settings.readVersionFromCatalog(versionKey: String): String? {
     val catalogFile = rootDir.resolve("gradle/libs.versions.toml")
     if (!catalogFile.isFile) {
@@ -93,7 +95,7 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
-val hasSamsungIapAar = isSamsungIapAarPresent(samsungIapSdkDir)
+val hasSamsungIapAar = isSamsungIAPAARPresent(samsungIapSdkDir)
 gradle.beforeProject {
     if (this == rootProject) {
         extra["hasSamsungIapAar"] = hasSamsungIapAar
