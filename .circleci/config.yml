@@ -323,6 +323,10 @@ jobs:
           command: |
             ./gradlew :feature:galaxy:getSamsungIapSdk --no-daemon
       - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
           name: Run galaxy unit and api tests
           command: |
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
@@ -349,6 +353,10 @@ jobs:
           name: Download Samsung IAP SDK AAR
           command: |
             ./gradlew :feature:galaxy:getSamsungIapSdk --no-daemon
+      - run:
+          name: Compile CEC API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileCustomEntitlementComputationDebugKotlin --no-daemon
       - run:
           name: Run galaxy CEC unit and api tests
           command: |
