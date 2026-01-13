@@ -325,7 +325,7 @@ jobs:
       - run:
           name: Run galaxy unit and api tests
           command: |
-            ./gradlew testDefaultsBc8DebugUnitTest :feature:galaxy:test :api-tester:testDebugUnitTest --parallel --no-daemon
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
@@ -352,7 +352,7 @@ jobs:
       - run:
           name: Run galaxy CEC unit and api tests
           command: |
-            ./gradlew testCustomEntitlementComputationBc8DebugUnitTest :feature:galaxy:test :api-tester:testDebugUnitTest --parallel --no-daemon
+            ./gradlew testCustomEntitlementComputationBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
           command: |
