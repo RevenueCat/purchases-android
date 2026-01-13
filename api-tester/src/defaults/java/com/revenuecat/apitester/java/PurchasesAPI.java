@@ -31,6 +31,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -150,12 +151,28 @@ final class PurchasesAPI {
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
         purchases.setAirbridgeDeviceID("");
+        purchases.setSolarEngineDistinctId("");
+        purchases.setSolarEngineAccountId("");
+        purchases.setSolarEngineVisitorId("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");
         purchases.setCreative("");
+    }
+
+    static void checkSetAppsFlyerAttributionData(final Purchases purchases) {
+        Map<String, Object> mapStringAny = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringAny);
+
+        purchases.setAppsFlyerConversionData(null);
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringString);
+
+        Map<String, Integer> mapStringInt = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringInt);
     }
 
     static void checkConfiguration(final Context context,

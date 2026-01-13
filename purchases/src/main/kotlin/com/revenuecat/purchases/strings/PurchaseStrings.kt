@@ -55,4 +55,10 @@ internal object PurchaseStrings {
     const val EXTRA_CALLBACK_CANMAKEPAYMENTS = "Callback has already been called when checking if device can " +
         "make payments."
     const val EXCEPTION_CANMAKEPAYMENTS = "Exception received when checking if device can make payments: \n%s."
+    const val EMPTY_ADD_ONS_LIST_PASSED = "An empty list of add-ons was provided. Will proceed with purchasing the " +
+        "base product."
+    const val PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE = "Making a purchase with add-ons is only supported on" +
+        " the Play Store."
+    const val DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID = "Passing a basePlanId in oldProductId (%s) during a " +
+        "DEFERRED product change is not recommended. The basePlanId will be stripped automatically."
 }

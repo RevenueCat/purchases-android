@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import dev.drewhamilton.poko.Poko
+import java.net.URL
 
 /**
  * An offering is a collection of [Package] available for the user to purchase.
@@ -16,6 +17,7 @@ import dev.drewhamilton.poko.Poko
  * @property serverDescription Offering description defined in RevenueCat dashboard.
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
+ * @property webCheckoutURL If the Offering has an associated Web Purchase Link, this will be the URL for it.
  */
 @Suppress("UnsafeOptInUsageError")
 @Poko
@@ -30,6 +32,7 @@ constructor(
     val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
     val paywallComponents: PaywallComponents? = null,
+    val webCheckoutURL: URL? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
     constructor(
@@ -44,6 +47,7 @@ constructor(
         availablePackages = availablePackages,
         paywall = null,
         paywallComponents = null,
+        webCheckoutURL = null,
     )
 
     @InternalRevenueCatAPI
@@ -132,6 +136,7 @@ constructor(
             availablePackages = this.availablePackages.map { it.copy(presentedOfferingContext) },
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
+            webCheckoutURL = this.webCheckoutURL,
         )
     }
 }

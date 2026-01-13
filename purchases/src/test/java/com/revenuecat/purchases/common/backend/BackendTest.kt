@@ -14,7 +14,9 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -98,6 +100,7 @@ class BackendTest {
         receivedVirtualCurrencies = null
         receivedWebBillingProductsResponse = null
         receivedAliasUsersCallCount = 0
+        receivedOriginalDataSource = null
     }
 
     @After
@@ -169,8 +172,10 @@ class BackendTest {
     private var receivedWebBillingProductsResponse: WebBillingProductsResponse? = null
     private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
+    private var receivedOriginalDataSource: HTTPResponseOriginalSource? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
+    private var receivedGetOfferingsErrorHandlingBehavior: GetOfferingsErrorHandlingBehavior? = null
     private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
@@ -197,13 +202,15 @@ class BackendTest {
         this@BackendTest.receivedIsServerError = isServerError
     }
 
-    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject) -> Unit = { offeringsJSON ->
+    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource) -> Unit = { offeringsJSON, originalDataSource ->
         this@BackendTest.receivedOfferingsJSON = offeringsJSON
+        this@BackendTest.receivedOriginalDataSource = originalDataSource
     }
 
-    private val onReceiveOfferingsErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
+    private val onReceiveOfferingsErrorHandler: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit =
+        { error, errorBehavior ->
         this@BackendTest.receivedError = error
-        this@BackendTest.receivedIsServerError = isServerError
+        this@BackendTest.receivedGetOfferingsErrorHandlingBehavior = errorBehavior
     }
 
     private val onLoginSuccessHandler: (CustomerInfo, Boolean) -> Unit = { customerInfo, created ->
@@ -308,7 +315,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -318,7 +325,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = {},
+            onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
 
@@ -327,7 +334,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = {},
+            onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
     }
@@ -389,7 +396,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -443,7 +450,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -498,7 +505,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -778,7 +785,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -849,7 +856,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
         verify(exactly = 2) {
@@ -858,7 +865,7 @@ class BackendTest {
                 Endpoint.GetCustomerInfo(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -953,7 +960,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1015,7 +1022,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1065,7 +1072,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1114,7 +1121,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1180,7 +1187,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1371,7 +1378,7 @@ class BackendTest {
                 Endpoint.PostReceipt,
                 any(),
                 expectedPostFieldsToSign,
-                any()
+                any(),
             )
         }
     }
@@ -1505,33 +1512,33 @@ class BackendTest {
     }
 
     @Test
-    fun `given a server error, correct callback values are given`() {
+    fun `given a 5xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
 
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { fail("Should be error") },
+            onSuccess = { _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
         assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isTrue
+        assertThat(receivedGetOfferingsErrorHandlingBehavior).isEqualTo(GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS)
     }
 
     @Test
-    fun `given a non server error, correct callback values are given`() {
+    fun `given a 4xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.BAD_REQUEST, null, null)
 
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { fail("Should be error") },
+            onSuccess = { _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
         assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isFalse
+        assertThat(receivedGetOfferingsErrorHandlingBehavior).isEqualTo(GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
     }
 
     @Test
@@ -1545,10 +1552,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1559,7 +1566,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1575,10 +1582,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1589,7 +1596,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
         verify(exactly = 1) {
@@ -1598,7 +1605,7 @@ class BackendTest {
                 Endpoint.GetOfferings("anotherUser"),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1614,10 +1621,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1638,10 +1645,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1652,7 +1659,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1690,7 +1697,7 @@ class BackendTest {
                 Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -1726,7 +1733,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 body,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1876,7 +1883,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 expectedPostFieldsToSign,
-                any()
+                any(),
             )
         }
     }
@@ -1927,7 +1934,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -1978,7 +1985,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -2029,7 +2036,7 @@ class BackendTest {
                 Endpoint.LogIn,
                 requestBody,
                 any(),
-                any()
+                any(),
             )
         }
     }
@@ -2046,7 +2053,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2075,7 +2082,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2106,7 +2113,7 @@ class BackendTest {
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
             )
         }
     }
@@ -2266,7 +2273,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2293,7 +2300,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2325,7 +2332,7 @@ class BackendTest {
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2464,7 +2471,7 @@ class BackendTest {
                 endpoint = Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2574,7 +2581,7 @@ class BackendTest {
                 Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2628,7 +2635,7 @@ class BackendTest {
                 Endpoint.GetVirtualCurrencies(appUserID),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2730,7 +2737,7 @@ class BackendTest {
                 endpoint = Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2865,7 +2872,7 @@ class BackendTest {
                 Endpoint.WebBillingGetProducts(appUserID, productIDs),
                 body = null,
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -2885,7 +2892,7 @@ class BackendTest {
                 endpoint = Endpoint.AliasUsers("test-old-app-user-id"),
                 body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
                 postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders
+                requestHeaders = defaultAuthHeaders,
             )
         }
     }
@@ -2972,7 +2979,7 @@ class BackendTest {
                 Endpoint.AliasUsers(appUserID),
                 body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
                 postFieldsToSign = null,
-                any()
+                any(),
             )
         }
     }
@@ -3005,7 +3012,7 @@ class BackendTest {
                 eq(endpoint),
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3222,7 +3229,7 @@ class BackendTest {
                 eq(endpoint),
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3256,7 +3263,7 @@ class BackendTest {
                 eq(endpoint),
                 null,
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3288,7 +3295,7 @@ class BackendTest {
                 eq(endpoint),
                 body,
                 any(),
-                capture(headersSlot)
+                capture(headersSlot),
             )
         }
 
@@ -3300,6 +3307,228 @@ class BackendTest {
         } else {
             everyMockedCall throws clientException
         }
+    }
+
+    // endregion
+
+    // region postCreateSupportTicket
+
+    @Test
+    fun `postCreateSupportTicket makes call with correct parameters`() {
+        val email = "user@example.com"
+        val description = "I need help with my subscription"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = {},
+            onErrorHandler = {}
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = endpoint,
+                body = mapOf(
+                    "app_user_id" to appUserID,
+                    "customer_email" to email,
+                    "issue_description" to description
+                ),
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+            )
+        }
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls success handler with sent true`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{\"sent\":true}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertTrue(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls success handler with sent false`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{\"sent\":false}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = true
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertFalse(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket defaults to false when sent field is missing`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val resultBody = "{}"
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            shouldMockCustomerInfo = false
+        )
+
+        var successCalled = false
+        var wasSent = true
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { sent ->
+                successCalled = true
+                wasSent = sent
+            },
+            onErrorHandler = { fail("expected success") }
+        )
+
+        assertTrue(successCalled)
+        assertFalse(wasSent)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on network error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 200,
+            clientException = IOException(),
+            resultBody = null,
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+            }
+        )
+
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on server error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 500,
+            clientException = null,
+            resultBody = null,
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+            }
+        )
+
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postCreateSupportTicket calls error handler on client error`() {
+        val email = "user@example.com"
+        val description = "I need help"
+        val endpoint = Endpoint.PostCreateSupportTicket
+
+        mockResponse(
+            endpoint = endpoint,
+            body = null,
+            responseCode = 400,
+            clientException = null,
+            resultBody = "{\"code\":7101}",
+            shouldMockCustomerInfo = false
+        )
+
+        var errorCalled = false
+        backend.postCreateSupportTicket(
+            appUserID = appUserID,
+            email = email,
+            description = description,
+            onSuccessHandler = { fail("expected error") },
+            onErrorHandler = { error ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+            }
+        )
+
+        assertTrue(errorCalled)
     }
 
     // endregion

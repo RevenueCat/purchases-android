@@ -69,6 +69,8 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Paywall.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property localeIdentifier The locale identifier of the device.
+     * @property exitOfferType The type of exit offer shown. Only for exit offer events.
+     * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
      */
     @Serializable
     @SerialName("paywalls")
@@ -91,6 +93,43 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("exit_offer_type")
+        val exitOfferType: String? = null,
+        @SerialName("exit_offering_id")
+        val exitOfferingID: String? = null,
+    ) : BackendEvent()
+
+    @Serializable
+    @SerialName("ad")
+    data class Ad(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("timestamp_ms")
+        val timestamp: Long,
+        @SerialName("network_name")
+        val networkName: String,
+        @SerialName("mediator_name")
+        val mediatorName: String,
+        val placement: String?,
+        @SerialName("ad_unit_id")
+        val adUnitId: String,
+        @SerialName("impression_id")
+        val impressionId: String?,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+
+        // Revenue event only fields
+        @SerialName("revenue_micros")
+        val revenueMicros: Long? = null,
+        val currency: String? = null,
+        val precision: String? = null,
+
+        // Failed to load event only fields
+        @SerialName("mediator_error_code")
+        val mediatorErrorCode: Int? = null,
     ) : BackendEvent()
 
     /**
@@ -106,5 +145,10 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the customer center event schema.
          */
         const val CUSTOMER_CENTER_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the ad event schema.
+         */
+        const val AD_EVENT_SCHEMA_VERSION = 1
     }
 }

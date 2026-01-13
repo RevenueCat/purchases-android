@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
@@ -17,7 +18,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class StoreTransaction(
+class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
@@ -28,8 +29,7 @@ class StoreTransaction(
     /**
      * Product IDs purchased.
      *
-     * If size > 1, indicates that a multi-line purchase occurred, which RevenueCat does not support.
-     * Only the first productId will be processed by the SDK.
+     * If size > 1, indicates that a multi-line purchase occurred.
      */
     val productIds: List<String>,
 
@@ -99,6 +99,22 @@ class StoreTransaction(
     val subscriptionOptionId: String?,
 
     /**
+     * The id of the SubscriptionOption purchased for each product ID.
+     *
+     * In Google, this will be calculated from the basePlanId and offerId
+     * Null in Google for restored transactions and purchases initiated outside of the app.
+     * Null for Amazon purchases.
+     */
+    // We've marked this with @get:JvmSynthetic because its synthesized
+    // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
+    // applied to it, and there doesn't appear to be a way to do so.
+    // We can remove this @get:JvmSynthetic annotation when we remove the experimental annotation from this
+    // property.
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @get:JvmSynthetic
+    val subscriptionOptionIdForProductIDs: Map<String, String>?,
+
+    /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
@@ -106,6 +122,43 @@ class StoreTransaction(
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    constructor(
+        orderId: String?,
+        productIds: List<String>,
+        type: ProductType,
+        purchaseTime: Long,
+        purchaseToken: String,
+        purchaseState: PurchaseState,
+        isAutoRenewing: Boolean?,
+        signature: String?,
+        originalJson: JSONObject,
+        presentedOfferingContext: PresentedOfferingContext?,
+        storeUserID: String?,
+        purchaseType: PurchaseType,
+        marketplace: String?,
+        subscriptionOptionId: String?,
+        replacementMode: ReplacementMode?,
+    ) : this(
+        orderId = orderId,
+        productIds = productIds,
+        type = type,
+        purchaseTime = purchaseTime,
+        purchaseToken = purchaseToken,
+        purchaseState = purchaseState,
+        isAutoRenewing = isAutoRenewing,
+        signature = signature,
+        originalJson = originalJson,
+        presentedOfferingContext = presentedOfferingContext,
+        storeUserID = storeUserID,
+        purchaseType = purchaseType,
+        marketplace = marketplace,
+        subscriptionOptionId = subscriptionOptionId,
+        subscriptionOptionIdForProductIDs = emptyMap(),
+        replacementMode = replacementMode,
+    )
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Deprecated("Use constructor with presentedOfferingContext instead")
     constructor(
         orderId: String?,
@@ -138,6 +191,7 @@ class StoreTransaction(
         purchaseType,
         marketplace,
         subscriptionOptionId,
+        emptyMap(),
         replacementMode,
     )
 

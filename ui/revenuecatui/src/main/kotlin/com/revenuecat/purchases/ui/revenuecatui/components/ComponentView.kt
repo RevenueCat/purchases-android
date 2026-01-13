@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFo
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
@@ -114,6 +116,12 @@ internal fun ComponentView(
     is TabControlToggleComponentStyle -> TabControlToggleView(
         style = style,
         state = state,
+        modifier = modifier,
+    )
+    is CountdownComponentStyle -> CountdownComponentView(
+        style = style,
+        state = state,
+        onClick = onClick,
         modifier = modifier,
     )
 }

@@ -1,404 +1,372 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:bind="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
-
-    <data>
-        <variable
-                name="viewModel"
-                type="com.revenuecat.purchasetester.OverviewViewModel" />
-
-        <import type="android.view.View" />
-    </data>
-
-    <FrameLayout
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            android:layout_height="wrap_content">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:padding="@dimen/padding_small">
+
+            <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/customer_info_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:animateLayoutChanges="true"
-                    android:padding="@dimen/padding_small">
+                    android:layout_margin="@dimen/padding_small"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
-                <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/customer_info_card"
+                <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/customer_info_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_margin="@dimen/padding_small"
-                        app:layout_constraintEnd_toEndOf="parent"
+                        android:padding="@dimen/padding_small"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        android:onClick="@{() -> viewModel.onCardClicked()}">
+                        app:layout_constraintTop_toTopOf="parent">
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/customer_info_content"
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/customer_info_label"
+                            style="@style/TextAppearance.AppCompat.Subhead"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:padding="@dimen/padding_small"
+                            android:text="CustomerInfo"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
+                            app:layout_constraintTop_toTopOf="parent" />
 
-                        <androidx.appcompat.widget.AppCompatTextView
-                                android:id="@+id/customer_info_label"
-                                style="@style/TextAppearance.AppCompat.Subhead"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="CustomerInfo"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toTopOf="parent" />
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/customer_info_request_date"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/padding_small"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_label" />
 
-                        <androidx.appcompat.widget.AppCompatTextView
-                                android:id="@+id/customer_info_request_date"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="@dimen/padding_small"
-                                android:text="@{` as of ` + viewModel.customerInfo.requestDate}"
-                                android:visibility="@{viewModel.customerInfo.requestDate != null ? View.VISIBLE : View.GONE}"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_label" />
+                    <include
+                            android:id="@+id/customer_info_app_user_id"
+                            layout="@layout/row_view"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/padding_small"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_request_date" />
 
-                        <include
-                                android:id="@+id/customer_info_app_user_id"
-                                layout="@layout/row_view"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="@dimen/padding_small"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_request_date"
-                                bind:detail="@{viewModel.customerInfo.originalAppUserId}"
-                                bind:header="@{`Original App User Id: `}" />
+                    <include
+                            android:id="@+id/customer_info_verification_result"
+                            layout="@layout/row_view"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="@dimen/padding_small"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_app_user_id" />
 
-                        <include
-                                android:id="@+id/customer_info_verification_result"
-                                layout="@layout/row_view"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="@dimen/padding_small"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_app_user_id"
-                                bind:detail="@{viewModel.verificationResult.name()}"
-                                bind:header="@{`Current verification result: `}" />
+                    <androidx.appcompat.widget.AppCompatImageButton
+                            android:id="@+id/customer_info_copy_user_id_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            app:layout_constraintBottom_toBottomOf="@+id/customer_info_app_user_id"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="@+id/customer_info_app_user_id"
+                            app:srcCompat="@drawable/ic_copy"/>
 
-                        <androidx.appcompat.widget.AppCompatImageButton
-                                android:id="@+id/customer_info_copy_user_id_button"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="?attr/selectableItemBackground"
-                                app:layout_constraintBottom_toBottomOf="@+id/customer_info_app_user_id"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintTop_toTopOf="@+id/customer_info_app_user_id"
-                                app:srcCompat="@drawable/ic_copy"
-                                android:onClick="@{() -> viewModel.onCopyClicked()}"/>
+                    <include
+                            android:id="@+id/customer_info_active_entitlements"
+                            layout="@layout/row_view"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_verification_result" />
 
-                        <include
-                                android:id="@+id/customer_info_active_entitlements"
-                                layout="@layout/row_view"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_verification_result"
-                                bind:header="@{`Active Entitlements: `}"
-                                bind:detail="@{viewModel.activeEntitlements}"/>
+                    <include
+                            android:id="@+id/customer_info_all_entitlements"
+                            layout="@layout/row_view"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_active_entitlements" />
 
-                        <include
-                                android:id="@+id/customer_info_all_entitlements"
-                                layout="@layout/row_view"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_active_entitlements"
-                                bind:header="@{`All Entitlements: `}"
-                                bind:detail="@{viewModel.allEntitlements}"/>
+                    <include
+                            android:id="@+id/customer_info_virtual_currencies"
+                            layout="@layout/row_view"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements" />
 
-                        <include
-                                android:id="@+id/customer_info_virtual_currencies"
-                                layout="@layout/row_view"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_all_entitlements"
-                                bind:header="@{`Virtual Currencies: `}"
-                                bind:detail="@{viewModel.formattedVirtualCurrencies}"/>
-
-                        <LinearLayout
-                                android:id="@+id/customer_info_subscriber_attribute_actions"
-                                android:orientation="horizontal"
-                                android:layout_gravity="center"
-                                android:layout_marginBottom="@dimen/padding_medium"
-                                android:layout_marginEnd="@dimen/padding_large"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container">
-
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_set_attribute"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:onClick="@{() -> viewModel.onSetAttributeClicked()}"
-                                    android:text="Set Attr" />
-
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_sync_attributes"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:onClick="@{() -> viewModel.onSyncAttributesClicked()}"
-                                    android:text="Sync Attr / Fetch Offerings" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                                android:id="@+id/customer_info_actions"
-                                android:orientation="horizontal"
-                                android:layout_gravity="center"
-                                android:layout_marginBottom="@dimen/padding_medium"
-                                android:layout_marginEnd="@dimen/padding_large"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_subscriber_attribute_actions">
-
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_manage_button"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:text="Manage"
-                                    android:onClick="@{() -> viewModel.onManageClicked()}"
-                                    android:visibility="@{viewModel.customerInfo.managementURL != null ? View.VISIBLE : View.GONE}" />
-
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_logout_button"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:text="Logout" />
-
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_restore_purchases_button"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:text="Restore"
-                                    android:onClick="@{() -> viewModel.onRestoreClicked()}"
-                                    android:enabled="@{!viewModel.isRestoring()}"
-                                    app:layout_constraintEnd_toEndOf="parent"
-                                    app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
-                                    app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
-
-                            <ProgressBar
-                                    android:id="@+id/customer_info_restore_progress"
-                                    android:layout_width="0dp"
-                                    android:layout_height="0dp"
-                                    android:layout_margin="6dp"
-                                    android:elevation="2dp"
-                                    android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
-                                    app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
-                                    app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
-                                    app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
-                                    app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
-
-                        </LinearLayout>
+                    <LinearLayout
+                            android:id="@+id/customer_info_subscriber_attribute_actions"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="@dimen/padding_medium"
+                            android:layout_marginEnd="@dimen/padding_large"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container">
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/block_store_clear_button"
+                                android:id="@+id/customer_info_set_attribute"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_margin="@dimen/padding_tiny"
-                                android:text="Clear Block Store"
-                                android:onClick="@{() -> viewModel.onBlockStoreClearClicked(context)}"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@id/customer_info_actions" />
+                                android:text="Set Attr" />
 
-                        <LinearLayout
-                                android:id="@+id/vc_actions"
-                                android:orientation="horizontal"
-                                android:layout_gravity="center"
-                                android:layout_marginBottom="@dimen/padding_medium"
-                                android:layout_marginEnd="@dimen/padding_large"
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_sync_attributes"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/block_store_clear_button">
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Sync Attr / Fetch Offerings" />
 
-                            <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/customer_info_fetch_vcs_button"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_margin="@dimen/padding_tiny"
-                                    android:onClick="@{() -> viewModel.onFetchVCsClicked()}"
-                                    android:text="Fetch + Log VCs" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                            android:id="@+id/customer_info_actions"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="@dimen/padding_medium"
+                            android:layout_marginEnd="@dimen/padding_large"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_subscriber_attribute_actions">
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_manage_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Manage" />
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_logout_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Logout" />
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_restore_purchases_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Restore"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
+
+                        <ProgressBar
+                                android:id="@+id/customer_info_restore_progress"
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_margin="6dp"
+                                android:elevation="2dp"
+                                app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
+                                app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
+                                app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
+                                app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/block_store_clear_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="@dimen/padding_tiny"
+                            android:text="Clear Block Store"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/customer_info_actions" />
+
+                    <LinearLayout
+                            android:id="@+id/vc_actions"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="@dimen/padding_medium"
+                            android:layout_marginEnd="@dimen/padding_large"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/block_store_clear_button">
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/customer_info_fetch_vcs_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="Fetch + Log VCs" />
 
                         <com.google.android.material.button.MaterialButton
                                 android:id="@+id/customer_info_invalidate_vcs_cache_button"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_margin="@dimen/padding_tiny"
-                                android:onClick="@{() -> viewModel.onInvalidateVirtualCurrenciesCache()}"
                                 android:text="Invalidate VC Cache" />
         
 
-                        </LinearLayout>
+                    </LinearLayout>
 
-                        <LinearLayout
-                                android:id="@+id/vc_actions2"
-                                android:orientation="horizontal"
-                                android:layout_gravity="center"
-                                android:layout_marginBottom="@dimen/padding_medium"
-                                android:layout_marginEnd="@dimen/padding_large"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/vc_actions">
+                    <LinearLayout
+                            android:id="@+id/vc_actions2"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="@dimen/padding_medium"
+                            android:layout_marginEnd="@dimen/padding_large"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/vc_actions">
 
                         <com.google.android.material.button.MaterialButton
                                 android:id="@+id/customer_info_fetch_vc_cache_button"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_margin="@dimen/padding_tiny"
-                                android:onClick="@{() -> viewModel.onFetchVCCache()}"
                                 android:text="Log VC Cache" />
 
-                        </LinearLayout>
+                    </LinearLayout>
 
-                        <androidx.constraintlayout.widget.Barrier
-                                android:id="@+id/customer_info_card_barrier"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:barrierDirection="start"
-                                app:constraint_referenced_ids="customer_info_copy_user_id_button" />
+                    <androidx.constraintlayout.widget.Barrier
+                            android:id="@+id/customer_info_card_barrier"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:barrierDirection="start"
+                            app:constraint_referenced_ids="customer_info_copy_user_id_button" />
 
-                        <androidx.constraintlayout.widget.ConstraintLayout
-                                android:id="@+id/customer_info_details_container"
-                                android:layout_width="wrap_content"
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/customer_info_details_container"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_virtual_currencies"
+                            app:layout_constraintVertical_bias="0">
+
+                        <include
+                                android:id="@+id/customer_info_json_object"
+                                layout="@layout/row_view"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:visibility="gone"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_virtual_currencies"
-                                app:layout_constraintVertical_bias="0">
-
-                            <include
-                                    android:id="@+id/customer_info_json_object"
-                                    layout="@layout/row_view"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    app:layout_constraintEnd_toEndOf="parent"
-                                    app:layout_constraintStart_toStartOf="parent"
-                                    app:layout_constraintTop_toTopOf="parent"
-                                    bind:header="@{`JSON Object`}"
-                                    bind:detail="@{viewModel.customerInfoJson}"/>
-
-                        </androidx.constraintlayout.widget.ConstraintLayout>
+                                app:layout_constraintTop_toTopOf="parent"/>
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-                <View
-                        android:id="@+id/overview_divider"
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="@dimen/padding_small"
-                        android:layout_marginBottom="@dimen/padding_small"
-                        android:background="#a9a9a9"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/customer_info_card" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/offering_header"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_small"
-                        android:text="Offerings"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/overview_divider" />
+            <View
+                    android:id="@+id/overview_divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="@dimen/padding_small"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:background="#a9a9a9"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/customer_info_card" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/overview_offerings_recycler"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_small"
-                        android:transitionGroup="true"
-                        tools:listitem="@layout/offering_card"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_header"
-                        app:layout_constraintBottom_toBottomOf="parent"/>
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/offering_header"
+                    style="@style/TextAppearance.AppCompat.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_small"
+                    android:text="Offerings"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/overview_divider" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </ScrollView>
+            <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/overview_offerings_recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_small"
+                    android:transitionGroup="true"
+                    tools:listitem="@layout/offering_card"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/offering_header"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
 
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_gravity="end|bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
         <LinearLayout
-                android:orientation="vertical"
+                android:orientation="horizontal"
                 android:layout_gravity="end|bottom"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-            <LinearLayout
-                    android:orientation="horizontal"
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/find_by_placement_button"
+                    android:text="@string/find_placement"
                     android:layout_gravity="end|bottom"
-                    android:layout_marginBottom="@dimen/padding_small"
-                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-                <com.google.android.material.button.MaterialButton
-                        android:id="@+id/find_by_placement_button"
-                        android:text="@string/find_placement"
-                        android:layout_gravity="end|bottom"
-                        android:layout_marginEnd="@dimen/padding_small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-            </LinearLayout>
-            <LinearLayout
-                    android:orientation="horizontal"
+                    android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_gravity="end|bottom"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/get_products_button"
+                    android:text="Get Products"
                     android:layout_gravity="end|bottom"
-                    android:layout_marginBottom="@dimen/padding_small"
-                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-                <com.google.android.material.button.MaterialButton
-                        android:id="@+id/purchase_product_id_button"
-                        android:text="@string/buy_product"
-                        android:layout_gravity="end|bottom"
-                        android:layout_marginEnd="@dimen/padding_small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-            </LinearLayout>
-            <LinearLayout
+                    android:layout_height="wrap_content"/>
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/purchase_product_id_button"
+                    android:text="@string/buy_product"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
                 android:orientation="horizontal"
                 android:layout_gravity="end|bottom"
                 android:layout_marginBottom="@dimen/padding_medium"
                 android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-                <com.google.android.material.button.MaterialButton
-                        android:id="@+id/proxy_button"
-                        android:text="@string/proxy"
-                        android:layout_gravity="end|bottom"
-                        android:layout_marginEnd="@dimen/padding_small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                <com.google.android.material.button.MaterialButton
-                        android:id="@+id/logs_button"
-                        android:text="@string/logs"
-                        android:layout_gravity="end|bottom"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/proxy_button"
+                    android:text="@string/proxy"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/logs_button"
+                    android:text="@string/logs"
+                    android:layout_gravity="end|bottom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
         </LinearLayout>
-    </FrameLayout>
-
-</layout>
+    </LinearLayout>
+</FrameLayout>

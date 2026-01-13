@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.DateHelper
@@ -18,6 +19,33 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.util.Date
+
+/**
+ * Internal enum representing the original source of CustomerInfo.
+ */
+internal enum class CustomerInfoOriginalSource {
+    MAIN,
+    LOAD_SHEDDER,
+    OFFLINE_ENTITLEMENTS,
+    ;
+
+    companion object {
+        val DEFAULT = MAIN
+
+        fun fromString(originalSourceString: String?): CustomerInfoOriginalSource {
+            return if (originalSourceString != null) {
+                try {
+                    CustomerInfoOriginalSource.valueOf(originalSourceString)
+                } catch (e: IllegalArgumentException) {
+                    errorLog(e) { "Invalid CustomerInfo original source deserializing from cache" }
+                    DEFAULT
+                }
+            } else {
+                DEFAULT
+            }
+        }
+    }
+}
 
 /**
  * Class containing all information regarding the customer
@@ -42,7 +70,7 @@ import java.util.Date
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class CustomerInfo(
+class CustomerInfo internal constructor(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
@@ -53,7 +81,35 @@ class CustomerInfo(
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
     private val jsonObject: JSONObject,
+    internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
+    internal val loadedFromCache: Boolean = false,
 ) : Parcelable, RawDataContainer<JSONObject> {
+
+    constructor(
+        entitlements: EntitlementInfos,
+        allExpirationDatesByProduct: Map<String, Date?>,
+        allPurchaseDatesByProduct: Map<String, Date?>,
+        requestDate: Date,
+        schemaVersion: Int,
+        firstSeen: Date,
+        originalAppUserId: String,
+        managementURL: Uri?,
+        originalPurchaseDate: Date?,
+        jsonObject: JSONObject,
+    ) : this(
+        entitlements = entitlements,
+        allExpirationDatesByProduct = allExpirationDatesByProduct,
+        allPurchaseDatesByProduct = allPurchaseDatesByProduct,
+        requestDate = requestDate,
+        schemaVersion = schemaVersion,
+        firstSeen = firstSeen,
+        originalAppUserId = originalAppUserId,
+        managementURL = managementURL,
+        originalPurchaseDate = originalPurchaseDate,
+        jsonObject = jsonObject,
+        originalSource = CustomerInfoOriginalSource.DEFAULT,
+        loadedFromCache = true,
+    )
 
     /**
      * @return Set of active subscription productIds
@@ -248,5 +304,6 @@ private data class ComparableData(
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
         originalPurchaseDate = customerInfo.originalPurchaseDate,
+        // Note: originalSource and loadedFromCache are excluded from equality comparison as they are metadata
     )
 }

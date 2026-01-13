@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.getCustomerInfoWith
@@ -15,7 +16,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
 
-    override val initialForceServerErrors = true
+    override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
     @Before
     fun setUp() {
@@ -46,7 +47,7 @@ class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEnt
 class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override val initialActivePurchasesToUse = initialActivePurchases
-    override val initialForceServerErrors = true
+    override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
     @Before
     fun setUp() {

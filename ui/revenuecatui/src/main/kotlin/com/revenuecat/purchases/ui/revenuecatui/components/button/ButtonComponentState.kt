@@ -76,5 +76,35 @@ internal class ButtonComponentState(
                 PaywallAction.External.PurchasePackage(rcPackage = rcPackage)
 
             is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.External.RestorePurchases
+
+            is ButtonComponentStyle.Action.WebCheckout -> PaywallAction.External.LaunchWebCheckout(
+                customUrl = null,
+                openMethod = openMethod,
+                autoDismiss = autoDismiss,
+                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                    rcPackage = rcPackage,
+                    packageParam = null,
+                ),
+            )
+
+            is ButtonComponentStyle.Action.WebProductSelection -> PaywallAction.External.LaunchWebCheckout(
+                customUrl = null,
+                openMethod = openMethod,
+                autoDismiss = autoDismiss,
+                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+            )
+
+            is ButtonComponentStyle.Action.CustomWebCheckout -> {
+                val urlString = urls.run { getOrDefault(localeId, entry.value) }
+                PaywallAction.External.LaunchWebCheckout(
+                    customUrl = urlString,
+                    openMethod = openMethod,
+                    autoDismiss = autoDismiss,
+                    packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                        rcPackage = rcPackage,
+                        packageParam = packageParam,
+                    ),
+                )
+            }
         }
 }

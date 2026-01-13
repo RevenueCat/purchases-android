@@ -228,11 +228,50 @@ private class PurchasesAPI {
             setCleverTapID("")
             setKochavaDeviceID("")
             setAirbridgeDeviceID("")
+            setSolarEngineDistinctId("")
+            setSolarEngineAccountId("")
+            setSolarEngineVisitorId("")
             setAdGroup("")
             setAd("")
             setKeyword("")
             setCreative("")
         }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppsFlyerConversionData(purchases: Purchases) {
+        val mapStringAny: Map<String, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringAny)
+
+        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyAny)
+
+        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableValue)
+
+        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
+        purchases.setAppsFlyerConversionData(nullableMapNullableKeyNullableValue)
+
+        val nullableMapStringAny: Map<String, Any>? = emptyMap()
+        purchases.setAppsFlyerConversionData(nullableMapStringAny)
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringString)
+
+        val mapStringNullableString: Map<String, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableString)
+
+        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableString)
+
+        val mapStringInt: Map<String, Int> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringInt)
+
+        val mapStringNullableInt: Map<String, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableInt)
+
+        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
     }
 
     @Suppress("ForbiddenComment")

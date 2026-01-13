@@ -1,10 +1,14 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
 @Poko
@@ -22,6 +26,14 @@ class PurchaseParams(val builder: Builder) {
 
     @get:JvmSynthetic
     internal var presentedOfferingContext: PresentedOfferingContext?
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @get:JvmSynthetic
+    internal val containsAddOnItems: Boolean
+        get() = (purchasingData as? GooglePurchasingData.Subscription)
+            ?.addOnProducts
+            ?.isNotEmpty()
+            ?: false
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -44,7 +56,7 @@ class PurchaseParams(val builder: Builder) {
      */
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
-        @get:JvmSynthetic internal val purchasingData: PurchasingData,
+        @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
@@ -106,6 +118,9 @@ class PurchaseParams(val builder: Builder) {
          * only. If a string including `:` is passed in, we will assume the string is in the form
          * `productId:basePlanId` and anything after the `:` will be ignored.
          *
+         * Note: When using [GoogleReplacementMode.DEFERRED], the product ID is used to match the purchase callback
+         * with the transaction returned by Google Play.
+         *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
         fun oldProductId(oldProductId: String) = apply {
@@ -120,6 +135,90 @@ class PurchaseParams(val builder: Builder) {
          */
         fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
             this.googleReplacementMode = googleReplacementMode
+        }
+
+        /*
+         * The [Package]s to add on to the base package passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor. The [defaultOption] for each add-on will be purchased.
+         * [defaultOption] is selected via the following logic:
+         *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
+         *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+         *   - Falls back to use base plan
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on packages must be the same and match the period of the base product.
+         * - No more than 49 add-ons packages per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun addOnPackages(addOnPackages: List<Package>) = apply {
+            this.addOnStoreProducts(addOnPackages.map { it.product })
+        }
+
+        /*
+         * The [StoreProduct]s to add on to the base product passed in via the [PurchaseParams.Builder]'s constructor.
+         * This will result in a multi-line purchase whose base product is the one passed in to the
+         * [PurchaseParams.Builder]'s constructor. The [defaultOption] for each add-on will be purchased.
+         * [defaultOption] is selected via the following logic:
+         *   - Filters out offers with "rc-ignore-offer" or "rc-customer-center" tag
+         *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+         *   - Falls back to use base plan
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on products must be the same and match the period of the base item.
+         * - No more than 49 add-ons products per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+            val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
+                .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+            attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
+        }
+
+        /*
+         * The [SubscriptionOption]s to add on to the base product passed in via
+         * the [PurchaseParams.Builder]'s constructor. This will result in a multi-line purchase whose base product
+         * is the one passed in to the [PurchaseParams.Builder]'s constructor.
+         *
+         * The following restrictions apply to add-on purchases:
+         * - Add-on purchases are currently only supported for subscriptions on the Play Store.
+         * - The renewal periods of all add-on products must be the same and match the period of the base item.
+         * - No more than 49 add-ons products per multi-line purchase are allowed.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
+            val compatibleAddOnProducts: List<GooglePurchasingData> = addOnSubscriptionOptions
+                .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
+
+            attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
+        }
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
+            if (addOns.isEmpty()) {
+                log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
+                return@apply
+            }
+
+            val existingPurchasingData = this.purchasingData as? GooglePurchasingData.Subscription
+            existingPurchasingData?.let {
+                val compatibleAddOnProducts: List<GooglePurchasingData.Subscription> = addOns
+                    .mapNotNull { it as? GooglePurchasingData.Subscription }
+
+                val newPurchasingData = GooglePurchasingData.Subscription(
+                    productId = existingPurchasingData.productId,
+                    optionId = existingPurchasingData.optionId,
+                    productDetails = existingPurchasingData.productDetails,
+                    token = existingPurchasingData.token,
+                    billingPeriod = existingPurchasingData.billingPeriod,
+                    addOnProducts = (existingPurchasingData.addOnProducts ?: emptyList()) + compatibleAddOnProducts,
+                )
+
+                this.purchasingData = newPurchasingData
+            }
         }
 
         open fun build(): PurchaseParams {

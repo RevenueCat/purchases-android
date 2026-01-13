@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.strings
 
+import com.revenuecat.purchases.APIKeyValidator
+import com.revenuecat.purchases.Store
+
 internal object OfferingStrings {
     const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR = "Could not find ProductDetails for %s " +
         "\nThere is a problem with your configuration in Play Store Developer Console. " +
@@ -27,10 +30,24 @@ internal object OfferingStrings {
     const val MISSING_PRODUCT_DETAILS = "Missing productDetails: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
     const val EMPTY_PRODUCT_ID_LIST = "productId list is empty, skipping queryProductDetailsAsync call"
-    const val CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS = "There are no products registered in the RevenueCat " +
-        "dashboard for your offerings. If you don't want to use the offerings system, you can safely ignore this " +
-        "message. To configure offerings and their products, follow the instructions in " +
-        "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    fun getConfigurationErrorNoProductsForOfferings(
+        apiKeyValidationResult: APIKeyValidator.ValidationResult,
+        configuredStore: Store,
+    ): String {
+        val storeNameForLogging = apiKeyValidationResult.storeNameForLogging(configuredStore)
+        val description = if (storeNameForLogging != null) {
+            val indefiniteArticle = apiKeyValidationResult.indefiniteArticle(configuredStore)
+            "You have configured the SDK with $indefiniteArticle $storeNameForLogging API key, " +
+                "but there are no $storeNameForLogging products registered in the " +
+                "RevenueCat dashboard for your offerings."
+        } else {
+            "You have configured the SDK with an API key from a store that has no products " +
+                "registered in the RevenueCat dashboard for your offerings."
+        }
+        return description + " If you don't want to use the offerings system, you can safely ignore this message. " +
+            "To configure offerings and their products, follow the instructions in " +
+            "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    }
     const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND = "There's a problem with your configuration. " +
         "None of the products registered in the RevenueCat dashboard could be fetched from the Play Store.\n" +
         "More information: https://rev.cat/why-are-offerings-empty"
@@ -40,4 +57,36 @@ internal object OfferingStrings {
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
+}
+
+private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore: Store): String? {
+    return when (this) {
+        APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
+            Store.PLAY_STORE -> "Play Store"
+            Store.AMAZON -> "Amazon Appstore"
+            else -> null
+        }
+        APIKeyValidator.ValidationResult.LEGACY -> "Play Store"
+        APIKeyValidator.ValidationResult.SIMULATED_STORE -> "Test Store"
+        APIKeyValidator.ValidationResult.OTHER_PLATFORM,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        -> null
+    }
+}
+
+private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: Store): String {
+    return when (this) {
+        APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
+            Store.PLAY_STORE -> "a" // "a Play Store API key"
+            Store.AMAZON -> "an" // "an Amazon Appstore API key"
+            else -> "a"
+        }
+        APIKeyValidator.ValidationResult.LEGACY -> "a" // "a Play Store API key"
+        APIKeyValidator.ValidationResult.SIMULATED_STORE -> "a" // "a Test Store API key"
+        APIKeyValidator.ValidationResult.OTHER_PLATFORM,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        -> "a"
+    }
 }

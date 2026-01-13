@@ -1,72 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:bind="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/offering_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_small"
+        android:layout_margin="@dimen/padding_small"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <data>
-
-        <variable
-                name="offering"
-                type="com.revenuecat.purchases.Offering" />
-
-        <variable
-                name="isCurrent"
-                type="Boolean" />
-    </data>
-
-    <com.google.android.material.card.MaterialCardView
-            android:id="@+id/offering_card"
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/offering_card_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_small"
-            android:layout_margin="@dimen/padding_small"
-            android:clickable="true"
-            android:focusable="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:animateLayoutChanges="true">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/offering_card_content"
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/offering_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small"
-                android:animateLayoutChanges="true">
+                style="@style/TextAppearance.AppCompat.Medium"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/offering_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@{offering.serverDescription + (isCurrent ? ` (current)` : ``)}"
-                    style="@style/TextAppearance.AppCompat.Medium"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+        <include
+                layout="@layout/row_view"
+                android:id="@+id/offering_identifier"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/offering_name" />
 
-            <include
-                    layout="@layout/row_view"
-                    android:id="@+id/offering_identifier"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    bind:header="@{`Identifier: `}"
-                    bind:detail="@{offering.identifier}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/offering_name" />
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/offering_num_packages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_tiny"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/offering_identifier" />
 
-            <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/offering_num_packages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_tiny"
-                    android:text="@{String.valueOf(offering.availablePackages.size()) + ` packages included`}"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/offering_identifier" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-</layout>
+</com.google.android.material.card.MaterialCardView>

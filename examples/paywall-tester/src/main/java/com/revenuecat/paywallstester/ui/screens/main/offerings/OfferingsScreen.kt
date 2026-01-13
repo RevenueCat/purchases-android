@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.offerings
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,16 +42,21 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.revenuecat.purchases.Package as RCPackage
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -237,6 +243,34 @@ private fun OfferingsListScreen(
             PaywallDialogOptions.Builder()
                 .setDismissRequest { displayPaywallDialogOffering = null }
                 .setOffering(displayPaywallDialogOffering)
+                .setListener(object : PaywallListener {
+                    override fun onPurchaseStarted(rcPackage: RCPackage) {
+                        Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
+                    }
+
+                    override fun onPurchaseCompleted(
+                        customerInfo: CustomerInfo,
+                        storeTransaction: StoreTransaction,
+                    ) {
+                        Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
+                    }
+
+                    override fun onPurchaseError(error: PurchasesError) {
+                        Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
+                    }
+
+                    override fun onRestoreStarted() {
+                        Log.d("PaywallDialog", "onRestoreStarted")
+                    }
+
+                    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                        Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
+                    }
+
+                    override fun onRestoreError(error: PurchasesError) {
+                        Log.e("PaywallDialog", "onRestoreError: ${error.message}")
+                    }
+                })
                 .build(),
         )
     }
@@ -343,7 +377,7 @@ private fun DisplayOfferingMenu(
             onClick = { activity.launchPaywall(offering, edgeToEdge = true) },
         )
         DropdownMenuItem(
-            text = { Text(text = "Display paywall as view in an activity") },
+            text = { Text(text = "Display paywall as view in an activity (Purchase button gating example)") },
             onClick = { activity.launchPaywallViewAsActivity(offering) },
         )
         DropdownMenuItem(

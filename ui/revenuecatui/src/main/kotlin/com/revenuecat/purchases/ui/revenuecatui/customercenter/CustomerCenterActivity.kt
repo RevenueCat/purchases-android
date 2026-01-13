@@ -11,16 +11,34 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
+import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
 internal class CustomerCenterActivity : ComponentActivity() {
     companion object {
+        private const val EXTRA_WAS_LAUNCHED_THROUGH_SDK = "was_launched_through_sdk"
+
         internal fun createIntent(context: Context): Intent {
-            return Intent(context, CustomerCenterActivity::class.java)
+            return Intent(context, CustomerCenterActivity::class.java).apply {
+                putExtra(EXTRA_WAS_LAUNCHED_THROUGH_SDK, true)
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        restoreSdkConfigurationIfNeeded(this, savedInstanceState)
+
+        val wasLaunchedThroughSDK = intent.getBooleanExtra(EXTRA_WAS_LAUNCHED_THROUGH_SDK, false)
+        if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
+            throw IllegalStateException(
+                "CustomerCenterActivity was not launched through the SDK. " +
+                    "Please use the SDK methods to open the Customer Center. " +
+                    "This might happen on some Google automated testing, but shouldn't happen to users.",
+            )
+        }
 
         setContent {
             val isDarkTheme = isSystemInDarkTheme()
@@ -38,5 +56,10 @@ internal class CustomerCenterActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        saveSdkConfiguration(outState)
+        super.onSaveInstanceState(outState)
     }
 }

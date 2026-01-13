@@ -2,6 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
@@ -107,8 +111,13 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
-        CustomerCenter(options = customerCenterOptions) {
-            onBackPressed()
+        val isDarkTheme = isSystemInDarkTheme()
+        val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+
+        MaterialTheme(colorScheme = colorScheme) {
+            CustomerCenter(options = customerCenterOptions) {
+                onBackPressed()
+            }
         }
     }
 }

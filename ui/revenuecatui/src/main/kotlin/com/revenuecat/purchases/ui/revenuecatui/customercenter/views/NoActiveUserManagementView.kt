@@ -9,17 +9,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -30,10 +30,12 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIC
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveButtonText
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
+import com.revenuecat.purchases.ui.revenuecatui.icons.Info
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 @Suppress("LongParameterList")
@@ -43,6 +45,7 @@ internal fun NoActiveUserManagementView(
     contactEmail: String?,
     appearance: CustomerCenterConfigData.Appearance,
     localization: CustomerCenterConfigData.Localization,
+    supportTickets: CustomerCenterConfigData.Support.SupportTickets,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     onAction: (CustomerCenterAction) -> Unit,
@@ -69,6 +72,7 @@ internal fun NoActiveUserManagementView(
                     start = ManagementViewHorizontalPadding,
                     end = ManagementViewHorizontalPadding,
                 ),
+                config = SettingsButtonConfig(),
             )
         }
 
@@ -93,6 +97,7 @@ internal fun NoActiveUserManagementView(
             supportedPaths = screen.paths,
             localization = localization,
             contactEmail = contactEmail,
+            addCreateTicketButton = supportTickets.allowCreation && supportTickets.allowsNonActiveCustomers(),
             addContactButton = true,
             onAction = onAction,
         )
@@ -108,7 +113,8 @@ private fun ContentUnavailableView(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
             modifier = Modifier
@@ -120,14 +126,16 @@ private fun ContentUnavailableView(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
-                imageVector = Icons.Rounded.Info,
+                imageVector = Info,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(ContentUnavailableIconSize),
             )
 
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
             )
 
@@ -135,6 +143,7 @@ private fun ContentUnavailableView(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = ContentUnavailableViewPaddingText),
                 )
@@ -161,6 +170,7 @@ private fun NoActiveUserManagementView_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 onAction = { },
             )
@@ -192,6 +202,7 @@ private fun NoActiveUserManagementView_WithVCs_Preview() {
                 contactEmail = "support@example.com",
                 appearance = CustomerCenterConfigTestData.standardAppearance,
                 localization = testData.localization,
+                supportTickets = testData.support.supportTickets,
                 offering = null, // No offering in preview
                 virtualCurrencies = CustomerCenterConfigTestData.fiveVirtualCurrencies,
                 onAction = { },
