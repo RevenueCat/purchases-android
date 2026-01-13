@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.views
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.os.Parcelable
@@ -23,6 +25,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 
 /**
  * A ComposeView expects a few things to be set up in the view tree it is added to. This gets handled automatically by
@@ -52,11 +55,33 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
      * A LifecycleOwner that derives its lifecycle state from View attachment and visibility callbacks.
      * Used internally by [CompatComposeView] when no external LifecycleOwner is provided.
      *
-     * **Note:** there is no destroy signal for Views.
+     * @param activity There's no definitive destroy signal for Views, so we'll use the Activity as a last resort.
      */
-    private class ViewLifecycleOwner : LifecycleOwner {
+    private class ViewLifecycleOwner(activity: Activity?) : LifecycleOwner {
 
         private val lifecycleRegistry = LifecycleRegistry(this)
+
+        init {
+            activity?.let { act ->
+                @Suppress("EmptyFunctionBlock")
+                object : Application.ActivityLifecycleCallbacks {
+                    override fun onActivityDestroyed(destroyedActivity: Activity) {
+                        if (destroyedActivity === act) {
+                            onDestroy()
+                            act.application?.unregisterActivityLifecycleCallbacks(this)
+                        }
+                    }
+                    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+                    override fun onActivityStarted(activity: Activity) {}
+                    override fun onActivityResumed(activity: Activity) {}
+                    override fun onActivityPaused(activity: Activity) {}
+                    override fun onActivityStopped(activity: Activity) {}
+                    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+                }.also { callbacks ->
+                    act.application?.registerActivityLifecycleCallbacks(callbacks)
+                }
+            }
+        }
 
         override val lifecycle: Lifecycle
             get() = lifecycleRegistry
@@ -86,6 +111,14 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             // Only goes to ON_STOP, not ON_DESTROY as the view might be reattached later.
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         }
+
+        private fun onDestroy() {
+            if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
+            if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            }
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
     }
 
     private var isManagingLifecycle = false
@@ -94,7 +127,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     private val isManagingViewTree: Boolean
         get() = isManagingLifecycle || isManagingSavedState || isManagingViewModelStore
 
-    private val lifecycleOwner: LifecycleOwner = ViewLifecycleOwner()
+    private val lifecycleOwner: LifecycleOwner = ViewLifecycleOwner(activity = context.getActivity())
     private val savedStateRegistryController: SavedStateRegistryController =
         SavedStateRegistryController.create(this)
 
