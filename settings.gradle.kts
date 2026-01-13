@@ -95,16 +95,13 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
-val hasSamsungIapAar = isSamsungIAPAARPresent(samsungIapSdkDir)
-val shouldIncludeGalaxyModule = hasSamsungIapAar || (
-    System.getenv("CI") == "true" && !System.getenv("SAMSUNG_IAP_SDK_URL").isNullOrBlank()
-    )
+val samsungIAPAARPresent = isSamsungIAPAARPresent(samsungIapSdkDir)
 gradle.beforeProject {
     if (this == rootProject) {
-        extra["hasSamsungIapAar"] = hasSamsungIapAar
+        extra["hasSamsungIapAar"] = samsungIAPAARPresent
     }
 }
-if (shouldIncludeGalaxyModule) {
+if (samsungIAPAARPresent) {
     include(":feature:galaxy")
 }
 include(":integration-tests")
