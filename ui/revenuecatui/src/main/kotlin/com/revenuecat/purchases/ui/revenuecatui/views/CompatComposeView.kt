@@ -10,6 +10,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.AbstractComposeView
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -53,7 +54,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     /**
      * A LifecycleOwner that derives its lifecycle state from View attachment and visibility callbacks.
-     * Used internally by [CompatComposeView] when no external LifecycleOwner is provided.
+     * Used internally by [CompatComposeView] when no external LifecycleOwner exists in the view tree.
      *
      * @param activity There's no definitive destroy signal for Views, so we'll use the Activity as a last resort.
      */
@@ -127,11 +128,18 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     private val isManagingViewTree: Boolean
         get() = isManagingLifecycle || isManagingSavedState || isManagingViewModelStore
 
-    private val lifecycleOwner: LifecycleOwner = ViewLifecycleOwner(activity = context.getActivity())
+    private var lifecycleOwner: LifecycleOwner? = null
+    private val lifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onDestroy(owner: LifecycleOwner) {
+            this@CompatComposeView.onDestroy()
+        }
+    }
     private val savedStateRegistryController: SavedStateRegistryController =
         SavedStateRegistryController.create(this)
 
-    override val lifecycle: Lifecycle = lifecycleOwner.lifecycle
+    override val lifecycle: Lifecycle
+        get() = lifecycleOwner?.lifecycle
+            ?: error("Lifecycle accessed before view attached to window")
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
@@ -179,7 +187,6 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     override fun onDetachedFromWindow() {
         (lifecycleOwner as? ViewLifecycleOwner)?.onDetachedFromWindow()
-        if (isManagingViewModelStore) viewModelStore.clear()
         deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
@@ -201,6 +208,14 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
     }
 
+    /**
+     * Called when our lifecycle moves to `DESTROYED`, regardless of whether we are managing the lifecycle or not.
+     */
+    private fun onDestroy() {
+        if (isManagingViewModelStore) viewModelStore.clear()
+        lifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
+    }
+
     private fun performSave(state: Parcelable?): Bundle {
         val bundle = Bundle().apply { putParcelable(KEY_SAVED_INSTANCE_STATE, state) }
         savedStateRegistryController.performSave(bundle)
@@ -219,7 +234,12 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         // null, so we set up all of them. In Expo 54+, LifecycleOwner is already set up, but SavedStateRegistryOwner
         // and ViewModelStoreOwner are not. We track each one separately to avoid performing operations on owners we
         // didn't set up.
-        if (windowRoot.findViewTreeLifecycleOwner() == null) {
+        val viewTreeLifecycleOwner = windowRoot.findViewTreeLifecycleOwner()
+        if (lifecycleOwner == null) {
+            lifecycleOwner = viewTreeLifecycleOwner ?: ViewLifecycleOwner(activity = context.getActivity())
+            lifecycle.addObserver(lifecycleObserver)
+        }
+        if (viewTreeLifecycleOwner == null) {
             windowRoot.setViewTreeLifecycleOwner(this)
             isManagingLifecycle = true
         }
