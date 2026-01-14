@@ -9,6 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -246,11 +247,10 @@ internal class Backend(
         finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?,
-        @SuppressWarnings("UnusedPrivateMember")
-        marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
+        purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -261,7 +261,7 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID,
+            purchasesAreCompletedBy.toString(),
         )
 
         val body = mapOf(
@@ -276,11 +276,12 @@ internal class Backend(
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
             "observer_mode" to !finishTransactions,
+            "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID,
+            "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
@@ -294,7 +295,7 @@ internal class Backend(
 
         val extraHeaders = mapOf(
             "price_string" to receiptInfo.formattedPrice,
-            "marketplace" to marketplace,
+            "marketplace" to receiptInfo.marketplace,
         ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {

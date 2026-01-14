@@ -149,6 +149,228 @@ class ReceiptInfoTest {
         assertThat(platformProductIDs[2]["product_id"]).isEqualTo(product3)
     }
 
+    // region merge tests
+
+    @Test
+    fun `merge keeps current non-null values over cached values`() {
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            price = 9.99,
+            formattedPrice = "$9.99",
+            currency = "USD",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product2"),
+            price = 4.99,
+            formattedPrice = "$4.99",
+            currency = "EUR",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            replacementMode = GoogleReplacementMode.DEFERRED,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.productIDs).isEqualTo(listOf("product1"))
+        assertThat(merged.price).isEqualTo(9.99)
+        assertThat(merged.formattedPrice).isEqualTo("$9.99")
+        assertThat(merged.currency).isEqualTo("USD")
+        assertThat(merged.period).isEqualTo(Period(1, Period.Unit.MONTH, "P1M"))
+        assertThat(merged.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+    }
+
+    @Test
+    fun `merge uses cached values when current values are null`() {
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            price = null,
+            formattedPrice = null,
+            currency = null,
+            period = null,
+            replacementMode = null,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product2"),
+            price = 4.99,
+            formattedPrice = "$4.99",
+            currency = "EUR",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            replacementMode = GoogleReplacementMode.DEFERRED,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.productIDs).isEqualTo(listOf("product1"))
+        assertThat(merged.price).isEqualTo(4.99)
+        assertThat(merged.formattedPrice).isEqualTo("$4.99")
+        assertThat(merged.currency).isEqualTo("EUR")
+        assertThat(merged.period).isEqualTo(Period(1, Period.Unit.YEAR, "P1Y"))
+        assertThat(merged.replacementMode).isEqualTo(GoogleReplacementMode.DEFERRED)
+    }
+
+    @Test
+    fun `merge uses cached platformProductIds when current is empty`() {
+        val cachedPlatformProductIds = listOf(
+            mapOf("product_id" to "product1", "base_plan_id" to "plan1")
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            platformProductIds = emptyList(),
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product1"),
+            platformProductIds = cachedPlatformProductIds,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.platformProductIds).isEqualTo(cachedPlatformProductIds)
+    }
+
+    @Test
+    fun `merge keeps current platformProductIds when not empty`() {
+        val currentPlatformProductIds = listOf(
+            mapOf("product_id" to "product1", "base_plan_id" to "plan1")
+        )
+        val cachedPlatformProductIds = listOf(
+            mapOf("product_id" to "product2", "base_plan_id" to "plan2")
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            platformProductIds = currentPlatformProductIds,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product2"),
+            platformProductIds = cachedPlatformProductIds,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.platformProductIds).isEqualTo(currentPlatformProductIds)
+    }
+
+    @Test
+    fun `merge uses cached offering context when current is null`() {
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "rule1")
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = null,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = cachedContext,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.presentedOfferingContext).isEqualTo(cachedContext)
+    }
+
+    @Test
+    fun `merge keeps current offering context when offering identifiers differ`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "rule1")
+        )
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering2",
+            placementIdentifier = "placement2",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 2, ruleId = "rule2")
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = currentContext,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = cachedContext,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.presentedOfferingContext).isEqualTo(currentContext)
+    }
+
+    @Test
+    fun `merge merges offering contexts when offering identifiers match`() {
+        val currentTargetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "rule1")
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = null
+        )
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = null,
+            targetingContext = currentTargetingContext
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = currentContext,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = cachedContext,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.presentedOfferingContext?.offeringIdentifier).isEqualTo("offering1")
+        assertThat(merged.presentedOfferingContext?.placementIdentifier).isEqualTo("placement1")
+        assertThat(merged.presentedOfferingContext?.targetingContext).isEqualTo(currentTargetingContext)
+    }
+
+    @Test
+    fun `merge fills in missing fields from cached offering context when offering identifiers match`() {
+        val cachedTargetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "rule1")
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = null,
+            targetingContext = null
+        )
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "offering1",
+            placementIdentifier = "placement1",
+            targetingContext = cachedTargetingContext
+        )
+
+        val current = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = currentContext,
+        )
+
+        val cached = ReceiptInfo(
+            productIDs = listOf("product1"),
+            presentedOfferingContext = cachedContext,
+        )
+
+        val merged = current.mergeWith(cached)
+
+        assertThat(merged.presentedOfferingContext?.offeringIdentifier).isEqualTo("offering1")
+        assertThat(merged.presentedOfferingContext?.placementIdentifier).isEqualTo("placement1")
+        assertThat(merged.presentedOfferingContext?.targetingContext).isEqualTo(cachedTargetingContext)
+    }
+
+    // endregion merge tests
+
     private fun makeMockStoreTransaction(purchaseState: PurchaseState, subscriptionOptionId: String?): StoreTransaction {
         return StoreTransaction(
             orderId = mockGooglePurchase.orderId,
