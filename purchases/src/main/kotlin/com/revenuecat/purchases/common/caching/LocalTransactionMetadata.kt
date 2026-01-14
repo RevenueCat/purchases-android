@@ -25,7 +25,7 @@ internal data class LocalTransactionMetadata(
     @Serializable
     data class TransactionMetadata(
         @SerialName("user_id")
-        val userID: String,
+        val appUserID: String,
 
         @SerialName("token")
         val token: String,

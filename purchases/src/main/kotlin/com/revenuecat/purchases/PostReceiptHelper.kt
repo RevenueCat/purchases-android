@@ -17,9 +17,13 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
+import com.revenuecat.purchases.utils.Result
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class PostReceiptHelper(
@@ -136,6 +140,71 @@ internal class PostReceiptHelper(
         )
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    fun postRemainingCachedTransactionMetadata(
+        allowSharingPlayStoreAccount: Boolean,
+        onNoTransactionsToSync: () -> Unit,
+        onError: ((PurchasesError) -> Unit),
+        onSuccess: ((CustomerInfo) -> Unit),
+    ) {
+        val results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>> = ConcurrentLinkedQueue()
+        val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
+        if (transactionMetadataToSync.isEmpty()) {
+            onNoTransactionsToSync()
+            return
+        }
+        transactionMetadataToSync.forEach { transactionMetadata ->
+            // Cached paywall data is retrieved from the cache when posting the receipt.
+            performPostReceipt(
+                appUserID = transactionMetadata.appUserID,
+                purchaseToken = transactionMetadata.token,
+                isRestore = allowSharingPlayStoreAccount,
+                receiptInfo = transactionMetadata.receiptInfo,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                paywallData = transactionMetadata.paywallPostReceiptData,
+                purchasesAreCompletedBy = transactionMetadata.purchasesAreCompletedBy,
+                hasCachedTransactionMetadata = true,
+                paywallEvent = null,
+                onSuccess = {
+                    results.add(Result.Success(it.customerInfo))
+                    callTransactionMetadataCompletionFromResults(
+                        transactionMetadataToSync,
+                        results,
+                        onError,
+                        onSuccess,
+                    )
+                },
+                onError = { backendError, _, _ ->
+                    results.add(Result.Error(backendError))
+                    callTransactionMetadataCompletionFromResults(
+                        transactionMetadataToSync,
+                        results,
+                        onError,
+                        onSuccess,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun callTransactionMetadataCompletionFromResults(
+        transactionMetadataToSync: List<LocalTransactionMetadata.TransactionMetadata>,
+        results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>>,
+        onError: ((PurchasesError) -> Unit)? = null,
+        onSuccess: ((CustomerInfo) -> Unit)? = null,
+    ) {
+        if (transactionMetadataToSync.size == results.size) {
+            results.forEachIndexed { index, result ->
+                if (result is Result.Error) {
+                    onError?.invoke(result.value)
+                    return
+                } else if (index == results.size - 1) {
+                    onSuccess?.invoke((result as Result.Success).value)
+                }
+            }
+        }
+    }
+
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     @OptIn(InternalRevenueCatAPI::class)
     private fun postReceiptAndSubscriberAttributes(
@@ -165,7 +234,7 @@ internal class PostReceiptHelper(
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
-                userID = appUserID,
+                appUserID = appUserID,
                 token = purchaseToken,
                 receiptInfo = receiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
@@ -183,6 +252,35 @@ internal class PostReceiptHelper(
             return
         }
 
+        performPostReceipt(
+            appUserID = appUserID,
+            purchaseToken = purchaseToken,
+            isRestore = isRestore,
+            receiptInfo = effectiveReceiptInfo,
+            initiationSource = initiationSource,
+            paywallData = effectivePaywallData,
+            purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
+            hasCachedTransactionMetadata = cachedTransactionMetadata != null || shouldCacheTransactionMetadata,
+            paywallEvent = presentedPaywall,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun performPostReceipt(
+        appUserID: String,
+        purchaseToken: String,
+        isRestore: Boolean,
+        receiptInfo: ReceiptInfo,
+        initiationSource: PostReceiptInitiationSource,
+        paywallData: PaywallPostReceiptData?,
+        purchasesAreCompletedBy: PurchasesAreCompletedBy,
+        hasCachedTransactionMetadata: Boolean,
+        paywallEvent: PaywallEvent?,
+        onSuccess: (PostReceiptResponse) -> Unit,
+        onError: PostReceiptDataErrorCallback,
+    ) {
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             backend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -190,12 +288,12 @@ internal class PostReceiptHelper(
                 isRestore = isRestore,
                 finishTransactions = finishTransactions,
                 subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = effectiveReceiptInfo,
+                receiptInfo = receiptInfo,
                 initiationSource = initiationSource,
-                paywallPostReceiptData = effectivePaywallData,
-                purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
+                paywallPostReceiptData = paywallData,
+                purchasesAreCompletedBy = purchasesAreCompletedBy,
                 onSuccess = { postReceiptResponse ->
-                    if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
+                    if (hasCachedTransactionMetadata) {
                         localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                     }
 
@@ -209,9 +307,9 @@ internal class PostReceiptHelper(
                     onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
-                    presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
+                    paywallEvent?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                        if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
+                        if (hasCachedTransactionMetadata) {
                             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
