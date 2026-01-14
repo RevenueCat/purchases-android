@@ -1893,7 +1893,6 @@ class PostReceiptHelperTest {
             ),
             type = PaywallEventType.IMPRESSION,
         )
-        val presentedPaywallData = presentedEvent.toPaywallPostReceiptData()
         paywallPresentedCache.cachePresentedPaywall(presentedEvent)
 
         mockPostReceiptSuccess()
