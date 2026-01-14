@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -9,6 +10,7 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
@@ -16,6 +18,7 @@ import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -53,6 +56,11 @@ class PostReceiptHelperTest {
     private val mockGooglePurchase = stubGooglePurchase(
         productIds = listOf("lifetime_product", "dos")
     )
+    private val mockPendingPurchase = stubGooglePurchase(
+        productIds = listOf("lifetime_product", "dos"),
+        purchaseToken = "pending-purchase-token",
+        purchaseState = Purchase.PurchaseState.PENDING,
+    )
     private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
     private val postToken = "test-post-token"
     private val storeUserId = "test-store-user-id"
@@ -64,11 +72,21 @@ class PostReceiptHelperTest {
         subscriptionOptionId,
         replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
     )
+    private val mockPendingStoreTransaction = mockPendingPurchase.toStoreTransaction(
+        ProductType.SUBS,
+        null,
+        subscriptionOptionId,
+        replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
+    )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
         presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "test-offering-identifier"),
-        subscriptionOptionId = subscriptionOptionId,
-        storeProduct = mockStoreProduct
+        price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+        currency = mockStoreProduct.price.currencyCode,
+        period = mockStoreProduct.period,
+        pricingPhases = mockStoreProduct.defaultOption?.pricingPhases,
+        replacementMode = null,
+        platformProductIds = emptyList(),
     )
     private val defaultFinishTransactions = true
     private val defaultCustomerInfo = CustomerInfoFactory.buildCustomerInfo(
@@ -124,7 +142,7 @@ class PostReceiptHelperTest {
             deviceCache = deviceCache,
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager,
-            paywallPresentedCache = paywallPresentedCache
+            paywallPresentedCache = paywallPresentedCache,
         )
 
         mockUnsyncedSubscriberAttributes()
@@ -154,8 +172,16 @@ class PostReceiptHelperTest {
         val expectedReceiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
             presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
-            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId,
-            storeProduct = mockStoreProduct
+            price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+            formattedPrice = mockStoreProduct.price.formatted,
+            currency = mockStoreProduct.price.currencyCode,
+            period = mockStoreProduct.period,
+            pricingPhases = null,
+            replacementMode = mockStoreTransaction.replacementMode,
+            platformProductIds = listOf(
+                mapOf("product_id" to "lifetime_product"),
+                mapOf("product_id" to "dos"),
+            ),
         )
 
         verify(exactly = 1) {
@@ -711,24 +737,6 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded posts subscriptionOptionId`() {
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = true,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.subscriptionOptionId).isEqualTo(subscriptionOptionId)
-    }
-
-    @Test
     fun `postTransactionAndConsumeIfNeeded sends null durations when posting inapps to backend`() {
         mockPostReceiptSuccess()
 
@@ -798,25 +806,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded posts storeProduct`() {
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = true,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.storeProduct).isEqualTo(mockStoreProduct)
-    }
-
-    @Test
-    fun `postTransactionAndConsumeIfNeeded posts price and currency`() {
+    fun `postTransactionAndConsumeIfNeeded posts storeProduct info`() {
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -832,6 +822,9 @@ class PostReceiptHelperTest {
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
         assertThat(postedReceiptInfoSlot.captured.price).isEqualTo(4.99)
         assertThat(postedReceiptInfoSlot.captured.currency).isEqualTo("USD")
+        assertThat(postedReceiptInfoSlot.captured.period).isEqualTo(
+            Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+        )
     }
 
     @Test
@@ -1623,6 +1616,57 @@ class PostReceiptHelperTest {
     }
 
     // endregion purchased products data
+
+    // region pending transactions
+
+    @Test
+    fun `if pending transaction, error callback is called`() {
+        var receivedError: PurchasesError? = null
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, error -> receivedError = error }
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PaymentPendingError)
+    }
+
+    @Test
+    fun `if pending transaction, transaction is not posted`() {
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } returns false
+
+        var errorCallCount = 0
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockPendingStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> errorCallCount++ }
+        )
+
+        assertThat(errorCallCount).isEqualTo(1)
+        verify(exactly = 0) {
+            backend.postReceiptData(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+    }
+
+    // endregion pending transactions
 
     // region helpers
 
