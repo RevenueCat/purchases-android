@@ -12,31 +12,18 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 internal data class LocalTransactionMetadata(
-    @SerialName("purchase_data_by_token_hash")
-    val purchaseDataByTokenHash: Map<String, TransactionMetadata>,
+    @SerialName("user_id")
+    val appUserID: String,
 
-    @SerialName("schema_version")
-    val schemaVersion: Int = SCHEMA_VERSION,
-) {
-    companion object {
-        const val SCHEMA_VERSION = 1
-    }
+    @SerialName("token")
+    val token: String,
 
-    @Serializable
-    data class TransactionMetadata(
-        @SerialName("user_id")
-        val appUserID: String,
+    @SerialName("receipt_info")
+    val receiptInfo: ReceiptInfo,
 
-        @SerialName("token")
-        val token: String,
+    @SerialName("paywall_data")
+    val paywallPostReceiptData: PaywallPostReceiptData? = null,
 
-        @SerialName("receipt_info")
-        val receiptInfo: ReceiptInfo,
-
-        @SerialName("paywall_data")
-        val paywallPostReceiptData: PaywallPostReceiptData? = null,
-
-        @SerialName("purchases_are_completed_by")
-        val purchasesAreCompletedBy: PurchasesAreCompletedBy,
-    )
-}
+    @SerialName("purchases_are_completed_by")
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+)
