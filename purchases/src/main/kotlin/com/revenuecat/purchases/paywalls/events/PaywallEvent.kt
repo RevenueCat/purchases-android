@@ -66,6 +66,8 @@ data class PaywallEvent(
 
     @Serializable
     data class Data(
+        // Nullable for legacy paywalls
+        val paywallIdentifier: String?,
         val offeringIdentifier: String,
         val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
@@ -79,6 +81,7 @@ data class PaywallEvent(
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
         return PaywallPostReceiptData(
+            paywallID = data.paywallIdentifier,
             sessionID = data.sessionIdentifier.toString(),
             revision = data.paywallRevision,
             displayMode = data.displayMode,

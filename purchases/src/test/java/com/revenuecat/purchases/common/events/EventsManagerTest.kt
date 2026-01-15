@@ -48,6 +48,7 @@ class EventsManagerTest {
             date = Date(1699270688884)
         ),
         data = PaywallEvent.Data(
+            paywallIdentifier = "paywallID",
             offeringIdentifier = "offeringID",
             paywallRevision = 5,
             sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),

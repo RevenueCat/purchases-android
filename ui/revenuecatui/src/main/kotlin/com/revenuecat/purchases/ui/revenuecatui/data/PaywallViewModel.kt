@@ -673,6 +673,7 @@ internal class PaywallViewModelImpl(
         }
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
+            paywallIdentifier = this.offering.paywallComponents?.data?.id,
             offeringIdentifier = offering.identifier,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
@@ -689,6 +690,7 @@ internal class PaywallViewModelImpl(
             return null
         }
         return PaywallEvent.Data(
+            paywallIdentifier = paywallData.data.id,
             offeringIdentifier = offering.identifier,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),

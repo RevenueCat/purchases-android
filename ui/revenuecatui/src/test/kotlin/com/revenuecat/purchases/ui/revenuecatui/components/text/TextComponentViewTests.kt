@@ -392,6 +392,7 @@ class TextComponentViewTests {
             )
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -555,6 +556,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = listOf(textComponent)),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -761,6 +763,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -845,6 +848,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

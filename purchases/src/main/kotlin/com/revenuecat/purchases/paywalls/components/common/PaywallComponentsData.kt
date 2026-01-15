@@ -14,6 +14,8 @@ import java.net.URL
 @Serializable
 class PaywallComponentsData(
     @get:JvmSynthetic
+    val id: String,
+    @get:JvmSynthetic
     @SerialName("template_name")
     val templateName: String,
     @get:JvmSynthetic

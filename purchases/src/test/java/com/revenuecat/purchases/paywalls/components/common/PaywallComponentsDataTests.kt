@@ -36,6 +36,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                         {
+                          "id": "paywall_id",
                           "template_name": "components",
                           "asset_base_url": "https://assets.pawwalls.com",
                           "components_config": {
@@ -74,6 +75,7 @@ internal class PaywallComponentsDataTests(
 
                         """.trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -110,6 +112,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                         {
+                          "id": "paywall_id",
                           "template_name": "components",
                           "asset_base_url": "https://assets.pawwalls.com",
                           "components_config": {
@@ -139,6 +142,7 @@ internal class PaywallComponentsDataTests(
 
                         """.trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -168,6 +172,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                 {
+                  "id": "paywall_id",
                   "template_name": "components",
                   "asset_base_url": "https://assets.pawwalls.com",
                   "components_config": {
@@ -211,6 +216,7 @@ internal class PaywallComponentsDataTests(
                   }
                 }""".trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -247,6 +253,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                 {
+                  "id": "paywall_id",
                   "template_name": "components",
                   "asset_base_url": "https://assets.pawwalls.com",
                   "components_config": {
@@ -279,6 +286,7 @@ internal class PaywallComponentsDataTests(
                   }
                 }""".trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(

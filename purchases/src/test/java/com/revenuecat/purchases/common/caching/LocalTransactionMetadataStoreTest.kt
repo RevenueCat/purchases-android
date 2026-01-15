@@ -49,6 +49,7 @@ class LocalTransactionMetadataStoreTest {
     )
 
     private val paywallData = PaywallPostReceiptData(
+        paywallID = "paywall_id",
         sessionID = "session_id",
         revision = 1,
         displayMode = "full_screen",
@@ -178,6 +179,7 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.contains(key) } returns false
 
         val paywallData = PaywallPostReceiptData(
+            paywallID = "paywall_id",
             sessionID = "session_id",
             revision = 1,
             displayMode = "full_screen",
@@ -557,6 +559,7 @@ class LocalTransactionMetadataStoreTest {
                     "currency":"USD"
                 },
                 "paywall_data":{
+                    "paywall_id":"paywall_id",
                     "session_id":"session_id",
                     "revision":1,
                     "display_mode":"full_screen",

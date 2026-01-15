@@ -102,6 +102,7 @@ class PostReceiptHelperTest {
     private val event = PaywallEvent(
         creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
         data = PaywallEvent.Data(
+            paywallIdentifier = "paywall_id",
             "offering_id",
             10,
             UUID.randomUUID(),
@@ -1878,6 +1879,7 @@ class PostReceiptHelperTest {
         val presentedEvent = PaywallEvent(
             creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
             data = PaywallEvent.Data(
+                paywallIdentifier = "presented_paywall_id",
                 "different_offering",
                 20,
                 UUID.randomUUID(),
