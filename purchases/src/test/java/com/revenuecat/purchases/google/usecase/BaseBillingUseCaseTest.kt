@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.utils.MockHandlerFactory
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -20,6 +21,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import kotlinx.coroutines.test.TestScope
 import org.junit.After
 import org.junit.Before
 import java.util.Date
@@ -40,7 +42,9 @@ internal open class BaseBillingUseCaseTest {
     protected var mockClient: BillingClient = mockk()
     protected var mockDeviceCache: DeviceCache = mockk()
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    protected var mockPurchaseHistoryManager: PurchaseHistoryManager = mockk()
     protected var mockDateProvider: DateProvider = mockk()
+    protected var testScope = TestScope()
 
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     protected val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
@@ -85,7 +89,9 @@ internal open class BaseBillingUseCaseTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            mockPurchaseHistoryManager,
+            mockDateProvider,
+            testScope,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
@@ -112,6 +118,9 @@ internal open class BaseBillingUseCaseTest {
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
         } just Runs
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())

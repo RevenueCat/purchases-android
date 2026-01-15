@@ -1,11 +1,13 @@
 package com.revenuecat.purchasetester
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,22 +15,28 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -44,6 +52,8 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
+    private var packageCardAdapter: PackageCardAdapter? = null
+    private var isAddOnPurchaseUpgrade: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,22 +83,78 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupAddOnPurchaseUI()
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+    }
+
+    private fun setupAddOnPurchaseUI() {
+        updateAddOnPurchaseModeUI(isAddOnPurchaseMode = false, false)
+
+        binding.addOnPurchaseCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            updateAddOnPurchaseModeUI(isAddOnPurchaseMode = isChecked, false)
+            packageCardAdapter?.setAddOnMode(isChecked)
+            // Force refresh the adapter to update UI
+            packageCardAdapter?.notifyDataSetChanged()
+            updatePurchaseButtonState(false, false, isChecked) // Reset button state when mode changes
+        }
+
+        binding.isAddOnPurchaseUpgradeCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            isAddOnPurchaseUpgrade = isChecked
+        }
+
+        binding.purchaseAllButton.setOnClickListener {
+            val selectedPackages = packageCardAdapter?.getSelectedPackages()
+            if (selectedPackages.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Please select at least one package", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val baseProduct = packageCardAdapter?.getBaseProduct()
+            if (baseProduct != null && !selectedPackages.contains(baseProduct)) {
+                Toast.makeText(
+                    requireContext(),
+                    "Base product must also be marked as a Buy Option",
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return@setOnClickListener
+            }
+
+            val selectedSubscriptionOptionsForPackageID =
+                packageCardAdapter?.getSelectedSubscriptionOptionsForPackageID() ?: emptyMap()
+
+            onAddOnPurchaseClicked(selectedPackages, selectedSubscriptionOptionsForPackageID)
+        }
     }
 
     private fun populateOfferings(offerings: Offerings) {
         val offering = offerings.getOffering(offeringId) ?: return
-        binding.offering = offering
+
+        // Manually update offering views
+        binding.offeringDetailsName.text = offering.identifier
+        binding.offeringDetailsServerDescription.updateRowView("Description:", offering.serverDescription)
+        binding.offeringDetailsOpenWplButton.visibility =
+            if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
 
-        binding.offeringDetailsPackagesRecycler.adapter =
-            PackageCardAdapter(
-                offering.availablePackages,
-                activeSubscriptions,
-                this,
-                isPlayStore,
-            )
+        packageCardAdapter = PackageCardAdapter(
+            offering.availablePackages,
+            activeSubscriptions,
+            this,
+            isPlayStore,
+        )
+        binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
+
+        binding.offeringDetailsOpenWplButton.setOnClickListener {
+            val webCheckoutUrl = offering.webCheckoutURL ?: return@setOnClickListener
+            val intent = Intent(Intent.ACTION_VIEW, webCheckoutUrl.toString().toUri())
+            startActivity(intent)
+        }
+    }
+
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = detail ?: "None"
     }
 
     override fun onPurchasePackageClicked(
@@ -97,7 +163,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
             startPurchaseWithoutFinishingTransaction(currentPackage.product.purchasingData)
@@ -110,7 +176,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
             startPurchaseWithoutFinishingTransaction(currentProduct.purchasingData)
@@ -123,11 +189,114 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
     ) {
-        if (Purchases.sharedInstance.finishTransactions) {
+        if (Purchases.sharedInstance.purchasesAreCompletedBy == PurchasesAreCompletedBy.REVENUECAT) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
         }
+    }
+
+    override fun onAddOnPurchaseClicked(
+        selectedPackages: List<Package>,
+        selectedSubscriptionOptionsForPackageID: Map<String, SubscriptionOption>,
+    ) {
+        startAddOnPurchase(selectedPackages, selectedSubscriptionOptionsForPackageID)
+    }
+
+    override fun onSelectionChanged(hasSelectedPackages: Boolean, hasValidBaseProduct: Boolean) {
+        val isAddOnPurchaseMode = binding.addOnPurchaseCheckbox.isChecked
+        updatePurchaseButtonState(hasSelectedPackages, hasValidBaseProduct, isAddOnPurchaseMode)
+    }
+
+    private fun updatePurchaseButtonState(
+        hasSelectedPackages: Boolean,
+        hasValidBaseProduct: Boolean,
+        isAddOnPurchaseMode: Boolean,
+    ) {
+        val isEnabled = isAddOnPurchaseMode && hasSelectedPackages && hasValidBaseProduct
+        binding.purchaseAllButton.isEnabled = isEnabled
+    }
+
+    private fun updateAddOnPurchaseModeUI(isAddOnPurchaseMode: Boolean, isPurchaseButtonEnabled: Boolean) {
+        binding.isAddOnPurchaseUpgradeCheckbox.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE
+        binding.purchaseAllButton.visibility = if (isAddOnPurchaseMode) View.VISIBLE else View.GONE
+        binding.purchaseAllButton.isEnabled = isPurchaseButtonEnabled
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private fun startAddOnPurchase(
+        selectedPackages: List<Package>,
+        selectedSubscriptionOptionsForPackageID: Map<String, SubscriptionOption>,
+    ) {
+        toggleLoadingIndicator(true)
+        val basePackage = packageCardAdapter?.getBaseProduct() ?: selectedPackages.first()
+        val addOnPackages = selectedPackages.filter { it != basePackage }
+
+        var purchaseParamsBuilder = selectedSubscriptionOptionsForPackageID[basePackage.identifier]?.let { option ->
+            PurchaseParams.Builder(
+                activity = requireActivity(),
+                subscriptionOption = option,
+            )
+        } ?: PurchaseParams.Builder(
+            activity = requireActivity(),
+            packageToPurchase = basePackage,
+        )
+
+        for (addOnPackage in addOnPackages) {
+            val option = selectedSubscriptionOptionsForPackageID[addOnPackage.identifier]
+
+            purchaseParamsBuilder = if (option != null) {
+                purchaseParamsBuilder.addOnSubscriptionOptions(listOf(option))
+            } else {
+                purchaseParamsBuilder.addOnPackages(listOf(addOnPackage))
+            }
+        }
+
+        if (isAddOnPurchaseUpgrade) {
+            promptForProductChangeInfo { oldProductId, replacementMode ->
+                oldProductId?.let {
+                    purchaseParamsBuilder.oldProductId(it)
+
+                    replacementMode?.let {
+                        purchaseParamsBuilder.googleReplacementMode(replacementMode)
+                    }
+
+                    val purchaseParams = purchaseParamsBuilder.build()
+                    startAddOnPurchase(purchaseParams)
+                }
+            }
+        } else {
+            val purchaseParams = purchaseParamsBuilder.build()
+            startAddOnPurchase(purchaseParams)
+        }
+    }
+
+    private fun startAddOnPurchase(purchaseParams: PurchaseParams) {
+        Purchases.sharedInstance.purchase(
+            purchaseParams = purchaseParams,
+            callback = object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    toggleLoadingIndicator(false)
+                    Toast.makeText(
+                        requireContext(),
+                        "Add-On purchase completed successfully!",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    findNavController().navigateUp()
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    toggleLoadingIndicator(false)
+                    if (!userCancelled) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Add-On purchase failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+            },
+        )
     }
 
     private fun startPurchase(

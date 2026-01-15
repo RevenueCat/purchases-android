@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -72,7 +73,9 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -93,7 +96,9 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
@@ -127,7 +132,8 @@ internal class PurchasesOrchestrator(
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
-    private val eventsManager: EventsManager?,
+    private val eventsManager: EventsManager,
+    private val adEventsManager: EventsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -144,10 +150,13 @@ internal class PurchasesOrchestrator(
             customerInfoUpdateHandler,
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
+    private val purchaseParamsValidator: PurchaseParamsValidator,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -267,7 +276,7 @@ internal class PurchasesOrchestrator(
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
-        flushPaywallEvents()
+        flushEvents(Delay.NONE)
     }
 
     /** @suppress */
@@ -303,7 +312,7 @@ internal class PurchasesOrchestrator(
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushPaywallEvents()
+            flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
@@ -314,6 +323,10 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        flushEvents(Delay.NONE)
     }
 
     fun redeemWebPurchase(
@@ -438,14 +451,14 @@ internal class PurchasesOrchestrator(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() },
+                    marketplace = null,
+                    storeUserID = amazonUserID,
                 )
                 postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
-                    amazonUserID,
                     receiptInfo,
                     this.allowSharingPlayStoreAccount,
                     appUserID,
-                    marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
                     {
                         log(LogIntent.PURCHASE) {
@@ -532,12 +545,43 @@ internal class PurchasesOrchestrator(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
+        val productIdsQueriedWithoutBasePlan = productIds
+            .filter { !it.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR) }
+            .toSet()
+
+        val requestedBasePlansByProductId = mutableMapOf<String, MutableSet<String>>()
+        val normalizedProductIds = productIds.map { productId ->
+            if (productId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                val normalizedId = productId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                val basePlanId = productId.substringAfter(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                if (normalizedId !in productIdsQueriedWithoutBasePlan) {
+                    requestedBasePlansByProductId.getOrPut(normalizedId) { mutableSetOf() }.add(basePlanId)
+                }
+                normalizedId
+            } else {
+                productId
+            }
+        }.toSet()
+
         getProductsOfTypes(
-            productIds.toSet(),
+            normalizedProductIds,
             types,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
-                    callback.onReceived(storeProducts)
+                    val filteredProducts = if (requestedBasePlansByProductId.isEmpty()) {
+                        storeProducts
+                    } else {
+                        storeProducts.filter { storeProduct ->
+                            val productId = storeProduct.purchasingData.productId
+                            val requestedBasePlans = requestedBasePlansByProductId[productId]
+                            if (requestedBasePlans != null) {
+                                (storeProduct as? GoogleStoreProduct)?.basePlanId in requestedBasePlans
+                            } else {
+                                true
+                            }
+                        }
+                    }
+                    callback.onReceived(filteredProducts)
                 }
 
                 override fun onError(error: PurchasesError) {
@@ -551,6 +595,12 @@ internal class PurchasesOrchestrator(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
+        val purchaseParamsValidationResult = purchaseParamsValidator.validate(purchaseParams = purchaseParams)
+        if (purchaseParamsValidationResult is Result.Error) {
+            dispatch { callback.onError(purchaseParamsValidationResult.value, userCancelled = false) }
+            return
+        }
+
         with(purchaseParams) {
             oldProductId?.let { productId ->
                 startProductChange(
@@ -630,6 +680,7 @@ internal class PurchasesOrchestrator(
                                 postReceiptHelper.postTransactionAndConsumeIfNeeded(
                                     purchase = purchase,
                                     storeProduct = null,
+                                    subscriptionOptionForProductIDs = null,
                                     isRestore = true,
                                     appUserID = appUserID,
                                     initiationSource = PostReceiptInitiationSource.RESTORE,
@@ -783,9 +834,7 @@ internal class PurchasesOrchestrator(
                 paywallPresentedCache.receiveEvent(event)
         }
 
-        if (isAndroidNOrNewer()) {
-            eventsManager?.track(event)
-        }
+        eventsManager.track(event)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -798,6 +847,21 @@ internal class PurchasesOrchestrator(
             onErrorHandler = { error ->
                 callback.onError(error)
             },
+        )
+    }
+
+    fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: (Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        backend.postCreateSupportTicket(
+            identityManager.currentAppUserID,
+            email,
+            description,
+            onSuccessHandler = onSuccess,
+            onErrorHandler = onError,
         )
     }
 
@@ -983,6 +1047,41 @@ internal class PurchasesOrchestrator(
             appUserID,
             application,
         )
+    }
+
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineDistinctId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId,
+            solarEngineDistinctId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineAccountId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineAccountId,
+            solarEngineAccountId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineVisitorId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
+            solarEngineVisitorId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
+        subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
     }
 
     // endregion
@@ -1240,7 +1339,7 @@ internal class PurchasesOrchestrator(
                 )
 
                 // Synchronize paywall events after a new purchase
-                flushPaywallEvents()
+                flushEvents(Delay.NONE)
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
@@ -1307,6 +1406,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
@@ -1322,6 +1422,19 @@ internal class PurchasesOrchestrator(
                     }
                 }",
             )
+        }
+
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            (purchasingData.addOnProducts?.isNotEmpty() == true) &&
+            this.store != Store.PLAY_STORE
+        ) {
+            val error = PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }
+            listener.dispatch(error)
+            return
         }
 
         trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
@@ -1359,6 +1472,8 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
@@ -1381,6 +1496,18 @@ internal class PurchasesOrchestrator(
             return
         }
 
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            (purchasingData.addOnProducts?.isNotEmpty() == true) &&
+            this.store != Store.PLAY_STORE
+        ) {
+            PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
+            return
+        }
+
         log(LogIntent.PURCHASE) {
             PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
@@ -1399,8 +1526,16 @@ internal class PurchasesOrchestrator(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
+                // We also need to normalize oldProductId by stripping any basePlanId suffix
+                // (e.g., "productId:basePlanId" becomes "productId") to ensure the callback key matches the productId
+                // in the transaction returned by Google Play, which only contains the product ID without the base plan.
                 val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
-                    oldProductId
+                    if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                        warnLog {
+                            PurchaseStrings.DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID.format(oldProductId)
+                        }
+                    }
+                    oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
                 } else {
                     purchasingData.productId
                 }
@@ -1460,7 +1595,7 @@ internal class PurchasesOrchestrator(
             }
         }
 
-        billing.findPurchaseInActivePurchases(
+        billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
             previousProductId,
@@ -1489,10 +1624,9 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
-    private fun flushPaywallEvents() {
-        if (isAndroidNOrNewer()) {
-            eventsManager?.flushEvents()
-        }
+    private fun flushEvents(delay: Delay) {
+        eventsManager.flushEvents(delay)
+        adEventsManager.flushEvents(delay)
     }
 
     private fun createCallbackWithDiagnosticsIfNeeded(

@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterPromoOfferEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
@@ -32,6 +34,15 @@ internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("paywalls")
     data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
+
+    /**
+     * Represents a stored event related to Ads.
+     *
+     * @property event The `BackendEvent.Ad` event that is being stored.
+     */
+    @Serializable
+    @SerialName("ad")
+    data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
 }
 
 /**
@@ -44,6 +55,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
     return when (this) {
         is BackendStoredEvent.Paywalls -> { this.event }
         is BackendStoredEvent.CustomerCenter -> { this.event }
+        is BackendStoredEvent.Ad -> { this.event }
     }
 }
 
@@ -72,6 +84,8 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            exitOfferType = data.exitOfferType?.value,
+            exitOfferingID = data.exitOfferingIdentifier,
         ),
     )
 }
@@ -184,6 +198,125 @@ internal fun CustomerCenterPromoOfferEvent.toBackendStoredEvent(
             targetProductID = data.targetProductID,
             error = data.error,
             transactionID = data.transactionID,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun AdEvent.Open.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun AdEvent.Displayed.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun AdEvent.Revenue.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            revenueMicros = revenueMicros,
+            currency = currency,
+            precision = precision.value,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun AdEvent.Loaded.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@JvmSynthetic
+internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            mediatorErrorCode = mediatorErrorCode,
         ),
     )
 }

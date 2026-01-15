@@ -140,7 +140,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.EntitlementVerificationMode default;
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface ExperimentalPreviewRevenueCatPurchasesAPI {
   }
 
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatAPI {
@@ -175,9 +175,13 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
+  public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
+    ctor public NoCoreLibraryDesugaringException(Throwable cause);
+  }
+
   @dev.drewhamilton.poko.Poko public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
-    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents);
+    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents, optional java.net.URL? webCheckoutURL);
     method public operator com.revenuecat.purchases.Package get(String s);
     method public com.revenuecat.purchases.Package? getAnnual();
     method public java.util.List<com.revenuecat.purchases.Package> getAvailablePackages();
@@ -193,6 +197,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.Package? getSixMonth();
     method public com.revenuecat.purchases.Package? getThreeMonth();
     method public com.revenuecat.purchases.Package? getTwoMonth();
+    method public java.net.URL? getWebCheckoutURL();
     method public com.revenuecat.purchases.Package? getWeekly();
     method public boolean hasPaywall();
     property public final com.revenuecat.purchases.Package? annual;
@@ -208,6 +213,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.Package? sixMonth;
     property public final com.revenuecat.purchases.Package? threeMonth;
     property public final com.revenuecat.purchases.Package? twoMonth;
+    property public final java.net.URL? webCheckoutURL;
     property public final com.revenuecat.purchases.Package? weekly;
   }
 
@@ -230,17 +236,20 @@ package com.revenuecat.purchases {
 
   @dev.drewhamilton.poko.Poko public final class Package {
     ctor public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
+    ctor public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext, optional java.net.URL? webCheckoutURL);
     ctor @Deprecated public Package(String identifier, com.revenuecat.purchases.PackageType packageType, com.revenuecat.purchases.models.StoreProduct product, String offering);
     method public String getIdentifier();
     method @Deprecated public String getOffering();
     method public com.revenuecat.purchases.PackageType getPackageType();
     method public com.revenuecat.purchases.PresentedOfferingContext getPresentedOfferingContext();
     method public com.revenuecat.purchases.models.StoreProduct getProduct();
+    method public java.net.URL? getWebCheckoutURL();
     property public final String identifier;
     property @Deprecated public final String offering;
     property public final com.revenuecat.purchases.PackageType packageType;
     property public final com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext;
     property public final com.revenuecat.purchases.models.StoreProduct product;
+    property public final java.net.URL? webCheckoutURL;
   }
 
   public enum PackageType {
@@ -305,6 +314,9 @@ package com.revenuecat.purchases {
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.models.SubscriptionOption subscriptionOption);
     ctor public PurchaseParams.Builder(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnPackages(java.util.List<com.revenuecat.purchases.Package> addOnPackages);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnSubscriptionOptions(java.util.List<? extends com.revenuecat.purchases.models.SubscriptionOption> addOnSubscriptionOptions);
     method public com.revenuecat.purchases.PurchaseParams build();
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
@@ -605,6 +617,126 @@ package com.revenuecat.purchases {
 
 }
 
+package com.revenuecat.purchases.ads.events {
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class AdTracker {
+    method public void trackAdDisplayed(com.revenuecat.purchases.ads.events.types.AdDisplayedData data);
+    method public void trackAdFailedToLoad(com.revenuecat.purchases.ads.events.types.AdFailedToLoadData data);
+    method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
+    method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
+    method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+  }
+
+}
+
+package com.revenuecat.purchases.ads.events.types {
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdDisplayedData {
+    ctor public AdDisplayedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String getNetworkName();
+    method public String? getPlacement();
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String networkName;
+    property public final String? placement;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdFailedToLoadData {
+    ctor public AdFailedToLoadData(String networkName, String mediatorName, String? placement, String adUnitId, Integer? mediatorErrorCode);
+    method public String getAdUnitId();
+    method public Integer? getMediatorErrorCode();
+    method public String getMediatorName();
+    method public String getNetworkName();
+    method public String? getPlacement();
+    property public final String adUnitId;
+    property public final Integer? mediatorErrorCode;
+    property public final String mediatorName;
+    property public final String networkName;
+    property public final String? placement;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdLoadedData {
+    ctor public AdLoadedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String getNetworkName();
+    method public String? getPlacement();
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String networkName;
+    property public final String? placement;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdMediatorName {
+    field public static final com.revenuecat.purchases.ads.events.types.AdMediatorName.Companion Companion;
+  }
+
+  public static final class AdMediatorName.Companion {
+    method public String fromString(String value);
+    method public String getAD_MOB();
+    method public String getAPP_LOVIN();
+    property public final String AD_MOB;
+    property public final String APP_LOVIN;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdOpenedData {
+    ctor public AdOpenedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String getNetworkName();
+    method public String? getPlacement();
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String networkName;
+    property public final String? placement;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRevenueData {
+    ctor public AdRevenueData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId, long revenueMicros, String currency, String precision);
+    method public String getAdUnitId();
+    method public String getCurrency();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String getNetworkName();
+    method public String? getPlacement();
+    method public String getPrecision();
+    method public long getRevenueMicros();
+    property public final String adUnitId;
+    property public final String currency;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String networkName;
+    property public final String? placement;
+    property public final String precision;
+    property public final long revenueMicros;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdRevenuePrecision {
+    field public static final com.revenuecat.purchases.ads.events.types.AdRevenuePrecision.Companion Companion;
+  }
+
+  public static final class AdRevenuePrecision.Companion {
+    method public String fromString(String value);
+    method public String getESTIMATED();
+    method public String getEXACT();
+    method public String getPUBLISHER_DEFINED();
+    method public String getUNKNOWN();
+    property public final String ESTIMATED;
+    property public final String EXACT;
+    property public final String PUBLISHER_DEFINED;
+    property public final String UNKNOWN;
+  }
+
+}
+
 package com.revenuecat.purchases.amazon {
 
   public abstract sealed class AmazonPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
@@ -887,6 +1019,7 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko public static final class GooglePurchasingData.Subscription extends com.revenuecat.purchases.models.GooglePurchasingData {
     ctor public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token);
+    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public GooglePurchasingData.Subscription(String productId, String optionId, com.android.billingclient.api.ProductDetails productDetails, String token, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI com.revenuecat.purchases.models.Period? billingPeriod, optional @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.List<? extends com.revenuecat.purchases.models.GooglePurchasingData>? addOnProducts);
     method public String getOptionId();
     method public com.android.billingclient.api.ProductDetails getProductDetails();
     method public String getProductId();
@@ -1146,6 +1279,7 @@ package com.revenuecat.purchases.models {
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
     ctor public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
+    ctor @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI java.util.Map<java.lang.String,java.lang.String>? subscriptionOptionIdForProductIDs, com.revenuecat.purchases.ReplacementMode? replacementMode);
     ctor @Deprecated public StoreTransaction(String? orderId, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType type, long purchaseTime, String purchaseToken, com.revenuecat.purchases.models.PurchaseState purchaseState, Boolean? isAutoRenewing, String? signature, org.json.JSONObject originalJson, String? presentedOfferingIdentifier, String? storeUserID, com.revenuecat.purchases.models.PurchaseType purchaseType, String? marketplace, String? subscriptionOptionId, com.revenuecat.purchases.ReplacementMode? replacementMode);
     method public String? getMarketplace();
     method public String? getOrderId();

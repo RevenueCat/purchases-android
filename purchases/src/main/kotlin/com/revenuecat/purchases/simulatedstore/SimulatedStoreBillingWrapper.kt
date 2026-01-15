@@ -2,6 +2,7 @@ package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -100,7 +101,7 @@ internal class SimulatedStoreBillingWrapper(
         debugLog { "SimulatedStoreBillingAbstract: consumeAndSave - no-op for test store" }
     }
 
-    override fun findPurchaseInActivePurchases(
+    override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -108,7 +109,7 @@ internal class SimulatedStoreBillingWrapper(
         onError: (PurchasesError) -> Unit,
     ) {
         debugLog {
-            "SimulatedStoreBillingAbstract: findPurchaseInActivePurchases for product: $productId will always fail"
+            "SimulatedStoreBillingAbstract: findPurchaseInPurchaseHistory for product: $productId will always fail"
         }
 
         onError(
@@ -172,6 +173,10 @@ internal class SimulatedStoreBillingWrapper(
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         val message = buildString {
+            append(
+                "This is a test purchase and should only be used during development. In production, " +
+                    "use a Google/Amazon API key from RevenueCat.\n\n",
+            )
             append("Product: ${product.id}\n")
             append("Price: ${product.price.formatted}\n")
             product.defaultOption?.let { option ->
@@ -212,6 +217,7 @@ internal class SimulatedStoreBillingWrapper(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun completePurchase(
         product: StoreProduct,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -241,6 +247,9 @@ internal class SimulatedStoreBillingWrapper(
             purchaseType = PurchaseType.GOOGLE_PURCHASE, // WIP: Specify a new purchase type for the simulated store
             marketplace = null,
             subscriptionOptionId = product.defaultOption?.id,
+            subscriptionOptionIdForProductIDs = product.defaultOption?.id?.let {
+                mapOf(product.id to it)
+            } ?: emptyMap(),
             replacementMode = null,
         )
 

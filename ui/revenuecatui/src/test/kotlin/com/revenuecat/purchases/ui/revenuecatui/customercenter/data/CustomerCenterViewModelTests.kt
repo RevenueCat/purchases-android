@@ -2184,7 +2184,8 @@ class CustomerCenterViewModelTests {
             )
         )
         every { configData.support } returns CustomerCenterConfigData.Support(
-            displayVirtualCurrencies = false
+            displayVirtualCurrencies = false,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
         )
 
         every { customerInfo.managementURL } returns null
@@ -2494,7 +2495,10 @@ class CustomerCenterViewModelTests {
         val mockVirtualCurrencies = mockk<VirtualCurrencies>()
         coEvery { purchases.awaitGetVirtualCurrencies() } returns mockVirtualCurrencies
         every { purchases.invalidateVirtualCurrenciesCache() } just Runs
-        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = true)
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
 
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
@@ -2520,7 +2524,10 @@ class CustomerCenterViewModelTests {
     @Test
     fun `loadCustomerCenter does not load virtual currencies when displayVirtualCurrencies is null`(): Unit = runBlocking {
         setupPurchasesMock()
-        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = null)
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = null,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
 
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
@@ -2533,7 +2540,10 @@ class CustomerCenterViewModelTests {
     @Test
     fun `showVirtualCurrencyBalances navigates to virtual currency balances screen when displayVirtualCurrencies is true`(): Unit = runBlocking {
         setupPurchasesMock()
-        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = true)
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
         val model = setupViewModel()
 
         model.state.filterIsInstance<CustomerCenterState.Success>().first()
@@ -2567,7 +2577,10 @@ class CustomerCenterViewModelTests {
     @Test
     fun `showVirtualCurrencyBalances does nothing when displayVirtualCurrencies is null`(): Unit = runBlocking {
         setupPurchasesMock()
-        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = null)
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = null,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
 
         val model = setupViewModel()
         

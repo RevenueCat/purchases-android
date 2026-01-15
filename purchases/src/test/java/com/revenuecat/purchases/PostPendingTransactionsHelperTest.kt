@@ -19,7 +19,6 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +36,7 @@ class PostPendingTransactionsHelperTest {
     private lateinit var dispatcher: Dispatcher
     private lateinit var identityManager: IdentityManager
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
+    private lateinit var postReceiptHelper: PostReceiptHelper
 
     private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
@@ -50,6 +50,20 @@ class PostPendingTransactionsHelperTest {
             every { currentAppUserID } returns appUserId
         }
         postTransactionWithProductDetailsHelper = mockk()
+        postReceiptHelper = mockk()
+
+        // Default mock for postRemainingCachedTransactionMetadata
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = any(),
+                onNoTransactionsToSync = captureLambda(),
+                onError = any(),
+                onSuccess = any()
+            )
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         changeBillingConnected()
         changeAutoSyncEnabled(true)
@@ -61,6 +75,7 @@ class PostPendingTransactionsHelperTest {
             dispatcher,
             identityManager,
             postTransactionWithProductDetailsHelper,
+            postReceiptHelper,
         )
     }
 
@@ -405,4 +420,219 @@ class PostPendingTransactionsHelperTest {
         )
         assertThat(successCallCount).isEqualTo(1)
     }
+
+    // region postRemainingCachedTransactionMetadata tests
+
+    @Test
+    fun `when there are no cached transaction metadata, onNoTransactionsToSync is called`() {
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = captureLambda(),
+                onError = any(),
+                onSuccess = any()
+            )
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+
+        verify(exactly = 1) {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when cached transaction metadata posting succeeds, success callback is invoked`() {
+        val customerInfoMock = mockk<CustomerInfo>()
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = captureLambda()
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfoMock)
+        }
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+    }
+
+    @Test
+    fun `when posting cached transaction metadata fails, error callback is invoked`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = captureLambda(),
+                onSuccess = any()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
+    }
+
+    @Test
+    fun `when regular transactions succeed, cached metadata is also posted`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(activePurchase))
+
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = captureLambda()
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfoMock)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = any()
+            )
+        }
+
+        verify(exactly = 1) {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when regular transactions fail, cached metadata is still attempted and can succeed`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda()
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(activePurchase, regularTransactionError)
+        }
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = captureLambda()
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfoMock)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = any()
+            )
+        }
+    }
+
+    @Test
+    fun `when regular transactions fail and cached metadata also fails, regular transaction error is returned`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+
+        val regularTransactionError = PurchasesError(PurchasesErrorCode.NetworkError, "Regular transaction failed")
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda()
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(activePurchase, regularTransactionError)
+        }
+
+        val metadataError = PurchasesError(PurchasesErrorCode.NetworkError, "Metadata post failed")
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                onNoTransactionsToSync = any(),
+                onError = captureLambda(),
+                onSuccess = any()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(metadataError)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(regularTransactionError))
+    }
+
+    // endregion
 }

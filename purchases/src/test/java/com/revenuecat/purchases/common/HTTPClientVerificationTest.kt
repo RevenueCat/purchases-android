@@ -37,7 +37,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     fun `performRequest adds nonce header to request if endpoint supports it`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.VERIFIED),
             verificationResult = VerificationResult.VERIFIED
         )
@@ -66,7 +66,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = expectedResult,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
@@ -96,7 +96,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = expectedResult,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
@@ -126,7 +126,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = expectedResult,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
@@ -156,15 +156,18 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         mockSigningResult(VerificationResult.VERIFIED)
 
+        val urlString = server.url(endpoint.getPath()).toString()
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
-                urlPath = endpoint.getPath(),
+                urlString = urlString,
                 refreshETag = false,
                 requestDate = Date(1234567890L),
-                verificationResult = VerificationResult.VERIFIED
+                verificationResult = VerificationResult.VERIFIED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         } returns expectedResult
         val response = MockResponse()
@@ -209,7 +212,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         } returns expectedPostParamsHash
         mockSigningResult(VerificationResult.VERIFIED)
         enqueue(
-            endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult,
             VerificationResult.VERIFIED,
         )
@@ -232,7 +235,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
-            endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult,
         )
 
@@ -252,7 +255,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.NOT_REQUESTED),
             verificationResult = VerificationResult.NOT_REQUESTED
         )
@@ -274,7 +277,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     fun `performRequest on informational client does not throw on verification error`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
             verificationResult = VerificationResult.FAILED
         )
@@ -297,7 +300,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     fun `performRequest on informational client without nonce does not throw verification error`() {
         val endpoint = Endpoint.GetOfferings("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
             verificationResult = VerificationResult.FAILED
         )
@@ -321,7 +324,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
             verificationResult = VerificationResult.FAILED
         )
@@ -343,7 +346,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(thrownCorrectException).isTrue
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -352,7 +355,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetOfferings("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
             verificationResult = VerificationResult.FAILED
         )
@@ -370,7 +373,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
 
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -378,7 +381,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     fun `performRequest on enforced client does not throw if verification success`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
-            endpoint = endpoint,
+            urlPath = endpoint.getPath(),
             expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.VERIFIED),
             verificationResult = VerificationResult.VERIFIED
         )

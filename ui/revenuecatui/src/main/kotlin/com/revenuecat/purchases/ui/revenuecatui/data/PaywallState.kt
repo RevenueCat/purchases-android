@@ -240,7 +240,15 @@ internal sealed interface PaywallState {
                     // package when the tab changes.
                     if (packagesOutsideTabs.contains(selectedPackage)) return
 
-                    selectedPackage = selectedPackageByTab[selectedTabIndex] ?: initialSelectedPackageOutsideTabs
+                    selectedPackage = selectedPackageByTab[selectedTabIndex]
+                        ?: initialSelectedPackageOutsideTabs
+                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg?.also {
+                            Logger.w(
+                                "Could not find default package for tab $selectedTabIndex. " +
+                                    "Using first package instead. " +
+                                    "This could be caused by not having any package marked as selected by default.",
+                            )
+                        }
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
@@ -255,6 +263,13 @@ internal sealed interface PaywallState {
                 val tabsWithThisPackage = tabsByPackage[selectedPackage]
                 val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
+            }
+
+            fun resetToDefaultPackage() {
+                selectedPackage =
+                    packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.pkg
+                        ?: initialSelectedPackageOutsideTabs
+                        ?: selectedPackageByTab[selectedTabIndex]
             }
 
             private fun LocaleList.toLocaleId(): LocaleId {

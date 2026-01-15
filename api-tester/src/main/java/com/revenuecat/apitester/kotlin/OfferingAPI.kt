@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import java.net.URL
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingAPI {
@@ -22,6 +23,7 @@ private class OfferingAPI {
             val metadata: Map<String, Any> = metadata
             val metadataString: String = getMetadataString("key", "default")
             var hasPaywall: Boolean = hasPaywall
+            val webCheckoutURL: URL? = webCheckoutURL
 
             Offering(
                 identifier = identifier,

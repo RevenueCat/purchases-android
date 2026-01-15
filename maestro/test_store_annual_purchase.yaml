@@ -11,7 +11,7 @@ appId: com.revenuecat.e2etests
 - assertVisible: Get CatPrrro
 - tapOn: "12" # Annual package selector
 - tapOn: Subscribe now
-- assertVisible: "Product: test_yearly.*"
+- assertVisible: ".*Product: test_yearly.*"
 - assertVisible: ".*Price: \\$11.99.*"
 - assertVisible: ".*Phase: \\$11.99 for P1Y.*"
 - tapOn: TEST VALID PURCHASE

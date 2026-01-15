@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -76,7 +75,7 @@ class SyncPurchasesHelperTest {
         assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -113,11 +112,9 @@ class SyncPurchasesHelperTest {
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = any(),
-                storeUserID = any(),
                 receiptInfo = any(),
                 isRestore = any(),
                 appUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 onSuccess = any(),
                 onError = any(),
@@ -144,11 +141,9 @@ class SyncPurchasesHelperTest {
         every {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = any(),
-                storeUserID = any(),
                 receiptInfo = any(),
                 isRestore = any(),
                 appUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
@@ -169,22 +164,20 @@ class SyncPurchasesHelperTest {
         verifyAll {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-1",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match { it.storeUserID == "test-store-user-id" },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = null,
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id" && it.marketplace == "test-marketplace"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = "test-marketplace",
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -210,7 +203,7 @@ class SyncPurchasesHelperTest {
 
         every {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(),
+                any(), any(), any(), any(), any(), any(), captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
@@ -228,22 +221,22 @@ class SyncPurchasesHelperTest {
         verifyAll {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-1",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = null,
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id" && it.marketplace == "test-marketplace"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = "test-marketplace",
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -315,7 +308,7 @@ class SyncPurchasesHelperTest {
         verify(exactly = 1) {
             diagnosticsTracker.trackSyncPurchasesResult(
                 errorCode = PurchasesErrorCode.UnknownError.code,
-                errorMessage = "Unknown error.",
+                errorMessage = "Unknown error. Check the underlying error for more details.",
                 any(),
             )
         }

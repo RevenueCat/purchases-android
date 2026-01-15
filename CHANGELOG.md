@@ -1,3 +1,344 @@
+## 9.19.0
+## RevenueCat SDK
+### ✨ New Features
+* Add Solar Engine integration support (#2994) via Lim Hoang (@limdauto)
+
+### 🔄 Other Changes
+* Incrase firebase tests timeout (#2997) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2998) via RevenueCat Git Bot (@RCGitBot)
+
+## 9.18.1
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.3 (#2977) via RevenueCat Git Bot (@RCGitBot)
+
+### 🔄 Other Changes
+* Bump uri from 1.0.3 to 1.0.4 (#2984) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update golden test files for backend integration tests (#2985) via RevenueCat Git Bot (@RCGitBot)
+* Add better error message when opening SimulatedStoreErrorDialogActivity from non-supported sources (#2980) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2978) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `76a3a08` to `e6454e3` (#2976) via dependabot[bot] (@dependabot[bot])
+* Improve error messages when displaying `CustomerCenterActivity` or `PaywallActivity` from other sources (#2974) via Toni Rico (@tonidero)
+* Fix SDK size testing app version (#2973) via Toni Rico (@tonidero)
+* Add size testing app and related CI tasks (#2956) via Toni Rico (@tonidero)
+
+## 9.18.0
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Retry creation of font folder (#2965) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### ✨ New Features
+* Add exit offers support to PaywallActivity and PaywallDialog (#2938) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Improve event tracking reliability (#2968) via Toni Rico (@tonidero)
+* Use @ExperimentalPreviewRevenueCatPurchasesAPI for non subscription tracking API (#2962) via Pol Miro (@polmiro)
+
+## 9.17.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Remove deprecated API usage (#2957) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix crash when context.cacheDir is null in FontLoader (#2961) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump fastlane from 2.229.1 to 2.230.0 (#2951) via dependabot[bot] (@dependabot[bot])
+
+## 9.17.0
+## RevenueCat SDK
+### ✨ New Features
+* Adds `setAppsFlyerConversionData` to conveniently track AppsFlyer conversion data (#2931) via JayShortway (@JayShortway)
+### 🐞 Bugfixes
+* Make close() method also clear the shared instance of the SDK (#2940) via Toni Rico (@tonidero)
+* Fix purchase callback not firing for DEFERRED product changes with baePlanId in oldProductId (#2937) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* [AUTOMATIC] Update golden test files for backend integration tests (#2949) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2944) via RevenueCat Git Bot (@RCGitBot)
+* Adds `.kotlin` to `.gitignore` (#2941) via JayShortway (@JayShortway)
+* Dont use reflection to instantiate AmazonOfferingParser (#2934) via Will Taylor (@fire-at-will)
+
+## 9.16.0
+
+### 🔄 Other Changes
+* Add AIDL to query purchase history inapp products (#2872) via Toni Rico (@tonidero)
+
+## 9.15.5
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update build-dependencies to v8.13.2 (#2929) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix `IllegalStateException`: No `ViewModelStoreOwner` was provided via `LocalViewModelStoreOwner` in `CompatComposeView` (#2912) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Change AdFailedToLoad mediatorErrorCode type from Long to Int (#2924) via Pol Miro (@polmiro)
+* Change paywall preview recorder name template (#2923) via Toni Rico (@tonidero)
+* Don't use reflection to instantiate AmazonDeviceIdentifiersFetcher (#2919) via Will Taylor (@fire-at-will)
+
+## 9.15.4
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix custom schemes on paywall purchase buttons (#2914) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Bump fastlane-plugin-revenuecat_internal from `efca663` to `76a3a08` (#2915) via dependabot[bot] (@dependabot[bot])
+
+## 9.15.3
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix missing events tracking by removing delay to flush when backgrounding app (#2907) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Update Golden File for Galaxy Store (#2902) via Will Taylor (@fire-at-will)
+* Improve log message for no products of specific store in any offerings (#2897) via Antonio Pallares (@ajpallares)
+
+## 9.15.2
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix exception when buttons are hidden (#2889) via Cesar de la Vega (@vegaro)
+* Fixes `ConcurrentModificationException` in `FontLoader` (#2885) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Add extra non subscription events (#2892) via Toni Rico (@tonidero)
+* Show redacted Test Api key in alert when detected in Release build (#2891) via Antonio Pallares (@ajpallares)
+* Remove data binding purchase tester + Update AGP (#2887) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2828) via RevenueCat Git Bot (@RCGitBot)
+* Remove unused `BuildConfig. ENABLE_VIDEO_COMPONENT ` (#2884) via Toni Rico (@tonidero)
+* Configure build logic and restructure gradle files (#2827) via Jaewoong Eum (@skydoves)
+
+## 9.15.1
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix ANR when initializing FontLoader (#2819) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix `Template7CustomPackagesTestData` (#2875) via Cesar de la Vega (@vegaro)
+* Fix predownloading of fonts if first offering doesn't have paywall components (#2873) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Extract parameters for non paid revenue tracking API to use objects (#2871) via Toni Rico (@tonidero)
+* Bump fastlane from 2.229.0 to 2.229.1 (#2869) via dependabot[bot] (@dependabot[bot])
+
+## 9.15.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Restore Purchases config automatically in CustomerCenter (#2867) via Facundo Menzella (@facumenzella)
+* Handle error reading `errorStream` in some devices (#2865) via Toni Rico (@tonidero)
+* [MON-1122] Revert variable rounding logic to not round up (#2857) via Pol Piella Abadia (@polpielladev)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Select default package on Sheet dismissal (#2861) via Cesar de la Vega (@vegaro)
+### Customer Center
+#### ✨ New Features
+* CC-581 | Allow for support ticket creation (#2810) via Rosie Watson (@RosieWatson)
+
+### 🔄 Other Changes
+* Bump fastlane-plugin-revenuecat_internal from `7328ea7` to `efca663` (#2864) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.228.0 to 2.229.0 (#2863) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `083ced9` to `7328ea7` (#2862) via dependabot[bot] (@dependabot[bot])
+* Runs plugin actions from correct directory (#2858) via JayShortway (@JayShortway)
+* Flush multiple event batches (#2842) via Toni Rico (@tonidero)
+* Add file size limit to events tracking files (#2841) via Toni Rico (@tonidero)
+* Make events manager be supported in Android < 24 (#2854) via Toni Rico (@tonidero)
+* Add non paid revenue reporting infra (#2728) via Toni Rico (@tonidero)
+* Fix backend integration tests (#2860) via Toni Rico (@tonidero)
+* Track `connection_error_reason` property in diagnostics (#2855) via Toni Rico (@tonidero)
+* Uses some git+GitHub lanes from Fastlane plugin (#2856) via JayShortway (@JayShortway)
+* Add client side timeout logic for endpoints that support fallback URLs (#2807) via Toni Rico (@tonidero)
+* [EXTERNAL] Fix deprecation warnings in examples module (#2852) contributed by @gojoel (#2853) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `9f78bb9` to `083ced9` (#2848) via dependabot[bot] (@dependabot[bot])
+
+## 9.14.1
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+### 🔄 Other Changes
+* Add BC7 version of the SDKs  (#2839) via Toni Rico (@tonidero)
+
+## 9.14.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add `countFrom` support for `CountdownComponent` (#2844) via Cesar de la Vega (@vegaro)
+* Countdown Paywalls component (#2837) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump fastlane-plugin-revenuecat_internal from `1e3e3fd` to `9f78bb9` (#2840) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `9362b21` to `1e3e3fd` (#2836) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update golden test files for backend integration tests (#2830) via RevenueCat Git Bot (@RCGitBot)
+* Adds slack alert and heartbeat monitor to backend integration tests (#2826) via JayShortway (@JayShortway)
+* Bump fastlane-plugin-revenuecat_internal from `525d48c` to `9362b21` (#2825) via dependabot[bot] (@dependabot[bot])
+* Add internal `Offerings` and `ProductEntitlementMapping` source information (#2802) via Toni Rico (@tonidero)
+* Add job to update golden test files for backend integration tests manually (#2824) via Toni Rico (@tonidero)
+
+## 9.13.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [Purchase Tester]: Fix toggling "Base Item" box sometimes programmatically enabling other "Buy Option" boxes (#2812) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add hook to delay payment screens (#2753) via Jacob Rakidzich (@JZDesign)
+* Video Background (#2786) via Jacob Rakidzich (@JZDesign)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix dark mode in CustomerCenterView (#2817) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Fix integration tests (#2821) via Toni Rico (@tonidero)
+* Add internal CustomerInfo source properties (#2796) via Toni Rico (@tonidero)
+
+## 9.12.2
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Hotfix video component crash onPause (#2804) via Jacob Rakidzich (@JZDesign)
+* Normalize product ids (#2797) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Adds `TestStoreErrorDialogActivity` (#2809) via JayShortway (@JayShortway)
+* Update golden test files to have tests pass again (#2813) via Toni Rico (@tonidero)
+* Wrap error when connecting to BillingClient (#2801) via Toni Rico (@tonidero)
+* Use new fortress us-east-1 base url (#2805) via Toni Rico (@tonidero)
+* Support fortress us-east-2 integration tests (#2793) via Toni Rico (@tonidero)
+* Add test backend environment parameter to integration tests (#2792) via Toni Rico (@tonidero)
+* Unify integration tests jobs (#2791) via Toni Rico (@tonidero)
+* Update CHANGELOG to reflect where changes actually happened in 9.12.0 and 9.12.1 (#2798) via Toni Rico (@tonidero)
+* Add extra request logging (#2794) via Toni Rico (@tonidero)
+* Fix golden backend integration tests (#2795) via Toni Rico (@tonidero)
+
+## 9.12.1
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Remove GOOGLE_PRODUCT_MISSING_INFINITELY_RECURRING_BILLING_PHASE log message (#2767) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Invalidate CustomerInfo cache when opening a WPB in paywalls (#2785) via Toni Rico (@tonidero)
+* FIX: Video component - felt slow on first appearance (#2784) via Jacob Rakidzich (@JZDesign)
+* Add package fallback to tab selection when there's no default selected (#2782) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add golden tests for requests and responses in backend integration tests (#2781) via Toni Rico (@tonidero)
+* Unlock entitlements from add-ons in offline entitlements mode (#2776) via Will Taylor (@fire-at-will)
+* Add fallback URL integration tests (#2769) via Toni Rico (@tonidero)
+* [SDK-4152] Use static fallback urls (#2780) via Antonio Pallares (@ajpallares)
+* Skip tests not supported in fortress (#2783) via Toni Rico (@tonidero)
+* Keep cache logic similar to iOS + ensure path extension is on file (#2750) via Jacob Rakidzich (@JZDesign)
+* Use cached offerings on network errors (#2772) via Toni Rico (@tonidero)
+* [EXTERNAL] Update Emerge snapshots to best/latest practices (#2777) by @rbro112 (#2779) via Toni Rico (@tonidero)
+* Change ForceServerErrorStrategy to be a `fun interface` to simplify instantiation (#2773) via Toni Rico (@tonidero)
+* Stores backend integration test result on CircleCI (#2771) via JayShortway (@JayShortway)
+* Change test server down mechanism to use new server down endpoint (#2765) via Toni Rico (@tonidero)
+* [CAT-2067 EXPERIMENTAL]: Add-On Subscription Options (#2763) via Will Taylor (@fire-at-will)
+* Avoids the `PaywallComponentsTemplate_Preview` from being rendered by Emerge (#2761) via JayShortway (@JayShortway)
+* Handle error building `QueryProductDetailsParams` in some devices (#2764) via Toni Rico (@tonidero)
+* Add more proper error message when using test store API key in release builds (#2762) via Toni Rico (@tonidero)
+
+## 9.12.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### ✨ New Features
+* Add webCheckoutURL property to Offering and Package (#2747) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Use the fallback endpoint in more failure scenarios (#2754) via JayShortway (@JayShortway)
+* Protect against developers excluding blockstore dependency (#2745) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add support for Web Purchase buttons in paywalls (#2751) via Toni Rico (@tonidero)
+### Customer Center
+#### 🐞 Bugfixes
+* Add elevation to surfaces in Customer Center to fix default appearance (#2741) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Experimental]: Support Multi-Line Subscriptions (#2668) via Will Taylor (@fire-at-will)
+* Add PurchaseButtonComponent WPL field deserialization (#2749) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `25c7fb8` to `525d48c` (#2748) via dependabot[bot] (@dependabot[bot])
+* Add extra message test store dialog (#2746) via Toni Rico (@tonidero)
+
+## 9.11.0
+> [!WARNING]  
+> If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
+> Non-consumables are products that are meant to be bought only once, for example, lifetime subscriptions.
+
+
+## RevenueCat SDK
+### ✨ New Features
+* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
+
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
+
 ## 9.10.0
 > [!WARNING]  
 > If you don't have any login system in your app, please make sure your one-time purchase products have been correctly configured in the RevenueCat dashboard as either consumable or non-consumable. If they're incorrectly configured as consumables, RevenueCat will consume these purchases. This means that users won't be able to restore them from version 9.0.0 onward.
@@ -394,6 +735,62 @@ Using the SDK with your own IAP code is still supported in v9. Other than updati
 * Fix `Switch` component previews (#2509) via Toni Rico (@tonidero)
 * Add V9 migration guide (#2508) via Toni Rico (@tonidero)
 * [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2499) via RevenueCat Git Bot (@RCGitBot)
+
+## 8.25.0
+## RevenueCat SDK
+> [!NOTE]  
+> This release brings all non-breaking changes between SDK versions 9.6.0 and 9.11.0 to major 8, so developers that don't/can't use major 9, can still get the latest updates. meant to be bought only once, for example, lifetime subscriptions.
+
+### ✨ New Features
+* Adds new experimental `storefrontLocale` APIs. (#2726) via JayShortway (@JayShortway)
+* Turn on Video Component (#2725) via Jacob Rakidzich (@JZDesign)
+* Add support for the Test Store (#2710) via Toni Rico (@tonidero)
+* Add Airbridge device ID subscriber attribute (#2696) via Lim Hoang (@limdauto)
+* Enable Test Store (#2685) via Antonio Pallares (@ajpallares)
+### 🐞 Bugfixes
+* Fix deadlock in `allowSharingPlayStoreAccount` (#2707) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Expose `launch` and `launchIfNeeded` to Java (#2695) via Cesar de la Vega (@vegaro)
+#### 🐞 Bugfixes
+* Fix bundled font families when using assets folder (#2672) via Toni Rico (@tonidero)
+### Customer Center
+#### ✨ New Features
+* Add Customer Center per-view listener for hybrids (#2713) via Facundo Menzella (@facumenzella)
+* Display Virtual Currencies in Customer Center (#2652) via Will Taylor (@fire-at-will)
+#### 🐞 Bugfixes
+* Fixes more Icons crashing with `NoClassDefFoundError` when using Material 1.4.0 (#2732) via Cesar de la Vega (@vegaro)
+* Fix potential `NoClassDefFoundError` crash finding `Icons` caused by material3 1.4.0  (#2727) via Cesar de la Vega (@vegaro)
+* Fix Expired badge in Customer Center dark mode (#2693) via Cesar de la Vega (@vegaro)
+* Fix promo offer button CTA in Customer Center (#2682) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add test store maestro test (#2711) via Toni Rico (@tonidero)
+* Finalize video component to include a checksum, and optimize memory usage for large file downloads (#2717) via Jacob Rakidzich (@JZDesign)
+* Add `TestStoreSimulatedPurchaseError` error code (#2716) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `3f7fffc` to `25c7fb8` (#2721) via dependabot[bot] (@dependabot[bot])
+* Disable offline entitlements in test store (#2718) via Toni Rico (@tonidero)
+* Add E2E Test app for integration tests (#2715) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2714) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `a8770fd` to `3f7fffc` (#2712) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `e555afb` to `a8770fd` (#2708) via dependabot[bot] (@dependabot[bot])
+* Correct Opt In for FileRepository (#2709) via Jacob Rakidzich (@JZDesign)
+* Paywalls -> Video Component (#2680) via Jacob Rakidzich (@JZDesign)
+* Update fastlane-plugin-revenuecat_internal to e555afb (#2705) via Cesar de la Vega (@vegaro)
+* [EXTERNAL] Fix incorrect exception use in test (#2674) via @nikit19 (#2703) via Toni Rico (@tonidero)
+* Add CODEOWNERS (#2664) via Facundo Menzella (@facumenzella)
+* Adds new tab ID properties to `TabsComponent`. (#2577) via JayShortway (@JayShortway)
+* Bump fastlane-plugin-revenuecat_internal from `401d148` to `7508f17` (#2697) via dependabot[bot] (@dependabot[bot])
+* Reimplement placeholder with Modifier.Node (#2677) via Jaewoong Eum (@skydoves)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#2667) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `a6dc551` to `401d148` (#2683) via dependabot[bot] (@dependabot[bot])
+* Bump rexml from 3.4.1 to 3.4.2 (#2676) via dependabot[bot] (@dependabot[bot])
+* Add 8.24.0 CHANGELOG to main (#2662) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `489faef` to `a6dc551` (#2673) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `7d97553` to `489faef` (#2671) via dependabot[bot] (@dependabot[bot])
+* File Repository (#2634) via Jacob Rakidzich (@JZDesign)
 
 ## 8.24.0
 ## RevenueCat SDK

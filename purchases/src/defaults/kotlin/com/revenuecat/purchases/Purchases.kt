@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -165,6 +166,14 @@ class Purchases internal constructor(
     @InternalRevenueCatAPI
     val fileRepository: FileRepository
         get() = purchasesOrchestrator.fileRepository
+
+    /**
+     * The AdTracker used to track ad attribution data.
+     */
+    @get:JvmSynthetic
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val adTracker: AdTracker
+        get() = purchasesOrchestrator.adTracker
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
@@ -458,10 +467,12 @@ class Purchases internal constructor(
     }
 
     /**
-     * Call close when you are done with this instance of Purchases
+     * Call close when you are done with this instance of Purchases.
+     * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     fun close() {
         purchasesOrchestrator.close()
+        backingFieldSharedInstance = null
     }
 
     /**
@@ -576,6 +587,23 @@ class Purchases internal constructor(
         callback: GetCustomerCenterConfigCallback,
     ) {
         purchasesOrchestrator.getCustomerCenterConfig(callback)
+    }
+
+    /**
+     * Creates a support ticket for the current user.
+     * @param email The user's email address for the support ticket.
+     * @param description The description of the support request.
+     * @param onSuccess Called when the support ticket is created successfully with a Boolean indicating if it was sent.
+     * @param onError Called when there's an error creating the support ticket.
+     */
+    @InternalRevenueCatAPI
+    fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: (Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
     }
 
     // region Subscriber Attributes
@@ -788,6 +816,58 @@ class Purchases internal constructor(
      */
     fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
         purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Distinct ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineDistinctId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        purchasesOrchestrator.setSolarEngineDistinctId(solarEngineDistinctId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Account ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineAccountId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        purchasesOrchestrator.setSolarEngineAccountId(solarEngineAccountId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Visitor ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineVisitorId null or an empty string will delete the subscriber attribute.
+     */
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        purchasesOrchestrator.setSolarEngineVisitorId(solarEngineVisitorId)
+    }
+
+    /**
+     * Sets attribution data from AppsFlyer's conversion data.
+     *
+     * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
+     * this method will never unset any attributes, even if passed `null`. To unset attributes, call the setter method
+     * for the individual attribute that should be unset with a `null` value.
+     *
+     * The following RevenueCat attributes will be set based on the AppsFlyer data:
+     * - `$mediaSource`: From `media_source`, or "Organic" if `af_status` is "Organic"
+     * - `$campaign`: From `campaign`
+     * - `$adGroup`: From `adgroup`, with fallback to `adset`
+     * - `$ad`: From `af_ad`, with fallback to `ad_id`
+     * - `$keyword`: From `af_keywords`, with fallback to `keyword`
+     * - `$creative`: From `creative`, with fallback to `af_creative`
+     *
+     * @param data The conversion data map from AppsFlyer's `onConversionDataSuccess` callback.
+     */
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppsFlyerConversionData(data)
     }
 
     // endregion

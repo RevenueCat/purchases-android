@@ -8,6 +8,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -28,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -52,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CreateSupportTicketView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
@@ -157,6 +162,10 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
                 is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
+                is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
+                is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
+                    viewModel.dismissSupportTicketSuccessSnackbar()
+                }
             }
         },
     )
@@ -368,11 +377,36 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    CustomerCenterNavHost(
-        currentDestination = state.currentDestination,
-        customerCenterState = state,
-        onAction = onAction,
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val latestOnAction by rememberUpdatedState(newValue = onAction)
+    val latestMessage by rememberUpdatedState(
+        newValue = state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
+        ),
     )
+
+    LaunchedEffect(state.showSupportTicketSuccessSnackbar) {
+        if (state.showSupportTicketSuccessSnackbar) {
+            snackbarHostState.showSnackbar(latestMessage)
+            latestOnAction(CustomerCenterAction.DismissSupportTicketSuccessSnackbar)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CustomerCenterNavHost(
+            currentDestination = state.currentDestination,
+            customerCenterState = state,
+            onAction = onAction,
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+        )
+    }
 }
 
 @Suppress("LongMethod")
@@ -437,6 +471,13 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
+
+            is CustomerCenterDestination.CreateSupportTicket -> {
+                CreateSupportTicketView(
+                    data = destination.data,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                )
+            }
         }
     }
 
@@ -470,6 +511,7 @@ private fun MainScreenContent(
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
                     if (state.purchases.size > 1) {
@@ -490,6 +532,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTickets = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
@@ -556,7 +599,10 @@ private val previewConfigData = CustomerCenterConfigData(
             "subscription" to "Subscription",
         ),
     ),
-    support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+    support = CustomerCenterConfigData.Support(
+        email = "test@revenuecat.com",
+        supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+    ),
 )
 
 @Preview

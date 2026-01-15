@@ -52,6 +52,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onPurchaseCancelled();
     method public default void onPurchaseCompleted(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction storeTransaction);
     method public default void onPurchaseError(com.revenuecat.purchases.PurchasesError error);
+    method public default void onPurchasePackageInitiated(com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.ui.revenuecatui.utils.Resumable resume);
     method public default void onPurchaseStarted(com.revenuecat.purchases.Package rcPackage);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreError(com.revenuecat.purchases.PurchasesError error);
@@ -331,6 +332,15 @@ package com.revenuecat.purchases.ui.revenuecatui.fonts {
     enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType TITLE_LARGE;
     enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType TITLE_MEDIUM;
     enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType TITLE_SMALL;
+  }
+
+}
+
+package com.revenuecat.purchases.ui.revenuecatui.utils {
+
+  public fun interface Resumable {
+    method public default operator void invoke(optional boolean shouldResume);
+    method public void resume(boolean shouldResume);
   }
 
 }

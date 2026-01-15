@@ -49,6 +49,7 @@ import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -129,6 +130,10 @@ internal interface CustomerCenterViewModel {
     fun showPaywall(context: Context)
 
     fun showVirtualCurrencyBalances()
+
+    fun showCreateSupportTicket()
+
+    fun dismissSupportTicketSuccessSnackbar()
 }
 
 @Stable
@@ -305,6 +310,92 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 currentState
+            }
+        }
+    }
+
+    override fun showCreateSupportTicket() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val createSupportTicketDestination = CustomerCenterDestination.CreateSupportTicket(
+                    data = CreateSupportTicketData(
+                        onSubmit = { email, description, onSuccess, onError ->
+                            handleSupportTicketSubmit(email, description, onSuccess, onError)
+                        },
+                        onCancel = {
+                            goBackToMain()
+                        },
+                        onClose = {
+                            goBackToMain()
+                        },
+                    ),
+                    title = state.customerCenterConfigData.localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_CREATE,
+                    ),
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(createSupportTicketDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun dismissSupportTicketSuccessSnackbar() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(showSupportTicketSuccessSnackbar = false)
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun handleSupportTicketSubmit(
+        email: String,
+        description: String,
+        onSuccess: () -> Unit,
+        onError: () -> Unit,
+    ) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        viewModelScope.launch {
+            try {
+                Logger.d("Creating support ticket - email: $email, Description: $description")
+                val result = purchases.awaitCreateSupportTicket(email, description)
+
+                if (result.success) {
+                    Logger.d("Support ticket created successfully")
+                    // Navigate back and show success snackbar
+                    _state.update { currentState ->
+                        if (currentState is CustomerCenterState.Success) {
+                            currentState.copy(
+                                navigationState = currentState.navigationState.pop(),
+                                navigationButtonType = if (currentState.navigationState.pop().canNavigateBack) {
+                                    CustomerCenterState.NavigationButtonType.BACK
+                                } else {
+                                    CustomerCenterState.NavigationButtonType.CLOSE
+                                },
+                                showSupportTicketSuccessSnackbar = true,
+                            )
+                        } else {
+                            currentState
+                        }
+                    }
+                    onSuccess()
+                } else {
+                    Logger.e("Support ticket creation returned false")
+                    onError()
+                }
+            } catch (e: PurchasesException) {
+                Logger.e("Error creating support ticket", e)
+                onError()
             }
         }
     }

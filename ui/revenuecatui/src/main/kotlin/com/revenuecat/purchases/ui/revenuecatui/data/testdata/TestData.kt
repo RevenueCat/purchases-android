@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
@@ -21,8 +22,11 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -235,7 +239,6 @@ internal object TestData {
         val monthly = Package(
             packageType = PackageType.MONTHLY,
             identifier = PackageType.MONTHLY.identifier!!,
-            offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.monthly_product",
                 name = "Monthly",
@@ -244,11 +247,14 @@ internal object TestData {
                 description = "Monthly",
                 period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
             ),
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+            webCheckoutURL = URL(
+                "https://test-web-billing.revenuecat.com?rc_package=${PackageType.MONTHLY.identifier}",
+            ),
         )
         val annual = Package(
             packageType = PackageType.ANNUAL,
             identifier = PackageType.ANNUAL.identifier!!,
-            offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.annual_product",
                 name = "Annual",
@@ -258,6 +264,8 @@ internal object TestData {
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
                 freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
             ),
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+            webCheckoutURL = URL("https://test-web-billing.revenuecat.com?rc_package=${PackageType.ANNUAL.identifier}"),
         )
 
         val annualEuros = Package(
@@ -494,6 +502,8 @@ internal class MockViewModel(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
+    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()
@@ -527,6 +537,15 @@ internal class MockViewModel(
         trackPaywallImpressionIfNeededCallCount++
     }
 
+    var trackExitOfferCallCount = 0
+        private set
+    var trackExitOfferParams = mutableListOf<Pair<ExitOfferType, String>>()
+        private set
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
+        trackExitOfferCallCount++
+        trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
+    }
+
     var refreshStateIfLocaleChangedCallCount = 0
         private set
     override fun refreshStateIfLocaleChanged() {
@@ -553,6 +572,22 @@ internal class MockViewModel(
         private set
     override fun closePaywall() {
         closePaywallCallCount++
+    }
+
+    var getWebCheckoutUrlCallCount = 0
+        private set
+    var getWebCheckoutUrlParams = mutableListOf<PaywallAction.External.LaunchWebCheckout>()
+        private set
+    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
+        getWebCheckoutUrlCallCount++
+        getWebCheckoutUrlParams.add(launchWebCheckout)
+        return null
+    }
+
+    var invalidateCustomerInfoCacheCallCount = 0
+        private set
+    override fun invalidateCustomerInfoCache() {
+        invalidateCustomerInfoCacheCallCount++
     }
 
     var purchaseSelectedPackageCallCount = 0
@@ -610,6 +645,21 @@ internal class MockViewModel(
     override fun clearActionError() {
         clearActionErrorCallCount++
         _actionError.value = null
+    }
+
+    var preloadExitOfferingCallCount = 0
+        private set
+    override fun preloadExitOffering() {
+        preloadExitOfferingCallCount++
+    }
+
+    var updateOptionsCallCount = 0
+        private set
+    var updateOptionsParams = mutableListOf<PaywallOptions>()
+        private set
+    fun updateOptions(options: PaywallOptions) {
+        updateOptionsCallCount++
+        updateOptionsParams.add(options)
     }
 
     private fun simulateActionInProgress() {
