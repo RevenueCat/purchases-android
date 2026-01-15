@@ -33,9 +33,6 @@ internal data class ReceiptInfo(
     @Serializable(with = ReplacementModeSerializer::class)
     val replacementMode: ReplacementMode? = null,
     val platformProductIds: List<Map<String, String?>> = emptyList(),
-    // Amazon-only fields
-    val storeUserID: String? = null,
-    val marketplace: String? = null,
 ) {
     companion object {
         @OptIn(InternalRevenueCatAPI::class)
@@ -79,51 +76,12 @@ internal data class ReceiptInfo(
                 pricingPhases = subscriptionOption?.pricingPhases,
                 replacementMode = storeTransaction.replacementMode,
                 platformProductIds = platformProductIds,
-                storeUserID = storeTransaction.storeUserID,
-                marketplace = storeTransaction.marketplace,
             )
         }
     }
 
     @IgnoredOnParcel
     val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
-
-    /**
-     * Merges this [ReceiptInfo] with another [ReceiptInfo], giving precedence to the values in this
-     * instance when there are conflicts.
-     */
-    fun mergeWith(receiptInfo: ReceiptInfo): ReceiptInfo {
-        fun PresentedOfferingContext?.mergeWith(
-            presentedOfferingContext: PresentedOfferingContext?,
-        ): PresentedOfferingContext? {
-            if (this == null) {
-                return presentedOfferingContext
-            }
-            return if (offeringIdentifier == presentedOfferingContext?.offeringIdentifier) {
-                copy(
-                    placementIdentifier = placementIdentifier ?: presentedOfferingContext.placementIdentifier,
-                    targetingContext = targetingContext ?: presentedOfferingContext.targetingContext,
-                )
-            } else {
-                this
-            }
-        }
-        return ReceiptInfo(
-            productIDs = this.productIDs,
-            presentedOfferingContext = this.presentedOfferingContext.mergeWith(receiptInfo.presentedOfferingContext),
-            price = this.price ?: receiptInfo.price,
-            formattedPrice = this.formattedPrice?.takeUnless { it.isBlank() } ?: receiptInfo.formattedPrice,
-            currency = this.currency?.takeUnless { it.isBlank() } ?: receiptInfo.currency,
-            period = this.period ?: receiptInfo.period,
-            pricingPhases = this.pricingPhases ?: receiptInfo.pricingPhases,
-            replacementMode = this.replacementMode ?: receiptInfo.replacementMode,
-            platformProductIds = this.platformProductIds.ifEmpty {
-                receiptInfo.platformProductIds
-            },
-            storeUserID = this.storeUserID ?: receiptInfo.storeUserID,
-            marketplace = this.marketplace ?: receiptInfo.marketplace,
-        )
-    }
 }
 
 private fun StoreProduct.platformProductId(): PlatformProductId {

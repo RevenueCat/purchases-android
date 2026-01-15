@@ -268,9 +268,11 @@ internal open class BasePurchasesTest {
             every {
                 postTokenWithoutConsuming(
                     purchaseToken = any(),
+                    storeUserID = any(),
                     receiptInfo = any(),
                     isRestore = any(),
                     appUserID = any(),
+                    marketplace = any(),
                     initiationSource = any(),
                     onSuccess = captureLambda(),
                     onError = any(),

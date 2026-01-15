@@ -66,16 +66,14 @@ internal class SyncPurchasesHelper(
                         }
                     }
                     allPurchases.forEach { purchase ->
-                        val productInfo = ReceiptInfo(
-                            productIDs = purchase.productIds,
-                            storeUserID = purchase.storeUserID,
-                            marketplace = purchase.marketplace,
-                        )
+                        val productInfo = ReceiptInfo(productIDs = purchase.productIds)
                         postReceiptHelper.postTokenWithoutConsuming(
                             purchase.purchaseToken,
+                            purchase.storeUserID,
                             productInfo,
                             isRestore,
                             appUserID,
+                            purchase.marketplace,
                             PostReceiptInitiationSource.RESTORE,
                             {
                                 log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASE_SYNCED.format(purchase) }

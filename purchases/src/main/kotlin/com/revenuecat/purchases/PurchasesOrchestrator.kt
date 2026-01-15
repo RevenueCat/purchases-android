@@ -451,14 +451,14 @@ internal class PurchasesOrchestrator(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() },
-                    marketplace = null,
-                    storeUserID = amazonUserID,
                 )
                 postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
+                    amazonUserID,
                     receiptInfo,
                     this.allowSharingPlayStoreAccount,
                     appUserID,
+                    marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
                     {
                         log(LogIntent.PURCHASE) {

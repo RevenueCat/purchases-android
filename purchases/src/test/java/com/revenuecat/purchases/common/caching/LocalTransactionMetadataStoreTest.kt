@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.caching
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
@@ -66,7 +65,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
@@ -88,7 +87,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
@@ -106,7 +105,7 @@ class LocalTransactionMetadataStoreTest {
                     token = purchaseToken,
                     receiptInfo = receiptInfo,
                     paywallPostReceiptData = null,
-                    purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                    observerMode = false,
                 )
             )
         )
@@ -118,7 +117,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, newTransactionMetadata)
@@ -138,7 +137,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
@@ -146,7 +145,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         // Cache first transaction
@@ -187,7 +186,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
@@ -216,7 +215,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -239,7 +238,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -262,7 +261,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -295,7 +294,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
@@ -303,7 +302,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -333,7 +332,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val transactionMetadata2 = LocalTransactionMetadata.TransactionMetadata(
@@ -341,7 +340,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -381,7 +380,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -406,7 +405,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val cachedData = LocalTransactionMetadata(
@@ -439,7 +438,7 @@ class LocalTransactionMetadataStoreTest {
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            observerMode = false,
         )
 
         val localTransactionMetadata = LocalTransactionMetadata(
@@ -481,7 +480,7 @@ class LocalTransactionMetadataStoreTest {
                     "locale":"en_US",
                     "offering_id":"offering_id"
                  },
-                 "purchases_are_completed_by":"REVENUECAT"
+                 "observer_mode":false
               }
            }
         }

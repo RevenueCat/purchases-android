@@ -35,8 +35,6 @@ internal class PostReceiptHelper(
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
-    private val purchasesAreCompletedBy: PurchasesAreCompletedBy
-        get() = appConfig.purchasesAreCompletedBy
 
     /**
      * This method will post a token and receiptInfo to the backend without consuming any purchases.
@@ -44,9 +42,11 @@ internal class PostReceiptHelper(
      */
     fun postTokenWithoutConsuming(
         purchaseToken: String,
+        storeUserID: String?,
         receiptInfo: ReceiptInfo,
         isRestore: Boolean,
         appUserID: String,
+        marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -56,6 +56,8 @@ internal class PostReceiptHelper(
             purchaseToken,
             isRestore,
             receiptInfo,
+            storeUserID,
+            marketplace,
             initiationSource,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
             onSuccess = { postReceiptResponse ->
@@ -104,6 +106,8 @@ internal class PostReceiptHelper(
             purchaseToken = purchase.purchaseToken,
             isRestore = isRestore,
             receiptInfo = receiptInfo,
+            storeUserID = purchase.storeUserID,
+            marketplace = purchase.marketplace,
             initiationSource = initiationSource,
             purchaseState = purchase.purchaseState,
             onSuccess = { postReceiptResponse ->
@@ -136,32 +140,24 @@ internal class PostReceiptHelper(
         )
     }
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    @Suppress("LongMethod")
     @OptIn(InternalRevenueCatAPI::class)
     private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
         purchaseToken: String,
         isRestore: Boolean,
         receiptInfo: ReceiptInfo,
+        storeUserID: String?,
+        marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
         purchaseState: PurchaseState,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val cachedTransactionMetadata = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
-        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(cachedTransactionMetadata, initiationSource)
+        val hasCachedTransactionMetadata = hasCachedTransactionMetadata(purchaseToken)
+        val shouldCacheTransactionMetadata = shouldCacheTransactionMetadata(purchaseToken, initiationSource)
 
-        val presentedPaywall = if (cachedTransactionMetadata == null) {
-            paywallPresentedCache.getAndRemovePresentedEvent()
-        } else {
-            null
-        }
-        val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
-            ?: presentedPaywall?.toPaywallPostReceiptData()
-        val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo?.let { receiptInfo.mergeWith(it) }
-            ?: receiptInfo
-        val effectivePurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
-            ?: purchasesAreCompletedBy
+        val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
 
         if (shouldCacheTransactionMetadata) {
             val dataToCache = LocalTransactionMetadata.TransactionMetadata(
@@ -169,7 +165,7 @@ internal class PostReceiptHelper(
                 token = purchaseToken,
                 receiptInfo = receiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
-                purchasesAreCompletedBy = purchasesAreCompletedBy,
+                observerMode = !finishTransactions,
             )
             localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, dataToCache)
         }
@@ -190,12 +186,13 @@ internal class PostReceiptHelper(
                 isRestore = isRestore,
                 finishTransactions = finishTransactions,
                 subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = effectiveReceiptInfo,
+                receiptInfo = receiptInfo,
+                storeAppUserID = storeUserID,
+                marketplace = marketplace,
                 initiationSource = initiationSource,
-                paywallPostReceiptData = effectivePaywallData,
-                purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
+                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 onSuccess = { postReceiptResponse ->
-                    if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
+                    if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
                         localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                     }
 
@@ -211,7 +208,7 @@ internal class PostReceiptHelper(
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                        if (cachedTransactionMetadata != null || shouldCacheTransactionMetadata) {
+                        if (hasCachedTransactionMetadata || shouldCacheTransactionMetadata) {
                             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
                         }
                         subscriberAttributesManager.markAsSynced(
@@ -264,10 +261,11 @@ internal class PostReceiptHelper(
         )
     }
 
-    private fun shouldCacheTransactionMetadata(
-        cachedTransactionMetadata: LocalTransactionMetadata.TransactionMetadata?,
-        source: PostReceiptInitiationSource,
-    ): Boolean {
-        return cachedTransactionMetadata == null && source == PostReceiptInitiationSource.PURCHASE
+    private fun shouldCacheTransactionMetadata(purchaseToken: String, source: PostReceiptInitiationSource): Boolean {
+        return !hasCachedTransactionMetadata(purchaseToken) && source == PostReceiptInitiationSource.PURCHASE
+    }
+
+    private fun hasCachedTransactionMetadata(purchaseToken: String): Boolean {
+        return localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken) != null
     }
 }

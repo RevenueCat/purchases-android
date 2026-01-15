@@ -3,7 +3,6 @@ package com.revenuecat.purchases.subscriberattributes
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PostReceiptInitiationSource
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -311,9 +310,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -339,9 +338,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -366,9 +365,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -396,9 +395,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -425,9 +424,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -454,9 +453,9 @@ class SubscriberAttributesPosterTests {
             finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
