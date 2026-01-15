@@ -20,7 +20,6 @@ import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
-import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.createResult
@@ -43,7 +42,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
@@ -514,9 +512,11 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes replacement mode and pricing phases as maps in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
+        val subscriptionOption = storeProduct.subscriptionOptions!!.first()
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
+            subscriptionOptionId = subscriptionOption.id,
             replacementMode = GoogleReplacementMode.WITHOUT_PRORATION
         )
 
@@ -557,6 +557,7 @@ class BackendTest {
     fun `postReceipt has product_plan_id in body if receipt is GoogleStoreProduct subscription`() {
         val productId = "product_id"
         val basePlanId = "base_plan_id"
+        val productDetails = mockProductDetails()
 
         val recurringPhase = PricingPhase(
             billingPeriod = Period.create("P1M"),
@@ -568,15 +569,34 @@ class BackendTest {
                 currencyCode = "USD",
             )
         )
+        val subscriptionOption = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
+            pricingPhases = listOf(recurringPhase),
+            tags = emptyList(),
+            productDetails = productDetails,
+            offerToken = "mock-token"
+        )
+
+        val googleStoreProduct = GoogleStoreProduct(
+            productId = productId,
+            basePlanId = basePlanId,
+            type = ProductType.SUBS,
+            price = Price("$9.00", 9000000, "USD"),
+            name = "TITLE",
+            title = "TITLE (App name)",
+            description = "DESCRIPTION",
+            period = Period.create("P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption)),
+            defaultOption = subscriptionOption,
+            productDetails = productDetails
+        )
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
-            price = 9.00,
-            formattedPrice = "$9.00",
-            currency = "USD",
-            period = Period.create("P1M"),
-            pricingPhases = listOf(recurringPhase),
-            platformProductIds = listOf(mapOf("product_id" to productId, "base_plan_id" to basePlanId, "offer_id" to null)),
+            storeProduct = googleStoreProduct,
+            subscriptionOptionId = basePlanId
         )
 
         mockPostReceiptResponseAndPost(
@@ -603,15 +623,25 @@ class BackendTest {
     @Test
     fun `postReceipt doesn't have product_plan_id in body if receipt is GoogleStoreProduct in-app`() {
         val productId = "product_id"
+        val productDetails = mockProductDetails()
+
+        val googleStoreProduct = GoogleStoreProduct(
+            productId = productId,
+            basePlanId = null,
+            type = ProductType.SUBS,
+            price = Price("$9.00", 9000000, "USD"),
+            name = "TITLE",
+            title = "TITLE (App name)",
+            description = "DESCRIPTION",
+            period = Period.create("P1M"),
+            subscriptionOptions = null,
+            defaultOption = null,
+            productDetails = productDetails
+        )
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
-            price = 9.00,
-            formattedPrice = "$9.00",
-            currency = "USD",
-            period = Period.create("P1M"),
-            pricingPhases = null,
-            platformProductIds = listOf(mapOf("product_id" to productId)),
+            storeProduct = googleStoreProduct
         )
 
         mockPostReceiptResponseAndPost(
@@ -629,9 +659,9 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes normal duration in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
-            storeProduct = storeProduct,
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
+            storeProduct = storeProduct
         )
 
         val expectedDuration = receiptInfo.duration
@@ -655,7 +685,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes store user ID in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct
         )
@@ -688,7 +718,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct),
+            receiptInfo = ReceiptInfo(productIDs = productIDs, storeProduct = storeProduct),
             storeAppUserID = null,
             initiationSource = initiationSource,
         )
@@ -867,8 +897,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -881,18 +911,18 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber different price, both are triggered`() {
-        val receiptInfo1 = createReceiptInfoFromProduct(
-            productIDs = productIDs,
+        val receiptInfo1 = ReceiptInfo(
+            productIDs,
             presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct,
-            platformProductIds = listOf(mapOf("product_id" to storeProduct.id, "base_plan_id" to "abc")),
+            subscriptionOptionId = "abc"
         )
 
-        val receiptInfo2 = createReceiptInfoFromProduct(
-            productIDs = productIDs,
+        val receiptInfo2 = ReceiptInfo(
+            productIDs,
             presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct,
-            platformProductIds = listOf(mapOf("product_id" to storeProduct.id, "base_plan_id" to "ef")),
+            subscriptionOptionId = "ef"
         )
 
         val lock = CountDownLatch(2)
@@ -937,20 +967,24 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber different durations, both are triggered`() {
-        val receiptInfo1 = createReceiptInfoFromProduct(
-            productIDs = productIDs,
+        val receiptInfo1 = ReceiptInfo(
+            productIDs,
             presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct
         )
 
-        val receiptInfo2 = createReceiptInfoFromProduct(
-            productIDs = productIDs,
+        val originalSubscriptionOption = storeProduct.subscriptionOptions!!.first()
+        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod.iso8601
+        val subscriptionOption = stubSubscriptionOption(originalSubscriptionOption.id, originalDuration + "a")
+        val storeProduct2 = stubStoreProduct(
+            storeProduct.id,
+            subscriptionOption
+        )
+
+        val receiptInfo2 = ReceiptInfo(
+            productIDs,
             presentedOfferingContext = PresentedOfferingContext("offering_a"),
-            storeProduct = storeProduct,
-            platformProductIds = listOf(mapOf(
-                "product_id" to storeProduct.id,
-                "base_plan_id" to "some_other_base_plan_id",
-            ))
+            storeProduct = storeProduct2
         )
 
         val lock = CountDownLatch(2)
@@ -1045,8 +1079,8 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
-        val receiptInfo = createReceiptInfoFromProduct(
-            productIDs = productIDs,
+        val receiptInfo = ReceiptInfo(
+            productIDs,
             presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct
         )
@@ -1101,8 +1135,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -1256,8 +1290,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -1278,8 +1312,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -1301,8 +1335,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -1326,8 +1360,8 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             finishTransactions = false,
-            receiptInfo = createReceiptInfoFromProduct(
-                productIDs = productIDs,
+            receiptInfo = ReceiptInfo(
+                productIDs,
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
@@ -1351,7 +1385,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes paywall in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct
         )
@@ -1392,7 +1426,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes presented_placement_identifier in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
             presentedOfferingContext = PresentedOfferingContext(
@@ -1423,7 +1457,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes applied targeting rule in body`() {
-        val receiptInfo = createReceiptInfoFromProduct(
+        val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
             presentedOfferingContext = PresentedOfferingContext(
@@ -3273,26 +3307,6 @@ class BackendTest {
         } else {
             everyMockedCall throws clientException
         }
-    }
-
-    private fun createReceiptInfoFromProduct(
-        storeProduct: StoreProduct,
-        productIDs: List<String> = listOf(storeProduct.id),
-        presentedOfferingContext: PresentedOfferingContext? = null,
-        replacementMode: GoogleReplacementMode? = null,
-        platformProductIds: List<Map<String, String?>> = listOf(mapOf("product_id" to storeProduct.id))
-    ): ReceiptInfo {
-        return ReceiptInfo(
-            productIDs = productIDs,
-            presentedOfferingContext = presentedOfferingContext,
-            price = storeProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
-            formattedPrice = storeProduct.price.formatted,
-            currency = storeProduct.price.currencyCode,
-            period = storeProduct.period,
-            pricingPhases = storeProduct.defaultOption?.pricingPhases,
-            replacementMode = replacementMode,
-            platformProductIds = platformProductIds,
-        )
     }
 
     // endregion
