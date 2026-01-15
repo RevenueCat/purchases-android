@@ -59,18 +59,18 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
      *
      * @param activity There's no definitive destroy signal for Views, so we'll use the Activity as a last resort.
      */
-    private class ViewLifecycleOwner(activity: Activity?) : LifecycleOwner {
+    private class ViewLifecycleOwner(private val activity: Activity?) : LifecycleOwner {
 
         private val lifecycleRegistry = LifecycleRegistry(this)
+        private var activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks? = null
 
         init {
             activity?.let { act ->
                 @Suppress("EmptyFunctionBlock")
-                object : Application.ActivityLifecycleCallbacks {
+                activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
                     override fun onActivityDestroyed(destroyedActivity: Activity) {
                         if (destroyedActivity === act) {
                             destroy()
-                            act.application?.unregisterActivityLifecycleCallbacks(this)
                         }
                     }
                     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
@@ -116,6 +116,12 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
         fun destroy() {
             if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
+
+            activityLifecycleCallbacks?.let { callbacks ->
+                activity?.application?.unregisterActivityLifecycleCallbacks(callbacks)
+                activityLifecycleCallbacks = null
+            }
+
             if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
             }
