@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.MainActivity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
@@ -27,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
     BaseOfflineEntitlementsIntegrationTest() {
 
@@ -122,6 +124,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
     }
 }
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @RunWith(AndroidJUnit4::class)
 class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {

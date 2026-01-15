@@ -5,6 +5,7 @@ import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.VerificationResult
@@ -24,6 +25,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls

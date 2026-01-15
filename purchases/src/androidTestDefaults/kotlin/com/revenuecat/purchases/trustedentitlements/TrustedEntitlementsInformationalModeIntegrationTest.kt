@@ -5,6 +5,7 @@ import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.VerificationResult
@@ -20,6 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @RunWith(AndroidJUnit4::class)
 class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
 

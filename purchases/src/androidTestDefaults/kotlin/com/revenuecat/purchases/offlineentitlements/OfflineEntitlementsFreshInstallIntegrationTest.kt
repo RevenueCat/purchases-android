@@ -2,6 +2,7 @@ package com.revenuecat.purchases.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.getCustomerInfoWith
@@ -49,6 +50,7 @@ class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOffli
     override val initialActivePurchasesToUse = initialActivePurchases
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
+    @OptIn(InternalRevenueCatStoreAPI::class)
     @Before
     fun setUp() {
         ensureBlockFinishes { latch ->

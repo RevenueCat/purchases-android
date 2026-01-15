@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.content.Context
 import com.revenuecat.purchases.common.BillingAbstract
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @Suppress("LongParameterList")
 internal fun Purchases.Companion.configureSdk(
     context: Context,

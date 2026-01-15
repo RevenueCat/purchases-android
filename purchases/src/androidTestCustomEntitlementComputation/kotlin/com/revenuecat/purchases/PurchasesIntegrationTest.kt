@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
@@ -14,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 

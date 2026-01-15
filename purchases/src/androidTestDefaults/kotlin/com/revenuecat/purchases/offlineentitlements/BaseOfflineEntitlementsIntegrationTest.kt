@@ -3,12 +3,14 @@ package com.revenuecat.purchases.offlineentitlements
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import org.assertj.core.api.Assertions
 
+@OptIn(InternalRevenueCatStoreAPI::class)
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     private val initialActiveTransaction = StoreTransactionFactory.createStoreTransaction(
         skus = listOf(Constants.productIdToPurchase),
