@@ -1650,7 +1650,6 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = expectedPaywallData,
@@ -1680,7 +1679,6 @@ class PostReceiptHelperTest {
             onError = { _, _ -> }
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockPendingStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1698,7 +1696,6 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded does not cache if metadata already exists but clears it on success`() {
         // Mock that metadata already exists for this token
         val existingMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1754,7 +1751,6 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded clears cache on SHOULD_BE_MARKED_SYNCED error if metadata was already cached`() {
         // Mock that metadata already exists for this token (from a previous attempt)
         val existingMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
             paywallPostReceiptData = null,
@@ -1831,7 +1827,6 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded uses cached paywall data when present paywall is null`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = cachedPaywallData,
@@ -1873,7 +1868,6 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded uses cached data over presented when both exist and does not remove cached`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = cachedPaywallData,
@@ -1932,7 +1926,6 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded uses cached observer mode value if available`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = cachedPaywallData,
@@ -1971,7 +1964,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded merges receipt info with cached receipt info`() {
+    fun `postTransactionAndConsumeIfNeeded uses cached receipt info if available`() {
         val cachedReceiptInfo = ReceiptInfo(
             productIDs = listOf("cached-product"),
             presentedOfferingContext = PresentedOfferingContext("cached-offering"),
@@ -1984,20 +1977,12 @@ class PostReceiptHelperTest {
             platformProductIds = listOf(mapOf("product_id" to "cached-product")),
         )
         val cachedMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = cachedReceiptInfo,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
         )
         every { localTransactionMetadataStore.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
-
-        val currentReceiptInfo = ReceiptInfo.from(
-            storeTransaction = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionsForProductIDs = emptyMap(),
-        )
-        val expectedMergedReceiptInfo = currentReceiptInfo.mergeWith(cachedReceiptInfo)
 
         mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE)
 
@@ -2019,7 +2004,7 @@ class PostReceiptHelperTest {
                 isRestore = any(),
                 finishTransactions = any(),
                 subscriberAttributes = any(),
-                receiptInfo = expectedMergedReceiptInfo,
+                receiptInfo = cachedReceiptInfo,
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
@@ -2032,7 +2017,6 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded passes PurchasesAreCompletedBy from cached metadata`() {
         val cachedMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = mockStoreTransaction.purchaseToken,
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
@@ -2312,6 +2296,7 @@ class PostReceiptHelperTest {
 
         var onNoTransactionsToSyncCalled = false
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = {
                 onNoTransactionsToSyncCalled = true
@@ -2327,7 +2312,6 @@ class PostReceiptHelperTest {
     fun `postRemainingCachedTransactionMetadata posts cached metadata with paywallPostReceiptData`() {
         val paywallPostReceiptData = event.toPaywallPostReceiptData()
         val metadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = paywallPostReceiptData,
@@ -2363,6 +2347,7 @@ class PostReceiptHelperTest {
 
         var successCalled = false
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
@@ -2381,7 +2366,6 @@ class PostReceiptHelperTest {
     @Test
     fun `postRemainingCachedTransactionMetadata posts cached metadata with MY_APP purchasesAreCompletedBy`() {
         val metadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
@@ -2417,6 +2401,7 @@ class PostReceiptHelperTest {
 
         var successCalled = false
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
@@ -2435,7 +2420,6 @@ class PostReceiptHelperTest {
     @Test
     fun `postRemainingCachedTransactionMetadata clears cache only on success`() {
         val metadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
@@ -2470,6 +2454,7 @@ class PostReceiptHelperTest {
         }
 
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
@@ -2484,7 +2469,6 @@ class PostReceiptHelperTest {
     @Test
     fun `postRemainingCachedTransactionMetadata does not clear cache on error`() {
         val metadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
@@ -2518,6 +2502,7 @@ class PostReceiptHelperTest {
 
         var errorCalled = false
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { receivedError ->
@@ -2536,14 +2521,12 @@ class PostReceiptHelperTest {
     @Test
     fun `postRemainingCachedTransactionMetadata posts all cached metadata`() {
         val metadata1 = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token-1",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
         )
         val metadata2 = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = "cached-token-2",
             receiptInfo = testReceiptInfo,
             paywallPostReceiptData = null,
@@ -2580,6 +2563,7 @@ class PostReceiptHelperTest {
 
         var successCount = 0
         postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
