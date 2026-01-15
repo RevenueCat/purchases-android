@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.code
 import kotlin.test.fail
 
 @RunWith(AndroidJUnit4::class)
