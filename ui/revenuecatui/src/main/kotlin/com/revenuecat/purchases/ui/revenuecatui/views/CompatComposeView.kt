@@ -26,6 +26,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 
 /**
@@ -205,6 +206,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
      * Provide a manual destroy signal.
      */
     protected fun destroy() {
+        Logger.d("CompatComposeView: Destroying lifecycle owner since destroy() was called.")
         (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
     }
 
