@@ -19,7 +19,6 @@ internal sealed class SyncPendingPurchaseResult {
     object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
 }
 
-@Suppress("LongParameterList")
 internal class PostPendingTransactionsHelper(
     private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
@@ -27,10 +26,8 @@ internal class PostPendingTransactionsHelper(
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
-    private val postReceiptHelper: PostReceiptHelper,
 ) {
 
-    @Suppress("LongMethod")
     fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
         callback: ((SyncPendingPurchaseResult) -> Unit)? = null,
@@ -58,48 +55,13 @@ internal class PostPendingTransactionsHelper(
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
-                            postReceiptHelper.postRemainingCachedTransactionMetadata(
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                onNoTransactionsToSync = {
-                                    callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
-                                },
-                                onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
-                                },
-                                onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
-                                },
-                            )
+                            callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
                         },
                         onError = { error ->
-                            postReceiptHelper.postRemainingCachedTransactionMetadata(
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                onNoTransactionsToSync = {
-                                    log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
-                                },
-                                onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
-                                },
-                                onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
-                                },
-                            )
+                            callback?.invoke(SyncPendingPurchaseResult.Error(error))
                         },
                         onSuccess = { customerInfo ->
-                            postReceiptHelper.postRemainingCachedTransactionMetadata(
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                onNoTransactionsToSync = {
-                                    log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
-                                },
-                                onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
-                                },
-                                onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
-                                },
-                            )
+                            callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
                         },
                     )
                 },

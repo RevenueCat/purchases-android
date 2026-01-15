@@ -49,10 +49,6 @@ internal class LocalTransactionMetadataStore(
         return getCachedData()?.purchaseDataByTokenHash?.get(getTokenHash(purchaseToken))
     }
 
-    fun getAllLocalTransactionMetadata(): List<LocalTransactionMetadata.TransactionMetadata> {
-        return getCachedData()?.purchaseDataByTokenHash?.values?.toList() ?: emptyList()
-    }
-
     @Synchronized
     fun clearLocalTransactionMetadata(purchaseTokens: Set<String>) {
         val existingData = getCachedData() ?: return
