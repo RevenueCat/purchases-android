@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
@@ -141,7 +142,19 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     override val lifecycle: Lifecycle
         get() = lifecycleOwner?.lifecycle
-            ?: error("Lifecycle accessed before view attached to window")
+            // Defaulting to a lifecycle in INITIALIZED state if none is set.
+            ?: object : Lifecycle() {
+                override val currentState: State
+                    get() = State.INITIALIZED
+
+                override fun addObserver(observer: LifecycleObserver) {
+                    // No-op
+                }
+
+                override fun removeObserver(observer: LifecycleObserver) {
+                    // No-op
+                }
+            }
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
