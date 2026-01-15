@@ -810,24 +810,14 @@ internal class CustomerCenterViewModelImpl(
 
         // Track impression event when promo offer is shown
         if (loaded) {
-            val googleOption = subscriptionOption as? GoogleSubscriptionOption
-            val storeOfferId = googleOption?.offerId
-            val originProductId = purchaseInformation?.product?.id
-            val targetProductId = googleOption?.let {
-                "${it.productDetails.productId}:${it.basePlanId}"
-            }
-
-            if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                trackPromoOfferEvent(
-                    eventType = CustomerCenterEventType.PROMO_OFFER_IMPRESSION,
-                    path = originalPath.type,
-                    url = originalPath.url,
-                    surveyOptionID = surveyOptionID,
-                    storeOfferID = storeOfferId,
-                    productID = originProductId,
-                    targetProductID = targetProductId,
-                )
-            }
+            trackPromoOfferEvent(
+                eventType = CustomerCenterEventType.PROMO_OFFER_IMPRESSION,
+                subscriptionOption = subscriptionOption,
+                purchaseInfo = purchaseInformation,
+                path = originalPath.type,
+                url = originalPath.url,
+                surveyOptionID = surveyOptionID,
+            )
         }
 
         return loaded
@@ -850,26 +840,15 @@ internal class CustomerCenterViewModelImpl(
 
             // Track error event if we have promo data
             promoData?.let { data ->
-                val googleOption = subscriptionOption as? GoogleSubscriptionOption
-                val storeOfferId = googleOption?.offerId
-                val originProductId = purchaseInfo?.product?.id
-                // Construct full product ID with base plan: {productId}:{basePlanId}
-                val targetProductId = googleOption?.let {
-                    "${it.productDetails.productId}:${it.basePlanId}"
-                }
-
-                if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                    trackPromoOfferEvent(
-                        eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
-                        path = data.originalPath.type,
-                        url = data.originalPath.url,
-                        surveyOptionID = data.surveyOptionID,
-                        storeOfferID = storeOfferId,
-                        productID = originProductId,
-                        targetProductID = targetProductId,
-                        error = "Activity is null when accepting promotional offer",
-                    )
-                }
+                trackPromoOfferEvent(
+                    eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
+                    subscriptionOption = subscriptionOption,
+                    purchaseInfo = purchaseInfo,
+                    path = data.originalPath.type,
+                    url = data.originalPath.url,
+                    surveyOptionID = data.surveyOptionID,
+                    error = "Activity is null when accepting promotional offer",
+                )
             }
             return
         }
@@ -880,26 +859,15 @@ internal class CustomerCenterViewModelImpl(
 
             // Track success event
             promoData?.let { data ->
-                val googleOption = subscriptionOption as? GoogleSubscriptionOption
-                val storeOfferId = googleOption?.offerId
-                val originProductId = purchaseInfo?.product?.id
-                // Construct full product ID with base plan: {productId}:{basePlanId}
-                val targetProductId = googleOption?.let {
-                    "${it.productDetails.productId}:${it.basePlanId}"
-                }
-
-                if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                    trackPromoOfferEvent(
-                        eventType = CustomerCenterEventType.PROMO_OFFER_SUCCESS,
-                        path = data.originalPath.type,
-                        url = data.originalPath.url,
-                        surveyOptionID = data.surveyOptionID,
-                        storeOfferID = storeOfferId,
-                        productID = originProductId,
-                        targetProductID = targetProductId,
-                        transactionID = result.storeTransaction.orderId,
-                    )
-                }
+                trackPromoOfferEvent(
+                    eventType = CustomerCenterEventType.PROMO_OFFER_SUCCESS,
+                    subscriptionOption = subscriptionOption,
+                    purchaseInfo = purchaseInfo,
+                    path = data.originalPath.type,
+                    url = data.originalPath.url,
+                    surveyOptionID = data.surveyOptionID,
+                    transactionID = result.storeTransaction.orderId,
+                )
             }
 
             // Reload customer center data to refresh the UI with the latest subscription information
@@ -909,49 +877,27 @@ internal class CustomerCenterViewModelImpl(
             if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
                 // Track cancel event
                 promoData?.let { data ->
-                    val googleOption = subscriptionOption as? GoogleSubscriptionOption
-                    val storeOfferId = googleOption?.offerId
-                    val originProductId = purchaseInfo?.product?.id
-                    // Construct full product ID with base plan: {productId}:{basePlanId}
-                    val targetProductId = googleOption?.let {
-                        "${it.productDetails.productId}:${it.basePlanId}"
-                    }
-
-                    if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                        trackPromoOfferEvent(
-                            eventType = CustomerCenterEventType.PROMO_OFFER_CANCEL,
-                            path = data.originalPath.type,
-                            url = data.originalPath.url,
-                            surveyOptionID = data.surveyOptionID,
-                            storeOfferID = storeOfferId,
-                            productID = originProductId,
-                            targetProductID = targetProductId,
-                        )
-                    }
+                    trackPromoOfferEvent(
+                        eventType = CustomerCenterEventType.PROMO_OFFER_CANCEL,
+                        subscriptionOption = subscriptionOption,
+                        purchaseInfo = purchaseInfo,
+                        path = data.originalPath.type,
+                        url = data.originalPath.url,
+                        surveyOptionID = data.surveyOptionID,
+                    )
                 }
             } else {
                 // Track error event
                 promoData?.let { data ->
-                    val googleOption = subscriptionOption as? GoogleSubscriptionOption
-                    val storeOfferId = googleOption?.offerId
-                    val originProductId = purchaseInfo?.product?.id
-                    // Construct full product ID with base plan: {productId}:{basePlanId}
-                    val targetProductId = googleOption?.let {
-                        "${it.productDetails.productId}:${it.basePlanId}"
-                    }
-
-                    if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                        trackPromoOfferEvent(
-                            eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
-                            path = data.originalPath.type,
-                            url = data.originalPath.url,
-                            surveyOptionID = data.surveyOptionID,
-                            storeOfferID = storeOfferId,
-                            productID = originProductId,
-                            targetProductID = targetProductId,
-                            error = e.message,
-                        )
-                    }
+                    trackPromoOfferEvent(
+                        eventType = CustomerCenterEventType.PROMO_OFFER_ERROR,
+                        subscriptionOption = subscriptionOption,
+                        purchaseInfo = purchaseInfo,
+                        path = data.originalPath.type,
+                        url = data.originalPath.url,
+                        surveyOptionID = data.surveyOptionID,
+                        error = e.message,
+                    )
                 }
 
                 _actionError.value = e.error
@@ -973,27 +919,15 @@ internal class CustomerCenterViewModelImpl(
 
         // Track dismissed event (user closed promo offer without engaging)
         promoData?.let { data ->
-            val subscriptionOption = data.subscriptionOption
-            val googleOption = subscriptionOption as? GoogleSubscriptionOption
-            val storeOfferId = googleOption?.offerId
-            val originProductId = purchaseInfo?.product?.id
-            // Construct full product ID with base plan: {productId}:{basePlanId}
-            val targetProductId = googleOption?.let {
-                "${it.productDetails.productId}:${it.basePlanId}"
-            }
-
-            if (storeOfferId != null && originProductId != null && targetProductId != null) {
-                trackPromoOfferEvent(
-                    eventType = CustomerCenterEventType.PROMO_OFFER_REJECTED,
-                    path = data.originalPath.type,
-                    url = data.originalPath.url,
-                    surveyOptionID = data.surveyOptionID,
-                    source = source,
-                    storeOfferID = storeOfferId,
-                    productID = originProductId,
-                    targetProductID = targetProductId,
-                )
-            }
+            trackPromoOfferEvent(
+                eventType = CustomerCenterEventType.PROMO_OFFER_REJECTED,
+                subscriptionOption = data.subscriptionOption,
+                purchaseInfo = purchaseInfo,
+                path = data.originalPath.type,
+                url = data.originalPath.url,
+                surveyOptionID = data.surveyOptionID,
+                source = source,
+            )
         }
 
         // Continue with the original action and remove the promotional offer data
@@ -1159,16 +1093,16 @@ internal class CustomerCenterViewModelImpl(
     @SuppressWarnings("LongParameterList")
     private fun trackPromoOfferEvent(
         eventType: CustomerCenterEventType,
+        subscriptionOption: SubscriptionOption?,
+        purchaseInfo: PurchaseInformation?,
         path: HelpPath.PathType,
         url: String?,
         surveyOptionID: String?,
-        storeOfferID: String,
-        productID: String,
-        targetProductID: String,
         source: PromoOfferRejectionSource? = null,
         error: String? = null,
         transactionID: String? = null,
     ) {
+        val trackingData = extractPromoOfferTrackingData(subscriptionOption, purchaseInfo) ?: return
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         val event = CustomerCenterPromoOfferEvent(
             data = CustomerCenterPromoOfferEvent.Data(
@@ -1180,9 +1114,9 @@ internal class CustomerCenterViewModelImpl(
                 url = url,
                 surveyOptionID = surveyOptionID,
                 source = source,
-                storeOfferID = storeOfferID,
-                productID = productID,
-                targetProductID = targetProductID,
+                storeOfferID = trackingData.storeOfferId,
+                productID = trackingData.originProductId,
+                targetProductID = trackingData.targetProductId,
                 error = error,
                 transactionID = transactionID,
             ),
@@ -1491,5 +1425,28 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
+    )
+}
+
+private val GoogleSubscriptionOption.fullProductIdWithBasePlan: String
+    get() = "${productDetails.productId}:$basePlanId"
+
+private data class PromoOfferTrackingData(
+    val storeOfferId: String,
+    val originProductId: String,
+    val targetProductId: String,
+)
+
+private fun extractPromoOfferTrackingData(
+    subscriptionOption: SubscriptionOption?,
+    purchaseInfo: PurchaseInformation?,
+): PromoOfferTrackingData? {
+    val googleOption = subscriptionOption as? GoogleSubscriptionOption ?: return null
+    val storeOfferId = googleOption.offerId ?: return null
+    val originProductId = purchaseInfo?.product?.id ?: return null
+    return PromoOfferTrackingData(
+        storeOfferId = storeOfferId,
+        originProductId = originProductId,
+        targetProductId = googleOption.fullProductIdWithBasePlan,
     )
 }
