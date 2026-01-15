@@ -19,9 +19,12 @@ import com.revenuecat.purchasetester.configurationDataStore
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -44,6 +47,8 @@ class ConfigureScreenViewModelImpl(
 ) : ViewModel(), ConfigureScreenViewModel {
 
     companion object {
+        private const val SUBSCRIPTION_TIMEOUT_MILLIS = 5000L
+        
         val Factory = viewModelFactory {
             initializer {
                 val context = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
@@ -54,37 +59,37 @@ class ConfigureScreenViewModelImpl(
         }
     }
 
-    override val state: StateFlow<ConfigureScreenState>
-        get() = _state.asStateFlow()
-
     override val events: SharedFlow<ConfigureUiEvent>
         get() = _events.asSharedFlow()
 
-    private val _state: MutableStateFlow<ConfigureScreenState> = MutableStateFlow(ConfigureScreenState.Loading)
     private val _events = MutableSharedFlow<ConfigureUiEvent>(
         replay = 0,
         extraBufferCapacity = 1
     )
 
-    init {
-        loadData()
-    }
+    private val userEdits = MutableStateFlow<ConfigureScreenState.ConfigureScreenData?>(null)
 
-    private fun loadData() {
-        viewModelScope.launch {
-            dataStoreUtils.getSdkConfig().collect { sdkConfiguration ->
-                _state.value = ConfigureScreenState.ConfigureScreenData(
-                    apiKey = sdkConfiguration.apiKey,
-                    proxyUrl = sdkConfiguration.proxyUrl.orEmpty(),
-                    selectedStoreType = if (sdkConfiguration.useAmazon) {
-                        StoreType.AMAZON
-                    } else {
-                        StoreType.GOOGLE
-                    },
-                )
-            }
-        }
-    }
+    private val _state: StateFlow<ConfigureScreenState> = combine(
+        dataStoreUtils.getSdkConfig(),
+        userEdits
+    ) { sdkConfiguration, edits ->
+        edits ?: ConfigureScreenState.ConfigureScreenData(
+            apiKey = sdkConfiguration.apiKey,
+            proxyUrl = sdkConfiguration.proxyUrl.orEmpty(),
+            selectedStoreType = if (sdkConfiguration.useAmazon) {
+                StoreType.AMAZON
+            } else {
+                StoreType.GOOGLE
+            },
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MILLIS),
+        initialValue = ConfigureScreenState.Loading
+    )
+
+    override val state: StateFlow<ConfigureScreenState>
+        get() = _state
 
     override fun validateInputs(apiKey: String, proxyUrl: String): ValidationResult {
         if (apiKey.isBlank()) {
@@ -205,9 +210,9 @@ class ConfigureScreenViewModelImpl(
     private inline fun updateData(
         block: ConfigureScreenState.ConfigureScreenData.() -> ConfigureScreenState.ConfigureScreenData,
     ) {
-        _state.value = when (val current = _state.value) {
-            is ConfigureScreenState.ConfigureScreenData -> block(current)
-            else -> current
+        val current = _state.value
+        if (current is ConfigureScreenState.ConfigureScreenData) {
+            userEdits.value = block(current)
         }
     }
 }
