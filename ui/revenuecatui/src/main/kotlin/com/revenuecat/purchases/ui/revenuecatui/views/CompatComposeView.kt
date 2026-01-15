@@ -109,11 +109,6 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             }
         }
 
-        fun onDetachedFromWindow() {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        }
-
         fun destroy() {
             if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
 
@@ -170,7 +165,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         // been destroyed yet.
         lifecycleOwner?.let { lifecycleOwner ->
             if (lifecycleOwner is ViewLifecycleOwner) {
-                Logger.e("Attaching to a window a view that was already detached. Resetting state")
+                Logger.e("Attaching a previously-detached view to a window. Resetting state")
                 lifecycleOwner.destroy()
                 onDestroy()
             }
@@ -201,7 +196,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     }
 
     override fun onDetachedFromWindow() {
-        (lifecycleOwner as? ViewLifecycleOwner)?.onDetachedFromWindow()
+        (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
         deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
