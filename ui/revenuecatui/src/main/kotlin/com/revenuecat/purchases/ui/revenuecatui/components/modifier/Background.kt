@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @JvmSynthetic
 @Stable
@@ -34,12 +33,15 @@ internal fun Modifier.background(
     when (background) {
         is BackgroundStyle.Color -> this.background(color = background.color, shape = shape)
         is BackgroundStyle.Image ->
+            // Image backgrounds with color overlays are handled specially in WithOptionalOverlayBackground
+            // to ensure the overlay covers the full container, not just the image bounds.
+            // This matches the web builder behavior where overlays cover 100% of the viewport.
             this.clip(shape)
                 .paint(
                     painter = background.painter,
                     contentScale = background.contentScale,
+                    alignment = androidx.compose.ui.Alignment.TopCenter,
                 )
-                .applyIfNotNull(background.colorOverlay) { underlay(it, shape) }
         is BackgroundStyle.Video ->
             // Video backgrounds are handled specially - they need to be rendered
             // in a Box behind the content, so we do nothing here
