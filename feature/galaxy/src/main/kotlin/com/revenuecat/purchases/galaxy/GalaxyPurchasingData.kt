@@ -4,7 +4,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchasingData
 import dev.drewhamilton.poko.Poko
 
-internal sealed class GalaxyPurchasingData : PurchasingData {
+sealed class GalaxyPurchasingData : PurchasingData {
     @Poko
     class Product(
         override val productId: String,
