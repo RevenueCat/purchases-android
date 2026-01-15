@@ -165,7 +165,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         // been destroyed yet.
         lifecycleOwner?.let { lifecycleOwner ->
             if (lifecycleOwner is ViewLifecycleOwner) {
-                Logger.e("Attaching a previously-detached view to a window. Resetting state")
+                Logger.w("Attaching a previously-detached view to a window. Resetting state")
                 lifecycleOwner.destroy()
                 onDestroy()
             }
