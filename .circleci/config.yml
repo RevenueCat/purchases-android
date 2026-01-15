@@ -1000,7 +1000,6 @@ workflows:
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches
       - run-firebase-tests-purchases-integration-tests:
-          <<: *release-branches
           context:
             - slack-secrets
           matrix:
