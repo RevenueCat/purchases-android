@@ -174,7 +174,6 @@ class PaywallView : CompatComposeView {
 
     private fun dismiss() {
         dismissHandler?.invoke()
-        destroy()
     }
 
     @Composable

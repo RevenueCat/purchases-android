@@ -110,8 +110,8 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
         }
 
         fun onDetachedFromWindow() {
-            // Only goes to ON_STOP, not ON_DESTROY as the view might be reattached later.
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         }
 
         fun destroy() {
@@ -152,7 +152,6 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
 
     open fun onBackPressed() {
         (parent as? ViewGroup)?.removeView(this)
-        (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
     }
 
     override fun onSaveInstanceState(): Parcelable? {
@@ -167,6 +166,15 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     }
 
     override fun onAttachedToWindow() {
+        // This is just a safety measure in case the View is re-attached after being detached without having
+        // been destroyed yet.
+        lifecycleOwner?.let { lifecycleOwner ->
+            if (lifecycleOwner is ViewLifecycleOwner) {
+                Logger.e("Attaching to a window a view that was already detached. Resetting state")
+                lifecycleOwner.destroy()
+                onDestroy()
+            }
+        }
         initViewTreeOwners()
         if (isManagingSavedState) {
             savedStateRegistryController.performAttach()
@@ -222,6 +230,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     private fun onDestroy() {
         if (isManagingViewModelStore) viewModelStore.clear()
         lifecycleOwner?.lifecycle?.removeObserver(lifecycleObserver)
+        lifecycleOwner = null
     }
 
     private fun performSave(state: Parcelable?): Bundle {
