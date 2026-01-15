@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "90012",
+    "Content-Length": "90036",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "server": "envoy",
@@ -4077,7 +4077,8 @@
       "variable_config": {
         "variable_compatibility_map": {},
         "function_compatibility_map": {}
-      }
+      },
+      "custom_variables": {}
     }
   }
 }
