@@ -671,9 +671,10 @@ internal class PaywallViewModelImpl(
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
+        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.data?.id
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
-            paywallIdentifier = this.offering.paywallComponents?.data?.id,
+            paywallIdentifier = paywallId,
             offeringIdentifier = offering.identifier,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),

@@ -66,7 +66,6 @@ data class PaywallEvent(
 
     @Serializable
     data class Data(
-        // Nullable for legacy paywalls
         val paywallIdentifier: String?,
         val offeringIdentifier: String,
         val paywallRevision: Int,
