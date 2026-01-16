@@ -39,7 +39,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class OfflineCustomerInfoCalculatorTest {
     private val oneHourAgo = 1.hours.ago()
     private val oneDayFromNow = 1.days.fromNow()

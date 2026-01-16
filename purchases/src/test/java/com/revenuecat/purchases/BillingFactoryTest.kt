@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import kotlin.test.assertIs
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class BillingFactoryTest {
 
     @Test

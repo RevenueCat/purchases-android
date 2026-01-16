@@ -8,7 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.util.Date
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class InMemoryCachedObjectTest {
     // region clearCacheTimestamp
 

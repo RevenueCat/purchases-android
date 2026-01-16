@@ -28,7 +28,7 @@ import java.net.URL
 
 private const val API_KEY = "TEST_API_KEY"
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 @RunWith(AndroidJUnit4::class)
 class AmazonBackendTest {
 

@@ -27,7 +27,7 @@ import org.junit.After
 import org.junit.Before
 import java.util.Date
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal open class BaseBillingUseCaseTest {
 
     protected companion object {

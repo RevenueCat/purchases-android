@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google.usecase
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingConfig
 import com.android.billingclient.api.GetBillingConfigParams
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -18,7 +17,6 @@ internal data class GetBillingConfigUseCaseParams(
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class GetBillingConfigUseCase(
     useCaseParams: GetBillingConfigUseCaseParams,
     val deviceCache: DeviceCache,

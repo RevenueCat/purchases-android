@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class VirtualCurrencyManagerTest {
 
     private val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
@@ -132,7 +132,7 @@ class VirtualCurrencyManagerTest {
             )
             mockCallback.onReceived(this@VirtualCurrencyManagerTest.virtualCurrencies)
         }
-        
+
         verify(exactly = 0) {
             mockDeviceCache.getCachedVirtualCurrencies(any())
             mockCallback.onError(any())

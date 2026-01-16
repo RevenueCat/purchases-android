@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -53,7 +52,7 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal typealias OfferingsCallback = Pair<
     (JSONObject, HTTPResponseOriginalSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
@@ -82,7 +81,7 @@ internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesEr
 internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -107,7 +106,7 @@ internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_NOT_FALLBACK,
 }
 
-@OptIn(InternalRevenueCatAPI::class, InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,

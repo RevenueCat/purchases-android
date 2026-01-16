@@ -13,7 +13,7 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class DiagnosticsEntryTest {
 
     private val testDate = Date(1675954145000L) // Thursday, February 9, 2023 2:49:05 PM GMT

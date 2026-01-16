@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class DateExtensionsTest {
 
     @Test

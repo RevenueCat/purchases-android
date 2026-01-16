@@ -28,7 +28,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal abstract class BaseHTTPClientTest {
 
     protected val countryCode = "JP"

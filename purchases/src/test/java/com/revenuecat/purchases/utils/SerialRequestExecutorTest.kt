@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SerialRequestExecutorTest {
 
     @Test

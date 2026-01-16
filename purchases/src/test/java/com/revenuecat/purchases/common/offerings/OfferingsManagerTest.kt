@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class OfferingsManagerTest {
 
     private val appUserId = "fakeUserID"

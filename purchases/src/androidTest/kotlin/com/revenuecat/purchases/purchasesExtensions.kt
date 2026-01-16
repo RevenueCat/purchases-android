@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun Purchases.Companion.configure(
     configuration: PurchasesConfiguration,
     overrideBillingAbstract: BillingAbstract,

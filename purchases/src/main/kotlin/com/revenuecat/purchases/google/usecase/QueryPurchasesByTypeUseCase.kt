@@ -6,7 +6,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchasesParams
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -27,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 internal data class QueryPurchasesByTypeUseCaseParams
-@OptIn(InternalRevenueCatStoreAPI::class)
 constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -35,7 +33,6 @@ constructor(
     @ProductType val productType: String,
 ) : UseCaseParams
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class QueryPurchasesByTypeUseCase(
     private val useCaseParams: QueryPurchasesByTypeUseCaseParams,
     val onSuccess: (Map<String, StoreTransaction>) -> Unit,

@@ -24,7 +24,7 @@ import java.util.Date
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SubscriberAttributesDeviceCacheTests {
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"

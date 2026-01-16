@@ -5,7 +5,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsResult
 import com.android.billingclient.api.UnfetchedProduct.StatusCode
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -26,7 +25,6 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal data class QueryProductDetailsUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -35,7 +33,6 @@ internal data class QueryProductDetailsUseCaseParams(
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,
     val onReceive: StoreProductsCallback,

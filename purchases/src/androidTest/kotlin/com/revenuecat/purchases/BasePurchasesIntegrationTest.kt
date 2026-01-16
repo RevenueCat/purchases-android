@@ -30,7 +30,6 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 open class BasePurchasesIntegrationTest {
 
     companion object {

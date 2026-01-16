@@ -26,7 +26,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class PurchasedProductsFetcherTest {
     private lateinit var fetcher: PurchasedProductsFetcher
 

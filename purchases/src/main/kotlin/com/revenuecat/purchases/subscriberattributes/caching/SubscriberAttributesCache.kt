@@ -6,7 +6,6 @@
 package com.revenuecat.purchases.subscriberattributes.caching
 
 import android.content.SharedPreferences
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -18,7 +17,6 @@ internal typealias AppUserID = String
 internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
 internal typealias SubscriberAttributesPerAppUserIDMap = Map<AppUserID, SubscriberAttributeMap>
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class SubscriberAttributesCache(
     internal val deviceCache: DeviceCache,
 ) {

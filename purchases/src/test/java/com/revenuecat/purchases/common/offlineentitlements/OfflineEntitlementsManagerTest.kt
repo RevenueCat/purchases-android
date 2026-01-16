@@ -27,7 +27,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class OfflineEntitlementsManagerTest {
 
     private val appUserID = "test-app-user-id"

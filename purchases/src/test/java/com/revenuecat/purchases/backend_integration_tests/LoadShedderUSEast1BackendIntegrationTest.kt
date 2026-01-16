@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import java.net.URL
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
 

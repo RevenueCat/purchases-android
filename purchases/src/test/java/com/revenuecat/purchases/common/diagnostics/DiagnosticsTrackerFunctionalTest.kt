@@ -79,7 +79,7 @@ class DiagnosticsTrackerFunctionalTest {
         }
     }
 
-    @OptIn(InternalRevenueCatStoreAPI::class)
+
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
         return DiagnosticsEntry(
             name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,

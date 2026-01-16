@@ -33,7 +33,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     private val appUserId = "jerry"

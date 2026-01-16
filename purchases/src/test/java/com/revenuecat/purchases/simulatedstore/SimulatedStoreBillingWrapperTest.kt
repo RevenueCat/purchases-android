@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SimulatedStoreBillingWrapperTest {
 
     private lateinit var deviceCache: DeviceCache
@@ -56,22 +56,22 @@ class SimulatedStoreBillingWrapperTest {
         backend = mockk()
         purchaseDialogHelper = mockk()
         stateListener = mockk()
-        
+
         // Create actual listener object for testing purchase flows
         purchasesUpdatedListener = this@SimulatedStoreBillingWrapperTest.TestPurchasesListener()
-        
+
         every { mainHandler.postDelayed(any(), any()) } answers {
             val runnable = firstArg<Runnable>()
             runnable.run()
             true
         }
-        
+
         every { mainHandler.post(any()) } answers {
             val runnable = firstArg<Runnable>()
             runnable.run()
             true
         }
-        
+
         testStoreBilling = SimulatedStoreBillingWrapper(
             deviceCache = deviceCache,
             mainHandler = mainHandler,
@@ -79,7 +79,7 @@ class SimulatedStoreBillingWrapperTest {
             backend = backend,
             dialogHelper = purchaseDialogHelper
         )
-        
+
         testStoreBilling.stateListener = stateListener
         testStoreBilling.purchasesUpdatedListener = purchasesUpdatedListener
     }
@@ -87,11 +87,11 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `startConnection sets connected to true and notifies listener`() {
         every { stateListener.onConnected() } just Runs
-        
+
         assertThat(testStoreBilling.isConnected()).isFalse()
-        
+
         testStoreBilling.startConnection()
-        
+
         assertThat(testStoreBilling.isConnected()).isTrue()
         verify { stateListener.onConnected() }
     }
@@ -99,9 +99,9 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `startConnectionOnMainThread posts delayed and starts connection`() {
         every { stateListener.onConnected() } just Runs
-        
+
         testStoreBilling.startConnectionOnMainThread(100)
-        
+
         verify { mainHandler.postDelayed(any(), 100) }
         verify { stateListener.onConnected() }
     }
@@ -109,10 +109,10 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `close sets connected to false`() {
         every { stateListener.onConnected() } just Runs
-        
+
         testStoreBilling.startConnection()
         assertThat(testStoreBilling.isConnected()).isTrue()
-        
+
         testStoreBilling.close()
         assertThat(testStoreBilling.isConnected()).isFalse()
     }
@@ -120,12 +120,12 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `getStorefront returns US`() {
         var result: String? = null
-        
+
         testStoreBilling.getStorefront(
             onSuccess = { result = it },
             onError = { }
         )
-        
+
         assertThat(result).isEqualTo("US")
     }
 
@@ -182,29 +182,29 @@ class SimulatedStoreBillingWrapperTest {
         val activity = mockk<Activity>()
         val productId = "test_product_123"
         val presentedOfferingContext = mockk<PresentedOfferingContext>()
-        
+
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
         val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-        
+
         every { deviceCache.getCachedAppUserID() } returns "test_user"
         every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
             val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
-        
+
         // Mock dialog helper to simulate cancellation
-        every { 
+        every {
             purchaseDialogHelper.showDialog(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            ) 
+            )
         } answers {
             val onNeutralClicked = lastArg<() -> Unit>()
             onNeutralClicked()
         }
-        
+
         // When
         testStoreBilling.makePurchaseAsync(
             activity = activity,
@@ -214,7 +214,7 @@ class SimulatedStoreBillingWrapperTest {
             presentedOfferingContext = presentedOfferingContext,
             isPersonalizedPrice = null
         )
-        
+
         // Then
         val listenerImpl = purchasesUpdatedListener as TestPurchasesListener
         assertThat(listenerImpl.lastError).isNotNull()
@@ -229,29 +229,29 @@ class SimulatedStoreBillingWrapperTest {
         val activity = mockk<Activity>()
         val productId = "test_product_456"
         val presentedOfferingContext = mockk<PresentedOfferingContext>()
-        
+
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
         val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-        
+
         every { deviceCache.getCachedAppUserID() } returns "test_user"
         every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
             val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
-        
+
         // Mock dialog helper to simulate successful purchase
-        every { 
+        every {
             purchaseDialogHelper.showDialog(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            ) 
+            )
         } answers {
             val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
-        
+
         // When
         testStoreBilling.makePurchaseAsync(
             activity = activity,
@@ -261,12 +261,12 @@ class SimulatedStoreBillingWrapperTest {
             presentedOfferingContext = presentedOfferingContext,
             isPersonalizedPrice = null
         )
-        
+
         // Then
         val listenerImpl = purchasesUpdatedListener as SimulatedStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastPurchases).isNotNull()
         assertThat(listenerImpl.lastPurchases).hasSize(1)
-        
+
         val transaction = listenerImpl.lastPurchases?.first()
         assertThat(transaction?.productIds).containsExactly(productId)
         assertThat(transaction?.type).isEqualTo(ProductType.SUBS)
@@ -306,7 +306,7 @@ class SimulatedStoreBillingWrapperTest {
             onReceivePurchaseHistory = { cachedPurchases = it },
             onReceivePurchaseHistoryError = { fail("Expected success") }
         )
-        
+
         assertThat(cachedPurchases).isNotNull()
         assertThat(cachedPurchases).hasSize(0)
     }
@@ -319,7 +319,7 @@ class SimulatedStoreBillingWrapperTest {
             onSuccess = { cachedPurchases = it },
             onError = { fail("Should succeed") }
         )
-        
+
         assertThat(cachedPurchases).isNotNull()
         assertThat(cachedPurchases).hasSize(0)
     }
@@ -334,7 +334,7 @@ class SimulatedStoreBillingWrapperTest {
             onCompletion = { fail("Should error") },
             onError = { error = it }
         )
-        
+
         assertThat(error).isNotNull()
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
         assertThat(error?.underlyingErrorMessage).isEqualTo("No active purchase found for product: test-product-id")
@@ -344,11 +344,11 @@ class SimulatedStoreBillingWrapperTest {
     fun `findPurchaseInPurchaseHistory returns error when purchase not found`() {
         // Given - no purchases in cache
         val nonExistentProductId = "non_existent_product"
-        
+
         // When - try to find non-existent purchase
         var foundPurchase: StoreTransaction? = null
         var errorFound: PurchasesError? = null
-        
+
         testStoreBilling.findPurchaseInPurchaseHistory(
             appUserID = "test_user",
             productType = ProductType.SUBS,
@@ -356,7 +356,7 @@ class SimulatedStoreBillingWrapperTest {
             onCompletion = { foundPurchase = it },
             onError = { errorFound = it }
         )
-        
+
         // Then - should return error
         assertThat(foundPurchase).isNull()
         assertThat(errorFound).isNotNull()
@@ -367,11 +367,11 @@ class SimulatedStoreBillingWrapperTest {
     private inner class TestPurchasesListener : BillingAbstract.PurchasesUpdatedListener {
         var lastPurchases: List<StoreTransaction>? = null
         var lastError: PurchasesError? = null
-        
+
         override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
             lastPurchases = purchases
         }
-        
+
         override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
             lastError = purchasesError
         }

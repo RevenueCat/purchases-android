@@ -40,7 +40,7 @@ import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class OfferingsFactoryTest {
 
     // language=JSON

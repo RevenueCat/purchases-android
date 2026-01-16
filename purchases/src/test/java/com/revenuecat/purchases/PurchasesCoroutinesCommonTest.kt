@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-@OptIn(ExperimentalCoroutinesApi::class, InternalRevenueCatStoreAPI::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {

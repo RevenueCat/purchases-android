@@ -35,7 +35,7 @@ import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class IdentityManagerTests {
 
     private lateinit var cachedAppUserIDSlot: CapturingSlot<String>

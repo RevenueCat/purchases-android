@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.random.Random
 
-@OptIn(ExperimentalCoroutinesApi::class, InternalRevenueCatStoreAPI::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class PurchasesCoroutinesTest : BasePurchasesTest() {
@@ -447,7 +447,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
-    
+
     // endregion
 
     // region awaitGetAmazonLWAConsentStatus

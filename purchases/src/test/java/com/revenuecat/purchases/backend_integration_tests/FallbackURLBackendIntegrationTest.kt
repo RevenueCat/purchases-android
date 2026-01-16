@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
     override val forceServerErrorStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls

@@ -17,7 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class CustomerInfoUpdateHandlerTest {
 
     private lateinit var deviceCache: DeviceCache

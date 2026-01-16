@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import java.util.Date
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal fun HTTPResult.Companion.createResult(
     responseCode: Int = RCHTTPStatusCodes.SUCCESS,
     payload: String = "{}",

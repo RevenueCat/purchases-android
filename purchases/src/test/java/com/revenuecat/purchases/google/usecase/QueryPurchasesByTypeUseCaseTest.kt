@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
 
     private var billingClientStateListener: BillingClientStateListener? = null

@@ -5,7 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.caching.DeviceCache
 import org.json.JSONObject
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class MockDeviceCache(
     preferences: SharedPreferences,
     apiKey: String

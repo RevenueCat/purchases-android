@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -14,7 +13,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,

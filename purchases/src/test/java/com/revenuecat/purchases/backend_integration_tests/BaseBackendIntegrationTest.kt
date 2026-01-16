@@ -38,7 +38,7 @@ import kotlin.time.Duration.Companion.seconds
 // To run these tests in Android Studio, you need to remove the test exclusion in the
 // common module build.gradle and change the API KEY in Constants.kt
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal abstract class BaseBackendIntegrationTest {
 
     companion object {

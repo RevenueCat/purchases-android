@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
@@ -63,7 +62,6 @@ internal interface RequestResponseListener {
 }
 
 @Suppress("LongParameterList")
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,

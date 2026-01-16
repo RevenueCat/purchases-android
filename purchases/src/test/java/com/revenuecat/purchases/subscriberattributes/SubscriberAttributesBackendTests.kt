@@ -40,7 +40,7 @@ import java.net.URL
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")

@@ -4,7 +4,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -22,7 +21,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 @RunWith(AndroidJUnit4::class)
 class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 

@@ -87,7 +87,7 @@ import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalCoroutinesApi::class, InternalRevenueCatStoreAPI::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class BillingWrapperTest {
@@ -606,7 +606,7 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
-        
+
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
 

@@ -8,7 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class ProductEntitlementMappingTest {

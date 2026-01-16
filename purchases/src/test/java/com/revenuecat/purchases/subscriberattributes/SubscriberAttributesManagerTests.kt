@@ -28,7 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
@@ -456,7 +456,7 @@ class SubscriberAttributesManagerTests {
 
         verify(exactly = 0) { mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any()) }
         verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
-        
+
         val capturedAttributes = slot.captured
         val adjustAttribute = capturedAttributes[SubscriberAttributeKey.AttributionIds.Adjust.backendKey]
         assertThat(adjustAttribute).isNotNull

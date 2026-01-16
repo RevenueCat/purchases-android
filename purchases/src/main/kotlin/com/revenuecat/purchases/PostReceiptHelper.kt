@@ -18,7 +18,6 @@ import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 
 @Suppress("LongParameterList")
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class PostReceiptHelper(
     private val appConfig: AppConfig,
     private val backend: Backend,

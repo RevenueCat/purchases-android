@@ -31,7 +31,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()

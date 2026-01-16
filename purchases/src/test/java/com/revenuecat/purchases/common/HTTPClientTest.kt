@@ -41,7 +41,7 @@ import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Before
@@ -1260,7 +1260,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
     private val statusCode: Int,
@@ -1357,7 +1357,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class ParameterizedConnectionFailureFallbackTest(
     private val endpoint: Endpoint,
 ) : BaseHTTPClientTest() {

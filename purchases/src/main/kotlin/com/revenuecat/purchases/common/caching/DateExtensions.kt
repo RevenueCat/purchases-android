@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.caching
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
@@ -15,7 +14,6 @@ import kotlin.time.Duration.Companion.minutes
 private val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 5.minutes
 private val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 25.hours
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun Date?.isCacheStale(appInBackground: Boolean, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
     return this?.let {
         log(LogIntent.DEBUG) { ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground) }
@@ -28,7 +26,6 @@ internal fun Date?.isCacheStale(appInBackground: Boolean, dateProvider: DateProv
     } ?: true
 }
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun Date?.isCacheStale(cacheDuration: Duration, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
     return this?.let { cacheLastUpdated ->
         (dateProvider.now.time - cacheLastUpdated.time).milliseconds >= cacheDuration

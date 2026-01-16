@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class AmazonCacheTest {
     private val apiKey = "api_key"
     private lateinit var cache: MockDeviceCache
@@ -112,7 +112,7 @@ class AmazonCacheTest {
     }
 
     private fun getStoredJSONFromMap(expected: Map<String, String>) = """
-                { "receiptsToSkus": 
+                { "receiptsToSkus":
                     {
                         ${expected.map { "\"${it.key}\": \"${it.value}\"" }.joinToString()}
                     }

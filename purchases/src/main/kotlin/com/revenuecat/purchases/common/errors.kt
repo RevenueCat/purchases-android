@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -74,7 +73,6 @@ internal fun Exception.toPurchasesError(): PurchasesError {
 private fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun HTTPResult.toPurchasesError(): PurchasesError {
     val errorCode = backendErrorCode
     val errorMessage = backendErrorMessage ?: ""

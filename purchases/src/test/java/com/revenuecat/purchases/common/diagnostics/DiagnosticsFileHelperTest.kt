@@ -19,7 +19,7 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(

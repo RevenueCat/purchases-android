@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -108,7 +107,6 @@ internal fun JSONObject.buildEntitlementInfo(
     )
 }
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 private fun isDateActive(
     identifier: String,
     expirationDate: Date?,

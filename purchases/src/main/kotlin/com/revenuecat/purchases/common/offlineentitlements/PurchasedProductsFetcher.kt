@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -13,7 +12,6 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class PurchasedProductsFetcher(
     private val deviceCache: DeviceCache,
     private val billing: BillingAbstract,

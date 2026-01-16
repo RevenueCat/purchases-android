@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class DispatcherTest {
 
     private val mockExecutorService: ExecutorService = mockk()

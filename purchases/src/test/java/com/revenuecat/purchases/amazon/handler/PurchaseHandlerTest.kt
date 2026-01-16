@@ -79,7 +79,7 @@ class PurchaseHandlerTest {
     private var activityIntentSlot = slot<Intent>()
     private val packageName = UUID.randomUUID().toString()
 
-    @OptIn(InternalRevenueCatStoreAPI::class)
+
     @Before
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()

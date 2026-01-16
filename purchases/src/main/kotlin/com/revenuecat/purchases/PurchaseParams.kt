@@ -95,7 +95,6 @@ class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
-        @OptIn(InternalRevenueCatStoreAPI::class)
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var galaxyReplacementMode: GalaxyReplacementMode = GalaxyReplacementMode.default
@@ -216,7 +215,7 @@ class PurchaseParams(val builder: Builder) {
             attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
         }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
             if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }

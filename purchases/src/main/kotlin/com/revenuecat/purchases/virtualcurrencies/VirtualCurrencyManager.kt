@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.virtualcurrencies
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -12,7 +11,6 @@ import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 
 @Suppress("UnusedPrivateProperty")
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class VirtualCurrencyManager(
     private val identityManager: IdentityManager,
     private val deviceCache: DeviceCache,

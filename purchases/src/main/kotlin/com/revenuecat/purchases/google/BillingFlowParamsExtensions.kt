@@ -1,12 +1,10 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingFlowParams
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.GoogleReplacementMode
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: ReplaceProductInfo) {
     val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
         setOldPurchaseToken(replaceProductInfo.oldPurchase.purchaseToken)

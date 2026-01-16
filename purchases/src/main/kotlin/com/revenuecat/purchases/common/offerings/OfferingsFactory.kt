@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.offerings
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -18,7 +17,6 @@ import kotlinx.serialization.SerializationException
 import org.json.JSONException
 import org.json.JSONObject
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class OfferingsFactory(
     private val billing: BillingAbstract,
     private val offeringParser: OfferingParser,

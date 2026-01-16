@@ -23,7 +23,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Before

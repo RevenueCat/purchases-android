@@ -25,7 +25,7 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Test
 import java.net.URL
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
 

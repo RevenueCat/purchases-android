@@ -6,7 +6,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -39,7 +38,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @Suppress("MagicNumber", "FunctionNaming", "TooManyFunctions", "MaximumLineLength", "MaxLineLength")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
     private lateinit var mockDetailsList: List<ProductDetails>

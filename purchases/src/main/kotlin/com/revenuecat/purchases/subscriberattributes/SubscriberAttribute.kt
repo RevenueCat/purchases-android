@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.subscriberattributes
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -18,7 +17,6 @@ internal const val JSON_NAME_IS_SYNCED = "is_synced"
 internal const val BACKEND_NAME_VALUE = "value"
 internal const val BACKEND_NAME_TIMESTAMP = "updated_at_ms"
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal data class SubscriberAttribute(
     val key: SubscriberAttributeKey,
     val value: String?,

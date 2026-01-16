@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -196,7 +195,6 @@ class AmazonStoreProduct @JvmOverloads constructor(
         "Replaced with copyWithPresentedOfferingContext",
         ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),
     )
-    @OptIn(InternalRevenueCatStoreAPI::class)
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         val newPresentedOfferingContext = presentedOfferingContext?.copy(offeringIdentifier = offeringId)
             ?: PresentedOfferingContext(offeringId)

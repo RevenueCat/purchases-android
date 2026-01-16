@@ -21,7 +21,6 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -87,7 +86,6 @@ private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
 @Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
-@OptIn(InternalRevenueCatStoreAPI::class)
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,

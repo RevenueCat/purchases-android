@@ -30,7 +30,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatAPI::class, InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 class OfferingsTest {
 
     private val productIdentifier = "com.myproduct"
@@ -604,7 +604,7 @@ class OfferingsTest {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val products = mapOf(productIdentifier to listOf(storeProductMonthly))
-        
+
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = "offering_a",
             listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),
@@ -668,7 +668,7 @@ class OfferingsTest {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val products = mapOf(productIdentifier to listOf(storeProductMonthly))
-        
+
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = "offering_a",
             listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),

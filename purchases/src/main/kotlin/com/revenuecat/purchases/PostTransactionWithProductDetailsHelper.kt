@@ -10,7 +10,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 /**
  * This class will post store transactions after querying the product details to enrich the data.
  */
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 internal class PostTransactionWithProductDetailsHelper(
     private val billing: BillingAbstract,
     private val postReceiptHelper: PostReceiptHelper,

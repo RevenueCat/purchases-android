@@ -23,7 +23,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class ETagManagerTest {
 
     private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT

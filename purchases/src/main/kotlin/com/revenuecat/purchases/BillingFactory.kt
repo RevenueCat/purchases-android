@@ -17,7 +17,6 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 internal object BillingFactory {
 
-    @OptIn(InternalRevenueCatStoreAPI::class)
     @Suppress("LongParameterList", "ThrowsCount")
     fun createBilling(
         store: Store,

@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.offerings
 
 import android.os.Handler
 import android.os.Looper
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -25,7 +24,6 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
-@OptIn(InternalRevenueCatStoreAPI::class)
 @Suppress("LongParameterList")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,

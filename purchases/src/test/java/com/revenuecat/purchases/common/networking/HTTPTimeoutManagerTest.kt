@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Config(manifest = Config.NONE)
 internal class HTTPTimeoutManagerTest {
 
-    @OptIn(InternalRevenueCatStoreAPI::class)
+
     private class FakeDateProvider(private val currentTime: AtomicLong = AtomicLong(System.currentTimeMillis())) : DateProvider {
         override val now: Date
             get() = Date(currentTime.get())
@@ -38,7 +38,7 @@ internal class HTTPTimeoutManagerTest {
     private lateinit var timeoutManager: HTTPTimeoutManager
 
     @Before
-    @OptIn(InternalRevenueCatStoreAPI::class)
+
     fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { runningTests } returns false

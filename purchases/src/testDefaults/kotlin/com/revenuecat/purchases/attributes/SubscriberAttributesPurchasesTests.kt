@@ -48,7 +48,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatStoreAPI::class)
+
 class SubscriberAttributesPurchasesTests {
 
     private lateinit var underTest: Purchases
