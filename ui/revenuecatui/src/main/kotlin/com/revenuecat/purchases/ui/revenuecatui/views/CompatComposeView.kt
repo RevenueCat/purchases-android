@@ -94,6 +94,10 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         }
 
+        fun onDetachedFromWindow() {
+            destroy()
+        }
+
         fun onWindowVisibilityChanged(visibility: Int) {
             if (visibility == VISIBLE) {
                 lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
@@ -209,7 +213,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     }
 
     override fun onDetachedFromWindow() {
-        (lifecycleOwner as? ViewLifecycleOwner)?.destroy()
+        (lifecycleOwner as? ViewLifecycleOwner)?.onDetachedFromWindow()
         deinitViewTreeOwners()
         super.onDetachedFromWindow()
     }
