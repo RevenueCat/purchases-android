@@ -452,7 +452,7 @@ platform :android do
       end
     end
 
-#     slack_backend_integration_test_results(environment: backend_environment, success: success)
+    slack_backend_integration_test_results(environment: backend_environment, success: success)
     ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
     if last_exception
       raise last_exception
