@@ -71,14 +71,14 @@ This suppresses the "internal RevenueCat API" warnings during compilation.
 
 | Feature | Sample Project Location |
 |---------|------------------------|
-| 🔧 RevenueCat SDK initialization | [MainApplication.kt:29](app/src/main/java/com/revenuecat/sample/admob/MainApplication.kt#L29) |
-| 🔧 AdMob SDK initialization | [MainApplication.kt:44](app/src/main/java/com/revenuecat/sample/admob/MainApplication.kt#L44) |
-| 📊 Banner ad tracking | [AdMobManager.kt:47](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L47) |
-| 📊 Interstitial ad tracking | [AdMobManager.kt:99](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L99) |
+| 🔧 RevenueCat SDK initialization | [MainApplication.kt:36](app/src/main/java/com/revenuecat/sample/admob/MainApplication.kt#L36) |
+| 🔧 AdMob SDK initialization | [MainApplication.kt:60](app/src/main/java/com/revenuecat/sample/admob/MainApplication.kt#L60) |
+| 📊 Banner ad tracking | [AdMobManager.kt:72](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L72) |
+| 📊 Interstitial ad tracking | [AdMobManager.kt:135](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L135) |
 | 📊 App Open ad tracking | [AdMobManager.kt:237](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L237) |
-| 📊 Native ad tracking | [AdMobManager.kt:179](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L179) |
-| 💰 Ad revenue tracking (OnPaidEventListener) | [AdMobManager.kt:360](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L360) |
-| ❌ Ad failure tracking | [AdMobManager.kt:391](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L391) |
+| 📊 Native ad tracking | [AdMobManager.kt:336](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L336) |
+| 💰 Ad revenue tracking (OnPaidEventListener) | [AdMobManager.kt:525](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L525) |
+| ❌ Ad failure tracking | [AdMobManager.kt:557](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L557) |
 | 🎨 Compose UI integration | [HomeScreen.kt](app/src/main/java/com/revenuecat/sample/admob/ui/HomeScreen.kt) |
 
 ---
@@ -248,7 +248,7 @@ AdMob precision types are mapped to RevenueCat types:
 | `PUBLISHER_PROVIDED` (2) | `PUBLISHER_DEFINED` | Value provided by publisher |
 | `UNKNOWN` (3) | `UNKNOWN` | Precision unknown |
 
-See [AdMobManager.kt:425](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L425) for implementation.
+See [AdMobManager.kt:587](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L587) for implementation.
 
 #### 3. **Event Timing**
 
