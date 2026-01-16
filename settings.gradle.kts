@@ -48,7 +48,7 @@ private fun Settings.isSamsungIAPAARPresent(samsungIAPSDKDir: File): Boolean {
  * version catalog extension (not available during settings evaluation).
  */
 @Suppress("ReturnCount")
-fun Settings.readVersionFromCatalog(versionKey: String): String? {
+private fun Settings.readVersionFromCatalog(versionKey: String): String? {
     val catalogFile = rootDir.resolve("gradle/libs.versions.toml")
     if (!catalogFile.isFile) {
         return null
