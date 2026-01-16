@@ -101,4 +101,3 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
         }
     }
 }
-
