@@ -307,4 +307,87 @@ internal class UiConfigTests {
         // Assert
         assertThat(actual).isEqualTo(expected)
     }
+
+    @Test
+    fun `Should properly deserialize custom_variables`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "custom_variables": {
+                "user_name": {
+                  "type": "string",
+                  "default_value": "Friend"
+                },
+                "discount_percent": {
+                  "type": "number",
+                  "default_value": "20"
+                },
+                "is_premium": {
+                  "type": "boolean",
+                  "default_value": "true"
+                }
+              }
+            }
+            """.trimIndent()
+        val expected = UiConfig(
+            customVariables = mapOf(
+                "user_name" to UiConfig.CustomVariableDefinition(
+                    type = "string",
+                    defaultValue = "Friend",
+                ),
+                "discount_percent" to UiConfig.CustomVariableDefinition(
+                    type = "number",
+                    defaultValue = "20",
+                ),
+                "is_premium" to UiConfig.CustomVariableDefinition(
+                    type = "boolean",
+                    defaultValue = "true",
+                ),
+            ),
+        )
+
+        // Act
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Should deserialize empty custom_variables`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "custom_variables": {}
+            }
+            """.trimIndent()
+        val expected = UiConfig(
+            customVariables = emptyMap(),
+        )
+
+        // Act
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Should default custom_variables to empty map when not present`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "app": {}
+            }
+            """.trimIndent()
+
+        // Act
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual.customVariables).isEmpty()
+    }
 }

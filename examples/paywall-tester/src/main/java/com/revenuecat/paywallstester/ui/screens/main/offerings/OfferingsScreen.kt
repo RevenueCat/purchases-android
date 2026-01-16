@@ -41,6 +41,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -243,6 +244,7 @@ private fun OfferingsListScreen(
             PaywallDialogOptions.Builder()
                 .setDismissRequest { displayPaywallDialogOffering = null }
                 .setOffering(displayPaywallDialogOffering)
+                .setCustomVariables(Constants.CUSTOM_VARIABLES)
                 .setListener(object : PaywallListener {
                     override fun onPurchaseStarted(rcPackage: RCPackage) {
                         Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")

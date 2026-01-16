@@ -31,6 +31,9 @@ class UiConfig(
     @SerialName("variable_config")
     @get:JvmSynthetic
     val variableConfig: VariableConfig = VariableConfig(),
+    @SerialName("custom_variables")
+    @get:JvmSynthetic
+    val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
 ) {
 
     @InternalRevenueCatAPI
@@ -85,5 +88,16 @@ class UiConfig(
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
         val functionCompatibilityMap: Map<String, String> = emptyMap(),
+    )
+
+    @InternalRevenueCatAPI
+    @Poko
+    @Serializable
+    class CustomVariableDefinition(
+        @get:JvmSynthetic
+        val type: String,
+        @SerialName("default_value")
+        @get:JvmSynthetic
+        val defaultValue: String,
     )
 }

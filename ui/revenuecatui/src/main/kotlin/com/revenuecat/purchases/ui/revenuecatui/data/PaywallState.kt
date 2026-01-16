@@ -98,6 +98,14 @@ internal sealed interface PaywallState {
             private val storefrontCountryCode: String?,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
+            /**
+             * Custom variables provided by the SDK user at runtime.
+             */
+            val customVariables: Map<String, String> = emptyMap(),
+            /**
+             * Default custom variables from the dashboard configuration.
+             */
+            val defaultCustomVariables: Map<String, String> = emptyMap(),
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
