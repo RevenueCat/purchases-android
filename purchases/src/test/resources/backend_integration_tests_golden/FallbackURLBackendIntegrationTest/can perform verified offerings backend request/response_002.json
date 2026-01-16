@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "92142",
+    "Content-Length": "92166",
     "Server": "cloudflare",
     "x-revenuecat-app-id": "appc735cd95ea"
   },
@@ -4388,7 +4388,8 @@
       "variable_config": {
         "variable_compatibility_map": {},
         "function_compatibility_map": {}
-      }
+      },
+      "custom_variables": {}
     }
   }
 }
