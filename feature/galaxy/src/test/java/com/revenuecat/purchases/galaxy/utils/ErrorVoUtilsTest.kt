@@ -68,7 +68,7 @@ class ErrorVoUtilsTest {
             assertThat(purchasesError)
                 .describedAs("Galaxy code ${galaxyCode.name} should map to $purchasesErrorCode")
                 .isNotNull
-            Assertions.assertThat(purchasesError!!.code).isEqualTo(purchasesErrorCode)
+            assertThat(purchasesError.code).isEqualTo(purchasesErrorCode)
             assertThat(purchasesError.underlyingErrorMessage).isEqualTo(message)
         }
     }

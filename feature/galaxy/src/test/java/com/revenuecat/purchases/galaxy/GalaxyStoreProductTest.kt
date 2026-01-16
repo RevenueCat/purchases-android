@@ -10,7 +10,6 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.collections.get
 
 @RunWith(AndroidJUnit4::class)
 class GalaxyStoreProductTest : GalaxyStoreTest() {
@@ -21,7 +20,7 @@ class GalaxyStoreProductTest : GalaxyStoreTest() {
         currencyCode = "USD",
     )
 
-    private val period = Period.Factory.create("P1M")
+    private val period = Period.create("P1M")
 
     @Test
     fun `copyWithOfferingId copies product with offeringId and preserves context details`() {

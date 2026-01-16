@@ -308,7 +308,7 @@ open class PurchasesConfiguration(builder: Builder) {
 
         /**
          * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
-         * @see com.revenuecat.purchases.galaxy.constants.GalaxyBillingMode
+         * @see GalaxyBillingMode
          */
         fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
             this.galaxyBillingMode = galaxyBillingMode

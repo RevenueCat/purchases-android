@@ -38,7 +38,7 @@ private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
 /**
  * Returns the backend name for this [ReplacementMode].
  * For [GoogleReplacementMode], this returns the legacy proration mode name.
- * For [com.revenuecat.purchases.galaxy.GalaxyReplacementMode], this returns the enum name directly.
+ * For [GalaxyReplacementMode], this returns the enum name directly.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal val ReplacementMode.backendName: String
