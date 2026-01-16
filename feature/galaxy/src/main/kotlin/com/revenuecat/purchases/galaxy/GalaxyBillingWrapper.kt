@@ -3,7 +3,7 @@ package com.revenuecat.purchases.galaxy
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -47,7 +47,7 @@ import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,

@@ -161,9 +161,6 @@ package com.revenuecat.purchases {
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API that may change frequently and without warning. " + "No compatibility guarantees are provided. It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatAPI {
   }
 
-  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="This is an internal RevenueCat API used to mark classes used when building store integrations. " + "It may change frequently and without warning. No compatibility guarantees are provided. " + "It is strongly discouraged to use this API.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY, kotlin.annotation.AnnotationTarget.TYPEALIAS, kotlin.annotation.AnnotationTarget.CONSTRUCTOR}) public @interface InternalRevenueCatStoreAPI {
-  }
-
   public final class ListenerConversionsCommonKt {
     method public static void getOfferingsWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offerings,kotlin.Unit> onSuccess);
     method public static void getProductsWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, com.revenuecat.purchases.ProductType? type, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onGetStoreProducts);
@@ -307,18 +304,9 @@ package com.revenuecat.purchases {
     enum_constant @kotlinx.serialization.SerialName("trial") public static final com.revenuecat.purchases.PeriodType TRIAL;
   }
 
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public enum PostReceiptInitiationSource {
-    method public String getPostReceiptFieldValue();
-    property public final String postReceiptFieldValue;
-    enum_constant public static final com.revenuecat.purchases.PostReceiptInitiationSource PURCHASE;
-    enum_constant public static final com.revenuecat.purchases.PostReceiptInitiationSource RESTORE;
-    enum_constant public static final com.revenuecat.purchases.PostReceiptInitiationSource UNSYNCED_ACTIVE_PURCHASES;
-  }
-
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class PresentedOfferingContext implements android.os.Parcelable {
     ctor public PresentedOfferingContext(String offeringIdentifier);
     ctor public PresentedOfferingContext(String offeringIdentifier, String? placementIdentifier, com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
-    method @com.revenuecat.purchases.InternalRevenueCatStoreAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PresentedOfferingContext copy(optional String offeringIdentifier, optional String? placementIdentifier, optional com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? targetingContext);
     method public String getOfferingIdentifier();
     method public String? getPlacementIdentifier();
     method public com.revenuecat.purchases.PresentedOfferingContext.TargetingContext? getTargetingContext();
@@ -650,31 +638,6 @@ package com.revenuecat.purchases {
     property public final String? underlyingErrorMessage;
   }
 
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class PurchasesState {
-    ctor public PurchasesState(optional Boolean? allowSharingPlayStoreAccount, optional java.util.Map<java.lang.String,? extends com.revenuecat.purchases.interfaces.PurchaseCallback> purchaseCallbacksByProductId, optional com.revenuecat.purchases.interfaces.ProductChangeCallback? deprecatedProductChangeCallback, optional boolean appInBackground, optional boolean firstTimeInForeground);
-    method public Boolean? component1();
-    method public java.util.Map<java.lang.String,com.revenuecat.purchases.interfaces.PurchaseCallback> component2();
-    method public com.revenuecat.purchases.interfaces.ProductChangeCallback? component3();
-    method public boolean component4();
-    method public boolean component5();
-    method public com.revenuecat.purchases.PurchasesState copy(Boolean? allowSharingPlayStoreAccount, java.util.Map<java.lang.String,? extends com.revenuecat.purchases.interfaces.PurchaseCallback> purchaseCallbacksByProductId, com.revenuecat.purchases.interfaces.ProductChangeCallback? deprecatedProductChangeCallback, boolean appInBackground, boolean firstTimeInForeground);
-    method public Boolean? getAllowSharingPlayStoreAccount();
-    method public boolean getAppInBackground();
-    method public com.revenuecat.purchases.interfaces.ProductChangeCallback? getDeprecatedProductChangeCallback();
-    method public boolean getFirstTimeInForeground();
-    method public java.util.Map<java.lang.String,com.revenuecat.purchases.interfaces.PurchaseCallback> getPurchaseCallbacksByProductId();
-    property public final Boolean? allowSharingPlayStoreAccount;
-    property public final boolean appInBackground;
-    property public final com.revenuecat.purchases.interfaces.ProductChangeCallback? deprecatedProductChangeCallback;
-    property public final boolean firstTimeInForeground;
-    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.interfaces.PurchaseCallback> purchaseCallbacksByProductId;
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public interface PurchasesStateProvider {
-    method public com.revenuecat.purchases.PurchasesState getPurchasesState();
-    property public abstract com.revenuecat.purchases.PurchasesState purchasesState;
-  }
-
   public final class PurchasesTransactionException extends com.revenuecat.purchases.PurchasesException {
     ctor public PurchasesTransactionException(com.revenuecat.purchases.PurchasesError purchasesError, boolean userCancelled);
     method public boolean getUserCancelled();
@@ -960,243 +923,12 @@ package com.revenuecat.purchases.backup {
 
 package com.revenuecat.purchases.common {
 
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public abstract class BillingAbstract {
-    ctor public BillingAbstract(com.revenuecat.purchases.PurchasesStateProvider purchasesStateProvider);
-    method public final void close();
-    method public abstract void consumeAndSave(boolean finishTransactions, com.revenuecat.purchases.models.StoreTransaction purchase, boolean shouldConsume, com.revenuecat.purchases.PostReceiptInitiationSource initiationSource);
-    method protected abstract void endConnection();
-    method public abstract void findPurchaseInPurchaseHistory(String appUserID, com.revenuecat.purchases.ProductType productType, String productId, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.models.StoreTransaction,kotlin.Unit> onCompletion, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method public void getAmazonLWAConsentStatus(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.AmazonLWAConsentStatus,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method protected final com.revenuecat.purchases.PurchasesStateProvider getPurchasesStateProvider();
-    method @kotlin.jvm.Synchronized public final com.revenuecat.purchases.common.BillingAbstract.PurchasesUpdatedListener? getPurchasesUpdatedListener();
-    method @kotlin.jvm.Synchronized public final com.revenuecat.purchases.common.BillingAbstract.StateListener? getStateListener();
-    method public abstract void getStorefront(kotlin.jvm.functions.Function1<? super java.lang.String,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method public abstract boolean isConnected();
-    method public abstract void makePurchaseAsync(android.app.Activity activity, String appUserID, com.revenuecat.purchases.models.PurchasingData purchasingData, com.revenuecat.purchases.common.ReplaceProductInfo? replaceProductInfo, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, optional Boolean? isPersonalizedPrice);
-    method public void normalizePurchaseData(String productID, String purchaseToken, String storeUserID, kotlin.jvm.functions.Function1<? super java.lang.String,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method public abstract void queryAllPurchases(String appUserID, kotlin.jvm.functions.Function1<? super java.util.List<com.revenuecat.purchases.models.StoreTransaction>,kotlin.Unit> onReceivePurchaseHistory, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onReceivePurchaseHistoryError);
-    method public abstract void queryProductDetailsAsync(com.revenuecat.purchases.ProductType productType, java.util.Set<java.lang.String> productIds, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onReceive, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method public abstract void queryPurchases(String appUserID, kotlin.jvm.functions.Function1<? super java.util.Map<java.lang.String,com.revenuecat.purchases.models.StoreTransaction>,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
-    method public final void setPurchasesUpdatedListener(com.revenuecat.purchases.common.BillingAbstract.PurchasesUpdatedListener?);
-    method @kotlin.jvm.Synchronized public final void setStateListener(com.revenuecat.purchases.common.BillingAbstract.StateListener?);
-    method public abstract void showInAppMessagesIfNeeded(android.app.Activity activity, java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes, kotlin.jvm.functions.Function0<kotlin.Unit> subscriptionStatusChange);
-    method public abstract void startConnection();
-    method public abstract void startConnectionOnMainThread(optional long delayMilliseconds);
-    property protected final com.revenuecat.purchases.PurchasesStateProvider purchasesStateProvider;
-    property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.common.BillingAbstract.PurchasesUpdatedListener? purchasesUpdatedListener;
-    property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.common.BillingAbstract.StateListener? stateListener;
-  }
-
-  public static interface BillingAbstract.PurchasesUpdatedListener {
-    method public void onPurchasesFailedToUpdate(com.revenuecat.purchases.PurchasesError purchasesError);
-    method public void onPurchasesUpdated(java.util.List<com.revenuecat.purchases.models.StoreTransaction> purchases);
-  }
-
-  public static interface BillingAbstract.StateListener {
-    method public void onConnected();
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class Config {
-    method public com.revenuecat.purchases.LogLevel getLogLevel();
-    method public void setLogLevel(com.revenuecat.purchases.LogLevel);
-    property public final com.revenuecat.purchases.LogLevel logLevel;
-    field public static final com.revenuecat.purchases.common.Config INSTANCE;
-    field public static final String frameworkVersion = "9.20.0-SNAPSHOT";
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public interface DateProvider {
-    method public java.util.Date getNow();
-    property public abstract java.util.Date now;
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class DefaultDateProvider implements com.revenuecat.purchases.common.DateProvider {
-    ctor public DefaultDateProvider();
-    method public java.util.Date getNow();
-    property public java.util.Date now;
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public enum HTTPResponseOriginalSource {
-    enum_constant public static final com.revenuecat.purchases.common.HTTPResponseOriginalSource FALLBACK;
-    enum_constant public static final com.revenuecat.purchases.common.HTTPResponseOriginalSource LOAD_SHEDDER;
-    enum_constant public static final com.revenuecat.purchases.common.HTTPResponseOriginalSource MAIN;
-  }
-
   @dev.drewhamilton.poko.Poko public final class PlatformInfo {
     ctor public PlatformInfo(String flavor, String? version);
     method public String getFlavor();
     method public String? getVersion();
     property public final String flavor;
     property public final String? version;
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class ReplaceProductInfo {
-    ctor public ReplaceProductInfo(com.revenuecat.purchases.models.StoreTransaction oldPurchase, optional com.revenuecat.purchases.ReplacementMode? replacementMode);
-    method public com.revenuecat.purchases.models.StoreTransaction component1();
-    method public com.revenuecat.purchases.ReplacementMode? component2();
-    method public com.revenuecat.purchases.common.ReplaceProductInfo copy(com.revenuecat.purchases.models.StoreTransaction oldPurchase, com.revenuecat.purchases.ReplacementMode? replacementMode);
-    method public com.revenuecat.purchases.models.StoreTransaction getOldPurchase();
-    method public com.revenuecat.purchases.ReplacementMode? getReplacementMode();
-    property public final com.revenuecat.purchases.models.StoreTransaction oldPurchase;
-    property public final com.revenuecat.purchases.ReplacementMode? replacementMode;
-  }
-
-  public final class UtilsKt {
-    method @com.revenuecat.purchases.InternalRevenueCatStoreAPI public static String sha1(String);
-    method @com.revenuecat.purchases.InternalRevenueCatStoreAPI public static String sha256(String);
-  }
-
-}
-
-package com.revenuecat.purchases.common.caching {
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public class DeviceCache implements com.revenuecat.purchases.interfaces.StorefrontProvider {
-    ctor public DeviceCache(android.content.SharedPreferences preferences, String apiKey, optional com.revenuecat.purchases.common.DateProvider dateProvider);
-    method @kotlin.jvm.Synchronized public final void addSuccessfullyPostedToken(String token);
-    method @kotlin.jvm.Synchronized public final void cacheAppUserID(String appUserID);
-    method @kotlin.jvm.Synchronized public final android.content.SharedPreferences.Editor cacheAppUserID(String appUserID, android.content.SharedPreferences.Editor cacheEditor);
-    method @kotlin.jvm.Synchronized public final void cacheCustomerInfo(String appUserID, com.revenuecat.purchases.CustomerInfo info);
-    method @kotlin.jvm.Synchronized public final void cacheOfferingsResponse(org.json.JSONObject offeringsResponse);
-    method @kotlin.jvm.Synchronized public final void cacheProductEntitlementMapping(com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping productEntitlementMapping);
-    method @kotlin.jvm.Synchronized public final void cacheVirtualCurrencies(String appUserID, com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies virtualCurrencies);
-    method @kotlin.jvm.Synchronized public final void cleanPreviouslySentTokens(java.util.Set<java.lang.String> hashedTokens);
-    method @kotlin.jvm.Synchronized public final void cleanupOldAttributionData();
-    method @kotlin.jvm.Synchronized public final void clearCachesForAppUserID(String appUserID);
-    method @kotlin.jvm.Synchronized public final void clearCustomerInfoCache(String appUserID);
-    method @kotlin.jvm.Synchronized public final void clearCustomerInfoCache(String appUserID, android.content.SharedPreferences.Editor editor);
-    method @kotlin.jvm.Synchronized public final void clearCustomerInfoCacheTimestamp(String appUserID);
-    method @kotlin.jvm.Synchronized public final void clearOfferingsResponseCache();
-    method @kotlin.jvm.Synchronized public final void clearVirtualCurrenciesCache(String appUserID);
-    method @kotlin.jvm.Synchronized public final void clearVirtualCurrenciesCache(String appUserID, android.content.SharedPreferences.Editor editor);
-    method public final String customerInfoCacheKey(String appUserID);
-    method public final String customerInfoLastUpdatedCacheKey(String appUserID);
-    method public final java.util.Set<java.lang.String> findKeysThatStartWith(String cacheKey);
-    method @kotlin.jvm.Synchronized public final java.util.List<com.revenuecat.purchases.models.StoreTransaction> getActivePurchasesNotInCache(java.util.Map<java.lang.String,com.revenuecat.purchases.models.StoreTransaction> hashedTokens);
-    method public final String getAppUserIDCacheKey();
-    method @kotlin.jvm.Synchronized public final String? getCachedAppUserID();
-    method public final com.revenuecat.purchases.CustomerInfo? getCachedCustomerInfo(String appUserID);
-    method @kotlin.jvm.Synchronized public final com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? getCachedVirtualCurrencies(String appUserID);
-    method public org.json.JSONObject? getJSONObjectOrNull(String key);
-    method public final String getLegacyAppUserIDCacheKey();
-    method @kotlin.jvm.Synchronized public final String? getLegacyCachedAppUserID();
-    method @kotlin.jvm.Synchronized public final org.json.JSONObject? getOfferingsResponseCache();
-    method @kotlin.jvm.Synchronized public final java.util.Set<java.lang.String> getPreviouslySentHashedTokens();
-    method @kotlin.jvm.Synchronized public final com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping? getProductEntitlementMapping();
-    method @kotlin.jvm.Synchronized public String? getStorefront();
-    method public final String getStorefrontCacheKey();
-    method public final String getTokensCacheKey();
-    method @kotlin.jvm.Synchronized public final boolean isCustomerInfoCacheStale(String appUserID, boolean appInBackground);
-    method @kotlin.jvm.Synchronized public final boolean isProductEntitlementMappingCacheStale();
-    method @kotlin.jvm.Synchronized public final boolean isVirtualCurrenciesCacheStale(String appUserID, boolean appInBackground);
-    method public final String newKey(String key);
-    method public void putString(String cacheKey, String value);
-    method public final void remove(String cacheKey);
-    method @kotlin.jvm.Synchronized public final void setCustomerInfoCacheTimestamp(String appUserID, java.util.Date date);
-    method @kotlin.jvm.Synchronized public final void setCustomerInfoCacheTimestampToNow(String appUserID);
-    method @kotlin.jvm.Synchronized public final void setProductEntitlementMappingCacheTimestampToNow();
-    method @kotlin.jvm.Synchronized public final void setStorefront(String countryCode);
-    method @kotlin.jvm.Synchronized public final void setVirtualCurrenciesCacheTimestamp(String appUserID, java.util.Date date);
-    method @kotlin.jvm.Synchronized public final void setVirtualCurrenciesCacheTimestampToNow(String appUserID);
-    method public final android.content.SharedPreferences.Editor startEditing();
-    method public final String virtualCurrenciesCacheKey(String appUserID);
-    method public final String virtualCurrenciesLastUpdatedCacheKey(String appUserID);
-    property public final String appUserIDCacheKey;
-    property public final String legacyAppUserIDCacheKey;
-    property public final String storefrontCacheKey;
-    property public final String tokensCacheKey;
-    field public static final com.revenuecat.purchases.common.caching.DeviceCache.Companion Companion;
-  }
-
-  public static final class DeviceCache.Companion {
-  }
-
-}
-
-package com.revenuecat.purchases.common.networking {
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class HTTPResult {
-    ctor public HTTPResult(int responseCode, String payload, com.revenuecat.purchases.common.networking.HTTPResult.Origin origin, java.util.Date? requestDate, com.revenuecat.purchases.VerificationResult verificationResult, boolean isLoadShedderResponse, boolean isFallbackURL);
-    method public int component1();
-    method public String component2();
-    method public com.revenuecat.purchases.common.networking.HTTPResult.Origin component3();
-    method public java.util.Date? component4();
-    method public com.revenuecat.purchases.VerificationResult component5();
-    method public boolean component6();
-    method public boolean component7();
-    method public com.revenuecat.purchases.common.networking.HTTPResult copy(int responseCode, String payload, com.revenuecat.purchases.common.networking.HTTPResult.Origin origin, java.util.Date? requestDate, com.revenuecat.purchases.VerificationResult verificationResult, boolean isLoadShedderResponse, boolean isFallbackURL);
-    method public Integer? getBackendErrorCode();
-    method public String? getBackendErrorMessage();
-    method public org.json.JSONObject getBody();
-    method public com.revenuecat.purchases.common.networking.HTTPResult.Origin getOrigin();
-    method public String getPayload();
-    method public java.util.Date? getRequestDate();
-    method public int getResponseCode();
-    method public com.revenuecat.purchases.VerificationResult getVerificationResult();
-    method public boolean isFallbackURL();
-    method public boolean isLoadShedderResponse();
-    method public String serialize();
-    property public final Integer? backendErrorCode;
-    property public final String? backendErrorMessage;
-    property public final org.json.JSONObject body;
-    property public final boolean isFallbackURL;
-    property public final boolean isLoadShedderResponse;
-    property public final com.revenuecat.purchases.common.networking.HTTPResult.Origin origin;
-    property public final String payload;
-    property public final java.util.Date? requestDate;
-    property public final int responseCode;
-    property public final com.revenuecat.purchases.VerificationResult verificationResult;
-    field public static final com.revenuecat.purchases.common.networking.HTTPResult.Companion Companion;
-    field public static final String ETAG_HEADER_NAME = "X-RevenueCat-ETag";
-    field public static final String LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress";
-    field public static final String REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time";
-    field public static final String SIGNATURE_HEADER_NAME = "X-Signature";
-  }
-
-  public static final class HTTPResult.Companion {
-    method public com.revenuecat.purchases.common.networking.HTTPResult deserialize(String serialized);
-  }
-
-  public enum HTTPResult.Origin {
-    enum_constant public static final com.revenuecat.purchases.common.networking.HTTPResult.Origin BACKEND;
-    enum_constant public static final com.revenuecat.purchases.common.networking.HTTPResult.Origin CACHE;
-  }
-
-}
-
-package com.revenuecat.purchases.common.offlineentitlements {
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class ProductEntitlementMapping {
-    ctor public ProductEntitlementMapping(java.util.Map<java.lang.String,com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping> mappings, optional com.revenuecat.purchases.common.HTTPResponseOriginalSource originalSource, optional boolean loadedFromCache);
-    method public java.util.Map<java.lang.String,com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping> component1();
-    method public com.revenuecat.purchases.common.HTTPResponseOriginalSource component2();
-    method public boolean component3();
-    method public com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping copy(java.util.Map<java.lang.String,com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping> mappings, com.revenuecat.purchases.common.HTTPResponseOriginalSource originalSource, boolean loadedFromCache);
-    method public boolean getLoadedFromCache();
-    method public java.util.Map<java.lang.String,com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping> getMappings();
-    method public com.revenuecat.purchases.common.HTTPResponseOriginalSource getOriginalSource();
-    method public org.json.JSONObject toJson();
-    property public final boolean loadedFromCache;
-    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping> mappings;
-    property public final com.revenuecat.purchases.common.HTTPResponseOriginalSource originalSource;
-    field public static final com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Companion Companion;
-  }
-
-  public static final class ProductEntitlementMapping.Companion {
-    method public com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping fromJson(org.json.JSONObject json, optional boolean loadedFromCache);
-    method public com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping fromNetwork(org.json.JSONObject json, com.revenuecat.purchases.common.networking.HTTPResult httpResult);
-  }
-
-  public static final class ProductEntitlementMapping.Mapping {
-    ctor public ProductEntitlementMapping.Mapping(String productIdentifier, String? basePlanId, java.util.List<java.lang.String> entitlements);
-    method public String component1();
-    method public String? component2();
-    method public java.util.List<java.lang.String> component3();
-    method public com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping.Mapping copy(String productIdentifier, String? basePlanId, java.util.List<java.lang.String> entitlements);
-    method public String? getBasePlanId();
-    method public java.util.List<java.lang.String> getEntitlements();
-    method public String getProductIdentifier();
-    property public final String? basePlanId;
-    property public final java.util.List<java.lang.String> entitlements;
-    property public final String productIdentifier;
   }
 
 }
@@ -1838,92 +1570,6 @@ package com.revenuecat.purchases.models {
 
 }
 
-package com.revenuecat.purchases.strings {
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class Emojis {
-    field public static final String BOX = "\ud83d\udce6";
-    field public static final String DOUBLE_EXCLAMATION = "\u203c\ufe0f";
-    field public static final String HEART_CAT_EYES = "\ud83d\ude3b";
-    field public static final String INFO = "\u2139\ufe0f";
-    field public static final com.revenuecat.purchases.strings.Emojis INSTANCE;
-    field public static final String MONEY_BAG = "\ud83d\udcb0";
-    field public static final String PERSON = "\ud83d\udc64";
-    field public static final String ROBOT = "\ud83e\udd16";
-    field public static final String SAD_CAT_EYES = "\ud83d\ude3f";
-    field public static final String STARS = "\u2728";
-    field public static final String WARNING = "\u26a0\ufe0f";
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class PurchaseStrings {
-    field public static final String ACKNOWLEDGING_PURCHASE = "Acknowledging purchase with token %s";
-    field public static final String ACKNOWLEDGING_PURCHASE_ERROR = "Error acknowledging purchase. Will retry next queryPurchases. %s";
-    field public static final String ACKNOWLEDGING_PURCHASE_ERROR_RESTORE = "Couldn\'t acknowledge purchase after restoring it, this most likely means the subscription has expired already or the product has already been acknowledged.";
-    field public static final String BILLING_CLIENT_NOT_CONNECTED = "Skipping updating pending purchase queue since BillingClient is not connected yet.";
-    field public static final String CONSUMING_PURCHASE = "Consuming purchase with token %s";
-    field public static final String CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s";
-    field public static final String CONSUMING_PURCHASE_ERROR_RESTORE = "Couldn\'t consume purchase after restoring it, this most likely means the product has already been consumed.";
-    field public static final String DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID = "Passing a basePlanId in oldProductId (%s) during a DEFERRED product change is not recommended. The basePlanId will be stripped automatically.";
-    field public static final String EMPTY_ADD_ONS_LIST_PASSED = "An empty list of add-ons was provided. Will proceed with purchasing the base product.";
-    field public static final String ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD = "Entitlement %s is no longer active (expired %s) and it\'s outside grace period window (last updated %s)";
-    field public static final String ERROR_FINDING_PURCHASE = "Error finding existing purchase for SKU: %s";
-    field public static final String EXCEPTION_CANMAKEPAYMENTS = "Exception received when checking if device can make payments: \n%s.";
-    field public static final String EXTRA_CALLBACK_CANMAKEPAYMENTS = "Callback has already been called when checking if device can make payments.";
-    field public static final String EXTRA_CONNECTION_CANMAKEPAYMENTS = "BillingClient has returned more than once when checking if device can make payments with result: %s.";
-    field public static final String FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s";
-    field public static final com.revenuecat.purchases.strings.PurchaseStrings INSTANCE;
-    field public static final String INVALID_CALLBACK_TYPE_INTERNAL_ERROR = "Internal SDK error -- invalid callback type passed to startProductChange.";
-    field public static final String INVALID_PRODUCT_NO_PRICE = "Error finding a price for %s.";
-    field public static final String INVALID_PRODUCT_TYPE = "Invalid product type passed to %s.";
-    field public static final String INVALID_PURCHASE_TYPE = "Purchase for a %s purchase must be a %s.";
-    field public static final String INVALID_STORE_PRODUCT_TYPE = "StoreProduct for a %s purchase must be a %s.";
-    field public static final String NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND = "Not consuming in-app purchase according to server configuration. This is expected for non-consumable products. The user won\'t be able to purchase this product again.";
-    field public static final String NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized.";
-    field public static final String NO_EXISTING_PURCHASE = "Couldn\'t find existing purchase for SKU: %s";
-    field public static final String NO_PENDING_PURCHASES_TO_SYNC = "No pending purchases to sync";
-    field public static final String OFFERING = " - offering: ";
-    field public static final String PRODUCT_CHANGE_STARTED = "Product change started: %s";
-    field public static final String PURCHASE_FINISH_TRANSACTION_FALSE = "finishTransactions is set to false and a purchase has been started. Are you sure you want to do this? More info here: https://errors.rev.cat/finishTransactions";
-    field public static final String PURCHASE_STARTED = "Purchase started - product: %s";
-    field public static final String PURCHASE_SYNCED = "Purchase %s synced";
-    field public static final String PURCHASE_SYNCED_USER_ID = "Purchase %s synced %s";
-    field public static final String PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE = "Making a purchase with add-ons is only supported on the Play Store.";
-    field public static final String PURCHASING_PRODUCT = "Purchasing product: %s";
-    field public static final String SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization.";
-    field public static final String SYNCED_PURCHASES_SUCCESSFULLY = "Synced purchases successfully";
-    field public static final String SYNCING_PURCHASES = "Syncing purchases";
-    field public static final String SYNCING_PURCHASES_ERROR = "Error syncing purchases. Error: %s";
-    field public static final String SYNCING_PURCHASES_ERROR_DETAILS = "Error syncing purchases %s. Error: %s";
-    field public static final String SYNCING_PURCHASE_ERROR_DETAILS_USER_ID = "Error syncing purchase %s for store user ID %s. Error: %s";
-    field public static final String SYNCING_PURCHASE_SKIPPING = "Skipping syncing purchase %s for store user ID %s. It has already been posted";
-    field public static final String SYNCING_PURCHASE_STORE_USER_ID = "Syncing purchase with token %s, for store user ID %s";
-    field public static final String UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue";
-    field public static final String UPGRADING_INVALID_TYPE = "UpgradeInfo passed to purchase for non-sub product type. No upgrade will occur. Consider using non-upgrade purchase flows for this product.";
-    field public static final String UPGRADING_SKU = "Moving from old SKU %s to sku %s";
-    field public static final String UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s";
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class RestoreStrings {
-    field public static final String EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE = "BillingClient queryPurchaseHistory has returned more than once, with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts";
-    field public static final com.revenuecat.purchases.strings.RestoreStrings INSTANCE;
-    field public static final String PURCHASE_HISTORY_EMPTY = "Purchase history is empty.";
-    field public static final String PURCHASE_HISTORY_RETRIEVED = "Purchase history retrieved %s";
-    field public static final String PURCHASE_RESTORED = "Purchase %s restored";
-    field public static final String QUERYING_INAPP_ERROR = "Error when querying inapps. %s";
-    field public static final String QUERYING_PURCHASE = "Querying purchases";
-    field public static final String QUERYING_PURCHASE_HISTORY = "Querying purchase history for type %s";
-    field public static final String QUERYING_PURCHASE_WITH_HASH = "Purchase of type %s with hash %s";
-    field public static final String QUERYING_PURCHASE_WITH_TYPE = "Querying Purchase with %s and type %s";
-    field public static final String QUERYING_SUBS_ERROR = "Error when querying subscriptions. %s";
-    field public static final String RESTORE_PURCHASES_NO_PURCHASES_FOUND = "No purchases found to restore. This will happen if the user does not have any active subscriptions or unconsumed one-time products.Please make sure you\'re using the correct Store account (Google/Amazon) and that you have configured your one-time products correctly as either consumables (that can be purchased multiple times) or non-consumables (that can only be purchased one by each user) in the RevenueCat dashboard. This will return the current CustomerInfo.";
-    field public static final String RESTORE_PURCHASES_SIMULATED_STORE = "Restoring purchases not available in test store. Returning current CustomerInfo.";
-    field public static final String RESTORING_PURCHASE = "Restoring purchases";
-    field public static final String RESTORING_PURCHASE_ERROR = "Error restoring purchase: %s. Error: %s";
-    field public static final String SHARING_ACC_RESTORE_FALSE = "allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will \'alias\' any app user id\'s sharing the same receipt. Are you sure you want to do this? More info here: https://errors.rev.cat/allowsSharingPlayStoreAccount";
-    field public static final String SYNC_PURCHASES_SIMULATED_STORE = "Syncing purchases not available in test store. Returning current CustomerInfo.";
-  }
-
-}
-
 package com.revenuecat.purchases.utils {
 
   public final class Iso8601Utils {
@@ -1934,11 +1580,6 @@ package com.revenuecat.purchases.utils {
 
   public final class LocaleExtensionsKt {
     method public static java.util.List<java.util.Locale> getDefaultLocales();
-  }
-
-  @com.revenuecat.purchases.InternalRevenueCatStoreAPI public final class SerialRequestExecutor {
-    ctor public SerialRequestExecutor();
-    method public void executeSerially(kotlin.jvm.functions.Function1<? super kotlin.jvm.functions.Function0<kotlin.Unit>,kotlin.Unit> request);
   }
 
 }

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha256
@@ -34,7 +34,7 @@ internal class ChangeSubscriptionPlanHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Suppress("ReturnCount")
     @GalaxySerialOperation
     override fun changeSubscriptionPlan(

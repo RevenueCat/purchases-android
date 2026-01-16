@@ -2,7 +2,7 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache

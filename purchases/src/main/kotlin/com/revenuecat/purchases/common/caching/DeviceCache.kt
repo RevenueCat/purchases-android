@@ -8,7 +8,7 @@ package com.revenuecat.purchases.common.caching
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -41,7 +41,7 @@ private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
 @Suppress("TooManyFunctions")
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,

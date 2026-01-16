@@ -11,7 +11,7 @@ import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataRequest
 import com.revenuecat.purchases.AmazonLWAConsentStatus
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback

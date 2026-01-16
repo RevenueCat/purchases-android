@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha256
@@ -16,7 +16,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal class PurchaseHandler(
     private val iapHelper: IAPHelperProvider,
 ) : PurchaseResponseListener {

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.galaxy
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -74,7 +74,7 @@ class GalaxyStoreProduct(
      *
      * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
      */
-    @OptIn(InternalRevenueCatStoreAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Deprecated(
         "Replaced with copyWithPresentedOfferingContext",
         ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),

@@ -2,7 +2,7 @@ package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import kotlin.test.Test
@@ -30,7 +30,7 @@ class GalaxyReplacementModeConversionsTest {
         assertThat(expectations.size).isEqualTo(GalaxyReplacementMode.values().size)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatStoreAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Test
     fun `default replacement mode is instant no proration`() {
         assertThat(GalaxyReplacementMode.default).isEqualTo(GalaxyReplacementMode.INSTANT_NO_PRORATION)

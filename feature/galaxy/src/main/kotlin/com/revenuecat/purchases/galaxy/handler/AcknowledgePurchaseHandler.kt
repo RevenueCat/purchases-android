@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import android.content.Context
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.galaxy.GalaxyStrings
@@ -32,7 +32,7 @@ internal class AcknowledgePurchaseHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
-    @OptIn(InternalRevenueCatStoreAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Suppress("ReturnCount")
     @GalaxySerialOperation
     override fun acknowledgePurchase(

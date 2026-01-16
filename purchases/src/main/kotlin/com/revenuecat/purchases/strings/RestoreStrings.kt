@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.strings
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 object RestoreStrings {
     const val PURCHASE_HISTORY_EMPTY = "Purchase history is empty."
     const val PURCHASE_HISTORY_RETRIEVED = "Purchase history retrieved %s"

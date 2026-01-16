@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.app.Activity
 import com.revenuecat.purchases.AmazonLWAConsentStatus
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -14,11 +14,11 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 abstract class BillingAbstract(
     protected val purchasesStateProvider: PurchasesStateProvider,
 ) {

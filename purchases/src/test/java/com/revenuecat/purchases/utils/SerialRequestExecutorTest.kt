@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.utils
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import org.assertj.core.api.Assertions
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch

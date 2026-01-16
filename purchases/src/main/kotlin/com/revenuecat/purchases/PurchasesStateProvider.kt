@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 interface PurchasesStateProvider {
     val purchasesState: PurchasesState
 }

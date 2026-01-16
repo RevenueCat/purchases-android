@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.networking.HTTPResult
 
 /**
  * Indicates where the data originally came from (before caching).
  */
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 enum class HTTPResponseOriginalSource {
     /**
      * Original data came from normal network fetch.

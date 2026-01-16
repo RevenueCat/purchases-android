@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -22,7 +22,7 @@ import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import java.util.ArrayList
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal class ProductDataHandler(
     private val iapHelper: IAPHelperProvider,
     private val promotionEligibilityResponseListener: PromotionEligibilityResponseListener =

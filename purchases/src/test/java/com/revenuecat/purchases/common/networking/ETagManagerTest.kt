@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.DateProvider

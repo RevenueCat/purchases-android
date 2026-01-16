@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
@@ -17,7 +17,7 @@ private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderRe
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
 @Suppress("ForbiddenPublicDataClass")
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 data class HTTPResult(
     val responseCode: Int,
     val payload: String,

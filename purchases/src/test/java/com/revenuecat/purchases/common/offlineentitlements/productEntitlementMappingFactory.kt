@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 
 

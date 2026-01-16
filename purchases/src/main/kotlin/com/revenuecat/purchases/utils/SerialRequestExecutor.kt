@@ -1,13 +1,13 @@
 package com.revenuecat.purchases.utils
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicBoolean
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 typealias SerialRequest = (finish: () -> Unit) -> Unit
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 class SerialRequestExecutor {
 
     private val lock = Any()

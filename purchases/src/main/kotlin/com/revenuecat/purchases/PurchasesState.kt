@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 @Suppress("ForbiddenPublicDataClass")
 data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,

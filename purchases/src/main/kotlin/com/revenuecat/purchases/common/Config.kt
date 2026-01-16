@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.api.BuildConfig
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 object Config {
     var logLevel = LogLevel.debugLogsEnabled(BuildConfig.DEBUG)
 

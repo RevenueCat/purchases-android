@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.galaxy.logging
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -40,7 +40,7 @@ internal inline fun errorLog(throwable: Throwable? = null, messageBuilder: () ->
     currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", messageBuilder(), throwable)
 }
 
-@OptIn(InternalRevenueCatStoreAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 private inline fun logIfEnabled(
     level: LogLevel,
     logger: (tag: String, message: String) -> Unit,

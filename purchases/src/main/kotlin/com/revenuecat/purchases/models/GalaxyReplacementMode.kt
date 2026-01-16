@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ReplacementMode
 import kotlinx.parcelize.Parcelize
 
@@ -58,7 +58,7 @@ enum class GalaxyReplacementMode : ReplacementMode {
         /**
          * The default replacement mode for Galaxy Store subscription changes.
          */
-        @InternalRevenueCatStoreAPI
+        @InternalRevenueCatAPI
         val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
     }
 }

@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.strings
 
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 
-@InternalRevenueCatStoreAPI
+@InternalRevenueCatAPI
 object Emojis {
     const val DOUBLE_EXCLAMATION = "‼️"
     const val HEART_CAT_EYES = "😻"

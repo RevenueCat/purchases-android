@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.caching
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.subtract
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test

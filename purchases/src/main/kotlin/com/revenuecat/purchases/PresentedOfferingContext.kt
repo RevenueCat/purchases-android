@@ -35,7 +35,7 @@ class PresentedOfferingContext @JvmOverloads constructor(
     constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
 
     @JvmSynthetic
-    @InternalRevenueCatStoreAPI
+    @InternalRevenueCatAPI
     fun copy(
         offeringIdentifier: String = this.offeringIdentifier,
         placementIdentifier: String? = this.placementIdentifier,

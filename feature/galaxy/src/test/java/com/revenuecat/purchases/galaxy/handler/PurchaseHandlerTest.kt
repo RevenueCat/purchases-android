@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatStoreAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha256
@@ -38,7 +38,7 @@ class PurchaseHandlerTest {
         purchaseHandler = PurchaseHandler(iapHelperProvider)
     }
 
-    @OptIn(GalaxySerialOperation::class, InternalRevenueCatStoreAPI::class)
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
     @Test
     fun `purchase dispatches payment with obfuscated account id`() {
         every {
