@@ -952,7 +952,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val productId = "galaxy_gold"
         val oldSubId = "oldGalaxySubId"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -970,7 +970,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
         val upgradePurchaseParams = PurchaseParams.Builder(
             mockActivity,
-            receiptInfo.storeProduct!!.defaultOption!!
+            storeProduct
         )
             .oldProductId(oldSubId)
             .galaxyReplacementMode(replacementMode)
@@ -990,7 +990,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct.defaultOption!!.purchasingData,
+                storeProduct.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
                 any()
