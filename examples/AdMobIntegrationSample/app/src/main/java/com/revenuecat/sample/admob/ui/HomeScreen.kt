@@ -42,9 +42,10 @@ import com.revenuecat.sample.admob.manager.AdMobManager
  * This screen showcases:
  * 1. Banner Ad - Always visible at the top
  * 2. Interstitial Ad - Loaded and shown via button
- * 3. Native Ad - Loaded and displayed via button
- * 4. Native Video Ad - Loaded and displayed via button
- * 5. Error Testing - Demonstrates ad load failure tracking
+ * 3. App Open Ad - Loaded and shown via button
+ * 4. Native Ad - Loaded and displayed via button
+ * 5. Native Video Ad - Loaded and displayed via button
+ * 6. Error Testing - Demonstrates ad load failure tracking
  *
  * All ads track the following RevenueCat events:
  * - trackAdLoaded
@@ -63,6 +64,7 @@ fun HomeScreen(
     var nativeAdState by remember { mutableStateOf<NativeAd?>(null) }
     var nativeVideoAdState by remember { mutableStateOf<NativeAd?>(null) }
     var interstitialStatus by remember { mutableStateOf("Not Loaded") }
+    var appOpenStatus by remember { mutableStateOf("Not Loaded") }
 
     Column(
         modifier = Modifier
@@ -81,7 +83,7 @@ fun HomeScreen(
         )
 
         Text(
-            text = "This app demonstrates tracking all 5 RevenueCat ad events across 4 AdMob ad formats. " +
+            text = "This app demonstrates tracking all 5 RevenueCat ad events across 5 AdMob ad formats. " +
                     "Check Logcat for detailed event tracking logs.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
@@ -190,7 +192,7 @@ fun HomeScreen(
         }
 
         // ============================================================================
-        // Section 3: Native Ad
+        // Section 3: App Open Ad
         // ============================================================================
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -203,7 +205,73 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "3. Native Ad",
+                    text = "3. App Open Ad",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Full-screen ad designed for app launch/resume. Tracks: Loaded, Displayed, Opened (on click), Revenue.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Text(
+                    text = "Status: $appOpenStatus",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Button(
+                    onClick = {
+                        appOpenStatus = "Loading..."
+                        adMobManager.loadAppOpenAd(
+                            placement = "home_app_open",
+                            onAdLoaded = {
+                                appOpenStatus = "Loaded - Ready to Show"
+                                Toast.makeText(context, "App open ad loaded!", Toast.LENGTH_SHORT).show()
+                            },
+                            onAdFailedToLoad = { error ->
+                                appOpenStatus = "Failed: $error"
+                                Toast.makeText(context, "Failed to load", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Load App Open Ad")
+                }
+
+                Button(
+                    onClick = {
+                        val shown = adMobManager.showAppOpenAd(activity)
+                        if (shown) {
+                            appOpenStatus = "Shown - Load Again"
+                        } else {
+                            Toast.makeText(context, "No ad loaded yet", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = appOpenStatus.contains("Loaded")
+                ) {
+                    Text("Show App Open Ad")
+                }
+            }
+        }
+
+        // ============================================================================
+        // Section 4: Native Ad
+        // ============================================================================
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "4. Native Ad",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -251,12 +319,12 @@ fun HomeScreen(
         }
 
         // ============================================================================
-        // Section 4: Native Video Ad
+        // Section 5: Native Video Ad
         // ============================================================================
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
         ) {
             Column(
@@ -264,7 +332,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "4. Native Video Ad",
+                    text = "5. Native Video Ad",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -312,7 +380,7 @@ fun HomeScreen(
         }
 
         // ============================================================================
-        // Section 5: Error Testing
+        // Section 6: Error Testing
         // ============================================================================
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -325,7 +393,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "5. Error Testing",
+                    text = "6. Error Testing",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )

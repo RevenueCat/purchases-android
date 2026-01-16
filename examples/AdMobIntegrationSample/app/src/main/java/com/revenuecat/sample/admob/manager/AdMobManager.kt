@@ -15,6 +15,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
+import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.nativead.NativeAd
@@ -33,7 +34,7 @@ import com.revenuecat.sample.admob.data.Constants
  * AdMobManager - Centralized manager for AdMob integration with RevenueCat ad event tracking.
  *
  * This class demonstrates how to:
- * 1. Load different ad formats (Banner, Interstitial, Native)
+ * 1. Load different ad formats (Banner, Interstitial, App Open, Native)
  * 2. Track all 5 RevenueCat ad events:
  *    - trackAdLoaded: When ad successfully loads
  *    - trackAdDisplayed: When ad is shown to the user
@@ -52,6 +53,7 @@ import com.revenuecat.sample.admob.data.Constants
 class AdMobManager(private val context: Context) {
 
     private var interstitialAd: InterstitialAd? = null
+    private var appOpenAd: AppOpenAd? = null
     private var currentNativeAd: NativeAd? = null
 
     /**
@@ -211,6 +213,108 @@ class AdMobManager(private val context: Context) {
             true
         } else {
             Log.w(TAG, "Interstitial ad not ready to show")
+            false
+        }
+    }
+
+    /**
+     * Load an app open ad with full RevenueCat event tracking.
+     *
+     * App open ads are full-screen ads designed to be shown when users open or switch back to your app.
+     * They are typically used during app launch or resume scenarios.
+     *
+     * This demonstrates:
+     * - AdLoaded event when app open ad loads successfully
+     * - AdDisplayed event when app open ad is shown
+     * - AdOpened event when user interacts with the app open ad
+     * - AdRevenue event when app open ad generates revenue
+     *
+     * @param adUnitId The AdMob ad unit ID (use test IDs from Constants)
+     * @param placement Optional placement identifier (e.g., "app_open_main")
+     * @param onAdLoaded Callback when ad is loaded and ready to show
+     * @param onAdFailedToLoad Callback when ad fails to load
+     */
+    fun loadAppOpenAd(
+        adUnitId: String = Constants.AdMob.APP_OPEN_AD_UNIT_ID,
+        placement: String = "app_open_main",
+        onAdLoaded: (() -> Unit)? = null,
+        onAdFailedToLoad: ((String) -> Unit)? = null
+    ) {
+        Log.d(TAG, "Loading app open ad with unit ID: $adUnitId")
+
+        val adRequest = AdRequest.Builder().build()
+
+        AppOpenAd.load(
+            context,
+            adUnitId,
+            adRequest,
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    Log.d(TAG, "App open ad loaded successfully")
+                    appOpenAd = ad
+
+                    val responseInfo = ad.responseInfo
+                    trackAdLoaded(adUnitId, placement, responseInfo)
+
+                    // Set up OnPaidEventListener for revenue tracking
+                    ad.onPaidEventListener = OnPaidEventListener { adValue ->
+                        trackAdRevenue(
+                            adUnitId = adUnitId,
+                            placement = placement,
+                            responseInfo = ad.responseInfo,
+                            adValue = adValue
+                        )
+                    }
+
+                    // Set up FullScreenContentCallback for display and interaction tracking
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdShowedFullScreenContent() {
+                            Log.d(TAG, "App open ad displayed")
+                            trackAdDisplayed(adUnitId, placement, ad.responseInfo)
+                        }
+
+                        override fun onAdClicked() {
+                            Log.d(TAG, "App open ad clicked (opened)")
+                            trackAdOpened(adUnitId, placement, ad.responseInfo)
+                        }
+
+                        override fun onAdDismissedFullScreenContent() {
+                            Log.d(TAG, "App open ad dismissed")
+                            appOpenAd = null
+                        }
+
+                        override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                            Log.e(TAG, "App open ad failed to show: ${adError.message}")
+                            appOpenAd = null
+                        }
+                    }
+
+                    onAdLoaded?.invoke()
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    Log.e(TAG, "App open ad failed to load: ${loadAdError.message}")
+                    appOpenAd = null
+                    trackAdFailedToLoad(adUnitId, placement, loadAdError)
+                    onAdFailedToLoad?.invoke(loadAdError.message)
+                }
+            }
+        )
+    }
+
+    /**
+     * Show the loaded app open ad.
+     *
+     * @param activity The activity to show the ad on
+     * @return true if ad was shown, false if no ad is loaded
+     */
+    fun showAppOpenAd(activity: Activity): Boolean {
+        return if (appOpenAd != null) {
+            Log.d(TAG, "Showing app open ad")
+            appOpenAd?.show(activity)
+            true
+        } else {
+            Log.w(TAG, "App open ad not ready to show")
             false
         }
     }
@@ -500,6 +604,7 @@ class AdMobManager(private val context: Context) {
         currentNativeAd?.destroy()
         currentNativeAd = null
         interstitialAd = null
+        appOpenAd = null
     }
 
     companion object {
