@@ -5,8 +5,10 @@ import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
+import dev.drewhamilton.poko.Poko
 
-internal class GalaxySubscriptionOption(
+@Poko
+class GalaxySubscriptionOption(
     /**
      * The product ID of the Galaxy Store product represented by this option.
      */

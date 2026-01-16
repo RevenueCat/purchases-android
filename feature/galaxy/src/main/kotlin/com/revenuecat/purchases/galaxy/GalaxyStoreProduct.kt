@@ -52,12 +52,12 @@ class GalaxyStoreProduct(
     override val period: Period?,
 
     /**
-     * Always null for GalaxyStoreProduct
+     * The subscription options for this product.
      */
     override val subscriptionOptions: SubscriptionOptions?,
 
     /**
-     * Always null for GalaxyStoreProduct
+     * The default subscription option for this product.
      */
     override val defaultOption: SubscriptionOption?,
 
