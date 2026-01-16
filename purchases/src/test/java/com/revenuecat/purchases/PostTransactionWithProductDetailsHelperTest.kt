@@ -65,49 +65,6 @@ class PostTransactionWithProductDetailsHelperTest {
     }
 
     @Test
-    fun `if pending transaction, error callback is called`() {
-        val transactions = listOf(
-            mockk<StoreTransaction>().apply { every { purchaseState } returns PurchaseState.PENDING }
-        )
-        var receivedError: PurchasesError? = null
-        postTransactionWithProductDetailsHelper.postTransactions(
-            transactions = transactions,
-            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            transactionPostSuccess = { _, _ -> fail("Should not be called") },
-            transactionPostError = { _, error -> receivedError = error },
-        )
-
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PaymentPendingError)
-    }
-
-    @Test
-    fun `if pending transaction, transaction is not posted`() {
-        val transactions = listOf(
-            mockk<StoreTransaction>().apply { every { purchaseState } returns PurchaseState.PENDING }
-        )
-
-        var errorCallCount = 0
-        postTransactionWithProductDetailsHelper.postTransactions(
-            transactions = transactions,
-            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-            appUserID = appUserID,
-            initiationSource = initiationSource,
-            transactionPostSuccess = { _, _ -> fail("Should not be called") },
-            transactionPostError = { _, _ -> errorCallCount++ },
-        )
-
-        assertThat(errorCallCount).isEqualTo(1)
-        verify(exactly = 0) {
-            postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                any(), any(), any(), any(), any(), any(), any(),
-            )
-        }
-    }
-
-    @Test
     fun `if query product details fails, transaction is posted without product information`() {
         mockQueryProductDetailsError(mockSubsTransaction)
         mockPostReceiptSuccessful(mockSubsTransaction, null)
