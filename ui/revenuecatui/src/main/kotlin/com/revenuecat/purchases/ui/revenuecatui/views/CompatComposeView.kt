@@ -148,11 +148,11 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
                     get() = State.INITIALIZED
 
                 override fun addObserver(observer: LifecycleObserver) {
-                    // No-op
+                    Logger.e("CompatComposeView: Attempted to add a LifecycleObserver when no LifecycleOwner is set.")
                 }
 
                 override fun removeObserver(observer: LifecycleObserver) {
-                    // No-op
+                    Logger.e("CompatComposeView: Attempted to remove LifecycleObserver when no LifecycleOwner is set.")
                 }
             }
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
