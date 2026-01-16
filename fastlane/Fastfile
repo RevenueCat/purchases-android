@@ -438,6 +438,7 @@ platform :android do
         run_firebase_integration_tests(app_name)
 
         success = true
+        last_exception = nil
         break
       rescue => exception
         last_exception = exception
