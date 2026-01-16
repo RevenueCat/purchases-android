@@ -75,6 +75,7 @@ This suppresses the "internal RevenueCat API" warnings during compilation.
 | 🔧 AdMob SDK initialization | [MainApplication.kt:44](app/src/main/java/com/revenuecat/sample/admob/MainApplication.kt#L44) |
 | 📊 Banner ad tracking | [AdMobManager.kt:47](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L47) |
 | 📊 Interstitial ad tracking | [AdMobManager.kt:99](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L99) |
+| 📊 App Open ad tracking | [AdMobManager.kt:237](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L237) |
 | 📊 Native ad tracking | [AdMobManager.kt:179](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L179) |
 | 💰 Ad revenue tracking (OnPaidEventListener) | [AdMobManager.kt:360](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L360) |
 | ❌ Ad failure tracking | [AdMobManager.kt:391](app/src/main/java/com/revenuecat/sample/admob/manager/AdMobManager.kt#L391) |
