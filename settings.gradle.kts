@@ -35,7 +35,7 @@ val samsungIapSdkDir = file("$rootDir/libs")
  * `gradle/libs.versions.toml`) is present in the SDK directory.
  */
 @Suppress("ReturnCount")
-fun Settings.isSamsungIAPAARPresent(samsungIAPSDKDir: File): Boolean {
+private fun Settings.isSamsungIAPAARPresent(samsungIAPSDKDir: File): Boolean {
     if (!samsungIAPSDKDir.exists()) { return false }
 
     val samsungIapVersion = readVersionFromCatalog("samsungIap") ?: return false
