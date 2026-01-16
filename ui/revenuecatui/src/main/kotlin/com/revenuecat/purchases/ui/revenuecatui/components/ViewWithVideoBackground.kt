@@ -66,7 +66,7 @@ internal fun ViewWithVideoBackground(
 }
 
 @Composable
-internal fun WithOptionalVideoBackground(
+internal fun WithOptionalBackgroundOverlay(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
     modifier: Modifier = Modifier,

@@ -33,7 +33,7 @@ internal fun Modifier.background(
     when (background) {
         is BackgroundStyle.Color -> this.background(color = background.color, shape = shape)
         is BackgroundStyle.Image ->
-            // Image backgrounds with color overlays are handled specially in WithOptionalOverlayBackground
+            // Image backgrounds with color overlays are handled specially in WithOptionalBackgroundOverlay
             // to ensure the overlay covers the full container, not just the image bounds.
             // This matches the web builder behavior where overlays cover 100% of the viewport.
             this.clip(shape)

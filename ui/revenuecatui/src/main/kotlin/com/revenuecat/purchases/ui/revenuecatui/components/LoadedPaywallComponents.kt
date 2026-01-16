@@ -80,7 +80,7 @@ internal fun LoadedPaywallComponents(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
-        WithOptionalVideoBackground(state, background = background) {
+        WithOptionalBackgroundOverlay(state, background = background) {
             Column {
                 ComponentView(
                     style = style,
