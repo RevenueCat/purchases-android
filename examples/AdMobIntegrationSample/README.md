@@ -4,7 +4,7 @@ This sample app demonstrates how to integrate Google AdMob with RevenueCat's ad 
 
 ## Overview
 
-This example shows how to track **all 5 RevenueCat ad events** across four different AdMob ad formats:
+This example shows how to track **all 5 RevenueCat ad events** across five different AdMob ad formats:
 
 ### Ad Events Tracked
 1. ✅ **Ad Loaded** - When an ad successfully loads
@@ -16,6 +16,7 @@ This example shows how to track **all 5 RevenueCat ad events** across four diffe
 ### Ad Formats Demonstrated
 - **Banner Ads** - Always visible at the top of the screen
 - **Interstitial Ads** - Full-screen ads triggered by user action
+- **App Open Ads** - Full-screen ads designed for app launch/resume scenarios
 - **Native Ads** - Custom-styled ads with text and images integrated into the app's UI
 - **Native Video Ads** - Custom-styled ads with video content integrated into the app's UI
 
@@ -146,6 +147,7 @@ This sample uses **Google's official test ad unit IDs**:
 |-----------|----------------|-------|--------|
 | **Banner** | `ca-app-pub-3940256099942544/9214589741` | Google's test banner ad | ✅ Working |
 | **Interstitial** | `ca-app-pub-3940256099942544/1033173712` | Google's test interstitial ad | ✅ Working |
+| **App Open** | `ca-app-pub-3940256099942544/9257395921` | Google's test app open ad | ✅ Working |
 | **Native** | `ca-app-pub-3940256099942544/2247696110` | Google's test native ad (text + images) | ⚠️ Unreliable |
 | **Native Video** | `ca-app-pub-3940256099942544/1044960115` | Google's test native video ad | ⚠️ Unreliable |
 | **Error Testing** | `"invalid-ad-unit-id"` | Triggers load failures for error handling demo | ✅ Working |
@@ -263,13 +265,19 @@ Different ad formats track events at different times:
 - `Opened`: `FullScreenContentCallback.onAdClicked()`
 - `Revenue`: `OnPaidEventListener`
 
+**App Open Ads:**
+- `Loaded`: `AppOpenAd.AppOpenAdLoadCallback.onAdLoaded()`
+- `Displayed`: `FullScreenContentCallback.onAdShowedFullScreenContent()`
+- `Opened`: `FullScreenContentCallback.onAdClicked()`
+- `Revenue`: `OnPaidEventListener`
+
 **Native Ads (both regular and video):**
 - `Loaded`: `AdLoader.forNativeAd()` callback
 - `Displayed`: **Manual** - Call `trackNativeAdDisplayed()` after rendering
 - `Opened`: `AdListener.onAdClicked()` callback
 - `Revenue`: `setOnPaidEventListener()`
 
-**Note:** Native and native video ads use the same tracking mechanisms. The only difference is the ad unit ID used and the content returned (with or without video).
+**Note:** Native and native video ads use the same tracking mechanisms. The only difference is the ad unit ID used and the content returned (with or without video). App Open ads follow the same pattern as Interstitial ads but are designed for app launch/resume scenarios.
 
 ---
 
