@@ -35,6 +35,13 @@ object Constants {
         const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
 
         /**
+         * App Open Ad Test Unit ID
+         * Always successfully loads and displays a test app open ad.
+         * App open ads are full-screen ads shown when users open or switch back to your app.
+         */
+        const val APP_OPEN_AD_UNIT_ID = "ca-app-pub-3940256099942544/9257395921"
+
+        /**
          * Native Ad Test Unit ID
          * Test ID for native ads (text + images).
          * Official Google test ID for Native Advanced ads.
