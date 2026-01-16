@@ -74,6 +74,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() = runTest {
+        assertThat(true).isFalse
         performPurchase()
 
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
