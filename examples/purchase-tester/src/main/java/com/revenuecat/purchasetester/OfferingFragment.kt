@@ -24,6 +24,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
@@ -74,7 +75,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                isPlayStore = !sdkConfiguration.useAmazon
+                isPlayStore = sdkConfiguration.store == Store.PLAY_STORE
             }.collect()
         }
 

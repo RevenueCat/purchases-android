@@ -17,7 +17,10 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyConfiguration
 import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
@@ -53,12 +56,11 @@ class ConfigureFragment : Fragment() {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
                 binding.apiKeyInput.setText(sdkConfiguration.apiKey)
                 binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
-                val storeToCheckId =
-                    if (sdkConfiguration.useAmazon) {
-                        R.id.amazon_store_radio_id
-                    } else {
-                        R.id.google_store_radio_id
-                    }
+                val storeToCheckId = when (sdkConfiguration.store) {
+                    Store.AMAZON -> R.id.amazon_store_radio_id
+                    Store.GALAXY -> R.id.galaxy_store_radio_id
+                    else -> R.id.google_store_radio_id
+                }
                 binding.storeRadioGroup.check(storeToCheckId)
             }.collect()
         }
@@ -123,7 +125,11 @@ class ConfigureFragment : Fragment() {
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
-        val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
+        val selectedStore = when (binding.storeRadioGroup.checkedRadioButtonId) {
+            R.id.amazon_store_radio_id -> Store.AMAZON
+            R.id.galaxy_store_radio_id -> Store.GALAXY
+            else -> Store.PLAY_STORE
+        }
         val purchasesAreCompletedBy = when (binding.purchaseCompletionRadioGroup.checkedRadioButtonId) {
             R.id.completed_by_revenuecat_radio_id -> PurchasesAreCompletedBy.REVENUECAT
             R.id.completed_by_my_app_radio_id -> PurchasesAreCompletedBy.MY_APP
@@ -138,12 +144,11 @@ class ConfigureFragment : Fragment() {
 
         Purchases.logLevel = LogLevel.VERBOSE
 
-        val configurationBuilder =
-            if (useAmazonStore) {
-                AmazonConfiguration.Builder(application, apiKey)
-            } else {
-                PurchasesConfiguration.Builder(application, apiKey)
-            }
+        val configurationBuilder = when (selectedStore) {
+            Store.AMAZON -> AmazonConfiguration.Builder(application, apiKey)
+            Store.GALAXY -> GalaxyConfiguration.Builder(application, apiKey, GalaxyBillingMode.TEST)
+            else -> PurchasesConfiguration.Builder(application, apiKey)
+        }
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
@@ -163,7 +168,7 @@ class ConfigureFragment : Fragment() {
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
-        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
+        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, selectedStore))
     }
 
     private fun setupSupportedStoresRadioButtons() {
@@ -175,6 +180,10 @@ class ConfigureFragment : Fragment() {
         if (!supportedStores.contains("amazon")) {
             binding.amazonStoreRadioId.isEnabled = false
             binding.amazonUnavailableTextView.visibility = View.VISIBLE
+        }
+        if (!supportedStores.contains("galaxy")) {
+            binding.galaxyStoreRadioId.isEnabled = false
+            binding.galaxyUnavailableTextView.visibility = View.VISIBLE
         }
     }
 
