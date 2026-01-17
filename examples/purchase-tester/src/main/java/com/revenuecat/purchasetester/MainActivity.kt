@@ -46,10 +46,6 @@ class MainActivity : AppCompatActivity() {
                 val navController = navHostFragment?.navController ?: return@post
 
                 when (destination) {
-                    NavigationDestinations.LOGIN -> {
-                        navController.navigate(R.id.action_configureFragment_to_loginFragment)
-                    }
-
                     NavigationDestinations.LOGS -> {
                         navController.navigate(R.id.action_configureFragment_to_logsFragment)
                     }
