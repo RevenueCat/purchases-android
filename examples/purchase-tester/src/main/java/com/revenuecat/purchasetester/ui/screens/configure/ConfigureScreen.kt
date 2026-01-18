@@ -139,6 +139,7 @@ private fun ConfigureScreenContent(
             entitlementVerificationMode = data.entitlementVerificationMode
             selectedStore = data.selectedStoreType
             purchasesAreCompletedBy = data.purchasesAreCompletedBy
+            configureScreenViewModel.saveProxyUrl(proxyUrl)
         }
     }
 

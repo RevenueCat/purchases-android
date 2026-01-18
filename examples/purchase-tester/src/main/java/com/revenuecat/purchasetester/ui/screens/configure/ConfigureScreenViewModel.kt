@@ -1,5 +1,6 @@
 package com.revenuecat.purchasetester.ui.screens.configure
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.net.URL
@@ -140,11 +140,7 @@ class ConfigureScreenViewModelImpl(
         application: MainApplication,
         currentState: ConfigureScreenState.ConfigureScreenData,
     ) {
-        if (currentState.proxyUrl.isNotEmpty()) {
-            Purchases.proxyURL = URL(currentState.proxyUrl)
-        } else {
-            Purchases.proxyURL = null
-        }
+        configureProxyUrl(currentState.proxyUrl.trim())
 
         Purchases.logLevel = LogLevel.VERBOSE
 
@@ -192,7 +188,9 @@ class ConfigureScreenViewModelImpl(
     }
 
     override fun saveProxyUrl(proxyUrl: String) {
-        updateData { copy(proxyUrl = proxyUrl.trim()) }
+        val trimmedUrl = proxyUrl.trim()
+        updateData { copy(proxyUrl = trimmedUrl) }
+        configureProxyUrl(trimmedUrl)
     }
 
     override fun saveEntitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) {
@@ -215,4 +213,22 @@ class ConfigureScreenViewModelImpl(
             userEdits.value = block(current)
         }
     }
+
+    private fun configureProxyUrl(proxyUrl: String) {
+        try {
+            if (proxyUrl.isUrl()) {
+                Purchases.proxyURL = URL(proxyUrl)
+            } else {
+                Purchases.proxyURL = null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun String.isUrl(): Boolean {
+        if (this.isBlank()) return false
+        return Patterns.WEB_URL.matcher(this).matches()
+    }
+
 }
