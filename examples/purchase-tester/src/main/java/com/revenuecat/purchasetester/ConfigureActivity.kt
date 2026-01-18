@@ -16,6 +16,12 @@ class ConfigureActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val navigateTo = intent.getStringExtra(NavigationExtras.NAVIGATE_TO)
+        val startDestination = when (navigateTo) {
+            NavigationDestinations.LOGS -> PurchaseTesterScreen.Logs.route
+            else -> PurchaseTesterScreen.Configure.route
+        }
+
         setContent {
             PurchaseTesterTheme {
                 Surface(
@@ -23,7 +29,7 @@ class ConfigureActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     PurchaseTesterApp(
-                        startDestination = PurchaseTesterScreen.Configure.route
+                        startDestination = startDestination
                     )
                 }
             }

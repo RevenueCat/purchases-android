@@ -10,6 +10,8 @@ val ColorAccent = Color(0xFFf2545b)
 val LightGrey = Color(0xFFdddddd)
 val White = Color(0xFFffffff)
 val Red = Color(0xFFf7cac6)
+val Yellow = Color(0xFFf4f5b0)
+val Blue = Color(0xFFc6edf7)
 
 // Additional colors for dark theme support
 val BackgroundLight = Color(0xFFFFFFFF)
