@@ -398,8 +398,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     }
 
     private fun navigateToLogsFragment() {
-        val directions = OverviewFragmentDirections.actionOverviewFragmentToLogsFragment()
-        findNavController().navigate(directions)
+        val intent = Intent(requireContext(), ConfigureActivity::class.java).apply {
+            putExtra(NavigationExtras.NAVIGATE_TO, NavigationDestinations.LOGS)
+        }
+        startActivity(intent)
     }
 
     private fun navigateToProxyFragment() {

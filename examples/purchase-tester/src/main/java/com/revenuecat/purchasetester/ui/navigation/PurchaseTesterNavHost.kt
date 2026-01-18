@@ -13,9 +13,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.revenuecat.purchasetester.MainActivity
-import com.revenuecat.purchasetester.NavigationDestinations
 import com.revenuecat.purchasetester.ui.screens.configure.ConfigureScreen
 import com.revenuecat.purchasetester.ui.screens.login.LoginScreen
+import com.revenuecat.purchasetester.ui.screens.logs.LogsScreen
 import com.revenuecat.purchasetester.ui.screens.proxysettings.ProxySettingsSheet
 
 @Composable
@@ -41,11 +41,7 @@ fun PurchaseTesterApp(
                     }
                 },
                 onNavigateToLogs = {
-                    // Navigate to MainActivity with Logs destination (Fragment-based)
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        putExtra(NavigationDestinations.EXTRA_DESTINATION, NavigationDestinations.LOGS)
-                    }
-                    context.startActivity(intent)
+                    navController.navigate(PurchaseTesterScreen.Logs.route)
                 },
                 onNavigateToProxy = {
                     showProxySheet = true
@@ -70,11 +66,7 @@ fun PurchaseTesterApp(
                     }
                 },
                 onNavigateToLogs = {
-                    // Navigate to MainActivity with Logs destination (Fragment-based)
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        putExtra(NavigationDestinations.EXTRA_DESTINATION, NavigationDestinations.LOGS)
-                    }
-                    context.startActivity(intent)
+                    navController.navigate(PurchaseTesterScreen.Logs.route)
                 },
                 onNavigateToProxy = {
                     showProxySheet = true
@@ -82,14 +74,10 @@ fun PurchaseTesterApp(
             )
         }
 
-        // These routes are placeholders for future Compose screens
-        // Currently handled by Fragment navigation through MainActivity
         composable(PurchaseTesterScreen.Logs.route) {
-            // TODO: Replace with LogsScreen when migrated
-        }
-
-        composable(PurchaseTesterScreen.Proxy.route) {
-            // TODO: Replace with ProxySettingsSheet when migrated
+            LogsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
 
         composable(PurchaseTesterScreen.Overview.route) {
