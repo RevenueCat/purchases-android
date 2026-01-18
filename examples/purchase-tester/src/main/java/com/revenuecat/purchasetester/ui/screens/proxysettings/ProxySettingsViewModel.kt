@@ -30,9 +30,10 @@ class ProxySettingsViewModel(
     private val _state = MutableStateFlow<ProxySettingsState>(ProxySettingsState.Loading)
     val state: StateFlow<ProxySettingsState> = _state.asStateFlow()
 
-    private val proxyURL = Purchases.proxyURL
+    private var proxyURL = Purchases.proxyURL
 
     fun loadCurrentState() {
+        proxyURL = Purchases.proxyURL
         val statusURL = proxyURL?.let { URL("$it/status") } ?: run {
             updateState { ProxySettingsState.Error("There is no Proxy URL configured") }
             return
