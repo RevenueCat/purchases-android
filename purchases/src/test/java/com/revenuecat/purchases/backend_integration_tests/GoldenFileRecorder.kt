@@ -120,6 +120,8 @@ class GoldenFileRecorder(
             "X-Version",
             "Server-Timing",
             "Accept-Ranges",
+            "X-Cache",
+            "Alt-Svc",
         )
 
         /**
