@@ -23,6 +23,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
@@ -72,6 +73,7 @@ internal interface PaywallViewModel {
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
+    fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
     fun closePaywall()
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
@@ -189,13 +191,17 @@ internal class PaywallViewModelImpl(
     override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
+        val exitOffering = if (!_purchaseCompleted.value) {
+            _preloadedExitOffering.value
+        } else {
+            null
+        }
+        if (exitOffering != null) {
+            trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
+        }
+        paywallPresentationData = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            val exitOffering = if (!_purchaseCompleted.value) {
-                _preloadedExitOffering.value
-            } else {
-                null
-            }
             dismissWithExitOffering(exitOffering)
         } else {
             options.dismissRequest()
@@ -294,6 +300,24 @@ internal class PaywallViewModelImpl(
             paywallPresentationData = createEventData()
             track(PaywallEventType.IMPRESSION)
         }
+    }
+
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking exit offer event")
+            return
+        }
+        val exitOfferEventData = eventData.copy(
+            exitOfferType = exitOfferType,
+            exitOfferingIdentifier = exitOfferingIdentifier,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = exitOfferEventData,
+            type = PaywallEventType.EXIT_OFFER,
+        )
+        purchases.track(event)
     }
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
@@ -731,7 +755,6 @@ internal class PaywallViewModelImpl(
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
-            paywallPresentationData = null
         }
     }
 
@@ -775,8 +798,10 @@ internal class PaywallViewModelImpl(
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
+        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.data?.id
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
+            paywallIdentifier = paywallId,
             offeringIdentifier = offering.identifier,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
@@ -793,6 +818,7 @@ internal class PaywallViewModelImpl(
             return null
         }
         return PaywallEvent.Data(
+            paywallIdentifier = paywallData.data.id,
             offeringIdentifier = offering.identifier,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),

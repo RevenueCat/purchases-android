@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "90012",
+    "Content-Length": "90036",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "server": "envoy",
     "strict-transport-security": "max-age= 63072000; includeSubdomains; preload",
@@ -4079,7 +4077,8 @@
       "variable_config": {
         "variable_compatibility_map": {},
         "function_compatibility_map": {}
-      }
+      },
+      "custom_variables": {}
     }
   }
 }

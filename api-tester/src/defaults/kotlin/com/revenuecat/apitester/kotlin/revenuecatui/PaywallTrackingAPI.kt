@@ -22,6 +22,7 @@ private class PaywallTrackingAPI {
                 Date(),
             ),
             PaywallEvent.Data(
+                paywallIdentifier = "paywallId",
                 "offeringId",
                 paywallRevision,
                 UUID.randomUUID(),
@@ -48,6 +49,7 @@ private class PaywallTrackingAPI {
             PaywallEventType.IMPRESSION,
             PaywallEventType.CANCEL,
             PaywallEventType.CLOSE,
+            PaywallEventType.EXIT_OFFER,
             -> {}
         }
     }

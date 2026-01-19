@@ -21,6 +21,7 @@ internal data class PaywallStoredEvent(
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     fun toBackendEvent(): BackendEvent.Paywalls {
         return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
@@ -29,11 +30,14 @@ internal data class PaywallStoredEvent(
             appUserID = userID,
             sessionID = event.data.sessionIdentifier.toString(),
             offeringID = event.data.offeringIdentifier,
+            paywallID = event.data.paywallIdentifier,
             paywallRevision = event.data.paywallRevision,
             timestamp = event.creationData.date.time,
             displayMode = event.data.displayMode,
             darkMode = event.data.darkMode,
             localeIdentifier = event.data.localeIdentifier,
+            exitOfferType = event.data.exitOfferType?.value,
+            exitOfferingID = event.data.exitOfferingIdentifier,
         )
     }
 

@@ -3,6 +3,14 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
 
 @Parcelize
 @Poko
@@ -30,3 +38,43 @@ class Price(
      */
     val currencyCode: String,
 ) : Parcelable
+
+internal object PriceSerializer : KSerializer<Price> {
+    private const val FORMATTED_INDEX = 0
+    private const val AMOUNT_MICROS_INDEX = 1
+    private const val CURRENCY_CODE_INDEX = 2
+
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Price") {
+        element("formatted", String.serializer().descriptor)
+        element("amount_micros", Long.serializer().descriptor)
+        element("currency_code", String.serializer().descriptor)
+    }
+
+    override fun serialize(encoder: Encoder, value: Price) {
+        encoder.encodeStructure(descriptor) {
+            encodeStringElement(descriptor, FORMATTED_INDEX, value.formatted)
+            encodeLongElement(descriptor, AMOUNT_MICROS_INDEX, value.amountMicros)
+            encodeStringElement(descriptor, CURRENCY_CODE_INDEX, value.currencyCode)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): Price {
+        return decoder.decodeStructure(descriptor) {
+            var formatted = ""
+            var amountMicros = 0L
+            var currencyCode = ""
+
+            while (true) {
+                when (val index = decodeElementIndex(descriptor)) {
+                    FORMATTED_INDEX -> formatted = decodeStringElement(descriptor, FORMATTED_INDEX)
+                    AMOUNT_MICROS_INDEX -> amountMicros = decodeLongElement(descriptor, AMOUNT_MICROS_INDEX)
+                    CURRENCY_CODE_INDEX -> currencyCode = decodeStringElement(descriptor, CURRENCY_CODE_INDEX)
+                    -1 -> break
+                    else -> error("Unexpected index: $index")
+                }
+            }
+
+            Price(formatted, amountMicros, currencyCode)
+        }
+    }
+}
