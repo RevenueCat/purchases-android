@@ -22,6 +22,7 @@ private class PaywallTrackingAPI {
                 Date(),
             ),
             PaywallEvent.Data(
+                paywallIdentifier = "paywallId",
                 "offeringId",
                 paywallRevision,
                 UUID.randomUUID(),

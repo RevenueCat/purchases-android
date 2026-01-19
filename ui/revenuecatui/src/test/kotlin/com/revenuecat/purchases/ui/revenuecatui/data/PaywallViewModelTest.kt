@@ -80,6 +80,7 @@ class PaywallViewModelTest {
         ),
     )
     private val emptyPaywallComponentsData = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(

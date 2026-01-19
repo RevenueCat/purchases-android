@@ -150,6 +150,7 @@ class PaywallActionTests {
         localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
         defaultLocale: LocaleId,
     ): PaywallComponentsData = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
