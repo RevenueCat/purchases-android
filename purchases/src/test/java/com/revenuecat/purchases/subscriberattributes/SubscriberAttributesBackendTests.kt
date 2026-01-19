@@ -29,7 +29,6 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -314,6 +313,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -342,6 +342,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -369,6 +370,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -399,6 +401,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -428,6 +431,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -457,6 +461,7 @@ class SubscriberAttributesPosterTests {
             initiationSource = initiationSource,
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            sdkOriginated = true,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )

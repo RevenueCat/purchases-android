@@ -251,6 +251,7 @@ internal class Backend(
         paywallPostReceiptData: PaywallPostReceiptData?,
         // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
+        sdkOriginated: Boolean,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -262,6 +263,7 @@ internal class Backend(
             subscriberAttributes.toString(),
             receiptInfo.toString(),
             purchasesAreCompletedBy.toString(),
+            sdkOriginated.toString(),
         )
 
         val body = mapOf(
@@ -277,6 +279,7 @@ internal class Backend(
             },
             "observer_mode" to !finishTransactions,
             "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
+            "sdk_originated" to sdkOriginated,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },

@@ -329,6 +329,7 @@ internal class PostReceiptHelper(
                 initiationSource = initiationSource,
                 paywallPostReceiptData = paywallData,
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
+                sdkOriginated = hasCachedTransactionMetadata,
                 onSuccess = { postReceiptResponse ->
                     if (hasCachedTransactionMetadata) {
                         localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))

@@ -208,6 +208,7 @@ class PostReceiptHelperTest {
                 receiptInfo = expectedReceiptInfo,
                 initiationSource = PostReceiptInitiationSource.PURCHASE,
                 paywallPostReceiptData = null,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -243,6 +244,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = null,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -904,6 +906,7 @@ class PostReceiptHelperTest {
                 receiptInfo = testReceiptInfo,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
                 paywallPostReceiptData = null,
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -936,6 +939,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = null,
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1448,6 +1452,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 initiationSource = any(),
                 paywallPostReceiptData = expectedPaywallData,
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1825,6 +1830,39 @@ class PostReceiptHelperTest {
     }
 
     @Test
+    fun `postTransactionAndConsumeIfNeeded posts sdkOriginated as false when there is no cached transaction metadata and initiation source is not purchase`() {
+        mockPostReceiptSuccess(postReceiptInitiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                sdkOriginated = false,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `postTransactionAndConsumeIfNeeded uses cached paywall data when present paywall is null`() {
         val cachedPaywallData = event.toPaywallPostReceiptData()
         val cachedMetadata = LocalTransactionMetadata(
@@ -1859,6 +1897,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = cachedPaywallData,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1918,6 +1957,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = cachedPaywallData,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1959,6 +1999,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2010,6 +2051,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2050,6 +2092,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2082,6 +2125,7 @@ class PostReceiptHelperTest {
                 initiationSource = any(),
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2134,7 +2178,7 @@ class PostReceiptHelperTest {
         assertThat(errorCallCount).isEqualTo(1)
         verify(exactly = 0) {
             backend.postReceiptData(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             )
         }
     }
@@ -2174,6 +2218,7 @@ class PostReceiptHelperTest {
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = any(),
+                sdkOriginated = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2217,6 +2262,7 @@ class PostReceiptHelperTest {
                 initiationSource = initiationSource,
                 paywallPostReceiptData = any(),
                 purchasesAreCompletedBy = any(),
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -2338,6 +2384,7 @@ class PostReceiptHelperTest {
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallPostReceiptData = paywallPostReceiptData,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2392,6 +2439,7 @@ class PostReceiptHelperTest {
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallPostReceiptData = null,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
+                sdkOriginated = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2446,6 +2494,7 @@ class PostReceiptHelperTest {
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallPostReceiptData = null,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2491,6 +2540,7 @@ class PostReceiptHelperTest {
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallPostReceiptData = null,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -2554,6 +2604,7 @@ class PostReceiptHelperTest {
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallPostReceiptData = null,
                 purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                sdkOriginated = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
