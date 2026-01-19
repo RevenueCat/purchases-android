@@ -64,6 +64,7 @@ internal fun FakePaywallState(
         )
     }
     val data = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
