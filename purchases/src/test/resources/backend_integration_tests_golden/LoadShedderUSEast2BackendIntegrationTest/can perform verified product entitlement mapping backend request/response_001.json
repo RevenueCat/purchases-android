@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
     "Content-Length": "515",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "server": "envoy",
     "strict-transport-security": "max-age= 63072000; includeSubdomains; preload",
     "x-revenuecat-fortress": "true"
