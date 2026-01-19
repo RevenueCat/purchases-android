@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.common.PlayStoreOfferConfig
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,4 +21,7 @@ class PackageComponent(
     val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
     val stack: StackComponent,
+    @get:JvmSynthetic
+    @SerialName("play_store_offer")
+    val playStoreOffer: PlayStoreOfferConfig? = null,
 ) : PaywallComponent

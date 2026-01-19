@@ -38,4 +38,7 @@ class PaywallComponentsData(
     @get:JvmSynthetic
     @SerialName("exit_offers")
     val exitOffers: ExitOffers? = null,
+    @get:JvmSynthetic
+    @SerialName("product_change")
+    val productChangeConfig: ProductChangeConfig? = null,
 )
