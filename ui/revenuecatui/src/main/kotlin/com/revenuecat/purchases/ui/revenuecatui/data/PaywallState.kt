@@ -28,6 +28,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
@@ -111,6 +112,7 @@ internal sealed interface PaywallState {
                 data class Info(
                     val pkg: Package,
                     val isSelectedByDefault: Boolean,
+                    val resolvedOffer: ResolvedOffer? = null,
                 )
 
                 /**
@@ -130,6 +132,7 @@ internal sealed interface PaywallState {
 
             data class SelectedPackageInfo(
                 val rcPackage: Package,
+                val resolvedOffer: ResolvedOffer? = null,
             )
 
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
@@ -210,8 +213,14 @@ internal sealed interface PaywallState {
 
             val selectedPackageInfo by derivedStateOf {
                 selectedPackage?.let { rcPackage ->
-                    SelectedPackageInfo(rcPackage = rcPackage)
+                    val resolvedOffer = findPackageInfo(rcPackage)?.resolvedOffer
+                    SelectedPackageInfo(rcPackage = rcPackage, resolvedOffer = resolvedOffer)
                 }
+            }
+
+            private fun findPackageInfo(pkg: Package): AvailablePackages.Info? {
+                return packages.packagesOutsideTabs.find { it.pkg == pkg }
+                    ?: packages.packagesByTab.values.flatten().find { it.pkg == pkg }
             }
 
             val mostExpensivePricePerMonthMicros by derivedStateOf {

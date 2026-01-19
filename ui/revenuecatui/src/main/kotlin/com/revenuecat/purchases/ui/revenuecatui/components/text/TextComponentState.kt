@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -44,6 +45,7 @@ internal fun rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
     )
 }
@@ -55,6 +57,7 @@ internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
     selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
@@ -70,6 +73,7 @@ internal fun rememberUpdatedTextComponentState(
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
@@ -86,6 +90,7 @@ internal class TextComponentState(
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
@@ -116,6 +121,15 @@ internal class TextComponentState(
      */
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
+    }
+
+    /**
+     * The subscription option to use for offer variables (product.offer_*, product.secondary_offer_*).
+     * If a specific Play Store offer is configured for this text's package, use that.
+     * Otherwise, use the selected package's resolved subscription option.
+     */
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.subscriptionOption ?: selectedSubscriptionOptionProvider()
     }
 
     /**

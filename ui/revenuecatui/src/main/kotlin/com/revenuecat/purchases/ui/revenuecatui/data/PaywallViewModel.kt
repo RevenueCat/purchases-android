@@ -12,11 +12,17 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
@@ -85,7 +91,7 @@ internal interface PaywallViewModel {
     fun preloadExitOffering()
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
@@ -372,7 +378,12 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchase(activity, selectedPackage.rcPackage)
+                performPurchase(
+                    activity = activity,
+                    packageToPurchase = selectedPackage.rcPackage,
+                    subscriptionOption = null,
+                    productChangeConfig = null,
+                )
             }
             is PaywallState.Loaded.Components -> {
                 // Purchase the provided package if not null, otherwise purchase the selected package.
@@ -381,7 +392,8 @@ internal class PaywallViewModelImpl(
                         rcPackage = it,
                     )
                 } ?: currentState.selectedPackageInfo
-                performPurchaseIfNecessary(activity, selectedPackageInfo)
+                val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
+                performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
             }
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -393,16 +405,27 @@ internal class PaywallViewModelImpl(
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
+        productChangeConfig: ProductChangeConfig?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
         } else {
-            performPurchase(activity, packageInfo.rcPackage)
+            performPurchase(
+                activity = activity,
+                packageToPurchase = packageInfo.rcPackage,
+                subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
+                productChangeConfig = productChangeConfig,
+            )
         }
     }
 
-    @Suppress("LongMethod", "NestedBlockDepth")
-    private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+    @Suppress("LongMethod", "NestedBlockDepth", "CyclomaticComplexMethod")
+    private suspend fun performPurchase(
+        activity: Activity,
+        packageToPurchase: Package,
+        subscriptionOption: SubscriptionOption?,
+        productChangeConfig: ProductChangeConfig?,
+    ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCoroutine { continuation ->
@@ -449,9 +472,26 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+                    // Use subscription option from resolved offer if available, otherwise use package
+                    val purchaseParamsBuilder = if (subscriptionOption != null) {
+                        PurchaseParams.Builder(activity, subscriptionOption)
+                            .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
+                    } else {
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    }
+
+                    val productChangeInfo = getProductChangeInfo(packageToPurchase, productChangeConfig)
+                    if (productChangeInfo != null) {
+                        Logger.d(
+                            "Performing product change from ${productChangeInfo.oldProductId} " +
+                                "with mode ${productChangeInfo.replacementMode}",
+                        )
+                        purchaseParamsBuilder
+                            .oldProductId(productChangeInfo.oldProductId)
+                            .googleReplacementMode(productChangeInfo.replacementMode)
+                    }
+
+                    val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
@@ -472,6 +512,93 @@ internal class PaywallViewModelImpl(
         }
 
         finishAction()
+    }
+
+    /**
+     * Data class containing product change information for performing a product change purchase.
+     */
+    private data class ProductChangeInfo(
+        val oldProductId: String,
+        val replacementMode: GoogleReplacementMode,
+    )
+
+    /**
+     * Determines if a product change is needed and returns the product change info if so.
+     *
+     * Product change logic:
+     * 1. If the package is not a subscription, no product change.
+     * 2. If productChangeConfig is not configured in the paywall, no product change (allows parallel subscriptions).
+     * 3. If user has no active Play Store subscriptions, no product change (first subscription).
+     * 4. If the active subscription has the same product ID as the package being purchased,
+     *    no product change (Google handles base plan changes automatically).
+     * 5. Otherwise, perform a product change with the appropriate replacement mode.
+     */
+    @Suppress("ReturnCount")
+    private suspend fun getProductChangeInfo(
+        packageToPurchase: Package,
+        productChangeConfig: ProductChangeConfig?,
+    ): ProductChangeInfo? {
+        // Only subscriptions can have product changes
+        if (packageToPurchase.product.type != ProductType.SUBS) {
+            return null
+        }
+
+        // If no productChangeConfig is configured, treat as a regular purchase (parallel subscriptions possible)
+        if (productChangeConfig == null) {
+            return null
+        }
+
+        return try {
+            val customerInfo = purchases.awaitCustomerInfo()
+            val activePlayStoreSubscription = customerInfo.subscriptionsByProductIdentifier.entries
+                .firstOrNull { (_, subscriptionInfo) ->
+                    subscriptionInfo.isActive && subscriptionInfo.store == Store.PLAY_STORE
+                }
+
+            // No active subscription means this is a new purchase
+            if (activePlayStoreSubscription == null) {
+                return null
+            }
+
+            val oldProductIdentifier = activePlayStoreSubscription.key
+            val newProductId = packageToPurchase.product.id
+
+            // Extract subscription ID from the old product identifier (format: subscriptionId:basePlanId)
+            val oldSubscriptionId = oldProductIdentifier.substringBefore(":")
+
+            // If same product (just different base plan), Google handles it automatically
+            if (oldSubscriptionId == newProductId) {
+                Logger.d("Same product change ($newProductId), Google will handle base plan change automatically")
+                return null
+            }
+
+            // Different product - determine if it's an upgrade or downgrade based on price
+            val oldPrice = activePlayStoreSubscription.value.price?.amountMicros
+            val newPrice = packageToPurchase.product.pricePerMonthMicros()
+
+            val replacementMode = if (oldPrice != null && newPrice != null && newPrice > oldPrice) {
+                Logger.d("Detected upgrade: $oldSubscriptionId -> $newProductId")
+                productChangeConfig.upgradeReplacementMode.toGoogleReplacementMode()
+            } else {
+                Logger.d("Detected downgrade: $oldSubscriptionId -> $newProductId")
+                productChangeConfig.downgradeReplacementMode.toGoogleReplacementMode()
+            }
+
+            ProductChangeInfo(
+                oldProductId = oldProductIdentifier,
+                replacementMode = replacementMode,
+            )
+        } catch (e: PurchasesException) {
+            Logger.e("Failed to get customer info for product change detection", e)
+            null
+        }
+    }
+
+    /**
+     * Get the monthly price in micros for price comparison.
+     */
+    private fun StoreProduct.pricePerMonthMicros(): Long? {
+        return pricePerMonth()?.amountMicros
     }
 
     private fun validateState() {
