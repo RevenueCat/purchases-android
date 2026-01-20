@@ -49,6 +49,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.UUID
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -1460,6 +1461,109 @@ class PostReceiptHelperTest {
             )
         }
         assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+    }
+
+    @Test
+    fun `postReceipt does not post paywall data if purchase product does not match paywall event`() {
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.receiveEvent(event)
+
+        val mockGooglePurchase2 = stubGooglePurchase(productIds = listOf("other_product"))
+        val mockStoreTransaction2 = mockGooglePurchase2.toStoreTransaction(
+            ProductType.SUBS,
+            null,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        every { billing.consumeAndSave(
+            finishTransactions = any(),
+            purchase = mockStoreTransaction2,
+            shouldConsume = any(),
+            initiationSource = initiationSource,
+        )
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction2,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+    }
+
+    @Test
+    fun `postReceipt does not post paywall data if purchase timestamp before purchase initiated event`() {
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.receiveEvent(event)
+
+        val mockGooglePurchase2 = stubGooglePurchase(
+            productIds = listOf("lifetime_product", "dos"),
+            purchaseTime = 1.days.ago().time,
+        )
+        val mockStoreTransaction2 = mockGooglePurchase2.toStoreTransaction(
+            ProductType.SUBS,
+            null,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        every { billing.consumeAndSave(
+            finishTransactions = any(),
+            purchase = mockStoreTransaction2,
+            shouldConsume = any(),
+            initiationSource = initiationSource,
+        )
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction2,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
     }
 
     // endregion paywall data
