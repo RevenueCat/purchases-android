@@ -142,7 +142,7 @@ private class PurchasesAPI {
         amazonUserId: String,
         isoCurrencyCode: String?,
         price: Double?,
-        purchaseTime: Long?,
+        purchaseTime: Long,
     ) {
         purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime)
         purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price)
