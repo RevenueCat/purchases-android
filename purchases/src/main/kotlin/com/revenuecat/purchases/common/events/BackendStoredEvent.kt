@@ -72,7 +72,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
     appUserID: String,
 ): BackendStoredEvent? {
     if (type == PaywallEventType.PURCHASE_INITIATED || type == PaywallEventType.PURCHASE_ERROR) {
-        // WIP: We should implement support for these paywalls in the backend.
+        // WIP: We should implement support for these events in the backend.
         return null
     }
     return BackendStoredEvent.Paywalls(
