@@ -1222,6 +1222,103 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `SDK-originated purchase has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val storeProduct = mockStoreProduct(listOf(productId), listOf(productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        val purchaseParams = getPurchaseParams(storeProduct.first().subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `non-SDK-originated purchase has sdkOriginated set to false`() {
+        val productId = "test_product"
+        mockQueryingProductDetails(productId, ProductType.INAPP)
+
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.INAPP
+        )
+
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockk())
+        }
+
+        // Trigger purchase updated without calling purchaseWith first,
+        // simulating a purchase that came from outside the SDK
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun doesntPostIfNotOK() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
