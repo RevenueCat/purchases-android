@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.galaxy.attribution
 
 import android.app.Application
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher

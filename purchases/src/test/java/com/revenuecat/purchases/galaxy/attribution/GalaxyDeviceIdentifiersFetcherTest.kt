@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.galaxy
+package com.revenuecat.purchases.galaxy.attribution
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4

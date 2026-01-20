@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.amazon.attribution.AmazonDeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.galaxy.GalaxyDeviceIdentifiersFetcher
+import com.revenuecat.purchases.galaxy.attribution.GalaxyDeviceIdentifiersFetcher
 import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetcher
 
 internal object AttributionFetcherFactory {
