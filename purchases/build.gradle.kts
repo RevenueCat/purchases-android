@@ -127,7 +127,6 @@ metalava {
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all-compatibility")
-        freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
     }
 
     if (name.contains("UnitTest") || name.contains("AndroidTest")) {

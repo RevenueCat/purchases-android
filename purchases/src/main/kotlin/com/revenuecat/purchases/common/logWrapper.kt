@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.util.Log
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.strings.Emojis
 
@@ -57,7 +58,7 @@ internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> Str
 /**
  * Enum of emojis for log messages according to intent.
  */
-
+@OptIn(InternalRevenueCatAPI::class)
 internal enum class LogIntent(val emojiList: List<String>) {
     DEBUG(listOf(Emojis.INFO)),
     GOOGLE_ERROR(listOf(Emojis.ROBOT, Emojis.DOUBLE_EXCLAMATION)),

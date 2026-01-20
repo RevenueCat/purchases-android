@@ -15,6 +15,7 @@ import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
+@OptIn(InternalRevenueCatAPI::class)
 internal object BillingFactory {
 
     @Suppress("LongParameterList", "ThrowsCount")

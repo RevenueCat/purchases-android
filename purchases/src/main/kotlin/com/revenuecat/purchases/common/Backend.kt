@@ -53,7 +53,7 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
-
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias OfferingsCallback = Pair<
     (JSONObject, HTTPResponseOriginalSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
@@ -82,7 +82,7 @@ internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesEr
 internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
-
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)

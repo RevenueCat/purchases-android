@@ -16,7 +16,7 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
  */
-
+@OptIn(InternalRevenueCatAPI::class)
 internal class CustomerInfoUpdateHandler constructor(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,

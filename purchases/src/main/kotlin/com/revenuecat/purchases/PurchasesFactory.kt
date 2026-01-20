@@ -1,5 +1,3 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases
 
 import android.Manifest
@@ -68,7 +66,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,

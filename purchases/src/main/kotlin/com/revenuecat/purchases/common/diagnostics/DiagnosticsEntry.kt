@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.utils.Event
@@ -8,6 +9,7 @@ import org.json.JSONObject
 import java.util.Date
 import java.util.UUID
 
+@OptIn(InternalRevenueCatAPI::class)
 internal data class DiagnosticsEntry
 constructor(
     val id: UUID = UUID.randomUUID(),

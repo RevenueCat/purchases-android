@@ -27,7 +27,7 @@ enum class HTTPResponseOriginalSource {
 /**
  * Converts HTTPResult to OriginalDataSource based on response characteristics.
  */
-
+@OptIn(InternalRevenueCatAPI::class)
 internal val HTTPResult.originalDataSource: HTTPResponseOriginalSource
     get() {
         if (isLoadShedderResponse && isFallbackURL) {
