@@ -1008,7 +1008,7 @@ class BackendTest {
 
         val receiptInfo2 = ReceiptInfo(
             basicReceiptInfo.productIDs,
-            basicReceiptInfo.presentedOfferingContext?.copy(
+            presentedOfferingContext = basicReceiptInfo.presentedOfferingContext?.copy(
                 offeringIdentifier = basicReceiptInfo.presentedOfferingContext.offeringIdentifier + "a"
             )
         )

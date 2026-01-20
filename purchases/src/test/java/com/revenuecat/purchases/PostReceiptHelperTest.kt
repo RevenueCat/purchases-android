@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
@@ -48,6 +49,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.UUID
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -82,6 +85,7 @@ class PostReceiptHelperTest {
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
+        purchaseTime = Date().time,
         presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "test-offering-identifier"),
         price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
         currency = mockStoreProduct.price.currencyCode,
@@ -100,7 +104,7 @@ class PostReceiptHelperTest {
     )
     private val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes()
     private val event = PaywallEvent(
-        creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+        creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
         data = PaywallEvent.Data(
             paywallIdentifier = "paywall_id",
             "offering_id",
@@ -109,8 +113,10 @@ class PostReceiptHelperTest {
             "footer",
             "es_ES",
             false,
+            packageIdentifier = "test-package-id",
+            productIdentifier = mockGooglePurchase.products.first(),
         ),
-        type = PaywallEventType.CLOSE,
+        type = PaywallEventType.PURCHASE_INITIATED,
     )
 
     private lateinit var postedReceiptInfoSlot: CapturingSlot<ReceiptInfo>
@@ -184,6 +190,7 @@ class PostReceiptHelperTest {
 
         val expectedReceiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
+            purchaseTime = mockStoreTransaction.purchaseTime,
             presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
             price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
             formattedPrice = mockStoreProduct.price.formatted,
@@ -1426,7 +1433,7 @@ class PostReceiptHelperTest {
 
         mockPostReceiptSuccess()
 
-        paywallPresentedCache.cachePresentedPaywall(event)
+        paywallPresentedCache.receiveEvent(event)
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
@@ -1452,25 +1459,7 @@ class PostReceiptHelperTest {
                 onError = any()
             )
         }
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-    }
-
-    @Test
-    fun `postReceipt keeps paywall data in cache if request fails`() {
-        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
-
-        paywallPresentedCache.cachePresentedPaywall(event)
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            subscriptionOptionForProductIDs = null,
-            isRestore = false,
-            appUserID = appUserID,
-            initiationSource = PostReceiptInitiationSource.PURCHASE,
-            onSuccess = { _, _ -> fail("Should error") },
-            onError = { _, _ -> }
-        )
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
     }
 
     // endregion paywall data
@@ -1637,7 +1626,7 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded caches transaction metadata before posting`() {
         val expectedPaywallData = event.toPaywallPostReceiptData()
 
-        paywallPresentedCache.cachePresentedPaywall(event)
+        paywallPresentedCache.receiveEvent(event)
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -1877,7 +1866,7 @@ class PostReceiptHelperTest {
         every { localTransactionMetadataStore.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
 
         val presentedEvent = PaywallEvent(
-            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.minutes.ago()),
             data = PaywallEvent.Data(
                 paywallIdentifier = "presented_paywall_id",
                 "different_offering",
@@ -1886,10 +1875,12 @@ class PostReceiptHelperTest {
                 "header",
                 "en_US",
                 true,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockStoreTransaction.productIds.first(),
             ),
-            type = PaywallEventType.IMPRESSION,
+            type = PaywallEventType.PURCHASE_INITIATED,
         )
-        paywallPresentedCache.cachePresentedPaywall(presentedEvent)
+        paywallPresentedCache.receiveEvent(presentedEvent)
 
         mockPostReceiptSuccess()
 
@@ -1905,7 +1896,7 @@ class PostReceiptHelperTest {
         )
 
         // Verify we have not removed presented cache event when using cached value
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNotNull
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
 
         verify(exactly = 1) {
             backend.postReceiptData(

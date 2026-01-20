@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ReceiptInfo(
     val productIDs: List<String>,
+    val purchaseTime: Long? = null,
     @Serializable(with = PresentedOfferingContextSerializer::class)
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val price: Double? = null,
@@ -71,6 +72,7 @@ internal data class ReceiptInfo(
 
             return ReceiptInfo(
                 productIDs = storeTransaction.productIds,
+                purchaseTime = storeTransaction.purchaseTime,
                 presentedOfferingContext = storeTransaction.presentedOfferingContext,
                 price = storeProduct?.price?.amountMicros?.div(SharedConstants.MICRO_MULTIPLIER),
                 formattedPrice = storeProduct?.price?.formatted,

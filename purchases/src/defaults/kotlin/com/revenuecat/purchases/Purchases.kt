@@ -275,13 +275,17 @@ class Purchases internal constructor(
      * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
      * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
      * @param [price] Product's price.
+     * @param [purchaseTime] Time the product was purchased, in milliseconds since the epoch.
      */
+    @Suppress("LongParameterList")
+    @JvmOverloads
     fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
         isoCurrencyCode: String?,
         price: Double?,
+        purchaseTime: Long? = null,
     ) {
         purchasesOrchestrator.syncAmazonPurchase(
             productID,
@@ -289,6 +293,7 @@ class Purchases internal constructor(
             amazonUserID,
             isoCurrencyCode,
             price,
+            purchaseTime,
         )
     }
 

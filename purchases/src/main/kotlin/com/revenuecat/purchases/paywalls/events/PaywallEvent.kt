@@ -29,6 +29,16 @@ enum class PaywallEventType(val value: String) {
     CLOSE("paywall_close"),
 
     /**
+     * The user initiated a purchase through the paywall.
+     */
+    PURCHASE_INITIATED("paywall_purchase_initiated"),
+
+    /**
+     * The user encountered an error during purchase.
+     */
+    PURCHASE_ERROR("paywall_purchase_error"),
+
+    /**
      * An exit offer will be shown to the user.
      */
     EXIT_OFFER("paywall_exit_offer"),
@@ -76,6 +86,10 @@ data class PaywallEvent(
         val darkMode: Boolean,
         val exitOfferType: ExitOfferType? = null,
         val exitOfferingIdentifier: String? = null,
+        val packageIdentifier: String? = null,
+        val productIdentifier: String? = null,
+        val errorCode: Int? = null,
+        val errorMessage: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {

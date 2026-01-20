@@ -443,6 +443,8 @@ internal class PaywallViewModelImpl(
         try {
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
+            trackPaywallPurchaseInitiated(packageToPurchase)
+
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
                     checkNotNull(customPurchaseHandler) {
@@ -460,7 +462,10 @@ internal class PaywallViewModelImpl(
                             trackPaywallCancel()
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let {
+                                trackPaywallPurchaseError(packageToPurchase, it)
+                                _actionError.value = it
+                            }
                         }
                     }
                 }
@@ -490,6 +495,7 @@ internal class PaywallViewModelImpl(
                 trackPaywallCancel()
                 listener?.onPurchaseCancelled()
             } else {
+                trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
                 _actionError.value = e.error
             }
@@ -629,6 +635,44 @@ internal class PaywallViewModelImpl(
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
         }
+    }
+
+    private fun trackPaywallPurchaseInitiated(rcPackage: Package) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase initiated event")
+            return
+        }
+        val purchaseInitiatedEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = rcPackage.product.id,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseInitiatedEventData,
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+        purchases.track(event)
+    }
+
+    private fun trackPaywallPurchaseError(rcPackage: Package, error: PurchasesError) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase error event")
+            return
+        }
+        val purchaseErrorEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = rcPackage.product.id,
+            errorCode = error.code.code,
+            errorMessage = error.message,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseErrorEventData,
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+        purchases.track(event)
     }
 
     private fun trackPaywallCancel() {

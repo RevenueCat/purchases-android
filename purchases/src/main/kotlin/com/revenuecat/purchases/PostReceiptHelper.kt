@@ -165,7 +165,6 @@ internal class PostReceiptHelper(
                 paywallData = transactionMetadata.paywallPostReceiptData,
                 purchasesAreCompletedBy = transactionMetadata.purchasesAreCompletedBy,
                 hasCachedTransactionMetadata = true,
-                paywallEvent = null,
                 onSuccess = {
                     results.add(Result.Success(it.customerInfo))
                     callTransactionMetadataCompletionFromResults(
@@ -253,7 +252,6 @@ internal class PostReceiptHelper(
             paywallData = effectivePaywallData,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
             hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
-            paywallEvent = presentedPaywall,
             onSuccess = onSuccess,
             onError = onError,
         )
@@ -282,7 +280,10 @@ internal class PostReceiptHelper(
             initiationSource == PostReceiptInitiationSource.PURCHASE
 
         val presentedPaywall = if (cachedTransactionMetadata == null) {
-            paywallPresentedCache.getAndRemovePresentedEvent()
+            paywallPresentedCache.getAndRemovePurchaseInitiatedEventIfNeeded(
+                receiptInfo.productIDs,
+                receiptInfo.purchaseTime,
+            )
         } else {
             null
         }
@@ -314,7 +315,6 @@ internal class PostReceiptHelper(
         paywallData: PaywallPostReceiptData?,
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         hasCachedTransactionMetadata: Boolean,
-        paywallEvent: PaywallEvent?,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -344,7 +344,6 @@ internal class PostReceiptHelper(
                     onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
-                    paywallEvent?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         if (hasCachedTransactionMetadata) {
                             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))
