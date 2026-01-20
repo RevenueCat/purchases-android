@@ -23,12 +23,12 @@ internal class PaywallPresentedCache {
         purchaseTimestamp: Long?,
     ): PaywallEvent? {
         val shouldAttributePaywallToPurchase: Boolean = lastPurchaseInitiatedEvent?.let { event ->
-            val wasPurchasePerformedAfterPaywallDisplayed = purchaseTimestamp?.let { timestamp ->
+            val wasPurchasePerformedAfterPurchaseInitiated = purchaseTimestamp?.let { timestamp ->
                 event.creationData.date.time <= timestamp
             } ?: false
             event.type == PaywallEventType.PURCHASE_INITIATED &&
                 event.data.productIdentifier in purchasedProductIDs &&
-                wasPurchasePerformedAfterPaywallDisplayed
+                wasPurchasePerformedAfterPurchaseInitiated
         } ?: false
         if (!shouldAttributePaywallToPurchase) {
             return null
