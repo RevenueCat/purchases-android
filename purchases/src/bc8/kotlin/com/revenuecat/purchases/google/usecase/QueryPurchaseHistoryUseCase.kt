@@ -23,7 +23,9 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal data class QueryPurchaseHistoryUseCaseParams @OptIn(InternalRevenueCatAPI::class) constructor(
+internal data class QueryPurchaseHistoryUseCaseParams
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     @BillingClient.ProductType val productType: String,

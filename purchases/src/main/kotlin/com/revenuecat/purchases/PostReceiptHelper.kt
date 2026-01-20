@@ -26,7 +26,9 @@ import com.revenuecat.purchases.utils.Result
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
-internal class PostReceiptHelper @OptIn(InternalRevenueCatAPI::class) constructor(
+internal class PostReceiptHelper
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     private val appConfig: AppConfig,
     private val backend: Backend,
     private val billing: BillingAbstract,

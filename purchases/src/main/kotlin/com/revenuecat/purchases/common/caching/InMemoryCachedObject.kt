@@ -5,7 +5,9 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import java.util.Date
 
-internal class InMemoryCachedObject<T> @OptIn(InternalRevenueCatAPI::class) constructor(
+internal class InMemoryCachedObject<T>
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     internal var lastUpdatedAt: Date? = null,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {

@@ -27,7 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 internal data class QueryPurchasesByTypeUseCaseParams
-@OptIn(InternalRevenueCatAPI::class) constructor(
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     override val appInBackground: Boolean,

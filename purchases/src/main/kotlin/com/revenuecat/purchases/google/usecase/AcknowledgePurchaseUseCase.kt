@@ -12,7 +12,8 @@ import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 internal class AcknowledgePurchaseUseCaseParams
-@OptIn(InternalRevenueCatAPI::class) constructor(
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val purchaseToken: String,
     val initiationSource: PostReceiptInitiationSource,
     override val appInBackground: Boolean,

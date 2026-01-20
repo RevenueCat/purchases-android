@@ -10,7 +10,9 @@ import dev.drewhamilton.poko.Poko
  * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
 @Poko
-class Offerings @OptIn(InternalRevenueCatAPI::class) internal constructor(
+class Offerings
+@OptIn(InternalRevenueCatAPI::class)
+internal constructor(
     val current: Offering?,
     val all: Map<String, Offering>,
     internal val placements: Placements? = null,

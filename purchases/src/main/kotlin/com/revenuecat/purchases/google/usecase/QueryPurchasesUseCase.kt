@@ -10,7 +10,8 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreTransaction
 
 internal data class QueryPurchasesUseCaseParams
-@OptIn(InternalRevenueCatAPI::class) constructor(
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     override val appInBackground: Boolean,
