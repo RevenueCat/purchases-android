@@ -48,15 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum:
-      [
-        default,
-        bump,
-        paywall_tester_release,
-        deploy_snapshot_release,
-        update_paywall_templates,
-        update_golden_requests_backend_integration_tests,
-      ]
+    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -199,6 +191,7 @@ commands:
             git submodule update << parameters.path >>
 
 jobs:
+
   assemble-magic-weather-compose-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -926,14 +919,14 @@ workflows:
     when:
       and:
         - not:
-            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["default", << pipeline.parameters.action >>]
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger
 
   snapshot-deploy-manual:
     when:
-      equal: [deploy_snapshot_release, << pipeline.parameters.action >>]
+      equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
           context: maven-central-publishing
@@ -942,9 +935,9 @@ workflows:
     when:
       and:
         - not:
-            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["main", << pipeline.git.branch >>]
-        - equal: ["default", << pipeline.parameters.action >>]
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
           context: maven-central-publishing
@@ -959,8 +952,8 @@ workflows:
     when:
       and:
         - not:
-            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["default", << pipeline.parameters.action >>]
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-tests
       - test:
@@ -1046,12 +1039,7 @@ workflows:
             - slack-secrets
           matrix:
             parameters:
-              backend_environment:
-                [
-                  "production",
-                  "load_shedder_us_east_1",
-                  "load_shedder_us_east_2",
-                ]
+              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -1061,9 +1049,9 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
-            - test-galaxy
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
@@ -1098,9 +1086,9 @@ workflows:
     when:
       and:
         - not:
-            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["main", << pipeline.git.branch >>]
-        - equal: ["default", << pipeline.parameters.action >>]
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-next-version
       - publish-paywall-tester-release:
@@ -1112,9 +1100,8 @@ workflows:
   daily-load-shedder-integration-tests:
     when:
       and:
-        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal:
-            ["load-shedder-integration-tests", << pipeline.schedule.name >>]
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
       - run-firebase-tests-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_1"
@@ -1128,36 +1115,32 @@ workflows:
   weekly-run-workflow:
     when:
       and:
-        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["release-train", << pipeline.schedule.name >>]
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
 
   manual-trigger-bump:
     when:
-      equal: [bump, << pipeline.parameters.action >>]
+      equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump
 
   manual-paywall-tester-release:
     when:
-      equal: [paywall_tester_release, << pipeline.parameters.action >>]
+      equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
       - publish-paywall-tester-release:
           track: "alpha"
 
   update-paywall-templates:
     when:
-      equal: [update_paywall_templates, << pipeline.parameters.action >>]
+      equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
 
   manual-update-golden-requests-backend-integration-tests:
     when:
-      equal:
-        [
-          update_golden_requests_backend_integration_tests,
-          << pipeline.parameters.action >>,
-        ]
+      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
