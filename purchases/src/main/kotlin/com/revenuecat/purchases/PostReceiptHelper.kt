@@ -95,6 +95,7 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        sdkOriginated: Boolean = false,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -102,6 +103,7 @@ internal class PostReceiptHelper(
             storeTransaction = purchase,
             storeProduct = storeProduct,
             subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
+            sdkOriginated = sdkOriginated,
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,

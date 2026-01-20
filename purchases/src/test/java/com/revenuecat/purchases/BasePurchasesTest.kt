@@ -256,6 +256,7 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
+                    sdkOriginated = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )

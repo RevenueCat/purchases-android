@@ -803,7 +803,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
@@ -834,6 +834,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -872,7 +873,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
@@ -1182,6 +1183,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
+                    sdkOriginated = false,
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -1200,6 +1202,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1210,6 +1213,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1229,6 +1233,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1742,6 +1747,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2430,6 +2436,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2454,6 +2461,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )

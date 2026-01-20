@@ -286,6 +286,7 @@ internal class Backend(
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "sdk_originated" to receiptInfo.sdkOriginated,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
