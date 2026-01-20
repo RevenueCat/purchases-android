@@ -36,7 +36,8 @@ internal object GalaxyBillingWrapperFactory {
             error.initCause(e)
             throw error
         } catch (e: NoSuchMethodException) {
-            throw IllegalStateException("Failed to find GalaxyBillingWrapper constructor", e)
+            throw IllegalStateException("Failed to find GalaxyBillingWrapper constructor. " +
+                "Please ensure that you've declared a dependency on the purchases-galaxy module.", e)
         } catch (e: ReflectiveOperationException) {
             throw IllegalStateException("Failed to create GalaxyBillingWrapper", e)
         }
