@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.utils.JSONObjectAssert
 import io.mockk.mockk
@@ -12,7 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-
 class AmazonCacheTest {
     private val apiKey = "api_key"
     private lateinit var cache: MockDeviceCache
@@ -112,7 +110,7 @@ class AmazonCacheTest {
     }
 
     private fun getStoredJSONFromMap(expected: Map<String, String>) = """
-                { "receiptsToSkus":
+                { "receiptsToSkus": 
                     {
                         ${expected.map { "\"${it.key}\": \"${it.value}\"" }.joinToString()}
                     }

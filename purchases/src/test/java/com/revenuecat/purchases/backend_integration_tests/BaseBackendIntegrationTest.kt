@@ -3,7 +3,6 @@ package com.revenuecat.purchases.backend_integration_tests
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -38,7 +37,6 @@ import kotlin.time.Duration.Companion.seconds
 // To run these tests in Android Studio, you need to remove the test exclusion in the
 // common module build.gradle and change the API KEY in Constants.kt
 @RunWith(AndroidJUnit4::class)
-
 internal abstract class BaseBackendIntegrationTest {
 
     companion object {

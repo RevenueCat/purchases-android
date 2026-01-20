@@ -6,7 +6,6 @@ import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
@@ -49,7 +48,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-
 class SubscriberAttributesPurchasesTests {
 
     private lateinit var underTest: Purchases

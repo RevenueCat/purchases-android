@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -83,7 +82,6 @@ private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class BackendTest {
 
     @Before

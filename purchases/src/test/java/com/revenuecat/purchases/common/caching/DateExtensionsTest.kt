@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.caching
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.subtract
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -13,7 +12,6 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DateExtensionsTest {
 
     @Test

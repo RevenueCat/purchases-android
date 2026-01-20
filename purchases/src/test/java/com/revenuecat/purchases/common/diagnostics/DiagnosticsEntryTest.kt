@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -13,7 +12,6 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DiagnosticsEntryTest {
 
     private val testDate = Date(1675954145000L) // Thursday, February 9, 2023 2:49:05 PM GMT

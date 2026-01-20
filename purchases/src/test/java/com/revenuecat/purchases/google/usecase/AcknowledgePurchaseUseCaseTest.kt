@@ -5,7 +5,6 @@ import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -30,7 +29,6 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     private var capturedAcknowledgeResponseListener = slot<AcknowledgePurchaseResponseListener>()

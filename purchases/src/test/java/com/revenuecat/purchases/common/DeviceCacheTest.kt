@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -42,7 +41,6 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DeviceCacheTest {
 
     private val validCachedCustomerInfo by lazy {
@@ -788,7 +786,6 @@ class DeviceCacheTest {
 
         cache.cacheVirtualCurrencies(appUserID, vcs)
         assertThat(slotForPutLong.captured).isNotNull
-
         // The serializer caches the JSON fields in a different order than the network response. Here, we
         // check for the expected order.
         val expectedCachedJSON = "{\"virtual_currencies\":{\"COIN\":{\"balance\":1,\"name\":\"Coin\",\"code\":" +
@@ -861,11 +858,9 @@ class DeviceCacheTest {
     @Test
     fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws SerializationException`() {
         mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
-
         every {
             VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
         } throws SerializationException("Serialization error")
-
         val vcs = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(vcs).`as`("cached VirtualCurrencies is null when SerializationException is thrown").isNull()
     }
@@ -873,11 +868,9 @@ class DeviceCacheTest {
     @Test
     fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws IllegalArgumentException`() {
         mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
-
         every {
             VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
         } throws IllegalArgumentException("Invalid input")
-
         val vcs = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(vcs).`as`("cached VirtualCurrencies is null when IllegalArgumentException is thrown").isNull()
     }

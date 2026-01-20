@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -26,7 +25,6 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class PurchasedProductsFetcherTest {
     private lateinit var fetcher: PurchasedProductsFetcher
 

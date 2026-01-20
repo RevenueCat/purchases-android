@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
@@ -20,7 +19,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-
 class VirtualCurrencyManagerTest {
 
     private val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(

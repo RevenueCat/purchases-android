@@ -2,7 +2,6 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
@@ -28,7 +27,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-
 class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()

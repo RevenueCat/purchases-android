@@ -19,7 +19,6 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -606,7 +605,6 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
-
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
 

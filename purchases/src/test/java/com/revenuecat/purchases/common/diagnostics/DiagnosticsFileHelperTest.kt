@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.FileHelper
 import io.mockk.Runs
 import io.mockk.every
@@ -19,7 +18,6 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(

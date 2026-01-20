@@ -60,7 +60,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
-
 internal class PurchasesCommonTest: BasePurchasesTest() {
     private var receivedProducts: List<StoreProduct>? = null
 
@@ -953,7 +952,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "galaxy_gold"
         val oldSubId = "oldGalaxySubId"
         val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
-
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
             mockBillingAbstract.findPurchaseInPurchaseHistory(

@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
@@ -39,7 +38,6 @@ import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class OfflineCustomerInfoCalculatorTest {
     private val oneHourAgo = 1.hours.ago()
     private val oneDayFromNow = 1.days.fromNow()

@@ -6,7 +6,6 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -32,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DispatcherTest {
 
     private val mockExecutorService: ExecutorService = mockk()

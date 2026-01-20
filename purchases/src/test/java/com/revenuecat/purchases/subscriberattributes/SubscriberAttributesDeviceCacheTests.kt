@@ -2,7 +2,6 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -24,7 +23,6 @@ import java.util.Date
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
-
 class SubscriberAttributesDeviceCacheTests {
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"

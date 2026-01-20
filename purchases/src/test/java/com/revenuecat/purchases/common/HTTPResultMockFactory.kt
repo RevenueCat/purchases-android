@@ -1,11 +1,9 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import java.util.Date
-
 
 internal fun HTTPResult.Companion.createResult(
     responseCode: Int = RCHTTPStatusCodes.SUCCESS,

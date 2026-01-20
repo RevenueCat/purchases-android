@@ -7,7 +7,6 @@ import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesError
@@ -44,7 +43,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(

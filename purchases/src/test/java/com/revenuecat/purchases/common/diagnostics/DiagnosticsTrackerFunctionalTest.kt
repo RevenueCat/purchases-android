@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.FileHelper
@@ -78,7 +77,6 @@ class DiagnosticsTrackerFunctionalTest {
             diagnosticsTracker.trackEvent(event)
         }
     }
-
 
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
         return DiagnosticsEntry(

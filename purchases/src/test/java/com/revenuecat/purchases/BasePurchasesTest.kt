@@ -60,7 +60,6 @@ import org.junit.Before
 import org.robolectric.Shadows.shadowOf
 import java.util.Date
 
-
 internal open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
     protected val mockBackend: Backend = mockk()

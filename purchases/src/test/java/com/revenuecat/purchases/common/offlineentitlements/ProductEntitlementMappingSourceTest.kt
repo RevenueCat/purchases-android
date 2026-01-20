@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createResult
@@ -18,7 +17,6 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 class ProductEntitlementMappingSourceTest {
 
     private lateinit var deviceCache: DeviceCache
