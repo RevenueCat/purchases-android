@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -643,9 +644,15 @@ internal class PaywallViewModelImpl(
             Logger.e("Paywall event data is null, not tracking purchase initiated event")
             return
         }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
         val purchaseInitiatedEventData = eventData.copy(
             packageIdentifier = rcPackage.identifier,
-            productIdentifier = rcPackage.product.id,
+            productIdentifier = productId,
         )
         val event = PaywallEvent(
             creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
@@ -661,16 +668,22 @@ internal class PaywallViewModelImpl(
             Logger.e("Paywall event data is null, not tracking purchase error event")
             return
         }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
         val purchaseErrorEventData = eventData.copy(
             packageIdentifier = rcPackage.identifier,
-            productIdentifier = rcPackage.product.id,
+            productIdentifier = productId,
             errorCode = error.code.code,
             errorMessage = error.message,
         )
         val event = PaywallEvent(
             creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
             data = purchaseErrorEventData,
-            type = PaywallEventType.PURCHASE_INITIATED,
+            type = PaywallEventType.PURCHASE_ERROR,
         )
         purchases.track(event)
     }
