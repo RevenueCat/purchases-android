@@ -49,7 +49,6 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -144,8 +143,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             onError = { receivedError = it },
         )
 
-        Assertions.assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
-        Assertions.assertThat(receivedError?.underlyingErrorMessage).isEqualTo(GalaxyStrings.STOREFRONT_NOT_SUPPORTED)
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(receivedError?.underlyingErrorMessage).isEqualTo(GalaxyStrings.STOREFRONT_NOT_SUPPORTED)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -178,9 +177,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                 onError = capture(onErrorSlot),
             )
         }
-
-        Assertions.assertThat(idsSlot.captured).containsExactlyInAnyOrderElementsOf(productIds)
-        Assertions.assertThat(typeSlot.captured).isEqualTo(expectedType)
+        assertThat(idsSlot.captured).containsExactlyInAnyOrderElementsOf(productIds)
+        assertThat(typeSlot.captured).isEqualTo(expectedType)
 
         val expectedProducts = listOf(mockk<StoreProduct>())
         onReceiveSlot.captured(expectedProducts)
@@ -236,11 +234,11 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
         onSuccessSlot.captured.invoke(arrayListOf(ownedProduct))
 
-        Assertions.assertThat(receivedError).isNull()
+        assertThat(receivedError).isNull()
         val transactions = receivedTransactions
-        Assertions.assertThat(transactions).isNotNull
-        Assertions.assertThat(transactions!!.map { it.purchaseToken }).containsExactly("token")
-        Assertions.assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS)
+        assertThat(transactions).isNotNull
+        assertThat(transactions!!.map { it.purchaseToken }).containsExactly("token")
+        assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS)
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
@@ -267,7 +265,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         onErrorSlot.captured.invoke(error)
 
-        Assertions.assertThat(receivedError).isEqualTo(error)
+        assertThat(receivedError).isEqualTo(error)
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
@@ -299,8 +297,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
         onSuccessSlot.captured.invoke(arrayListOf(invalidOwnedProduct))
 
-        Assertions.assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
-        Assertions.assertThat(receivedError?.underlyingErrorMessage)
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
+        assertThat(receivedError?.underlyingErrorMessage)
             .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
@@ -345,10 +343,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             ),
         )
 
-        Assertions.assertThat(receivedError).isNull()
+        assertThat(receivedError).isNull()
         val transaction = receivedTransaction ?: fail("Expected transaction")
-        Assertions.assertThat(transaction.purchaseToken).isEqualTo("match_token")
-        Assertions.assertThat(transaction.productIds).containsExactly("target_product")
+        assertThat(transaction.purchaseToken).isEqualTo("match_token")
+        assertThat(transaction.productIds).containsExactly("target_product")
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -385,9 +383,9 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             ),
         )
 
-        Assertions.assertThat(completionCalled).isFalse()
-        Assertions.assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        Assertions.assertThat(receivedError?.underlyingErrorMessage)
+        assertThat(completionCalled).isFalse()
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(receivedError?.underlyingErrorMessage)
             .isEqualTo(PurchaseStrings.NO_EXISTING_PURCHASE.format("missing_product"))
     }
 
@@ -417,8 +415,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         onErrorSlot.captured.invoke(error)
 
-        Assertions.assertThat(completionCalled).isFalse()
-        Assertions.assertThat(receivedError).isEqualTo(error)
+        assertThat(completionCalled).isFalse()
+        assertThat(receivedError).isEqualTo(error)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -465,8 +463,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, expiredOwnedProduct))
 
         val purchases = receivedMap ?: fail("Expected purchases")
-        Assertions.assertThat(purchases.keys).containsExactly("active_token".sha1())
-        Assertions.assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
+        assertThat(purchases.keys).containsExactly("active_token".sha1())
+        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -504,7 +502,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         onSuccessSlot.captured.invoke(arrayListOf(expiredOwnedProduct))
 
         val purchases = receivedMap ?: fail("Expected purchases")
-        Assertions.assertThat(purchases).isEmpty()
+        assertThat(purchases).isEmpty()
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -530,7 +528,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         onErrorSlot.captured.invoke(error)
 
-        Assertions.assertThat(receivedError).isEqualTo(error)
+        assertThat(receivedError).isEqualTo(error)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -567,8 +565,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         }
         onSuccessSlot.captured.invoke(arrayListOf(invalidOwnedProduct))
 
-        Assertions.assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
-        Assertions.assertThat(receivedError?.underlyingErrorMessage)
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
+        assertThat(receivedError?.underlyingErrorMessage)
             .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
     }
 
@@ -596,8 +594,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         val errorSlot = slot<PurchasesError>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
-        Assertions.assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        Assertions.assertThat(errorSlot.captured.underlyingErrorMessage)
+        assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(errorSlot.captured.underlyingErrorMessage)
             .isEqualTo(PurchaseStrings.INVALID_PURCHASE_TYPE.format("Galaxy", "GalaxyPurchasingData"))
     }
 
@@ -672,8 +670,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val transactionsSlot = slot<List<StoreTransaction>>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesUpdated(capture(transactionsSlot)) }
         val transaction = transactionsSlot.captured.single()
-        Assertions.assertThat(transaction.productIds).containsExactly(storeProduct.id)
-        Assertions.assertThat(transaction.replacementMode).isEqualTo(replacementMode)
+        assertThat(transaction.productIds).containsExactly(storeProduct.id)
+        assertThat(transaction.replacementMode).isEqualTo(replacementMode)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -768,7 +766,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         val errorSlot = slot<PurchasesError>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
-        Assertions.assertThat(errorSlot.captured).isEqualTo(expectedError)
+        assertThat(errorSlot.captured).isEqualTo(expectedError)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -820,8 +818,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val transactionsSlot = slot<List<StoreTransaction>>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesUpdated(capture(transactionsSlot)) }
         val transaction = transactionsSlot.captured.single()
-        Assertions.assertThat(transaction.productIds).containsExactly(storeProduct.id)
-        Assertions.assertThat(transaction.presentedOfferingContext).isEqualTo(storeProduct.presentedOfferingContext)
+        assertThat(transaction.productIds).containsExactly(storeProduct.id)
+        assertThat(transaction.presentedOfferingContext).isEqualTo(storeProduct.presentedOfferingContext)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -864,7 +862,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         val errorSlot = slot<PurchasesError>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
-        Assertions.assertThat(errorSlot.captured).isEqualTo(expectedError)
+        assertThat(errorSlot.captured).isEqualTo(expectedError)
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -886,8 +884,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         val errorSlot = slot<PurchasesError>()
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
-        Assertions.assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
-        Assertions.assertThat(errorSlot.captured.underlyingErrorMessage).isEqualTo(GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED)
+        assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(errorSlot.captured.underlyingErrorMessage).isEqualTo(GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED)
 
         verify(exactly = 0) { purchaseHandlerMock.purchase(any(), any(), any(), any()) }
     }
@@ -1000,7 +998,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        Assertions.assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-sub")
+        assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-sub")
         verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub") }
     }
 
