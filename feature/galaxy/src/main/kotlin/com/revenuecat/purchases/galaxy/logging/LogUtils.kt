@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.Config
 internal val LogLevel.debugLogsEnabled: Boolean
     get() = this <= LogLevel.DEBUG
 
+@JvmSynthetic
 internal fun LogLevel.Companion.debugLogsEnabled(enabled: Boolean): LogLevel {
     return if (enabled) {
         LogLevel.DEBUG
@@ -20,22 +21,27 @@ internal fun LogLevel.Companion.debugLogsEnabled(enabled: Boolean): LogLevel {
     }
 }
 
+@JvmSynthetic
 internal inline fun verboseLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.VERBOSE, currentLogHandler::v, messageBuilder)
 }
 
+@JvmSynthetic
 internal inline fun debugLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.DEBUG, currentLogHandler::d, messageBuilder)
 }
 
+@JvmSynthetic
 internal inline fun infoLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.INFO, currentLogHandler::i, messageBuilder)
 }
 
+@JvmSynthetic
 internal inline fun warnLog(messageBuilder: () -> String) {
     logIfEnabled(LogLevel.WARN, currentLogHandler::w, messageBuilder)
 }
 
+@JvmSynthetic
 internal inline fun errorLog(throwable: Throwable? = null, messageBuilder: () -> String) {
     currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", messageBuilder(), throwable)
 }
@@ -53,6 +59,7 @@ private inline fun logIfEnabled(
 
 private const val PURCHASES_LOG_TAG: String = "[Purchases]"
 
+@JvmSynthetic
 internal fun errorLog(error: PurchasesError) {
     when (error.code) {
         PurchasesErrorCode.UnknownError,

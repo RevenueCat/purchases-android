@@ -34,6 +34,7 @@ private class DefaultLogHandler : LogHandler {
 }
 
 @Suppress("CyclomaticComplexMethod")
+@JvmSynthetic
 internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> String) {
     val fullMessageBuilder = { "${intent.emojiList.joinToString("")} ${messageBuilder()}" }
 
