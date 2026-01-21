@@ -32,7 +32,7 @@ internal class ProductDataHandler(
     @get:Synchronized
     private var inFlightRequest: Request? = null
 
-    private data class Request constructor(
+    private data class Request(
         val productIds: Set<String>,
         val productType: ProductType,
         val onReceive: StoreProductsCallback,
