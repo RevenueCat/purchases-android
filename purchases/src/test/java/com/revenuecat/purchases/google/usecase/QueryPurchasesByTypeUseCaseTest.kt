@@ -7,7 +7,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchasesParams
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -31,7 +30,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-
 internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
 
     private var billingClientStateListener: BillingClientStateListener? = null
