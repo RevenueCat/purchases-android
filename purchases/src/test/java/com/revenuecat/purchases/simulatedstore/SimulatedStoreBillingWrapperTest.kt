@@ -194,15 +194,15 @@ class SimulatedStoreBillingWrapperTest {
         }
         
         // Mock dialog helper to simulate cancellation
-        every {
+        every { 
             purchaseDialogHelper.showDialog(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            )
+            ) 
         } answers {
             val onNeutralClicked = lastArg<() -> Unit>()
             onNeutralClicked()
         }
-
+        
         // When
         testStoreBilling.makePurchaseAsync(
             activity = activity,
@@ -212,7 +212,7 @@ class SimulatedStoreBillingWrapperTest {
             presentedOfferingContext = presentedOfferingContext,
             isPersonalizedPrice = null
         )
-
+        
         // Then
         val listenerImpl = purchasesUpdatedListener as TestPurchasesListener
         assertThat(listenerImpl.lastError).isNotNull()
@@ -227,19 +227,19 @@ class SimulatedStoreBillingWrapperTest {
         val activity = mockk<Activity>()
         val productId = "test_product_456"
         val presentedOfferingContext = mockk<PresentedOfferingContext>()
-
+        
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
         val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-
+        
         every { deviceCache.getCachedAppUserID() } returns "test_user"
         every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
             val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
-
+        
         // Mock dialog helper to simulate successful purchase
         every {
             purchaseDialogHelper.showDialog(
