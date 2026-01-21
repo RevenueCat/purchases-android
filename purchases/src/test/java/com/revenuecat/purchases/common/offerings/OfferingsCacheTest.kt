@@ -214,6 +214,7 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse
         offeringsCache.clearCache()
+        
         // Assert
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
