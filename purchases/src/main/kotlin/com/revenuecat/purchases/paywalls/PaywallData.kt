@@ -26,6 +26,11 @@ import java.util.Locale
 @Poko
 class PaywallData(
     /**
+     * The unique identifier for this paywall.
+     */
+    val id: String? = null,
+
+    /**
      * The type of template used to display this paywall.
      */
     @SerialName("template_name") val templateName: String,

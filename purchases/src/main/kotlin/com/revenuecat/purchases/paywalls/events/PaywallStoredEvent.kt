@@ -30,6 +30,7 @@ internal data class PaywallStoredEvent(
             appUserID = userID,
             sessionID = event.data.sessionIdentifier.toString(),
             offeringID = event.data.offeringIdentifier,
+            paywallID = event.data.paywallIdentifier,
             paywallRevision = event.data.paywallRevision,
             timestamp = event.creationData.date.time,
             displayMode = event.data.displayMode,

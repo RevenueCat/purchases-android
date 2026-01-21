@@ -1351,6 +1351,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,
             paywallPostReceiptData = PaywallPostReceiptData(
+                paywallID = "paywall_id_1234",
                 sessionID = "1234-1234-1234-1234",
                 revision = 17,
                 displayMode = "full_screen",
@@ -1363,6 +1364,7 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("paywall")
         assertThat(requestBodySlot.captured["paywall"]).isEqualTo(mapOf(
+            "paywall_id" to "paywall_id_1234",
             "session_id" to "1234-1234-1234-1234",
             "revision" to 17,
             "display_mode" to "full_screen",
