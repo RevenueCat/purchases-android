@@ -76,8 +76,7 @@ class PurchaseHandlerTest {
     private var broadcastIntentSlot = slot<Intent>()
     private var activityIntentSlot = slot<Intent>()
     private val packageName = UUID.randomUUID().toString()
-
-
+    
     @Before
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
