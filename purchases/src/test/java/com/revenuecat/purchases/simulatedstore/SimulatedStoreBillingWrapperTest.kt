@@ -249,7 +249,7 @@ class SimulatedStoreBillingWrapperTest {
             val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
         }
-
+        
         // When
         testStoreBilling.makePurchaseAsync(
             activity = activity,
@@ -259,12 +259,12 @@ class SimulatedStoreBillingWrapperTest {
             presentedOfferingContext = presentedOfferingContext,
             isPersonalizedPrice = null
         )
-
+        
         // Then
         val listenerImpl = purchasesUpdatedListener as SimulatedStoreBillingWrapperTest.TestPurchasesListener
         assertThat(listenerImpl.lastPurchases).isNotNull()
         assertThat(listenerImpl.lastPurchases).hasSize(1)
-
+        
         val transaction = listenerImpl.lastPurchases?.first()
         assertThat(transaction?.productIds).containsExactly(productId)
         assertThat(transaction?.type).isEqualTo(ProductType.SUBS)
@@ -304,7 +304,7 @@ class SimulatedStoreBillingWrapperTest {
             onReceivePurchaseHistory = { cachedPurchases = it },
             onReceivePurchaseHistoryError = { fail("Expected success") }
         )
-
+        
         assertThat(cachedPurchases).isNotNull()
         assertThat(cachedPurchases).hasSize(0)
     }
@@ -317,7 +317,7 @@ class SimulatedStoreBillingWrapperTest {
             onSuccess = { cachedPurchases = it },
             onError = { fail("Should succeed") }
         )
-
+        
         assertThat(cachedPurchases).isNotNull()
         assertThat(cachedPurchases).hasSize(0)
     }
@@ -332,7 +332,7 @@ class SimulatedStoreBillingWrapperTest {
             onCompletion = { fail("Should error") },
             onError = { error = it }
         )
-
+        
         assertThat(error).isNotNull()
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
         assertThat(error?.underlyingErrorMessage).isEqualTo("No active purchase found for product: test-product-id")
@@ -342,11 +342,11 @@ class SimulatedStoreBillingWrapperTest {
     fun `findPurchaseInPurchaseHistory returns error when purchase not found`() {
         // Given - no purchases in cache
         val nonExistentProductId = "non_existent_product"
-
+        
         // When - try to find non-existent purchase
         var foundPurchase: StoreTransaction? = null
         var errorFound: PurchasesError? = null
-
+        
         testStoreBilling.findPurchaseInPurchaseHistory(
             appUserID = "test_user",
             productType = ProductType.SUBS,
@@ -354,7 +354,7 @@ class SimulatedStoreBillingWrapperTest {
             onCompletion = { foundPurchase = it },
             onError = { errorFound = it }
         )
-
+        
         // Then - should return error
         assertThat(foundPurchase).isNull()
         assertThat(errorFound).isNotNull()
@@ -365,11 +365,11 @@ class SimulatedStoreBillingWrapperTest {
     private inner class TestPurchasesListener : BillingAbstract.PurchasesUpdatedListener {
         var lastPurchases: List<StoreTransaction>? = null
         var lastError: PurchasesError? = null
-
+        
         override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
             lastPurchases = purchases
         }
-
+        
         override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
             lastError = purchasesError
         }
