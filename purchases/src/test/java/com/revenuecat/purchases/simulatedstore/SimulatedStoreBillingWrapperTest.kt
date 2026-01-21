@@ -241,10 +241,10 @@ class SimulatedStoreBillingWrapperTest {
         }
         
         // Mock dialog helper to simulate successful purchase
-        every {
+        every { 
             purchaseDialogHelper.showDialog(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            )
+            ) 
         } answers {
             val onPositiveClicked = arg<() -> Unit>(6)
             onPositiveClicked()
