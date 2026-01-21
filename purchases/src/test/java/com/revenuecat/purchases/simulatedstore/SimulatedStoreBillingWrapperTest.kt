@@ -54,22 +54,22 @@ class SimulatedStoreBillingWrapperTest {
         backend = mockk()
         purchaseDialogHelper = mockk()
         stateListener = mockk()
-
+        
         // Create actual listener object for testing purchase flows
         purchasesUpdatedListener = this@SimulatedStoreBillingWrapperTest.TestPurchasesListener()
-
+        
         every { mainHandler.postDelayed(any(), any()) } answers {
             val runnable = firstArg<Runnable>()
             runnable.run()
             true
         }
-
+        
         every { mainHandler.post(any()) } answers {
             val runnable = firstArg<Runnable>()
             runnable.run()
             true
         }
-
+        
         testStoreBilling = SimulatedStoreBillingWrapper(
             deviceCache = deviceCache,
             mainHandler = mainHandler,
@@ -77,7 +77,7 @@ class SimulatedStoreBillingWrapperTest {
             backend = backend,
             dialogHelper = purchaseDialogHelper
         )
-
+        
         testStoreBilling.stateListener = stateListener
         testStoreBilling.purchasesUpdatedListener = purchasesUpdatedListener
     }
@@ -85,11 +85,11 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `startConnection sets connected to true and notifies listener`() {
         every { stateListener.onConnected() } just Runs
-
+        
         assertThat(testStoreBilling.isConnected()).isFalse()
-
+        
         testStoreBilling.startConnection()
-
+        
         assertThat(testStoreBilling.isConnected()).isTrue()
         verify { stateListener.onConnected() }
     }
@@ -97,9 +97,9 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `startConnectionOnMainThread posts delayed and starts connection`() {
         every { stateListener.onConnected() } just Runs
-
+        
         testStoreBilling.startConnectionOnMainThread(100)
-
+        
         verify { mainHandler.postDelayed(any(), 100) }
         verify { stateListener.onConnected() }
     }
@@ -107,10 +107,10 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `close sets connected to false`() {
         every { stateListener.onConnected() } just Runs
-
+        
         testStoreBilling.startConnection()
         assertThat(testStoreBilling.isConnected()).isTrue()
-
+        
         testStoreBilling.close()
         assertThat(testStoreBilling.isConnected()).isFalse()
     }
@@ -118,12 +118,12 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `getStorefront returns US`() {
         var result: String? = null
-
+        
         testStoreBilling.getStorefront(
             onSuccess = { result = it },
             onError = { }
         )
-
+        
         assertThat(result).isEqualTo("US")
     }
 
@@ -180,19 +180,19 @@ class SimulatedStoreBillingWrapperTest {
         val activity = mockk<Activity>()
         val productId = "test_product_123"
         val presentedOfferingContext = mockk<PresentedOfferingContext>()
-
+        
         // Mock product response from backend
         val productResponse = createMockProductResponse(productId)
         val product = SimulatedStoreProductConverter.convertToStoreProduct(productResponse)
         val purchasingData = product.purchasingData
         val billingResponse = WebBillingProductsResponse(listOf(productResponse))
-
+        
         every { deviceCache.getCachedAppUserID() } returns "test_user"
         every { backend.getWebBillingProducts(any(), any(), any(), any()) } answers {
             val onSuccess = thirdArg<(WebBillingProductsResponse) -> Unit>()
             onSuccess(billingResponse)
         }
-
+        
         // Mock dialog helper to simulate cancellation
         every {
             purchaseDialogHelper.showDialog(

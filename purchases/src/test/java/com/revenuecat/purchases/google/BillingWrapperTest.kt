@@ -605,6 +605,7 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
+        
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
 
