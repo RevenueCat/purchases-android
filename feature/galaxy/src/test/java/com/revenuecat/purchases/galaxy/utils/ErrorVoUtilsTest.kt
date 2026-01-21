@@ -6,7 +6,6 @@ import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import io.mockk.every
 import io.mockk.mockk
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
