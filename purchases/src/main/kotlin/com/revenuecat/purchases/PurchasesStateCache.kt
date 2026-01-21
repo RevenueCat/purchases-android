@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-@InternalRevenueCatAPI
+@OptIn(InternalRevenueCatAPI::class)
 internal data class PurchasesStateCache(
     @get:Synchronized
     @set:Synchronized
