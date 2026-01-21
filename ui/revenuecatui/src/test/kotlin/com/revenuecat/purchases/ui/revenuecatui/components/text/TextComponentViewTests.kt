@@ -994,10 +994,8 @@ class TextComponentViewTests {
         // Assert
         // The countdown variables should be processed, not shown as raw placeholders
         // If the bug exists, we'd see "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
-        // With the fix, we'd see something like "1d 23h" (approximately 2 days from now)
         val node = onNodeWithTag("countdown_text").onChild()
 
-        // Get the actual text and verify it doesn't contain raw variable placeholders
         val actualText = node.fetchSemanticsNode().config
             .first { it.key.name == "Text" }
             .value
@@ -1005,7 +1003,6 @@ class TextComponentViewTests {
 
         assertThat(actualText).doesNotContain("{{")
         assertThat(actualText).doesNotContain("}}")
-        // Should contain something like "1d 23h" - verify it has numbers
         assertThat(actualText).containsPattern("\\d+d \\d+h")
     }
 
