@@ -786,7 +786,7 @@ class DeviceCacheTest {
 
         cache.cacheVirtualCurrencies(appUserID, vcs)
         assertThat(slotForPutLong.captured).isNotNull
-
+        
         // The serializer caches the JSON fields in a different order than the network response. Here, we
         // check for the expected order.
         val expectedCachedJSON = "{\"virtual_currencies\":{\"COIN\":{\"balance\":1,\"name\":\"Coin\",\"code\":" +
