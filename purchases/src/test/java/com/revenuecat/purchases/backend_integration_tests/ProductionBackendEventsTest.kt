@@ -36,6 +36,7 @@ internal class ProductionBackendEventsTest: BaseBackendIntegrationTest() {
                             appUserID = UUID.randomUUID().toString(),
                             sessionID = UUID.randomUUID().toString(),
                             offeringID = UUID.randomUUID().toString(),
+                            paywallID = "paywall_id",
                             paywallRevision = 1,
                             timestamp = Date().time,
                             displayMode = "FULL_SCREEN",

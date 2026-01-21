@@ -36,6 +36,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                         {
+                          "id": "paywall_id",
                           "template_name": "components",
                           "asset_base_url": "https://assets.pawwalls.com",
                           "components_config": {
@@ -74,6 +75,7 @@ internal class PaywallComponentsDataTests(
 
                         """.trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -110,6 +112,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                         {
+                          "id": "paywall_id",
                           "template_name": "components",
                           "asset_base_url": "https://assets.pawwalls.com",
                           "components_config": {
@@ -139,6 +142,7 @@ internal class PaywallComponentsDataTests(
 
                         """.trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -164,10 +168,71 @@ internal class PaywallComponentsDataTests(
                 ),
             ),
             arrayOf(
+                "id absent",
+                Args(
+                    json = """
+                        {
+                          "template_name": "components",
+                          "asset_base_url": "https://assets.pawwalls.com",
+                          "revision": 5,
+                          "components_config": {
+                            "base": {
+                              "stack": {
+                                "type": "stack",
+                                "components": []
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "components_localizations": {
+                            "en_US": {
+                              "ZvS4Ck5hGM": "Hello"
+                            }
+                          },
+                          "default_locale": "en_US"
+                        }
+
+                        """.trimIndent(),
+                    expected = PaywallComponentsData(
+                        id = null,
+                        templateName = "components",
+                        assetBaseURL = URL("https://assets.pawwalls.com"),
+                        componentsConfig = ComponentsConfig(
+                            base = PaywallComponentsConfig(
+                                stack = StackComponent(
+                                    components = emptyList()
+                                ),
+                                background = Background.Color(
+                                    value = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
+                                    )
+                                )
+                            )
+                        ),
+                        componentsLocalizations = mapOf(
+                            LocaleId("en_US") to mapOf(
+                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
+                            )
+                        ),
+                        defaultLocaleIdentifier = LocaleId("en_US"),
+                        revision = 5
+                    )
+                ),
+            ),
+            arrayOf(
                 "with zero_decimal_place_countries",
                 Args(
                     json = """
                 {
+                  "id": "paywall_id",
                   "template_name": "components",
                   "asset_base_url": "https://assets.pawwalls.com",
                   "components_config": {
@@ -211,6 +276,7 @@ internal class PaywallComponentsDataTests(
                   }
                 }""".trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
@@ -247,6 +313,7 @@ internal class PaywallComponentsDataTests(
                 Args(
                     json = """
                 {
+                  "id": "paywall_id",
                   "template_name": "components",
                   "asset_base_url": "https://assets.pawwalls.com",
                   "components_config": {
@@ -279,6 +346,7 @@ internal class PaywallComponentsDataTests(
                   }
                 }""".trimIndent(),
                     expected = PaywallComponentsData(
+                        id = "paywall_id",
                         templateName = "components",
                         assetBaseURL = URL("https://assets.pawwalls.com"),
                         componentsConfig = ComponentsConfig(
