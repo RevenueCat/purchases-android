@@ -176,7 +176,7 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-  
+
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:
@@ -184,7 +184,7 @@ commands:
         type: string
         default: ""
     steps:
-      - run: 
+      - run:
           name: Check out submodule << parameters.path >>
           command: |
             git submodule init << parameters.path >>
@@ -307,6 +307,37 @@ jobs:
           command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
       - store_test_results:
           path: dokka-hide-internal/build/test-results/test
+      - store_artifacts:
+          path: build/reports
+
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew :getSamsungIapSdk --no-daemon
+      - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
+          name: Run Galaxy Unit Tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
       - store_artifacts:
           path: build/reports
 
@@ -978,6 +1009,9 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test-galaxy:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1015,6 +1049,7 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester
@@ -1043,8 +1078,8 @@ workflows:
       - publish-paywall-tester-release:
           track: "alpha"
           requires:
-              - deploy
-              - docs-deploy
+            - deploy
+            - docs-deploy
           <<: *release-tags
 
   on-main-branch:
@@ -1095,8 +1130,8 @@ workflows:
     when:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
-        - publish-paywall-tester-release:
-            track: "alpha"
+      - publish-paywall-tester-release:
+          track: "alpha"
 
   update-paywall-templates:
     when:

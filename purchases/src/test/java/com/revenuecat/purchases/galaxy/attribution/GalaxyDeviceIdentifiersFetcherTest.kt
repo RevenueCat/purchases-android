@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.galaxy.attribution
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.app.Application
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith

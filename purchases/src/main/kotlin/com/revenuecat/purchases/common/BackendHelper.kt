@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import org.json.JSONObject
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class BackendHelper(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
@@ -67,6 +69,7 @@ internal class BackendHelper(
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 internal fun HTTPResult.isSuccessful(): Boolean {
     return responseCode < RCHTTPStatusCodes.UNSUCCESSFUL
 }

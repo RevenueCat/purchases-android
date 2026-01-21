@@ -1174,6 +1174,7 @@ class Purchases internal constructor(
          * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         fun configure(
             configuration: PurchasesConfiguration,

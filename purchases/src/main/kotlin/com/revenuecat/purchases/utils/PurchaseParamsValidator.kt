@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -33,6 +34,7 @@ internal class PurchaseParamsValidator {
         return Result.Success(Unit)
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     private fun validateAddOnProducts(

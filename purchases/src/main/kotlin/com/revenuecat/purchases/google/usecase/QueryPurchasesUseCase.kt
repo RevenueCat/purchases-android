@@ -2,18 +2,22 @@ package com.revenuecat.purchases.google.usecase
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.ProductType
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreTransaction
 
-internal data class QueryPurchasesUseCaseParams(
+internal data class QueryPurchasesUseCaseParams
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class QueryPurchasesUseCase(
     private val useCaseParams: QueryPurchasesUseCaseParams,
     val onSuccess: (Map<String, StoreTransaction>) -> Unit,

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService

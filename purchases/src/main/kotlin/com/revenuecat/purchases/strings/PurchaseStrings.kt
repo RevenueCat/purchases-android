@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.strings
 
-internal object PurchaseStrings {
+import com.revenuecat.purchases.InternalRevenueCatAPI
+
+@InternalRevenueCatAPI
+object PurchaseStrings {
     const val ACKNOWLEDGING_PURCHASE = "Acknowledging purchase with token %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR = "Error acknowledging purchase. Will retry next queryPurchases. %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR_RESTORE = "Couldn't acknowledge purchase after restoring it, this most " +

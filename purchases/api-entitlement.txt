@@ -320,7 +320,7 @@ package com.revenuecat.purchases {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnSubscriptionOptions(java.util.List<? extends com.revenuecat.purchases.models.SubscriptionOption> addOnSubscriptionOptions);
     method public com.revenuecat.purchases.PurchaseParams build();
-    method public final com.revenuecat.purchases.PurchaseParams.Builder galaxyReplacementMode(com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder galaxyReplacementMode(com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
     method public final com.revenuecat.purchases.PurchaseParams.Builder oldProductId(String oldProductId);
@@ -888,67 +888,6 @@ package com.revenuecat.purchases.galaxy {
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
   }
 
-  public abstract sealed class GalaxyPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
-  }
-
-  @dev.drewhamilton.poko.Poko public static final class GalaxyPurchasingData.Product extends com.revenuecat.purchases.galaxy.GalaxyPurchasingData {
-    ctor public GalaxyPurchasingData.Product(String productId, com.revenuecat.purchases.ProductType productType);
-    method public String getProductId();
-    method public com.revenuecat.purchases.ProductType getProductType();
-    property public String productId;
-    property public com.revenuecat.purchases.ProductType productType;
-  }
-
-  @dev.drewhamilton.poko.Poko public final class GalaxyStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
-    ctor public GalaxyStoreProduct(String id, com.revenuecat.purchases.ProductType type, com.revenuecat.purchases.models.Price price, String name, String title, String description, com.revenuecat.purchases.models.Period? period, com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions, com.revenuecat.purchases.models.SubscriptionOption? defaultOption, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
-    method @Deprecated public com.revenuecat.purchases.models.StoreProduct copyWithOfferingId(String offeringId);
-    method public com.revenuecat.purchases.models.StoreProduct copyWithPresentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
-    method public com.revenuecat.purchases.models.SubscriptionOption? getDefaultOption();
-    method public String getDescription();
-    method public String getId();
-    method public String getName();
-    method public com.revenuecat.purchases.models.Period? getPeriod();
-    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
-    method @Deprecated public String? getPresentedOfferingIdentifier();
-    method public com.revenuecat.purchases.models.Price getPrice();
-    method public com.revenuecat.purchases.galaxy.GalaxyPurchasingData getPurchasingData();
-    method @Deprecated public String getSku();
-    method public com.revenuecat.purchases.models.SubscriptionOptions? getSubscriptionOptions();
-    method public String getTitle();
-    method public com.revenuecat.purchases.ProductType getType();
-    property public com.revenuecat.purchases.models.SubscriptionOption? defaultOption;
-    property public String description;
-    property public String id;
-    property public String name;
-    property public com.revenuecat.purchases.models.Period? period;
-    property public com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
-    property @Deprecated public String? presentedOfferingIdentifier;
-    property public com.revenuecat.purchases.models.Price price;
-    property public com.revenuecat.purchases.galaxy.GalaxyPurchasingData purchasingData;
-    property @Deprecated public String sku;
-    property public com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions;
-    property public String title;
-    property public com.revenuecat.purchases.ProductType type;
-  }
-
-  public final class GalaxySubscriptionOption implements com.revenuecat.purchases.models.SubscriptionOption {
-    ctor public GalaxySubscriptionOption(String id, java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases, java.util.List<java.lang.String> tags, com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext, com.revenuecat.purchases.models.PurchasingData purchasingData, com.revenuecat.purchases.models.InstallmentsInfo? installmentsInfo);
-    method public String getId();
-    method public com.revenuecat.purchases.models.InstallmentsInfo? getInstallmentsInfo();
-    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
-    method @Deprecated public String? getPresentedOfferingIdentifier();
-    method public java.util.List<com.revenuecat.purchases.models.PricingPhase> getPricingPhases();
-    method public com.revenuecat.purchases.models.PurchasingData getPurchasingData();
-    method public java.util.List<java.lang.String> getTags();
-    property public String id;
-    property public com.revenuecat.purchases.models.InstallmentsInfo? installmentsInfo;
-    property public com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
-    property @Deprecated public String? presentedOfferingIdentifier;
-    property public java.util.List<com.revenuecat.purchases.models.PricingPhase> pricingPhases;
-    property public com.revenuecat.purchases.models.PurchasingData purchasingData;
-    property public java.util.List<java.lang.String> tags;
-  }
-
 }
 
 package com.revenuecat.purchases.interfaces {
@@ -1074,7 +1013,7 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.BillingFeature SUBSCRIPTIONS_UPDATE;
   }
 
-  @kotlinx.parcelize.Parcelize public enum GalaxyReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlinx.parcelize.Parcelize public enum GalaxyReplacementMode implements com.revenuecat.purchases.ReplacementMode {
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode DEFERRED;
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_NO_PRORATION;
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_CHARGE;
@@ -1083,6 +1022,8 @@ package com.revenuecat.purchases.models {
   }
 
   public static final class GalaxyReplacementMode.Companion {
+    method public com.revenuecat.purchases.models.GalaxyReplacementMode getDefault();
+    property public final com.revenuecat.purchases.models.GalaxyReplacementMode default;
   }
 
   @dev.drewhamilton.poko.Poko public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {

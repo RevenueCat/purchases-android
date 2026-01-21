@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -20,13 +21,15 @@ internal fun Context.getLocale(): Locale? =
         resources.configuration.locale
     }
 
-internal fun String.sha1() =
+@InternalRevenueCatAPI
+fun String.sha1() =
     MessageDigest.getInstance("SHA-1")
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
-internal fun String.sha256() =
+@InternalRevenueCatAPI
+fun String.sha256() =
     MessageDigest.getInstance("SHA-256")
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))

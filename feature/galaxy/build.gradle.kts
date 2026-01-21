@@ -1,6 +1,7 @@
-
 plugins {
     id("revenuecat-public-library")
+    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.poko)
 }
 
 android {
@@ -24,10 +25,13 @@ android {
     }
 }
 
+val samsungIapVersion = libs.versions.samsungIap.get()
+
 dependencies {
     implementation(project(":purchases"))
 
-    compileOnly("com.samsung.iap:samsung-iap:6.5.0@aar")
+    compileOnly("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
     testImplementation(libs.bundles.test)
-    testImplementation("com.samsung.iap:samsung-iap:6.5.0@aar")
+    testImplementation(libs.kotlin.test)
+    testImplementation("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
 }

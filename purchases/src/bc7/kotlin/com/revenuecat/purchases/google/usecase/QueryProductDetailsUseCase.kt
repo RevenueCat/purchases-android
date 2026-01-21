@@ -7,6 +7,7 @@ import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.NO_CORE_LIBRARY_DESUGARING_ERROR_MESSAGE
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -29,6 +30,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 internal data class QueryProductDetailsUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -37,6 +39,7 @@ internal data class QueryProductDetailsUseCaseParams(
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,
     val onReceive: StoreProductsCallback,

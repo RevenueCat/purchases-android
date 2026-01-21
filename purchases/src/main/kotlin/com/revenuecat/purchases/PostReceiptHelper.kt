@@ -26,7 +26,9 @@ import com.revenuecat.purchases.utils.Result
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
-internal class PostReceiptHelper(
+internal class PostReceiptHelper
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     private val appConfig: AppConfig,
     private val backend: Backend,
     private val billing: BillingAbstract,
@@ -46,6 +48,7 @@ internal class PostReceiptHelper(
      * This method will post a token and receiptInfo to the backend without consuming any purchases.
      * It will store that the token was sent to the backend so it doesn't send it again.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     fun postTokenWithoutConsuming(
         purchaseToken: String,
         receiptInfo: ReceiptInfo,
@@ -88,6 +91,7 @@ internal class PostReceiptHelper(
      * This method will post a StoreTransaction and optionally a StoreProduct info to the backend.
      * It will consume the purchase if finishTransactions is true.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,

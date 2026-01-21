@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ReplacementMode
-import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -14,9 +14,7 @@ import kotlinx.parcelize.Parcelize
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Parcelize
-enum class GalaxyReplacementMode(
-    internal val samsungProrationMode: HelperDefine.ProrationMode,
-) : ReplacementMode {
+enum class GalaxyReplacementMode : ReplacementMode {
     /**
      * The current subscription is instantly changed and the customer can start using the new subscription
      * immediately. The remaining payment of the original subscription is prorated to the cost of the new
@@ -25,7 +23,7 @@ enum class GalaxyReplacementMode(
      *
      * This mode can be used for both upgrades and downgrades.
      */
-    INSTANT_PRORATED_DATE(HelperDefine.ProrationMode.INSTANT_PRORATED_DATE),
+    INSTANT_PRORATED_DATE,
 
     /**
      * For upgraded subscriptions only. The current subscription is instantly changed and the customer can
@@ -34,7 +32,7 @@ enum class GalaxyReplacementMode(
      * of the subscription period (minus the remaining payment of the original subscription) is immediately
      * charged to the customer.
      */
-    INSTANT_PRORATED_CHARGE(HelperDefine.ProrationMode.INSTANT_PRORATED_CHARGE),
+    INSTANT_PRORATED_CHARGE,
 
     /**
      * For upgraded subscriptions only. The current subscription is instantly changed and the customer can
@@ -44,7 +42,7 @@ enum class GalaxyReplacementMode(
      *
      * This is the default behavior.
      */
-    INSTANT_NO_PRORATION(HelperDefine.ProrationMode.INSTANT_NO_PRORATION),
+    INSTANT_NO_PRORATION,
 
     /**
      * The current subscription continues and the features of the new subscription are not available until
@@ -53,13 +51,14 @@ enum class GalaxyReplacementMode(
      * subscription, they cannot change the subscription again during the remaining time of the current
      * subscription period.
      */
-    DEFERRED(HelperDefine.ProrationMode.DEFERRED),
+    DEFERRED,
     ;
 
     companion object {
         /**
          * The default replacement mode for Galaxy Store subscription changes.
          */
-        internal val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
+        @InternalRevenueCatAPI
+        val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
     }
 }
