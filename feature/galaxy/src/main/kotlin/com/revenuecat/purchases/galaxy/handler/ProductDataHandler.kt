@@ -21,6 +21,7 @@ import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.ProductVo
 import com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo
 import java.util.ArrayList
+import java.util.LinkedHashMap
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class ProductDataHandler(
@@ -35,6 +36,7 @@ internal class ProductDataHandler(
     private data class Request(
         val productIds: Set<String>,
         val productType: ProductType,
+        val cachedProducts: List<StoreProduct>,
         val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback,
     )
@@ -70,15 +72,18 @@ internal class ProductDataHandler(
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
 
+        val cachedProducts = productIds.mapNotNull(productsCache::get)
+        val missingProductIds = productIds - productsCache.keys
+
         val request = Request(
             productIds = productIds,
             productType = productType,
+            cachedProducts = cachedProducts,
             onReceive = onReceive,
             onError = onError,
         )
 
-        if (productsCache.keys.containsAll(productIds)) {
-            val cachedProducts = productIds.mapNotNull(productsCache::get)
+        if (missingProductIds.isEmpty()) {
             this.inFlightRequest = request
 
             handleStoreProducts(
@@ -90,7 +95,7 @@ internal class ProductDataHandler(
             // - An empty string: queries all products
             // - A string with one product ID in it: queries for that one product
             // - A string with multiple product IDs in it, delimited by a comma
-            val productIdRequestString = productIds.joinToString(separator = ",")
+            val productIdRequestString = missingProductIds.joinToString(separator = ",")
             iapHelper.getProductsDetails(
                 productIDs = productIdRequestString,
                 onGetProductsDetailsListener = this,
@@ -117,6 +122,8 @@ internal class ProductDataHandler(
         val nonNullProducts = products.mapNotNull { it }
         // The serial execution of this call is an extension of the serial execution of the parent
         // get products request
+
+        // TODO: We should check the promotion eligibilities for cached products too!!!
         promotionEligibilityResponseListener.getPromotionEligibilities(
             productIds = nonNullProducts.map { it.itemId },
             onSuccess = { promotionEligibilities ->
@@ -135,7 +142,13 @@ internal class ProductDataHandler(
                     productsCache[product.id] = product
                 }
 
-                handleStoreProducts(storeProducts = storeProducts)
+                val cachedProducts = inFlightRequest?.cachedProducts.orEmpty()
+                val combinedProducts = LinkedHashMap<String, StoreProduct>()
+                (cachedProducts + storeProducts).forEach { product ->
+                    combinedProducts[product.id] = product
+                }
+
+                handleStoreProducts(storeProducts = combinedProducts.values.toList())
             },
             onError = { error ->
                 val onError = inFlightRequest?.onError
