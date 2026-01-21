@@ -1258,7 +1258,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
-
 internal class ParameterizedNonJsonResponseBodyTest(
     private val endpoint: Endpoint,
     private val statusCode: Int,
@@ -1355,7 +1354,6 @@ internal class ParameterizedNonJsonResponseBodyTest(
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)
-
 internal class ParameterizedConnectionFailureFallbackTest(
     private val endpoint: Endpoint,
 ) : BaseHTTPClientTest() {
