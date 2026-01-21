@@ -604,7 +604,7 @@ class OfferingsTest {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val products = mapOf(productIdentifier to listOf(storeProductMonthly))
-
+        
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = "offering_a",
             listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),
