@@ -6,6 +6,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
@@ -18,7 +19,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -116,6 +117,12 @@ internal object VariableProcessorV2 {
         date: Date,
         countdownTime: CountdownTime? = null,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+        /**
+         * Optional subscription option from a resolved Play Store offer.
+         * When provided, offer variables (product.offer_*, product.secondary_offer_*) will use
+         * the pricing phases from this option instead of the package's defaultOption.
+         */
+        subscriptionOption: SubscriptionOption? = null,
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -130,6 +137,7 @@ internal object VariableProcessorV2 {
             date = date,
             countdownTime = countdownTime,
             countFrom = countFrom,
+            subscriptionOption = subscriptionOption,
         )
     }
 
@@ -175,6 +183,7 @@ internal object VariableProcessorV2 {
         date: Date,
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
+        subscriptionOption: SubscriptionOption?,
     ): String {
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
@@ -192,6 +201,7 @@ internal object VariableProcessorV2 {
                 date = date,
                 countdownTime = countdownTime,
                 countFrom = countFrom,
+                subscriptionOption = subscriptionOption,
             )?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, currencyLocale)
@@ -290,6 +300,7 @@ internal object VariableProcessorV2 {
         date: Date,
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
+        subscriptionOption: SubscriptionOption?,
     ): String? = when (this) {
         Variable.PRODUCT_CURRENCY_CODE -> rcPackage.product.price.currencyCode
         Variable.PRODUCT_CURRENCY_SYMBOL ->
@@ -394,35 +405,64 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PERIOD_IN_MONTHS -> rcPackage.product.period?.roundedValueInMonths
         Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage.product.period?.roundedValueInYears
         Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage.productPeriodWithUnit(localizedVariableKeys)
-        Variable.PRODUCT_OFFER_PRICE -> rcPackage.firstIntroOffer?.productOfferPrice(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_PRICE ->
+            getFirstIntroOffer(rcPackage, subscriptionOption)?.productOfferPrice(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
-            rcPackage.firstIntroOffer?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
+            getFirstIntroOffer(
+                rcPackage,
+                subscriptionOption,
+            )?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_WEEK ->
-            rcPackage.firstIntroOffer?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
+            getFirstIntroOffer(
+                rcPackage,
+                subscriptionOption,
+            )?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_MONTH ->
-            rcPackage.firstIntroOffer?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
+            getFirstIntroOffer(
+                rcPackage,
+                subscriptionOption,
+            )?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_YEAR ->
-            rcPackage.firstIntroOffer?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
+            getFirstIntroOffer(
+                rcPackage,
+                subscriptionOption,
+            )?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_PERIOD -> rcPackage.firstIntroOffer?.productOfferPeriod(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_PERIOD ->
+            getFirstIntroOffer(rcPackage, subscriptionOption)?.productOfferPeriod(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED ->
-            rcPackage.firstIntroOffer?.productOfferPeriodAbbreviated(localizedVariableKeys)
+            getFirstIntroOffer(rcPackage, subscriptionOption)?.productOfferPeriodAbbreviated(localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> rcPackage.firstIntroOffer?.productOfferPeriodInDays
-        Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> rcPackage.firstIntroOffer?.productOfferPeriodInWeeks
-        Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> rcPackage.firstIntroOffer?.productOfferPeriodInMonths
-        Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> rcPackage.firstIntroOffer?.productOfferPeriodInYears
+        Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> getFirstIntroOffer(
+            rcPackage,
+            subscriptionOption,
+        )?.productOfferPeriodInDays
+        Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> getFirstIntroOffer(
+            rcPackage,
+            subscriptionOption,
+        )?.productOfferPeriodInWeeks
+        Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> getFirstIntroOffer(
+            rcPackage,
+            subscriptionOption,
+        )?.productOfferPeriodInMonths
+        Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> getFirstIntroOffer(
+            rcPackage,
+            subscriptionOption,
+        )?.productOfferPeriodInYears
         Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT ->
-            rcPackage.firstIntroOffer?.productOfferPeriodWithUnit(localizedVariableKeys)
+            getFirstIntroOffer(rcPackage, subscriptionOption)?.productOfferPeriodWithUnit(localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_END_DATE -> rcPackage.firstIntroOffer?.productOfferEndDate(dateLocale, date)
-        Variable.PRODUCT_SECONDARY_OFFER_PRICE -> rcPackage.secondIntroOffer?.productOfferPrice(localizedVariableKeys)
-        Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> rcPackage.secondIntroOffer?.productOfferPeriod(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_END_DATE ->
+            getFirstIntroOffer(rcPackage, subscriptionOption)?.productOfferEndDate(dateLocale, date)
+        Variable.PRODUCT_SECONDARY_OFFER_PRICE ->
+            getSecondIntroOffer(rcPackage, subscriptionOption)?.productOfferPrice(localizedVariableKeys)
+        Variable.PRODUCT_SECONDARY_OFFER_PERIOD ->
+            getSecondIntroOffer(rcPackage, subscriptionOption)?.productOfferPeriod(localizedVariableKeys)
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED ->
-            rcPackage.secondIntroOffer?.productOfferPeriodAbbreviated(localizedVariableKeys)
+            getSecondIntroOffer(rcPackage, subscriptionOption)?.productOfferPeriodAbbreviated(localizedVariableKeys)
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext.relativeDiscount(localizedVariableKeys)
 
@@ -662,11 +702,23 @@ internal object VariableProcessorV2 {
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
             }
 
-    private val Package.firstIntroOffer: PricingPhase?
-        get() = product.defaultOption?.let { option -> option.freePhase ?: option.introPhase }
+    /**
+     * Gets the first intro offer (free trial or intro phase) from the provided subscription option,
+     * or falls back to the package's default option if no subscription option is provided.
+     */
+    private fun getFirstIntroOffer(rcPackage: Package, subscriptionOption: SubscriptionOption?): PricingPhase? {
+        val option = subscriptionOption ?: rcPackage.product.defaultOption
+        return option?.let { it.freePhase ?: it.introPhase }
+    }
 
-    private val Package.secondIntroOffer: PricingPhase?
-        get() = product.defaultOption?.let { option -> if (option.freePhase != null) option.introPhase else null }
+    /**
+     * Gets the second intro offer (intro phase when free phase exists) from the provided subscription option,
+     * or falls back to the package's default option if no subscription option is provided.
+     */
+    private fun getSecondIntroOffer(rcPackage: Package, subscriptionOption: SubscriptionOption?): PricingPhase? {
+        val option = subscriptionOption ?: rcPackage.product.defaultOption
+        return option?.let { if (it.freePhase != null) it.introPhase else null }
+    }
 
     private val Package.isLifetime: Boolean
         get() = packageType == PackageType.LIFETIME
