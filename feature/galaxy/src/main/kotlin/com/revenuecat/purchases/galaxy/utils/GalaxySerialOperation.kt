@@ -11,7 +11,7 @@ package com.revenuecat.purchases.galaxy.utils
  * Functions marked with `@GalaxySerialOperation` **must** be executed one at a time,
  * in strict sequence, without concurrent execution. This is usually managed by ensuring the
  * execution path for these functions goes through a mechanism like
- * the [com.revenuecat.purchases.utils.SerialRequestExecutor]
+ * the [SerialRequestExecutor]
  * or a single-threaded dispatcher (e.g., a single-threaded Coroutine scope).
  *
  * Failing to execute these functions serially can lead to the `IapHelper` throwing
@@ -21,7 +21,7 @@ package com.revenuecat.purchases.galaxy.utils
  * Apply `@OptIn(GalaxySerialOperation::class)` to the calling function. This should only be done if the calling
  * scope *guarantees* serial execution for the call.
  *
- * @see [com.revenuecat.purchases.utils.SerialRequestExecutor] The underlying mechanism typically used to enforce
+ * @see [SerialRequestExecutor] The underlying mechanism typically used to enforce
  * this constraint.
  */
 @Retention(value = AnnotationRetention.BINARY)

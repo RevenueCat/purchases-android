@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.utils
 
-import com.revenuecat.purchases.utils.SerialRequestExecutor
 import org.assertj.core.api.Assertions
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch

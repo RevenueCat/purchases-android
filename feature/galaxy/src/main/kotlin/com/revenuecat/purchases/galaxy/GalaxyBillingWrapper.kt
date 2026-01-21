@@ -34,6 +34,7 @@ import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
+import com.revenuecat.purchases.galaxy.utils.SerialRequestExecutor
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -42,7 +43,6 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
-import com.revenuecat.purchases.utils.SerialRequestExecutor
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo

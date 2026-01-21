@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.utils
+package com.revenuecat.purchases.galaxy.utils
 
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicBoolean
