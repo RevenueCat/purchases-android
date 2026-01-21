@@ -447,7 +447,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
-
+    
     // endregion
 
     // region awaitGetAmazonLWAConsentStatus
