@@ -1273,6 +1273,60 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `SDK-originated multi-line purchase with different order of product Ids in resulting StoreTransaction has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val productId2 = "another_product"
+        val storeProduct = mockStoreProduct(listOf(productId2, productId), listOf(productId2, productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productIds = listOf(productId2, productId),
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        mockQueryingProductDetails(productId2, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        // Purchasing second product (index 1), so the callbacks are keyed by that product ID.
+        val purchaseParams = getPurchaseParams(storeProduct[1].subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `non-SDK-originated purchase has sdkOriginated set to false`() {
         val productId = "test_product"
         mockQueryingProductDetails(productId, ProductType.INAPP)

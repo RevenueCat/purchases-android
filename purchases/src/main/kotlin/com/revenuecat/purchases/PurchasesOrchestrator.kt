@@ -1322,9 +1322,9 @@ internal class PurchasesOrchestrator(
 
                 synchronized(this@PurchasesOrchestrator) {
                     sdkOriginated = purchases.all { purchase ->
-                        purchase.productIds.firstOrNull()?.let {
-                            state.purchaseCallbacksByProductId.contains(it)
-                        } ?: false
+                        purchase.productIds.any {
+                            state.purchaseCallbacksByProductId.containsKey(it)
+                        }
                     }
                     isDeprecatedProductChangeInProgress = state.deprecatedProductChangeCallback != null
                     if (isDeprecatedProductChangeInProgress) {
