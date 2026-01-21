@@ -859,11 +859,11 @@ class DeviceCacheTest {
     @Test
     fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws SerializationException`() {
         mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
-
+        
         every {
             VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
         } throws SerializationException("Serialization error")
-
+        
         val vcs = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(vcs).`as`("cached VirtualCurrencies is null when SerializationException is thrown").isNull()
     }
@@ -871,11 +871,11 @@ class DeviceCacheTest {
     @Test
     fun `getCachedVirtualCurrencies returns null when VirtualCurrenciesFactory throws IllegalArgumentException`() {
         mockString(cache.virtualCurrenciesCacheKey(appUserID), "{}")
-
+        
         every {
             VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = any())
         } throws IllegalArgumentException("Invalid input")
-
+        
         val vcs = cache.getCachedVirtualCurrencies(appUserID)
         assertThat(vcs).`as`("cached VirtualCurrencies is null when IllegalArgumentException is thrown").isNull()
     }
