@@ -1111,5 +1111,4 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         every { signature } returns null
         every { productIds } returns listOf(productId)
     }
-
 }
