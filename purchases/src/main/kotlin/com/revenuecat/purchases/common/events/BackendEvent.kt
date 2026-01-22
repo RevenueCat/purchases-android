@@ -71,6 +71,10 @@ internal sealed class BackendEvent : Event {
      * @property localeIdentifier The locale identifier of the device.
      * @property exitOfferType The type of exit offer shown. Only for exit offer events.
      * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
+     * @property packageID The package ID of the purchase attempted. Only for purchase attempt events.
+     * @property productID The product ID of the purchase attempted. Only for purchase attempt events.
+     * @property errorCode The error code if an error occurred. Only for purchase attempt error events.
+     * @property errorMessage The error message if an error occurred. Only for purchase attempt error events.
      */
     @Serializable
     @SerialName("paywalls")
@@ -84,6 +88,8 @@ internal sealed class BackendEvent : Event {
         val sessionID: String,
         @SerialName("offering_id")
         val offeringID: String,
+        @SerialName("paywall_id")
+        val paywallID: String?,
         @SerialName("paywall_revision")
         val paywallRevision: Int,
         val timestamp: Long,
@@ -97,6 +103,14 @@ internal sealed class BackendEvent : Event {
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
         val exitOfferingID: String? = null,
+        @SerialName("package_id")
+        val packageID: String? = null,
+        @SerialName("product_id")
+        val productID: String? = null,
+        @SerialName("error_code")
+        val errorCode: Int? = null,
+        @SerialName("error_message")
+        val errorMessage: String? = null,
     ) : BackendEvent()
 
     @Serializable

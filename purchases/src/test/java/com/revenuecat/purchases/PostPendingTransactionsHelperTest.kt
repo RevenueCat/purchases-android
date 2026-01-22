@@ -98,6 +98,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -153,6 +154,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -279,6 +281,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -329,6 +332,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = capture(successSlot),
                 transactionPostError = capture(errorSlot)
             )
@@ -353,6 +357,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -532,6 +537,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -563,6 +569,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )
@@ -611,6 +618,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )

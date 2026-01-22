@@ -12,6 +12,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
@@ -33,11 +34,13 @@ internal class CustomerCenterActivity : ComponentActivity() {
 
         val wasLaunchedThroughSDK = intent.getBooleanExtra(EXTRA_WAS_LAUNCHED_THROUGH_SDK, false)
         if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
-            throw IllegalStateException(
-                "CustomerCenterActivity was not launched through the SDK. " +
-                    "Please use the SDK methods to open the Customer Center. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to users.",
+            Logger.e(
+                "CustomerCenterActivity was launched incorrectly. " +
+                    "Please use ShowCustomerCenter activity result contract, CustomerCenter composable, " +
+                    "or CustomerCenterView to display the Customer Center.",
             )
+            finish()
+            return
         }
 
         setContent {
