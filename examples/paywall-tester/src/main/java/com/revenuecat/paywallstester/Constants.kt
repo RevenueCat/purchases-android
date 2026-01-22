@@ -12,4 +12,10 @@ object Constants {
     // Optional: Set a preferred UI locale override (e.g., "en-US", "es-ES", "fr-FR")
     // Leave as empty string to use system default locale
     const val PREFERRED_UI_LOCALE_OVERRIDE: String = ""
+
+    // Custom variables to pass to paywalls. These will replace {{ custom.key }} placeholders.
+    val CUSTOM_VARIABLES: Map<String, Any> = mapOf(
+        "user_name" to "John",
+        "app_name" to "Paywall Tester",
+    )
 }
