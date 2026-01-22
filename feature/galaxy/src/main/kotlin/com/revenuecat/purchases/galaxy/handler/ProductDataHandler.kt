@@ -112,17 +112,18 @@ internal class ProductDataHandler(
     private fun handleSuccessfulProductsResponse(
         products: List<ProductVo?>,
     ) {
-        val nonNullProducts = products.mapNotNull { it }
-        if (nonNullProducts.isEmpty()) {
+        val requestedProductIds = inFlightRequest?.productIds.orEmpty()
+        val productsFromResponse = products.mapNotNull { it }
+        productsFromResponse.forEach { product ->
+            productVoCache[product.itemId] = product
+        }
+
+        val productsForRequest = requestedProductIds.mapNotNull(productVoCache::get)
+        if (productsForRequest.isEmpty()) {
             handleStoreProducts(storeProducts = emptyList())
             return
         }
 
-        nonNullProducts.forEach { product ->
-            productVoCache[product.itemId] = product
-        }
-        val requestedProductIds = inFlightRequest?.productIds.orEmpty()
-        val productsForRequest = requestedProductIds.mapNotNull(productVoCache::get)
         fetchPromotionEligibilityAndHandleStoreProducts(productsForRequest)
     }
 

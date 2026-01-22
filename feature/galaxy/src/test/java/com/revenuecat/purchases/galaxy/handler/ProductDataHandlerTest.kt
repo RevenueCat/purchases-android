@@ -266,6 +266,53 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
+    fun `cached products do not re-request product details`() {
+        val capturedProductListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedProductListener))
+        } returns Unit
+
+        val capturedEligibilityListeners = mutableListOf<OnGetPromotionEligibilityListener>()
+        every {
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedEligibilityListeners))
+        } returns true
+
+        val productId = "sub"
+        val product = createProductVo(itemId = productId, type = "subscription")
+
+        // Cache the product
+        productDataHandler.getProductDetails(
+            productIds = setOf(productId),
+            productType = ProductType.SUBS,
+            onReceive = {},
+            onError = unexpectedOnError,
+        )
+
+        val successErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+        }
+        capturedProductListener.captured.onGetProducts(successErrorVo, arrayListOf(product))
+        capturedEligibilityListeners.single().onGetPromotionEligibility(
+            successErrorVo,
+            arrayListOf(createPromotionEligibilityVo(itemId = productId, pricing = "None")),
+        )
+
+        productDataHandler.getProductDetails(
+            productIds = setOf(productId),
+            productType = ProductType.SUBS,
+            onReceive = {},
+            onError = unexpectedOnError,
+        )
+
+        verify(exactly = 1) { iapHelperProvider.getProductsDetails(any(), any()) }
+        verify(exactly = 2) { iapHelperProvider.getPromotionEligibility(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `partial cache only requests uncached products from galaxy store and returns full set`() {
         val capturedProductListener = slot<OnGetProductsDetailsListener>()
         every { iapHelperProvider.getProductsDetails(
@@ -311,5 +358,200 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         verify(exactly = 1) { iapHelperProvider.getProductsDetails(uncachedId, any()) }
         assertThat(receivedProducts).isNotNull
         assertThat(receivedProducts!!.map { it.id }).containsExactlyInAnyOrder(cachedId, uncachedId)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `extra cached products are ignored when requesting uncached IDs`() {
+        val capturedProductListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedProductListener))
+        } returns Unit
+
+        val capturedEligibilityListener = slot<OnGetPromotionEligibilityListener>()
+        every {
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedEligibilityListener))
+        } returns true
+
+        val cachedRequestedId = "cached_requested"
+        val cachedExtraId = "cached_extra"
+        val uncachedId = "uncached"
+        val cachedRequestedProduct = createProductVo(itemId = cachedRequestedId, type = "subscription")
+        val cachedExtraProduct = createProductVo(itemId = cachedExtraId, type = "subscription")
+        val uncachedProduct = createProductVo(itemId = uncachedId, type = "subscription")
+        productDataHandler.productVoCache[cachedRequestedId] = cachedRequestedProduct
+        productDataHandler.productVoCache[cachedExtraId] = cachedExtraProduct
+
+        var receivedProducts: List<StoreProduct>? = null
+
+        productDataHandler.getProductDetails(
+            productIds = setOf(cachedRequestedId, uncachedId),
+            productType = ProductType.SUBS,
+            onReceive = { receivedProducts = it },
+            onError = unexpectedOnError,
+        )
+
+        val successErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+        }
+        capturedProductListener.captured.onGetProducts(successErrorVo, arrayListOf(uncachedProduct))
+        capturedEligibilityListener.captured.onGetPromotionEligibility(
+            successErrorVo,
+            arrayListOf(
+                createPromotionEligibilityVo(itemId = cachedRequestedId, pricing = "None"),
+                createPromotionEligibilityVo(itemId = uncachedId, pricing = "None"),
+            ),
+        )
+
+        verify(exactly = 1) { iapHelperProvider.getProductsDetails(uncachedId, any()) }
+        assertThat(receivedProducts).isNotNull
+        assertThat(receivedProducts!!.map { it.id }).containsExactlyInAnyOrder(cachedRequestedId, uncachedId)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `partial cache returns cached products when samsung response is empty`() {
+        val capturedProductListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedProductListener))
+        } returns Unit
+
+        val capturedEligibilityListener = slot<OnGetPromotionEligibilityListener>()
+        every {
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedEligibilityListener))
+        } returns true
+
+        val cachedId = "cached"
+        val uncachedId = "uncached"
+        val cachedProduct = createProductVo(itemId = cachedId, type = "subscription")
+        productDataHandler.productVoCache[cachedId] = cachedProduct
+
+        var receivedProducts: List<StoreProduct>? = null
+
+        productDataHandler.getProductDetails(
+            productIds = setOf(cachedId, uncachedId),
+            productType = ProductType.SUBS,
+            onReceive = { receivedProducts = it },
+            onError = unexpectedOnError,
+        )
+
+        val successErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+        }
+        capturedProductListener.captured.onGetProducts(successErrorVo, arrayListOf())
+        capturedEligibilityListener.captured.onGetPromotionEligibility(
+            successErrorVo,
+            arrayListOf(createPromotionEligibilityVo(itemId = cachedId, pricing = "None")),
+        )
+
+        verify(exactly = 1) { iapHelperProvider.getProductsDetails(uncachedId, any()) }
+        verify(exactly = 1) { iapHelperProvider.getPromotionEligibility(any(), any()) }
+        assertThat(receivedProducts).isNotNull
+        assertThat(receivedProducts!!.map { it.id }).containsExactly(cachedId)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `extra products returned by samsung are not surfaced to the caller`() {
+        val capturedProductListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedProductListener))
+        } returns Unit
+
+        val capturedEligibilityListener = slot<OnGetPromotionEligibilityListener>()
+        every {
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedEligibilityListener))
+        } returns true
+
+        val requestedId = "requested"
+        val extraId = "extra"
+        val requestedProduct = createProductVo(itemId = requestedId, type = "subscription")
+        val extraProduct = createProductVo(itemId = extraId, type = "subscription")
+
+        var receivedProducts: List<StoreProduct>? = null
+
+        productDataHandler.getProductDetails(
+            productIds = setOf(requestedId),
+            productType = ProductType.SUBS,
+            onReceive = { receivedProducts = it },
+            onError = unexpectedOnError,
+        )
+
+        val successErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+        }
+        capturedProductListener.captured.onGetProducts(successErrorVo, arrayListOf(requestedProduct, extraProduct))
+        capturedEligibilityListener.captured.onGetPromotionEligibility(
+            successErrorVo,
+            arrayListOf(
+                createPromotionEligibilityVo(itemId = requestedId, pricing = "None"),
+                createPromotionEligibilityVo(itemId = extraId, pricing = "None"),
+            ),
+        )
+
+        assertThat(receivedProducts).isNotNull
+        assertThat(receivedProducts!!.map { it.id }).containsExactly(requestedId)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `promotion eligibility error clears in flight and forwards error`() {
+        val capturedProductListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(
+            any(),
+            capture(capturedProductListener))
+        } returns Unit
+
+        val capturedEligibilityListener = slot<OnGetPromotionEligibilityListener>()
+        every {
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedEligibilityListener))
+        } returns true
+
+        val productId = "sub"
+        val product = createProductVo(itemId = productId, type = "subscription")
+        var receivedError: PurchasesError? = null
+
+        // Build up cache
+        productDataHandler.getProductDetails(
+            productIds = setOf(productId),
+            productType = ProductType.SUBS,
+            onReceive = unexpectedOnReceive,
+            onError = { receivedError = it },
+        )
+
+        val successErrorVo = mockk<ErrorVo> {
+            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+        }
+        capturedProductListener.captured.onGetProducts(successErrorVo, arrayListOf(product))
+
+        capturedEligibilityListener.captured.onGetPromotionEligibility(
+            mockk<ErrorVo> {
+                every { errorCode } returns GalaxyErrorCode.IAP_ERROR_COMMON.code
+                every { errorString } returns "eligibility failed"
+            },
+            arrayListOf(),
+        )
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+
+        productDataHandler.getProductDetails(
+            productIds = setOf("next"),
+            productType = ProductType.SUBS,
+            onReceive = {},
+            onError = unexpectedOnError,
+        )
+
+        verify(exactly = 2) { iapHelperProvider.getProductsDetails(any(), any()) }
     }
 }
