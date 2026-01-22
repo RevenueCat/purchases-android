@@ -127,7 +127,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
         assertThat(receivedProducts).isNotNull
         assertThat(receivedProducts!!.map { it.id }).containsExactly("sub")
-        assertThat(productDataHandler.productMetadataCache).containsKeys("iap", "sub")
+        assertThat(productDataHandler.productVoCache).containsKeys("iap", "sub")
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -284,7 +284,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         val uncachedId = "uncached"
         val cachedProduct = createProductVo(itemId = cachedId, type = "subscription")
         val uncachedProduct = createProductVo(itemId = uncachedId, type = "subscription")
-        productDataHandler.productMetadataCache[cachedId] = cachedProduct
+        productDataHandler.productVoCache[cachedId] = cachedProduct
 
         var receivedProducts: List<StoreProduct>? = null
 

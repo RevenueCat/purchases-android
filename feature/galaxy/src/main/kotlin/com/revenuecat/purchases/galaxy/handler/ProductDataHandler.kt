@@ -40,7 +40,7 @@ internal class ProductDataHandler(
     )
 
     @get:Synchronized
-    internal val productMetadataCache = mutableMapOf<String, ProductVo>()
+    internal val productVoCache = mutableMapOf<String, ProductVo>()
 
     @GalaxySerialOperation
     override fun getProductDetails(
@@ -77,12 +77,12 @@ internal class ProductDataHandler(
             onError = onError,
         )
 
-        if (productMetadataCache.keys.containsAll(productIds)) {
-            val cachedProducts = productIds.mapNotNull(productMetadataCache::get)
+        if (productVoCache.keys.containsAll(productIds)) {
+            val cachedProducts = productIds.mapNotNull(productVoCache::get)
             this.inFlightRequest = request
             fetchPromotionEligibilityAndHandleStoreProducts(cachedProducts)
         } else {
-            val uncachedProductIds = productIds - productMetadataCache.keys
+            val uncachedProductIds = productIds - productVoCache.keys
             // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
             // the following contents product the following results:
             // - An empty string: queries all products
@@ -119,10 +119,10 @@ internal class ProductDataHandler(
         }
 
         nonNullProducts.forEach { product ->
-            productMetadataCache[product.itemId] = product
+            productVoCache[product.itemId] = product
         }
         val requestedProductIds = inFlightRequest?.productIds.orEmpty()
-        val productsForRequest = requestedProductIds.mapNotNull(productMetadataCache::get)
+        val productsForRequest = requestedProductIds.mapNotNull(productVoCache::get)
         fetchPromotionEligibilityAndHandleStoreProducts(productsForRequest)
     }
 
