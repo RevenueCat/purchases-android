@@ -27,6 +27,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
@@ -102,11 +103,12 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         val args = getArgs()
         val wasLaunchedThroughSDK = args?.wasLaunchedThroughSDK ?: false
         if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
-            throw IllegalStateException(
-                "PaywallActivity was not launched through the SDK. " +
-                    "Please use the SDK methods to open the Paywall. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to users.",
+            Logger.e(
+                "PaywallActivity was launched incorrectly. " +
+                    "Please use PaywallActivityLauncher or Paywall composable to display the Paywall.",
             )
+            finish()
+            return
         }
 
         val edgeToEdge = args?.edgeToEdge == true
