@@ -1,5 +1,6 @@
 package com.revenuecat.purchasetester
 
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -18,8 +19,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
-import com.revenuecat.purchases.galaxy.GalaxyBillingMode
-import com.revenuecat.purchases.galaxy.GalaxyConfiguration
 import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
@@ -91,8 +90,12 @@ class ConfigureFragment : Fragment() {
             binding.continueButton.isEnabled = false
 
             lifecycleScope.launch {
-                configureSDK()
-                navigateToLoginFragment()
+                val didConfigure = configureSDK()
+                if (didConfigure) {
+                    navigateToLoginFragment()
+                } else {
+                    binding.continueButton.isEnabled = true
+                }
             }
         }
 
@@ -124,7 +127,7 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
-    private suspend fun configureSDK() {
+    private suspend fun configureSDK(): Boolean {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
@@ -152,8 +155,10 @@ class ConfigureFragment : Fragment() {
         val configurationBuilder =
             when (selectedStore) {
                 Store.AMAZON -> AmazonConfiguration.Builder(application, apiKey)
-                Store.GALAXY -> GalaxyConfiguration.Builder(application, apiKey)
-                    .galaxyBillingMode(GalaxyBillingMode.TEST)
+                Store.GALAXY -> createGalaxyConfigurationBuilder(application, apiKey) ?: run {
+                    showError("Galaxy Store support is unavailable in this build.")
+                    return false
+                }
                 Store.GOOGLE -> PurchasesConfiguration.Builder(application, apiKey)
             }
 
@@ -176,6 +181,7 @@ class ConfigureFragment : Fragment() {
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
         dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, selectedStore))
+        return true
     }
 
     private fun setupSupportedStoresRadioButtons() {
@@ -188,11 +194,50 @@ class ConfigureFragment : Fragment() {
             binding.amazonStoreRadioId.isEnabled = false
             binding.amazonUnavailableTextView.visibility = View.VISIBLE
         }
+        if (!supportedStores.contains("galaxy") || !isGalaxyAvailable()) {
+            binding.galaxyStoreRadioId.isEnabled = false
+        }
     }
 
     private fun updateGalaxyWarningVisibility() {
         val isGalaxySelected = binding.storeRadioGroup.checkedRadioButtonId == R.id.galaxy_store_radio_id
         binding.galaxyWarningTextView.visibility = if (isGalaxySelected) View.VISIBLE else View.GONE
+    }
+
+    private fun isGalaxyAvailable(): Boolean {
+        return try {
+            Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration")
+            true
+        } catch (_: ClassNotFoundException) {
+            false
+        }
+    }
+
+    private fun createGalaxyConfigurationBuilder(
+        context: Context,
+        apiKey: String,
+    ): PurchasesConfiguration.Builder? {
+        return try {
+            // Galaxy types are optional because the Samsung IAP AAR isn't always present,
+            // and settings.gradle.kts conditionally includes the module.
+            val builderClass =
+                Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration\$Builder")
+            val constructor = builderClass.getConstructor(Context::class.java, String::class.java)
+            val builder = constructor.newInstance(context, apiKey) as PurchasesConfiguration.Builder
+            try {
+                val modeClass = Class.forName("com.revenuecat.purchases.galaxy.GalaxyBillingMode")
+                @Suppress("UNCHECKED_CAST")
+                val testMode =
+                    java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
+                val method = builderClass.getMethod("galaxyBillingMode", modeClass)
+                method.invoke(builder, testMode)
+            } catch (_: Exception) {
+                // No-op: fallback to Galaxy defaults when reflection fails.
+            }
+            builder
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun navigateToLoginFragment() {

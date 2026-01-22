@@ -74,7 +74,10 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
-    implementation(project(":feature:galaxy"))
+    val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+    if (hasSamsungIapAar) {
+        implementation(project(":feature:galaxy"))
+    }
 
     val samsungIapVersion = libs.versions.samsungIap.get()
     val samsungIapAar = file("libs/samsung-iap-$samsungIapVersion.aar")
