@@ -78,6 +78,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
         verify(exactly = 1) { iapHelperProvider.getProductsDetails(any(), any()) }
+        verify(exactly = 0) { iapHelperProvider.getPromotionEligibility(any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
