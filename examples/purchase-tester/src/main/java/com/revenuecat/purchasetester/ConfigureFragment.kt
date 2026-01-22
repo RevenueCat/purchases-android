@@ -241,7 +241,7 @@ class ConfigureFragment : Fragment() {
                     java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
                 val method = builderClass.getMethod("galaxyBillingMode", modeClass)
                 method.invoke(builder, testMode)
-            } catch (e: Exception) {
+            } catch (e: ReflectiveOperationException) {
                 Log.e("PurchaseTester", "Failed to set Galaxy billing mode via reflection.", e)
                 Toast.makeText(
                     context,
