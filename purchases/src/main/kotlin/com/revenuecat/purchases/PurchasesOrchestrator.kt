@@ -432,6 +432,7 @@ internal class PurchasesOrchestrator(
         amazonUserID: String,
         isoCurrencyCode: String?,
         price: Double?,
+        purchaseTime: Long?,
     ) {
         log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID) }
 
@@ -449,6 +450,7 @@ internal class PurchasesOrchestrator(
 
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
+                    purchaseTime = purchaseTime,
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() },
                     marketplace = null,
