@@ -321,7 +321,7 @@ jobs:
       - run:
           name: Download Samsung IAP SDK AAR
           command: |
-            ./gradlew :getSamsungIapSdk --no-daemon
+            ./gradlew getSamsungIapSdk --no-daemon
       - run:
           name: Compile API Tester with Galaxy Files
           command: |

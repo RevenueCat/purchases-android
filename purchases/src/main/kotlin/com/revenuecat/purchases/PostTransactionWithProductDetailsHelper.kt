@@ -25,6 +25,7 @@ constructor(
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        sdkOriginated: Boolean,
         transactionPostSuccess: (SuccessfulPurchaseCallback)? = null,
         transactionPostError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -83,6 +84,7 @@ constructor(
                         isRestore = allowSharingPlayStoreAccount,
                         appUserID = appUserID,
                         initiationSource = initiationSource,
+                        sdkOriginated = sdkOriginated,
                         onSuccess = transactionPostSuccess,
                         onError = transactionPostError,
                     )
@@ -95,6 +97,7 @@ constructor(
                         isRestore = allowSharingPlayStoreAccount,
                         appUserID = appUserID,
                         initiationSource = initiationSource,
+                        sdkOriginated = sdkOriginated,
                         onSuccess = transactionPostSuccess,
                         onError = transactionPostError,
                     )
