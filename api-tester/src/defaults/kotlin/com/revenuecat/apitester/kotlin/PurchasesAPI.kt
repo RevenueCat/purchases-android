@@ -54,7 +54,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
+@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION", "TooManyFunctions")
 private class PurchasesAPI {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
@@ -132,6 +132,20 @@ private class PurchasesAPI {
 
         val locale: Locale? = purchases.storefrontLocale
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+    }
+
+    @Suppress("LongParameterList")
+    fun checkSyncAmazonPurchase(
+        purchases: Purchases,
+        productId: String,
+        receiptId: String,
+        amazonUserId: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long,
+    ) {
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime)
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

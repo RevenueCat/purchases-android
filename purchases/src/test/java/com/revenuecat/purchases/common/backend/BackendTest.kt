@@ -687,6 +687,24 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt posts sdk_originated`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct, sdkOriginated = true),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("sdk_originated")
+        assertThat(requestBodySlot.captured["sdk_originated"]).isEqualTo(true)
+    }
+
+    @Test
     fun `postReceipt posts purchase_completed_by`() {
         mockPostReceiptResponseAndPost(
             backend,
@@ -1008,7 +1026,7 @@ class BackendTest {
 
         val receiptInfo2 = ReceiptInfo(
             basicReceiptInfo.productIDs,
-            basicReceiptInfo.presentedOfferingContext?.copy(
+            presentedOfferingContext = basicReceiptInfo.presentedOfferingContext?.copy(
                 offeringIdentifier = basicReceiptInfo.presentedOfferingContext.offeringIdentifier + "a"
             )
         )
@@ -3263,6 +3281,7 @@ class BackendTest {
         platformProductIds: List<Map<String, String?>> = listOf(mapOf("product_id" to storeProduct.id)),
         storeUserID: String? = null,
         marketplace: String? = null,
+        sdkOriginated: Boolean = false,
     ): ReceiptInfo {
         return ReceiptInfo(
             productIDs = productIDs,
@@ -3276,6 +3295,7 @@ class BackendTest {
             platformProductIds = platformProductIds,
             storeUserID = storeUserID,
             marketplace = marketplace,
+            sdkOriginated = sdkOriginated,
         )
     }
 
