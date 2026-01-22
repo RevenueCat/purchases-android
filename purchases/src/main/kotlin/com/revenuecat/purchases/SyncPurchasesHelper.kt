@@ -69,6 +69,7 @@ internal class SyncPurchasesHelper(
                     allPurchases.forEach { purchase ->
                         val productInfo = ReceiptInfo(
                             productIDs = purchase.productIds,
+                            purchaseTime = purchase.purchaseTime,
                             storeUserID = purchase.storeUserID,
                             marketplace = purchase.marketplace,
                         )
