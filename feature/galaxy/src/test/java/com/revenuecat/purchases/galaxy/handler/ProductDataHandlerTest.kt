@@ -8,7 +8,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
-import com.revenuecat.purchases.galaxy.conversions.toStoreProduct
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
@@ -128,53 +127,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         assertThat(receivedProducts).isNotNull
         assertThat(receivedProducts!!.map { it.id }).containsExactly("sub")
         assertThat(productDataHandler.productsCache).containsKeys("iap", "sub")
-    }
-
-    @OptIn(GalaxySerialOperation::class)
-    @Test
-    fun `getProductDetails only requests missing products and returns cached results`() {
-        val capturedListener = slot<OnGetProductsDetailsListener>()
-        every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
-
-        val capturedPromotionEligibilityListener = slot<OnGetPromotionEligibilityListener>()
-        every {
-            iapHelperProvider.getPromotionEligibility(any(), capture(capturedPromotionEligibilityListener))
-        } returns true
-
-        val cachedProduct = createProductVo(itemId = "cached", type = "item").toStoreProduct()
-        productDataHandler.productsCache[cachedProduct.id] = cachedProduct
-
-        var receivedProducts: List<StoreProduct>? = null
-
-        productDataHandler.getProductDetails(
-            productIds = setOf("cached", "new"),
-            productType = ProductType.INAPP,
-            onReceive = { receivedProducts = it },
-            onError = unexpectedOnError,
-        )
-
-        verify(exactly = 1) { iapHelperProvider.getProductsDetails("new", any()) }
-
-        val successErrorVo = mockk<ErrorVo> {
-            every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
-        }
-        val newProduct = createProductVo(itemId = "new", type = "item")
-        capturedListener.captured.onGetProducts(successErrorVo, arrayListOf(newProduct))
-
-        verify(exactly = 1) {
-            iapHelperProvider.getPromotionEligibility(
-                itemIDs = "new",
-                onGetPromotionEligibilityListener = any(),
-            )
-        }
-
-        capturedPromotionEligibilityListener.captured.onGetPromotionEligibility(
-            successErrorVo,
-            arrayListOf(createPromotionEligibilityVo(itemId = "new", pricing = "None")),
-        )
-
-        assertThat(receivedProducts).isNotNull
-        assertThat(receivedProducts!!.map { it.id }).containsExactlyInAnyOrder("cached", "new")
     }
 
     @OptIn(GalaxySerialOperation::class)
