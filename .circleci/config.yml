@@ -319,7 +319,7 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Download Samsung IAP SDK
+          name: Download Samsung IAP SDK AAR
           command: |
             ./gradlew getSamsungIapSdk --no-daemon
       - run:
