@@ -28,6 +28,7 @@ class GalaxyConfigurationTest {
 
     @Test
     fun `GalaxyConfiguration Builder sets Galaxy defaults`() {
+        assertThat(true).isFalse()
         val configuration = GalaxyConfiguration.Builder(context, apiKey).build()
 
         assertThat(configuration.store).isEqualTo(Store.GALAXY)
