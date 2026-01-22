@@ -319,6 +319,10 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
+          name: Download Samsung IAP SDK
+          command: |
+            ./gradlew getSamsungIapSdk --no-daemon
+      - run:
           name: Compile API Tester with Galaxy Files
           command: |
             ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
