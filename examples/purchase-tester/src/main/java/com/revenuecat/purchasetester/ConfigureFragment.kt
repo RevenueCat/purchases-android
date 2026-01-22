@@ -218,14 +218,20 @@ class ConfigureFragment : Fragment() {
         apiKey: String,
     ): PurchasesConfiguration.Builder? {
         return try {
-            // Galaxy types are optional because the Samsung IAP AAR isn't always present,
-            // and settings.gradle.kts conditionally includes the module.
+            // Galaxy types are instantiated via reflection because the Samsung IAP AAR isn't always present,
+            // and settings.gradle.kts conditionally includes the purchases-galaxy module depending on the presence
+            // of the Samsung IAP AAR. In our case, we want to be able to compile and run the purchase tester app
+            // with and without the Samsung IAP, so the module's conditional availability is necessary. In a normal
+            // app, you wouldn't need to do that and could avoid the reflection here.
             val builderClass =
                 Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration\$Builder")
             val constructor = builderClass.getConstructor(Context::class.java, String::class.java)
             val builder = constructor.newInstance(context, apiKey) as PurchasesConfiguration.Builder
             try {
                 val modeClass = Class.forName("com.revenuecat.purchases.galaxy.GalaxyBillingMode")
+
+                // We can't use the default Enum import (kotlin.Enum) since it doesn't have a valueOf() function.
+                // We need to
                 @Suppress("UNCHECKED_CAST")
                 val testMode =
                     java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
