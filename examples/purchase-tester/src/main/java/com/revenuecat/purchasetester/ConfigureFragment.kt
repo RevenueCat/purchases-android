@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import java.net.MalformedURLException
 import java.net.URL
 
+@Suppress("TooManyFunctions")
 class ConfigureFragment : Fragment() {
 
     lateinit var binding: FragmentConfigureBinding
@@ -127,6 +128,7 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun configureSDK(): Boolean {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
