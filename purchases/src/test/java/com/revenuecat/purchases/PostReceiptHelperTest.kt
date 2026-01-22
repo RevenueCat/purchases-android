@@ -203,6 +203,7 @@ class PostReceiptHelperTest {
                 mapOf("product_id" to "lifetime_product"),
                 mapOf("product_id" to "dos"),
             ),
+            sdkOriginated = false,
         )
 
         verify(exactly = 1) {
@@ -1745,7 +1746,7 @@ class PostReceiptHelperTest {
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
             token = mockStoreTransaction.purchaseToken,
-            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap(), sdkOriginated = false),
             paywallPostReceiptData = expectedPaywallData,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
@@ -1774,7 +1775,7 @@ class PostReceiptHelperTest {
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
             token = mockPendingStoreTransaction.purchaseToken,
-            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
+            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap(), sdkOriginated = false),
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
