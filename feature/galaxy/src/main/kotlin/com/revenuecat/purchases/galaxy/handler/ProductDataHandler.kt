@@ -40,7 +40,7 @@ internal class ProductDataHandler(
     )
 
     @get:Synchronized
-    internal val productsCache = mutableMapOf<String, StoreProduct>()
+    internal val productMetadataCache = mutableMapOf<String, ProductVo>()
 
     @GalaxySerialOperation
     override fun getProductDetails(
@@ -77,20 +77,18 @@ internal class ProductDataHandler(
             onError = onError,
         )
 
-        if (productsCache.keys.containsAll(productIds)) {
-            val cachedProducts = productIds.mapNotNull(productsCache::get)
+        if (productMetadataCache.keys.containsAll(productIds)) {
+            val cachedProducts = productIds.mapNotNull(productMetadataCache::get)
             this.inFlightRequest = request
-
-            handleStoreProducts(
-                storeProducts = cachedProducts,
-            )
+            fetchPromotionEligibilityAndHandleStoreProducts(cachedProducts)
         } else {
+            val uncachedProductIds = productIds - productMetadataCache.keys
             // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
             // the following contents product the following results:
             // - An empty string: queries all products
             // - A string with one product ID in it: queries for that one product
             // - A string with multiple product IDs in it, delimited by a comma
-            val productIdRequestString = productIds.joinToString(separator = ",")
+            val productIdRequestString = uncachedProductIds.joinToString(separator = ",")
             iapHelper.getProductsDetails(
                 productIDs = productIdRequestString,
                 onGetProductsDetailsListener = this,
@@ -115,34 +113,17 @@ internal class ProductDataHandler(
         products: List<ProductVo?>,
     ) {
         val nonNullProducts = products.mapNotNull { it }
-        // The serial execution of this call is an extension of the serial execution of the parent
-        // get products request
-        promotionEligibilityResponseListener.getPromotionEligibilities(
-            productIds = nonNullProducts.map { it.itemId },
-            onSuccess = { promotionEligibilities ->
-                // Map of product IDs to a list of all PromotionEligibilityVos for that product
-                val promotionalEligibilityMap: Map<String, List<PromotionEligibilityVo>> =
-                    promotionEligibilities.groupBy { it.itemId }
+        if (nonNullProducts.isEmpty()) {
+            handleStoreProducts(storeProducts = emptyList())
+            return
+        }
 
-                val storeProducts: List<StoreProduct> = nonNullProducts
-                    .map {
-                        it.toStoreProduct(
-                            promotionEligibilities = promotionalEligibilityMap[it.itemId],
-                        )
-                    }
-
-                storeProducts.forEach { product ->
-                    productsCache[product.id] = product
-                }
-
-                handleStoreProducts(storeProducts = storeProducts)
-            },
-            onError = { error ->
-                val onError = inFlightRequest?.onError
-                clearInFlightRequest()
-                onError?.invoke(error)
-            },
-        )
+        nonNullProducts.forEach { product ->
+            productMetadataCache[product.itemId] = product
+        }
+        val requestedProductIds = inFlightRequest?.productIds.orEmpty()
+        val productsForRequest = requestedProductIds.mapNotNull(productMetadataCache::get)
+        fetchPromotionEligibilityAndHandleStoreProducts(productsForRequest)
     }
 
     private fun handleStoreProducts(storeProducts: List<StoreProduct>) {
@@ -170,5 +151,38 @@ internal class ProductDataHandler(
 
     private fun clearInFlightRequest() {
         inFlightRequest = null
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    private fun fetchPromotionEligibilityAndHandleStoreProducts(
+        products: List<ProductVo>,
+    ) {
+        if (products.isEmpty()) {
+            handleStoreProducts(storeProducts = emptyList())
+            return
+        }
+        // The serial execution of this call is an extension of the serial execution of the parent
+        // get products request
+        promotionEligibilityResponseListener.getPromotionEligibilities(
+            productIds = products.map { it.itemId },
+            onSuccess = { promotionEligibilities ->
+                // Map of product IDs to a list of all PromotionEligibilityVos for that product
+                val promotionalEligibilityMap: Map<String, List<PromotionEligibilityVo>> =
+                    promotionEligibilities.groupBy { it.itemId }
+
+                val storeProducts: List<StoreProduct> = products.map {
+                    it.toStoreProduct(
+                        promotionEligibilities = promotionalEligibilityMap[it.itemId],
+                    )
+                }
+
+                handleStoreProducts(storeProducts = storeProducts)
+            },
+            onError = { error ->
+                val onError = inFlightRequest?.onError
+                clearInFlightRequest()
+                onError?.invoke(error)
+            },
+        )
     }
 }
