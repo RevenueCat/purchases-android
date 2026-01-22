@@ -18,6 +18,7 @@ class DataStoreUtils(
     private val apiKeyKey = stringPreferencesKey("last_sdk_api_key")
     private val proxyUrlKey = stringPreferencesKey("last_proxy_url_key")
     private val useAmazonKey = booleanPreferencesKey("last_use_amazon_key")
+    private val storeKey = stringPreferencesKey("last_store_key")
 
     suspend fun saveSdkConfig(
         sdkConfiguration: SdkConfiguration,
@@ -29,16 +30,19 @@ class DataStoreUtils(
             } else {
                 preferences[proxyUrlKey] = sdkConfiguration.proxyUrl
             }
-            preferences[useAmazonKey] = sdkConfiguration.useAmazon
+            preferences[useAmazonKey] = sdkConfiguration.store == Store.AMAZON
+            preferences[storeKey] = sdkConfiguration.store.name
         }
     }
 
     fun getSdkConfig(): Flow<SdkConfiguration> {
         return dataStore.data.map { preferences ->
+            val storedStore = Store.fromName(preferences[storeKey])
+            val fallbackStore = if (preferences[useAmazonKey] == true) Store.AMAZON else Store.GOOGLE
             SdkConfiguration(
                 apiKey = preferences[apiKeyKey] ?: "",
                 proxyUrl = preferences[proxyUrlKey],
-                useAmazon = preferences[useAmazonKey] ?: false,
+                store = storedStore ?: fallbackStore,
             )
         }
     }

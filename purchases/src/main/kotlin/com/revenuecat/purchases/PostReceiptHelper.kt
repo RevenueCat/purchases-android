@@ -99,6 +99,7 @@ constructor(
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        sdkOriginated: Boolean = false,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -106,6 +107,7 @@ constructor(
             storeTransaction = purchase,
             storeProduct = storeProduct,
             subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
+            sdkOriginated = sdkOriginated,
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,
@@ -169,7 +171,6 @@ constructor(
                 paywallData = transactionMetadata.paywallPostReceiptData,
                 purchasesAreCompletedBy = transactionMetadata.purchasesAreCompletedBy,
                 hasCachedTransactionMetadata = true,
-                paywallEvent = null,
                 onSuccess = {
                     results.add(Result.Success(it.customerInfo))
                     callTransactionMetadataCompletionFromResults(
@@ -257,7 +258,6 @@ constructor(
             paywallData = effectivePaywallData,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
             hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
-            paywallEvent = presentedPaywall,
             onSuccess = onSuccess,
             onError = onError,
         )
@@ -286,7 +286,10 @@ constructor(
             initiationSource == PostReceiptInitiationSource.PURCHASE
 
         val presentedPaywall = if (cachedTransactionMetadata == null) {
-            paywallPresentedCache.getAndRemovePresentedEvent()
+            paywallPresentedCache.getAndRemovePurchaseInitiatedEventIfNeeded(
+                receiptInfo.productIDs,
+                receiptInfo.purchaseTime,
+            )
         } else {
             null
         }
@@ -318,7 +321,6 @@ constructor(
         paywallData: PaywallPostReceiptData?,
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         hasCachedTransactionMetadata: Boolean,
-        paywallEvent: PaywallEvent?,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -348,7 +350,6 @@ constructor(
                     onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
-                    paywallEvent?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         if (hasCachedTransactionMetadata) {
                             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))

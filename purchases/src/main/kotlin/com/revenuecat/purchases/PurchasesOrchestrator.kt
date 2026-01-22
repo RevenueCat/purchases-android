@@ -433,6 +433,7 @@ internal class PurchasesOrchestrator(
         amazonUserID: String,
         isoCurrencyCode: String?,
         price: Double?,
+        purchaseTime: Long?,
     ) {
         log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID) }
 
@@ -450,6 +451,7 @@ internal class PurchasesOrchestrator(
 
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
+                    purchaseTime = purchaseTime,
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() },
                     marketplace = null,
@@ -687,6 +689,7 @@ internal class PurchasesOrchestrator(
                                     isRestore = true,
                                     appUserID = appUserID,
                                     initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    sdkOriginated = false,
                                     onSuccess = { _, info ->
                                         log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
                                         if (sortedByTime.last() == purchase) {
@@ -1320,8 +1323,14 @@ internal class PurchasesOrchestrator(
                 val isDeprecatedProductChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val deprecatedProductChangeListener: ProductChangeCallback?
+                val sdkOriginated: Boolean
 
                 synchronized(this@PurchasesOrchestrator) {
+                    sdkOriginated = purchases.all { purchase ->
+                        purchase.productIds.any {
+                            state.purchaseCallbacksByProductId.containsKey(it)
+                        }
+                    }
                     isDeprecatedProductChangeInProgress = state.deprecatedProductChangeCallback != null
                     if (isDeprecatedProductChangeInProgress) {
                         deprecatedProductChangeListener = getAndClearProductChangeCallback()
@@ -1337,6 +1346,7 @@ internal class PurchasesOrchestrator(
                     allowSharingPlayStoreAccount,
                     appUserID,
                     PostReceiptInitiationSource.PURCHASE,
+                    sdkOriginated = sdkOriginated,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )

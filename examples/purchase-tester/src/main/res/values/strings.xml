@@ -8,12 +8,14 @@
     <string name="store">Store</string>
     <string name="google">Google</string>
     <string name="amazon">Amazon</string>
+    <string name="galaxy">Galaxy</string>
     <string name="revenuecat">RevenueCat</string>
     <string name="continue_text">Continue</string>
     <string name="loving_cat">😻</string>
     <string name="logs">Logs</string>
     <string name="google_store_is_unavailable">Google Store is unavailable in this build. Download a version from the Play Store or build locally to enable it.</string>
     <string name="amazon_store_is_unavailable">Amazon Store is unavailable in this build. Download a version from LAT or build locally to enable it.</string>
+    <string name="galaxy_store_warning">To use the Galaxy Store, ensure that the correct Samsung IAP SDK AAR file is included in the repo root\'s libs directory or the purchase tester app\'s libs directory. The filename should be in the format samsung-iap-sdk-VERSION.aar.\n\nAdditionally, please note that the Galaxy Store sandbox only works on physical Samsung devices.</string>
     <string name="subscription_options">Subscription Options:</string>
     <string name="proxy_settings">Proxy settings</string>
     <string name="proxy_disabled">Disabled (Will hit production)</string>
