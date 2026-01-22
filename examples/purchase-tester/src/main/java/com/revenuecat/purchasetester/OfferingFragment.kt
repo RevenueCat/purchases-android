@@ -74,7 +74,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                isPlayStore = !sdkConfiguration.useAmazon
+                isPlayStore = sdkConfiguration.store == Store.GOOGLE
             }.collect()
         }
 
