@@ -4,10 +4,12 @@ import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -239,8 +241,13 @@ class ConfigureFragment : Fragment() {
                     java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
                 val method = builderClass.getMethod("galaxyBillingMode", modeClass)
                 method.invoke(builder, testMode)
-            } catch (_: Exception) {
-                // No-op: fallback to Galaxy defaults when reflection fails.
+            } catch (e: Exception) {
+                Log.e("PurchaseTester", "Failed to set Galaxy billing mode via reflection.", e)
+                Toast.makeText(
+                    context,
+                    "Galaxy billing mode unavailable. Using defaults.",
+                    Toast.LENGTH_SHORT,
+                ).show()
             }
             builder
         } catch (_: Exception) {
