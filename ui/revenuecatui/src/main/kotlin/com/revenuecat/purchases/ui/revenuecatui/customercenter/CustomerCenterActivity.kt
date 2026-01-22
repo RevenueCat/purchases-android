@@ -36,8 +36,8 @@ internal class CustomerCenterActivity : ComponentActivity() {
         if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
             Logger.e(
                 "CustomerCenterActivity was launched incorrectly. " +
-                    "Please use CustomerCenterActivityLauncher or CustomerCenter composable " +
-                    "to display the Customer Center.",
+                    "Please use ShowCustomerCenter activity result contract, CustomerCenter composable, " +
+                    "or CustomerCenterView to display the Customer Center.",
             )
             finish()
             return

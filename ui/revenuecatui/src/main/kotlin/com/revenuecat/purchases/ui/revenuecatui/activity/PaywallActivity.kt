@@ -105,7 +105,8 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
             Logger.e(
                 "PaywallActivity was launched incorrectly. " +
-                    "Please use PaywallActivityLauncher or Paywall composable to display the Paywall.",
+                    "Please use PaywallActivityLauncher, or Paywall/PaywallDialog/PaywallFooter " +
+                    "composables to display the Paywall.",
             )
             finish()
             return
