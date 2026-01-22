@@ -27,7 +27,6 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
@@ -39,6 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
