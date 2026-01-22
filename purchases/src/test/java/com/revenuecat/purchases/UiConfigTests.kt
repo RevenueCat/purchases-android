@@ -309,7 +309,7 @@ internal class UiConfigTests {
     }
 
     @Test
-    fun `Should properly deserialize custom_variables`() {
+    fun `Should properly deserialize custom_variables with native types`() {
         // Arrange
         // language=json
         val serialized = """
@@ -321,7 +321,54 @@ internal class UiConfigTests {
                 },
                 "discount_percent": {
                   "type": "number",
-                  "default_value": "20"
+                  "default_value": 20.5
+                },
+                "max_items": {
+                  "type": "integer",
+                  "default_value": 100
+                },
+                "is_premium": {
+                  "type": "boolean",
+                  "default_value": true
+                }
+              }
+            }
+            """.trimIndent()
+
+        // Act
+        val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
+
+        // Assert
+        assertThat(actual.customVariables).hasSize(4)
+
+        val userName = actual.customVariables["user_name"]!!
+        assertThat(userName.type).isEqualTo("string")
+        assertThat(userName.defaultValue).isEqualTo("Friend")
+
+        val discountPercent = actual.customVariables["discount_percent"]!!
+        assertThat(discountPercent.type).isEqualTo("number")
+        assertThat(discountPercent.defaultValue).isEqualTo(20.5)
+
+        val maxItems = actual.customVariables["max_items"]!!
+        assertThat(maxItems.type).isEqualTo("integer")
+        assertThat(maxItems.defaultValue).isEqualTo(100L)
+
+        val isPremium = actual.customVariables["is_premium"]!!
+        assertThat(isPremium.type).isEqualTo("boolean")
+        assertThat(isPremium.defaultValue).isEqualTo(true)
+    }
+
+    @Test
+    fun `Should properly deserialize custom_variables with string values falling back to string conversion`() {
+        // When values are provided as strings but typed as non-strings, they should be converted
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "custom_variables": {
+                "discount_percent": {
+                  "type": "number",
+                  "default_value": "20.5"
                 },
                 "is_premium": {
                   "type": "boolean",
@@ -330,28 +377,18 @@ internal class UiConfigTests {
               }
             }
             """.trimIndent()
-        val expected = UiConfig(
-            customVariables = mapOf(
-                "user_name" to UiConfig.CustomVariableDefinition(
-                    type = "string",
-                    defaultValue = "Friend",
-                ),
-                "discount_percent" to UiConfig.CustomVariableDefinition(
-                    type = "number",
-                    defaultValue = "20",
-                ),
-                "is_premium" to UiConfig.CustomVariableDefinition(
-                    type = "boolean",
-                    defaultValue = "true",
-                ),
-            ),
-        )
 
         // Act
         val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
-        assertThat(actual).isEqualTo(expected)
+        val discountPercent = actual.customVariables["discount_percent"]!!
+        assertThat(discountPercent.type).isEqualTo("number")
+        assertThat(discountPercent.defaultValue).isEqualTo(20.5) // Parsed from string
+
+        val isPremium = actual.customVariables["is_premium"]!!
+        assertThat(isPremium.type).isEqualTo("boolean")
+        assertThat(isPremium.defaultValue).isEqualTo(true) // Parsed from string
     }
 
     @Test

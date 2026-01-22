@@ -611,7 +611,7 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
-                customVariables = convertCustomVariablesToStrings(options.customVariables),
+                customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
             )
         }
@@ -761,16 +761,9 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * Converts custom variables from Map<String, Any> to Map<String, String>.
-     * All values are converted to their string representation.
-     */
-    private fun convertCustomVariablesToStrings(customVariables: Map<String, Any>): Map<String, String> =
-        customVariables.mapValues { (_, value) -> value.toString() }
-
-    /**
      * Extracts default custom variable values from the offering's UiConfig.
      */
-    private fun extractDefaultCustomVariables(offering: Offering): Map<String, String> =
+    private fun extractDefaultCustomVariables(offering: Offering): Map<String, Any> =
         offering.paywallComponents?.uiConfig?.customVariables
             ?.mapValues { (_, definition) -> definition.defaultValue }
             ?: emptyMap()

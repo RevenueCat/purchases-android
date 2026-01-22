@@ -121,8 +121,8 @@ internal object VariableProcessorV2 {
         countdownTime: CountdownTime? = null,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
         // Custom variables:
-        customVariables: Map<String, String> = emptyMap(),
-        defaultCustomVariables: Map<String, String> = emptyMap(),
+        customVariables: Map<String, Any> = emptyMap(),
+        defaultCustomVariables: Map<String, Any> = emptyMap(),
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -183,8 +183,8 @@ internal object VariableProcessorV2 {
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
         // Custom variables:
-        customVariables: Map<String, String>,
-        defaultCustomVariables: Map<String, String>,
+        customVariables: Map<String, Any>,
+        defaultCustomVariables: Map<String, Any>,
     ): String {
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
 
@@ -255,29 +255,32 @@ internal object VariableProcessorV2 {
      * 1. SDK-provided value (from customVariables)
      * 2. Dashboard default value (from defaultCustomVariables)
      * 3. Empty string with a warning log
+     *
+     * Values are converted to their String representation during processing.
      */
     private fun resolveCustomVariable(
         key: String,
-        customVariables: Map<String, String>,
-        defaultCustomVariables: Map<String, String>,
+        customVariables: Map<String, Any>,
+        defaultCustomVariables: Map<String, Any>,
         functions: List<Function>,
         currencyLocale: Locale,
     ): String {
         val value = customVariables[key]
             ?: defaultCustomVariables[key]
             ?: run {
-                Logger.missingCustomVariable(key)
+                Logger.w(
+                    "Custom variable '$key' was not provided and has no default value. Defaulting to empty string.",
+                )
                 return ""
             }
 
-        return functions.fold(value) { accumulator, function ->
+        // Convert Any to String during processing
+        val stringValue = value.toString()
+
+        return functions.fold(stringValue) { accumulator, function ->
             accumulator.processFunction(function, currencyLocale)
         }
     }
-
-    private fun Logger.missingCustomVariable(key: String): Unit = w(
-        "Custom variable '$key' was not provided and has no default value. Defaulting to empty string.",
-    )
 
     private fun findVariable(
         variableIdentifier: String,

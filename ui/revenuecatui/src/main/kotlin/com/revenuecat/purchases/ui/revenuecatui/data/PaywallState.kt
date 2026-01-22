@@ -101,11 +101,11 @@ internal sealed interface PaywallState {
             /**
              * Custom variables provided by the SDK user at runtime.
              */
-            val customVariables: Map<String, String> = emptyMap(),
+            val customVariables: Map<String, Any> = emptyMap(),
             /**
              * Default custom variables from the dashboard configuration.
              */
-            val defaultCustomVariables: Map<String, String> = emptyMap(),
+            val defaultCustomVariables: Map<String, Any> = emptyMap(),
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),

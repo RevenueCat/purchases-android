@@ -306,8 +306,8 @@ internal fun Offering.toComponentsPaywallState(
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
     purchases: PurchasesType,
-    customVariables: Map<String, String> = emptyMap(),
-    defaultCustomVariables: Map<String, String> = emptyMap(),
+    customVariables: Map<String, Any> = emptyMap(),
+    defaultCustomVariables: Map<String, Any> = emptyMap(),
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
