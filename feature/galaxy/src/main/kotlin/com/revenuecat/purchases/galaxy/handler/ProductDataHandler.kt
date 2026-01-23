@@ -131,12 +131,12 @@ internal class ProductDataHandler(
 
     private fun handleStoreProducts(storeProducts: List<StoreProduct>) {
         val requestedProductIds = inFlightRequest?.productIds
-        val storeProductsOfMatchingType = storeProducts.filter { storeProduct ->
+        val storeProductsMatchingRequest = storeProducts.filter { storeProduct ->
             storeProduct.type == inFlightRequest?.productType && requestedProductIds?.contains(storeProduct.id) == true
         }
         val onReceive = inFlightRequest?.onReceive
         clearInFlightRequest()
-        onReceive?.invoke(storeProductsOfMatchingType)
+        onReceive?.invoke(storeProductsMatchingRequest)
     }
 
     private fun handleUnsuccessfulProductDataResponse(
