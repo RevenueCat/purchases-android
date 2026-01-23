@@ -39,9 +39,6 @@ internal class ProductDataHandler(
         val onError: PurchasesErrorCallback,
     )
 
-    @get:Synchronized
-    internal val productsCache = mutableMapOf<String, StoreProduct>()
-
     @GalaxySerialOperation
     override fun getProductDetails(
         productIds: Set<String>,
@@ -77,27 +74,18 @@ internal class ProductDataHandler(
             onError = onError,
         )
 
-        if (productsCache.keys.containsAll(productIds)) {
-            val cachedProducts = productIds.mapNotNull(productsCache::get)
-            this.inFlightRequest = request
+        // When requesting products from the Samsung IAP SDK, the `productIds` param is a string where
+        // the following contents product the following results:
+        // - An empty string: queries all products
+        // - A string with one product ID in it: queries for that one product
+        // - A string with multiple product IDs in it, delimited by a comma
+        val productIdRequestString = productIds.joinToString(separator = ",")
+        iapHelper.getProductsDetails(
+            productIDs = productIdRequestString,
+            onGetProductsDetailsListener = this,
+        )
 
-            handleStoreProducts(
-                storeProducts = cachedProducts,
-            )
-        } else {
-            // When requesting products from the Samsung IAP SDK, the `_productIds` param is a string where
-            // the following contents product the following results:
-            // - An empty string: queries all products
-            // - A string with one product ID in it: queries for that one product
-            // - A string with multiple product IDs in it, delimited by a comma
-            val productIdRequestString = productIds.joinToString(separator = ",")
-            iapHelper.getProductsDetails(
-                productIDs = productIdRequestString,
-                onGetProductsDetailsListener = this,
-            )
-
-            this.inFlightRequest = request
-        }
+        this.inFlightRequest = request
     }
 
     override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
@@ -131,10 +119,6 @@ internal class ProductDataHandler(
                         )
                     }
 
-                storeProducts.forEach { product ->
-                    productsCache[product.id] = product
-                }
-
                 handleStoreProducts(storeProducts = storeProducts)
             },
             onError = { error ->
@@ -146,7 +130,10 @@ internal class ProductDataHandler(
     }
 
     private fun handleStoreProducts(storeProducts: List<StoreProduct>) {
-        val storeProductsOfMatchingType = storeProducts.filter { it.type == inFlightRequest?.productType }
+        val requestedProductIds = inFlightRequest?.productIds
+        val storeProductsOfMatchingType = storeProducts.filter { storeProduct ->
+            storeProduct.type == inFlightRequest?.productType && requestedProductIds?.contains(storeProduct.id) == true
+        }
         val onReceive = inFlightRequest?.onReceive
         clearInFlightRequest()
         onReceive?.invoke(storeProductsOfMatchingType)
