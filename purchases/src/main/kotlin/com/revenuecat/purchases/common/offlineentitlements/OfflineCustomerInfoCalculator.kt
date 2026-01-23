@@ -108,8 +108,13 @@ internal class OfflineCustomerInfoCalculator(
         )
     }
 
-    private fun determineManagementURL() =
-        if (appConfig.store == Store.PLAY_STORE) Constants.GOOGLE_PLAY_MANAGEMENT_URL else JSONObject.NULL
+    private fun determineManagementURL(): Any {
+        return when (appConfig.store) {
+            Store.PLAY_STORE -> Constants.GOOGLE_PLAY_MANAGEMENT_URL
+            Store.GALAXY -> Constants.GALAXY_STORE_MANAGEMENT_URL
+            else -> JSONObject.NULL
+        }
+    }
 
     private fun calculateOriginalPurchaseDate(purchasedProducts: List<PurchasedProduct>): String? {
         val minPurchaseDate = purchasedProducts.minOfOrNull { it.storeTransaction.purchaseTime }
