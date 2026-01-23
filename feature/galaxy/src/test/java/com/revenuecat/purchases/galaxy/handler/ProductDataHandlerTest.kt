@@ -169,7 +169,9 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
         val capturedPromotionEligibilityListener = slot<OnGetPromotionEligibilityListener>()
         every {
-            iapHelperProvider.getPromotionEligibility(any(), capture(capturedPromotionEligibilityListener))
+            iapHelperProvider.getPromotionEligibility(
+                any(),
+                capture(capturedPromotionEligibilityListener))
         } returns true
 
         val productIds = setOf("iap")
