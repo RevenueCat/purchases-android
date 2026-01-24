@@ -33,7 +33,6 @@ class CustomerCenterSurveyOptionChosenEvent(
 
     @InternalRevenueCatAPI
     @Poko
-    @SuppressWarnings("LongParameterList")
     class Data(
         val timestamp: Date,
         val darkMode: Boolean,
