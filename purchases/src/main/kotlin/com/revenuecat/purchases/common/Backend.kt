@@ -121,6 +121,12 @@ internal class Backend(
         private const val FETCH_TOKEN = "fetch_token"
         private const val NEW_APP_USER_ID = "new_app_user_id"
 
+        /**
+         * This version should be bumped whenever there is a change to the payload of POST receipt that the backend
+         * may need to handle differently. It should be kept in sync with the iOS SDK.
+         */
+        private const val POST_RECEIPT_PAYLOAD_VERSION = 1
+
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal val json = Json {
             ignoreUnknownKeys = true
@@ -289,6 +295,7 @@ internal class Backend(
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
             "sdk_originated" to receiptInfo.sdkOriginated,
+            "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
