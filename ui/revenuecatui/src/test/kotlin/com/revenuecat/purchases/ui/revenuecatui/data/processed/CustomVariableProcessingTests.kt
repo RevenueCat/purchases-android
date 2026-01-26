@@ -10,7 +10,15 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import java.util.Date
 import java.util.Locale
@@ -30,6 +38,17 @@ import java.util.Locale
  * Custom variables accept Map<String, Any> and values are converted to String during processing.
  */
 class CustomVariableProcessingTests {
+
+    @Before
+    fun setUp() {
+        mockkObject(Logger)
+        every { Logger.w(any()) } just runs
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(Logger)
+    }
 
     private companion object {
         private const val OFFERING_ID = "offering_identifier"
