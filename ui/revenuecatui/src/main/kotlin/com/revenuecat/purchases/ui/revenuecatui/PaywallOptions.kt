@@ -55,7 +55,7 @@ class PaywallOptions internal constructor(
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
-    val customVariables: Map<String, Any> = emptyMap(),
+    val customVariables: Map<String, CustomVariableValue> = emptyMap(),
 ) {
     companion object {
         private const val hashMultiplier = 31
@@ -109,7 +109,7 @@ class PaywallOptions internal constructor(
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?) -> Unit)? = this.dismissRequestWithExitOffering,
-        customVariables: Map<String, Any> = this.customVariables,
+        customVariables: Map<String, CustomVariableValue> = this.customVariables,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -133,7 +133,7 @@ class PaywallOptions internal constructor(
         internal var purchaseLogic: PurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null
-        internal var customVariables: Map<String, Any> = emptyMap()
+        internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -187,10 +187,9 @@ class PaywallOptions internal constructor(
          * Sets custom variables to be used in paywall text. These values will replace
          * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
          *
-         * @param variables A map of variable names to their values. Values can be of any type
-         *                  and will be converted to strings when displayed.
+         * @param variables A map of variable names to their [CustomVariableValue] values.
          */
-        fun setCustomVariables(variables: Map<String, Any>) = apply {
+        fun setCustomVariables(variables: Map<String, CustomVariableValue>) = apply {
             this.customVariables = variables
         }
 

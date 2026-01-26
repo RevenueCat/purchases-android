@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.toAnyMap
 import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -611,7 +612,7 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
-                customVariables = options.customVariables,
+                customVariables = options.customVariables.toAnyMap(),
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
             )
         }

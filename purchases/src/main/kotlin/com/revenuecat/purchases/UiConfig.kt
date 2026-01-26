@@ -118,11 +118,13 @@ class UiConfig(
  * Custom serializer for [UiConfig.CustomVariableDefinition] that deserializes
  * the `default_value` field based on the `type` field.
  *
- * Supported types:
+ * Supported types (matching the backend):
  * - "string" -> String
- * - "integer" -> Long
- * - "number" -> Double
+ * - "number" -> Double (numeric values, integers and decimals)
  * - "boolean" -> Boolean
+ *
+ * Also handles "integer" -> Long for backwards compatibility, though the backend
+ * currently only sends "number" for all numeric types.
  *
  * Falls back to String representation for unknown types.
  */

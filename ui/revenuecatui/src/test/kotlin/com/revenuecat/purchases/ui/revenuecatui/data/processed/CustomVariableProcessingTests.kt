@@ -101,10 +101,10 @@ class CustomVariableProcessingTests {
     @Test
     fun `multiple custom variables are replaced`() {
         val template = "{{ custom.greeting }}, {{ custom.name }}! You have {{ custom.points }} points."
-        val customVariables = mapOf(
+        val customVariables = mapOf<String, Any>(
             "greeting" to "Welcome",
             "name" to "Alice",
-            "points" to "100",
+            "points" to 100,
         )
 
         val result = processTemplate(template, customVariables = customVariables)
@@ -438,6 +438,37 @@ class CustomVariableProcessingTests {
         )
 
         assertThat(result).isEqualTo("Value: 999")
+    }
+
+    @Test
+    fun `custom object is converted to string using toString`() {
+        data class CustomObject(val name: String, val value: Int)
+        val template = "Object: {{ custom.obj }}"
+        val customVariables = mapOf<String, Any>("obj" to CustomObject("test", 42))
+
+        val result = processTemplate(template, customVariables = customVariables)
+
+        assertThat(result).isEqualTo("Object: CustomObject(name=test, value=42)")
+    }
+
+    @Test
+    fun `list is converted to string using toString`() {
+        val template = "List: {{ custom.items }}"
+        val customVariables = mapOf<String, Any>("items" to listOf("a", "b", "c"))
+
+        val result = processTemplate(template, customVariables = customVariables)
+
+        assertThat(result).isEqualTo("List: [a, b, c]")
+    }
+
+    @Test
+    fun `map is converted to string using toString`() {
+        val template = "Map: {{ custom.data }}"
+        val customVariables = mapOf<String, Any>("data" to mapOf("key" to "value"))
+
+        val result = processTemplate(template, customVariables = customVariables)
+
+        assertThat(result).isEqualTo("Map: {key=value}")
     }
 
     // endregion
