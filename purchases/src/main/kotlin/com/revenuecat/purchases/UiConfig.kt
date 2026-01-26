@@ -15,12 +15,10 @@ import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
 
 @InternalRevenueCatAPI
 @Serializable
@@ -120,16 +118,12 @@ class UiConfig(
  *
  * Supported types (matching the backend):
  * - "string" -> String
- * - "number" -> Double (numeric values, integers and decimals)
+ * - "number" -> Double
  * - "boolean" -> Boolean
- *
- * Also handles "integer" -> Long for backwards compatibility, though the backend
- * currently only sends "number" for all numeric types.
  *
  * Falls back to String representation for unknown types.
  */
 @InternalRevenueCatAPI
-@Suppress("MagicNumber")
 internal object CustomVariableDefinitionSerializer : KSerializer<UiConfig.CustomVariableDefinition> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CustomVariableDefinition") {
         element<String>("type")
@@ -146,27 +140,20 @@ internal object CustomVariableDefinitionSerializer : KSerializer<UiConfig.Custom
 
         val defaultValue: Any = when (type) {
             "string" -> defaultValueElement.content
-            "integer" -> defaultValueElement.longOrNull ?: defaultValueElement.content.toLongOrNull()
-                ?: defaultValueElement.content
-            "number" -> defaultValueElement.doubleOrNull ?: defaultValueElement.content.toDoubleOrNull()
-                ?: defaultValueElement.content
-            "boolean" -> defaultValueElement.booleanOrNull ?: defaultValueElement.content.toBooleanStrictOrNull()
-                ?: defaultValueElement.content
-            else -> jsonPrimitiveToAny(defaultValueElement)
+            "number" -> {
+                defaultValueElement.doubleOrNull
+                    ?: defaultValueElement.content.toDoubleOrNull()
+                    ?: defaultValueElement.content
+            }
+            "boolean" -> {
+                defaultValueElement.booleanOrNull
+                    ?: defaultValueElement.content.toBooleanStrictOrNull()
+                    ?: defaultValueElement.content
+            }
+            else -> defaultValueElement.content
         }
 
         return UiConfig.CustomVariableDefinition(type = type, defaultValue = defaultValue)
-    }
-
-    /**
-     * Attempts to convert a [JsonPrimitive] to its most appropriate Kotlin type.
-     * Priority: Boolean -> Long -> Double -> String
-     */
-    private fun jsonPrimitiveToAny(primitive: JsonPrimitive): Any {
-        return primitive.booleanOrNull
-            ?: primitive.longOrNull
-            ?: primitive.doubleOrNull
-            ?: primitive.content
     }
 
     override fun serialize(encoder: Encoder, value: UiConfig.CustomVariableDefinition) {
