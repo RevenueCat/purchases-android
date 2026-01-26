@@ -157,6 +157,26 @@ class EventsManagerTest {
         )
     }
 
+    /**
+     * We should remove this test once we support the purchase initiated event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase initiated event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_INITIATED))
+
+        checkFileExists(shouldExist = false)
+    }
+
+    /**
+     * We should remove this test once we support the purchase error event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase error event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_ERROR))
+
+        checkFileExists(shouldExist = false)
+    }
+
     @Test
     fun `tracking mixed events adds them to file`() {
         eventsManager.track(customerCenterImpressionEvent)
@@ -377,6 +397,11 @@ class EventsManagerTest {
     private fun checkFileContents(expectedContents: String) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         assertThat(file.readText()).isEqualTo(expectedContents)
+    }
+
+    private fun checkFileExists(shouldExist: Boolean) {
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        assertThat(file.exists()).isEqualTo(shouldExist)
     }
 
     private fun mockBackendResponse(success: Boolean, shouldMarkAsSyncedOnError: Boolean = false) {

@@ -133,6 +133,7 @@ internal class PostPendingTransactionsHelper(
                 allowSharingPlayStoreAccount,
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                sdkOriginated = false,
                 transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
