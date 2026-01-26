@@ -7,6 +7,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
@@ -35,7 +36,7 @@ import java.util.Locale
  * 2. Dashboard defaults (defaultCustomVariables)
  * 3. Empty string (with warning log)
  *
- * Custom variables accept Map<String, Any> and values are converted to String during processing.
+ * Custom variables accept Map<String, CustomVariableValue> with type-safe values.
  */
 class CustomVariableProcessingTests {
 
@@ -81,7 +82,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable with custom prefix is replaced`() {
         val template = "Hello, {{ custom.name }}!"
-        val customVariables = mapOf("name" to "John")
+        val customVariables = mapOf("name" to CustomVariableValue.String("John"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -91,7 +92,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable with dollar custom prefix is replaced`() {
         val template = "Hello, {{ \$custom.name }}!"
-        val customVariables = mapOf("name" to "Jane")
+        val customVariables = mapOf("name" to CustomVariableValue.String("Jane"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -101,10 +102,10 @@ class CustomVariableProcessingTests {
     @Test
     fun `multiple custom variables are replaced`() {
         val template = "{{ custom.greeting }}, {{ custom.name }}! You have {{ custom.points }} points."
-        val customVariables = mapOf<String, Any>(
-            "greeting" to "Welcome",
-            "name" to "Alice",
-            "points" to 100,
+        val customVariables = mapOf(
+            "greeting" to CustomVariableValue.String("Welcome"),
+            "name" to CustomVariableValue.String("Alice"),
+            "points" to CustomVariableValue.Number(100),
         )
 
         val result = processTemplate(template, customVariables = customVariables)
@@ -116,8 +117,8 @@ class CustomVariableProcessingTests {
     fun `mixed custom and dollar custom prefixes work together`() {
         val template = "{{ custom.first }} and {{ \$custom.second }}"
         val customVariables = mapOf(
-            "first" to "One",
-            "second" to "Two",
+            "first" to CustomVariableValue.String("One"),
+            "second" to CustomVariableValue.String("Two"),
         )
 
         val result = processTemplate(template, customVariables = customVariables)
@@ -132,8 +133,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `SDK-provided value takes priority over dashboard default`() {
         val template = "Hello, {{ custom.name }}!"
-        val customVariables = mapOf("name" to "SDK Value")
-        val defaultCustomVariables = mapOf("name" to "Dashboard Default")
+        val customVariables = mapOf("name" to CustomVariableValue.String("SDK Value"))
+        val defaultCustomVariables = mapOf("name" to CustomVariableValue.String("Dashboard Default"))
 
         val result = processTemplate(
             template,
@@ -147,8 +148,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `dashboard default is used when SDK value is not provided`() {
         val template = "Hello, {{ custom.name }}!"
-        val customVariables = emptyMap<String, Any>()
-        val defaultCustomVariables = mapOf<String, Any>("name" to "Dashboard Default")
+        val customVariables = emptyMap<String, CustomVariableValue>()
+        val defaultCustomVariables = mapOf("name" to CustomVariableValue.String("Dashboard Default"))
 
         val result = processTemplate(
             template,
@@ -162,8 +163,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `empty string is returned when variable is not found anywhere`() {
         val template = "Hello, {{ custom.unknown }}!"
-        val customVariables = emptyMap<String, Any>()
-        val defaultCustomVariables = emptyMap<String, Any>()
+        val customVariables = emptyMap<String, CustomVariableValue>()
+        val defaultCustomVariables = emptyMap<String, CustomVariableValue>()
 
         val result = processTemplate(
             template,
@@ -177,8 +178,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `partial resolution works correctly`() {
         val template = "{{ custom.found }} and {{ custom.missing }}"
-        val customVariables = mapOf<String, Any>("found" to "Present")
-        val defaultCustomVariables = emptyMap<String, Any>()
+        val customVariables = mapOf("found" to CustomVariableValue.String("Present"))
+        val defaultCustomVariables = emptyMap<String, CustomVariableValue>()
 
         val result = processTemplate(
             template,
@@ -196,7 +197,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `uppercase function works with custom variables`() {
         val template = "{{ custom.name | uppercase }}"
-        val customVariables = mapOf("name" to "john")
+        val customVariables = mapOf("name" to CustomVariableValue.String("john"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -206,7 +207,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `lowercase function works with custom variables`() {
         val template = "{{ custom.name | lowercase }}"
-        val customVariables = mapOf("name" to "JANE")
+        val customVariables = mapOf("name" to CustomVariableValue.String("JANE"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -216,7 +217,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `capitalize function works with custom variables`() {
         val template = "{{ custom.name | capitalize }}"
-        val customVariables = mapOf("name" to "alice")
+        val customVariables = mapOf("name" to CustomVariableValue.String("alice"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -226,7 +227,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `function works with dollar custom prefix`() {
         val template = "{{ \$custom.name | uppercase }}"
-        val customVariables = mapOf("name" to "bob")
+        val customVariables = mapOf("name" to CustomVariableValue.String("bob"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -236,7 +237,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `function is not applied when variable is missing`() {
         val template = "{{ custom.missing | uppercase }}"
-        val customVariables = emptyMap<String, Any>()
+        val customVariables = emptyMap<String, CustomVariableValue>()
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -250,7 +251,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variables work alongside product variables`() {
         val template = "{{ custom.greeting }}, get {{ product.store_product_name }} now!"
-        val customVariables = mapOf("greeting" to "Hello")
+        val customVariables = mapOf("greeting" to CustomVariableValue.String("Hello"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -260,7 +261,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `template with only product variables is not affected by custom variables`() {
         val template = "{{ product.price }}"
-        val customVariables = mapOf("price" to "Should not appear")
+        val customVariables = mapOf("price" to CustomVariableValue.String("Should not appear"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -274,7 +275,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `empty custom variable value is used correctly`() {
         val template = "Value: [{{ custom.empty }}]"
-        val customVariables = mapOf("empty" to "")
+        val customVariables = mapOf("empty" to CustomVariableValue.String(""))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -284,7 +285,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable with special characters in value`() {
         val template = "{{ custom.special }}"
-        val customVariables = mapOf("special" to "Hello, World! @#\$%^&*()")
+        val customVariables = mapOf("special" to CustomVariableValue.String("Hello, World! @#\$%^&*()"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -294,7 +295,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable key with underscores`() {
         val template = "{{ custom.user_first_name }}"
-        val customVariables = mapOf("user_first_name" to "John")
+        val customVariables = mapOf("user_first_name" to CustomVariableValue.String("John"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -304,7 +305,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable key with numbers`() {
         val template = "{{ custom.discount2024 }}"
-        val customVariables = mapOf("discount2024" to "50%")
+        val customVariables = mapOf("discount2024" to CustomVariableValue.String("50%"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -314,7 +315,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `template without any variables returns unchanged`() {
         val template = "This has no variables"
-        val customVariables = mapOf("unused" to "value")
+        val customVariables = mapOf("unused" to CustomVariableValue.String("value"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -324,7 +325,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `custom variable with multiline value`() {
         val template = "{{ custom.multiline }}"
-        val customVariables = mapOf<String, Any>("multiline" to "Line 1\nLine 2")
+        val customVariables = mapOf("multiline" to CustomVariableValue.String("Line 1\nLine 2"))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -333,12 +334,12 @@ class CustomVariableProcessingTests {
 
     // endregion
 
-    // region Non-string type conversions
+    // region Type conversions
 
     @Test
     fun `integer custom variable is converted to string`() {
         val template = "You have {{ custom.count }} items"
-        val customVariables = mapOf<String, Any>("count" to 42)
+        val customVariables = mapOf("count" to CustomVariableValue.Number(42))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -348,7 +349,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `double custom variable is converted to string`() {
         val template = "Price: {{ custom.price }}"
-        val customVariables = mapOf<String, Any>("price" to 19.99)
+        val customVariables = mapOf("price" to CustomVariableValue.Number(19.99))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -358,7 +359,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `boolean true custom variable is converted to string`() {
         val template = "Premium: {{ custom.is_premium }}"
-        val customVariables = mapOf<String, Any>("is_premium" to true)
+        val customVariables = mapOf("is_premium" to CustomVariableValue.Boolean(true))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -368,7 +369,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `boolean false custom variable is converted to string`() {
         val template = "Premium: {{ custom.is_premium }}"
-        val customVariables = mapOf<String, Any>("is_premium" to false)
+        val customVariables = mapOf("is_premium" to CustomVariableValue.Boolean(false))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -378,7 +379,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `long custom variable is converted to string`() {
         val template = "ID: {{ custom.user_id }}"
-        val customVariables = mapOf<String, Any>("user_id" to 1234567890123L)
+        val customVariables = mapOf("user_id" to CustomVariableValue.Number(1234567890123L))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -388,10 +389,10 @@ class CustomVariableProcessingTests {
     @Test
     fun `mixed types in same template are converted correctly`() {
         val template = "{{ custom.name }} has {{ custom.points }} points (VIP: {{ custom.is_vip }})"
-        val customVariables = mapOf<String, Any>(
-            "name" to "John",
-            "points" to 100,
-            "is_vip" to true,
+        val customVariables = mapOf(
+            "name" to CustomVariableValue.String("John"),
+            "points" to CustomVariableValue.Number(100),
+            "is_vip" to CustomVariableValue.Boolean(true),
         )
 
         val result = processTemplate(template, customVariables = customVariables)
@@ -402,7 +403,7 @@ class CustomVariableProcessingTests {
     @Test
     fun `integer custom variable with uppercase function`() {
         val template = "Count: {{ custom.count | uppercase }}"
-        val customVariables = mapOf<String, Any>("count" to 42)
+        val customVariables = mapOf("count" to CustomVariableValue.Number(42))
 
         val result = processTemplate(template, customVariables = customVariables)
 
@@ -413,8 +414,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `non-string default custom variable is converted to string`() {
         val template = "Level: {{ custom.level }}"
-        val customVariables = emptyMap<String, Any>()
-        val defaultCustomVariables = mapOf<String, Any>("level" to 5)
+        val customVariables = emptyMap<String, CustomVariableValue>()
+        val defaultCustomVariables = mapOf("level" to CustomVariableValue.Number(5))
 
         val result = processTemplate(
             template,
@@ -428,8 +429,8 @@ class CustomVariableProcessingTests {
     @Test
     fun `SDK integer overrides dashboard string default`() {
         val template = "Value: {{ custom.value }}"
-        val customVariables = mapOf<String, Any>("value" to 999)
-        val defaultCustomVariables = mapOf<String, Any>("value" to "default")
+        val customVariables = mapOf("value" to CustomVariableValue.Number(999))
+        val defaultCustomVariables = mapOf("value" to CustomVariableValue.String("default"))
 
         val result = processTemplate(
             template,
@@ -440,43 +441,12 @@ class CustomVariableProcessingTests {
         assertThat(result).isEqualTo("Value: 999")
     }
 
-    @Test
-    fun `custom object is converted to string using toString`() {
-        data class CustomObject(val name: String, val value: Int)
-        val template = "Object: {{ custom.obj }}"
-        val customVariables = mapOf<String, Any>("obj" to CustomObject("test", 42))
-
-        val result = processTemplate(template, customVariables = customVariables)
-
-        assertThat(result).isEqualTo("Object: CustomObject(name=test, value=42)")
-    }
-
-    @Test
-    fun `list is converted to string using toString`() {
-        val template = "List: {{ custom.items }}"
-        val customVariables = mapOf<String, Any>("items" to listOf("a", "b", "c"))
-
-        val result = processTemplate(template, customVariables = customVariables)
-
-        assertThat(result).isEqualTo("List: [a, b, c]")
-    }
-
-    @Test
-    fun `map is converted to string using toString`() {
-        val template = "Map: {{ custom.data }}"
-        val customVariables = mapOf<String, Any>("data" to mapOf("key" to "value"))
-
-        val result = processTemplate(template, customVariables = customVariables)
-
-        assertThat(result).isEqualTo("Map: {key=value}")
-    }
-
     // endregion
 
     private fun processTemplate(
         template: String,
-        customVariables: Map<String, Any> = emptyMap(),
-        defaultCustomVariables: Map<String, Any> = emptyMap(),
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     ): String {
         val variableDataProvider = VariableDataProvider(MockResourceProvider())
         return VariableProcessorV2.processVariables(

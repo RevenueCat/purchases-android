@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -121,8 +122,8 @@ internal object VariableProcessorV2 {
         countdownTime: CountdownTime? = null,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
         // Custom variables:
-        customVariables: Map<String, Any> = emptyMap(),
-        defaultCustomVariables: Map<String, Any> = emptyMap(),
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -183,8 +184,8 @@ internal object VariableProcessorV2 {
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
         // Custom variables:
-        customVariables: Map<String, Any>,
-        defaultCustomVariables: Map<String, Any>,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
     ): String {
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
 
@@ -260,8 +261,8 @@ internal object VariableProcessorV2 {
      */
     private fun resolveCustomVariable(
         key: String,
-        customVariables: Map<String, Any>,
-        defaultCustomVariables: Map<String, Any>,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
         functions: List<Function>,
         currencyLocale: Locale,
     ): String {
@@ -274,10 +275,7 @@ internal object VariableProcessorV2 {
                 return ""
             }
 
-        // Convert Any to String during processing
-        val stringValue = value.toString()
-
-        return functions.fold(stringValue) { accumulator, function ->
+        return functions.fold(value.stringValue) { accumulator, function ->
             accumulator.processFunction(function, currencyLocale)
         }
     }

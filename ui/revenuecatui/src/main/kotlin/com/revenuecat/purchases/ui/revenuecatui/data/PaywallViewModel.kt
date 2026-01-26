@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -41,7 +42,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
-import com.revenuecat.purchases.ui.revenuecatui.toAnyMap
 import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -612,7 +612,7 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
-                customVariables = options.customVariables.toAnyMap(),
+                customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
             )
         }
@@ -764,8 +764,8 @@ internal class PaywallViewModelImpl(
     /**
      * Extracts default custom variable values from the offering's UiConfig.
      */
-    private fun extractDefaultCustomVariables(offering: Offering): Map<String, Any> =
+    private fun extractDefaultCustomVariables(offering: Offering): Map<String, CustomVariableValue> =
         offering.paywallComponents?.uiConfig?.customVariables
-            ?.mapValues { (_, definition) -> definition.defaultValue }
+            ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
             ?: emptyMap()
 }

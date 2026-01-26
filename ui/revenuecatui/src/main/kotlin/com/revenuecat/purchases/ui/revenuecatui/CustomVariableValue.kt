@@ -110,20 +110,4 @@ sealed class CustomVariableValue {
             )
         }
     }
-
-    /**
-     * Returns the underlying primitive value of this [CustomVariableValue].
-     */
-    internal val primitiveValue: Any
-        get() = when (this) {
-            is String -> value
-            is Number -> value
-            is Boolean -> value
-        }
 }
-
-/**
- * Converts a map of [CustomVariableValue] to a map of primitive values for internal processing.
- */
-internal fun Map<String, CustomVariableValue>.toAnyMap(): Map<String, Any> =
-    mapValues { (_, value) -> value.primitiveValue }
