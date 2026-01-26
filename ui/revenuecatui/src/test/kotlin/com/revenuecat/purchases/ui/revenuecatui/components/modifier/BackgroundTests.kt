@@ -175,6 +175,7 @@ class BackgroundTests {
             // Image backgrounds with overlays are rendered in two layers:
             // 1. The image is applied via the background modifier
             // 2. The overlay is rendered as a separate Box layer (matching WithOptionalBackgroundOverlay)
+            val imageStyle = backgroundStyle as BackgroundStyle.Image
             Box(
                 modifier = Modifier
                     .requiredSize(sizeDp)
@@ -182,8 +183,8 @@ class BackgroundTests {
                     .semantics { testTag = "box" }
             ) {
                 // Overlay layer - rendered behind content but in front of image
-                backgroundStyle.colorOverlay?.let { overlay ->
-                    Box(modifier = Modifier.matchParentSize().background(overlay))
+                imageStyle.colorOverlay?.let { overlay ->
+                    Box(modifier = Modifier.matchParentSize().background(color = overlay))
                 }
                 // Content layer
                 Text(
