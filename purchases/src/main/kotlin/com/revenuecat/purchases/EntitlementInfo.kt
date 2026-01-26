@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -255,6 +256,14 @@ enum class Store {
             PADDLE -> "paddle"
             TEST_STORE -> "test_store"
             GALAXY -> "galaxy"
+        }
+
+    @get:JvmSynthetic
+    internal val managementUrl: String?
+        get() = when (this) {
+            PLAY_STORE -> Constants.GOOGLE_PLAY_MANAGEMENT_URL
+            GALAXY -> Constants.GALAXY_STORE_MANAGEMENT_URL
+            else -> null
         }
 
     internal companion object {

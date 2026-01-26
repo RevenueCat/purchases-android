@@ -12,7 +12,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -668,12 +667,7 @@ class OfflineCustomerInfoCalculatorTest {
     fun `management_url depends on store`() {
         val purchasedProduct = mockActiveProducts().first()
         val testCases = Store.values()
-            .associateWith { JSONObject.NULL }
-            .toMutableMap()
-            .apply {
-                this[Store.PLAY_STORE] = Constants.GOOGLE_PLAY_MANAGEMENT_URL
-                this[Store.GALAXY] = Constants.GALAXY_STORE_MANAGEMENT_URL
-            }
+            .associateWith { it.managementUrl ?: JSONObject.NULL }
 
         testCases.forEach { (storeType, expectedManagementUrl) ->
             val appConfigForStore = mockk<AppConfig>().apply {
