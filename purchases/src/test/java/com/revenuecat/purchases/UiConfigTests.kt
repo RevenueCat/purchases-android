@@ -311,6 +311,7 @@ internal class UiConfigTests {
     @Test
     fun `Should properly deserialize custom_variables with native types`() {
         // Arrange
+        // Backend only sends string, number, and boolean types
         // language=json
         val serialized = """
             {
@@ -324,7 +325,7 @@ internal class UiConfigTests {
                   "default_value": 20.5
                 },
                 "max_items": {
-                  "type": "integer",
+                  "type": "number",
                   "default_value": 100
                 },
                 "is_premium": {
@@ -350,8 +351,8 @@ internal class UiConfigTests {
         assertThat(discountPercent.defaultValue).isEqualTo(20.5)
 
         val maxItems = actual.customVariables["max_items"]!!
-        assertThat(maxItems.type).isEqualTo("integer")
-        assertThat(maxItems.defaultValue).isEqualTo(100L)
+        assertThat(maxItems.type).isEqualTo("number")
+        assertThat(maxItems.defaultValue).isEqualTo(100.0) // Integer values are deserialized as Double
 
         val isPremium = actual.customVariables["is_premium"]!!
         assertThat(isPremium.type).isEqualTo("boolean")
