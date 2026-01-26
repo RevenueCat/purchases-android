@@ -55,6 +55,7 @@ class PostPendingTransactionsHelperTest {
         // Default mock for postRemainingCachedTransactionMetadata
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = any(),
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
@@ -426,6 +427,7 @@ class PostPendingTransactionsHelperTest {
     fun `when there are no cached transaction metadata, onNoTransactionsToSync is called`() {
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
@@ -444,6 +446,7 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -457,6 +460,7 @@ class PostPendingTransactionsHelperTest {
         val customerInfoMock = mockk<CustomerInfo>()
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -479,6 +483,7 @@ class PostPendingTransactionsHelperTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network failed")
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),
@@ -509,6 +514,7 @@ class PostPendingTransactionsHelperTest {
 
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -533,6 +539,7 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -566,6 +573,7 @@ class PostPendingTransactionsHelperTest {
         val customerInfoMock = mockk<CustomerInfo>()
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -579,6 +587,7 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = any(),
@@ -612,6 +621,7 @@ class PostPendingTransactionsHelperTest {
         val metadataError = PurchasesError(PurchasesErrorCode.NetworkError, "Metadata post failed")
         every {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),

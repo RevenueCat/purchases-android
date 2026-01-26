@@ -12,9 +12,6 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 internal data class LocalTransactionMetadata(
-    @SerialName("user_id")
-    val appUserID: String,
-
     @SerialName("token")
     val token: String,
 

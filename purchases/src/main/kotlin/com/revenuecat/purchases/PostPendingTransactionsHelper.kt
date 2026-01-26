@@ -59,6 +59,7 @@ internal class PostPendingTransactionsHelper(
                         appUserID,
                         onNoTransactionsToSync = {
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                                appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
@@ -73,6 +74,7 @@ internal class PostPendingTransactionsHelper(
                         },
                         onError = { error ->
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                                appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
@@ -88,6 +90,7 @@ internal class PostPendingTransactionsHelper(
                         },
                         onSuccess = { customerInfo ->
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
+                                appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }

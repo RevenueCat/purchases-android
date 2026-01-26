@@ -35,7 +35,6 @@ class LocalTransactionMetadataStoreTest {
     private val apiKey = "test_api_key"
     private val purchaseToken = "test_purchase_token"
     private val purchaseToken2 = "test_purchase_token_2"
-    private val appUserID = "test_user_id"
 
     private val receiptInfo = ReceiptInfo(
         productIDs = listOf("product_id"),
@@ -50,6 +49,7 @@ class LocalTransactionMetadataStoreTest {
     )
 
     private val paywallData = PaywallPostReceiptData(
+        paywallID = "paywall_id",
         sessionID = "session_id",
         revision = 1,
         displayMode = "full_screen",
@@ -81,7 +81,6 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.getString(any(), any()) } returns null
 
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -105,7 +104,6 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.contains(key) } returns false
 
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -131,7 +129,6 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.contains(key) } returns true
 
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -152,7 +149,6 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.getString(any(), any()) } returns null
 
         val transactionMetadata1 = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -160,7 +156,6 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -184,6 +179,7 @@ class LocalTransactionMetadataStoreTest {
         every { sharedPreferences.contains(key) } returns false
 
         val paywallData = PaywallPostReceiptData(
+            paywallID = "paywall_id",
             sessionID = "session_id",
             revision = 1,
             displayMode = "full_screen",
@@ -193,7 +189,6 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -228,7 +223,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getLocalTransactionMetadata returns cached data`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -247,7 +241,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getLocalTransactionMetadata returns null for wrong token`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -267,7 +260,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getLocalTransactionMetadata reads from SharedPreferences on each call`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -322,7 +314,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getAllLocalTransactionMetadata returns single item when one transaction cached`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -344,7 +335,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getAllLocalTransactionMetadata returns all items when multiple transactions cached`() {
         val transactionMetadata1 = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -352,7 +342,6 @@ class LocalTransactionMetadataStoreTest {
         )
 
         val transactionMetadata2 = LocalTransactionMetadata(
-            appUserID = "another_user",
             token = purchaseToken2,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -375,62 +364,8 @@ class LocalTransactionMetadataStoreTest {
     }
 
     @Test
-    fun `getAllLocalTransactionMetadata returns data with correct user IDs`() {
-        val userId1 = "user_1"
-        val userId2 = "user_2"
-        val userId3 = "user_3"
-
-        val transactionMetadata1 = LocalTransactionMetadata(
-            appUserID = userId1,
-            token = "token_1",
-            receiptInfo = receiptInfo,
-            paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
-        )
-
-        val transactionMetadata2 = LocalTransactionMetadata(
-            appUserID = userId2,
-            token = "token_2",
-            receiptInfo = receiptInfo,
-            paywallPostReceiptData = null,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
-        )
-
-        val transactionMetadata3 = LocalTransactionMetadata(
-            appUserID = userId3,
-            token = "token_3",
-            receiptInfo = receiptInfo,
-            paywallPostReceiptData = paywallData,
-            purchasesAreCompletedBy = PurchasesAreCompletedBy.MY_APP,
-        )
-
-        val key1 = "local_transaction_metadata_${"token_1".sha1()}"
-        val key2 = "local_transaction_metadata_${"token_2".sha1()}"
-        val key3 = "local_transaction_metadata_${"token_3".sha1()}"
-        val jsonString1 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata1)
-        val jsonString2 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata2)
-        val jsonString3 = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata3)
-
-        every { sharedPreferences.all } returns mapOf(
-            key1 to jsonString1,
-            key2 to jsonString2,
-            key3 to jsonString3
-        )
-        every { sharedPreferences.getString(key1, null) } returns jsonString1
-        every { sharedPreferences.getString(key2, null) } returns jsonString2
-        every { sharedPreferences.getString(key3, null) } returns jsonString3
-
-        val result = localTransactionMetadataStore.getAllLocalTransactionMetadata()
-
-        assertThat(result).hasSize(3)
-        assertThat(result.map { it.appUserID }).containsExactlyInAnyOrder(userId1, userId2, userId3)
-        assertThat(result.map { it.token }).containsExactlyInAnyOrder("token_1", "token_2", "token_3")
-    }
-
-    @Test
     fun `getAllLocalTransactionMetadata ignores keys without prefix`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -456,7 +391,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `getAllLocalTransactionMetadata skips corrupted entries`() {
         val validMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -556,7 +490,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `clearLocalTransactionMetadata removes data from SharedPreferences`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = null,
@@ -601,7 +534,6 @@ class LocalTransactionMetadataStoreTest {
     @Test
     fun `LocalTransactionMetadata serializes correctly`() {
         val transactionMetadata = LocalTransactionMetadata(
-            appUserID = appUserID,
             token = purchaseToken,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallData,
@@ -614,7 +546,6 @@ class LocalTransactionMetadataStoreTest {
         // language=json
         val expectedJson = """
             {
-                "user_id":"$appUserID",
                 "token":"$purchaseToken",
                 "receipt_info":{
                     "productIDs":["product_id"],
@@ -628,6 +559,7 @@ class LocalTransactionMetadataStoreTest {
                     "currency":"USD"
                 },
                 "paywall_data":{
+                    "paywall_id":"paywall_id",
                     "session_id":"session_id",
                     "revision":1,
                     "display_mode":"full_screen",

@@ -84,6 +84,8 @@ internal sealed class BackendEvent : Event {
         val sessionID: String,
         @SerialName("offering_id")
         val offeringID: String,
+        @SerialName("paywall_id")
+        val paywallID: String?,
         @SerialName("paywall_revision")
         val paywallRevision: Int,
         val timestamp: Long,
