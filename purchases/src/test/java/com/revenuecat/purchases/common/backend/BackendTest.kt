@@ -705,6 +705,24 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt posts payload_version`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = createReceiptInfoFromProduct(productIDs = productIDs, storeProduct = storeProduct, sdkOriginated = true),
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("payload_version")
+        assertThat(requestBodySlot.captured["payload_version"]).isEqualTo(1)
+    }
+
+    @Test
     fun `postReceipt posts purchase_completed_by`() {
         mockPostReceiptResponseAndPost(
             backend,
