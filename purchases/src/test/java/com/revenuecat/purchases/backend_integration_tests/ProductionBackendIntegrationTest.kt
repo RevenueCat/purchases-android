@@ -240,6 +240,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     timestamp = 123456789,
                     networkName = "networkName",
                     mediatorName = "mediatorName",
+                    adFormat = "banner",
                     placement = "placement",
                     adUnitId = "adUnitId",
                     impressionId = "impressionId",

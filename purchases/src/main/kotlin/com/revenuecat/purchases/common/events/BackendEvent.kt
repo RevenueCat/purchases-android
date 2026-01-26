@@ -113,6 +113,9 @@ internal sealed class BackendEvent : Event {
         val networkName: String,
         @SerialName("mediator_name")
         val mediatorName: String,
+        @SerialName("ad_format")
+        val adFormat: String,
+        @SerialName("placement")
         val placement: String?,
         @SerialName("ad_unit_id")
         val adUnitId: String,

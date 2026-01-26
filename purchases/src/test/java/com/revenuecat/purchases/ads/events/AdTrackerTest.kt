@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ads.events
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
@@ -40,6 +41,7 @@ class AdTrackerTest {
             data = AdDisplayedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.BANNER,
                 placement = "banner_home",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
@@ -50,6 +52,7 @@ class AdTrackerTest {
 
         assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.BANNER)
         assertThat(eventSlot.captured.placement).isEqualTo("banner_home")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
@@ -65,6 +68,7 @@ class AdTrackerTest {
             data = AdDisplayedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.INTERSTITIAL,
                 placement = null,
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
@@ -84,6 +88,7 @@ class AdTrackerTest {
             data = AdOpenedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.NATIVE,
                 placement = "interstitial_level_complete",
                 adUnitId = "ca-app-pub-789012",
                 impressionId = "impression-456",
@@ -94,6 +99,7 @@ class AdTrackerTest {
 
         assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.NATIVE)
         assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
@@ -109,6 +115,7 @@ class AdTrackerTest {
             data = AdRevenueData(
                 networkName = "AppLovin",
                 mediatorName = AdMediatorName.APP_LOVIN,
+                adFormat = AdFormat.REWARDED,
                 placement = "rewarded_video",
                 adUnitId = "ad-unit-999",
                 impressionId = "impression-789",
@@ -122,6 +129,7 @@ class AdTrackerTest {
 
         assertThat(eventSlot.captured.networkName).isEqualTo("AppLovin")
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.APP_LOVIN)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
         assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ad-unit-999")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-789")
@@ -140,6 +148,7 @@ class AdTrackerTest {
             data = AdRevenueData(
                 networkName = "Network",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.MREC,
                 placement = "placement",
                 adUnitId = "ad-unit",
                 impressionId = "impression",
@@ -161,6 +170,7 @@ class AdTrackerTest {
             data = AdLoadedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.INTERSTITIAL,
                 placement = "interstitial_level_complete",
                 adUnitId = "ca-app-pub-789012",
                 impressionId = "impression-456",
@@ -171,6 +181,7 @@ class AdTrackerTest {
 
         assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.INTERSTITIAL)
         assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
@@ -186,6 +197,7 @@ class AdTrackerTest {
             data = AdFailedToLoadData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.APP_OPEN,
                 placement = "interstitial_level_complete",
                 adUnitId = "ca-app-pub-789012",
                 mediatorErrorCode = 123,
@@ -196,6 +208,7 @@ class AdTrackerTest {
 
         assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.APP_OPEN)
         assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isNull()
