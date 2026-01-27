@@ -28,6 +28,7 @@
         "timestamp_ms": 123456789,
         "network_name": "networkName",
         "mediator_name": "mediatorName",
+        "ad_format": "banner",
         "placement": "placement",
         "ad_unit_id": "adUnitId",
         "impression_id": "impressionId",
