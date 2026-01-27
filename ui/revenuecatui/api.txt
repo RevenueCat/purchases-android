@@ -1,7 +1,7 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.revenuecatui {
 
-  public abstract sealed class CustomVariableValue {
+  public abstract class CustomVariableValue {
     method public static final com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue from(Object value);
     method public final String getStringValue();
     property public final String stringValue;

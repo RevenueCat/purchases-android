@@ -23,7 +23,7 @@ package com.revenuecat.purchases.ui.revenuecatui
  * Hello {{ custom.player_name }}!
  * ```
  */
-sealed class CustomVariableValue {
+abstract class CustomVariableValue internal constructor() {
 
     /**
      * A string value.
@@ -80,6 +80,7 @@ sealed class CustomVariableValue {
                 }
             }
             is Boolean -> value.toString()
+            else -> error("Unknown CustomVariableValue type")
         }
 
     companion object {
