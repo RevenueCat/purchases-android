@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.samsung.android.sdk.iap.lib.constants.HelperConstants
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -98,6 +100,7 @@ internal class GalaxyBillingWrapper(
 
     init {
         iapHelper.setOperationMode(mode = billingMode.toSamsungIAPOperationMode())
+        logWarningIfUnexpectedSamsungIAPVersionFound()
     }
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
@@ -471,5 +474,17 @@ internal class GalaxyBillingWrapper(
 
     private fun onPurchaseError(error: PurchasesError) {
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+    }
+
+    private fun logWarningIfUnexpectedSamsungIAPVersionFound() {
+        if (HelperConstants.HELPER_VERSION != SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION) {
+            log(intent = LogIntent.GALAXY_WARNING) {
+                "Unexpected Samsung IAP SDK version found. Expected " +
+                    "${SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION}, but found ${HelperConstants.HELPER_VERSION}" +
+                    ". Unexpected behavior related to the Galaxy Store in-app purchases may occur. Please obtain and" +
+                    " include version ${HelperConstants.HELPER_VERSION} of the Samsung IAP SDK from the Samsung's" +
+                    " developer website."
+            }
+        }
     }
 }
