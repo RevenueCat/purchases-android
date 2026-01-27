@@ -11,7 +11,7 @@ internal class ConfigurePurchasesUseCase(
 
     operator fun invoke(apiKey: String) {
         val builder = PurchasesConfiguration.Builder(context.applicationContext, apiKey)
-            .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
+            .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
             .appUserID(null)
             .diagnosticsEnabled(true)
 

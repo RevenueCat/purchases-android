@@ -1,17 +1,30 @@
 package com.revenuecat.paywallstester.ui.screens.paywall
 
+import android.app.Activity
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.AtomicReference
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,13 +40,16 @@ interface PaywallScreenViewModel : PaywallListener {
     }
     val state: StateFlow<PaywallScreenState>
 
+    fun performMyAppLogicPurchase(activity: Activity, rcPackage: Package, resume: (PurchaseLogicResult) -> Unit)
     fun onDialogDismissed()
 }
 
 class PaywallScreenViewModelImpl(
     application: Application,
     savedStateHandle: SavedStateHandle,
-) : AndroidViewModel(application), PaywallScreenViewModel {
+) : AndroidViewModel(application), PaywallScreenViewModel, PurchasesUpdatedListener {
+
+    val billingClient: BillingClient
 
     override val state: StateFlow<PaywallScreenState>
         get() = _state.asStateFlow()
@@ -45,6 +61,21 @@ class PaywallScreenViewModelImpl(
 
     init {
         updateOffering()
+        billingClient = BillingClient.newBuilder(application.applicationContext)
+            .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().enablePrepaidPlans().build())
+            .setListener(this)
+            .build()
+        billingClient.startConnection(object: BillingClientStateListener {
+            override fun onBillingServiceDisconnected() {
+                Log.e("PaywallScreenViewModel", "Billing service disconnected")
+                // TODO("Not yet implemented")
+            }
+
+            override fun onBillingSetupFinished(p0: BillingResult) {
+                Log.i("PaywallScreenViewModel", "Billing service connected")
+                // TODO("Not yet implemented")
+            }
+        })
     }
 
     @Suppress("MagicNumber")
@@ -96,6 +127,50 @@ class PaywallScreenViewModelImpl(
                 value.copy(
                     dialogText = null,
                 )
+            }
+        }
+    }
+
+    private var purchaseInProgress: AtomicReference<((PurchaseLogicResult) -> Unit)?> = AtomicReference(null)
+
+    override fun performMyAppLogicPurchase(activity: Activity, rcPackage: Package, resume: (PurchaseLogicResult) -> Unit) {
+        if (purchaseInProgress.get() != null) {
+            // A purchase is already in progress
+            resume(PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError, "Another purchase is already in progress.")))
+            return
+        }
+        purchaseInProgress.set(resume)
+        val productDetailsToPurchase = (rcPackage.product as GoogleStoreProduct).productDetails
+        val params = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(
+                listOf(
+                    BillingFlowParams.ProductDetailsParams.newBuilder()
+                        .setOfferToken(productDetailsToPurchase.subscriptionOfferDetails?.firstOrNull()?.offerToken!!)
+                        .setProductDetails(productDetailsToPurchase)
+                        .build(),
+                ),
+            )
+            .build()
+        billingClient.launchBillingFlow(activity, params)
+    }
+
+    override fun onPurchasesUpdated(result: BillingResult, p1: List<Purchase?>?) {
+        Log.d("PaywallScreenViewModel", "onPurchasesUpdated: ${result.responseCode}")
+        if (result.responseCode == BillingClient.BillingResponseCode.OK && p1 != null) {
+            purchaseInProgress.get()?.let {
+                it(PurchaseLogicResult.Success)
+                purchaseInProgress.set(null)
+            }
+        } else {
+            // Handle error cases
+            purchaseInProgress.get()?.let {
+                val error = if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
+                    PurchaseLogicResult.Cancellation
+                } else {
+                    PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.UnknownError, "Purchase failed with response code: ${result.responseCode}"))
+                }
+                it(error)
+                purchaseInProgress.set(null)
             }
         }
     }
