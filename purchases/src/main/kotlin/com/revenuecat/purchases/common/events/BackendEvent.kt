@@ -126,7 +126,8 @@ internal sealed class BackendEvent : Event {
         @SerialName("mediator_name")
         val mediatorName: String,
         @SerialName("ad_format")
-        val adFormat: String,
+        // support deserializing events before this field
+        val adFormat: String? = null,
         val placement: String?,
         @SerialName("ad_unit_id")
         val adUnitId: String,
