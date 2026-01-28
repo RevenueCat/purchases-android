@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.paywallstester.Constants
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesHolder
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
@@ -37,7 +37,7 @@ fun PaywallScreen(
                     PaywallOptions.Builder(dismissRequest)
                         .setOffering(state.offering)
                         .setListener(viewModel)
-                        .setCustomVariables(Constants.CUSTOM_VARIABLES)
+                        .setCustomVariables(CustomVariablesHolder.customVariables)
                         .build(),
                 )
                 state.dialogText?.let {
