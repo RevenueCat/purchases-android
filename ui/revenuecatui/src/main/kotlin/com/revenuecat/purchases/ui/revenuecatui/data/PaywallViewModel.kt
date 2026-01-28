@@ -12,13 +12,19 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -412,7 +418,8 @@ internal class PaywallViewModelImpl(
                         uniqueId = it.identifier,
                     )
                 } ?: currentState.selectedPackageInfo
-                performPurchaseIfNecessary(activity, selectedPackageInfo)
+                val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
+                performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
             }
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -424,6 +431,7 @@ internal class PaywallViewModelImpl(
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
+        productChangeConfig: ProductChangeConfig?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
@@ -432,15 +440,17 @@ internal class PaywallViewModelImpl(
                 activity = activity,
                 packageToPurchase = packageInfo.rcPackage,
                 subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
+                productChangeConfig = productChangeConfig,
             )
         }
     }
 
-    @Suppress("LongMethod", "NestedBlockDepth")
+    @Suppress("LongMethod", "NestedBlockDepth", "CyclomaticComplexMethod")
     private suspend fun performPurchase(
         activity: Activity,
         packageToPurchase: Package,
         subscriptionOption: SubscriptionOption?,
+        productChangeConfig: ProductChangeConfig? = null,
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
@@ -458,6 +468,11 @@ internal class PaywallViewModelImpl(
         try {
             trackPaywallPurchaseInitiated(packageToPurchase)
 
+            // Get product change info (replacement mode) if product change config is set
+            val productChangeInfo = productChangeConfig?.let {
+                getProductChangeInfo(packageToPurchase, it)
+            }
+
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
                     val logic = checkNotNull(purchaseLogic) {
@@ -469,7 +484,7 @@ internal class PaywallViewModelImpl(
                             activity,
                             packageToPurchase,
                             subscriptionOption,
-                            productChangeConfig = null,
+                            productChangeConfig,
                         )
                     ) {
                         is PurchaseLogicResult.Success -> {
@@ -504,6 +519,17 @@ internal class PaywallViewModelImpl(
                             .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
                     } else {
                         PurchaseParams.Builder(activity, packageToPurchase)
+                    }
+
+                    // Apply product change configuration if detected
+                    if (productChangeInfo != null) {
+                        Logger.d(
+                            "Performing product change from ${productChangeInfo.oldProductId} " +
+                                "with mode ${productChangeInfo.replacementMode}",
+                        )
+                        purchaseParamsBuilder
+                            .oldProductId(productChangeInfo.oldProductId)
+                            .googleReplacementMode(productChangeInfo.replacementMode)
                     }
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
@@ -782,4 +808,138 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
         )
     }
+
+    /**
+     * Determines if a product change is needed and returns the product change info if so.
+     *
+     * Product change logic:
+     * 1. If the package is not a subscription, no product change.
+     * 2. If user has no active Play Store subscriptions, no product change (first subscription).
+     * 3. If the active subscription has the same product ID as the package being purchased,
+     *    no product change (Google handles base plan changes automatically).
+     * 4. Otherwise, perform a product change with the appropriate replacement mode based on
+     *    price comparison (upgrade vs downgrade).
+     */
+    @Suppress("ReturnCount", "LongMethod", "TooGenericExceptionCaught")
+    private suspend fun getProductChangeInfo(
+        packageToPurchase: Package,
+        productChangeConfig: ProductChangeConfig,
+    ): ProductChangeInfo? {
+        // Only subscriptions can have product changes
+        if (packageToPurchase.product.type != ProductType.SUBS) {
+            return null
+        }
+
+        return try {
+            val customerInfo = purchases.awaitCustomerInfo()
+            val activePlayStoreSubscription = customerInfo.subscriptionsByProductIdentifier.entries
+                .firstOrNull { (_, subscriptionInfo) ->
+                    subscriptionInfo.isActive && subscriptionInfo.store == Store.PLAY_STORE
+                }
+
+            // No active subscription means this is a new purchase
+            if (activePlayStoreSubscription == null) {
+                return null
+            }
+
+            val oldProductIdentifier = activePlayStoreSubscription.key
+            val newProductId = packageToPurchase.product.id
+
+            // Extract subscription ID and base plan from the old product identifier
+            // (format: subscriptionId:basePlanId)
+            val oldSubscriptionId = oldProductIdentifier.substringBefore(":")
+            val oldBasePlanId = oldProductIdentifier.substringAfter(":", "")
+                .takeIf { it.isNotEmpty() }
+
+            // If same product (just different base plan), Google handles it automatically
+            if (oldSubscriptionId == newProductId) {
+                Logger.d("Same product change ($newProductId), Google handles base plan change automatically")
+                return null
+            }
+
+            // Fetch the old product to get its normalized price for comparison
+            val oldProduct = purchases.awaitGetProduct(oldSubscriptionId, oldBasePlanId)
+            val isSandbox = activePlayStoreSubscription.value.isSandbox
+
+            // In sandbox mode, use price per sandbox minute for accurate comparison
+            // (different periods have different accelerated renewal times)
+            // In production, use price per month for comparison
+            val oldNormalizedPrice = oldProduct?.getNormalizedPrice(isSandbox)
+            val newNormalizedPrice = packageToPurchase.product.getNormalizedPrice(isSandbox)
+
+            val replacementMode = if (oldNormalizedPrice != null && newNormalizedPrice != null &&
+                newNormalizedPrice > oldNormalizedPrice
+            ) {
+                Logger.d(
+                    "Detected upgrade: $oldSubscriptionId -> $newProductId " +
+                        "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
+                )
+                productChangeConfig.upgradeReplacementMode.toGoogleReplacementMode()
+            } else {
+                Logger.d(
+                    "Detected downgrade: $oldSubscriptionId -> $newProductId " +
+                        "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
+                )
+                productChangeConfig.downgradeReplacementMode.toGoogleReplacementMode()
+            }
+
+            ProductChangeInfo(
+                oldProductId = oldSubscriptionId,
+                replacementMode = replacementMode,
+            )
+        } catch (e: Exception) {
+            Logger.e("Error determining product change info: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Gets a normalized price for comparison purposes.
+     * In sandbox, normalizes to price per minute based on sandbox renewal times.
+     * In production, normalizes to price per month.
+     */
+    private fun StoreProduct.getNormalizedPrice(isSandbox: Boolean): Long? {
+        val period = this.period ?: return null
+        val priceAmountMicros = this.price.amountMicros
+        return if (isSandbox) {
+            val sandboxMinutes = getSandboxRenewalMinutes(period)
+            priceAmountMicros / sandboxMinutes
+        } else {
+            pricePerMonth()?.amountMicros
+        }
+    }
+
+    /**
+     * Gets the sandbox renewal time in minutes for a given billing period.
+     * Google Play sandbox uses accelerated renewal times:
+     * - Weekly/Monthly: 5 minutes
+     * - 3 months: 10 minutes
+     * - 6 months: 15 minutes
+     * - Yearly: 30 minutes
+     */
+    @Suppress("MagicNumber")
+    private fun getSandboxRenewalMinutes(period: Period): Long {
+        val totalMonths = period.valueInMonths
+        return when {
+            totalMonths >= MONTHS_IN_YEAR -> SANDBOX_YEARLY_MINUTES
+            totalMonths >= MONTHS_IN_HALF_YEAR -> SANDBOX_HALF_YEAR_MINUTES
+            totalMonths >= MONTHS_IN_QUARTER -> SANDBOX_QUARTER_MINUTES
+            else -> SANDBOX_MONTHLY_MINUTES
+        }
+    }
+
+    private companion object {
+        const val MONTHS_IN_YEAR = 12
+        const val MONTHS_IN_HALF_YEAR = 6
+        const val MONTHS_IN_QUARTER = 3
+        const val SANDBOX_YEARLY_MINUTES = 30L
+        const val SANDBOX_HALF_YEAR_MINUTES = 15L
+        const val SANDBOX_QUARTER_MINUTES = 10L
+        const val SANDBOX_MONTHLY_MINUTES = 5L
+    }
+
+    private data class ProductChangeInfo(
+        val oldProductId: String,
+        val replacementMode: GoogleReplacementMode,
+    )
 }
