@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -33,8 +34,12 @@ internal fun rememberUpdatedCarouselComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -42,6 +47,9 @@ private fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): CarouselComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -51,6 +59,9 @@ private fun rememberUpdatedCarouselComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -59,12 +70,16 @@ private fun rememberUpdatedCarouselComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class CarouselComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: CarouselComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
@@ -82,10 +97,27 @@ internal class CarouselComponentState(
         style.rcPackage ?: selectedPackageProvider()
     }
 
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
+    /**
+     * The subscription option to use for intro eligibility.
+     * For components without their own package, use the selected subscription option so that
+     * promo offers with multiple phases correctly trigger the MultipleIntroOffers condition.
+     */
+    private val subscriptionOption by derivedStateOf {
+        if (style.rcPackage == null) selectedSubscriptionOptionProvider() else null
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        // Use subscription option's eligibility if available (from resolved promo offer),
+        // otherwise fall back to package's default option eligibility
+        val introOfferEligibility = subscriptionOption?.introEligibility
+            ?: applicablePackage?.introEligibility
+            ?: IntroOfferEligibility.INELIGIBLE
 
         style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
