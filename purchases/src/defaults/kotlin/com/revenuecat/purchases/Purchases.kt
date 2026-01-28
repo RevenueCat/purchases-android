@@ -152,6 +152,7 @@ class Purchases internal constructor(
      * This is an internal debug API for monitoring events tracked by RevenueCatUI.
      */
     @get:JvmSynthetic
+    @set:JvmSynthetic
     @InternalRevenueCatAPI
     var trackedEventListener: TrackedEventListener? by purchasesOrchestrator::trackedEventListener
 

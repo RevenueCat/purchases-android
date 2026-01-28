@@ -397,6 +397,7 @@ package com.revenuecat.purchases {
     method public java.util.Locale? getStorefrontLocale();
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void getStorefrontLocale(com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback callback);
     method @Deprecated public void getSubscriptionSkus(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
+    method @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.TrackedEventListener? getTrackedEventListener();
     method @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public void getVirtualCurrencies(com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback callback);
     method public void invalidateCustomerInfoCache();
@@ -456,6 +457,7 @@ package com.revenuecat.purchases {
     method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
     method public void setSolarEngineVisitorId(String? solarEngineVisitorId);
     method public void setTenjinAnalyticsInstallationID(String? tenjinAnalyticsInstallationID);
+    method public void setTrackedEventListener(com.revenuecat.purchases.TrackedEventListener?);
     method @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity, optional java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes);
@@ -485,6 +487,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.Store store;
     property @kotlin.jvm.Synchronized public final String? storefrontCountryCode;
     property @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final java.util.Locale? storefrontLocale;
+    property @kotlin.jvm.JvmSynthetic public final com.revenuecat.purchases.TrackedEventListener? trackedEventListener;
     property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? updatedCustomerInfoListener;
     field public static final com.revenuecat.purchases.Purchases.Companion Companion;
   }
