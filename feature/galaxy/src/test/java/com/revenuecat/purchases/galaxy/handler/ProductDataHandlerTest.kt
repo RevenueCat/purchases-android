@@ -1,14 +1,21 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.revenuecat.purchases.galaxy.listener.PromotionEligibilityResponseListener
+import com.revenuecat.purchases.galaxy.logging.LogIntent
+import com.revenuecat.purchases.galaxy.logging.currentLogHandler
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
+import com.revenuecat.purchases.galaxy.GalaxyStrings
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.models.StoreProduct
 import com.samsung.android.sdk.iap.lib.listener.OnGetProductsDetailsListener
 import com.samsung.android.sdk.iap.lib.listener.OnGetPromotionEligibilityListener
@@ -313,5 +320,67 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             onError = unexpectedOnError,
         )
         verify(exactly = 2) { iapHelperProvider.getProductsDetails(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `missing products are logged as warning`() {
+        val capturedListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
+
+        val promotionEligibilityListener = mockk<PromotionEligibilityResponseListener>()
+        val capturedPromotionOnSuccess = slot<(List<com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo>) -> Unit>()
+        every {
+            promotionEligibilityListener.getPromotionEligibilities(any(), capture(capturedPromotionOnSuccess), any())
+        } returns Unit
+
+        productDataHandler = ProductDataHandler(
+            iapHelper = iapHelperProvider,
+            promotionEligibilityResponseListener = promotionEligibilityListener,
+        )
+
+        val previousLogHandler = currentLogHandler
+        val previousLogLevel = Config.logLevel
+        val loggedMessages = mutableListOf<String>()
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {}
+            override fun d(tag: String, msg: String) {}
+            override fun i(tag: String, msg: String) {}
+            override fun w(tag: String, msg: String) {
+                loggedMessages.add(msg)
+            }
+            override fun e(tag: String, msg: String, throwable: Throwable?) {}
+        }
+        Config.logLevel = LogLevel.VERBOSE
+
+        try {
+            productDataHandler.getProductDetails(
+                productIds = setOf("iap", "missing"),
+                productType = ProductType.INAPP,
+                onReceive = { },
+                onError = unexpectedOnError,
+            )
+
+            val successErrorVo = mockk<ErrorVo> {
+                every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+            }
+            capturedListener.captured.onGetProducts(
+                successErrorVo,
+                arrayListOf(createProductVo(itemId = "iap", type = "item")),
+            )
+            capturedPromotionOnSuccess.captured.invoke(
+                listOf(createPromotionEligibilityVo(itemId = "iap", pricing = "None")),
+            )
+        } finally {
+            currentLogHandler = previousLogHandler
+            Config.logLevel = previousLogLevel
+        }
+
+        val expectedMessage = "${LogIntent.GALAXY_WARNING.emojiList.joinToString("")} " +
+            GalaxyStrings.GET_PRODUCT_DETAILS_RESPONSE_MISSING_PRODUCTS.format(
+                "iap, missing",
+                "missing",
+            )
+        assertThat(loggedMessages).contains(expectedMessage)
     }
 }
