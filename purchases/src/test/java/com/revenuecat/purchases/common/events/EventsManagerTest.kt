@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.AppConfig
@@ -74,6 +75,7 @@ class EventsManagerTest {
         timestamp = 1699270688884,
         networkName = "Google AdMob",
         mediatorName = AdMediatorName.AD_MOB,
+        adFormat = AdFormat.BANNER,
         placement = "banner_home",
         adUnitId = "ca-app-pub-123456",
         impressionId = "impression-id"
@@ -445,6 +447,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -453,7 +456,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -464,6 +467,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = null,
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -472,7 +476,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -483,6 +487,7 @@ class EventsManagerTest {
             timestamp = 1699270688885,
             networkName = "AppLovin",
             mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.NATIVE,
             placement = "interstitial",
             adUnitId = "ad-unit-789",
             impressionId = "impression-456"
@@ -491,7 +496,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","ad_format":"native","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -502,6 +507,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
@@ -513,7 +519,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
         )
     }
 
@@ -524,6 +530,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
@@ -532,7 +539,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -543,6 +550,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             mediatorErrorCode = 123,
@@ -551,7 +559,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
         )
     }
 
@@ -563,6 +571,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -575,7 +584,7 @@ class EventsManagerTest {
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
-                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
+                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
                 + "\n"
                 + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
@@ -590,6 +599,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -611,6 +621,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner",
             adUnitId = "ad-unit-1",
             impressionId = "impression-1"
@@ -621,6 +632,7 @@ class EventsManagerTest {
             timestamp = 1699270688885,
             networkName = "AppLovin",
             mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = "interstitial",
             adUnitId = "ad-unit-2",
             impressionId = "impression-2"
@@ -631,6 +643,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
             placement = "rewarded",
             adUnitId = "ad-unit-3",
             impressionId = "impression-3",
