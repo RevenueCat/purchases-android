@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -45,9 +46,13 @@ internal fun rememberUpdatedTextComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 }
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -56,6 +61,9 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -70,7 +78,10 @@ internal fun rememberUpdatedTextComponentState(
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -80,13 +91,17 @@ internal fun rememberUpdatedTextComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -101,7 +116,9 @@ internal class TextComponentState(
         private set
 
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
+        if (style.packageUniqueId != null) {
+            style.packageUniqueId == selectedPackageUniqueIdProvider()
+        } else if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
@@ -119,18 +136,40 @@ internal class TextComponentState(
     }
 
     /**
+     * The subscription option to use for offer variables (product.offer_*, product.secondary_offer_*).
+     * If a specific Play Store offer is configured for this text's package, use that.
+     * Otherwise, use the selected package's resolved subscription option.
+     */
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.subscriptionOption ?: selectedSubscriptionOptionProvider()
+    }
+
+    /**
      * How countdown variables should be displayed (component hours vs total hours).
      */
     @get:JvmSynthetic
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
+    /**
+     * Whether this component uses a configured promo offer.
+     * If the style has its own package, use the style's isPromoOffer.
+     * Otherwise, use the selected package's promo offer status.
+     */
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        // Use subscription option's eligibility if available (from resolved offer),
+        // otherwise fall back to package's default option eligibility
+        val introOfferEligibility = subscriptionOption?.introEligibility
+            ?: applicablePackage?.introEligibility
+            ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
     }
 
     @get:JvmSynthetic

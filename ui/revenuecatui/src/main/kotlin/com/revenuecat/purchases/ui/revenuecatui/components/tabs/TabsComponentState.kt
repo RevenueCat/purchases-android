@@ -32,6 +32,7 @@ internal fun rememberUpdatedTabsComponentState(
     rememberUpdatedTabsComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
 @Stable
@@ -40,6 +41,7 @@ internal fun rememberUpdatedTabsComponentState(
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageProvider: () -> Package?,
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -48,6 +50,7 @@ internal fun rememberUpdatedTabsComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -61,6 +64,7 @@ internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TabsComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -68,12 +72,13 @@ internal class TabsComponentState(
      * The package to consider for intro offer eligibility.
      */
     private val applicablePackage by derivedStateOf { selectedPackageProvider() }
+    private val isPromoOffer by derivedStateOf { selectedIsPromoOfferProvider() }
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
     }
 
     @get:JvmSynthetic
