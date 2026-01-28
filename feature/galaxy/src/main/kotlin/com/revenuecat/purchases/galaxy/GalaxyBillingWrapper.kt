@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.api.BuildConfig as PurchasesBuildConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.samsung.android.sdk.iap.lib.BuildConfig as SamsungBuildConfig
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
@@ -475,8 +477,8 @@ internal class GalaxyBillingWrapper(
     }
 
     private fun logWarningIfUnexpectedSamsungIAPVersionFound() {
-        val expectedSamsungIAPSDKVersion = com.revenuecat.purchases.api.BuildConfig.SAMSUNG_IAP_SDK_VERSION
-        val actualSamsungIAPSDKVersion = com.samsung.android.sdk.iap.lib.BuildConfig.VERSION_NAME
+        val expectedSamsungIAPSDKVersion = PurchasesBuildConfig.SAMSUNG_IAP_SDK_VERSION
+        val actualSamsungIAPSDKVersion = SamsungBuildConfig.VERSION_NAME
 
         if (expectedSamsungIAPSDKVersion != actualSamsungIAPSDKVersion) {
             log(intent = LogIntent.GALAXY_WARNING) {
