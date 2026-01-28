@@ -324,7 +324,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
     @Test
-    fun `missing products are logged as warning`() {
+    fun `missing products are logged`() {
         val capturedListener = slot<OnGetProductsDetailsListener>()
         every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
 
@@ -382,5 +382,68 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
                 "missing",
             )
         assertThat(loggedMessages).contains(expectedMessage)
+    }
+
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `no missing products warning logged when all products are returned`() {
+        val capturedListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
+
+        val promotionEligibilityListener = mockk<PromotionEligibilityResponseListener>()
+        val capturedPromotionOnSuccess = slot<(List<com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo>) -> Unit>()
+        every {
+            promotionEligibilityListener.getPromotionEligibilities(any(), capture(capturedPromotionOnSuccess), any())
+        } returns Unit
+
+        productDataHandler = ProductDataHandler(
+            iapHelper = iapHelperProvider,
+            promotionEligibilityResponseListener = promotionEligibilityListener,
+        )
+
+        val previousLogHandler = currentLogHandler
+        val previousLogLevel = Config.logLevel
+        val loggedMessages = mutableListOf<String>()
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {}
+            override fun d(tag: String, msg: String) {}
+            override fun i(tag: String, msg: String) {}
+            override fun w(tag: String, msg: String) {
+                loggedMessages.add(msg)
+            }
+            override fun e(tag: String, msg: String, throwable: Throwable?) {}
+        }
+        Config.logLevel = LogLevel.VERBOSE
+
+        try {
+            productDataHandler.getProductDetails(
+                productIds = setOf("iap", "sub"),
+                productType = ProductType.INAPP,
+                onReceive = { },
+                onError = unexpectedOnError,
+            )
+
+            val successErrorVo = mockk<ErrorVo> {
+                every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+            }
+            capturedListener.captured.onGetProducts(
+                successErrorVo,
+                arrayListOf(
+                    createProductVo(itemId = "iap", type = "item"),
+                    createProductVo(itemId = "sub", type = "item"),
+                ),
+            )
+            capturedPromotionOnSuccess.captured.invoke(
+                listOf(
+                    createPromotionEligibilityVo(itemId = "iap", pricing = "None"),
+                    createPromotionEligibilityVo(itemId = "sub", pricing = "None"),
+                ),
+            )
+        } finally {
+            currentLogHandler = previousLogHandler
+            Config.logLevel = previousLogLevel
+        }
+
+        assertThat(loggedMessages).noneMatch { it.contains("returned product details for only") }
     }
 }
