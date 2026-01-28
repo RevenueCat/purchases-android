@@ -477,12 +477,15 @@ internal class GalaxyBillingWrapper(
     }
 
     private fun logWarningIfUnexpectedSamsungIAPVersionFound() {
-        if (HelperConstants.HELPER_VERSION != SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION) {
+        val expectedSamsungIAPSDKVersion = com.revenuecat.purchases.api.BuildConfig.SAMSUNG_IAP_SDK_VERSION
+        val actualSamsungIAPSDKVersion = com.samsung.android.sdk.iap.lib.BuildConfig.VERSION_NAME
+
+        if (expectedSamsungIAPSDKVersion != actualSamsungIAPSDKVersion) {
             log(intent = LogIntent.GALAXY_WARNING) {
                 "Unexpected Samsung IAP SDK version found. Expected " +
-                    "${SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION}, but found ${HelperConstants.HELPER_VERSION}" +
-                    ". Unexpected behavior related to the Galaxy Store in-app purchases may occur. Please obtain and" +
-                    " include version ${SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION} of the Samsung IAP SDK from the Samsung's" +
+                    "$expectedSamsungIAPSDKVersion, but found $actualSamsungIAPSDKVersion. Unexpected behavior " +
+                    "related to the Galaxy Store in-app purchases may occur. Please obtain and" +
+                    " include version $expectedSamsungIAPSDKVersion of the Samsung IAP SDK from the Samsung's" +
                     " developer website."
             }
         }
