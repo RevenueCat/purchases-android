@@ -20,6 +20,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -414,6 +415,7 @@ internal class PaywallViewModelImpl(
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
+                        uniqueId = it.identifier,
                     )
                 } ?: currentState.selectedPackageInfo
                 val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
@@ -464,15 +466,20 @@ internal class PaywallViewModelImpl(
         }
 
         try {
-            val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
-
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    checkNotNull(customPurchaseHandler) {
+                    val logic = checkNotNull(purchaseLogic) {
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
-                    when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
+                    when (
+                        val result = logic.performPurchase(
+                            activity,
+                            packageToPurchase,
+                            subscriptionOption,
+                            productChangeConfig,
+                        )
+                    ) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
                             _purchaseCompleted.value = true
@@ -489,7 +496,7 @@ internal class PaywallViewModelImpl(
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     listener?.onPurchaseStarted(packageToPurchase)
-                    if (customPurchaseHandler != null) {
+                    if (purchaseLogic != null) {
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
@@ -587,8 +594,10 @@ internal class PaywallViewModelImpl(
             val oldProductIdentifier = activePlayStoreSubscription.key
             val newProductId = packageToPurchase.product.id
 
-            // Extract subscription ID from the old product identifier (format: subscriptionId:basePlanId)
+            // Extract subscription ID and base plan from the old product identifier (format: subscriptionId:basePlanId)
             val oldSubscriptionId = oldProductIdentifier.substringBefore(":")
+            val oldBasePlanId = oldProductIdentifier.substringAfter(":", "")
+                .takeIf { it.isNotEmpty() }
 
             // If same product (just different base plan), Google handles it automatically
             if (oldSubscriptionId == newProductId) {
@@ -596,15 +605,29 @@ internal class PaywallViewModelImpl(
                 return null
             }
 
-            // Different product - determine if it's an upgrade or downgrade based on price
-            val oldPrice = activePlayStoreSubscription.value.price?.amountMicros
-            val newPrice = packageToPurchase.product.pricePerMonthMicros()
+            // Fetch the old product to get its normalized price for comparison
+            val oldProduct = purchases.awaitGetProduct(oldSubscriptionId, oldBasePlanId)
+            val isSandbox = activePlayStoreSubscription.value.isSandbox
 
-            val replacementMode = if (oldPrice != null && newPrice != null && newPrice > oldPrice) {
-                Logger.d("Detected upgrade: $oldSubscriptionId -> $newProductId")
+            // In sandbox mode, use price per sandbox minute for accurate comparison
+            // (different periods have different accelerated renewal times)
+            // In production, use price per month for comparison
+            val oldNormalizedPrice = oldProduct?.getNormalizedPrice(isSandbox)
+            val newNormalizedPrice = packageToPurchase.product.getNormalizedPrice(isSandbox)
+
+            val replacementMode = if (oldNormalizedPrice != null && newNormalizedPrice != null &&
+                newNormalizedPrice > oldNormalizedPrice
+            ) {
+                Logger.d(
+                    "Detected upgrade: $oldSubscriptionId -> $newProductId " +
+                        "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
+                )
                 productChangeConfig.upgradeReplacementMode.toGoogleReplacementMode()
             } else {
-                Logger.d("Detected downgrade: $oldSubscriptionId -> $newProductId")
+                Logger.d(
+                    "Detected downgrade: $oldSubscriptionId -> $newProductId " +
+                        "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
+                )
                 productChangeConfig.downgradeReplacementMode.toGoogleReplacementMode()
             }
 
@@ -619,10 +642,51 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * Get the monthly price in micros for price comparison.
+     * Get a normalized price for comparison between products with different billing periods.
+     *
+     * In production: Returns price per month (micros) for fair comparison.
+     * In sandbox: Returns price per sandbox minute, accounting for Google Play's test renewal acceleration:
+     *   - Weekly/Monthly → 5 minutes
+     *   - 3 months → 10 minutes
+     *   - 6 months → 15 minutes
+     *   - Yearly → 30 minutes
+     *
+     * @see https://developer.android.com/google/play/billing/test#renewal-acceleration
      */
-    private fun StoreProduct.pricePerMonthMicros(): Long? {
-        return pricePerMonth()?.amountMicros
+    private fun StoreProduct.getNormalizedPrice(isSandbox: Boolean): Long? {
+        val period = this.period ?: return null
+        val priceAmountMicros = this.price.amountMicros
+
+        return if (isSandbox) {
+            // In sandbox, normalize to price per minute based on accelerated renewal times
+            val sandboxMinutes = getSandboxRenewalMinutes(period)
+            priceAmountMicros / sandboxMinutes
+        } else {
+            // In production, use price per month
+            pricePerMonth()?.amountMicros
+        }
+    }
+
+    /**
+     * Returns the sandbox renewal time in minutes for a given billing period.
+     * Based on Google Play's test subscription renewal acceleration.
+     *
+     * @see https://developer.android.com/google/play/billing/test#renewal-acceleration
+     */
+    private fun getSandboxRenewalMinutes(period: Period): Long {
+        // Google Play sandbox acceleration times:
+        // - 1 week → 5 minutes
+        // - 1 month → 5 minutes
+        // - 3 months → 10 minutes
+        // - 6 months → 15 minutes
+        // - 1 year → 30 minutes
+        val totalMonths = period.valueInMonths
+        return when {
+            totalMonths >= 12 -> 30L // Yearly
+            totalMonths >= 6 -> 15L // 6 months
+            totalMonths >= 3 -> 10L // 3 months
+            else -> 5L // Weekly or monthly
+        }
     }
 
     private fun validateState() {

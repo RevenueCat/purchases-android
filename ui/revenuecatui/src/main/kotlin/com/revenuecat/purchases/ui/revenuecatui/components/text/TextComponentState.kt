@@ -45,8 +45,10 @@ internal fun rememberUpdatedTextComponentState(
         style = style,
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 }
 
@@ -57,8 +59,10 @@ internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
-    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -75,6 +79,8 @@ internal fun rememberUpdatedTextComponentState(
             selectedPackageProvider = selectedPackageProvider,
             selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -92,6 +98,8 @@ internal class TextComponentState(
     private val selectedPackageProvider: () -> Package?,
     private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -106,7 +114,9 @@ internal class TextComponentState(
         private set
 
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
+        if (style.packageUniqueId != null) {
+            style.packageUniqueId == selectedPackageUniqueIdProvider()
+        } else if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
@@ -139,12 +149,25 @@ internal class TextComponentState(
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
+    /**
+     * Whether this component uses a configured promo offer.
+     * If the style has its own package, use the style's isPromoOffer.
+     * Otherwise, use the selected package's promo offer status.
+     */
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        // Use subscription option's eligibility if available (from resolved offer),
+        // otherwise fall back to package's default option eligibility
+        val introOfferEligibility = subscriptionOption?.introEligibility
+            ?: applicablePackage?.introEligibility
+            ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
     }
 
     @get:JvmSynthetic

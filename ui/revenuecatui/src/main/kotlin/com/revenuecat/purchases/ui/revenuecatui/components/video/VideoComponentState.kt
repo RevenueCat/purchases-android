@@ -53,10 +53,14 @@ internal class VideoComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
+        if (style.packageUniqueId != null) {
+            style.packageUniqueId == selectedPackageUniqueIdProvider()
+        } else if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
@@ -75,12 +79,16 @@ internal class VideoComponentState(
         style.rcPackage ?: selectedPackageProvider()
     }
 
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
     }
 
     private val themeVideoUrls: ThemeVideoUrls by derivedStateOf {
@@ -306,6 +314,8 @@ internal fun rememberUpdatedVideoComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
 @Stable
@@ -316,6 +326,8 @@ internal fun rememberUpdatedVideoComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): VideoComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -331,6 +343,8 @@ internal fun rememberUpdatedVideoComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }
 }

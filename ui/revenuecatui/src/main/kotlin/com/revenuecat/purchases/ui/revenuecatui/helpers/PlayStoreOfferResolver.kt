@@ -29,6 +29,12 @@ sealed class ResolvedOffer {
             is ConfiguredOffer -> option
             is NoConfiguration -> option
         }
+
+    /**
+     * Whether this resolved offer is a promo offer (specifically configured Play Store offer).
+     */
+    val isPromoOffer: Boolean
+        get() = this is ConfiguredOffer
 }
 
 /**

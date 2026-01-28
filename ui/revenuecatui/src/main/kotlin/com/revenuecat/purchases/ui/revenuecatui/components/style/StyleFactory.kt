@@ -246,8 +246,12 @@ internal class StyleFactory(
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
+        val packageUniqueId: String?
+            get() = packageInfo?.uniqueId
         val subscriptionOption: SubscriptionOption?
             get() = packageInfo?.resolvedOffer?.subscriptionOption
+        val isPromoOffer: Boolean
+            get() = packageInfo?.resolvedOffer?.isPromoOffer ?: false
 
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
@@ -735,6 +739,8 @@ internal class StyleFactory(
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -783,7 +789,9 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
             subscriptionOption = subscriptionOption,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -822,6 +830,8 @@ internal class StyleFactory(
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
@@ -870,6 +880,8 @@ internal class StyleFactory(
             padding = component.padding?.toPaddingValues() ?: PaddingValues(),
             margin = component.margin?.toPaddingValues() ?: PaddingValues(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
@@ -907,6 +919,8 @@ internal class StyleFactory(
                 margin = component.margin.toPaddingValues(),
                 iconBackground = background,
                 rcPackage = rcPackage,
+                packageUniqueId = packageUniqueId,
+                isPromoOffer = isPromoOffer,
                 tabIndex = tabControlIndex,
                 overrides = presentedOverrides,
             )
@@ -933,6 +947,8 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             items = items,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -967,6 +983,8 @@ internal class StyleFactory(
             icon = icon,
             connector = connectorStyle,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -1004,6 +1022,8 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            isPromoOffer = isPromoOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
