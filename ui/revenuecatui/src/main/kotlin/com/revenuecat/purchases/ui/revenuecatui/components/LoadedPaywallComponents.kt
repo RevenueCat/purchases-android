@@ -80,7 +80,7 @@ internal fun LoadedPaywallComponents(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
-        WithOptionalVideoBackground(state, background = background) {
+        WithOptionalBackgroundOverlay(state, background = background) {
             Column {
                 ComponentView(
                     style = style,
@@ -223,6 +223,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         dark = ColorInfo.Hex(Color.Black.toArgb()),
     )
     val data = PaywallComponentsData(
+        id = "preview_paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
@@ -394,6 +395,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
 @Composable
 private fun previewHelloWorldPaywallState(): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
+        id = "preview_paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(

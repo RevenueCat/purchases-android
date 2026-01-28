@@ -5,6 +5,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
 import kotlin.math.roundToInt
 
 private object PeriodConstants {
@@ -122,6 +130,46 @@ class Period(
                 0.0
             }
         }
+}
+
+internal object PeriodSerializer : KSerializer<Period> {
+    private const val VALUE_INDEX = 0
+    private const val UNIT_INDEX = 1
+    private const val ISO8601_INDEX = 2
+
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Period") {
+        element("value", Int.serializer().descriptor)
+        element("unit", String.serializer().descriptor)
+        element("iso8601", String.serializer().descriptor)
+    }
+
+    override fun serialize(encoder: Encoder, value: Period) {
+        encoder.encodeStructure(descriptor) {
+            encodeIntElement(descriptor, VALUE_INDEX, value.value)
+            encodeStringElement(descriptor, UNIT_INDEX, value.unit.name)
+            encodeStringElement(descriptor, ISO8601_INDEX, value.iso8601)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): Period {
+        return decoder.decodeStructure(descriptor) {
+            var value = 0
+            var unit = Period.Unit.UNKNOWN
+            var iso8601 = ""
+
+            while (true) {
+                when (val index = decodeElementIndex(descriptor)) {
+                    VALUE_INDEX -> value = decodeIntElement(descriptor, VALUE_INDEX)
+                    UNIT_INDEX -> unit = Period.Unit.valueOf(decodeStringElement(descriptor, UNIT_INDEX))
+                    ISO8601_INDEX -> iso8601 = decodeStringElement(descriptor, ISO8601_INDEX)
+                    -1 -> break
+                    else -> error("Unexpected index: $index")
+                }
+            }
+
+            Period(value, unit, iso8601)
+        }
+    }
 }
 
 // Would use Duration.parse but only available API 26 and up

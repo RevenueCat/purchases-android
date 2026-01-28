@@ -284,6 +284,11 @@ class Purchases internal constructor(
      * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
      * @param [price] Product's price.
      */
+    @Suppress("LongParameterList")
+    @Deprecated(
+        "Use syncAmazonPurchase with purchaseTime parameter instead.",
+        ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price, purchaseTime)"),
+    )
     fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
@@ -297,6 +302,41 @@ class Purchases internal constructor(
             amazonUserID,
             isoCurrencyCode,
             price,
+            null,
+        )
+    }
+
+    /**
+     * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
+     * have set [purchasesAreCompletedBy] to [MY_APP][PurchasesAreCompletedBy.MY_APP] or when performing a client side
+     * migration of your current users to RevenueCat.
+     *
+     * The receipt IDs are cached if successfully posted so they are not posted more than once.
+     *
+     * @param [productID] Product ID associated to the purchase.
+     * @param [receiptID] ReceiptId that represents the Amazon purchase.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
+     * @param [purchaseTime] Time the product was purchased, in milliseconds since the epoch.
+     * Can be obtained from the PurchaseResponse > Receipt > purchaseTime.
+     */
+    @Suppress("LongParameterList")
+    fun syncAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long,
+    ) {
+        purchasesOrchestrator.syncAmazonPurchase(
+            productID,
+            receiptID,
+            amazonUserID,
+            isoCurrencyCode,
+            price,
+            purchaseTime,
         )
     }
 

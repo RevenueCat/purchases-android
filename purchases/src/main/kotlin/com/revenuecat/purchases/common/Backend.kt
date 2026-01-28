@@ -9,6 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -117,6 +118,12 @@ internal class Backend(
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
         private const val NEW_APP_USER_ID = "new_app_user_id"
+
+        /**
+         * This version should be bumped whenever there is a change to the payload of POST receipt that the backend
+         * may need to handle differently. It should be kept in sync with the iOS SDK.
+         */
+        private const val POST_RECEIPT_PAYLOAD_VERSION = 1
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal val json = Json {
@@ -246,11 +253,10 @@ internal class Backend(
         finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?,
-        @SuppressWarnings("UnusedPrivateMember")
-        marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
+        purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -261,13 +267,13 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID,
+            purchasesAreCompletedBy.toString(),
         )
 
         val body = mapOf(
             FETCH_TOKEN to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
-            "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
+            "platform_product_ids" to receiptInfo.platformProductIds,
             APP_USER_ID to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
@@ -276,15 +282,18 @@ internal class Backend(
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
             "observer_mode" to !finishTransactions,
+            "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID,
+            "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "sdk_originated" to receiptInfo.sdkOriginated,
+            "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
@@ -293,8 +302,8 @@ internal class Backend(
         )
 
         val extraHeaders = mapOf(
-            "price_string" to receiptInfo.storeProduct?.price?.formatted,
-            "marketplace" to marketplace,
+            "price_string" to receiptInfo.formattedPrice,
+            "marketplace" to receiptInfo.marketplace,
         ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {

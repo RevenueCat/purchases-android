@@ -197,6 +197,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     appUserID = "appUserID",
                     sessionID = "sessionID",
                     offeringID = "offeringID",
+                    paywallID = "paywallID",
                     paywallRevision = 5,
                     timestamp = 123456789,
                     displayMode = "footer",

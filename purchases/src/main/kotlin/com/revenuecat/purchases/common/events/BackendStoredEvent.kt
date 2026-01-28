@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -69,7 +70,11 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
 @JvmSynthetic
 internal fun PaywallEvent.toBackendStoredEvent(
     appUserID: String,
-): BackendStoredEvent {
+): BackendStoredEvent? {
+    if (type == PaywallEventType.PURCHASE_INITIATED || type == PaywallEventType.PURCHASE_ERROR) {
+        // WIP: We should implement support for these events in the backend.
+        return null
+    }
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -78,6 +83,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             appUserID = appUserID,
             sessionID = data.sessionIdentifier.toString(),
             offeringID = data.offeringIdentifier,
+            paywallID = data.paywallIdentifier,
             paywallRevision = data.paywallRevision,
             timestamp = creationData.date.time,
             displayMode = data.displayMode,
@@ -85,6 +91,10 @@ internal fun PaywallEvent.toBackendStoredEvent(
             localeIdentifier = data.localeIdentifier,
             exitOfferType = data.exitOfferType?.value,
             exitOfferingID = data.exitOfferingIdentifier,
+            packageID = data.packageIdentifier,
+            productID = data.productIdentifier,
+            errorCode = data.errorCode,
+            errorMessage = data.errorMessage,
         ),
     )
 }

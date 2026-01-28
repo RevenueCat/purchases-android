@@ -60,7 +60,7 @@ class PaywallView : CompatComposeView {
 
     private val paywallOptionsState = mutableStateOf(
         PaywallOptions.Builder {
-            dismissHandler?.invoke()
+            dismiss()
         }.build(),
     )
     private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
@@ -144,12 +144,12 @@ class PaywallView : CompatComposeView {
     }
 
     override fun onBackPressed() {
-        dismissHandler?.run { invoke() } ?: super.onBackPressed()
+        dismissHandler?.run { dismiss() } ?: super.onBackPressed()
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
-        paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
+        paywallOptions = PaywallOptions.Builder { dismiss() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
             .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
@@ -170,6 +170,10 @@ class PaywallView : CompatComposeView {
         }
         this.initialFontProvider = fontProvider
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
+    }
+
+    private fun dismiss() {
+        dismissHandler?.invoke()
     }
 
     @Composable

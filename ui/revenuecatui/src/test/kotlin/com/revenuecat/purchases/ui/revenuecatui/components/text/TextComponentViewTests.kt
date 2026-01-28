@@ -40,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
@@ -57,8 +58,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
+import java.util.Date
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -392,6 +399,7 @@ class TextComponentViewTests {
             )
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -555,6 +563,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = listOf(textComponent)),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -761,6 +770,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -845,6 +855,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -924,6 +935,75 @@ class TextComponentViewTests {
             .assertIsDisplayed()
             .onChild()
             .assertTextEquals(expectedTextWithoutDecimals)
+    }
+
+    @Test
+    fun `Countdown variables should be processed without a selected package`(): Unit = with(composeTestRule) {
+        // Arrange
+        // A date in the future (2 days from now)
+        val countdownDate = Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)
+        val countdownTextKey = LocalizationKey("countdown_text")
+        val countdownText = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
+        val countdownLocalizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
+                countdownTextKey to LocalizationData.Text(countdownText),
+            ),
+        )
+
+        // Create a text component style with countdownDate set (simulating being inside a countdown component)
+        // but with NO package (rcPackage = null) and no packages in the state
+        val textStyle = TextComponentStyle(
+            texts = nonEmptyMapOf(localeIdEnUs to countdownText),
+            color = ColorStyles(ColorStyle.Solid(Color.Black)),
+            fontSize = 15,
+            fontWeight = null,
+            fontSpec = null,
+            textAlign = null,
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            backgroundColor = null,
+            visible = true,
+            size = Size(Fit, Fit),
+            padding = PaddingValues(0.dp),
+            margin = PaddingValues(0.dp),
+            rcPackage = null, // No fixed package
+            tabIndex = null,
+            countdownDate = countdownDate, // Countdown is active
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            variableLocalizations = nonEmptyMapOf(
+                localeIdEnUs to variableLocalizationKeysForEnUs()
+            ),
+            overrides = emptyList(),
+        )
+
+        // Create a state with NO packages - this simulates when packages can't be loaded
+        val state = FakePaywallState(
+            localizations = countdownLocalizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            packages = emptyList(), // No packages!
+        )
+
+        // Act
+        setContent {
+            TextComponentView(
+                style = textStyle,
+                state = state,
+                modifier = Modifier.testTag("countdown_text")
+            )
+        }
+
+        // Assert
+        // The countdown variables should be processed, not shown as raw placeholders
+        // If the bug exists, we'd see "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
+        val node = onNodeWithTag("countdown_text").onChild()
+
+        val actualText = node.fetchSemanticsNode().config
+            .first { it.key.name == "Text" }
+            .value
+            .toString()
+
+        assertThat(actualText).doesNotContain("{{")
+        assertThat(actualText).doesNotContain("}}")
+        assertThat(actualText).containsPattern("\\d+d \\d+h")
     }
 
     /**

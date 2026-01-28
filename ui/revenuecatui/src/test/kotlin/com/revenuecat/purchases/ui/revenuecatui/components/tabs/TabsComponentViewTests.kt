@@ -143,6 +143,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -321,6 +322,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1156,6 +1158,7 @@ class TabsComponentViewTests {
         localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     ): PaywallComponentsData =
         PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1367,6 +1370,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1466,6 +1470,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1563,6 +1568,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(

@@ -324,6 +324,7 @@ class StackComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -650,6 +651,7 @@ class StackComponentViewTests {
             stack = StackComponent(components = listOf(stackComponent)),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

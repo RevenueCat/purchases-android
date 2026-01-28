@@ -80,6 +80,7 @@ class PaywallViewModelTest {
         ),
     )
     private val emptyPaywallComponentsData = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
@@ -1354,6 +1355,318 @@ class PaywallViewModelTest {
         model.trackPaywallImpressionIfNeeded()
         verify(exactly = 0) { purchases.track(any()) }
     }
+
+    // region PURCHASE_INITIATED event tests
+
+    @Test
+    fun `handlePackagePurchase tracks PURCHASE_INITIATED event before purchase attempt`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        model.trackPaywallImpressionIfNeeded()
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                    assertThat(paywallEvent.data.packageIdentifier).isEqualTo(selectedPackage.identifier)
+                    assertThat(paywallEvent.data.productIdentifier).isEqualTo(selectedPackage.product.id)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `purchase tracks PURCHASE_INITIATED even when purchase fails`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded.Legacy) {
+            fail("Invalid state")
+            return
+        }
+
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store error")
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        model.purchaseSelectedPackage(activity)
+
+        // Verify both PURCHASE_INITIATED and PURCHASE_ERROR are tracked
+        verifyOrder {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                },
+            )
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_ERROR)
+                },
+            )
+        }
+    }
+
+    // endregion PURCHASE_INITIATED event tests
+
+    // region PURCHASE_ERROR event tests
+
+    @Test
+    fun `handlePackagePurchase error tracks PURCHASE_ERROR event with error details`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        model.trackPaywallImpressionIfNeeded()
+        val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store error")
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    if (paywallEvent.type == PaywallEventType.PURCHASE_ERROR) {
+                        assertThat(paywallEvent.data.packageIdentifier).isEqualTo(selectedPackage.identifier)
+                        assertThat(paywallEvent.data.productIdentifier).isEqualTo(selectedPackage.product.id)
+                        assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.code)
+                        assertThat(paywallEvent.data.errorMessage).isEqualTo(expectedError.message)
+                    }
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `handlePackagePurchase cancellation does not track PURCHASE_ERROR event`(): Unit = runBlocking {
+        // Arrange
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(selectedPackage = TestData.Packages.monthly)
+        model.trackPaywallImpressionIfNeeded()
+        val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert
+        // Verify PURCHASE_INITIATED was tracked
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                },
+            )
+        }
+
+        // Verify CANCEL event is tracked (not PURCHASE_ERROR)
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CANCEL)
+                },
+            )
+        }
+
+        // Verify PURCHASE_ERROR is NOT tracked
+        verifyNoEventsOfTypeTracked(PaywallEventType.PURCHASE_ERROR)
+    }
+
+    // endregion PURCHASE_ERROR event tests
+
+    // region custom purchase logic tests
+
+    @Test
+    fun `custom purchase logic error tracks PURCHASE_ERROR event`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Custom error")
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Error(expectedError),
+            null,
+        )
+
+        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+        model.trackPaywallImpressionIfNeeded()
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded.Legacy) {
+            fail("Invalid state")
+            return@runTest
+        }
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        // Verify PURCHASE_INITIATED tracked first
+        verifyOrder {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                },
+            )
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_ERROR)
+                    assertThat(paywallEvent.data.packageIdentifier).isEqualTo(state.selectedPackage.value.rcPackage.identifier)
+                    assertThat(paywallEvent.data.productIdentifier).isEqualTo(state.selectedPackage.value.rcPackage.product.id)
+                    assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.code)
+                    assertThat(paywallEvent.data.errorMessage).isEqualTo(expectedError.message)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `custom purchase logic cancellation tracks CANCEL not PURCHASE_ERROR`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Cancellation,
+            null,
+        )
+
+        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+        model.trackPaywallImpressionIfNeeded()
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        // Verify PURCHASE_INITIATED tracked
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                },
+            )
+        }
+
+        // Verify CANCEL tracked
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CANCEL)
+                },
+            )
+        }
+
+        // Verify PURCHASE_ERROR is NOT tracked
+        verifyNoEventsOfTypeTracked(PaywallEventType.PURCHASE_ERROR)
+    }
+
+    @Test
+    fun `custom purchase logic success tracks only PURCHASE_INITIATED`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+        model.trackPaywallImpressionIfNeeded()
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        // Verify only PURCHASE_INITIATED tracked
+        verify {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_INITIATED)
+                },
+            )
+        }
+
+        // Verify PURCHASE_ERROR is NOT tracked
+        verifyNoEventsOfTypeTracked(PaywallEventType.PURCHASE_ERROR)
+
+        // Verify CANCEL is NOT tracked
+        verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
+    }
+
+    // endregion custom purchase logic tests
 
     // endregion events
 
