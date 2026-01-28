@@ -151,8 +151,8 @@ class Purchases internal constructor(
      * Listener for receiving tracked feature events.
      * This is an internal debug API for monitoring events tracked by RevenueCatUI.
      */
-    @set:InternalRevenueCatAPI
-    @get:InternalRevenueCatAPI
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
     var trackedEventListener: TrackedEventListener? by purchasesOrchestrator::trackedEventListener
 
     /**
