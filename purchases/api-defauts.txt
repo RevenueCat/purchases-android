@@ -457,7 +457,7 @@ package com.revenuecat.purchases {
     method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
     method public void setSolarEngineVisitorId(String? solarEngineVisitorId);
     method public void setTenjinAnalyticsInstallationID(String? tenjinAnalyticsInstallationID);
-    method public void setTrackedEventListener(com.revenuecat.purchases.TrackedEventListener?);
+    method @kotlin.jvm.JvmSynthetic public void setTrackedEventListener(com.revenuecat.purchases.TrackedEventListener?);
     method @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity, optional java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes);
