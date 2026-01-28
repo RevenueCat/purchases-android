@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import dev.drewhamilton.poko.Poko
 
+@Suppress("LongParameterList")
 @Poko
 internal class VideoComponentState(
     initialWindowSize: WindowWidthSizeClass,
@@ -53,6 +55,9 @@ internal class VideoComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
@@ -75,10 +80,27 @@ internal class VideoComponentState(
         style.rcPackage ?: selectedPackageProvider()
     }
 
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
+    /**
+     * The subscription option to use for intro eligibility.
+     * For components without their own package, use the selected subscription option so that
+     * promo offers with multiple phases correctly trigger the MultipleIntroOffers condition.
+     */
+    private val subscriptionOption by derivedStateOf {
+        if (style.rcPackage == null) selectedSubscriptionOptionProvider() else null
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        // Use subscription option's eligibility if available (from resolved promo offer),
+        // otherwise fall back to package's default option eligibility
+        val introOfferEligibility = subscriptionOption?.introEligibility
+            ?: applicablePackage?.introEligibility
+            ?: IntroOfferEligibility.INELIGIBLE
 
         style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
@@ -306,6 +328,9 @@ internal fun rememberUpdatedVideoComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
 @Stable
@@ -316,6 +341,9 @@ internal fun rememberUpdatedVideoComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): VideoComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -331,6 +359,9 @@ internal fun rememberUpdatedVideoComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }
 }

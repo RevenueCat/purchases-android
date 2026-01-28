@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -41,8 +42,12 @@ internal fun rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -50,6 +55,9 @@ internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -60,6 +68,8 @@ internal fun rememberUpdatedStackComponentState(
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
@@ -75,6 +85,8 @@ internal class StackComponentState(
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
+    private val selectedPackageUniqueIdProvider: () -> String?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
@@ -95,10 +107,27 @@ internal class StackComponentState(
     private val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
     }
+    private val isPromoOffer by derivedStateOf {
+        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
+    }
+
+    /**
+     * The subscription option to use for intro eligibility.
+     * For components without their own package, use the selected subscription option so that
+     * promo offers with multiple phases correctly trigger the MultipleIntroOffers condition.
+     */
+    private val subscriptionOption by derivedStateOf {
+        if (style.rcPackage == null) selectedSubscriptionOptionProvider() else null
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        // Use subscription option's eligibility if available (from resolved promo offer),
+        // otherwise fall back to package's default option eligibility
+        val introOfferEligibility = subscriptionOption?.introEligibility
+            ?: applicablePackage?.introEligibility
+            ?: IntroOfferEligibility.INELIGIBLE
 
         style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
