@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -16,7 +15,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -28,6 +26,8 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferAvailability
+import com.revenuecat.purchases.ui.revenuecatui.components.IntroOfferSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
@@ -45,16 +45,16 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 internal class VideoComponentState(
-    initialWindowSize: WindowWidthSizeClass,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
+    private val initialScreenCondition: ScreenCondition,
     private val style: VideoComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val introOfferAvailability: IntroOfferAvailability,
 ) {
-    private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
@@ -76,11 +76,19 @@ internal class VideoComponentState(
     }
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val introOfferSnapshot = IntroOfferSnapshot(
+            eligibility = introOfferEligibility,
+            availability = introOfferAvailability,
+        )
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            screenCondition = initialScreenCondition,
+            introOfferSnapshot = introOfferSnapshot,
+            state = componentState,
+            selectedPackageIdentifier = applicablePackage?.identifier,
+        )
     }
 
     private val themeVideoUrls: ThemeVideoUrls by derivedStateOf {
@@ -235,12 +243,10 @@ internal class VideoComponentState(
 
     @JvmSynthetic
     fun update(
-        windowSize: WindowWidthSizeClass? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
-        if (windowSize != null) this.windowSize = windowSize
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
         if (layoutDirection != null) this.layoutDirection = layoutDirection
@@ -306,24 +312,32 @@ internal fun rememberUpdatedVideoComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        screenConditionProvider = { paywallState.screenCondition },
+        introOfferAvailability = IntroOfferAvailability(
+            hasAnyIntroOfferEligiblePackage = paywallState.hasAnyIntroOfferEligiblePackage,
+            hasAnyMultipleIntroOffersEligiblePackage = paywallState.hasAnyMultipleIntroOffersEligiblePackage,
+        ),
     )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 internal fun rememberUpdatedVideoComponentState(
     style: VideoComponentStyle,
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    screenConditionProvider: () -> ScreenCondition,
+    introOfferAvailability: IntroOfferAvailability = IntroOfferAvailability(),
 ): VideoComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = screenConditionProvider()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current
-    return remember(style, windowSize, density, darkMode, layoutDirection) {
+    return remember(style, screenCondition, density, darkMode, layoutDirection) {
         VideoComponentState(
-            initialWindowSize = windowSize,
+            initialScreenCondition = screenCondition,
             initialDensity = density,
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
@@ -331,6 +345,7 @@ internal fun rememberUpdatedVideoComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            introOfferAvailability = introOfferAvailability,
         )
     }
 }

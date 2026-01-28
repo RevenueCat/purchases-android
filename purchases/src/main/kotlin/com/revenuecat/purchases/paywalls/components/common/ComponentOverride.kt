@@ -5,6 +5,7 @@ import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
@@ -17,26 +18,113 @@ class ComponentOverride<T : PartialComponent>(
 
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
+        /**
+         * Compares the selected package's intro-offer eligibility (not the whole paywall) against [value].
+         * This matches the package the customer currently has highlighted in the UI.
+         *
+         * Default values provide backward compatibility with legacy JSON that only has `{"type": "intro_offer"}`.
+         */
         @Serializable
-        object Compact : Condition
+        data class IntroOffer(
+            @SerialName("operator") val operator: EqualityOperatorType = EqualityOperatorType.EQUALS,
+            @SerialName("value") val value: Boolean = true,
+        ) : Condition
 
+        /**
+         * Compares whether the selected package exposes multiple intro offers. Other packages are ignored.
+         *
+         * Default values provide backward compatibility with legacy JSON.
+         */
         @Serializable
-        object Medium : Condition
+        data class MultipleIntroOffers(
+            @SerialName("operator") val operator: EqualityOperatorType = EqualityOperatorType.EQUALS,
+            @SerialName("value") val value: Boolean = true,
+        ) : Condition
 
+        /**
+         * Compares against whether any package on the paywall has an intro offer.
+         *
+         * Assuming the user is eligible for the offer
+         */
         @Serializable
-        object Expanded : Condition
+        data class AnyPackageContainsIntroOffer(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
 
+        /**
+         * Compares against whether any package on the paywall exposes multiple intro offers.
+         *
+         * Assuming the user is eligible for the offers
+         */
         @Serializable
-        object IntroOffer : Condition
+        data class AnyPackageContainsMultipleIntroOffers(
+            @SerialName("operator") val operator: EqualityOperatorType,
+            @SerialName("value") val value: Boolean,
+        ) : Condition
 
-        @Serializable
-        object MultipleIntroOffers : Condition
-
+        /**
+         * Is the current component in a selected state?
+         * */
         @Serializable
         object Selected : Condition
 
         @Serializable
         object Unsupported : Condition
+
+        /**
+         * Compares the current device orientation against the list of [orientations].
+         * */
+        @Serializable
+        data class Orientation(
+            @SerialName("operator") val operator: ArrayOperatorType,
+            @SerialName("orientations") val orientations: List<OrientationType>,
+        ) : Condition
+
+        /**
+         * Compares the current screen size against the list of [sizes].
+         * */
+        @Serializable
+        data class ScreenSize(
+            @SerialName("operator") val operator: ArrayOperatorType,
+            @SerialName("sizes") val sizes: List<String>,
+        ) : Condition
+
+        /**
+         * Compares the selected package against the list of [packages].
+         * */
+        @Serializable
+        data class SelectedPackage(
+            @SerialName("operator") val operator: ArrayOperatorType,
+            @SerialName("packages") val packages: List<String>,
+        ) : Condition
+
+        @Serializable
+        enum class ArrayOperatorType {
+            @SerialName("in")
+            IN,
+
+            @SerialName("not_in")
+            NOT_IN,
+        }
+
+        @Serializable
+        enum class EqualityOperatorType {
+            @SerialName("=")
+            EQUALS,
+
+            @SerialName("!=")
+            NOT_EQUALS,
+        }
+
+        @Serializable
+        enum class OrientationType {
+            @SerialName("portrait")
+            PORTRAIT,
+
+            @SerialName("landscape")
+            LANDSCAPE,
+        }
     }
 }
 
@@ -44,12 +132,14 @@ class ComponentOverride<T : PartialComponent>(
 internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
     serialName = "Condition",
     serializerByType = mapOf(
-        "compact" to { Condition.Compact.serializer() },
-        "medium" to { Condition.Medium.serializer() },
-        "expanded" to { Condition.Expanded.serializer() },
         "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
+        "introductory_offer_available" to { Condition.AnyPackageContainsIntroOffer.serializer() },
+        "multiple_intro_offers_available" to { Condition.AnyPackageContainsMultipleIntroOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
+        "orientation" to { Condition.Orientation.serializer() },
+        "screen_size" to { Condition.ScreenSize.serializer() },
+        "selected_package" to { Condition.SelectedPackage.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

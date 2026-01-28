@@ -1,26 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import com.revenuecat.purchases.FontAlias
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight
-import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
-import com.revenuecat.purchases.paywalls.components.properties.Padding
-import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.DEFAULT
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SELECTED
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.COMPACT
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.EXPANDED
-import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.MEDIUM
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.INELIGIBLE
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
@@ -37,26 +24,27 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
 
     // LocalizedTextPartial is an arbitrary choice. Any PresentedPartial type would do to test
     // the buildPresentedPartial() logic.
+    @Suppress("LongParameterList")
     class Args(
         val availableOverrides: List<PresentedOverride<LocalizedTextPartial>>,
-        val windowSize: ScreenCondition,
+        val screenCondition: ScreenCondition,
         val introOfferEligibility: IntroOfferEligibility,
         val state: ComponentViewState,
         val expected: LocalizedTextPartial?,
+        val selectedPackageIdentifier: String? = null,
+        val hasAnyIntroOfferEligiblePackage: Boolean = false,
+        val hasAnyMultipleIntroOffersEligiblePackage: Boolean = false,
     )
 
     @Suppress("LargeClass")
     companion object {
         private val localeId = LocaleId("en_US")
-        private val dummyLocalizationDictionary = nonEmptyMapOf(
-            LocalizationKey("dummyKey") to LocalizationData.Text("dummyText")
-        )
         private val selectedPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello selected"),
-                )
+                ),
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
@@ -66,7 +54,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             using = nonEmptyMapOf(
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello intro"),
-                )
+                ),
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
@@ -76,7 +64,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             using = nonEmptyMapOf(
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello multiple intros"),
-                )
+                ),
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
@@ -86,37 +74,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             using = nonEmptyMapOf(
                 localeId to nonEmptyMapOf(
                     LocalizationKey("key") to LocalizationData.Text("Hello compact"),
-                )
-            ),
-            aliases = emptyMap(),
-            fontAliases = emptyMap(),
-        ).getOrThrow()
-        private val mediumPartial = LocalizedTextPartial(
-            from = PartialTextComponent(),
-            using = nonEmptyMapOf(
-                localeId to nonEmptyMapOf(
-                    LocalizationKey("key") to LocalizationData.Text("Hello medium"),
-                )
-            ),
-            aliases = emptyMap(),
-            fontAliases = emptyMap(),
-        ).getOrThrow()
-        private val expandedPartial = LocalizedTextPartial(
-            from = PartialTextComponent(),
-            using = nonEmptyMapOf(
-                localeId to nonEmptyMapOf(
-                    LocalizationKey("key") to LocalizationData.Text("Hello expanded"),
-                )
-            ),
-            aliases = emptyMap(),
-            fontAliases = emptyMap(),
-        ).getOrThrow()
-        private val introOfferAndSelectedPartial = LocalizedTextPartial(
-            from = PartialTextComponent(),
-            using = nonEmptyMapOf(
-                localeId to nonEmptyMapOf(
-                    LocalizationKey("key") to LocalizationData.Text("Hello intro and selected"),
-                )
+                ),
             ),
             aliases = emptyMap(),
             fontAliases = emptyMap(),
@@ -127,49 +85,52 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             introOffer: LocalizedTextPartial? = introOfferPartial,
             multipleIntroOffers: LocalizedTextPartial? = multipleIntroOffersPartial,
             selected: LocalizedTextPartial? = selectedPartial,
-            expanded: LocalizedTextPartial? = expandedPartial,
-            medium: LocalizedTextPartial? = mediumPartial,
-            compact: LocalizedTextPartial? = compactPartial,
         ): List<PresentedOverride<LocalizedTextPartial>> {
             val overrides: MutableList<PresentedOverride<LocalizedTextPartial>> = mutableListOf()
-            compact?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.Compact),
-                    properties = it,
-                ))
-            }
-            medium?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.Medium),
-                    properties = it,
-                ))
-            }
-            expanded?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.Expanded),
-                    properties = it,
-                ))
-            }
             introOffer?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
-                    properties = it,
-                ))
+                overrides.add(
+                    PresentedOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.IntroOffer(
+                                operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                value = true,
+                            ),
+                        ),
+                        properties = it,
+                    ),
+                )
             }
             multipleIntroOffers?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
-                    properties = it,
-                ))
+                overrides.add(
+                    PresentedOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.MultipleIntroOffers(
+                                operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                value = true,
+                            ),
+                        ),
+                        properties = it,
+                    ),
+                )
             }
             selected?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.Selected),
-                    properties = it,
-                ))
+                overrides.add(
+                    PresentedOverride(
+                        conditions = listOf(ComponentOverride.Condition.Selected),
+                        properties = it,
+                    ),
+                )
             }
             return overrides
         }
+
+        private fun snapshot(
+            orientation: ScreenOrientation = ScreenOrientation.PORTRAIT,
+            screenSizeName: String? = null,
+        ): ScreenCondition = ScreenCondition(
+            orientation = orientation,
+            screenSize = screenSizeName?.let { UiConfig.AppConfig.ScreenSize(name = it, width = 0) },
+        )
 
         @Suppress("LongMethod")
         @JvmStatic
@@ -179,7 +140,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick selected when all overrides available and applicable",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    windowSize = MEDIUM,
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = selectedPartial,
@@ -189,7 +150,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick multiple intros when all overrides available and state is not selected",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    windowSize = MEDIUM,
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = DEFAULT,
                     expected = multipleIntroOffersPartial,
@@ -199,532 +160,709 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 "should pick intro when all overrides available and state is not selected and eligibility is single",
                 Args(
                     availableOverrides = buildPresentedOverrides(),
-                    windowSize = MEDIUM,
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
                     state = DEFAULT,
                     expected = introOfferPartial,
                 ),
             ),
             arrayOf(
-                "should pick compact when all overrides available, only window applies, and size is compact",
+                "should respect orientation condition",
                 Args(
-                    availableOverrides = buildPresentedOverrides(),
-                    windowSize = COMPACT,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.LANDSCAPE,
+                    ),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
                     expected = compactPartial,
                 ),
             ),
             arrayOf(
-                "should pick medium when all overrides available, only window applies, and size is medium",
+                "should reject orientation when not matching",
                 Args(
-                    availableOverrides = buildPresentedOverrides(),
-                    windowSize = MEDIUM,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
-                    expected = mediumPartial,
+                    expected = null,
                 ),
             ),
             arrayOf(
-                "should pick expanded when all overrides available, only window applies, and size is expanded",
+                "should respect screen size condition",
                 Args(
-                    availableOverrides = buildPresentedOverrides(),
-                    windowSize = EXPANDED,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.ScreenSize(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    sizes = listOf("tablet"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        screenSizeName = "tablet",
+                    ),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
-                    expected = expandedPartial,
+                    expected = compactPartial,
                 ),
             ),
             arrayOf(
-                "should pick multiple intros when all overrides applicable, but selected override unavailable",
+                "should respect selected package condition",
                 Args(
-                    availableOverrides = buildPresentedOverrides(selected = null),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = multipleIntroOffersPartial,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
                 ),
             ),
             arrayOf(
                 "should pick intro when all overrides applicable, but selected and multiple intro override unavailable",
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
-                    windowSize = MEDIUM,
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
                     state = SELECTED,
                     expected = introOfferPartial,
                 ),
             ),
             arrayOf(
-                "should pick medium when all overrides applicable, eligibility is multiple, but only single override " +
-                    "available",
+                "should respect orientation condition with NOT_IN operator",
                 Args(
-                    availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = mediumPartial,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
                 ),
             ),
             arrayOf(
-                "should pick medium when all overrides applicable, but selected and intro overrides not available",
+                "should apply orientation NOT_IN when orientation unknown",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = mediumPartial,
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.UNKNOWN,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
                 ),
             ),
             arrayOf(
-                "should pick medium when window is expanded, all overrides applicable, but selected, intro and " +
-                    "expanded overrides not available",
+                "should reject orientation when NOT_IN matches",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
-                        expanded = null,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = EXPANDED,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = mediumPartial,
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
                 ),
             ),
             arrayOf(
-                "should pick compact when window is medium, all overrides applicable, but selected, intro and medium " +
-                    "overrides not available",
+                "should respect screen size condition with NOT_IN operator",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
-                        medium = null,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.ScreenSize(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    sizes = listOf("phone"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    screenCondition = snapshot(
+                        screenSizeName = "tablet",
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "should reject screen size when active size is unknown",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.ScreenSize(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    sizes = listOf("tablet"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        screenSizeName = null,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "should reject screen size when NOT_IN matches",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.ScreenSize(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    sizes = listOf("tablet"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        screenSizeName = "tablet",
+                    ),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "should respect selected package condition with NOT_IN operator",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_monthly"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject selected package when not provided",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = null,
+                ),
+            ),
+            arrayOf(
+                "should reject selected package when NOT_IN matches",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should ignore unsupported condition",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "should apply override when all multiple conditions match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Selected,
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.LANDSCAPE,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
                     state = SELECTED,
                     expected = compactPartial,
                 ),
             ),
             arrayOf(
-                "should return null when window is compact, all overrides applicable, but selected, intro and " +
-                    "compact overrides not available",
+                "should reject override when one of multiple conditions does not match",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
-                        compact = null,
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Selected,
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = COMPACT,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = INELIGIBLE,
                     state = SELECTED,
                     expected = null,
                 ),
             ),
             arrayOf(
-                "should return null when all overrides applicable, but none available",
-                Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
-                        expanded = null,
-                        medium = null,
-                        compact = null,
-                    ),
-                    windowSize = COMPACT,
-                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
-                    state = SELECTED,
-                    expected = null,
-                ),
-            ),
-            arrayOf(
-                "should pick selected when all overrides applicable, but window override unavailable",
-                Args(
-                    availableOverrides = buildPresentedOverrides(
-                        compact = null,
-                        medium = null,
-                        expanded = null,
-                    ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = selectedPartial,
-                ),
-            ),
-            arrayOf(
-                "should pick selected when all overrides applicable, but window and intro overrides unavailable",
-                Args(
-                    availableOverrides = buildPresentedOverrides(
-                        compact = null,
-                        medium = null,
-                        expanded = null,
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                    ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = selectedPartial,
-                ),
-            ),
-            arrayOf(
-                "should pick multiple intros when all overrides applicable, but window and selected overrides " +
-                    "unavailable",
-                Args(
-                    availableOverrides = buildPresentedOverrides(
-                        compact = null,
-                        medium = null,
-                        expanded = null,
-                        selected = null,
-                    ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = introOfferPartial,
-                ),
-            ),
-            arrayOf(
-                "should pick intro when all overrides applicable, but window and selected overrides unavailable",
-                Args(
-                    availableOverrides = buildPresentedOverrides(
-                        compact = null,
-                        medium = null,
-                        expanded = null,
-                        selected = null,
-                    ),
-                    windowSize = MEDIUM,
-                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
-                    state = SELECTED,
-                    expected = introOfferPartial,
-                ),
-            ),
-            arrayOf(
-                "overrides with multiple conditions that are all applicable should override previous overrides",
+                "should apply override when SelectedPackage and IntroOffer both match (single offer)",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.Medium),
-                            properties = mediumPartial,
-                        ),
-                        PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.Selected),
-                            properties = selectedPartial,
-                        ),
-                        PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.Medium,
-                                ComponentOverride.Condition.Selected,
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
-                            properties = introOfferAndSelectedPartial,
+                            properties = compactPartial,
                         ),
                     ),
-                    windowSize = EXPANDED,
+                    screenCondition = snapshot(),
                     introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
-                    state = SELECTED,
-                    expected = introOfferAndSelectedPartial,
-                )
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
             ),
             arrayOf(
-                "overrides with multiple conditions that are not all applicable should not override previous overrides",
+                "should apply override when SelectedPackage and IntroOffer both match (multiple offers)",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.Medium),
-                            properties = mediumPartial,
-                        ),
-                        PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.Selected),
-                            properties = selectedPartial,
-                        ),
-                        PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.Medium,
-                                ComponentOverride.Condition.Selected,
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
-                            properties = introOfferAndSelectedPartial,
+                            properties = compactPartial,
                         ),
                     ),
-                    windowSize = COMPACT,
-                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
-                    state = SELECTED,
-                    expected = selectedPartial,
-                )
+                    screenCondition = snapshot(),
+                    introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
             ),
             arrayOf(
-                "should combine all window overrides when they're all available and applicable",
+                "should reject override when SelectedPackage matches but IntroOffer does not",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = null,
-                        multipleIntroOffers = null,
-                        selected = null,
-                        expanded = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = null,
-                                fontWeight = null,
-                                fontWeightInt = null,
-                                fontSize = null,
-                                horizontalAlignment = null,
-                                size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
-                                padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                                margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
-                            using = nonEmptyMapOf(
-                                localeId to nonEmptyMapOf(
-                                    LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
-                                )
-                            ),
-                            aliases = emptyMap(),
-                            fontAliases = emptyMap(),
-                        ).getOrThrow(),
-                        medium = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = FontAlias("mediumFont"),
-                                fontWeight = FontWeight.MEDIUM,
-                                fontWeightInt = 500,
-                                fontSize = 15,
-                                horizontalAlignment = HorizontalAlignment.CENTER,
-                                size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
-                                padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
-                                margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                            ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = mapOf(
-                                FontAlias("mediumFont") to FontSpec.System("mediumFont"),
-                            ),
-                        ).getOrThrow(),
-                        compact = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = LocalizationKey("compactKey"),
-                                color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
-                                backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                                fontName = FontAlias("compactFont"),
-                                fontWeight = FontWeight.LIGHT,
-                                fontWeightInt = 200,
-                                fontSize = 13,
-                                horizontalAlignment = HorizontalAlignment.LEADING,
-                                size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
-                                padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
-                                margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
-                            ),
-                            using = nonEmptyMapOf(
-                                localeId to nonEmptyMapOf(
-                                    LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
-                                )
-                            ),
-                            aliases = emptyMap(),
-                            fontAliases = mapOf(
-                                FontAlias("compactFont") to FontSpec.System("compactFont"),
-                            ),
-                        ).getOrThrow(),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = EXPANDED,
+                    screenCondition = snapshot(),
                     introOfferEligibility = INELIGIBLE,
                     state = DEFAULT,
-                    // We expect all of the non-null properties from the expanded override, the non-null properties
-                    // from the medium override that are null in expanded, and the non-null properties from the compact
-                    // override that are null in medium or expanded.
-                    expected = LocalizedTextPartial(
-                        from = PartialTextComponent(
-                            visible = true,
-                            text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
-                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                            fontName = FontAlias("mediumFont"),
-                            fontWeight = FontWeight.MEDIUM,
-                            fontWeightInt = 500,
-                            fontSize = 15,
-                            horizontalAlignment = HorizontalAlignment.CENTER,
-                            size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
-                            padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                            margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
-                        ),
-                        using = nonEmptyMapOf(
-                            localeId to nonEmptyMapOf(
-                                LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
-                            )
-                        ),
-                        aliases = emptyMap(),
-                        fontAliases = mapOf(
-                            FontAlias("mediumFont") to FontSpec.System("mediumFont"),
-                        ),
-                    ).getOrThrow(),
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
                 ),
             ),
             arrayOf(
-                "should combine all overrides when all are available and applicable",
+                "should reject override when IntroOffer matches but SelectedPackage does not",
                 Args(
-                    availableOverrides = buildPresentedOverrides(
-                        introOffer = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = null,
-                                fontWeight = null,
-                                fontWeightInt = null,
-                                fontSize = 18,
-                                horizontalAlignment = HorizontalAlignment.CENTER,
-                                size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
-                                padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
-                                margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
                             ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = emptyMap(),
-                        ).getOrThrow(),
-                        multipleIntroOffers = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = null,
-                                fontWeight = null,
-                                fontWeightInt = null,
-                                fontSize = 34,
-                                horizontalAlignment = HorizontalAlignment.CENTER,
-                                size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
-                                padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
-                                margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
-                            ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = emptyMap(),
-                        ).getOrThrow(),
-                        selected = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = null,
-                                fontWeight = null,
-                                fontWeightInt = null,
-                                fontSize = null,
-                                horizontalAlignment = null,
-                                size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
-                                padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
-                                margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
-                            ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = emptyMap(),
-                        ).getOrThrow(),
-                        compact = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = LocalizationKey("compactKey"),
-                                color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
-                                backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
-                                fontName = FontAlias("compactFont"),
-                                fontWeight = FontWeight.LIGHT,
-                                fontWeightInt = 200,
-                                fontSize = 13,
-                                horizontalAlignment = HorizontalAlignment.LEADING,
-                                size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
-                                padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
-                                margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
-                            ),
-                            using = nonEmptyMapOf(
-                                localeId to nonEmptyMapOf(
-                                    LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
-                                )
-                            ),
-                            aliases = emptyMap(),
-                            fontAliases = mapOf(
-                                FontAlias("compactFont") to FontSpec.System("compactFont"),
-                            ),
-                        ).getOrThrow(),
-                        medium = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
-                                backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
-                                fontName = FontAlias("mediumFont"),
-                                fontWeight = FontWeight.MEDIUM,
-                                fontWeightInt = 500,
-                                fontSize = 15,
-                                horizontalAlignment = HorizontalAlignment.CENTER,
-                                size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
-                                padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
-                                margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                            ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = mapOf(
-                                FontAlias("mediumFont") to FontSpec.System("mediumFont"),
-                            ),
-                        ).getOrThrow(),
-                        expanded = LocalizedTextPartial(
-                            from = PartialTextComponent(
-                                visible = true,
-                                text = null,
-                                color = null,
-                                backgroundColor = null,
-                                fontName = FontAlias("expandedFont"),
-                                fontWeight = FontWeight.BOLD,
-                                fontWeightInt = 600,
-                                fontSize = 17,
-                                horizontalAlignment = HorizontalAlignment.TRAILING,
-                                size = Size(width = Fixed(40.toUInt()), height = Fixed(40.toUInt())),
-                                padding = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
-                                margin = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
-                            ),
-                            using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
-                            aliases = emptyMap(),
-                            fontAliases = mapOf(
-                                FontAlias("expandedFont") to FontSpec.System("expandedFont"),
-                            ),
-                        ).getOrThrow(),
+                            properties = compactPartial,
+                        ),
                     ),
-                    windowSize = EXPANDED,
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_monthly",
+                ),
+            ),
+            arrayOf(
+                "should apply override with SelectedPackage NOT_IN and IntroOffer when both match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.NOT_IN,
+                                    packages = listOf("rc_monthly"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should apply override when SelectedPackage and MultipleIntroOffers both match",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.MultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
                     introOfferEligibility = MULTIPLE_OFFERS_ELIGIBLE,
-                    state = SELECTED,
-                    expected = LocalizedTextPartial(
-                        from = PartialTextComponent(
-                            visible = true,
-                            text = LocalizationKey("compactKey"),
-                            color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())),
-                            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
-                            fontName = FontAlias("expandedFont"),
-                            fontWeight = FontWeight.BOLD,
-                            fontWeightInt = 600,
-                            fontSize = 34,
-                            horizontalAlignment = HorizontalAlignment.CENTER,
-                            size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
-                            padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
-                            margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when SelectedPackage matches but MultipleIntroOffers does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.MultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = compactPartial,
                         ),
-                        using = nonEmptyMapOf(
-                            localeId to nonEmptyMapOf(
-                                LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
-                            )
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should apply override when any package has an intro offer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
                         ),
-                        aliases = emptyMap(),
-                        fontAliases = mapOf(
-                            FontAlias("expandedFont") to FontSpec.System("expandedFont"),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                    hasAnyIntroOfferEligiblePackage = true,
+                ),
+            ),
+            arrayOf(
+                "should reject override when no package has an intro offer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyPackageContainsIntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
                         ),
-                    ).getOrThrow(),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = INELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    hasAnyIntroOfferEligiblePackage = false,
+                ),
+            ),
+            arrayOf(
+                "should apply override when any package has multiple intro offers",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = multipleIntroOffersPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = multipleIntroOffersPartial,
+                    hasAnyMultipleIntroOffersEligiblePackage = true,
+                ),
+            ),
+            arrayOf(
+                "should reject override when no package has multiple intro offers",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = multipleIntroOffersPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    hasAnyMultipleIntroOffersEligiblePackage = false,
+                ),
+            ),
+            arrayOf(
+                "should apply override with multiple packages and IntroOffer",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual", "rc_six_month"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_six_month",
+                ),
+            ),
+            arrayOf(
+                "should apply override with three combined conditions: SelectedPackage, IntroOffer, and Orientation",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.PORTRAIT),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = compactPartial,
+                    selectedPackageIdentifier = "rc_annual",
+                ),
+            ),
+            arrayOf(
+                "should reject override when SelectedPackage and IntroOffer match but Orientation does not",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    packages = listOf("rc_annual"),
+                                ),
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                    value = true,
+                                ),
+                                ComponentOverride.Condition.Orientation(
+                                    operator = ComponentOverride.Condition.ArrayOperatorType.IN,
+                                    orientations = listOf(ComponentOverride.Condition.OrientationType.LANDSCAPE),
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    screenCondition = snapshot(
+                        orientation = ScreenOrientation.PORTRAIT,
+                    ),
+                    introOfferEligibility = SINGLE_OFFER_ELIGIBLE,
+                    state = DEFAULT,
+                    expected = null,
+                    selectedPackageIdentifier = "rc_annual",
                 ),
             ),
         )
@@ -734,9 +872,16 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
     fun `Should properly build presented partial`() {
         // Arrange, Act
         val actual: LocalizedTextPartial? = args.availableOverrides.buildPresentedPartial(
-            windowSize = args.windowSize,
-            introOfferEligibility = args.introOfferEligibility,
+            screenCondition = args.screenCondition,
+            introOfferSnapshot = IntroOfferSnapshot(
+                eligibility = args.introOfferEligibility,
+                availability = IntroOfferAvailability(
+                    hasAnyIntroOfferEligiblePackage = args.hasAnyIntroOfferEligiblePackage,
+                    hasAnyMultipleIntroOffersEligiblePackage = args.hasAnyMultipleIntroOffersEligiblePackage,
+                ),
+            ),
             state = args.state,
+            selectedPackageIdentifier = args.selectedPackageIdentifier,
         )
 
         // Assert

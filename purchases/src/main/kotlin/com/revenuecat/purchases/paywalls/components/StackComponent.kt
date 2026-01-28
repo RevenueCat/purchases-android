@@ -78,7 +78,7 @@ class StackComponent(
 @Immutable
 class PartialStackComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    val visible: Boolean? = null,
     @get:JvmSynthetic
     val dimension: Dimension? = null,
     @get:JvmSynthetic

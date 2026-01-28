@@ -80,7 +80,7 @@ class IconComponent(
 @Immutable
 class PartialIconComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("base_url")
     val baseUrl: String? = null,

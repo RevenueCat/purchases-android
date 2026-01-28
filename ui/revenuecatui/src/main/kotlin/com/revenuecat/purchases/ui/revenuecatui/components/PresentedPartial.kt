@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
@@ -77,13 +79,21 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  */
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
-    windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    screenCondition: ScreenCondition,
+    introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
+    selectedPackageIdentifier: String?,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+        if (
+            override.shouldApply(
+                screenCondition,
+                introOfferSnapshot,
+                state,
+                selectedPackageIdentifier,
+            )
+        ) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
@@ -92,42 +102,113 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 
 @Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
-    windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    screenCondition: ScreenCondition,
+    introOfferSnapshot: IntroOfferSnapshot,
     state: ComponentViewState,
-): Boolean {
-    for (condition in conditions) {
-        when (condition) {
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-            -> {
-                if (!windowSize.applicableConditions.contains(condition)) return false
-            }
-            ComponentOverride.Condition.MultipleIntroOffers -> {
-                if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
-            }
-            ComponentOverride.Condition.IntroOffer -> {
-                if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
-            }
-            ComponentOverride.Condition.Selected -> {
-                if (state != ComponentViewState.SELECTED) return false
-            }
-            ComponentOverride.Condition.Unsupported -> {
-                return false
-            }
-        }
-    }
-    return true
+    selectedPackageIdentifier: String?,
+): Boolean = this.conditions.all { condition ->
+    conditionMatches(condition, screenCondition, introOfferSnapshot, state, selectedPackageIdentifier)
 }
 
-private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
-    get() = when (this) {
-        ScreenCondition.COMPACT -> setOf(ComponentOverride.Condition.Compact)
-        ScreenCondition.MEDIUM -> setOf(ComponentOverride.Condition.Compact, ComponentOverride.Condition.Medium)
-        ScreenCondition.EXPANDED -> setOf(
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-        )
+@Suppress("ComplexMethod")
+private fun conditionMatches(
+    condition: ComponentOverride.Condition,
+    screenCondition: ScreenCondition,
+    introOfferSnapshot: IntroOfferSnapshot,
+    state: ComponentViewState,
+    selectedPackageIdentifier: String?,
+): Boolean = when (condition) {
+    is ComponentOverride.Condition.MultipleIntroOffers -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferSnapshot.eligibility.hasMultipleIntroOffers() == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferSnapshot.eligibility.hasMultipleIntroOffers() != condition.value
     }
+
+    is ComponentOverride.Condition.AnyPackageContainsMultipleIntroOffers -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferSnapshot.availability.hasAnyMultipleIntroOffersEligiblePackage != condition.value
+    }
+
+    ComponentOverride.Condition.Selected ->
+        state == ComponentViewState.SELECTED
+
+    ComponentOverride.Condition.Unsupported -> true // Ignore case and render partial
+
+    is ComponentOverride.Condition.IntroOffer -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferSnapshot.eligibility.isEligible() == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferSnapshot.eligibility.isEligible() != condition.value
+    }
+
+    is ComponentOverride.Condition.AnyPackageContainsIntroOffer -> when (condition.operator) {
+        ComponentOverride.Condition.EqualityOperatorType.EQUALS ->
+            introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage == condition.value
+        ComponentOverride.Condition.EqualityOperatorType.NOT_EQUALS ->
+            introOfferSnapshot.availability.hasAnyIntroOfferEligiblePackage != condition.value
+    }
+
+    is ComponentOverride.Condition.Orientation ->
+        matchesOrientation(condition, screenCondition.orientation)
+
+    is ComponentOverride.Condition.ScreenSize ->
+        matchesScreenSize(condition, screenCondition.screenSize?.name)
+
+    is ComponentOverride.Condition.SelectedPackage ->
+        matchesSelectedPackage(condition, selectedPackageIdentifier)
+}
+
+private fun matchesOrientation(
+    condition: ComponentOverride.Condition.Orientation,
+    orientation: ScreenOrientation,
+): Boolean {
+    val activeOrientation = orientation.toConditionOrientationType()
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            activeOrientation != null && condition.orientations.contains(activeOrientation)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            activeOrientation == null || !condition.orientations.contains(activeOrientation)
+    }
+}
+
+private fun matchesScreenSize(
+    condition: ComponentOverride.Condition.ScreenSize,
+    activeName: String?,
+): Boolean {
+    activeName ?: return false
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            condition.sizes.contains(activeName)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            !condition.sizes.contains(activeName)
+    }
+}
+
+private fun matchesSelectedPackage(
+    condition: ComponentOverride.Condition.SelectedPackage,
+    selectedPackageIdentifier: String?,
+): Boolean {
+    val selected = selectedPackageIdentifier ?: return false
+    return when (condition.operator) {
+        ComponentOverride.Condition.ArrayOperatorType.IN ->
+            condition.packages.contains(selected)
+        ComponentOverride.Condition.ArrayOperatorType.NOT_IN ->
+            !condition.packages.contains(selected)
+    }
+}
+
+private fun ScreenOrientation.toConditionOrientationType(): ComponentOverride.Condition.OrientationType? =
+    when (this) {
+        ScreenOrientation.PORTRAIT -> ComponentOverride.Condition.OrientationType.PORTRAIT
+        ScreenOrientation.LANDSCAPE -> ComponentOverride.Condition.OrientationType.LANDSCAPE
+        ScreenOrientation.UNKNOWN -> null
+    }
+
+private fun IntroOfferEligibility.isEligible(): Boolean =
+    this != IntroOfferEligibility.INELIGIBLE
+
+private fun IntroOfferEligibility.hasMultipleIntroOffers(): Boolean =
+    this == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE

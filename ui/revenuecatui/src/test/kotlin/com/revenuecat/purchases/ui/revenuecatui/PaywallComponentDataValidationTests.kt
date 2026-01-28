@@ -650,7 +650,10 @@ class PaywallComponentDataValidationTests {
                                 fontName = missingFontAlias1,
                                 overrides = listOf(
                                     ComponentOverride(
-                                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                        conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                            value = true,
+                                        )),
                                         properties = PartialTextComponent(fontName = missingFontAlias2),
                                     )
                                 )
@@ -718,7 +721,10 @@ class PaywallComponentDataValidationTests {
                                 fontName = missingBlankFontAliasBase,
                                 overrides = listOf(
                                     ComponentOverride(
-                                        conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                        conditions = listOf(ComponentOverride.Condition.IntroOffer(
+                                            operator = ComponentOverride.Condition.EqualityOperatorType.EQUALS,
+                                            value = true,
+                                        )),
                                         properties = PartialTextComponent(fontName = missingBlankFontAliasOverride),
                                     )
                                 )
