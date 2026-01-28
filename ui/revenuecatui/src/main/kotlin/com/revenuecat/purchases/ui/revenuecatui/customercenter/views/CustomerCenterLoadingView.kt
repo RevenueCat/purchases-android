@@ -56,93 +56,101 @@ internal fun CustomerCenterLoadingView() {
             .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
         horizontalAlignment = Alignment.Start,
     ) {
-        // Skeleton card mimicking PurchaseInformationCardView
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
-            color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
-            ) {
-                // Title row with badge
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = CustomerCenterConstants.Card.TITLE_ROW_BOTTOM_PADDING),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(LoadingViewConstants.TITLE_WIDTH)
-                            .height(LoadingViewConstants.TITLE_HEIGHT)
-                            .placeholder(
-                                visible = true,
-                                color = placeholderColor,
-                                shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
-                                highlight = fadeHighlight,
-                            ),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(LoadingViewConstants.BADGE_WIDTH)
-                            .height(LoadingViewConstants.BADGE_HEIGHT)
-                            .placeholder(
-                                visible = true,
-                                color = placeholderColor,
-                                shape = LoadingViewConstants.BADGE_SHAPE,
-                                highlight = fadeHighlight,
-                            ),
-                    )
-                }
-                // Subtitle line
-                Box(
-                    modifier = Modifier
-                        .width(LoadingViewConstants.SUBTITLE_WIDTH)
-                        .height(LoadingViewConstants.BODY_HEIGHT)
-                        .placeholder(
-                            visible = true,
-                            color = placeholderColor,
-                            shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
-                            highlight = fadeHighlight,
-                        ),
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                // Store text line
-                Box(
-                    modifier = Modifier
-                        .width(LoadingViewConstants.STORE_WIDTH)
-                        .height(LoadingViewConstants.BODY_HEIGHT)
-                        .placeholder(
-                            visible = true,
-                            color = placeholderColor,
-                            shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
-                            highlight = fadeHighlight,
-                        ),
-                )
-            }
-        }
-
+        LoadingCardPlaceholder(placeholderColor, fadeHighlight)
         Spacer(modifier = Modifier.height(CustomerCenterConstants.Layout.BUTTONS_TOP_PADDING))
+        LoadingButtonsPlaceholder(placeholderColor, fadeHighlight)
+    }
+}
 
-        // Skeleton buttons mimicking ManageSubscriptionsButtonsView
+@Composable
+private fun LoadingCardPlaceholder(placeholderColor: Color, fadeHighlight: Fade) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE),
+        color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+    ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
+            modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
         ) {
-            repeat(2) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = LoadingViewConstants.BUTTON_HEIGHT)
-                        .placeholder(
-                            visible = true,
-                            color = placeholderColor,
-                            shape = LoadingViewConstants.BUTTON_SHAPE,
-                            highlight = fadeHighlight,
-                        ),
-                )
-            }
+            LoadingCardTitleRow(placeholderColor, fadeHighlight)
+            Box(
+                modifier = Modifier
+                    .width(LoadingViewConstants.SUBTITLE_WIDTH)
+                    .height(LoadingViewConstants.BODY_HEIGHT)
+                    .placeholder(
+                        visible = true,
+                        color = placeholderColor,
+                        shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
+                        highlight = fadeHighlight,
+                    ),
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(
+                modifier = Modifier
+                    .width(LoadingViewConstants.STORE_WIDTH)
+                    .height(LoadingViewConstants.BODY_HEIGHT)
+                    .placeholder(
+                        visible = true,
+                        color = placeholderColor,
+                        shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
+                        highlight = fadeHighlight,
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingCardTitleRow(placeholderColor: Color, fadeHighlight: Fade) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = CustomerCenterConstants.Card.TITLE_ROW_BOTTOM_PADDING),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(LoadingViewConstants.TITLE_WIDTH)
+                .height(LoadingViewConstants.TITLE_HEIGHT)
+                .placeholder(
+                    visible = true,
+                    color = placeholderColor,
+                    shape = LoadingViewConstants.PLACEHOLDER_SHAPE,
+                    highlight = fadeHighlight,
+                ),
+        )
+        Box(
+            modifier = Modifier
+                .width(LoadingViewConstants.BADGE_WIDTH)
+                .height(LoadingViewConstants.BADGE_HEIGHT)
+                .placeholder(
+                    visible = true,
+                    color = placeholderColor,
+                    shape = LoadingViewConstants.BADGE_SHAPE,
+                    highlight = fadeHighlight,
+                ),
+        )
+    }
+}
+
+@Composable
+private fun LoadingButtonsPlaceholder(placeholderColor: Color, fadeHighlight: Fade) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(CustomerCenterConstants.Layout.BUTTONS_SPACING),
+    ) {
+        repeat(2) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = LoadingViewConstants.BUTTON_HEIGHT)
+                    .placeholder(
+                        visible = true,
+                        color = placeholderColor,
+                        shape = LoadingViewConstants.BUTTON_SHAPE,
+                        highlight = fadeHighlight,
+                    ),
+            )
         }
     }
 }
