@@ -482,7 +482,7 @@ internal class GalaxyBillingWrapper(
                 "Unexpected Samsung IAP SDK version found. Expected " +
                     "${SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION}, but found ${HelperConstants.HELPER_VERSION}" +
                     ". Unexpected behavior related to the Galaxy Store in-app purchases may occur. Please obtain and" +
-                    " include version ${HelperConstants.HELPER_VERSION} of the Samsung IAP SDK from the Samsung's" +
+                    " include version ${SharedConstants.EXPECTED_SAMSUNG_IAP_SDK_VERSION} of the Samsung IAP SDK from the Samsung's" +
                     " developer website."
             }
         }
