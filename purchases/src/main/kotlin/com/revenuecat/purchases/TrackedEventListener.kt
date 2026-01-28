@@ -14,4 +14,3 @@ fun interface TrackedEventListener {
      */
     fun onEventTracked(event: FeatureEvent)
 }
-
