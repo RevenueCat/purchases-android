@@ -137,6 +137,8 @@ private fun rememberProcessedText(
                 date = state.currentDate,
                 countdownTime = textState.countdownTime,
                 countFrom = textState.countFrom,
+                customVariables = state.customVariables,
+                defaultCustomVariables = state.defaultCustomVariables,
             )
         }
     }

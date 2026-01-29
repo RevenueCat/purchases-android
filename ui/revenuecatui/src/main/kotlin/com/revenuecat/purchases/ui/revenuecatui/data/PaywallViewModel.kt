@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -88,7 +89,7 @@ internal interface PaywallViewModel {
     fun preloadExitOffering()
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
@@ -611,6 +612,8 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
+                customVariables = options.customVariables,
+                defaultCustomVariables = extractDefaultCustomVariables(offering),
             )
         }
     }
@@ -757,4 +760,12 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
         )
     }
+
+    /**
+     * Extracts default custom variable values from the offering's UiConfig.
+     */
+    private fun extractDefaultCustomVariables(offering: Offering): Map<String, CustomVariableValue> =
+        offering.paywallComponents?.uiConfig?.customVariables
+            ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
+            ?: emptyMap()
 }
