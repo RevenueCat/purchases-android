@@ -103,6 +103,10 @@ internal class ProductDataHandler(
         products: List<ProductVo?>,
     ) {
         val nonNullProducts = products.mapNotNull { it }
+        logMissingProductIdsIfAny(
+            requestedProductIds = inFlightRequest?.productIds,
+            products = nonNullProducts,
+        )
         // The serial execution of this call is an extension of the serial execution of the parent
         // get products request
         promotionEligibilityResponseListener.getPromotionEligibilities(
@@ -137,6 +141,26 @@ internal class ProductDataHandler(
         val onReceive = inFlightRequest?.onReceive
         clearInFlightRequest()
         onReceive?.invoke(storeProductsMatchingRequest)
+    }
+
+    private fun logMissingProductIdsIfAny(
+        requestedProductIds: Set<String>?,
+        products: List<ProductVo>,
+    ) {
+        if (requestedProductIds == null || requestedProductIds.isEmpty()) {
+            return
+        }
+
+        val returnedProductIds = products.map { it.itemId }.toSet()
+        val missingProductIds = requestedProductIds - returnedProductIds
+        if (missingProductIds.isNotEmpty()) {
+            log(LogIntent.GALAXY_WARNING) {
+                GalaxyStrings.GET_PRODUCT_DETAILS_RESPONSE_MISSING_PRODUCTS.format(
+                    requestedProductIds.joinToString(),
+                    missingProductIds.joinToString(),
+                )
+            }
+        }
     }
 
     private fun handleUnsuccessfulProductDataResponse(

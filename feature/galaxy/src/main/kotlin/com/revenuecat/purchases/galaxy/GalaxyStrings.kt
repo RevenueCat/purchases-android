@@ -14,6 +14,8 @@ internal object GalaxyStrings {
     const val REQUESTING_PRODUCTS = "Requesting Galaxy products with identifiers: %s"
     const val GET_PRODUCT_DETAILS_REQUEST_ERRORED = "An error occurred while fetching product details for product " +
         "IDs %s from the Galaxy Store. Error: %s"
+    const val GET_PRODUCT_DETAILS_RESPONSE_MISSING_PRODUCTS = "The Galaxy Store returned product details for only " +
+        "some of the requested product IDs. Requested: %s. Missing: %s"
 
     // Product Parsing
     const val UNKNOWN_SUBSCRIPTION_DURATION_UNIT = "Detected an unknown SubscriptionDurationUnit from the " +
