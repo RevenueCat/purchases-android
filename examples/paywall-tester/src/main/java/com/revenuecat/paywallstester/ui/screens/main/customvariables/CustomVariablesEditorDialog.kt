@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 
 private enum class VariableType(val displayName: String) {
@@ -200,6 +201,7 @@ private fun VariableRow(
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Composable
 private fun TypeBadge(value: CustomVariableValue) {
     val (text, color) = when (value) {
@@ -221,7 +223,7 @@ private fun TypeBadge(value: CustomVariableValue) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, InternalRevenueCatAPI::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun AddVariableDialog(
@@ -375,6 +377,7 @@ private fun AddVariableDialog(
 }
 
 @Suppress("MagicNumber")
+@OptIn(InternalRevenueCatAPI::class)
 @Preview
 @Composable
 private fun CustomVariablesEditorDialogPreview() {

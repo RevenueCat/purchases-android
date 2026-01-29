@@ -1,5 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.os.Parcelable
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import kotlinx.parcelize.Parcelize
+
 /**
  * A value type for custom paywall variables that can be passed to paywalls at runtime.
  *
@@ -23,12 +27,13 @@ package com.revenuecat.purchases.ui.revenuecatui
  * Hello {{ custom.player_name }}!
  * ```
  */
-abstract class CustomVariableValue internal constructor() {
+sealed class CustomVariableValue : Parcelable {
 
     /**
      * A string value.
      */
-    class String(val value: kotlin.String) : CustomVariableValue() {
+    @Parcelize
+    class String(val value: kotlin.String) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is String && value == other.value
 
@@ -40,7 +45,9 @@ abstract class CustomVariableValue internal constructor() {
     /**
      * A numeric value (integer or decimal).
      */
-    class Number(val value: kotlin.Double) : CustomVariableValue() {
+    @InternalRevenueCatAPI
+    @Parcelize
+    class Number(val value: kotlin.Double) : CustomVariableValue(), Parcelable {
         constructor(value: kotlin.Int) : this(value.toDouble())
         constructor(value: kotlin.Long) : this(value.toDouble())
         constructor(value: kotlin.Float) : this(value.toDouble())
@@ -56,7 +63,9 @@ abstract class CustomVariableValue internal constructor() {
     /**
      * A boolean value.
      */
-    class Boolean(val value: kotlin.Boolean) : CustomVariableValue() {
+    @InternalRevenueCatAPI
+    @Parcelize
+    class Boolean(val value: kotlin.Boolean) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is Boolean && value == other.value
 
@@ -80,7 +89,6 @@ abstract class CustomVariableValue internal constructor() {
                 }
             }
             is Boolean -> value.toString()
-            else -> error("Unknown CustomVariableValue type")
         }
 
     companion object {
@@ -98,6 +106,7 @@ abstract class CustomVariableValue internal constructor() {
          * @throws IllegalArgumentException if the value type is not supported
          */
         @JvmStatic
+        @OptIn(InternalRevenueCatAPI::class)
         fun from(value: Any): CustomVariableValue = when (value) {
             is kotlin.String -> String(value)
             is kotlin.Int -> Number(value)

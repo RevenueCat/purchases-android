@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -38,6 +39,7 @@ import java.util.Locale
  *
  * Custom variables accept Map<String, CustomVariableValue> with type-safe values.
  */
+@OptIn(InternalRevenueCatAPI::class)
 class CustomVariableProcessingTests {
 
     @Before

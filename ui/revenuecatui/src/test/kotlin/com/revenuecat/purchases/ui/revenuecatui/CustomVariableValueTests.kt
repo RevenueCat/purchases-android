@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 
+@OptIn(InternalRevenueCatAPI::class)
 class CustomVariableValueTests {
 
     // region String conversion

@@ -203,7 +203,7 @@ internal object VariableProcessorV2 {
 
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         return if (variable == null) {
-            Logger.unknownVariable(variableIdentifier)
+            // findVariable already logged the unsupported variable warning
             ""
         } else {
             val result = variable.getValue(
@@ -242,13 +242,43 @@ internal object VariableProcessorV2 {
      * - "$custom.name" -> "name"
      * - "product.price" -> null
      */
+    @Suppress("ReturnCount")
     private fun extractCustomVariableKey(variableIdentifier: String): String? {
         for (prefix in customVariablePrefixes) {
             if (variableIdentifier.startsWith(prefix)) {
-                return variableIdentifier.removePrefix(prefix)
+                val key = variableIdentifier.removePrefix(prefix)
+                if (key.isEmpty()) {
+                    Logger.w(
+                        "Custom variable '$variableIdentifier' appears to be malformed. " +
+                            "Expected format: 'custom.<variable_name>' or '\$custom.<variable_name>'.",
+                    )
+                    return null
+                }
+                return key
             }
         }
+
+        // Check for potential malformed custom variables
+        checkForMalformedCustomVariable(variableIdentifier)
+
         return null
+    }
+
+    /**
+     * Logs a warning if a variable identifier looks like it might be intended as a custom variable
+     * but is malformed.
+     */
+    private fun checkForMalformedCustomVariable(variableIdentifier: String) {
+        val malformedPrefixes = listOf("custom", "\$custom")
+        for (prefix in malformedPrefixes) {
+            if (variableIdentifier == prefix || variableIdentifier.startsWith("$prefix ")) {
+                Logger.w(
+                    "Variable '$variableIdentifier' looks like it might be intended as a custom variable. " +
+                        "Use 'custom.<variable_name>' or '\$custom.<variable_name>' syntax instead.",
+                )
+                return
+            }
+        }
     }
 
     /**
@@ -318,10 +348,6 @@ internal object VariableProcessorV2 {
             }
         }
     }
-
-    private fun Logger.unknownVariable(variableIdentifier: String): Unit = e(
-        "Unknown variable: $variableIdentifier. Defaulting to empty string.",
-    )
 
     private fun Logger.failedToGetValue(variableIdentifier: String, rcPackage: Package): Unit = w(
         "Could not process value for variable '$variableIdentifier' for " +
