@@ -15,6 +15,7 @@ import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
@@ -135,7 +136,8 @@ internal object CustomVariableDefinitionSerializer : KSerializer<UiConfig.Custom
 
         val jsonObject = decoder.decodeJsonElement().jsonObject
         val type = jsonObject["type"]?.jsonPrimitive?.content ?: "string"
-        val defaultValueElement = jsonObject["default_value"]?.jsonPrimitive
+        // Use safe cast to handle null, arrays, or objects gracefully - default to empty string
+        val defaultValueElement = jsonObject["default_value"] as? JsonPrimitive
             ?: return UiConfig.CustomVariableDefinition(type = type, defaultValue = "")
 
         val defaultValue: Any = when (type) {
