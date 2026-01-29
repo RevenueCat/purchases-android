@@ -4,6 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -24,6 +25,7 @@ import java.util.Date
  * Builds a CustomerInfo
  * @throws [JSONException] If the json is invalid.
  */
+@OptIn(InternalRevenueCatAPI::class)
 internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)

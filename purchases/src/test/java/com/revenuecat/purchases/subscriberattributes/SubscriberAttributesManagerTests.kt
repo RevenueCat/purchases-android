@@ -454,7 +454,7 @@ class SubscriberAttributesManagerTests {
 
         verify(exactly = 0) { mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any()) }
         verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
-        
+
         val capturedAttributes = slot.captured
         val adjustAttribute = capturedAttributes[SubscriberAttributeKey.AttributionIds.Adjust.backendKey]
         assertThat(adjustAttribute).isNotNull

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
@@ -15,6 +16,8 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.fromNow
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.add
@@ -657,6 +660,54 @@ class OfflineCustomerInfoCalculatorTest {
             diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(match {
                 it.code == expectedError.code && it.underlyingErrorMessage == expectedError.underlyingErrorMessage
             })
+        }
+    }
+
+    @Test
+    fun `management_url depends on store`() {
+        val purchasedProduct = mockActiveProducts().first()
+        val testCases = Store.values()
+            .associateWith { it.managementUrl ?: JSONObject.NULL }
+
+        testCases.forEach { (storeType, expectedManagementUrl) ->
+            val appConfigForStore = mockk<AppConfig>().apply {
+                every { store } returns storeType
+            }
+            val calculator = OfflineCustomerInfoCalculator(
+                purchasedProductsFetcher,
+                appConfigForStore,
+                diagnosticsTracker,
+                testDateProvider
+            )
+
+            var receivedCustomerInfo: CustomerInfo? = null
+            calculator.computeOfflineCustomerInfo(
+                appUserID = appUserID,
+                onSuccess = { receivedCustomerInfo = it },
+                onError = { fail("Should've succeeded") }
+            )
+
+            val expectedCustomerInfoManagementUrl = when (expectedManagementUrl) {
+                is String -> Uri.parse(expectedManagementUrl)
+                else -> null
+            }
+            assertThat(receivedCustomerInfo?.managementURL)
+                .isEqualTo(expectedCustomerInfoManagementUrl)
+
+            val subscriberRawData = receivedCustomerInfo?.rawData
+                ?.get(CustomerInfoResponseJsonKeys.SUBSCRIBER) as? JSONObject
+            assertThat(subscriberRawData).isNotNull
+            assertThat(subscriberRawData!!.get(CustomerInfoResponseJsonKeys.MANAGEMENT_URL))
+                .isEqualTo(expectedManagementUrl)
+
+            val subscriptionsRawData = subscriberRawData
+                .get(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS) as? JSONObject
+            assertThat(subscriptionsRawData).isNotNull
+            val subscriptionRawData =
+                subscriptionsRawData!!.get(purchasedProduct.productIdentifier) as? JSONObject
+            assertThat(subscriptionRawData).isNotNull
+            assertThat(subscriptionRawData!!.get(ProductResponseJsonKeys.MANAGEMENT_URL))
+                .isEqualTo(expectedManagementUrl)
         }
     }
 

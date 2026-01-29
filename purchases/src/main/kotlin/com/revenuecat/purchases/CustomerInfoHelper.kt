@@ -30,6 +30,7 @@ private data class CustomerInfoDataResult(
     val hadUnsyncedPurchasesBefore: Boolean? = null,
 )
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
