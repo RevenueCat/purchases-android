@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -23,9 +22,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 
 @Stable
 @JvmSynthetic
@@ -38,9 +37,10 @@ internal fun rememberUpdatedIconComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
         selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
+        selectedOfferEligibilityProvider = {
+            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
+        },
     )
 
 @Suppress("LongParameterList")
@@ -51,9 +51,8 @@ private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
     selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedIsPromoOfferProvider: () -> Boolean = { false },
+    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -65,9 +64,8 @@ private fun rememberUpdatedIconComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
             selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -83,9 +81,8 @@ internal class IconComponentState(
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
     private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedIsPromoOfferProvider: () -> Boolean,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -98,32 +95,30 @@ internal class IconComponentState(
             false
         }
     }
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
-    }
-    private val isPromoOffer by derivedStateOf {
-        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
-    }
 
     /**
-     * The subscription option to use for intro eligibility.
-     * For components without their own package, use the selected subscription option so that
-     * promo offers with multiple phases correctly trigger the MultipleIntroOffers condition.
+     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
+     * If the style has its own package, uses the promo offer flag to determine the eligibility type.
+     * Otherwise, uses the selected package's resolved offer eligibility.
      */
-    private val subscriptionOption by derivedStateOf {
-        if (style.rcPackage == null) selectedSubscriptionOptionProvider() else null
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            // When isPromoOffer is true, the PromoOffer condition should match
+            if (style.isPromoOffer) {
+                OfferEligibility.PromoOfferIneligible
+            } else {
+                style.rcPackage.offerEligibility
+            }
+        } else {
+            selectedOfferEligibilityProvider()
+        }
     }
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        // Use subscription option's eligibility if available (from resolved promo offer),
-        // otherwise fall back to package's default option eligibility
-        val introOfferEligibility = subscriptionOption?.introEligibility
-            ?: applicablePackage?.introEligibility
-            ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl

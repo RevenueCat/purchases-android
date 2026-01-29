@@ -20,7 +20,7 @@ internal fun IntroEligibilityStateView(
     textWithNoIntroOffer: String?,
     textWithIntroOffer: String?,
     textWithMultipleIntroOffers: String?,
-    eligibility: IntroOfferEligibility,
+    eligibility: OfferEligibility,
     color: Color = Color.Unspecified,
     style: TextStyle = LocalTextStyle.current,
     fontWeight: FontWeight? = null,
@@ -53,25 +53,64 @@ internal fun IntroEligibilityStateView(
 }
 
 internal fun introEligibilityText(
-    eligibility: IntroOfferEligibility,
+    eligibility: OfferEligibility,
     textWithIntroOffer: String?,
     textWithMultipleIntroOffers: String?,
     textWithNoIntroOffer: String?,
 ): String {
     return when (eligibility) {
-        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
-        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textWithMultipleIntroOffers
-        else -> textWithNoIntroOffer
+        OfferEligibility.IntroOfferSingle,
+        OfferEligibility.PromoOfferSingle,
+        -> textWithIntroOffer
+
+        OfferEligibility.IntroOfferMultiple,
+        OfferEligibility.PromoOfferMultiple,
+        -> textWithMultipleIntroOffers
+
+        OfferEligibility.Ineligible,
+        OfferEligibility.PromoOfferIneligible,
+        -> textWithNoIntroOffer
     } // Display text with intro offer as a backup to ensure layout does not change when switching states.
         ?: textWithNoIntroOffer
         ?: textWithIntroOffer
         ?: ""
 }
 
-internal enum class IntroOfferEligibility {
-    INELIGIBLE,
-    SINGLE_OFFER_ELIGIBLE,
-    MULTIPLE_OFFERS_ELIGIBLE,
+/**
+ * Represents the eligibility status for subscription offers.
+ * Combines the offer type (intro vs promo) with the number of discounted phases.
+ */
+internal sealed class OfferEligibility {
+    /** Default option with no discounted phases */
+    object Ineligible : OfferEligibility()
+
+    /** Default option with a single discounted phase (either free trial OR intro price) */
+    object IntroOfferSingle : OfferEligibility()
+
+    /** Default option with multiple discounted phases (both free trial AND intro price) */
+    object IntroOfferMultiple : OfferEligibility()
+
+    /** Configured promo offer with no discounted phases */
+    object PromoOfferIneligible : OfferEligibility()
+
+    /** Configured promo offer with a single discounted phase */
+    object PromoOfferSingle : OfferEligibility()
+
+    /** Configured promo offer with multiple discounted phases */
+    object PromoOfferMultiple : OfferEligibility()
+
+    /** Whether this represents any offer with at least one discounted phase */
+    val hasDiscountedPhases: Boolean
+        get() = this is IntroOfferSingle || this is IntroOfferMultiple ||
+            this is PromoOfferSingle || this is PromoOfferMultiple
+
+    /** Whether this represents any offer with multiple discounted phases */
+    val hasMultipleDiscountedPhases: Boolean
+        get() = this is IntroOfferMultiple || this is PromoOfferMultiple
+
+    /** Whether this represents a configured promo offer */
+    val isPromoOffer: Boolean
+        get() = this is PromoOfferIneligible || this is PromoOfferSingle || this is PromoOfferMultiple
 }
 
 @Preview(showBackground = true)
@@ -81,7 +120,7 @@ private fun IntroEligibilityPreviewNoOffer() {
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = null,
         textWithMultipleIntroOffers = null,
-        eligibility = IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE,
+        eligibility = OfferEligibility.IntroOfferSingle,
         color = Color.Black,
     )
 }
@@ -93,7 +132,7 @@ private fun IntroEligibilityPreviewBothTextsIneligible() {
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
         textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $4.99/mo thereafter.",
-        eligibility = IntroOfferEligibility.INELIGIBLE,
+        eligibility = OfferEligibility.Ineligible,
         color = Color.Black,
     )
 }
@@ -105,7 +144,7 @@ private fun IntroEligibilityPreviewBothTextsEligibleSingleOffer() {
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
         textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $3.99/mo thereafter.",
-        eligibility = IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE,
+        eligibility = OfferEligibility.IntroOfferSingle,
         color = Color.Black,
     )
 }
@@ -117,7 +156,7 @@ private fun IntroEligibilityPreviewBothTextsEligibleMultipleOffers() {
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
         textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $4.99/mo thereafter.",
-        eligibility = IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE,
+        eligibility = OfferEligibility.IntroOfferMultiple,
         color = Color.Black,
     )
 }

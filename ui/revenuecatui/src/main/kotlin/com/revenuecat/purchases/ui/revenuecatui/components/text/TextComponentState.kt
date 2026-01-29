@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -29,9 +30,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -45,9 +47,15 @@ internal fun rememberUpdatedTextComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedOfferEligibilityProvider = {
+            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
+        },
     )
 }
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -56,6 +64,9 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -70,7 +81,10 @@ internal fun rememberUpdatedTextComponentState(
             style = style,
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
+            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -80,13 +94,17 @@ internal fun rememberUpdatedTextComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -101,7 +119,9 @@ internal class TextComponentState(
         private set
 
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
+        if (style.packageUniqueId != null) {
+            style.packageUniqueId == selectedPackageUniqueIdProvider()
+        } else if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
@@ -112,10 +132,19 @@ internal class TextComponentState(
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
     /**
-     * The package to take variable values from and to consider for intro offer eligibility.
+     * The package to take variable values from and to consider for offer eligibility.
      */
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
+    }
+
+    /**
+     * The subscription option to use for offer variables (product.offer_*, product.secondary_offer_*).
+     * If a specific Play Store offer is configured for this text's package, use that.
+     * Otherwise, use the selected package's resolved subscription option.
+     */
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.subscriptionOption ?: selectedSubscriptionOptionProvider()
     }
 
     /**
@@ -125,12 +154,25 @@ internal class TextComponentState(
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
+    /**
+     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
+     * If the style has its own package, calculates from the style's subscription option.
+     * Otherwise, uses the selected package's resolved offer eligibility.
+     */
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            style.subscriptionOption?.toOfferEligibility(style.isPromoOffer)
+                ?: style.rcPackage.offerEligibility
+        } else {
+            selectedOfferEligibilityProvider()
+        }
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic

@@ -11,17 +11,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 
 @Stable
 @JvmSynthetic
@@ -32,9 +30,9 @@ internal fun rememberUpdatedTabsComponentState(
 ): TabsComponentState =
     rememberUpdatedTabsComponentState(
         style = style,
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
-        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
+        selectedOfferEligibilityProvider = {
+            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
+        },
     )
 
 @Stable
@@ -42,9 +40,7 @@ internal fun rememberUpdatedTabsComponentState(
 @Composable
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
-    selectedPackageProvider: () -> Package?,
-    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
-    selectedIsPromoOfferProvider: () -> Boolean = { false },
+    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -52,9 +48,7 @@ internal fun rememberUpdatedTabsComponentState(
         TabsComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageProvider = selectedPackageProvider,
-            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
-            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -67,35 +61,15 @@ internal fun rememberUpdatedTabsComponentState(
 internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TabsComponentStyle,
-    private val selectedPackageProvider: () -> Package?,
-    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
-    private val selectedIsPromoOfferProvider: () -> Boolean,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-
-    /**
-     * The package to consider for intro offer eligibility.
-     */
-    private val applicablePackage by derivedStateOf { selectedPackageProvider() }
-    private val isPromoOffer by derivedStateOf { selectedIsPromoOfferProvider() }
-
-    /**
-     * The subscription option to use for intro eligibility.
-     * Use the selected subscription option so that promo offers with multiple phases
-     * correctly trigger the MultipleIntroOffers condition.
-     */
-    private val subscriptionOption by derivedStateOf { selectedSubscriptionOptionProvider() }
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
-        // Use subscription option's eligibility if available (from resolved promo offer),
-        // otherwise fall back to package's default option eligibility
-        val introOfferEligibility = subscriptionOption?.introEligibility
-            ?: applicablePackage?.introEligibility
-            ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, selectedOfferEligibilityProvider(), componentState)
     }
 
     @get:JvmSynthetic

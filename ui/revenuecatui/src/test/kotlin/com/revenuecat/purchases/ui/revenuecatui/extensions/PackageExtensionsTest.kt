@@ -11,7 +11,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -22,24 +22,24 @@ import org.junit.runner.RunWith
 class PackageExtensionsTest {
 
     @Test
-    fun `introEligibility calculation is SINGLE_OFFER_ELIGIBLE if defaultOption only has a free trial`() {
+    fun `offerEligibility calculation is IntroOfferSingle if defaultOption only has a free trial`() {
         val rcPackage = createPackage(freeTrial = true)
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE)
+        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.IntroOfferSingle)
     }
 
     @Test
-    fun `introEligibility calculation is MULTIPLE_OFFERS_ELIGIBLE if defaultOption has trial and discounted price`() {
+    fun `offerEligibility calculation is IntroOfferMultiple if defaultOption has trial and discounted price`() {
         val rcPackage = createPackage(freeTrial = true, introOffer = true)
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE)
+        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.IntroOfferMultiple)
     }
 
     @Test
-    fun `introEligibility calculation is INELIGIBLE if defaultOption is base plan`() {
+    fun `offerEligibility calculation is Ineligible if defaultOption is base plan`() {
         val rcPackage = createPackage()
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.INELIGIBLE)
+        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.Ineligible)
     }
 
     private fun createPackage(freeTrial: Boolean = false, introOffer: Boolean = false): Package {
