@@ -147,7 +147,7 @@ internal class ProductDataHandler(
         requestedProductIds: Set<String>?,
         products: List<ProductVo>,
     ) {
-        if (requestedProductIds == null) {
+        if (requestedProductIds == null || requestedProductIds.isEmpty()) {
             return
         }
 
