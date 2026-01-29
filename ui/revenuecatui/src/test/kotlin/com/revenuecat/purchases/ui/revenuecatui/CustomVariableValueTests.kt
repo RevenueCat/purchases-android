@@ -1,12 +1,32 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.unmockkObject
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 @OptIn(InternalRevenueCatAPI::class)
 class CustomVariableValueTests {
+
+    @Before
+    fun setUp() {
+        mockkObject(Logger)
+        every { Logger.w(any()) } just runs
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(Logger)
+    }
 
     // region String conversion
 
@@ -178,6 +198,46 @@ class CustomVariableValueTests {
     fun `valid key with mixed characters is accepted`() {
         val variables = mapOf("player_score_2024" to CustomVariableValue.String("value"))
         CustomVariableKeyValidator.validate(variables)
+        verify(exactly = 0) { Logger.w(any()) }
+    }
+
+    @Test
+    fun `invalid key starting with number logs warning`() {
+        val variables = mapOf("123key" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+        verify { Logger.w(match { it.contains("123key") && it.contains("invalid") }) }
+    }
+
+    @Test
+    fun `invalid key with special characters logs warning`() {
+        val variables = mapOf("key-name" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+        verify { Logger.w(match { it.contains("key-name") && it.contains("invalid") }) }
+    }
+
+    @Test
+    fun `invalid empty key logs warning`() {
+        val variables = mapOf("" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+        verify { Logger.w(match { it.contains("invalid") }) }
+    }
+
+    @Test
+    fun `invalid key with spaces logs warning`() {
+        val variables = mapOf("key name" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+        verify { Logger.w(match { it.contains("key name") && it.contains("invalid") }) }
+    }
+
+    @Test
+    fun `multiple invalid keys each log warning`() {
+        val variables = mapOf(
+            "valid_key" to CustomVariableValue.String("value"),
+            "123invalid" to CustomVariableValue.String("value"),
+            "also-invalid" to CustomVariableValue.String("value"),
+        )
+        CustomVariableKeyValidator.validate(variables)
+        verify(exactly = 2) { Logger.w(any()) }
     }
 
     // endregion

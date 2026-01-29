@@ -18,6 +18,7 @@ import io.mockk.just
 import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.unmockkObject
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -46,6 +47,7 @@ class CustomVariableProcessingTests {
     fun setUp() {
         mockkObject(Logger)
         every { Logger.w(any()) } just runs
+        every { Logger.e(any()) } just runs
     }
 
     @After
@@ -441,6 +443,51 @@ class CustomVariableProcessingTests {
         )
 
         assertThat(result).isEqualTo("Value: 999")
+    }
+
+    // endregion
+
+    // region Malformed custom variables
+
+    @Test
+    fun `malformed custom variable with empty key logs warning and returns empty string`() {
+        val template = "Hello, {{ custom. }}!"
+
+        val result = processTemplate(template)
+
+        assertThat(result).isEqualTo("Hello, !")
+        verify { Logger.w(match { it.contains("malformed") }) }
+    }
+
+    @Test
+    fun `malformed dollar custom variable with empty key logs warning`() {
+        val template = "Hello, {{ \$custom. }}!"
+
+        val result = processTemplate(template)
+
+        assertThat(result).isEqualTo("Hello, !")
+        verify { Logger.w(match { it.contains("malformed") }) }
+    }
+
+    @Test
+    fun `variable that looks like custom but missing dot logs warning`() {
+        val template = "Hello, {{ custom }}!"
+
+        val result = processTemplate(template)
+
+        // "custom" is treated as unknown variable, not custom variable
+        assertThat(result).isEqualTo("Hello, !")
+        verify { Logger.w(match { it.contains("custom") && it.contains("might be intended") }) }
+    }
+
+    @Test
+    fun `dollar custom without dot logs warning`() {
+        val template = "Hello, {{ \$custom }}!"
+
+        val result = processTemplate(template)
+
+        assertThat(result).isEqualTo("Hello, !")
+        verify { Logger.w(match { it.contains("custom") && it.contains("might be intended") }) }
     }
 
     // endregion
