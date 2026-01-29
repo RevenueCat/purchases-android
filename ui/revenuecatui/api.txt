@@ -1,33 +1,18 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.revenuecatui {
 
-  public abstract class CustomVariableValue {
+  public abstract sealed class CustomVariableValue implements android.os.Parcelable {
     method public static final com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue from(Object value);
     method public final String getStringValue();
     property public final String stringValue;
     field public static final com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue.Companion Companion;
   }
 
-  public static final class CustomVariableValue.Boolean extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue {
-    ctor public CustomVariableValue.Boolean(boolean value);
-    method public boolean getValue();
-    property public final boolean value;
-  }
-
   public static final class CustomVariableValue.Companion {
     method public com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue from(Object value);
   }
 
-  public static final class CustomVariableValue.Number extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue {
-    ctor public CustomVariableValue.Number(double value);
-    ctor public CustomVariableValue.Number(float value);
-    ctor public CustomVariableValue.Number(int value);
-    ctor public CustomVariableValue.Number(long value);
-    method public double getValue();
-    property public final double value;
-  }
-
-  public static final class CustomVariableValue.String extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue {
+  @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.String extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {
     ctor public CustomVariableValue.String(String value);
     method public String getValue();
     property public final String value;
@@ -164,6 +149,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
+    method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
     method @Deprecated @kotlin.jvm.JvmSynthetic public void launch(String offeringIdentifier, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
