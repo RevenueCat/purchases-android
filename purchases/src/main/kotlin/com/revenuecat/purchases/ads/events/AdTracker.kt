@@ -28,6 +28,7 @@ class AdTracker internal constructor(
             event = AdEvent.Displayed(
                 networkName = data.networkName,
                 mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
@@ -45,6 +46,7 @@ class AdTracker internal constructor(
             event = AdEvent.Open(
                 networkName = data.networkName,
                 mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
@@ -62,6 +64,7 @@ class AdTracker internal constructor(
             event = AdEvent.Revenue(
                 networkName = data.networkName,
                 mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
@@ -82,6 +85,7 @@ class AdTracker internal constructor(
             event = AdEvent.Loaded(
                 networkName = data.networkName,
                 mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
@@ -99,6 +103,7 @@ class AdTracker internal constructor(
             event = AdEvent.FailedToLoad(
                 networkName = data.networkName,
                 mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = null,
