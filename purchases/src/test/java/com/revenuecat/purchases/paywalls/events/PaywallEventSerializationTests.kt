@@ -19,6 +19,7 @@ class PaywallEventSerializationTests {
                 date = Date(1699270688884)
             ),
             data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
                 offeringIdentifier = "offeringID",
                 paywallRevision = 5,
                 sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
@@ -38,6 +39,7 @@ class PaywallEventSerializationTests {
                 date = Date(1699270688999)
             ),
             data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
                 offeringIdentifier = "offeringID",
                 paywallRevision = 3,
                 sessionIdentifier = UUID.fromString("415107f4-98bf-4b68-a582-eb27bcb6e222"),
@@ -63,6 +65,7 @@ class PaywallEventSerializationTests {
                         "\"date\":1699270688884" +
                     "}," +
                     "\"data\":{" +
+                        "\"paywallIdentifier\":\"paywallID\"," +
                         "\"offeringIdentifier\":\"offeringID\"," +
                         "\"paywallRevision\":5," +
                         "\"sessionIdentifier\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
@@ -95,6 +98,7 @@ class PaywallEventSerializationTests {
                         "\"date\":1699270688999" +
                     "}," +
                     "\"data\":{" +
+                        "\"paywallIdentifier\":\"paywallID\"," +
                         "\"offeringIdentifier\":\"offeringID\"," +
                         "\"paywallRevision\":3," +
                         "\"sessionIdentifier\":\"415107f4-98bf-4b68-a582-eb27bcb6e222\"," +

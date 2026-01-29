@@ -19,7 +19,7 @@ import java.util.Locale
 
 /**
  * Tests that verify countdown variables are correctly replaced in text templates.
- * 
+ *
  * These tests verify the entire pipeline:
  * Template: "{{ count_hours_without_zero }}" → Actual text: "0"
  */
@@ -224,6 +224,46 @@ class CountdownVariableProcessingTests {
         assertThat(result).isEqualTo("00:00:1563:04")
     }
 
+    @Test
+    fun `countdown variables work without a package`() {
+        val countdownTime = CountdownTime(days = 2, hours = 5, minutes = 30, seconds = 15)
+        val template = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h {{ count_minutes_without_zero }}m {{ count_seconds_without_zero }}s"
+
+        val result = processTemplateWithoutPackage(template, countdownTime)
+
+        assertThat(result).isEqualTo("2d 5h 30m 15s")
+    }
+
+    @Test
+    fun `countdown variables with zero padding work without a package`() {
+        val countdownTime = CountdownTime(days = 1, hours = 2, minutes = 3, seconds = 4)
+        val template = "{{ count_days_with_zero }}:{{ count_hours_with_zero }}:{{ count_minutes_with_zero }}:{{ count_seconds_with_zero }}"
+
+        val result = processTemplateWithoutPackage(template, countdownTime)
+
+        assertThat(result).isEqualTo("01:02:03:04")
+    }
+
+    @Test
+    fun `countdown variables with countFrom HOURS work without a package`() {
+        val countdownTime = CountdownTime(days = 2, hours = 0, minutes = 30, seconds = 15)
+        val template = "{{ count_hours_without_zero }}:{{ count_minutes_with_zero }}:{{ count_seconds_with_zero }}"
+
+        val result = processTemplateWithoutPackage(template, countdownTime, CountdownComponent.CountFrom.HOURS)
+
+        assertThat(result).isEqualTo("48:30:15")
+    }
+
+    @Test
+    fun `product variables return empty string without a package`() {
+        val countdownTime = CountdownTime(days = 2, hours = 5, minutes = 30, seconds = 15)
+        val template = "Price: {{ product.price }} - Time: {{ count_days_without_zero }}d"
+
+        val result = processTemplateWithoutPackage(template, countdownTime)
+
+        assertThat(result).isEqualTo("Price:  - Time: 2d")
+    }
+
     private fun processTemplate(
         template: String,
         countdownTime: CountdownTime,
@@ -243,6 +283,20 @@ class CountdownVariableProcessingTests {
             currencyLocale = Locale.US,
             dateLocale = Locale.US,
             date = Date(),
+            countdownTime = countdownTime,
+            countFrom = countFrom,
+        )
+    }
+
+    private fun processTemplateWithoutPackage(
+        template: String,
+        countdownTime: CountdownTime,
+        countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+    ): String {
+        return VariableProcessorV2.processVariables(
+            template = template,
+            variableConfig = UiConfig.VariableConfig(),
+            dateLocale = Locale.US,
             countdownTime = countdownTime,
             countFrom = countFrom,
         )

@@ -994,6 +994,7 @@ class OfferingsTest {
         // language=json
         """
         {
+          "id": "paywall_id",
           "template_name": "components",
           "asset_base_url": "https://assets.pawwalls.com",
           "components_config": {
