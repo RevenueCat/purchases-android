@@ -190,6 +190,7 @@ class PaywallOptions internal constructor(
          * @param variables A map of variable names to their [CustomVariableValue] values.
          */
         fun setCustomVariables(variables: Map<String, CustomVariableValue>) = apply {
+            CustomVariableKeyValidator.validate(variables)
             this.customVariables = variables
         }
 

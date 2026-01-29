@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Parcelable
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -120,4 +121,34 @@ sealed class CustomVariableValue : Parcelable {
             )
         }
     }
+}
+
+/**
+ * Validates custom variable keys and logs warnings for invalid keys.
+ *
+ * Valid keys:
+ * - Must not be empty
+ * - Must start with a letter
+ * - Can only contain letters, numbers, and underscores
+ */
+internal object CustomVariableKeyValidator {
+
+    /**
+     * Validates all keys in a custom variables map and logs warnings for invalid keys.
+     */
+    fun validate(variables: Map<String, CustomVariableValue>) {
+        for (key in variables.keys) {
+            if (!isValidKey(key)) {
+                Logger.w(
+                    "Custom variable key '$key' is invalid. " +
+                        "Keys must start with a letter and contain only letters, numbers, and underscores.",
+                )
+            }
+        }
+    }
+
+    private fun isValidKey(key: String): Boolean =
+        key.isNotEmpty() &&
+            key.first().isLetter() &&
+            key.all { it.isLetter() || it.isDigit() || it == '_' }
 }

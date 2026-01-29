@@ -152,4 +152,33 @@ class CustomVariableValueTests {
     }
 
     // endregion
+
+    // region Key validation
+
+    @Test
+    fun `valid key starting with letter is accepted`() {
+        // No exception should be thrown for valid keys
+        val variables = mapOf("validKey" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+    }
+
+    @Test
+    fun `valid key with underscores is accepted`() {
+        val variables = mapOf("valid_key_name" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+    }
+
+    @Test
+    fun `valid key with numbers is accepted`() {
+        val variables = mapOf("key123" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+    }
+
+    @Test
+    fun `valid key with mixed characters is accepted`() {
+        val variables = mapOf("player_score_2024" to CustomVariableValue.String("value"))
+        CustomVariableKeyValidator.validate(variables)
+    }
+
+    // endregion
 }
