@@ -45,6 +45,7 @@ internal sealed interface PaywallValidationResult {
         val variableDataProvider: VariableDataProvider,
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
+        val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

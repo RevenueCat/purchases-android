@@ -14,18 +14,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
@@ -102,7 +106,11 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val screenSizes: List<UiConfig.AppConfig.ScreenSize>?,
         ) : Loaded {
+
+            var screenCondition by mutableStateOf(ScreenCondition())
+                internal set
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
@@ -135,8 +143,13 @@ internal sealed interface PaywallState {
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
                 .firstOrNull { it.isSelectedByDefault }
                 ?.pkg
+
             private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.pkg }
+
+            private val allAvailablePackages: Set<Package> =
+                packagesOutsideTabs + packages.packagesByTab.values.flatten().map { it.pkg }
+
             private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packages) ->
                     packages.forEach { packageInfo ->
@@ -146,6 +159,16 @@ internal sealed interface PaywallState {
                     }
                 }
             }
+
+            val hasAnyIntroOfferEligiblePackage: Boolean =
+                allAvailablePackages.any { pkg ->
+                    pkg.introEligibility != IntroOfferEligibility.INELIGIBLE
+                }
+
+            val hasAnyMultipleIntroOffersEligiblePackage: Boolean =
+                allAvailablePackages.any { pkg ->
+                    pkg.introEligibility == IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+                }
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
