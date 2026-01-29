@@ -17,11 +17,9 @@ class MainActivity : AppCompatActivity() {
         webPurchaseRedemption = intent.asWebPurchaseRedemption()
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent != null) {
-            webPurchaseRedemption = intent.asWebPurchaseRedemption()
-        }
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
     }
 
     fun clearWebPurchaseRedemption() {
