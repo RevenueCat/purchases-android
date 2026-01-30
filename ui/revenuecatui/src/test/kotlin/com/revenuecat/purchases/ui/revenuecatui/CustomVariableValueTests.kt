@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
 import io.mockk.just
@@ -14,7 +13,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(InternalRevenueCatAPI::class)
 class CustomVariableValueTests {
 
     @Before
