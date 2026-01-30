@@ -23,6 +23,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -406,6 +407,7 @@ internal class PaywallViewModelImpl(
                 performPurchase(
                     activity = activity,
                     packageToPurchase = selectedPackage.rcPackage,
+                    subscriptionOption = null,
                 )
             }
             is PaywallState.Loaded.Components -> {
@@ -413,6 +415,7 @@ internal class PaywallViewModelImpl(
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
+                        uniqueId = it.identifier,
                     )
                 } ?: currentState.selectedPackageInfo
                 val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
@@ -436,6 +439,7 @@ internal class PaywallViewModelImpl(
             performPurchase(
                 activity = activity,
                 packageToPurchase = packageInfo.rcPackage,
+                subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
                 productChangeConfig = productChangeConfig,
             )
         }
@@ -445,6 +449,7 @@ internal class PaywallViewModelImpl(
     private suspend fun performPurchase(
         activity: Activity,
         packageToPurchase: Package,
+        subscriptionOption: SubscriptionOption?,
         productChangeConfig: ProductChangeConfig? = null,
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
@@ -478,6 +483,7 @@ internal class PaywallViewModelImpl(
                         val result = logic.performPurchase(
                             activity,
                             packageToPurchase,
+                            subscriptionOption,
                             productChangeConfig,
                         )
                     ) {
@@ -507,7 +513,13 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseParamsBuilder = PurchaseParams.Builder(activity, packageToPurchase)
+                    // Use subscription option from resolved offer if available, otherwise use package
+                    val purchaseParamsBuilder = if (subscriptionOption != null) {
+                        PurchaseParams.Builder(activity, subscriptionOption)
+                            .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
+                    } else {
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    }
 
                     // Apply product change configuration if detected
                     if (productChangeInfo != null) {
