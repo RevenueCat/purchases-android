@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -18,7 +19,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -101,6 +102,12 @@ internal object VariableProcessorV2 {
 
     private val regex = "\\{\\{\\s*(.*?)\\s*\\}\\}".toRegex()
 
+    /**
+     * Prefixes that identify custom variables in paywall text.
+     * Supports both `{{ custom.key }}` and `{{ $custom.key }}` syntax.
+     */
+    private val customVariablePrefixes = listOf("custom.", "\$custom.")
+
     @Suppress("LongParameterList")
     fun processVariables(
         template: String,
@@ -114,6 +121,8 @@ internal object VariableProcessorV2 {
         date: Date = Date(),
         countdownTime: CountdownTime? = null,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -128,6 +137,8 @@ internal object VariableProcessorV2 {
             date = date,
             countdownTime = countdownTime,
             countFrom = countFrom,
+            customVariables = customVariables,
+            defaultCustomVariables = defaultCustomVariables,
         )
     }
 
@@ -171,11 +182,25 @@ internal object VariableProcessorV2 {
         date: Date,
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
     ): String {
-        val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
+
+        // Check if this is a custom variable
+        val customVariableKey = extractCustomVariableKey(variableIdentifier)
+        if (customVariableKey != null) {
+            return resolveCustomVariable(
+                key = customVariableKey,
+                customVariables = customVariables,
+                defaultCustomVariables = defaultCustomVariables,
+                functions = functions,
+                currencyLocale = currencyLocale,
+            )
+        }
+
+        val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         return if (variable == null) {
-            Logger.unknownVariable(variableIdentifier)
             ""
         } else {
             val result = variable.getValue(
@@ -202,6 +227,83 @@ internal object VariableProcessorV2 {
                 }
                 ""
             }
+        }
+    }
+
+    /**
+     * Extracts the custom variable key from a variable identifier.
+     * Returns null if the identifier is not a custom variable.
+     *
+     * Examples:
+     * - "custom.name" -> "name"
+     * - "$custom.name" -> "name"
+     * - "product.price" -> null
+     */
+    @Suppress("ReturnCount")
+    private fun extractCustomVariableKey(variableIdentifier: String): String? {
+        for (prefix in customVariablePrefixes) {
+            if (variableIdentifier.startsWith(prefix)) {
+                val key = variableIdentifier.removePrefix(prefix)
+                if (key.isEmpty()) {
+                    Logger.w(
+                        "Custom variable '$variableIdentifier' appears to be malformed. " +
+                            "Expected format: 'custom.<variable_name>' or '\$custom.<variable_name>'.",
+                    )
+                    return null
+                }
+                return key
+            }
+        }
+
+        // Check for potential malformed custom variables
+        checkForMalformedCustomVariable(variableIdentifier)
+
+        return null
+    }
+
+    /**
+     * Logs a warning if a variable identifier looks like it might be intended as a custom variable
+     * but is malformed.
+     */
+    private fun checkForMalformedCustomVariable(variableIdentifier: String) {
+        val malformedPrefixes = listOf("custom", "\$custom")
+        for (prefix in malformedPrefixes) {
+            if (variableIdentifier == prefix || variableIdentifier.startsWith("$prefix ")) {
+                Logger.w(
+                    "Variable '$variableIdentifier' looks like it might be intended as a custom variable. " +
+                        "Use 'custom.<variable_name>' or '\$custom.<variable_name>' syntax instead.",
+                )
+                return
+            }
+        }
+    }
+
+    /**
+     * Resolves a custom variable value using the following priority:
+     * 1. SDK-provided value (from customVariables)
+     * 2. Dashboard default value (from defaultCustomVariables)
+     * 3. Empty string with a warning log
+     *
+     * Values are converted to their String representation during processing.
+     */
+    private fun resolveCustomVariable(
+        key: String,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
+        functions: List<Function>,
+        currencyLocale: Locale,
+    ): String {
+        val value = customVariables[key]
+            ?: defaultCustomVariables[key]
+            ?: run {
+                Logger.w(
+                    "Custom variable '$key' was not provided and has no default value. Defaulting to empty string.",
+                )
+                return ""
+            }
+
+        return functions.fold(value.stringValue) { accumulator, function ->
+            accumulator.processFunction(function, currencyLocale)
         }
     }
 
@@ -243,10 +345,6 @@ internal object VariableProcessorV2 {
             }
         }
     }
-
-    private fun Logger.unknownVariable(variableIdentifier: String): Unit = e(
-        "Unknown variable: $variableIdentifier. Defaulting to empty string.",
-    )
 
     private fun Logger.failedToGetValue(variableIdentifier: String, rcPackage: Package): Unit = w(
         "Could not process value for variable '$variableIdentifier' for " +

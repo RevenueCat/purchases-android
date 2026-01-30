@@ -1,6 +1,17 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.revenuecatui {
 
+  public abstract class CustomVariableValue implements android.os.Parcelable {
+    method public final String getStringValue();
+    property public final String stringValue;
+  }
+
+  @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.String extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {
+    ctor public CustomVariableValue.String(String value);
+    method public String getValue();
+    property public final String value;
+  }
+
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatUIPurchasesAPI {
   }
 
@@ -10,6 +21,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
 
   @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko public final class PaywallDialogOptions {
     ctor public PaywallDialogOptions(com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder builder);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method public kotlin.jvm.functions.Function0<kotlin.Unit>? getDismissRequest();
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? getFontProvider();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? getListener();
@@ -17,6 +29,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? getPurchaseLogic();
     method public kotlin.jvm.functions.Function1<com.revenuecat.purchases.CustomerInfo,java.lang.Boolean>? getShouldDisplayBlock();
     method public boolean getShouldDisplayDismissButton();
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public final kotlin.jvm.functions.Function0<kotlin.Unit>? dismissRequest;
     property public final com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider;
     property public final com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener;
@@ -30,6 +43,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     ctor public PaywallDialogOptions.Builder();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions build();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setCustomPurchaseLogic(com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic);
+    method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> variables);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setDismissRequest(kotlin.jvm.functions.Function0<kotlin.Unit> dismissRequest);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
@@ -61,10 +75,12 @@ package com.revenuecat.purchases.ui.revenuecatui {
 
   @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko public final class PaywallOptions {
     ctor public PaywallOptions(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder builder);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method public kotlin.jvm.functions.Function0<kotlin.Unit> getDismissRequest();
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? getFontProvider();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? getListener();
     method public com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? getPurchaseLogic();
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public final kotlin.jvm.functions.Function0<kotlin.Unit> dismissRequest;
     property public final com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider;
     property public final com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener;
@@ -75,6 +91,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
   public static final class PaywallOptions.Builder {
     ctor public PaywallOptions.Builder(kotlin.jvm.functions.Function0<kotlin.Unit> dismissRequest);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions build();
+    method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> variables);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setOffering(com.revenuecat.purchases.Offering? offering);
@@ -126,6 +143,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
+    method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
     method @Deprecated @kotlin.jvm.JvmSynthetic public void launch(String offeringIdentifier, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);

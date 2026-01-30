@@ -10,6 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -57,6 +58,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Only available for original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
+     * @param customVariables Custom variables to be used in paywall text. These values will replace
+     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     @JvmOverloads
     fun launch(
@@ -64,6 +67,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
@@ -76,6 +80,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
+                customVariables = customVariables,
             ),
         )
     }

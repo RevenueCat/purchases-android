@@ -17,6 +17,11 @@ class PaywallDialogOptions internal constructor(
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
     val purchaseLogic: PurchaseLogic?,
+    /**
+     * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
+     * `{{ $custom.key }}` placeholders in the paywall configuration.
+     */
+    val customVariables: Map<String, CustomVariableValue> = emptyMap(),
 ) {
 
     internal val offeringSelection: OfferingSelection
@@ -30,6 +35,7 @@ class PaywallDialogOptions internal constructor(
         fontProvider = builder.fontProvider,
         listener = builder.listener,
         purchaseLogic = builder.purchaseLogic,
+        customVariables = builder.customVariables,
     )
 
     class Builder {
@@ -40,6 +46,7 @@ class PaywallDialogOptions internal constructor(
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PurchaseLogic? = null
+        internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
@@ -87,6 +94,16 @@ class PaywallDialogOptions internal constructor(
 
         fun setCustomPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
             this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Sets custom variables to be used in paywall text. These values will replace
+         * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
+         *
+         * @param variables A map of variable names to their [CustomVariableValue] values.
+         */
+        fun setCustomVariables(variables: Map<String, CustomVariableValue>) = apply {
+            this.customVariables = variables
         }
 
         fun build(): PaywallDialogOptions {
