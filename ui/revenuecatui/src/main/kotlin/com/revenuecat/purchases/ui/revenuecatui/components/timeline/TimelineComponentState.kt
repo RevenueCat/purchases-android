@@ -113,7 +113,14 @@ internal class TimelineComponentState(
 
     @get:JvmSynthetic
     val items by derivedStateOf {
-        style.items.map { ItemState(initialWindowSize, it, selectedPackageProvider, selectedTabIndexProvider) }
+        style.items.map {
+            ItemState(
+                initialWindowSize,
+                it,
+                selectedPackageProvider,
+                selectedTabIndexProvider,
+            )
+        }
     }
 
     @JvmSynthetic

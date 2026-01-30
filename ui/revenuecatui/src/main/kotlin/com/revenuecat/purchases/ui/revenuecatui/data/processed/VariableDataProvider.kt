@@ -33,11 +33,19 @@ internal class VariableDataProvider(
             "Application Name"
         }
 
-    fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPrice(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         return rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
     }
 
-    fun localizedPricePerDay(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerDay(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerDay = rcPackage.product.pricePerDay(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerDay.endsIn00Cents()) {
             pricePerDay.getTruncatedFormatted(locale)
@@ -46,7 +54,11 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerWeek(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerWeek = rcPackage.product.pricePerWeek(locale) ?: return null
 
         return if (showZeroDecimalPlacePrices && pricePerWeek.endsIn00Cents()) {
@@ -56,7 +68,11 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerMonth(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerMonth = rcPackage.product.pricePerMonth(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerMonth.endsIn00Cents()) {
             pricePerMonth.getTruncatedFormatted(locale)
@@ -65,7 +81,11 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedPricePerYear(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerYear(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerYear = rcPackage.product.pricePerYear(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerYear.endsIn00Cents()) {
             pricePerYear.getTruncatedFormatted(locale)
@@ -152,22 +172,35 @@ internal class VariableDataProvider(
         return getSecondIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
-    fun localizedPricePerPeriod(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPricePerPeriod(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         val product = rcPackage.product
         return product.period?.let {
-            return product.price.localizedPerPeriod(it, locale, showZeroDecimalPlacePrices)
+            product.price.localizedPerPeriod(it, locale, showZeroDecimalPlacePrices)
         } ?: product.price.localized(locale, showZeroDecimalPlacePrices)
     }
 
-    fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
-        return rcPackage.product.period?.let { period ->
-            val formattedPeriod = period.localizedUnitPeriod(locale)
+    fun localizedPricePerPeriodFull(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
+        val product = rcPackage.product
+        val localizedPrice = product.price.localized(locale, showZeroDecimalPlacePrices)
+        return product.period?.let {
+            val formattedPeriod = it.localizedUnitPeriod(locale)
             "$localizedPrice/$formattedPeriod"
         } ?: localizedPrice
     }
 
-    fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPriceAndPerMonth(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
             return localizedPricePerPeriod(rcPackage, locale, showZeroDecimalPlacePrices)
         }
@@ -177,7 +210,11 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    fun localizedPriceAndPerMonthFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPriceAndPerMonthFull(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
             return localizedPricePerPeriodFull(rcPackage, locale, showZeroDecimalPlacePrices)
         }
