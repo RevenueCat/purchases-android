@@ -9,6 +9,8 @@ import kotlinx.serialization.json.encodeToJsonElement
 
 @Serializable
 internal data class PaywallPostReceiptData(
+    @SerialName("paywall_id")
+    val paywallID: String?,
     @SerialName("session_id")
     val sessionID: String,
     @SerialName("revision")

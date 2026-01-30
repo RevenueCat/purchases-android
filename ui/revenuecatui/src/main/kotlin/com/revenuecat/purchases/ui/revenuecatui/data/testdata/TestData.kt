@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -534,6 +535,15 @@ internal class MockViewModel(
         private set
     override fun trackPaywallImpressionIfNeeded() {
         trackPaywallImpressionIfNeededCallCount++
+    }
+
+    var trackExitOfferCallCount = 0
+        private set
+    var trackExitOfferParams = mutableListOf<Pair<ExitOfferType, String>>()
+        private set
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
+        trackExitOfferCallCount++
+        trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
     }
 
     var refreshStateIfLocaleChangedCallCount = 0

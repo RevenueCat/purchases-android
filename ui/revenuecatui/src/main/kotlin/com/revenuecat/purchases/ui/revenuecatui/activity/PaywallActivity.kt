@@ -24,6 +24,7 @@ import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -37,6 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
 
@@ -99,6 +101,17 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         restoreSdkConfigurationIfNeeded(this, savedInstanceState)
 
         val args = getArgs()
+        val wasLaunchedThroughSDK = args?.wasLaunchedThroughSDK ?: false
+        if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
+            Logger.e(
+                "PaywallActivity was launched incorrectly. " +
+                    "Please use PaywallActivityLauncher, or Paywall/PaywallDialog/PaywallFooter " +
+                    "composables to display the Paywall.",
+            )
+            finish()
+            return
+        }
+
         val edgeToEdge = args?.edgeToEdge == true
         if (edgeToEdge) {
             enableEdgeToEdge()

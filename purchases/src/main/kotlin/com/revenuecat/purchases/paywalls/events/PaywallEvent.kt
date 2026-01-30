@@ -27,6 +27,32 @@ enum class PaywallEventType(val value: String) {
      * The paywall was dismissed.
      */
     CLOSE("paywall_close"),
+
+    /**
+     * The user initiated a purchase through the paywall.
+     */
+    PURCHASE_INITIATED("paywall_purchase_initiated"),
+
+    /**
+     * The user encountered an error during purchase.
+     */
+    PURCHASE_ERROR("paywall_purchase_error"),
+
+    /**
+     * An exit offer will be shown to the user.
+     */
+    EXIT_OFFER("paywall_exit_offer"),
+}
+
+/**
+ * Types of exit offers. Meant for RevenueCatUI use.
+ */
+@InternalRevenueCatAPI
+enum class ExitOfferType(val value: String) {
+    /**
+     * An exit offer shown when the user attempts to dismiss the paywall without interacting.
+     */
+    DISMISS("dismiss"),
 }
 
 /**
@@ -50,6 +76,7 @@ data class PaywallEvent(
 
     @Serializable
     data class Data(
+        val paywallIdentifier: String?,
         val offeringIdentifier: String,
         val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
@@ -57,10 +84,17 @@ data class PaywallEvent(
         val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
         val localeIdentifier: String,
         val darkMode: Boolean,
+        val exitOfferType: ExitOfferType? = null,
+        val exitOfferingIdentifier: String? = null,
+        val packageIdentifier: String? = null,
+        val productIdentifier: String? = null,
+        val errorCode: Int? = null,
+        val errorMessage: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
         return PaywallPostReceiptData(
+            paywallID = data.paywallIdentifier,
             sessionID = data.sessionIdentifier.toString(),
             revision = data.paywallRevision,
             displayMode = data.displayMode,

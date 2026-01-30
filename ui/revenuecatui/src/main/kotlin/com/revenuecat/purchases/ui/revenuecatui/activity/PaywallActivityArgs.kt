@@ -18,6 +18,7 @@ internal data class PaywallActivityArgs(
     val fonts: Map<TypographyType, PaywallFontFamily?>? = null,
     val shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     val edgeToEdge: Boolean = defaultEdgeToEdge,
+    val wasLaunchedThroughSDK: Boolean = true,
 ) : Parcelable {
     constructor(
         requiredEntitlementIdentifier: String? = null,
@@ -25,11 +26,13 @@ internal data class PaywallActivityArgs(
         fontProvider: ParcelizableFontProvider?,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
+        wasLaunchedThroughSDK: Boolean = true,
     ) : this(
         requiredEntitlementIdentifier,
         offeringIdAndPresentedOfferingContext,
         fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFont(it) }) },
         shouldDisplayDismissButton,
         edgeToEdge,
+        wasLaunchedThroughSDK,
     )
 }

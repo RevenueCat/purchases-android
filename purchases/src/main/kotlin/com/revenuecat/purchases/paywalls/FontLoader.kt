@@ -33,7 +33,7 @@ internal class FontLoader(
 ) {
     private var hasCheckedFoldersExist: AtomicBoolean = AtomicBoolean(false)
 
-    private val cacheDirectory: File? by lazy(LazyThreadSafetyMode.NONE) {
+    private val cacheDirectory: File? by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         providedCacheDir ?: context.cacheDir?.let { File(it, "rc_paywall_fonts") }
     }
 

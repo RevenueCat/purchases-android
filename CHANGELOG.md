@@ -1,3 +1,90 @@
+## 9.19.4
+### 🔄 Other Changes
+* Add internal API to debug tracked events (#3054) via Toni Rico (@tonidero)
+* [ADS-1] feat: add ad_format to AdTracker events (#3050) via Peter Porfy (@peterporfy)
+
+## 9.19.3
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.4 (#3048) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix gradient overlay to cover full viewport instead of image bounds (#3017) via Facundo Menzella (@facumenzella)
+* [MON-1823] Fix paywall price variables not showing on initial load (#3044) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Add `payload_version` to POST /receipt (#3045) via Toni Rico (@tonidero)
+
+## 9.19.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Make sure countdown component works when there's no package context (#3036) via Cesar de la Vega (@vegaro)
+* Fix paywall data misattributions (#3032) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add `sdk_originated` to POST /receipt (#3034) via Toni Rico (@tonidero)
+* Finish activities instead of crashing when not launched through SDK (#3040) via Antonio Pallares (@ajpallares)
+* Bump fastlane from 2.231.0 to 2.231.1 (#3035) via dependabot[bot] (@dependabot[bot])
+* Update CLAUDE code review workflow reference (#3030) via Cesar de la Vega (@vegaro)
+* Bump fastlane from 2.230.0 to 2.231.0 (#3028) via dependabot[bot] (@dependabot[bot])
+* Ignore new headers in golden backend test snapshots (#3029) via Toni Rico (@tonidero)
+* Add Claude Code GitHub Workflow (#3011) via Cesar de la Vega (@vegaro)
+* Send `paywall_id` in paywall events (#3018) via Toni Rico (@tonidero)
+* Add retry mechanism to purchases integration tests (#3024) via Toni Rico (@tonidero)
+
+## 9.19.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fixes incorrect lifecycle transitions in `CompatComposeView` (#3006) via JayShortway (@JayShortway)
+* Fixes `showInAppMessages` NPE when the Activity has no content View (#3004) via JayShortway (@JayShortway)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Synchronize `cacheDirectory` lazy property to fix `NullPointerException` on `UnsafeLazyImpl`  (#3019) via Cesar de la Vega (@vegaro)
+### Customer Center
+#### 🐞 Bugfixes
+* Simplify determining paid price in Customer Center (#2600) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Improve accuracy of transactions origin Part 6: Cleanup, Do not cache user id (#3012) via Toni Rico (@tonidero)
+* Properly cleanup new shared preferences files between tests (#3016) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3015) via RevenueCat Git Bot (@RCGitBot)
+* Improve accuracy of transactions origin Part 5: Cleanup (#3002) via Toni Rico (@tonidero)
+* Improve accuracy of transactions origin Part 4: Post remaining transaction metadata when syncing purchases (#2993) via Toni Rico (@tonidero)
+* Improve accuracy of transactions origin Part 3: Merge cached data when posting receipts + Cache amazon data (#2989) via Toni Rico (@tonidero)
+* Improve accuracy of transactions origin Part 2: Store transaction metadata (#2988) via Toni Rico (@tonidero)
+* Improve accuracy of transactions origin Part 1: Refactor to allow caching transaction metadata (#2987) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3010) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3008) via RevenueCat Git Bot (@RCGitBot)
+* Track exit offers (#2975) via Cesar de la Vega (@vegaro)
+
+## 9.19.0
+## RevenueCat SDK
+### ✨ New Features
+* Add Solar Engine integration support (#2994) via Lim Hoang (@limdauto)
+
+### 🔄 Other Changes
+* Incrase firebase tests timeout (#2997) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2998) via RevenueCat Git Bot (@RCGitBot)
+
+## 9.18.1
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.3 (#2977) via RevenueCat Git Bot (@RCGitBot)
+
+### 🔄 Other Changes
+* Bump uri from 1.0.3 to 1.0.4 (#2984) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update golden test files for backend integration tests (#2985) via RevenueCat Git Bot (@RCGitBot)
+* Add better error message when opening SimulatedStoreErrorDialogActivity from non-supported sources (#2980) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#2978) via RevenueCat Git Bot (@RCGitBot)
+* Bump fastlane-plugin-revenuecat_internal from `76a3a08` to `e6454e3` (#2976) via dependabot[bot] (@dependabot[bot])
+* Improve error messages when displaying `CustomerCenterActivity` or `PaywallActivity` from other sources (#2974) via Toni Rico (@tonidero)
+* Fix SDK size testing app version (#2973) via Toni Rico (@tonidero)
+* Add size testing app and related CI tasks (#2956) via Toni Rico (@tonidero)
+
 ## 9.18.0
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes

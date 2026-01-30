@@ -17,6 +17,8 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
@@ -66,6 +68,7 @@ internal interface PaywallViewModel {
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
+    fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
     fun closePaywall()
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
@@ -183,13 +186,17 @@ internal class PaywallViewModelImpl(
     override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
+        val exitOffering = if (!_purchaseCompleted.value) {
+            _preloadedExitOffering.value
+        } else {
+            null
+        }
+        if (exitOffering != null) {
+            trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
+        }
+        paywallPresentationData = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            val exitOffering = if (!_purchaseCompleted.value) {
-                _preloadedExitOffering.value
-            } else {
-                null
-            }
             dismissWithExitOffering(exitOffering)
         } else {
             options.dismissRequest()
@@ -288,6 +295,24 @@ internal class PaywallViewModelImpl(
             paywallPresentationData = createEventData()
             track(PaywallEventType.IMPRESSION)
         }
+    }
+
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking exit offer event")
+            return
+        }
+        val exitOfferEventData = eventData.copy(
+            exitOfferType = exitOfferType,
+            exitOfferingIdentifier = exitOfferingIdentifier,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = exitOfferEventData,
+            type = PaywallEventType.EXIT_OFFER,
+        )
+        purchases.track(event)
     }
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
@@ -419,6 +444,8 @@ internal class PaywallViewModelImpl(
         try {
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
+            trackPaywallPurchaseInitiated(packageToPurchase)
+
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
                     checkNotNull(customPurchaseHandler) {
@@ -436,7 +463,10 @@ internal class PaywallViewModelImpl(
                             trackPaywallCancel()
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let {
+                                trackPaywallPurchaseError(packageToPurchase, it)
+                                _actionError.value = it
+                            }
                         }
                     }
                 }
@@ -466,6 +496,7 @@ internal class PaywallViewModelImpl(
                 trackPaywallCancel()
                 listener?.onPurchaseCancelled()
             } else {
+                trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
                 _actionError.value = e.error
             }
@@ -604,8 +635,57 @@ internal class PaywallViewModelImpl(
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
-            paywallPresentationData = null
         }
+    }
+
+    private fun trackPaywallPurchaseInitiated(rcPackage: Package) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase initiated event")
+            return
+        }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
+        val purchaseInitiatedEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = productId,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseInitiatedEventData,
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+        purchases.track(event)
+    }
+
+    private fun trackPaywallPurchaseError(rcPackage: Package, error: PurchasesError) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase error event")
+            return
+        }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
+        val purchaseErrorEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = productId,
+            errorCode = error.code.code,
+            errorMessage = error.message,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseErrorEventData,
+            type = PaywallEventType.PURCHASE_ERROR,
+        )
+        purchases.track(event)
     }
 
     private fun trackPaywallCancel() {
@@ -648,8 +728,10 @@ internal class PaywallViewModelImpl(
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
+        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.data?.id
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
+            paywallIdentifier = paywallId,
             offeringIdentifier = offering.identifier,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
@@ -666,6 +748,7 @@ internal class PaywallViewModelImpl(
             return null
         }
         return PaywallEvent.Data(
+            paywallIdentifier = paywallData.data.id,
             offeringIdentifier = offering.identifier,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),

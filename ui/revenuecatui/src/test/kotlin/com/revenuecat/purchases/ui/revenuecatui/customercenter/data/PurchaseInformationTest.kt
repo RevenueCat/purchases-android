@@ -770,42 +770,6 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test sandbox transaction with zero price falls back to product price`() {
-        val expiresDate = oneDayFromNow
-        setupDateFormatter(expiresDate, "3 Oct 2063")
-        
-        val transaction = createTransactionDetails(
-            isActive = true,
-            willRenew = true,
-            store = Store.PLAY_STORE,
-            productIdentifier = "test_product",
-            expiresDate = expiresDate,
-            price = Price("$0.00", 0L, "USD"),
-            isSandbox = true
-        )
-
-        val storeProduct = TestStoreProduct(
-            "test_product",
-            "name",
-            "Monthly Product",
-            "description",
-            Price("$9.99", 9_990_000, "USD"),
-            Period(1, Period.Unit.MONTH, "P1M")
-        )
-
-        val purchaseInformation = PurchaseInformation(
-            entitlementInfo = null,
-            subscribedProduct = storeProduct,
-            transaction = transaction,
-            dateFormatter = dateFormatter,
-            locale = locale,
-            localization = localization
-        )
-
-        assertThat(purchaseInformation.pricePaid).isEqualTo(PriceDetails.Paid("$9.99"))
-    }
-
-    @Test
     fun `test non-sandbox transaction with zero price shows as free`() {
         val expiresDate = oneDayFromNow
         setupDateFormatter(expiresDate, "3 Oct 2063")
@@ -1019,48 +983,6 @@ class PurchaseInformationTest {
             purchaseInformation,
             title = "Free Product",
             price = PriceDetails.Free,
-            store = Store.PLAY_STORE,
-            product = storeProduct,
-            isSubscription = false,
-            isExpired = false,
-            isTrial = false,
-            isCancelled = false,
-            expirationOrRenewal = null,
-            managementURL = null
-        )
-    }
-
-    @Test
-    fun `test one-time purchase sandbox with zero price falls back to product price`() {
-        val transaction = createNonSubscriptionTransactionDetails(
-            store = Store.PLAY_STORE,
-            productIdentifier = "test_product",
-            price = Price("$0.00", 0L, "USD"),
-            isSandbox = true
-        )
-
-        val storeProduct = TestStoreProduct(
-            "test_product",
-            "name",
-            "Premium Feature",
-            "description",
-            Price("$2.99", 2_990_000, "USD"),
-            null
-        )
-
-        val purchaseInformation = PurchaseInformation(
-            entitlementInfo = null,
-            subscribedProduct = storeProduct,
-            transaction = transaction,
-            dateFormatter = dateFormatter,
-            locale = locale,
-            localization = localization
-        )
-
-        assertPurchaseInformation(
-            purchaseInformation,
-            title = "Premium Feature",
-            price = PriceDetails.Paid("$2.99"),
             store = Store.PLAY_STORE,
             product = storeProduct,
             isSubscription = false,

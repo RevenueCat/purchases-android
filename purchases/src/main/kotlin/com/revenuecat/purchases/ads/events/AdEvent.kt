@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.events.BackendEvent
@@ -26,6 +27,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val timestamp: Long
     val networkName: String
     val mediatorName: AdMediatorName
+    val adFormat: AdFormat
     val placement: String?
     val adUnitId: String
     val impressionId: String?
@@ -37,6 +39,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
         override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -49,6 +52,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
         override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -61,6 +65,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
         override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -76,6 +81,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
         override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
@@ -88,6 +94,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val timestamp: Long = System.currentTimeMillis(),
         override val networkName: String,
         override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,

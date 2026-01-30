@@ -1,10 +1,3 @@
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Retry creation of font folder (#2965) via Cesar de la Vega (@vegaro)
-### Paywallv2
-#### ✨ New Features
-* Add exit offers support to PaywallActivity and PaywallDialog (#2938) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
-* Improve event tracking reliability (#2968) via Toni Rico (@tonidero)
-* Use @ExperimentalPreviewRevenueCatPurchasesAPI for non subscription tracking API (#2962) via Pol Miro (@polmiro)
+* Add internal API to debug tracked events (#3054) via Toni Rico (@tonidero)
+* [ADS-1] feat: add ad_format to AdTracker events (#3050) via Peter Porfy (@peterporfy)

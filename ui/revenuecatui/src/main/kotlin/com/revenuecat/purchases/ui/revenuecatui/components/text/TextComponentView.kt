@@ -37,13 +37,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
 internal fun TextComponentView(
@@ -112,41 +110,34 @@ private fun rememberProcessedText(
 ): String {
     val processedText by remember(state, textState) {
         derivedStateOf {
-            textState.applicablePackage?.let { packageToUse ->
-                val dateLocale = state.locale.toJavaLocale()
-                val currencyLocale = state.currencyLocale.toJavaLocale()
+            val dateLocale = state.locale.toJavaLocale()
+            val currencyLocale = state.currencyLocale.toJavaLocale()
+            val packageToUse = textState.applicablePackage
 
-                val introEligibility = packageToUse.introEligibility
-
-                when (introEligibility) {
-                    IntroOfferEligibility.INELIGIBLE -> textState.text
-                    IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textState.text
-                    IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textState.text
-                }
-
+            val variableContext = packageToUse?.let { pkg ->
                 val discount = discountPercentage(
-                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
+                    pricePerMonthMicros = pkg.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
-                val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
+                VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
+            }
 
-                VariableProcessorV2.processVariables(
-                    template = textState.text,
-                    localizedVariableKeys = textState.localizedVariableKeys,
-                    variableConfig = state.variableConfig,
-                    variableDataProvider = state.variableDataProvider,
-                    packageContext = variableContext,
-                    rcPackage = packageToUse,
-                    currencyLocale = currencyLocale,
-                    dateLocale = dateLocale,
-                    date = state.currentDate,
-                    countdownTime = textState.countdownTime,
-                    countFrom = textState.countFrom,
-                )
-            } ?: textState.text
+            VariableProcessorV2.processVariables(
+                template = textState.text,
+                localizedVariableKeys = textState.localizedVariableKeys,
+                variableConfig = state.variableConfig,
+                variableDataProvider = state.variableDataProvider,
+                packageContext = variableContext,
+                rcPackage = packageToUse,
+                currencyLocale = currencyLocale,
+                dateLocale = dateLocale,
+                date = state.currentDate,
+                countdownTime = textState.countdownTime,
+                countFrom = textState.countFrom,
+            )
         }
     }
 

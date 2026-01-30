@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    purchasesAreCompletedBy: PurchasesAreCompletedBy,
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
     val showInAppMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,

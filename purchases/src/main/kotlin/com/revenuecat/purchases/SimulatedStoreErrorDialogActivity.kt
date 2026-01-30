@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import com.revenuecat.purchases.common.errorLog
 
 internal class SimulatedStoreErrorDialogActivity : Activity() {
 
@@ -50,11 +51,23 @@ internal class SimulatedStoreErrorDialogActivity : Activity() {
     }
 
     private fun crashApp() {
-        throw PurchasesException(
-            error = PurchasesError(code = PurchasesErrorCode.ConfigurationError),
-            overridenMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
-                "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
-                "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
-        )
+        if (wasLaunchedThroughSDK()) {
+            throw PurchasesException(
+                error = PurchasesError(code = PurchasesErrorCode.ConfigurationError),
+                overridenMessage = "Test Store API key used in release build: $redactedApiKey. Please configure the " +
+                    "Play Store/Amazon app on the RevenueCat dashboard and use its corresponding API key " +
+                    "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
+            )
+        } else {
+            errorLog {
+                "SimulatedStoreErrorDialogActivity was launched incorrectly. " +
+                    "This activity is only meant to be launched internally by the SDK."
+            }
+            finish()
+        }
+    }
+
+    private fun wasLaunchedThroughSDK(): Boolean {
+        return intent.hasExtra(redactedApiKeyExtra)
     }
 }

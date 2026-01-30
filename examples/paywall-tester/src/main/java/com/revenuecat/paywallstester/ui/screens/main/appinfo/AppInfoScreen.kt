@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.Constants
+import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
@@ -77,6 +78,7 @@ fun AppInfoScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         val state by viewModel.state.collectAsState()
+        val activity = LocalContext.current as MainActivity
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         val currentActiveEntitlements by remember { derivedStateOf { state.activeEntitlements } }
@@ -105,6 +107,11 @@ fun AppInfoScreen(
             showCustomerCenterView = true
         }) {
             Text(text = "Customer Center (per-view Listener)")
+        }
+        Button(onClick = {
+            activity.launchCustomerCenter()
+        }) {
+            Text(text = "Customer Center (Activity)")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
