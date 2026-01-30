@@ -41,7 +41,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 
 private enum class VariableType(val displayName: String) {
@@ -201,13 +200,13 @@ private fun VariableRow(
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
 @Composable
 private fun TypeBadge(value: CustomVariableValue) {
-    val (text, color) = when (value) {
-        is CustomVariableValue.String -> "String" to MaterialTheme.colorScheme.primary
-        is CustomVariableValue.Number -> "Number" to MaterialTheme.colorScheme.tertiary
-        is CustomVariableValue.Boolean -> "Bool" to MaterialTheme.colorScheme.secondary
+    val typeString = value.toString()
+    val (text, color) = when {
+        typeString.startsWith("CustomVariableValue.String") -> "String" to MaterialTheme.colorScheme.primary
+        typeString.startsWith("CustomVariableValue.Number") -> "Number" to MaterialTheme.colorScheme.tertiary
+        typeString.startsWith("CustomVariableValue.Boolean") -> "Bool" to MaterialTheme.colorScheme.secondary
         else -> "Unknown" to MaterialTheme.colorScheme.outline
     }
     Surface(
@@ -223,7 +222,7 @@ private fun TypeBadge(value: CustomVariableValue) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, InternalRevenueCatAPI::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun AddVariableDialog(
@@ -358,8 +357,8 @@ private fun AddVariableDialog(
                 onClick = {
                     val value = when (selectedType) {
                         VariableType.STRING -> CustomVariableValue.String(stringValue)
-                        VariableType.NUMBER -> CustomVariableValue.Number(numberValue.toDouble())
-                        VariableType.BOOLEAN -> CustomVariableValue.Boolean(booleanValue)
+                        VariableType.NUMBER -> CustomVariableValue.String(numberValue)
+                        VariableType.BOOLEAN -> CustomVariableValue.String(booleanValue.toString())
                     }
                     onAdd(name, value)
                 },
@@ -377,15 +376,14 @@ private fun AddVariableDialog(
 }
 
 @Suppress("MagicNumber")
-@OptIn(InternalRevenueCatAPI::class)
 @Preview
 @Composable
 private fun CustomVariablesEditorDialogPreview() {
     CustomVariablesEditorDialog(
         customVariables = mapOf(
             "user_name" to CustomVariableValue.String("John"),
-            "user_points" to CustomVariableValue.Number(100),
-            "is_premium" to CustomVariableValue.Boolean(true),
+            "user_points" to CustomVariableValue.String("100"),
+            "is_premium" to CustomVariableValue.String("true"),
         ),
         onAddVariable = { _, _ -> },
         onRemoveVariable = {},

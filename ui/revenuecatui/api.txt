@@ -1,15 +1,9 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.revenuecatui {
 
-  public abstract sealed class CustomVariableValue implements android.os.Parcelable {
-    method public static final com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue from(Object value);
+  public abstract class CustomVariableValue implements android.os.Parcelable {
     method public final String getStringValue();
     property public final String stringValue;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue.Companion Companion;
-  }
-
-  public static final class CustomVariableValue.Companion {
-    method public com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue from(Object value);
   }
 
   @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.String extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {

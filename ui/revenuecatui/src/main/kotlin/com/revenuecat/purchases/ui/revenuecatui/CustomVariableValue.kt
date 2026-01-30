@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Parcelable
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.parcelize.Parcelize
 
@@ -16,9 +15,7 @@ import kotlinx.parcelize.Parcelize
  * PaywallOptions.Builder { /* dismiss */ }
  *     .setCustomVariables(mapOf(
  *         "player_name" to CustomVariableValue.String("John"),
- *         "max_health" to CustomVariableValue.Number(100.0),
- *         "price" to CustomVariableValue.Number(9.99),
- *         "is_premium" to CustomVariableValue.Boolean(true)
+ *         "level" to CustomVariableValue.String("42"),
  *     ))
  *     .build()
  * ```
@@ -28,7 +25,7 @@ import kotlinx.parcelize.Parcelize
  * Hello {{ custom.player_name }}!
  * ```
  */
-sealed class CustomVariableValue : Parcelable {
+abstract class CustomVariableValue internal constructor() : Parcelable {
 
     /**
      * A string value.
@@ -46,9 +43,8 @@ sealed class CustomVariableValue : Parcelable {
     /**
      * A numeric value (integer or decimal).
      */
-    @InternalRevenueCatAPI
     @Parcelize
-    class Number(val value: kotlin.Double) : CustomVariableValue(), Parcelable {
+    internal class Number(val value: kotlin.Double) : CustomVariableValue(), Parcelable {
         constructor(value: kotlin.Int) : this(value.toDouble())
         constructor(value: kotlin.Long) : this(value.toDouble())
         constructor(value: kotlin.Float) : this(value.toDouble())
@@ -64,9 +60,8 @@ sealed class CustomVariableValue : Parcelable {
     /**
      * A boolean value.
      */
-    @InternalRevenueCatAPI
     @Parcelize
-    class Boolean(val value: kotlin.Boolean) : CustomVariableValue(), Parcelable {
+    internal class Boolean(val value: kotlin.Boolean) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is Boolean && value == other.value
 
@@ -90,24 +85,10 @@ sealed class CustomVariableValue : Parcelable {
                 }
             }
             is Boolean -> value.toString()
+            else -> error("Unknown CustomVariableValue type")
         }
 
-    companion object {
-        /**
-         * Creates a [CustomVariableValue] from any supported type.
-         *
-         * Supported types:
-         * - [kotlin.String] -> [CustomVariableValue.String]
-         * - [kotlin.Int] -> [CustomVariableValue.Number]
-         * - [kotlin.Long] -> [CustomVariableValue.Number]
-         * - [kotlin.Double] -> [CustomVariableValue.Number]
-         * - [kotlin.Float] -> [CustomVariableValue.Number]
-         * - [kotlin.Boolean] -> [CustomVariableValue.Boolean]
-         *
-         * @throws IllegalArgumentException if the value type is not supported
-         */
-        @JvmStatic
-        @OptIn(InternalRevenueCatAPI::class)
+    internal companion object {
         fun from(value: Any): CustomVariableValue = when (value) {
             is kotlin.String -> String(value)
             is kotlin.Int -> Number(value)

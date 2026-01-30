@@ -121,7 +121,6 @@ internal object VariableProcessorV2 {
         date: Date = Date(),
         countdownTime: CountdownTime? = null,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
-        // Custom variables:
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
         defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     ): String = template.replaceVariablesWithValues { variable, functions ->
@@ -183,7 +182,6 @@ internal object VariableProcessorV2 {
         date: Date,
         countdownTime: CountdownTime?,
         countFrom: CountdownComponent.CountFrom,
-        // Custom variables:
         customVariables: Map<String, CustomVariableValue>,
         defaultCustomVariables: Map<String, CustomVariableValue>,
     ): String {
@@ -203,7 +201,6 @@ internal object VariableProcessorV2 {
 
         val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         return if (variable == null) {
-            // findVariable already logged the unsupported variable warning
             ""
         } else {
             val result = variable.getValue(

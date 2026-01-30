@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesHolder
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenState
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModelImpl
@@ -45,7 +44,6 @@ fun PaywallFooterScreen(
                     options = PaywallOptions.Builder(dismissRequest)
                         .setOffering(state.offering)
                         .setListener(viewModel)
-                        .setCustomVariables(CustomVariablesHolder.customVariables)
                         .build(),
                     condensed = state.footerCondensed,
                 ) {
