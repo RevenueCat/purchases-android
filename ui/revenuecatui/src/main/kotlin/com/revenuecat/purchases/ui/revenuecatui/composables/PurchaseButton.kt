@@ -41,7 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 
@@ -113,7 +113,7 @@ private fun PurchaseButton(
                     val p = selectedPackage.value
                     text = AnnotatedString(
                         introEligibilityText(
-                            eligibility = p.introEligibility,
+                            eligibility = p.offerEligibility,
                             textWithIntroOffer = p.localization.callToActionWithIntroOffer,
                             textWithMultipleIntroOffers = p.localization.callToActionWithMultipleIntroOffers,
                             textWithNoIntroOffer = p.localization.callToAction,
@@ -143,7 +143,7 @@ private fun PurchaseButton(
                         textWithNoIntroOffer = localization.callToAction,
                         textWithIntroOffer = localization.callToActionWithIntroOffer,
                         textWithMultipleIntroOffers = localization.callToActionWithMultipleIntroOffers,
-                        eligibility = it.introEligibility,
+                        eligibility = it.offerEligibility,
                         color = colors.callToActionForeground,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleMedium,

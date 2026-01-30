@@ -25,9 +25,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @Stable
@@ -41,8 +41,13 @@ internal fun rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedOfferEligibilityProvider = {
+            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
+        },
     )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -50,6 +55,8 @@ internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -60,7 +67,9 @@ internal fun rememberUpdatedStackComponentState(
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -69,18 +78,24 @@ internal fun rememberUpdatedStackComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageUniqueIdProvider: () -> String?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
+        if (style.packageUniqueId != null) {
+            // Use unique ID for selection comparison when available
+            style.packageUniqueId == selectedPackageUniqueIdProvider()
+        } else if (style.rcPackage != null) {
             // Fallback to package identifier comparison for backwards compatibility
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
@@ -91,17 +106,28 @@ internal class StackComponentState(
     }
 
     /**
-     * The package to consider for intro offer eligibility.
+     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
+     * If the style has its own package, uses the promo offer flag to determine the eligibility type.
+     * Otherwise, uses the selected package's resolved offer eligibility.
      */
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            // When isPromoOffer is true, the PromoOffer condition should match
+            if (style.isPromoOffer) {
+                OfferEligibility.PromoOfferIneligible
+            } else {
+                style.rcPackage.offerEligibility
+            }
+        } else {
+            selectedOfferEligibilityProvider()
+        }
     }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic

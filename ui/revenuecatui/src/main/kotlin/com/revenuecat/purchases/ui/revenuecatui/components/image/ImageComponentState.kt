@@ -38,9 +38,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 
 @Stable
 @JvmSynthetic
@@ -54,6 +54,10 @@ internal fun rememberUpdatedImageComponentState(
         localeProvider = { paywallState.locale },
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
+        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
+        selectedOfferEligibilityProvider = {
+            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
+        },
     )
 
 @Stable
@@ -64,6 +68,8 @@ internal fun rememberUpdatedImageComponentState(
     localeProvider: () -> Locale,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
+    selectedPackageUniqueIdProvider: () -> String? = { null },
+    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -80,6 +86,8 @@ internal fun rememberUpdatedImageComponentState(
             localeProvider = localeProvider,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -102,6 +110,8 @@ internal class ImageComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedPackageUniqueIdProvider: () -> String?,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private val selected by derivedStateOf {
@@ -118,18 +128,28 @@ internal class ImageComponentState(
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     /**
-     * The package to consider for intro offer eligibility.
+     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
+     * If the style has its own package, uses the promo offer flag to determine the eligibility type.
+     * Otherwise, uses the selected package's resolved offer eligibility.
      */
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            // When isPromoOffer is true, the PromoOffer condition should match
+            if (style.isPromoOffer) {
+                OfferEligibility.PromoOfferIneligible
+            } else {
+                style.rcPackage.offerEligibility
+            }
+        } else {
+            selectedOfferEligibilityProvider()
+        }
     }
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()

@@ -38,6 +38,18 @@ internal data class TimelineComponentStyle(
     @get:JvmSynthetic
     val rcPackage: Package?,
     /**
+     * Unique identifier for the package, combining package ID and offer ID.
+     * Used for selection comparison when multiple components reference the same package with different offers.
+     */
+    @get:JvmSynthetic
+    val packageUniqueId: String? = null,
+    /**
+     * Whether this component uses a configured promo offer (Play Store offer ID).
+     * Used to determine if the `promo_offer` override condition should apply.
+     */
+    @get:JvmSynthetic
+    val isPromoOffer: Boolean = false,
+    /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for timelines inside tab control elements. Not for all timelines within a tab.
      */
@@ -64,6 +76,18 @@ internal data class TimelineComponentStyle(
          */
         @get:JvmSynthetic
         val rcPackage: Package?,
+        /**
+         * Unique identifier for the package, combining package ID and offer ID.
+         * Used for selection comparison when multiple components reference the same package with different offers.
+         */
+        @get:JvmSynthetic
+        val packageUniqueId: String? = null,
+        /**
+         * Whether this component uses a configured promo offer (Play Store offer ID).
+         * Used to determine if the `promo_offer` override condition should apply.
+         */
+        @get:JvmSynthetic
+        val isPromoOffer: Boolean = false,
         /**
          * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
          * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.

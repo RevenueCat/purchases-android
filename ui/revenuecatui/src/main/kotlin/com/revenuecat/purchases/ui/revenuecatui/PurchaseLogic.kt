@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import dev.drewhamilton.poko.Poko
 import kotlin.coroutines.resume
@@ -51,6 +52,7 @@ interface PurchaseLogic {
     suspend fun performPurchase(
         activity: Activity,
         rcPackage: Package,
+        subscriptionOption: SubscriptionOption?,
         productChangeConfig: ProductChangeConfig?,
     ): PurchaseLogicResult = performPurchase(activity, rcPackage)
 
@@ -104,6 +106,8 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      *
      * @param activity The current Android `Activity` triggering the purchase.
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
+     * @param subscriptionOption The specific subscription option to purchase (e.g., a promo offer). If null,
+     *        the default option should be used.
      * @param productChangeConfig Configuration for product changes (upgrades/downgrades), specifying replacement
      *        modes. If null, no product change behavior is configured.
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
@@ -112,6 +116,7 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
     open fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
+        subscriptionOption: SubscriptionOption?,
         productChangeConfig: ProductChangeConfig?,
         completion: (PurchaseLogicResult) -> Unit,
     ) = performPurchaseWithCompletion(activity, rcPackage, completion)
@@ -146,10 +151,11 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
     final override suspend fun performPurchase(
         activity: Activity,
         rcPackage: Package,
+        subscriptionOption: SubscriptionOption?,
         productChangeConfig: ProductChangeConfig?,
     ): PurchaseLogicResult =
         suspendCoroutine { continuation ->
-            performPurchaseWithCompletion(activity, rcPackage, productChangeConfig) { result ->
+            performPurchaseWithCompletion(activity, rcPackage, subscriptionOption, productChangeConfig) { result ->
                 continuation.resume(result)
             }
         }
