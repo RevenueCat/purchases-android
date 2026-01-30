@@ -104,6 +104,13 @@ internal interface CustomerCenterViewModel {
 
     @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
+
+    /**
+     * Refreshes the Customer Center data while keeping the current Success state visible.
+     * Shows a subtle loading indicator instead of the full loading screen.
+     * Used when returning from external screens (e.g., manage subscriptions).
+     */
+    suspend fun refreshCustomerCenter()
     fun openURL(
         context: Context,
         url: String,
@@ -904,8 +911,20 @@ internal class CustomerCenterViewModelImpl(
 
     @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
+        loadCustomerCenter(isRefresh = false)
+    }
+
+    override suspend fun refreshCustomerCenter() {
+        loadCustomerCenter(isRefresh = true)
+    }
+
+    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
-            if (state !is CustomerCenterState.Loading) {
+            if (isRefresh && state is CustomerCenterState.Success) {
+                // For refresh, keep Success state but set isRefreshing flag
+                state.copy(isRefreshing = true)
+            } else if (state !is CustomerCenterState.Loading) {
+                // For initial load, show full loading screen
                 CustomerCenterState.Loading
             } else {
                 state
@@ -937,6 +956,7 @@ internal class CustomerCenterViewModelImpl(
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
+                isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -944,8 +964,13 @@ internal class CustomerCenterViewModelImpl(
                 successState.copy(mainScreenPaths = mainScreenPaths)
             }
         } catch (e: PurchasesException) {
-            _state.update {
-                CustomerCenterState.Error(e.error)
+            _state.update { currentState ->
+                if (isRefresh && currentState is CustomerCenterState.Success) {
+                    // On error during refresh, keep the existing state but clear isRefreshing
+                    currentState.copy(isRefreshing = false)
+                } else {
+                    CustomerCenterState.Error(e.error)
+                }
             }
         }
     }
