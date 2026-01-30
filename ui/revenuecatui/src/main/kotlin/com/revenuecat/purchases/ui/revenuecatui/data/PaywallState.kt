@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import java.util.Date
@@ -120,7 +121,25 @@ internal sealed interface PaywallState {
                 data class Info(
                     val pkg: Package,
                     val isSelectedByDefault: Boolean,
-                )
+                    val resolvedOffer: ResolvedOffer? = null,
+                ) {
+                    /**
+                     * Unique identifier combining package ID and offer ID.
+                     * This distinguishes multiple components referencing the same package
+                     * but with different offer configurations.
+                     */
+                    val uniqueId: String
+                        get() {
+                            val offerId = (resolvedOffer as? ResolvedOffer.ConfiguredOffer)
+                                ?.option
+                                ?.id
+                            return if (offerId != null) {
+                                "${pkg.identifier}:$offerId"
+                            } else {
+                                pkg.identifier
+                            }
+                        }
+                }
 
                 /**
                  * Merges this [AvailablePackages] with another one. Note that this concatenates [packagesOutsideTabs],
@@ -139,19 +158,21 @@ internal sealed interface PaywallState {
 
             data class SelectedPackageInfo(
                 val rcPackage: Package,
+                val resolvedOffer: ResolvedOffer? = null,
+                val uniqueId: String,
             )
 
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
                 .firstOrNull { it.isSelectedByDefault }
-                ?.pkg
-            private val packagesOutsideTabs: Set<Package> = packages.packagesOutsideTabs
-                .mapTo(mutableSetOf()) { it.pkg }
-            private val tabsByPackage: Map<Package, Set<Int>> = mutableMapOf<Package, Set<Int>>().apply {
-                packages.packagesByTab.forEach { (tabIndex, packages) ->
-                    packages.forEach { packageInfo ->
-                        val pkg = packageInfo.pkg
-                        val tabIndices = getOrDefault(pkg, emptySet())
-                        put(pkg, tabIndices + tabIndex)
+                ?.uniqueId
+            private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
+                .mapTo(mutableSetOf()) { it.uniqueId }
+            private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
+                packages.packagesByTab.forEach { (tabIndex, packagesList) ->
+                    packagesList.forEach { packageInfo ->
+                        val uniqueId = packageInfo.uniqueId
+                        val tabIndices = getOrDefault(uniqueId, emptySet())
+                        put(uniqueId, tabIndices + tabIndex)
                     }
                 }
             }
@@ -201,10 +222,10 @@ internal sealed interface PaywallState {
                 }
             }
 
-            private val selectedPackageByTab = mutableStateMapOf<Int, Package?>().apply {
+            private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
                 putAll(
-                    packages.packagesByTab.mapValues { (_, packages) ->
-                        packages.firstOrNull { it.isSelectedByDefault }?.pkg
+                    packages.packagesByTab.mapValues { (_, packagesList) ->
+                        packagesList.firstOrNull { it.isSelectedByDefault }?.uniqueId
                     },
                 )
             }
@@ -212,16 +233,26 @@ internal sealed interface PaywallState {
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
 
-            private val initialSelectedPackage = initialSelectedPackageOutsideTabs
-                ?: selectedPackageByTab[selectedTabIndex]
-                ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg
+            private val initialSelectedPackageUniqueId = initialSelectedPackageOutsideTabs
+                ?: initialSelectedTabIndex?.let { selectedPackageByTab[it] }
 
-            private var selectedPackage by mutableStateOf(initialSelectedPackage)
+            private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
             val selectedPackageInfo by derivedStateOf {
-                selectedPackage?.let { rcPackage ->
-                    SelectedPackageInfo(rcPackage = rcPackage)
+                selectedPackageUniqueId?.let { uniqueId ->
+                    findPackageInfoByUniqueId(uniqueId)?.let { info ->
+                        SelectedPackageInfo(
+                            rcPackage = info.pkg,
+                            resolvedOffer = info.resolvedOffer,
+                            uniqueId = uniqueId,
+                        )
+                    }
                 }
+            }
+
+            private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
+                return packages.packagesOutsideTabs.find { it.uniqueId == uniqueId }
+                    ?: packages.packagesByTab.values.flatten().find { it.uniqueId == uniqueId }
             }
 
             val mostExpensivePricePerMonthMicros by derivedStateOf {
@@ -248,11 +279,15 @@ internal sealed interface PaywallState {
                     this.selectedTabIndex = selectedTabIndex
                     // If our currently selected package exists outside of tabs, we don't have to change the selected
                     // package when the tab changes.
-                    if (packagesOutsideTabs.contains(selectedPackage)) return
+                    if (selectedPackageUniqueId != null &&
+                        packagesOutsideTabsUniqueIds.contains(selectedPackageUniqueId)
+                    ) {
+                        return
+                    }
 
-                    selectedPackage = selectedPackageByTab[selectedTabIndex]
+                    selectedPackageUniqueId = selectedPackageByTab[selectedTabIndex]
                         ?: initialSelectedPackageOutsideTabs
-                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.pkg?.also {
+                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId?.also {
                             Logger.w(
                                 "Could not find default package for tab $selectedTabIndex. " +
                                     "Using first package instead. " +
@@ -264,20 +299,20 @@ internal sealed interface PaywallState {
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
             }
 
-            fun update(selectedPackage: Package) {
-                this.selectedPackage = selectedPackage
+            fun update(selectedPackageUniqueId: String) {
+                this.selectedPackageUniqueId = selectedPackageUniqueId
 
                 // Check if the package (also) exists on the currently selected tab. We need to remember this so we can
                 // reselect this package when the user navigates away and back to the current tab.
                 val currentTabIndex = selectedTabIndex
-                val tabsWithThisPackage = tabsByPackage[selectedPackage]
+                val tabsWithThisPackage = tabsByUniqueId[selectedPackageUniqueId]
                 val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
-                if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackage
+                if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
             }
 
             fun resetToDefaultPackage() {
-                selectedPackage =
-                    packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.pkg
+                selectedPackageUniqueId =
+                    packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                         ?: initialSelectedPackageOutsideTabs
                         ?: selectedPackageByTab[selectedTabIndex]
             }

@@ -18,6 +18,10 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -398,13 +402,18 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchase(activity, selectedPackage.rcPackage)
+                performPurchase(
+                    activity = activity,
+                    packageToPurchase = selectedPackage.rcPackage,
+                    subscriptionOption = null,
+                )
             }
             is PaywallState.Loaded.Components -> {
                 // Purchase the provided package if not null, otherwise purchase the selected package.
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
+                        uniqueId = it.identifier,
                     )
                 } ?: currentState.selectedPackageInfo
                 performPurchaseIfNecessary(activity, selectedPackageInfo)
@@ -423,12 +432,22 @@ internal class PaywallViewModelImpl(
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
         } else {
-            performPurchase(activity, packageInfo.rcPackage)
+            performPurchase(
+                activity = activity,
+                packageToPurchase = packageInfo.rcPackage,
+                subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
+                productChangeConfig = productChangeConfig,
+            )
         }
     }
 
-    @Suppress("LongMethod", "NestedBlockDepth")
-    private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+    @Suppress("LongMethod", "NestedBlockDepth", "CyclomaticComplexMethod")
+    private suspend fun performPurchase(
+        activity: Activity,
+        packageToPurchase: Package,
+        subscriptionOption: SubscriptionOption?,
+        productChangeConfig: ProductChangeConfig? = null,
+    ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCoroutine { continuation ->
@@ -453,7 +472,14 @@ internal class PaywallViewModelImpl(
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
-                    when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
+                    when (
+                        val result = logic.performPurchase(
+                            activity,
+                            packageToPurchase,
+                            subscriptionOption,
+                            productChangeConfig,
+                        )
+                    ) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
                             _purchaseCompleted.value = true
@@ -480,9 +506,26 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+                    // Use subscription option from resolved offer if available, otherwise use package
+                    val purchaseParamsBuilder = if (subscriptionOption != null) {
+                        PurchaseParams.Builder(activity, subscriptionOption)
+                            .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
+                    } else {
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    }
+
+                    // Apply product change configuration if detected
+                    if (productChangeInfo != null) {
+                        Logger.d(
+                            "Performing product change from ${productChangeInfo.oldProductId} " +
+                                "with mode ${productChangeInfo.replacementMode}",
+                        )
+                        purchaseParamsBuilder
+                            .oldProductId(productChangeInfo.oldProductId)
+                            .googleReplacementMode(productChangeInfo.replacementMode)
+                    }
+
+                    val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
