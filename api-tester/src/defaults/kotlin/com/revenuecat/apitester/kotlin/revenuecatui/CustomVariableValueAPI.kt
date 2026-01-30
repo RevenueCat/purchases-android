@@ -12,9 +12,6 @@ private class CustomVariableValueAPI {
 
         // Access the underlying value
         val underlyingString: String = (stringValue as CustomVariableValue.String).value
-
-        // Factory method
-        val fromString: CustomVariableValue = CustomVariableValue.from("test")
     }
 
     fun checkMap() {
