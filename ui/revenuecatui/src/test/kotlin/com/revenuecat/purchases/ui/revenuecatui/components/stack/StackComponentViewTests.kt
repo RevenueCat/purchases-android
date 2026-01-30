@@ -115,7 +115,7 @@ class StackComponentViewTests {
                     clickHandler = { },
                     modifier = Modifier.testTag("stack")
                 )
-                  },
+            },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -166,12 +166,12 @@ class StackComponentViewTests {
             },
             act = {
                 StackComponentView(
-                style = it,
-                state = state,
-                clickHandler = { },
-                modifier = Modifier.testTag("stack")
-            )
-                  },
+                    style = it,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
+            },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -387,7 +387,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedSelectedShadowColor)
 
         // Select our package
-        state.update(rcPackage.identifier)
+        state.update(selectedPackage = rcPackage)
 
         onNodeWithTag("pkg")
             .assertIsDisplayed()
@@ -508,7 +508,7 @@ class StackComponentViewTests {
         }
 
         // Assert
-        state.update(packageWithoutIntroOffer.identifier)
+        state.update(selectedPackage = packageWithoutIntroOffer)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -522,7 +522,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
             .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
 
-        state.update(packageWithSingleIntroOffer.identifier)
+        state.update(selectedPackage = packageWithSingleIntroOffer)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -536,7 +536,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedIneligibleShadowColor)
             .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
 
-        state.update(packageWithMultipleIntroOffers.identifier)
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -782,11 +782,11 @@ class StackComponentViewTests {
 
         // Make sure the selected package does not influence the package used to pick the override properties.
         assertAll()
-        state.update(packageWithoutIntroOffer.identifier)
+        state.update(selectedPackage = packageWithoutIntroOffer)
         assertAll()
-        state.update(packageWithSingleIntroOffer.identifier)
+        state.update(selectedPackage = packageWithSingleIntroOffer)
         assertAll()
-        state.update(packageWithMultipleIntroOffers.identifier)
+        state.update(selectedPackage = packageWithMultipleIntroOffers)
         assertAll()
     }
 }

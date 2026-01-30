@@ -37,8 +37,6 @@ internal fun rememberUpdatedIconComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
 @Stable
@@ -48,8 +46,6 @@ private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -61,8 +57,6 @@ private fun rememberUpdatedIconComponentState(
             style = style,
             selectedPackageProvider = selectedPackageProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -71,7 +65,6 @@ private fun rememberUpdatedIconComponentState(
     }
 }
 
-@Suppress("LongParameterList")
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
@@ -79,15 +72,11 @@ internal class IconComponentState(
     private val style: IconComponentStyle,
     private val selectedPackageProvider: () -> Package?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
-        if (style.packageUniqueId != null) {
-            style.packageUniqueId == selectedPackageUniqueIdProvider()
-        } else if (style.rcPackage != null) {
+        if (style.rcPackage != null) {
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
@@ -98,15 +87,12 @@ internal class IconComponentState(
     private val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
     }
-    private val isPromoOffer by derivedStateOf {
-        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
-    }
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl

@@ -41,8 +41,6 @@ internal fun rememberUpdatedStackComponentState(
         style = style,
         selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
         selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedIsPromoOfferProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.isPromoOffer ?: false },
     )
 
 @Stable
@@ -52,8 +50,6 @@ internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageProvider: () -> Package?,
     selectedTabIndexProvider: () -> Int,
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedIsPromoOfferProvider: () -> Boolean = { false },
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -64,9 +60,7 @@ internal fun rememberUpdatedStackComponentState(
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageProvider = selectedPackageProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedIsPromoOfferProvider = selectedIsPromoOfferProvider,
         )
     }.apply {
         update(
@@ -75,24 +69,18 @@ internal fun rememberUpdatedStackComponentState(
     }
 }
 
-@Suppress("LongParameterList")
 @Stable
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageProvider: () -> Package?,
-    private val selectedPackageUniqueIdProvider: () -> String?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedIsPromoOfferProvider: () -> Boolean,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
-        if (style.packageUniqueId != null) {
-            // Use unique ID for selection comparison when available
-            style.packageUniqueId == selectedPackageUniqueIdProvider()
-        } else if (style.rcPackage != null) {
+        if (style.rcPackage != null) {
             // Fallback to package identifier comparison for backwards compatibility
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
@@ -108,15 +96,12 @@ internal class StackComponentState(
     private val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageProvider()
     }
-    private val isPromoOffer by derivedStateOf {
-        if (style.rcPackage != null) style.isPromoOffer else selectedIsPromoOfferProvider()
-    }
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
         val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState, isPromoOffer)
+        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
     }
 
     @get:JvmSynthetic

@@ -71,7 +71,6 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  * @param windowSize Current screen condition (compact / medium / expanded).
  * @param introOfferEligibility Whether the user is eligible for an intro offer.
  * @param state Current view state (selected / unselected).
- * @param isPromoOffer Whether the component uses a configured promo offer (Play Store offer ID).
  *
  * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
  * available overrides to use.
@@ -81,11 +80,10 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
     windowSize: ScreenCondition,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
-    isPromoOffer: Boolean = false,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state, isPromoOffer)) {
+        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
@@ -97,7 +95,6 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
     introOfferEligibility: IntroOfferEligibility,
     state: ComponentViewState,
-    isPromoOffer: Boolean,
 ): Boolean {
     for (condition in conditions) {
         when (condition) {
@@ -115,9 +112,6 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             }
             ComponentOverride.Condition.Selected -> {
                 if (state != ComponentViewState.SELECTED) return false
-            }
-            ComponentOverride.Condition.PromoOffer -> {
-                if (!isPromoOffer) return false
             }
             ComponentOverride.Condition.Unsupported -> {
                 return false
