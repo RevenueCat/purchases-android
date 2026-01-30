@@ -18,10 +18,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.GoogleStoreProduct
-import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -436,7 +433,6 @@ internal class PaywallViewModelImpl(
                 activity = activity,
                 packageToPurchase = packageInfo.rcPackage,
                 subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
-                productChangeConfig = productChangeConfig,
             )
         }
     }
@@ -446,7 +442,6 @@ internal class PaywallViewModelImpl(
         activity: Activity,
         packageToPurchase: Package,
         subscriptionOption: SubscriptionOption?,
-        productChangeConfig: ProductChangeConfig? = null,
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
@@ -462,13 +457,11 @@ internal class PaywallViewModelImpl(
         }
 
         try {
-            val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
-
             trackPaywallPurchaseInitiated(packageToPurchase)
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    checkNotNull(customPurchaseHandler) {
+                    val logic = checkNotNull(purchaseLogic) {
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
@@ -477,7 +470,6 @@ internal class PaywallViewModelImpl(
                             activity,
                             packageToPurchase,
                             subscriptionOption,
-                            productChangeConfig,
                         )
                     ) {
                         is PurchaseLogicResult.Success -> {
@@ -499,7 +491,7 @@ internal class PaywallViewModelImpl(
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     listener?.onPurchaseStarted(packageToPurchase)
-                    if (customPurchaseHandler != null) {
+                    if (purchaseLogic != null) {
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
@@ -512,17 +504,6 @@ internal class PaywallViewModelImpl(
                             .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
                     } else {
                         PurchaseParams.Builder(activity, packageToPurchase)
-                    }
-
-                    // Apply product change configuration if detected
-                    if (productChangeInfo != null) {
-                        Logger.d(
-                            "Performing product change from ${productChangeInfo.oldProductId} " +
-                                "with mode ${productChangeInfo.replacementMode}",
-                        )
-                        purchaseParamsBuilder
-                            .oldProductId(productChangeInfo.oldProductId)
-                            .googleReplacementMode(productChangeInfo.replacementMode)
                     }
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
