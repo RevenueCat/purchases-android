@@ -9,13 +9,16 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyBillingWrapperFactory
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
+@OptIn(InternalRevenueCatAPI::class)
 internal object BillingFactory {
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun createBilling(
         store: Store,
         application: Application,
@@ -25,6 +28,7 @@ internal object BillingFactory {
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
+        galaxyBillingMode: GalaxyBillingMode,
         backend: Backend,
     ): BillingAbstract {
         return when (store) {
@@ -55,6 +59,19 @@ internal object BillingFactory {
                     )
                 } catch (e: NoClassDefFoundError) {
                     errorLog(e) { "Make sure purchases-amazon is added as dependency" }
+                    throw e
+                }
+            }
+            Store.GALAXY -> {
+                try {
+                    GalaxyBillingWrapperFactory.createGalaxyBillingWrapper(
+                        stateProvider = stateProvider,
+                        context = application.applicationContext,
+                        billingMode = galaxyBillingMode,
+                        deviceCache = cache,
+                    )
+                } catch (e: NoClassDefFoundError) {
+                    errorLog(e) { "Make sure purchases-galaxy is added as dependency" }
                     throw e
                 }
             }

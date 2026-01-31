@@ -19,6 +19,7 @@ internal sealed class SyncPendingPurchaseResult {
     object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList")
 internal class PostPendingTransactionsHelper(
     private val appConfig: AppConfig,

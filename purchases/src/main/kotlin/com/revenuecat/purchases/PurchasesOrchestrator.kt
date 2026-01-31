@@ -73,6 +73,7 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -597,6 +598,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
@@ -615,6 +617,7 @@ internal class PurchasesOrchestrator(
                     presentedOfferingContext,
                     productId,
                     googleReplacementMode,
+                    galaxyReplacementMode,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -1496,6 +1499,7 @@ internal class PurchasesOrchestrator(
         presentedOfferingContext: PresentedOfferingContext?,
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode,
+        galaxyReplacementMode: GalaxyReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
@@ -1563,10 +1567,15 @@ internal class PurchasesOrchestrator(
             }
         }
         userPurchasing?.let { appUserID ->
+            val replacementMode: ReplacementMode? = when (store) {
+                Store.PLAY_STORE -> googleReplacementMode
+                Store.GALAXY -> galaxyReplacementMode
+                else -> null
+            }
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleReplacementMode,
+                replacementMode,
                 activity,
                 appUserID,
                 presentedOfferingContext,
@@ -1584,7 +1593,7 @@ internal class PurchasesOrchestrator(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode?,
+        replacementMode: ReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1622,7 +1631,7 @@ internal class PurchasesOrchestrator(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleReplacementMode),
+                    ReplaceProductInfo(purchaseRecord, replacementMode),
                     presentedOfferingContext,
                     isPersonalizedPrice,
                 )
