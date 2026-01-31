@@ -391,8 +391,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     }
 
     private fun navigateToLoginFragment() {
-        val directions = OverviewFragmentDirections.actionOverviewFragmentToLoginFragment()
-        findNavController().navigate(directions)
+        // Navigate back to ConfigureActivity (which now uses Compose with LoginScreen)
+        val intent = Intent(requireContext(), ConfigureActivity::class.java)
+        startActivity(intent)
+        requireActivity().finish()
     }
 
     private fun navigateToLogsFragment() {

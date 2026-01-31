@@ -24,4 +24,8 @@
     <string name="find_placement">Find Placement</string>
     <string name="purchases_completed_by">Purchases are completed by</string>
     <string name="my_app">My app</string>
+    <string name="loginWithUserId">Login with User ID</string>
+    <string name="continueAsRandomUser">Continue as random user</string>
+    <string name="userId">User ID</string>
+    <string name="resetSdk">Reset SDK</string>
 </resources>
