@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -64,17 +64,11 @@ internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
     /**
-     * The subscription option to use for offer eligibility calculation.
-     * When set, offer eligibility will be calculated from this option's pricing phases.
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
      */
     @get:JvmSynthetic
-    val subscriptionOption: SubscriptionOption? = null,
-    /**
-     * Whether this component uses a configured promo offer (Play Store offer ID).
-     * Used to determine if the `promo_offer` override condition should apply.
-     */
-    @get:JvmSynthetic
-    val isPromoOffer: Boolean = false,
+    val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for carousels inside tab control elements. Not for all carousels within a tab.

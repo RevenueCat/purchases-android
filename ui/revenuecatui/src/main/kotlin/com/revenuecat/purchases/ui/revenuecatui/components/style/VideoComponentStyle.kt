@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -63,17 +63,11 @@ internal data class VideoComponentStyle(
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
     /**
-     * The subscription option to use for offer eligibility calculation.
-     * When set, offer eligibility will be calculated from this option's pricing phases.
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
      */
     @get:JvmSynthetic
-    val subscriptionOption: SubscriptionOption? = null,
-    /**
-     * Whether this component uses a configured promo offer (Play Store offer ID).
-     * Used to determine if the `promo_offer` override condition should apply.
-     */
-    @get:JvmSynthetic
-    val isPromoOffer: Boolean = false,
+    val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for video inside tab control elements. Not for all video within a tab.

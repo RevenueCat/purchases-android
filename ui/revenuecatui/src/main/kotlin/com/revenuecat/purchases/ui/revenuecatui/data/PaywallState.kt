@@ -128,17 +128,10 @@ internal sealed interface PaywallState {
                      * This distinguishes multiple components referencing the same package
                      * but with different offer configurations.
                      */
-                    val uniqueId: String
-                        get() {
-                            val offerId = (resolvedOffer as? ResolvedOffer.ConfiguredOffer)
-                                ?.option
-                                ?.id
-                            return if (offerId != null) {
-                                "${pkg.identifier}:$offerId"
-                            } else {
-                                pkg.identifier
-                            }
-                        }
+                    val uniqueId: String = run {
+                        val offerId = (resolvedOffer as? ResolvedOffer.ConfiguredOffer)?.option?.id
+                        if (offerId != null) "${pkg.identifier}:$offerId" else pkg.identifier
+                    }
                 }
 
                 /**
@@ -233,8 +226,9 @@ internal sealed interface PaywallState {
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
 
-            private val initialSelectedPackageUniqueId = initialSelectedPackageOutsideTabs
-                ?: initialSelectedTabIndex?.let { selectedPackageByTab[it] }
+            private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
+                ?: selectedPackageByTab[selectedTabIndex]
+                ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 

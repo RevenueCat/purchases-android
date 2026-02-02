@@ -8,7 +8,6 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
@@ -72,6 +71,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PlayStoreOfferResolver
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
@@ -248,10 +248,8 @@ internal class StyleFactory(
             get() = packageInfo?.pkg
         val packageUniqueId: String?
             get() = packageInfo?.uniqueId
-        val subscriptionOption: SubscriptionOption?
-            get() = packageInfo?.resolvedOffer?.subscriptionOption
-        val isPromoOffer: Boolean
-            get() = packageInfo?.resolvedOffer?.isPromoOffer ?: false
+        val resolvedOffer: ResolvedOffer?
+            get() = packageInfo?.resolvedOffer
 
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
@@ -740,8 +738,7 @@ internal class StyleFactory(
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -791,8 +788,7 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -832,8 +828,7 @@ internal class StyleFactory(
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
@@ -883,8 +878,7 @@ internal class StyleFactory(
             margin = component.margin?.toPaddingValues() ?: PaddingValues(),
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
@@ -923,8 +917,7 @@ internal class StyleFactory(
                 iconBackground = background,
                 rcPackage = rcPackage,
                 packageUniqueId = packageUniqueId,
-                subscriptionOption = subscriptionOption,
-                isPromoOffer = isPromoOffer,
+                resolvedOffer = resolvedOffer,
                 tabIndex = tabControlIndex,
                 overrides = presentedOverrides,
             )
@@ -952,8 +945,7 @@ internal class StyleFactory(
             items = items,
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -989,8 +981,7 @@ internal class StyleFactory(
             connector = connectorStyle,
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -1029,8 +1020,7 @@ internal class StyleFactory(
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
             packageUniqueId = packageUniqueId,
-            subscriptionOption = subscriptionOption,
-            isPromoOffer = isPromoOffer,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )

@@ -6,7 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
@@ -59,18 +59,11 @@ internal class TextComponentStyle(
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
     /**
-     * The subscription option to use for offer variables (product.offer_*, product.secondary_offer_*).
-     * When set, offer variables will use pricing phases from this option instead of defaultOption.
-     * This is typically set when a specific Play Store offer is configured for the package.
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
      */
     @get:JvmSynthetic
-    val subscriptionOption: SubscriptionOption? = null,
-    /**
-     * Whether this component uses a configured promo offer (Play Store offer ID).
-     * Used to determine if the `promo_offer` override condition should apply.
-     */
-    @get:JvmSynthetic
-    val isPromoOffer: Boolean = false,
+    val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for texts inside tab control elements. Not for all texts within a tab.

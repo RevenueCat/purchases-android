@@ -41,7 +41,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
-import com.revenuecat.purchases.ui.revenuecatui.extensions.toOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -135,8 +134,7 @@ internal class ImageComponentState(
      */
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.subscriptionOption?.toOfferEligibility(style.isPromoOffer)
-                ?: style.rcPackage.offerEligibility
+            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
         } else {
             selectedOfferEligibilityProvider()
         }

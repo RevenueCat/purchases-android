@@ -757,9 +757,14 @@ class TextComponentViewTests {
             text = selectedPackageTextKey,
             color = textColor,
         )
-        val packageComponent = PackageComponent(
+        val yearlyPackageComponent = PackageComponent(
             packageId = packageYearly.identifier,
             isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val monthlyPackageComponent = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
@@ -770,7 +775,8 @@ class TextComponentViewTests {
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
                         selectedComponent,
-                        packageComponent,
+                        yearlyPackageComponent,
+                        monthlyPackageComponent,
                     )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
@@ -842,8 +848,13 @@ class TextComponentViewTests {
             )
         )
         val component = TextComponent(text = textKey, color = textColor)
-        val packageComponent = PackageComponent(
+        val usdPackageComponent = PackageComponent(
             packageId = usdPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        val mxnPackageComponent = PackageComponent(
+            packageId = mxnPackage.identifier,
             isSelectedByDefault = false,
             stack = StackComponent(components = emptyList()),
         )
@@ -853,7 +864,7 @@ class TextComponentViewTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(component, packageComponent)),
+                    stack = StackComponent(components = listOf(component, usdPackageComponent, mxnPackageComponent)),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),

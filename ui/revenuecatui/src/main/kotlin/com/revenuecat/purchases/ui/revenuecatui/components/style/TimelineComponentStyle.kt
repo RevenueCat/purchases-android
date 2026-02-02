@@ -3,7 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -45,17 +45,11 @@ internal data class TimelineComponentStyle(
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
     /**
-     * The subscription option to use for offer eligibility calculation.
-     * When set, offer eligibility will be calculated from this option's pricing phases.
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
      */
     @get:JvmSynthetic
-    val subscriptionOption: SubscriptionOption? = null,
-    /**
-     * Whether this component uses a configured promo offer (Play Store offer ID).
-     * Used to determine if the `promo_offer` override condition should apply.
-     */
-    @get:JvmSynthetic
-    val isPromoOffer: Boolean = false,
+    val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for timelines inside tab control elements. Not for all timelines within a tab.
@@ -90,17 +84,11 @@ internal data class TimelineComponentStyle(
         @get:JvmSynthetic
         val packageUniqueId: String? = null,
         /**
-         * The subscription option to use for offer eligibility calculation.
-         * When set, offer eligibility will be calculated from this option's pricing phases.
+         * The resolved offer for this package, containing the subscription option and promo offer status.
+         * Used to determine offer eligibility and pricing phase information.
          */
         @get:JvmSynthetic
-        val subscriptionOption: SubscriptionOption? = null,
-        /**
-         * Whether this component uses a configured promo offer (Play Store offer ID).
-         * Used to determine if the `promo_offer` override condition should apply.
-         */
-        @get:JvmSynthetic
-        val isPromoOffer: Boolean = false,
+        val resolvedOffer: ResolvedOffer? = null,
         /**
          * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
          * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.

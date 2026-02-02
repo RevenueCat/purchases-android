@@ -17,6 +17,7 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -33,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
-import com.revenuecat.purchases.ui.revenuecatui.extensions.toOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -143,8 +143,8 @@ internal class TextComponentState(
      * If a specific Play Store offer is configured for this text's package, use that.
      * Otherwise, use the selected package's resolved subscription option.
      */
-    val subscriptionOption: SubscriptionOption? by derivedStateOf {
-        style.subscriptionOption ?: selectedSubscriptionOptionProvider()
+    val subscriptionOption by derivedStateOf {
+        style.resolvedOffer?.subscriptionOption ?: selectedSubscriptionOptionProvider()
     }
 
     /**
@@ -156,13 +156,12 @@ internal class TextComponentState(
 
     /**
      * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, calculates from the style's subscription option.
+     * If the style has its own package, calculates from the style's resolved offer.
      * Otherwise, uses the selected package's resolved offer eligibility.
      */
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.subscriptionOption?.toOfferEligibility(style.isPromoOffer)
-                ?: style.rcPackage.offerEligibility
+            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
         } else {
             selectedOfferEligibilityProvider()
         }
