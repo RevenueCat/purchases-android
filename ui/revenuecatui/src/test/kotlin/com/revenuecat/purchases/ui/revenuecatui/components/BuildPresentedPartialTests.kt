@@ -25,6 +25,9 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.Ineligible
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.IntroOfferMultiple
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.IntroOfferSingle
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferSingle
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferMultiple
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferIneligible
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions
@@ -121,6 +124,16 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             aliases = emptyMap(),
             fontAliases = emptyMap(),
         ).getOrThrow()
+        private val promoOfferPartial = LocalizedTextPartial(
+            from = PartialTextComponent(),
+            using = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    LocalizationKey("key") to LocalizationData.Text("Hello promo"),
+                )
+            ),
+            aliases = emptyMap(),
+            fontAliases = emptyMap(),
+        ).getOrThrow()
 
         @JvmStatic
         private fun buildPresentedOverrides(
@@ -130,6 +143,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             expanded: LocalizedTextPartial? = expandedPartial,
             medium: LocalizedTextPartial? = mediumPartial,
             compact: LocalizedTextPartial? = compactPartial,
+            promoOffer: LocalizedTextPartial? = null,
         ): List<PresentedOverride<LocalizedTextPartial>> {
             val overrides: MutableList<PresentedOverride<LocalizedTextPartial>> = mutableListOf()
             compact?.let {
@@ -158,13 +172,19 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             }
             multipleIntroOffers?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = it,
                 ))
             }
             selected?.let {
                 overrides.add(PresentedOverride(
                     conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = it,
+                ))
+            }
+            promoOffer?.let {
+                overrides.add(PresentedOverride(
+                    conditions = listOf(ComponentOverride.Condition.PromoOffer),
                     properties = it,
                 ))
             }
@@ -246,18 +266,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should pick intro when all overrides applicable, but selected and multiple intro override unavailable",
-                Args(
-                    availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
-                    windowSize = MEDIUM,
-                    offerEligibility = IntroOfferMultiple,
-                    state = SELECTED,
-                    expected = introOfferPartial,
-                ),
-            ),
-            arrayOf(
-                "should pick medium when all overrides applicable, eligibility is multiple, but only single override " +
-                    "available",
+                "IntroOfferMultiple should NOT match IntroOffer - falls back to medium",
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
                     windowSize = MEDIUM,
@@ -376,7 +385,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should pick multiple intros when all overrides applicable, but window and selected overrides " +
+                "should pick multiple phase when all overrides applicable, but window and selected overrides " +
                     "unavailable",
                 Args(
                     availableOverrides = buildPresentedOverrides(
@@ -388,7 +397,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     windowSize = MEDIUM,
                     offerEligibility = IntroOfferMultiple,
                     state = SELECTED,
-                    expected = introOfferPartial,
+                    expected = multipleIntroOffersPartial,
                 ),
             ),
             arrayOf(
@@ -725,6 +734,106 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             FontAlias("expandedFont") to FontSpec.System("expandedFont"),
                         ),
                     ).getOrThrow(),
+                ),
+            ),
+            arrayOf(
+                "should pick promo offer when PromoOffer condition available and eligibility is PromoOfferSingle",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick promo offer when PromoOffer condition available and eligibility is PromoOfferMultiple",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should pick promo offer when PromoOffer condition available and eligibility is PromoOfferIneligible",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferIneligible,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should not pick promo offer when eligibility is IntroOfferSingle",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = IntroOfferSingle,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "should not pick promo offer when eligibility is Ineligible",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = mediumPartial,
+                ),
+            ),
+            arrayOf(
+                "PromoOfferSingle should NOT match IntroOffer condition - falls back to screen size",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = null),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = mediumPartial,
+                ),
+            ),
+            arrayOf(
+                "PromoOfferMultiple should match MultiplePhaseOffers condition (multi-phase is shared)",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = null),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = multipleIntroOffersPartial,
+                ),
+            ),
+            arrayOf(
+                "PromoOfferMultiple should NOT match PromoOffer condition - only MultiplePhaseOffers",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = multipleIntroOffersPartial,
+                ),
+            ),
+            arrayOf(
+                "PromoOfferIneligible should NOT match PromoOffer condition - falls back to screen size",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferIneligible,
+                    state = DEFAULT,
+                    expected = mediumPartial,
+                ),
+            ),
+            arrayOf(
+                "selected should take precedence over promo offer",
+                Args(
+                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferSingle,
+                    state = SELECTED,
+                    expected = selectedPartial,
                 ),
             ),
         )

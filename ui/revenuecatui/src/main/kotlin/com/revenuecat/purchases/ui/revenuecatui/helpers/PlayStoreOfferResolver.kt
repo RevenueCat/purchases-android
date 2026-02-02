@@ -22,12 +22,22 @@ sealed class ResolvedOffer {
     data class NoConfiguration(val option: SubscriptionOption?) : ResolvedOffer()
 
     /**
+     * An offer was configured but could not be found in the available subscription options.
+     * Falls back to the default option but logs a warning.
+     */
+    data class ConfigurationError(
+        val configuredOfferId: String,
+        val fallbackOption: SubscriptionOption?,
+    ) : ResolvedOffer()
+
+    /**
      * Gets the resolved subscription option, or null if resolution failed entirely.
      */
     val subscriptionOption: SubscriptionOption?
         get() = when (this) {
             is ConfiguredOffer -> option
             is NoConfiguration -> option
+            is ConfigurationError -> fallbackOption
         }
 
     /**
@@ -65,7 +75,14 @@ object PlayStoreOfferResolver {
         return if (configuredOption != null) {
             ResolvedOffer.ConfiguredOffer(configuredOption)
         } else {
-            ResolvedOffer.NoConfiguration(defaultOption)
+            Logger.w(
+                "Configured Play Store offer '${offerConfig.offerId}' not found for package " +
+                    "'${rcPackage.identifier}'. Falling back to default option.",
+            )
+            ResolvedOffer.ConfigurationError(
+                configuredOfferId = offerConfig.offerId,
+                fallbackOption = defaultOption,
+            )
         }
     }
 

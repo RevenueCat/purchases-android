@@ -42,6 +42,60 @@ class PackageExtensionsTest {
         assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.Ineligible)
     }
 
+    @Test
+    fun `toOfferEligibility returns PromoOfferSingle when isPromoOffer is true and has single phase`() {
+        val option = createSubscriptionOption(freeTrial = true)
+
+        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferSingle)
+    }
+
+    @Test
+    fun `toOfferEligibility returns PromoOfferMultiple when isPromoOffer is true and has multiple phases`() {
+        val option = createSubscriptionOption(freeTrial = true, introOffer = true)
+
+        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferMultiple)
+    }
+
+    @Test
+    fun `toOfferEligibility returns PromoOfferIneligible when isPromoOffer is true and no discounted phases`() {
+        val option = createSubscriptionOption()
+
+        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferIneligible)
+    }
+
+    @Test
+    fun `toOfferEligibility returns IntroOfferSingle when isPromoOffer is false and has single phase`() {
+        val option = createSubscriptionOption(freeTrial = true)
+
+        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    @Test
+    fun `toOfferEligibility returns IntroOfferMultiple when isPromoOffer is false and has multiple phases`() {
+        val option = createSubscriptionOption(freeTrial = true, introOffer = true)
+
+        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.IntroOfferMultiple)
+    }
+
+    @Test
+    fun `toOfferEligibility returns Ineligible when isPromoOffer is false and no discounted phases`() {
+        val option = createSubscriptionOption()
+
+        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.Ineligible)
+    }
+
+    private fun createSubscriptionOption(freeTrial: Boolean = false, introOffer: Boolean = false): SubscriptionOption {
+        return object : SubscriptionOption {
+            override val id: String = "option-id"
+            override val pricingPhases: List<PricingPhase> = getPricingPhases(freeTrial, introOffer)
+            override val tags: List<String> = emptyList()
+            override val presentedOfferingIdentifier: String? = "offering_id"
+            override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext("offering_id")
+            override val purchasingData: PurchasingData = mockk()
+            override val installmentsInfo: InstallmentsInfo? = null
+        }
+    }
+
     private fun createPackage(freeTrial: Boolean = false, introOffer: Boolean = false): Package {
         return mockk<Package>().apply {
             every { product } returns mockk<StoreProduct>().apply {

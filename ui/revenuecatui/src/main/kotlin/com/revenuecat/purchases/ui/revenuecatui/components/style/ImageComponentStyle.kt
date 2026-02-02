@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -50,6 +51,12 @@ internal data class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
+    /**
+     * The subscription option to use for offer eligibility calculation.
+     * When set, offer eligibility will be calculated from this option's pricing phases.
+     */
+    @get:JvmSynthetic
+    val subscriptionOption: SubscriptionOption? = null,
     /**
      * Whether this component uses a configured promo offer (Play Store offer ID).
      * Used to determine if the `promo_offer` override condition should apply.

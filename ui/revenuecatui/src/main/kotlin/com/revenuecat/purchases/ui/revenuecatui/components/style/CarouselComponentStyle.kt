@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -62,6 +63,12 @@ internal data class CarouselComponentStyle(
      */
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
+    /**
+     * The subscription option to use for offer eligibility calculation.
+     * When set, offer eligibility will be calculated from this option's pricing phases.
+     */
+    @get:JvmSynthetic
+    val subscriptionOption: SubscriptionOption? = null,
     /**
      * Whether this component uses a configured promo offer (Play Store offer ID).
      * Used to determine if the `promo_offer` override condition should apply.

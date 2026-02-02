@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -44,6 +45,12 @@ internal data class TimelineComponentStyle(
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
     /**
+     * The subscription option to use for offer eligibility calculation.
+     * When set, offer eligibility will be calculated from this option's pricing phases.
+     */
+    @get:JvmSynthetic
+    val subscriptionOption: SubscriptionOption? = null,
+    /**
      * Whether this component uses a configured promo offer (Play Store offer ID).
      * Used to determine if the `promo_offer` override condition should apply.
      */
@@ -82,6 +89,12 @@ internal data class TimelineComponentStyle(
          */
         @get:JvmSynthetic
         val packageUniqueId: String? = null,
+        /**
+         * The subscription option to use for offer eligibility calculation.
+         * When set, offer eligibility will be calculated from this option's pricing phases.
+         */
+        @get:JvmSynthetic
+        val subscriptionOption: SubscriptionOption? = null,
         /**
          * Whether this component uses a configured promo offer (Play Store offer ID).
          * Used to determine if the `promo_offer` override condition should apply.

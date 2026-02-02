@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
@@ -58,6 +59,13 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val packageUniqueId: String? = null,
+    /**
+     * The subscription option to use for offer eligibility calculation.
+     * When set, offer eligibility will be calculated from this option's pricing phases.
+     * This is typically set when a specific Play Store offer is configured for the package.
+     */
+    @get:JvmSynthetic
+    val subscriptionOption: SubscriptionOption? = null,
     /**
      * Whether this component uses a configured promo offer (Play Store offer ID).
      * Used to determine if the `promo_offer` override condition should apply.

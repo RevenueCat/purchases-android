@@ -28,6 +28,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.toOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @Stable
@@ -107,17 +108,13 @@ internal class StackComponentState(
 
     /**
      * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, uses the promo offer flag to determine the eligibility type.
+     * If the style has its own package, calculates from the style's subscription option.
      * Otherwise, uses the selected package's resolved offer eligibility.
      */
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            // When isPromoOffer is true, the PromoOffer condition should match
-            if (style.isPromoOffer) {
-                OfferEligibility.PromoOfferIneligible
-            } else {
-                style.rcPackage.offerEligibility
-            }
+            style.subscriptionOption?.toOfferEligibility(style.isPromoOffer)
+                ?: style.rcPackage.offerEligibility
         } else {
             selectedOfferEligibilityProvider()
         }
