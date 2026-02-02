@@ -99,18 +99,9 @@ internal sealed class OfferEligibility {
     /** Configured promo offer with multiple discounted phases */
     object PromoOfferMultiple : OfferEligibility()
 
-    /** Whether this represents any offer with at least one discounted phase */
-    val hasDiscountedPhases: Boolean
-        get() = this is IntroOfferSingle || this is IntroOfferMultiple ||
-            this is PromoOfferSingle || this is PromoOfferMultiple
-
     /** Whether this represents any offer (intro OR promo) with multiple discounted phases */
     val hasMultipleDiscountedPhases: Boolean
         get() = this is IntroOfferMultiple || this is PromoOfferMultiple
-
-    /** Whether this represents a configured promo offer (any phase count) */
-    val isPromoOffer: Boolean
-        get() = this is PromoOfferIneligible || this is PromoOfferSingle || this is PromoOfferMultiple
 
     /** Whether this represents a single-phase intro offer (for IntroOffer condition matching) */
     val isSinglePhaseIntroOffer: Boolean
