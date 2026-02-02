@@ -2,7 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -65,11 +65,10 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 }
 
 /**
- * Builds a presentable partial component based on current view state, screen condition and whether the user
- * is eligible for an intro offer.
+ * Builds a presentable partial component based on current view state, screen condition and offer eligibility.
  *
  * @param windowSize Current screen condition (compact / medium / expanded).
- * @param introOfferEligibility Whether the user is eligible for an intro offer.
+ * @param offerEligibility The offer eligibility, encoding both the offer type (intro/promo) and phase count.
  * @param state Current view state (selected / unselected).
  *
  * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
@@ -78,12 +77,12 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    offerEligibility: OfferEligibility,
     state: ComponentViewState,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+        if (override.shouldApply(windowSize, offerEligibility, state)) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
@@ -93,7 +92,7 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 @Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    offerEligibility: OfferEligibility,
     state: ComponentViewState,
 ): Boolean {
     for (condition in conditions) {
@@ -104,14 +103,17 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             -> {
                 if (!windowSize.applicableConditions.contains(condition)) return false
             }
-            ComponentOverride.Condition.MultipleIntroOffers -> {
-                if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
+            ComponentOverride.Condition.MultiplePhaseOffers -> {
+                if (!offerEligibility.hasMultipleDiscountedPhases) return false
             }
             ComponentOverride.Condition.IntroOffer -> {
-                if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
+                if (!offerEligibility.isSinglePhaseIntroOffer) return false
             }
             ComponentOverride.Condition.Selected -> {
                 if (state != ComponentViewState.SELECTED) return false
+            }
+            ComponentOverride.Condition.PromoOffer -> {
+                if (!offerEligibility.isSinglePhasePromoOffer) return false
             }
             ComponentOverride.Condition.Unsupported -> {
                 return false
