@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -39,13 +42,16 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
-import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextLayoutResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -58,20 +64,15 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
-import java.util.Date
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.unit.dp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 import java.net.URL
+import java.util.Date
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 
 @RunWith(AndroidJUnit4::class)
@@ -440,7 +441,7 @@ class TextComponentViewTests {
             .assertPixelColorPercentage(expectedUnselectedBackgroundColor) { percentage -> percentage > 0.4 }
 
         // Select the yearly package
-        state.update(selectedPackage = rcPackage)
+        state.update(rcPackage.identifier)
 
         onNodeWithText(expectedTextSelected)
             .assertIsDisplayed()
@@ -473,7 +474,7 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -494,19 +495,19 @@ class TextComponentViewTests {
         setContent { TextComponentView(style = style, state = state) }
 
         // Assert
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         onNodeWithText(expectedTextIneligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedIneligibleTextColor)
             .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         onNodeWithText(expectedTextSingleEligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedSingleEligibleTextColor)
             .assertPixelColorPercentage(expectedSingleEligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         onNodeWithText(expectedTextMultipleEligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedMultiEligibleTextColor)
@@ -538,7 +539,7 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -653,11 +654,11 @@ class TextComponentViewTests {
 
         // Make sure the selected package does not influence the package used to pick the override properties.
         assertAll()
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         assertAll()
     }
 
@@ -730,7 +731,7 @@ class TextComponentViewTests {
             components = listOf(component),
             packages = listOf(packageWithSingleIntroOffer)
         ).apply {
-            update(selectedPackage = packageWithSingleIntroOffer)
+            update(packageWithSingleIntroOffer.identifier)
         }
 
         // Act
@@ -764,9 +765,14 @@ class TextComponentViewTests {
             text = selectedPackageTextKey,
             color = textColor,
         )
-        val packageComponent = PackageComponent(
+        val yearlyPackageComponent = PackageComponent(
             packageId = packageYearly.identifier,
             isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val monthlyPackageComponent = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
             stack = StackComponent(components = emptyList()),
         )
         val data = PaywallComponentsData(
@@ -777,7 +783,8 @@ class TextComponentViewTests {
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
                         selectedComponent,
-                        packageComponent,
+                        yearlyPackageComponent,
+                        monthlyPackageComponent,
                     )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
@@ -815,7 +822,7 @@ class TextComponentViewTests {
 
         // Assert
         // Select monthly
-        state.update(selectedPackage = packageMonthly)
+        state.update(packageMonthly.identifier)
 
         onNodeWithText(expectedTextYearly)
             .assertIsNotDisplayed()
@@ -823,7 +830,7 @@ class TextComponentViewTests {
             .assertIsDisplayed()
 
         // Select yearly
-        state.update(selectedPackage = packageYearly)
+        state.update(packageYearly.identifier)
 
         onNodeWithText(expectedTextYearly)
             .assertIsDisplayed()
@@ -849,8 +856,13 @@ class TextComponentViewTests {
             )
         )
         val component = TextComponent(text = textKey, color = textColor)
-        val packageComponent = PackageComponent(
+        val usdPackageComponent = PackageComponent(
             packageId = usdPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        val mxnPackageComponent = PackageComponent(
+            packageId = mxnPackage.identifier,
             isSelectedByDefault = false,
             stack = StackComponent(components = emptyList()),
         )
@@ -860,7 +872,7 @@ class TextComponentViewTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(component, packageComponent)),
+                    stack = StackComponent(components = listOf(component, usdPackageComponent, mxnPackageComponent)),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -883,15 +895,15 @@ class TextComponentViewTests {
         val stateWithNullStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = null
-        ).apply { update(selectedPackage = usdPackage) }
+        ).apply { update(usdPackage.identifier) }
         val stateWithNlStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = "NL",
-        ).apply { update(selectedPackage = usdPackage) }
+        ).apply { update(usdPackage.identifier) }
         val stateWithMxStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = countryWithoutDecimals,
-        ).apply { update(selectedPackage = mxnPackage) }
+        ).apply { update(mxnPackage.identifier) }
 
         val styleFactory = StyleFactory(
             localizations = localizations,
@@ -939,8 +951,6 @@ class TextComponentViewTests {
 
     @Test
     fun `Countdown variables should be processed without a selected package`(): Unit = with(composeTestRule) {
-        // Arrange
-        // A date in the future (2 days from now)
         val countdownDate = Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)
         val countdownTextKey = LocalizationKey("countdown_text")
         val countdownText = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
@@ -950,8 +960,6 @@ class TextComponentViewTests {
             ),
         )
 
-        // Create a text component style with countdownDate set (simulating being inside a countdown component)
-        // but with NO package (rcPackage = null) and no packages in the state
         val textStyle = TextComponentStyle(
             texts = nonEmptyMapOf(localeIdEnUs to countdownText),
             color = ColorStyles(ColorStyle.Solid(Color.Black)),
@@ -962,12 +970,12 @@ class TextComponentViewTests {
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
             backgroundColor = null,
             visible = true,
-            size = Size(Fit, Fit),
+            size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
             padding = PaddingValues(0.dp),
             margin = PaddingValues(0.dp),
-            rcPackage = null, // No fixed package
+            rcPackage = null,
             tabIndex = null,
-            countdownDate = countdownDate, // Countdown is active
+            countdownDate = countdownDate,
             countFrom = CountdownComponent.CountFrom.DAYS,
             variableLocalizations = nonEmptyMapOf(
                 localeIdEnUs to variableLocalizationKeysForEnUs()
@@ -975,14 +983,12 @@ class TextComponentViewTests {
             overrides = emptyList(),
         )
 
-        // Create a state with NO packages - this simulates when packages can't be loaded
         val state = FakePaywallState(
             localizations = countdownLocalizations,
             defaultLocaleIdentifier = localeIdEnUs,
-            packages = emptyList(), // No packages!
+            packages = emptyList(),
         )
 
-        // Act
         setContent {
             TextComponentView(
                 style = textStyle,
@@ -991,9 +997,6 @@ class TextComponentViewTests {
             )
         }
 
-        // Assert
-        // The countdown variables should be processed, not shown as raw placeholders
-        // If the bug exists, we'd see "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
         val node = onNodeWithTag("countdown_text").onChild()
 
         val actualText = node.fetchSemanticsNode().config

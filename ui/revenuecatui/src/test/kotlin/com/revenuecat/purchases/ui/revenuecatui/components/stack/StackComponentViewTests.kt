@@ -387,7 +387,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedSelectedShadowColor)
 
         // Select our package
-        state.update(selectedPackage = rcPackage)
+        state.update(rcPackage.identifier)
 
         onNodeWithTag("pkg")
             .assertIsDisplayed()
@@ -459,7 +459,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -508,7 +508,7 @@ class StackComponentViewTests {
         }
 
         // Assert
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -522,7 +522,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedSingleEligibleShadowColor)
             .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
 
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -536,7 +536,7 @@ class StackComponentViewTests {
             .assertNoPixelColorEquals(expectedIneligibleShadowColor)
             .assertNoPixelColorEquals(expectedMultipleEligibleShadowColor)
 
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         onNodeWithTag("stack")
             .assertIsDisplayed()
             .assertRectangularBorderColor(
@@ -616,7 +616,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -782,11 +782,11 @@ class StackComponentViewTests {
 
         // Make sure the selected package does not influence the package used to pick the override properties.
         assertAll()
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         assertAll()
     }
 }
