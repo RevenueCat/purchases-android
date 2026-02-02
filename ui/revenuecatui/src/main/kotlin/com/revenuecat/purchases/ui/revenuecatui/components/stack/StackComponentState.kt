@@ -35,6 +35,19 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): StackComponentState = rememberUpdatedStackComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedStackComponentState(
+    style: StackComponentStyle,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -44,8 +57,8 @@ internal fun rememberUpdatedStackComponentState(
             initialWindowSize = windowSize,
             initialLayoutDirection = layoutDirection,
             style = style,
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(windowSize = windowSize)

@@ -27,6 +27,17 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): TabsComponentState = rememberUpdatedTabsComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedTabsComponentState(
+    style: TabsComponentStyle,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -34,7 +45,7 @@ internal fun rememberUpdatedTabsComponentState(
         TabsComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
         )
     }.apply {
         update(windowSize = windowSize)

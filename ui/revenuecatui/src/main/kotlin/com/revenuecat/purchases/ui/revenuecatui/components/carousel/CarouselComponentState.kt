@@ -27,6 +27,19 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): CarouselComponentState = rememberUpdatedCarouselComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedCarouselComponentState(
+    style: CarouselComponentStyle,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): CarouselComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -34,8 +47,8 @@ internal fun rememberUpdatedCarouselComponentState(
         CarouselComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(windowSize = windowSize)

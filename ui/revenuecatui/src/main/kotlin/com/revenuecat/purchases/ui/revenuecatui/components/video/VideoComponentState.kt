@@ -302,6 +302,22 @@ internal class VideoComponentState(
 internal fun rememberUpdatedVideoComponentState(
     style: VideoComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): VideoComponentState = rememberUpdatedVideoComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Suppress("LongParameterList")
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedVideoComponentState(
+    style: VideoComponentStyle,
+    localeProvider: () -> Locale,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): VideoComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -314,9 +330,9 @@ internal fun rememberUpdatedVideoComponentState(
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
             style = style,
-            localeProvider = { paywallState.locale },
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            localeProvider = localeProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }
 }

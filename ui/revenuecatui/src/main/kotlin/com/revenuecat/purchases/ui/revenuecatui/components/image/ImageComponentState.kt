@@ -47,6 +47,22 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): ImageComponentState = rememberUpdatedImageComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Suppress("LongParameterList")
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedImageComponentState(
+    style: ImageComponentStyle,
+    localeProvider: () -> Locale,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -60,9 +76,9 @@ internal fun rememberUpdatedImageComponentState(
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
             style = style,
-            localeProvider = { paywallState.locale },
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            localeProvider = localeProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -87,10 +103,6 @@ internal class ImageComponentState(
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private var density by mutableStateOf(initialDensity)
-    private var darkMode by mutableStateOf(initialDarkMode)
-    private var layoutDirection by mutableStateOf(initialLayoutDirection)
-
     private val selected by derivedStateOf {
         val selectedInfo = selectedPackageInfoProvider()
         when {
@@ -99,6 +111,9 @@ internal class ImageComponentState(
             else -> false
         }
     }
+    private var density by mutableStateOf(initialDensity)
+    private var darkMode by mutableStateOf(initialDarkMode)
+    private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {

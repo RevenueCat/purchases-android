@@ -24,6 +24,19 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): TimelineComponentState = rememberUpdatedTimelineComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedTimelineComponentState(
+    style: TimelineComponentStyle,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -31,8 +44,8 @@ internal fun rememberUpdatedTimelineComponentState(
         TimelineComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(windowSize = windowSize)

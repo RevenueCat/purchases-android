@@ -31,6 +31,19 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): IconComponentState = rememberUpdatedIconComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedIconComponentState(
+    style: IconComponentStyle,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -40,8 +53,8 @@ internal fun rememberUpdatedIconComponentState(
             initialWindowSize = windowSize,
             initialLayoutDirection = layoutDirection,
             style = style,
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(windowSize = windowSize)

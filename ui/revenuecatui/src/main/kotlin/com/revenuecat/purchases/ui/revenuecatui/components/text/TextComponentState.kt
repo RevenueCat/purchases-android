@@ -39,9 +39,25 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibi
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
+): TextComponentState = rememberUpdatedTextComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
+
+@Stable
+@JvmSynthetic
+@Composable
+private fun rememberUpdatedTextComponentState(
+    style: TextComponentStyle,
+    localeProvider: () -> Locale,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
+    // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->
         rememberCountdownState(date)
     }
@@ -50,9 +66,9 @@ internal fun rememberUpdatedTextComponentState(
         TextComponentState(
             initialWindowSize = windowSize,
             style = style,
-            localeProvider = { paywallState.locale },
-            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            localeProvider = localeProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
         update(
@@ -72,6 +88,13 @@ internal class TextComponentState(
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
+    /**
+     * The current countdown time, if this text is inside a countdown component.
+     *
+     * Updated every second via [update] when countdown is active. Triggers recomposition
+     * to update countdown variables (e.g., {{ count_hours_without_zero }}) in the text.
+     * Null if this text is not inside a countdown component.
+     */
     var countdownTime by mutableStateOf<CountdownTime?>(null)
         private set
 
@@ -87,6 +110,9 @@ internal class TextComponentState(
 
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
+    /**
+     * The package to take variable values from and to consider for intro offer eligibility.
+     */
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageInfoProvider()?.rcPackage
     }
@@ -95,6 +121,9 @@ internal class TextComponentState(
         style.resolvedOffer?.subscriptionOption ?: selectedPackageInfoProvider()?.resolvedOffer?.subscriptionOption
     }
 
+    /**
+     * How countdown variables should be displayed (component hours vs total hours).
+     */
     @get:JvmSynthetic
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
