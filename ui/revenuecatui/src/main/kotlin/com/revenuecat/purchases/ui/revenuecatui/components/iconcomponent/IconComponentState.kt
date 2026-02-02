@@ -74,6 +74,7 @@ private fun rememberUpdatedIconComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,

@@ -60,6 +60,7 @@ internal fun rememberUpdatedImageComponentState(
         },
     )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable

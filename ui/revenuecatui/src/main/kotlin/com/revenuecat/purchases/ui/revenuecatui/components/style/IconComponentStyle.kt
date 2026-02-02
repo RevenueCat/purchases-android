@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.IconComponent.Formats
 import com.revenuecat.purchases.paywalls.components.IconComponent.IconBackground
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -22,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate

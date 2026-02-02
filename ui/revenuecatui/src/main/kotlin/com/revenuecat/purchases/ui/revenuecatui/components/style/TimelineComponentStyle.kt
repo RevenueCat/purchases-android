@@ -3,13 +3,13 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
 @Suppress("LongParameterList")
 @Immutable

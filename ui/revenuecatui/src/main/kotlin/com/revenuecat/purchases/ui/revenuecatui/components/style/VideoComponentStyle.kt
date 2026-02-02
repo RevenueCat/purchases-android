@@ -5,7 +5,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -16,6 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
 @Suppress("LongParameterList")
 @Immutable

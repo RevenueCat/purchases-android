@@ -19,6 +19,7 @@ val Package.isMonthly: Boolean
  *
  * @param isPromoOffer Whether this is a configured promo offer (vs default option).
  */
+@Suppress("CyclomaticComplexMethod")
 internal fun SubscriptionOption.toOfferEligibility(isPromoOffer: Boolean): OfferEligibility {
     val phaseCount = when {
         isBasePlan -> 0
