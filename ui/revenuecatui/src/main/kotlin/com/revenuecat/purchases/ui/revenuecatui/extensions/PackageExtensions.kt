@@ -3,8 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
 val Package.isSubscription: Boolean
     get() = product.type == ProductType.SUBS
@@ -12,16 +13,42 @@ val Package.isSubscription: Boolean
 val Package.isMonthly: Boolean
     get() = product.period?.let { it.unit == Period.Unit.MONTH && it.value == 1 } ?: false
 
-internal val Package.introEligibility: IntroOfferEligibility
-    get() = product.defaultOption?.let { defaultOption ->
-        when {
-            defaultOption.isBasePlan -> IntroOfferEligibility.INELIGIBLE
-            (defaultOption.freePhase != null && defaultOption.introPhase == null) ||
-                (defaultOption.freePhase == null && defaultOption.introPhase != null) ->
-                IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
-            else -> IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
+/**
+ * Calculates offer eligibility with fallback logic:
+ * 1. If a promo offer is configured and has discount phases, use promo eligibility
+ * 2. If promo offer is ineligible (no discount phases), fall back to intro offer eligibility
+ * 3. If no intro offer, return Ineligible
+ */
+internal fun calculateOfferEligibility(resolvedOffer: ResolvedOffer?, rcPackage: Package): OfferEligibility {
+    if (resolvedOffer != null && resolvedOffer.isPromoOffer) {
+        val promoEligibility = resolvedOffer.promoOfferEligibility()
+        if (promoEligibility != OfferEligibility.PromoOfferIneligible) {
+            return promoEligibility
         }
-    } ?: IntroOfferEligibility.INELIGIBLE
+    }
+    return rcPackage.introOfferEligibility
+}
 
-internal val TemplateConfiguration.PackageInfo.introEligibility: IntroOfferEligibility
-    get() = this.rcPackage.introEligibility
+internal val Package.introOfferEligibility: OfferEligibility
+    get() {
+        val phaseCount = (product.defaultOption?.pricingPhases?.size ?: 0) - 1
+
+        return when (phaseCount) {
+            1 -> OfferEligibility.IntroOfferSingle
+            2 -> OfferEligibility.IntroOfferMultiple
+            else -> OfferEligibility.Ineligible
+        }
+    }
+
+private fun ResolvedOffer.promoOfferEligibility(): OfferEligibility {
+    val phaseCount = (subscriptionOption?.pricingPhases?.size ?: 0) - 1
+
+    return when (phaseCount) {
+        1 -> OfferEligibility.PromoOfferSingle
+        2 -> OfferEligibility.PromoOfferMultiple
+        else -> OfferEligibility.PromoOfferIneligible
+    }
+}
+
+internal val TemplateConfiguration.PackageInfo.offerEligibility: OfferEligibility
+    get() = this.rcPackage.introOfferEligibility
