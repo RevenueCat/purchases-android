@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -29,9 +29,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -39,22 +39,20 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TextComponentState {
-    return rememberUpdatedTextComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-    )
-}
+): TextComponentState = rememberUpdatedTextComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
 
 @Stable
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedTextComponentState(
+private fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
@@ -69,7 +67,7 @@ internal fun rememberUpdatedTextComponentState(
             initialWindowSize = windowSize,
             style = style,
             localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
@@ -85,7 +83,7 @@ internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
@@ -101,21 +99,26 @@ internal class TextComponentState(
         private set
 
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
         }
     }
+
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
     /**
      * The package to take variable values from and to consider for intro offer eligibility.
      */
     val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+        style.rcPackage ?: selectedPackageInfoProvider()?.rcPackage
+    }
+
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.resolvedOffer?.subscriptionOption ?: selectedPackageInfoProvider()?.resolvedOffer?.subscriptionOption
     }
 
     /**
@@ -125,12 +128,21 @@ internal class TextComponentState(
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
+        } else {
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
+        }
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic

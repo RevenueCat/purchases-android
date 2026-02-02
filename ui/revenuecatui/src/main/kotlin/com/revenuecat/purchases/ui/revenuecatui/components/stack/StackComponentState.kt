@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -25,9 +24,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @Stable
@@ -36,19 +35,18 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 internal fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): StackComponentState =
-    rememberUpdatedStackComponentState(
-        style = style,
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-    )
+): StackComponentState = rememberUpdatedStackComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+)
 
 @Stable
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedStackComponentState(
+private fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
@@ -59,13 +57,11 @@ internal fun rememberUpdatedStackComponentState(
             initialWindowSize = windowSize,
             initialLayoutDirection = layoutDirection,
             style = style,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
         )
     }.apply {
-        update(
-            windowSize = windowSize,
-        )
+        update(windowSize = windowSize)
     }
 }
 
@@ -74,33 +70,37 @@ internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
+
     private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
         }
     }
 
-    /**
-     * The package to consider for intro offer eligibility.
-     */
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+    private val offerEligibility by derivedStateOf {
+        if (style.rcPackage != null) {
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
+        } else {
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
+        }
     }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic
