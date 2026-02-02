@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -39,12 +42,16 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextLayoutResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -65,6 +72,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 import java.net.URL
+import java.util.Date
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 
 @RunWith(AndroidJUnit4::class)
@@ -939,6 +947,66 @@ class TextComponentViewTests {
             .assertIsDisplayed()
             .onChild()
             .assertTextEquals(expectedTextWithoutDecimals)
+    }
+
+    @Test
+    fun `Countdown variables should be processed without a selected package`(): Unit = with(composeTestRule) {
+        val countdownDate = Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)
+        val countdownTextKey = LocalizationKey("countdown_text")
+        val countdownText = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
+        val countdownLocalizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
+                countdownTextKey to LocalizationData.Text(countdownText),
+            ),
+        )
+
+        val textStyle = TextComponentStyle(
+            texts = nonEmptyMapOf(localeIdEnUs to countdownText),
+            color = ColorStyles(ColorStyle.Solid(Color.Black)),
+            fontSize = 15,
+            fontWeight = null,
+            fontSpec = null,
+            textAlign = null,
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            backgroundColor = null,
+            visible = true,
+            size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+            padding = PaddingValues(0.dp),
+            margin = PaddingValues(0.dp),
+            rcPackage = null,
+            tabIndex = null,
+            countdownDate = countdownDate,
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            variableLocalizations = nonEmptyMapOf(
+                localeIdEnUs to variableLocalizationKeysForEnUs()
+            ),
+            overrides = emptyList(),
+        )
+
+        val state = FakePaywallState(
+            localizations = countdownLocalizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            packages = emptyList(),
+        )
+
+        setContent {
+            TextComponentView(
+                style = textStyle,
+                state = state,
+                modifier = Modifier.testTag("countdown_text")
+            )
+        }
+
+        val node = onNodeWithTag("countdown_text").onChild()
+
+        val actualText = node.fetchSemanticsNode().config
+            .first { it.key.name == "Text" }
+            .value
+            .toString()
+
+        assertThat(actualText).doesNotContain("{{")
+        assertThat(actualText).doesNotContain("}}")
+        assertThat(actualText).containsPattern("\\d+d \\d+h")
     }
 
     /**
