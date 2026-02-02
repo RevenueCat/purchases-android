@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
 @Suppress("LongParameterList")
 @Immutable
@@ -44,6 +45,18 @@ internal data class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val rcPackage: Package?,
+    /**
+     * Unique identifier for the package, combining package ID and offer ID.
+     * Used for selection comparison when multiple components reference the same package with different offers.
+     */
+    @get:JvmSynthetic
+    val packageUniqueId: String? = null,
+    /**
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
+     */
+    @get:JvmSynthetic
+    val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for images inside tab control elements. Not for all images within a tab.

@@ -70,6 +70,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PlayStoreOfferResolver
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
@@ -244,6 +246,10 @@ internal class StyleFactory(
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
+        val packageUniqueId: String?
+            get() = packageInfo?.uniqueId
+        val resolvedOffer: ResolvedOffer?
+            get() = packageInfo?.resolvedOffer
 
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
@@ -520,10 +526,18 @@ internal class StyleFactory(
                     Logger.w(error.message)
                     return Result.Success(null)
                 }
+
+                // Resolve Play Store offer if configured
+                val resolvedOffer = PlayStoreOfferResolver.resolve(
+                    rcPackage = rcPackage,
+                    offerConfig = component.playStoreOffer,
+                )
+
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
                         isSelectedByDefault = component.isSelectedByDefault,
+                        resolvedOffer = resolvedOffer,
                     ),
                     // If a tab control contains a package, which is already an edge case, the package should not
                     // visually become "selected" if its tab control parent is.
@@ -541,6 +555,7 @@ internal class StyleFactory(
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
                             isSelectable = purchaseButtons == 0,
+                            resolvedOffer = resolvedOffer,
                         )
                     }
                 }
@@ -722,6 +737,8 @@ internal class StyleFactory(
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -770,6 +787,8 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -808,6 +827,8 @@ internal class StyleFactory(
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
@@ -856,6 +877,8 @@ internal class StyleFactory(
             padding = component.padding?.toPaddingValues() ?: PaddingValues(),
             margin = component.margin?.toPaddingValues() ?: PaddingValues(),
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
@@ -893,6 +916,8 @@ internal class StyleFactory(
                 margin = component.margin.toPaddingValues(),
                 iconBackground = background,
                 rcPackage = rcPackage,
+                packageUniqueId = packageUniqueId,
+                resolvedOffer = resolvedOffer,
                 tabIndex = tabControlIndex,
                 overrides = presentedOverrides,
             )
@@ -919,6 +944,8 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             items = items,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -953,6 +980,8 @@ internal class StyleFactory(
             icon = icon,
             connector = connectorStyle,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
@@ -990,6 +1019,8 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
+            packageUniqueId = packageUniqueId,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
             overrides = presentedOverrides,
         )
