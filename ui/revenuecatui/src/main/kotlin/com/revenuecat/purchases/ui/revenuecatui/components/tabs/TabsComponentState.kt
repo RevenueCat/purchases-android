@@ -19,7 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -27,20 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TabsComponentState =
-    rememberUpdatedTabsComponentState(
-        style = style,
-        selectedOfferEligibilityProvider = {
-            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
-        },
-    )
-
-@Stable
-@JvmSynthetic
-@Composable
-internal fun rememberUpdatedTabsComponentState(
-    style: TabsComponentStyle,
-    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -48,12 +34,10 @@ internal fun rememberUpdatedTabsComponentState(
         TabsComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
         )
     }.apply {
-        update(
-            windowSize = windowSize,
-        )
+        update(windowSize = windowSize)
     }
 }
 
@@ -61,15 +45,21 @@ internal fun rememberUpdatedTabsComponentState(
 internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TabsComponentStyle,
-    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
+    private val offerEligibility by derivedStateOf {
+        selectedPackageInfoProvider()?.let {
+            calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+        } ?: OfferEligibility.Ineligible
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
+        val componentState = ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, selectedOfferEligibilityProvider(), componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic

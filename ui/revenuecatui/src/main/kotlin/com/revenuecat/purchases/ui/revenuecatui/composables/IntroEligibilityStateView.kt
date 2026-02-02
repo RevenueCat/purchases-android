@@ -90,14 +90,14 @@ internal sealed class OfferEligibility {
     /** Default option with multiple discounted phases (both free trial AND intro price) */
     object IntroOfferMultiple : OfferEligibility()
 
-    /** Configured promo offer with no discounted phases */
-    object PromoOfferIneligible : OfferEligibility()
-
     /** Configured promo offer with a single discounted phase */
     object PromoOfferSingle : OfferEligibility()
 
     /** Configured promo offer with multiple discounted phases */
     object PromoOfferMultiple : OfferEligibility()
+
+    /** Configured promo offer with no discounted phases (misconfigured or base plan only) */
+    object PromoOfferIneligible : OfferEligibility()
 
     /** Whether this represents any offer (intro OR promo) with multiple discounted phases */
     val hasMultipleDiscountedPhases: Boolean

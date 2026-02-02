@@ -27,7 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.Int
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.IntroOfferSingle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferSingle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferMultiple
-import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility.PromoOfferIneligible
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions
@@ -757,16 +756,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should pick promo offer when PromoOffer condition available and eligibility is PromoOfferIneligible",
-                Args(
-                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
-                    windowSize = MEDIUM,
-                    offerEligibility = PromoOfferIneligible,
-                    state = DEFAULT,
-                    expected = promoOfferPartial,
-                ),
-            ),
-            arrayOf(
                 "should not pick promo offer when eligibility is IntroOfferSingle",
                 Args(
                     availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
@@ -814,16 +803,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     offerEligibility = PromoOfferMultiple,
                     state = DEFAULT,
                     expected = multipleIntroOffersPartial,
-                ),
-            ),
-            arrayOf(
-                "PromoOfferIneligible should NOT match PromoOffer condition - falls back to screen size",
-                Args(
-                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
-                    windowSize = MEDIUM,
-                    offerEligibility = PromoOfferIneligible,
-                    state = DEFAULT,
-                    expected = mediumPartial,
                 ),
             ),
             arrayOf(

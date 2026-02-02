@@ -19,7 +19,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -40,7 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -48,29 +47,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): ImageComponentState =
-    rememberUpdatedImageComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedOfferEligibilityProvider = {
-            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
-        },
-    )
-
-@Suppress("LongParameterList")
-@Stable
-@JvmSynthetic
-@Composable
-internal fun rememberUpdatedImageComponentState(
-    style: ImageComponentStyle,
-    localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
-    selectedTabIndexProvider: () -> Int,
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -84,11 +60,9 @@ internal fun rememberUpdatedImageComponentState(
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
             style = style,
-            localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
-            selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            localeProvider = { paywallState.locale },
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedTabIndexProvider = { paywallState.selectedTabIndex },
         )
     }.apply {
         update(
@@ -109,35 +83,30 @@ internal class ImageComponentState(
     initialLayoutDirection: LayoutDirection,
     private val style: ImageComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
-        }
-    }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    /**
-     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, calculates from the style's subscription option.
-     * Otherwise, uses the selected package's resolved offer eligibility.
-     */
+    private val selected by derivedStateOf {
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
+        }
+    }
+
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
         } else {
-            selectedOfferEligibilityProvider()
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
         }
     }
 

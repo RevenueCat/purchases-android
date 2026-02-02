@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -32,7 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -41,35 +40,8 @@ internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
 ): TextComponentState {
-    return rememberUpdatedTextComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedSubscriptionOptionProvider = { paywallState.selectedPackageInfo?.resolvedOffer?.subscriptionOption },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedOfferEligibilityProvider = {
-            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
-        },
-    )
-}
-
-@Suppress("LongParameterList")
-@Stable
-@JvmSynthetic
-@Composable
-internal fun rememberUpdatedTextComponentState(
-    style: TextComponentStyle,
-    localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
-    selectedTabIndexProvider: () -> Int,
-    selectedSubscriptionOptionProvider: () -> SubscriptionOption? = { null },
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
-): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
-    // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->
         rememberCountdownState(date)
     }
@@ -78,12 +50,9 @@ internal fun rememberUpdatedTextComponentState(
         TextComponentState(
             initialWindowSize = windowSize,
             style = style,
-            localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
-            selectedSubscriptionOptionProvider = selectedSubscriptionOptionProvider,
-            selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            localeProvider = { paywallState.locale },
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedTabIndexProvider = { paywallState.selectedTabIndex },
         )
     }.apply {
         update(
@@ -93,76 +62,50 @@ internal fun rememberUpdatedTextComponentState(
     }
 }
 
-@Suppress("LongParameterList")
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> Package?,
-    private val selectedSubscriptionOptionProvider: () -> SubscriptionOption?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
-    /**
-     * The current countdown time, if this text is inside a countdown component.
-     *
-     * Updated every second via [update] when countdown is active. Triggers recomposition
-     * to update countdown variables (e.g., {{ count_hours_without_zero }}) in the text.
-     * Null if this text is not inside a countdown component.
-     */
     var countdownTime by mutableStateOf<CountdownTime?>(null)
         private set
 
     private val selected by derivedStateOf {
-        if (style.packageUniqueId != null) {
-            style.packageUniqueId == selectedPackageUniqueIdProvider()
-        } else if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
         }
     }
+
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
-    /**
-     * The package to take variable values from and to consider for offer eligibility.
-     */
     val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+        style.rcPackage ?: selectedPackageInfoProvider()?.rcPackage
     }
 
-    /**
-     * The subscription option to use for offer variables (product.offer_*, product.secondary_offer_*).
-     * If a specific Play Store offer is configured for this text's package, use that.
-     * Otherwise, use the selected package's resolved subscription option.
-     */
-    val subscriptionOption by derivedStateOf {
-        style.resolvedOffer?.subscriptionOption ?: selectedSubscriptionOptionProvider()
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.resolvedOffer?.subscriptionOption ?: selectedPackageInfoProvider()?.resolvedOffer?.subscriptionOption
     }
 
-    /**
-     * How countdown variables should be displayed (component hours vs total hours).
-     */
     @get:JvmSynthetic
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
-    /**
-     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, calculates from the style's resolved offer.
-     * Otherwise, uses the selected package's resolved offer eligibility.
-     */
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
         } else {
-            selectedOfferEligibilityProvider()
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
         }
     }
 

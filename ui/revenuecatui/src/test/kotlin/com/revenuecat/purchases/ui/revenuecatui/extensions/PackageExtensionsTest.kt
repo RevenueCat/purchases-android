@@ -12,6 +12,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -22,66 +23,76 @@ import org.junit.runner.RunWith
 class PackageExtensionsTest {
 
     @Test
-    fun `offerEligibility calculation is IntroOfferSingle if defaultOption only has a free trial`() {
+    fun `introOfferEligibility is IntroOfferSingle if defaultOption only has a free trial`() {
         val rcPackage = createPackage(freeTrial = true)
 
-        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.IntroOfferSingle)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.IntroOfferSingle)
     }
 
     @Test
-    fun `offerEligibility calculation is IntroOfferMultiple if defaultOption has trial and discounted price`() {
+    fun `introOfferEligibility is IntroOfferMultiple if defaultOption has trial and discounted price`() {
         val rcPackage = createPackage(freeTrial = true, introOffer = true)
 
-        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.IntroOfferMultiple)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.IntroOfferMultiple)
     }
 
     @Test
-    fun `offerEligibility calculation is Ineligible if defaultOption is base plan`() {
+    fun `introOfferEligibility is Ineligible if defaultOption is base plan`() {
         val rcPackage = createPackage()
 
-        assertThat(rcPackage.offerEligibility).isEqualTo(OfferEligibility.Ineligible)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.Ineligible)
     }
 
     @Test
-    fun `toOfferEligibility returns PromoOfferSingle when isPromoOffer is true and has single phase`() {
+    fun `calculateOfferEligibility returns PromoOfferSingle when promo offer has single phase`() {
+        val promoOption = createSubscriptionOption(freeTrial = true)
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.PromoOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns PromoOfferMultiple when promo offer has multiple phases`() {
+        val promoOption = createSubscriptionOption(freeTrial = true, introOffer = true)
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.PromoOfferMultiple)
+    }
+
+    @Test
+    fun `calculateOfferEligibility falls back to intro offer when promo has no discount phases`() {
+        val promoOption = createSubscriptionOption()
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage(freeTrial = true)
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns Ineligible when promo has no phases and package has no intro`() {
+        val promoOption = createSubscriptionOption()
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.Ineligible)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns intro eligibility when no resolved offer`() {
+        val rcPackage = createPackage(freeTrial = true)
+
+        assertThat(calculateOfferEligibility(null, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns intro eligibility for NoConfiguration`() {
         val option = createSubscriptionOption(freeTrial = true)
+        val resolvedOffer = ResolvedOffer.NoConfiguration(option)
+        val rcPackage = createPackage(introOffer = true)
 
-        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferSingle)
-    }
-
-    @Test
-    fun `toOfferEligibility returns PromoOfferMultiple when isPromoOffer is true and has multiple phases`() {
-        val option = createSubscriptionOption(freeTrial = true, introOffer = true)
-
-        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferMultiple)
-    }
-
-    @Test
-    fun `toOfferEligibility returns PromoOfferIneligible when isPromoOffer is true and no discounted phases`() {
-        val option = createSubscriptionOption()
-
-        assertThat(option.toOfferEligibility(isPromoOffer = true)).isEqualTo(OfferEligibility.PromoOfferIneligible)
-    }
-
-    @Test
-    fun `toOfferEligibility returns IntroOfferSingle when isPromoOffer is false and has single phase`() {
-        val option = createSubscriptionOption(freeTrial = true)
-
-        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.IntroOfferSingle)
-    }
-
-    @Test
-    fun `toOfferEligibility returns IntroOfferMultiple when isPromoOffer is false and has multiple phases`() {
-        val option = createSubscriptionOption(freeTrial = true, introOffer = true)
-
-        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.IntroOfferMultiple)
-    }
-
-    @Test
-    fun `toOfferEligibility returns Ineligible when isPromoOffer is false and no discounted phases`() {
-        val option = createSubscriptionOption()
-
-        assertThat(option.toOfferEligibility(isPromoOffer = false)).isEqualTo(OfferEligibility.Ineligible)
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
     }
 
     private fun createSubscriptionOption(freeTrial: Boolean = false, introOffer: Boolean = false): SubscriptionOption {

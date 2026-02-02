@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
@@ -17,7 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -25,27 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 internal fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TimelineComponentState =
-    rememberUpdatedTimelineComponentState(
-        style = style,
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedOfferEligibilityProvider = {
-            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
-        },
-    )
-
-@Suppress("LongParameterList")
-@Stable
-@JvmSynthetic
-@Composable
-private fun rememberUpdatedTimelineComponentState(
-    style: TimelineComponentStyle,
-    selectedPackageProvider: () -> Package?,
-    selectedTabIndexProvider: () -> Int,
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -53,52 +31,41 @@ private fun rememberUpdatedTimelineComponentState(
         TimelineComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageProvider = selectedPackageProvider,
-            selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedTabIndexProvider = { paywallState.selectedTabIndex },
         )
     }.apply {
-        update(
-            windowSize = windowSize,
-        )
+        update(windowSize = windowSize)
     }
 }
 
-@Suppress("LongParameterList")
 @Stable
 internal class TimelineComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TimelineComponentStyle,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
+
     private val selected by derivedStateOf {
-        if (style.packageUniqueId != null) {
-            style.packageUniqueId == selectedPackageUniqueIdProvider()
-        } else if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
         }
     }
 
-    /**
-     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, calculates from the style's resolved offer.
-     * Otherwise, uses the selected package's resolved offer eligibility.
-     */
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
         } else {
-            selectedOfferEligibilityProvider()
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
         }
     }
 
@@ -139,10 +106,8 @@ internal class TimelineComponentState(
             ItemState(
                 initialWindowSize,
                 it,
-                selectedPackageProvider,
+                selectedPackageInfoProvider,
                 selectedTabIndexProvider,
-                selectedPackageUniqueIdProvider,
-                selectedOfferEligibilityProvider,
             )
         }
     }
@@ -154,40 +119,33 @@ internal class TimelineComponentState(
         if (windowSize != null) this.windowSize = windowSize
     }
 
-    @Suppress("LongParameterList")
     @Stable
     class ItemState(
         initialWindowSize: WindowWidthSizeClass,
         private val style: TimelineComponentStyle.ItemStyle,
-        private val selectedPackageProvider: () -> Package?,
+        private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,
-        private val selectedPackageUniqueIdProvider: () -> String?,
-        private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
+
         private val selected by derivedStateOf {
-            if (style.packageUniqueId != null) {
-                style.packageUniqueId == selectedPackageUniqueIdProvider()
-            } else if (style.rcPackage != null) {
-                style.rcPackage.identifier == selectedPackageProvider()?.identifier
-            } else if (style.tabIndex != null) {
-                style.tabIndex == selectedTabIndexProvider()
-            } else {
-                false
+            val selectedInfo = selectedPackageInfoProvider()
+            when {
+                style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+                style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+                style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+                else -> false
             }
         }
 
-        /**
-         * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-         * If the style has its own package, calculates from the style's resolved offer.
-         * Otherwise, uses the selected package's resolved offer eligibility.
-         */
         private val offerEligibility by derivedStateOf {
             if (style.rcPackage != null) {
-                style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
+                calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
             } else {
-                selectedOfferEligibilityProvider()
+                selectedPackageInfoProvider()?.let {
+                    calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+                } ?: OfferEligibility.Ineligible
             }
         }
 

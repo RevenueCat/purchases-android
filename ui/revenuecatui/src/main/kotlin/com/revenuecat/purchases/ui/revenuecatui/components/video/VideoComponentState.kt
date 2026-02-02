@@ -17,7 +17,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -40,10 +39,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import dev.drewhamilton.poko.Poko
 
-@Suppress("LongParameterList")
 @Poko
 internal class VideoComponentState(
     initialWindowSize: WindowWidthSizeClass,
@@ -52,37 +50,31 @@ internal class VideoComponentState(
     initialLayoutDirection: LayoutDirection,
     private val style: VideoComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> com.revenuecat.purchases.Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
-    private val selectedPackageUniqueIdProvider: () -> String?,
-    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private val selected by derivedStateOf {
-        if (style.packageUniqueId != null) {
-            style.packageUniqueId == selectedPackageUniqueIdProvider()
-        } else if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
-        }
-    }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    /**
-     * The offer eligibility for this component, encoding both offer type (intro/promo) and phase count.
-     * If the style has its own package, calculates from the style's subscription option.
-     * Otherwise, uses the selected package's resolved offer eligibility.
-     */
+    private val selected by derivedStateOf {
+        val selectedInfo = selectedPackageInfoProvider()
+        when {
+            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
+            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
+            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
+            else -> false
+        }
+    }
+
     private val offerEligibility by derivedStateOf {
         if (style.rcPackage != null) {
-            style.resolvedOffer?.offerEligibility ?: style.rcPackage.offerEligibility
+            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
         } else {
-            selectedOfferEligibilityProvider()
+            selectedPackageInfoProvider()?.let {
+                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+            } ?: OfferEligibility.Ineligible
         }
     }
 
@@ -310,29 +302,6 @@ internal class VideoComponentState(
 internal fun rememberUpdatedVideoComponentState(
     style: VideoComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): VideoComponentState =
-    rememberUpdatedVideoComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-        selectedPackageUniqueIdProvider = { paywallState.selectedPackageInfo?.uniqueId },
-        selectedOfferEligibilityProvider = {
-            paywallState.selectedPackageInfo?.resolvedOffer?.offerEligibility ?: OfferEligibility.Ineligible
-        },
-    )
-
-@Suppress("LongParameterList")
-@Stable
-@JvmSynthetic
-@Composable
-internal fun rememberUpdatedVideoComponentState(
-    style: VideoComponentStyle,
-    localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
-    selectedTabIndexProvider: () -> Int,
-    selectedPackageUniqueIdProvider: () -> String? = { null },
-    selectedOfferEligibilityProvider: () -> OfferEligibility = { OfferEligibility.Ineligible },
 ): VideoComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -345,11 +314,9 @@ internal fun rememberUpdatedVideoComponentState(
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
             style = style,
-            localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
-            selectedTabIndexProvider = selectedTabIndexProvider,
-            selectedPackageUniqueIdProvider = selectedPackageUniqueIdProvider,
-            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            localeProvider = { paywallState.locale },
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedTabIndexProvider = { paywallState.selectedTabIndex },
         )
     }
 }
