@@ -1517,6 +1517,21 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) { mockEventsManager.track(event) }
     }
 
+    @Test
+    fun `track notifies listener if set`() {
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        purchases.trackedEventListener = TrackedEventListener {
+            trackedEvents.add(it)
+        }
+        val event = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
+        }
+        every { mockEventsManager.track(event) } just Runs
+        purchases.track(event)
+
+        assertThat(trackedEvents).containsExactly(event)
+    }
+
     // endregion track events
 
     @Test

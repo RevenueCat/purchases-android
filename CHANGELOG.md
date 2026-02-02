@@ -1,3 +1,32 @@
+## 9.20.0
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add custom variables support for v2 paywalls (#3020) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* [AUTOMATIC] Update golden test files for backend integration tests (#3060) via RevenueCat Git Bot (@RCGitBot)
+* Add loading placeholder for the customer center (#3053) via Jaewoong Eum (@skydoves)
+
+## 9.19.4
+### 🔄 Other Changes
+* Add internal API to debug tracked events (#3054) via Toni Rico (@tonidero)
+* [ADS-1] feat: add ad_format to AdTracker events (#3050) via Peter Porfy (@peterporfy)
+
+## 9.19.3
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.4 (#3048) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix gradient overlay to cover full viewport instead of image bounds (#3017) via Facundo Menzella (@facumenzella)
+* [MON-1823] Fix paywall price variables not showing on initial load (#3044) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Add `payload_version` to POST /receipt (#3045) via Toni Rico (@tonidero)
+
 ## 9.19.2
 ## RevenueCat SDK
 ### 🐞 Bugfixes

@@ -5,6 +5,7 @@ import androidx.activity.result.ActivityResultCaller
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
@@ -36,6 +37,13 @@ private class PaywallActivityLauncherAPI {
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
             edgeToEdge = true,
+        )
+        activityLauncher.launch(
+            offering = offering,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+            edgeToEdge = true,
+            customVariables = mapOf("key" to CustomVariableValue.String("value")),
         )
         activityLauncher.launch(offeringIdentifier)
         activityLauncher.launch(

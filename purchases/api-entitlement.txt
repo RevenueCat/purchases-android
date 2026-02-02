@@ -639,12 +639,14 @@ package com.revenuecat.purchases.ads.events {
 package com.revenuecat.purchases.ads.events.types {
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdDisplayedData {
-    ctor public AdDisplayedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    ctor public AdDisplayedData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
+    method public String getAdFormat();
     method public String getAdUnitId();
     method public String getImpressionId();
     method public String getMediatorName();
     method public String getNetworkName();
     method public String? getPlacement();
+    property public final String adFormat;
     property public final String adUnitId;
     property public final String impressionId;
     property public final String mediatorName;
@@ -653,12 +655,14 @@ package com.revenuecat.purchases.ads.events.types {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdFailedToLoadData {
-    ctor public AdFailedToLoadData(String networkName, String mediatorName, String? placement, String adUnitId, Integer? mediatorErrorCode);
+    ctor public AdFailedToLoadData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, Integer? mediatorErrorCode);
+    method public String getAdFormat();
     method public String getAdUnitId();
     method public Integer? getMediatorErrorCode();
     method public String getMediatorName();
     method public String getNetworkName();
     method public String? getPlacement();
+    property public final String adFormat;
     property public final String adUnitId;
     property public final Integer? mediatorErrorCode;
     property public final String mediatorName;
@@ -666,13 +670,39 @@ package com.revenuecat.purchases.ads.events.types {
     property public final String? placement;
   }
 
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdFormat {
+    field public static final com.revenuecat.purchases.ads.events.types.AdFormat.Companion Companion;
+  }
+
+  public static final class AdFormat.Companion {
+    method public String fromString(String value);
+    method public String getAPP_OPEN();
+    method public String getBANNER();
+    method public String getINTERSTITIAL();
+    method public String getMREC();
+    method public String getNATIVE();
+    method public String getOTHER();
+    method public String getREWARDED();
+    method public String getREWARDED_INTERSTITIAL();
+    property public final String APP_OPEN;
+    property public final String BANNER;
+    property public final String INTERSTITIAL;
+    property public final String MREC;
+    property public final String NATIVE;
+    property public final String OTHER;
+    property public final String REWARDED;
+    property public final String REWARDED_INTERSTITIAL;
+  }
+
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdLoadedData {
-    ctor public AdLoadedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    ctor public AdLoadedData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
+    method public String getAdFormat();
     method public String getAdUnitId();
     method public String getImpressionId();
     method public String getMediatorName();
     method public String getNetworkName();
     method public String? getPlacement();
+    property public final String adFormat;
     property public final String adUnitId;
     property public final String impressionId;
     property public final String mediatorName;
@@ -693,12 +723,14 @@ package com.revenuecat.purchases.ads.events.types {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdOpenedData {
-    ctor public AdOpenedData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId);
+    ctor public AdOpenedData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
+    method public String getAdFormat();
     method public String getAdUnitId();
     method public String getImpressionId();
     method public String getMediatorName();
     method public String getNetworkName();
     method public String? getPlacement();
+    property public final String adFormat;
     property public final String adUnitId;
     property public final String impressionId;
     property public final String mediatorName;
@@ -707,7 +739,8 @@ package com.revenuecat.purchases.ads.events.types {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRevenueData {
-    ctor public AdRevenueData(String networkName, String mediatorName, String? placement, String adUnitId, String impressionId, long revenueMicros, String currency, String precision);
+    ctor public AdRevenueData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId, long revenueMicros, String currency, String precision);
+    method public String getAdFormat();
     method public String getAdUnitId();
     method public String getCurrency();
     method public String getImpressionId();
@@ -716,6 +749,7 @@ package com.revenuecat.purchases.ads.events.types {
     method public String? getPlacement();
     method public String getPrecision();
     method public long getRevenueMicros();
+    property public final String adFormat;
     property public final String adUnitId;
     property public final String currency;
     property public final String impressionId;

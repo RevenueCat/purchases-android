@@ -206,6 +206,7 @@ private fun buildPaywallOptions(
         .setFontProvider(paywallDialogOptions.fontProvider)
         .setListener(paywallDialogOptions.listener)
         .setPurchaseLogic(paywallDialogOptions.purchaseLogic)
+        .setCustomVariables(paywallDialogOptions.customVariables)
         .build()
 }
 

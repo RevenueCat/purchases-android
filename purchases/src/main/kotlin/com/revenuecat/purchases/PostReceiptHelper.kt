@@ -150,12 +150,14 @@ constructor(
     fun postRemainingCachedTransactionMetadata(
         appUserID: String,
         allowSharingPlayStoreAccount: Boolean,
+        pendingTransactionsTokens: Set<String>,
         onNoTransactionsToSync: () -> Unit,
         onError: ((PurchasesError) -> Unit),
         onSuccess: ((CustomerInfo) -> Unit),
     ) {
         val results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>> = ConcurrentLinkedQueue()
         val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
+            .filterNot { pendingTransactionsTokens.contains(it.token) }
         if (transactionMetadataToSync.isEmpty()) {
             onNoTransactionsToSync()
             return
