@@ -21,9 +21,10 @@ internal sealed class ResolvedOffer {
 
     /**
      * An offer was configured but could not be found in the available subscription options.
-     * Falls back to the default option but logs a warning.
+     * This can happen due to misconfiguration or because the user is not eligible for the offer.
+     * Falls back to the default option.
      */
-    data class ConfigurationError(
+    data class OfferNotFound(
         val configuredOfferId: String,
         val fallbackOption: SubscriptionOption?,
     ) : ResolvedOffer()
@@ -35,7 +36,7 @@ internal sealed class ResolvedOffer {
         get() = when (this) {
             is ConfiguredOffer -> option
             is NoConfiguration -> option
-            is ConfigurationError -> fallbackOption
+            is OfferNotFound -> fallbackOption
         }
 
     /**
@@ -61,22 +62,28 @@ internal object PromoOfferResolver {
         rcPackage: Package,
         offerConfig: PromoOfferConfig?,
     ): ResolvedOffer {
-        val subscriptionOptions = rcPackage.product.subscriptionOptions
         val defaultOption = rcPackage.product.defaultOption
 
-        if (subscriptionOptions == null || offerConfig == null) {
+        if (offerConfig == null) {
             return ResolvedOffer.NoConfiguration(defaultOption)
         }
 
-        val configuredOption = findOfferById(subscriptionOptions, offerConfig.offerId)
+        val subscriptionOptions = rcPackage.product.subscriptionOptions
+        val configuredOption = subscriptionOptions?.let { findOfferById(it, offerConfig.offerId) }
+
         return if (configuredOption != null) {
             ResolvedOffer.ConfiguredOffer(configuredOption)
         } else {
+            val reason = if (subscriptionOptions == null) {
+                "product has no subscription options"
+            } else {
+                "offer not found in available options"
+            }
             Logger.w(
-                "Configured Play Store offer '${offerConfig.offerId}' not found for package " +
-                    "'${rcPackage.identifier}'. Falling back to default option.",
+                "Configured offer '${offerConfig.offerId}' for package '${rcPackage.identifier}': " +
+                    "$reason. Falling back to default option.",
             )
-            ResolvedOffer.ConfigurationError(
+            ResolvedOffer.OfferNotFound(
                 configuredOfferId = offerConfig.offerId,
                 fallbackOption = defaultOption,
             )

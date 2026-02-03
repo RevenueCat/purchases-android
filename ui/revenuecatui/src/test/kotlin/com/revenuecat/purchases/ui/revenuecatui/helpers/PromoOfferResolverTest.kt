@@ -31,13 +31,14 @@ class PromoOfferResolverTest {
     }
 
     @Test
-    fun `resolve returns NoConfiguration when subscriptionOptions is null`() {
+    fun `resolve returns OfferNotFound when subscriptionOptions is null but offer configured`() {
         val rcPackage = createPackageWithoutSubscriptionOptions()
         val offerConfig = PromoOfferConfig(offerId = "promo-offer")
 
         val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
-        assertThat(result).isInstanceOf(ResolvedOffer.NoConfiguration::class.java)
+        assertThat(result).isInstanceOf(ResolvedOffer.OfferNotFound::class.java)
+        assertThat((result as ResolvedOffer.OfferNotFound).configuredOfferId).isEqualTo("promo-offer")
         assertThat(result.isPromoOffer).isFalse()
     }
 
@@ -55,15 +56,15 @@ class PromoOfferResolverTest {
     }
 
     @Test
-    fun `resolve returns ConfigurationError when offerId does not match any option`() {
+    fun `resolve returns OfferNotFound when offerId does not match any option`() {
         val option = createGoogleSubscriptionOption("other-offer")
         val rcPackage = createPackageWithSubscriptionOptions(listOf(option))
         val offerConfig = PromoOfferConfig(offerId = "non-existent-offer")
 
         val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
-        assertThat(result).isInstanceOf(ResolvedOffer.ConfigurationError::class.java)
-        val error = result as ResolvedOffer.ConfigurationError
+        assertThat(result).isInstanceOf(ResolvedOffer.OfferNotFound::class.java)
+        val error = result as ResolvedOffer.OfferNotFound
         assertThat(error.configuredOfferId).isEqualTo("non-existent-offer")
         assertThat(result.isPromoOffer).isFalse()
     }
@@ -98,7 +99,7 @@ class PromoOfferResolverTest {
     }
 
     @Test
-    fun `ConfigurationError fallbackOption uses defaultOption`() {
+    fun `OfferNotFound fallbackOption uses defaultOption`() {
         val defaultOption = createGoogleSubscriptionOption("default")
         val rcPackage = createPackageWithSubscriptionOptions(
             options = listOf(defaultOption),
@@ -108,7 +109,7 @@ class PromoOfferResolverTest {
 
         val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
-        assertThat(result).isInstanceOf(ResolvedOffer.ConfigurationError::class.java)
+        assertThat(result).isInstanceOf(ResolvedOffer.OfferNotFound::class.java)
         assertThat(result.subscriptionOption).isEqualTo(defaultOption)
     }
 
