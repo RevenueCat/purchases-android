@@ -41,9 +41,9 @@ internal val Package.introOfferEligibility: OfferEligibility
     }
 
 private fun ResolvedOffer.promoOfferEligibility(): OfferEligibility {
-    val phaseCount = (subscriptionOption?.pricingPhases?.size ?: 0) - 1
+    val offerPhaseCount = (subscriptionOption?.pricingPhases?.size ?: 0) - 1
 
-    return when (phaseCount) {
+    return when (offerPhaseCount) {
         1 -> OfferEligibility.PromoOfferSingle
         2 -> OfferEligibility.PromoOfferMultiple
         else -> OfferEligibility.PromoOfferIneligible
