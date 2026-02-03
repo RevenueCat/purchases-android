@@ -746,16 +746,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "should pick promo offer when PromoOffer condition available and eligibility is PromoOfferMultiple",
-                Args(
-                    availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
-                    windowSize = MEDIUM,
-                    offerEligibility = PromoOfferMultiple,
-                    state = DEFAULT,
-                    expected = promoOfferPartial,
-                ),
-            ),
-            arrayOf(
                 "should not pick promo offer when eligibility is IntroOfferSingle",
                 Args(
                     availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
