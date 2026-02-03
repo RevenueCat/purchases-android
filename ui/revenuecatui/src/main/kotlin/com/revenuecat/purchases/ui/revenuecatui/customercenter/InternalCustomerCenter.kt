@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,7 +29,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,11 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.PurchasesError
@@ -120,33 +116,22 @@ internal fun InternalCustomerCenter(
     // This matches iOS behavior where we refresh when the manage subscriptions sheet is dismissed.
     // When the user opens the manage subscriptions screen (Google Play Store), the activity pauses.
     // When they return and dismiss it, the activity resumes, and we refresh to show updated subscription status.
-    val lifecycleOwner = LocalLifecycleOwner.current
     var wasPaused by remember { mutableStateOf(false) }
     val currentState by rememberUpdatedState(state)
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    wasPaused = true
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    // Refresh when resuming after being paused (user returned from manage subscriptions screen)
-                    // Only refresh if we have a loaded state (to avoid refreshing during initial load)
-                    if (wasPaused && currentState is CustomerCenterState.Success) {
-                        // Reload Customer Center to reflect any subscription changes (e.g., cancellation)
-                        // that may have occurred while the user was in the Google Play Store
-                        coroutineScope.launch {
-                            viewModel.refreshCustomerCenter()
-                        }
-                    }
-                    wasPaused = false
-                }
-                else -> {}
+    LifecycleResumeEffect(Unit) {
+        // Refresh when resuming after being paused (user returned from manage subscriptions screen)
+        // Only refresh if we have a loaded state (to avoid refreshing during initial load)
+        // and not already refreshing (to avoid race condition)
+        val stateSnapshot = currentState
+        if (wasPaused && stateSnapshot is CustomerCenterState.Success && !stateSnapshot.isRefreshing) {
+            coroutineScope.launch {
+                viewModel.refreshCustomerCenter()
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        wasPaused = false
+
+        onPauseOrDispose {
+            wasPaused = true
         }
     }
 
@@ -456,9 +441,7 @@ private fun CustomerCenterLoaded(
         // Show loading indicator when refreshing (similar to iOS)
         if (state.isRefreshing) {
             CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(vertical = 16.dp),
+                modifier = Modifier.align(Alignment.Center),
             )
         }
 
