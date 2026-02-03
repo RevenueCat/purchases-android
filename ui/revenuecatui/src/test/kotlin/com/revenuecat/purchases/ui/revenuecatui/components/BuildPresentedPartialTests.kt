@@ -265,7 +265,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "IntroOfferMultiple should NOT match IntroOffer - falls back to medium",
+                "IntroOfferMultiple without MultiplePhaseOffers override uses screen size fallback",
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
                     windowSize = MEDIUM,
@@ -766,7 +766,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "PromoOfferSingle should NOT match IntroOffer condition - falls back to screen size",
+                "PromoOfferSingle without matching override uses screen size fallback",
                 Args(
                     availableOverrides = buildPresentedOverrides(promoOffer = null),
                     windowSize = MEDIUM,
@@ -776,7 +776,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "PromoOfferMultiple should match MultiplePhaseOffers condition (multi-phase is shared)",
+                "PromoOfferMultiple matches MultiplePhaseOffers override",
                 Args(
                     availableOverrides = buildPresentedOverrides(promoOffer = null),
                     windowSize = MEDIUM,
@@ -786,7 +786,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "PromoOfferMultiple should NOT match PromoOffer condition - only MultiplePhaseOffers",
+                "PromoOfferMultiple uses MultiplePhaseOffers override instead of PromoOffer",
                 Args(
                     availableOverrides = buildPresentedOverrides(promoOffer = promoOfferPartial),
                     windowSize = MEDIUM,
