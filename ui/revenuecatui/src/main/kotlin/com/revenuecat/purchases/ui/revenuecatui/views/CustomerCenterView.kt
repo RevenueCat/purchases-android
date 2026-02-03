@@ -102,11 +102,16 @@ public class CustomerCenterView : CompatComposeView {
     }
 
     override fun onBackPressed() {
-        dismissHandler?.run { invoke() } ?: super.onBackPressed()
+        dismissHandler?.run { dismiss() } ?: super.onBackPressed()
     }
 
     private fun init() {
         Logger.d("Initialized CustomerCenterView")
+    }
+
+    private fun dismiss() {
+        dismissHandler?.invoke()
+        destroy()
     }
 
     @Composable
@@ -116,7 +121,7 @@ public class CustomerCenterView : CompatComposeView {
 
         MaterialTheme(colorScheme = colorScheme) {
             CustomerCenter(options = customerCenterOptions) {
-                onBackPressed()
+                dismiss()
             }
         }
     }

@@ -83,4 +83,6 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.google.blockstore)
+
+    debugImplementation(libs.leakcanary.android)
 }

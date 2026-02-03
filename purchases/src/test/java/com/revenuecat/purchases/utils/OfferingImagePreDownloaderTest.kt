@@ -348,6 +348,7 @@ class OfferingImagePreDownloaderTest {
             every { paywallComponents } returns Offering.PaywallComponents(
                 uiConfig = mockk(),
                 data = PaywallComponentsData(
+                    id = "paywall_id",
                     templateName = "template",
                     assetBaseURL = URL("https://assets.pawwalls.com"),
                     componentsConfig = ComponentsConfig(

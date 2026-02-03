@@ -324,6 +324,7 @@ class StackComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -458,7 +459,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -615,7 +616,7 @@ class StackComponentViewTests {
                     ),
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedMultipleEligibleBackgroundColor.toArgb())
@@ -650,6 +651,7 @@ class StackComponentViewTests {
             stack = StackComponent(components = listOf(stackComponent)),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

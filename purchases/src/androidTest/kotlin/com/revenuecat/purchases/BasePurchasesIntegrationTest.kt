@@ -78,6 +78,8 @@ open class BasePurchasesIntegrationTest {
 
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
+    private val transactionMetadataSharedPrefsNameTemplate =
+        "com.revenuecat.purchases.transaction_metadata.%s"
 
     internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
     internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
@@ -101,6 +103,7 @@ open class BasePurchasesIntegrationTest {
         _activity = null
         forceServerErrorsStrategy = null
         Purchases.resetSingleton()
+        leakcanary.LeakAssertions.assertNoLeaks()
     }
 
     // region helpers
@@ -220,6 +223,10 @@ open class BasePurchasesIntegrationTest {
         ).edit().clear().commit()
         context.getSharedPreferences(
             diagnosticsSharedPreferencesNameTemplate.format(context.packageName),
+            Context.MODE_PRIVATE,
+        ).edit().clear().commit()
+        context.getSharedPreferences(
+            transactionMetadataSharedPrefsNameTemplate.format(Constants.apiKey),
             Context.MODE_PRIVATE,
         ).edit().clear().commit()
     }
