@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +14,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.FileRepository
@@ -41,12 +47,47 @@ internal fun VideoComponentView(
     repository: FileRepository = Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
+
     if (videoState.visible) {
         val overlay = videoState.overlay?.forCurrentTheme
         val borderStyle = videoState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = videoState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(videoState.shape) { derivedStateOf { videoState.shape ?: RectangleShape } }
-        val (videoUrl, fallbackImageViewStyle) = rememberVideoContentState(style, videoState.videoUrls, repository)
+
+        var isVisible by remember { mutableStateOf(false) }
+        var isNearViewport by remember { mutableStateOf(false) }
+        var videoReady by remember { mutableStateOf(false) }
+        val view = LocalView.current
+
+        // Fallback image style to show until video's first frame renders (avoids black flash)
+        // No border/shadow/margin/padding since parent Box already handles those
+        val fallbackImageViewStyle = remember(style.fallbackSources) {
+            style.fallbackSources?.let { sources ->
+                ImageComponentStyle(
+                    sources = sources,
+                    visible = style.visible,
+                    size = style.size,
+                    padding = PaddingValues(0.dp),
+                    margin = PaddingValues(0.dp),
+                    shape = null,
+                    border = null,
+                    shadow = null,
+                    overlay = style.overlay,
+                    contentScale = style.contentScale,
+                    rcPackage = style.rcPackage,
+                    tabIndex = style.tabIndex,
+                    overrides = emptyList(),
+                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                )
+            }
+        }
+
+        // Pre-load video URL when near viewport
+        val videoUrl = if (isNearViewport) {
+            rememberVideoContentState(style, videoState.videoUrls, repository).first
+        } else {
+            null
+        }
 
         Box(
             modifier = modifier
@@ -55,29 +96,83 @@ internal fun VideoComponentView(
                 .padding(videoState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
                 .clip(composeShape)
-                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
+                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) }
+                .onGloballyPositioned { coordinates ->
+                    isVisible = coordinates.isVisibleInWindow(view.width, view.height)
+                    isNearViewport = coordinates.isNearViewport(view.width, view.height)
+                },
         ) {
-            if (fallbackImageViewStyle != null) {
-                ImageComponentView(fallbackImageViewStyle, state, modifier)
+            // Show fallback image until video's first frame is rendered
+            if (fallbackImageViewStyle != null && !videoReady) {
+                ImageComponentView(fallbackImageViewStyle, state)
             }
 
-            videoUrl?.let {
-                VideoView(
-                    videoUri = it.toString(),
-                    modifier = Modifier
-                        .size(videoState.size)
-                        .applyIfNotNull(videoState.aspectRatio, Modifier::aspectRatio)
-                        .applyIfNotNull(overlay, Modifier::overlay)
-                        .padding(videoState.padding),
-                    showControls = style.showControls,
-                    autoPlay = style.autoplay,
-                    loop = style.loop,
-                    muteAudio = style.muteAudio,
-                    contentScale = style.contentScale,
-                )
+            if (isVisible) {
+                videoUrl?.let {
+                    VideoView(
+                        videoUri = it.toString(),
+                        modifier = Modifier
+                            .size(videoState.size)
+                            .applyIfNotNull(videoState.aspectRatio, Modifier::aspectRatio)
+                            .applyIfNotNull(overlay, Modifier::overlay)
+                            .padding(videoState.padding),
+                        showControls = style.showControls,
+                        autoPlay = style.autoplay,
+                        loop = style.loop,
+                        muteAudio = style.muteAudio,
+                        contentScale = style.contentScale,
+                        onReady = { videoReady = true },
+                    )
+                }
             }
         }
     }
+}
+
+private const val PRELOAD_MARGIN_MULTIPLIER = 0.5f
+
+@JvmSynthetic
+internal fun LayoutCoordinates.isVisibleInWindow(windowWidth: Int, windowHeight: Int): Boolean {
+    val position = positionInWindow()
+    return isVisibleInWindow(
+        componentX = position.x,
+        componentY = position.y,
+        componentWidth = size.width,
+        componentHeight = size.height,
+        windowWidth = windowWidth,
+        windowHeight = windowHeight,
+    )
+}
+
+@JvmSynthetic
+internal fun LayoutCoordinates.isNearViewport(windowWidth: Int, windowHeight: Int): Boolean {
+    val position = positionInWindow()
+    val marginX = (windowWidth * PRELOAD_MARGIN_MULTIPLIER).toInt()
+    val marginY = (windowHeight * PRELOAD_MARGIN_MULTIPLIER).toInt()
+    return isVisibleInWindow(
+        componentX = position.x + marginX,
+        componentY = position.y + marginY,
+        componentWidth = size.width,
+        componentHeight = size.height,
+        windowWidth = windowWidth + 2 * marginX,
+        windowHeight = windowHeight + 2 * marginY,
+    )
+}
+
+@Suppress("LongParameterList")
+@JvmSynthetic
+internal fun isVisibleInWindow(
+    componentX: Float,
+    componentY: Float,
+    componentWidth: Int,
+    componentHeight: Int,
+    windowWidth: Int,
+    windowHeight: Int,
+): Boolean {
+    val componentRight = componentX + componentWidth
+    val componentBottom = componentY + componentHeight
+    return componentX < windowWidth && componentRight > 0 &&
+        componentY < windowHeight && componentBottom > 0
 }
 
 @Composable
