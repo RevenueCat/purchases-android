@@ -1,16 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.paywalls.components.common.PlayStoreOfferConfig
+import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 
 /**
  * Result of resolving a Play Store offer configuration.
  */
-@InternalRevenueCatAPI
-sealed class ResolvedOffer {
+internal sealed class ResolvedOffer {
     /**
      * A specific offer was configured and successfully resolved.
      */
@@ -50,19 +48,18 @@ sealed class ResolvedOffer {
 /**
  * Resolves the subscription option to use for a package based on its Play Store offer configuration.
  */
-@InternalRevenueCatAPI
-object PlayStoreOfferResolver {
+internal object PromoOfferResolver {
 
     /**
      * Resolves the subscription option to use for a package based on the offer configuration.
      *
      * @param rcPackage The package to resolve the offer for
-     * @param offerConfig The Play Store offer configuration, or null if not configured
+     * @param offerConfig The promo offer configuration, or null if not configured
      * @return The resolved offer result
      */
     fun resolve(
         rcPackage: Package,
-        offerConfig: PlayStoreOfferConfig?,
+        offerConfig: PromoOfferConfig?,
     ): ResolvedOffer {
         val subscriptionOptions = rcPackage.product.subscriptionOptions
         val defaultOption = rcPackage.product.defaultOption

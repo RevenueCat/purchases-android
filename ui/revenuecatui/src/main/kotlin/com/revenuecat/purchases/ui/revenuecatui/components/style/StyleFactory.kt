@@ -70,7 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PlayStoreOfferResolver
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PromoOfferResolver
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
@@ -528,7 +528,7 @@ internal class StyleFactory(
                 }
 
                 // Resolve Play Store offer if configured
-                val resolvedOffer = PlayStoreOfferResolver.resolve(
+                val resolvedOffer = PromoOfferResolver.resolve(
                     rcPackage = rcPackage,
                     offerConfig = component.playStoreOffer,
                 )

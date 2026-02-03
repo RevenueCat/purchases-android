@@ -9,7 +9,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.paywalls.components.common.PlayStoreOfferConfig
+import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -18,13 +18,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class PlayStoreOfferResolverTest {
+class PromoOfferResolverTest {
 
     @Test
     fun `resolve returns NoConfiguration when offerConfig is null`() {
         val rcPackage = createPackageWithSubscriptionOptions()
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, null)
+        val result = PromoOfferResolver.resolve(rcPackage, null)
 
         assertThat(result).isInstanceOf(ResolvedOffer.NoConfiguration::class.java)
         assertThat(result.isPromoOffer).isFalse()
@@ -33,9 +33,9 @@ class PlayStoreOfferResolverTest {
     @Test
     fun `resolve returns NoConfiguration when subscriptionOptions is null`() {
         val rcPackage = createPackageWithoutSubscriptionOptions()
-        val offerConfig = PlayStoreOfferConfig(offerId = "promo-offer")
+        val offerConfig = PromoOfferConfig(offerId = "promo-offer")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.NoConfiguration::class.java)
         assertThat(result.isPromoOffer).isFalse()
@@ -45,9 +45,9 @@ class PlayStoreOfferResolverTest {
     fun `resolve returns ConfiguredOffer when offerId matches`() {
         val matchingOption = createGoogleSubscriptionOption("promo-offer")
         val rcPackage = createPackageWithSubscriptionOptions(listOf(matchingOption))
-        val offerConfig = PlayStoreOfferConfig(offerId = "promo-offer")
+        val offerConfig = PromoOfferConfig(offerId = "promo-offer")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.ConfiguredOffer::class.java)
         assertThat(result.subscriptionOption).isEqualTo(matchingOption)
@@ -58,9 +58,9 @@ class PlayStoreOfferResolverTest {
     fun `resolve returns ConfigurationError when offerId does not match any option`() {
         val option = createGoogleSubscriptionOption("other-offer")
         val rcPackage = createPackageWithSubscriptionOptions(listOf(option))
-        val offerConfig = PlayStoreOfferConfig(offerId = "non-existent-offer")
+        val offerConfig = PromoOfferConfig(offerId = "non-existent-offer")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.ConfigurationError::class.java)
         val error = result as ResolvedOffer.ConfigurationError
@@ -74,9 +74,9 @@ class PlayStoreOfferResolverTest {
         val option2 = createGoogleSubscriptionOption("offer-2")
         val option3 = createGoogleSubscriptionOption("offer-3")
         val rcPackage = createPackageWithSubscriptionOptions(listOf(option1, option2, option3))
-        val offerConfig = PlayStoreOfferConfig(offerId = "offer-2")
+        val offerConfig = PromoOfferConfig(offerId = "offer-2")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.ConfiguredOffer::class.java)
         assertThat(result.subscriptionOption).isEqualTo(option2)
@@ -89,9 +89,9 @@ class PlayStoreOfferResolverTest {
         }
         val googleOption = createGoogleSubscriptionOption("google-offer")
         val rcPackage = createPackageWithSubscriptionOptions(listOf(nonGoogleOption, googleOption))
-        val offerConfig = PlayStoreOfferConfig(offerId = "google-offer")
+        val offerConfig = PromoOfferConfig(offerId = "google-offer")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.ConfiguredOffer::class.java)
         assertThat(result.subscriptionOption).isEqualTo(googleOption)
@@ -104,9 +104,9 @@ class PlayStoreOfferResolverTest {
             options = listOf(defaultOption),
             defaultOption = defaultOption,
         )
-        val offerConfig = PlayStoreOfferConfig(offerId = "non-existent")
+        val offerConfig = PromoOfferConfig(offerId = "non-existent")
 
-        val result = PlayStoreOfferResolver.resolve(rcPackage, offerConfig)
+        val result = PromoOfferResolver.resolve(rcPackage, offerConfig)
 
         assertThat(result).isInstanceOf(ResolvedOffer.ConfigurationError::class.java)
         assertThat(result.subscriptionOption).isEqualTo(defaultOption)

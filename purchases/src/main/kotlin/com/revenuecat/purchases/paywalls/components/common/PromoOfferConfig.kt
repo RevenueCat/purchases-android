@@ -6,16 +6,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Configuration for a specific Play Store Offer to use for a package in a paywall.
- * Similar to iOS's applePromoOfferProductCode.
+ * Configuration for a promo offer to use for a package in a paywall.
+ * On Android, this maps to a Play Store offer ID.
  */
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PlayStoreOfferConfig(
+class PromoOfferConfig(
     /**
-     * The Play Store offer identifier to use for this package.
-     * This should match the offer ID configured in Google Play Console.
+     * The offer identifier to use for this package.
+     * On Android, this should match the offer ID configured in Google Play Console.
      */
     @get:JvmSynthetic
     @SerialName("offer_id")
