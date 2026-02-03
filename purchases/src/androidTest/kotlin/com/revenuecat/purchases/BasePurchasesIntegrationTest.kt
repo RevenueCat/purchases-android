@@ -103,6 +103,7 @@ open class BasePurchasesIntegrationTest {
         _activity = null
         forceServerErrorsStrategy = null
         Purchases.resetSingleton()
+        leakcanary.LeakAssertions.assertNoLeaks()
     }
 
     // region helpers
