@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -42,6 +43,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesEditorDialog
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesHolder
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesViewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -112,7 +116,7 @@ private fun LoadingOfferingsScreen(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongMethod", "LongParameterList")
+@Suppress("LongMethod", "LongParameterList", "ViewModelInjection")
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
@@ -124,10 +128,12 @@ private fun OfferingsListScreen(
     onSearchQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val customVariablesViewModel: CustomVariablesViewModel = viewModel()
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
+    var showCustomVariablesEditor by remember { mutableStateOf(false) }
 
     // Filter offerings based on search query
     val filteredOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
@@ -225,17 +231,34 @@ private fun OfferingsListScreen(
             }
         }
 
-        FloatingActionButton(
-            onClick = {
-                tappedOnReloadOfferings()
-            },
+        Column(
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = "Refresh offerings",
-            )
+            FloatingActionButton(
+                onClick = { showCustomVariablesEditor = true },
+            ) {
+                Text(
+                    text = "{ }",
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            FloatingActionButton(
+                onClick = { tappedOnReloadOfferings() },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh offerings",
+                )
+            }
         }
+    }
+
+    if (showCustomVariablesEditor) {
+        CustomVariablesEditorDialog(
+            viewModel = customVariablesViewModel,
+            onDismiss = { showCustomVariablesEditor = false },
+        )
     }
 
     if (displayPaywallDialogOffering != null) {
@@ -243,6 +266,7 @@ private fun OfferingsListScreen(
             PaywallDialogOptions.Builder()
                 .setDismissRequest { displayPaywallDialogOffering = null }
                 .setOffering(displayPaywallDialogOffering)
+                .setCustomVariables(CustomVariablesHolder.customVariables)
                 .setListener(object : PaywallListener {
                     override fun onPurchaseStarted(rcPackage: RCPackage) {
                         Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")

@@ -51,6 +51,11 @@ class PaywallOptions internal constructor(
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
     internal val dismissRequestWithExitOffering: ((exitOffering: Offering?) -> Unit)? = null,
+    /**
+     * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
+     * `{{ $custom.key }}` placeholders in the paywall configuration.
+     */
+    val customVariables: Map<String, CustomVariableValue> = emptyMap(),
 ) {
     companion object {
         private const val hashMultiplier = 31
@@ -65,6 +70,7 @@ class PaywallOptions internal constructor(
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
         dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
+        customVariables = builder.customVariables,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -74,6 +80,7 @@ class PaywallOptions internal constructor(
         var result = offeringSelection.offeringIdentifier.hashCode()
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
+        result = hashMultiplier * result + customVariables.hashCode()
         return result
     }
 
@@ -88,6 +95,7 @@ class PaywallOptions internal constructor(
             this.listener != other.listener -> false
             this.purchaseLogic != other.purchaseLogic -> false
             this.mode != other.mode -> false
+            this.customVariables != other.customVariables -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -101,6 +109,7 @@ class PaywallOptions internal constructor(
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?) -> Unit)? = this.dismissRequestWithExitOffering,
+        customVariables: Map<String, CustomVariableValue> = this.customVariables,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -110,8 +119,10 @@ class PaywallOptions internal constructor(
         mode = mode,
         dismissRequest = dismissRequest,
         dismissRequestWithExitOffering = dismissRequestWithExitOffering,
+        customVariables = customVariables,
     )
 
+    @Suppress("TooManyFunctions")
     class Builder(
         internal val dismissRequest: () -> Unit,
     ) {
@@ -122,6 +133,7 @@ class PaywallOptions internal constructor(
         internal var purchaseLogic: PurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null
+        internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -169,6 +181,17 @@ class PaywallOptions internal constructor(
 
         internal fun setDismissRequestWithExitOffering(dismissRequestWithExitOffering: ((Offering?) -> Unit)?) = apply {
             this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
+        }
+
+        /**
+         * Sets custom variables to be used in paywall text. These values will replace
+         * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
+         *
+         * @param variables A map of variable names to their [CustomVariableValue] values.
+         */
+        fun setCustomVariables(variables: Map<String, CustomVariableValue>) = apply {
+            CustomVariableKeyValidator.validate(variables)
+            this.customVariables = variables.toMap()
         }
 
         fun build(): PaywallOptions {

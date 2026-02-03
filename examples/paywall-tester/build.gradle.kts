@@ -119,6 +119,7 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
+    debugImplementation(libs.leakcanary.android)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

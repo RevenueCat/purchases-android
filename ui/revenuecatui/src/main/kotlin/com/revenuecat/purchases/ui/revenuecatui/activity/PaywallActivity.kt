@@ -140,6 +140,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                             )
                             .setListener(this@PaywallActivity)
                             .setDismissRequestWithExitOffering(::onDismissRequest)
+                            .setCustomVariables(args?.customVariables ?: emptyMap())
                             .build()
                         val viewModel = getPaywallViewModel(paywallOptions)
 

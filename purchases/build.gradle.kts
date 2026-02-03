@@ -201,6 +201,7 @@ dependencies {
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+    androidTestImplementation(libs.leakcanary.android.instrumentation)
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))

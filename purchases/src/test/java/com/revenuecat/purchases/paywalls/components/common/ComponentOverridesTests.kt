@@ -102,7 +102,7 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                                 properties = PartialTextComponent(fontName = FontAlias("multiple intros font")),
                             ),
                             ComponentOverride(
@@ -218,7 +218,7 @@ internal class ComponentOverridesTests {
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                                conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                                 properties = PartialImageComponent(
                                     overrideSourceLid = LocalizationKey("multiple_intros")
                                 ),
@@ -279,7 +279,7 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
                 arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),
                 arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer),
-                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultipleIntroOffers),
+                arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultiplePhaseOffers),
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),

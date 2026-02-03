@@ -104,7 +104,7 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             -> {
                 if (!windowSize.applicableConditions.contains(condition)) return false
             }
-            ComponentOverride.Condition.MultipleIntroOffers -> {
+            ComponentOverride.Condition.MultiplePhaseOffers -> {
                 if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
             }
             ComponentOverride.Condition.IntroOffer -> {
