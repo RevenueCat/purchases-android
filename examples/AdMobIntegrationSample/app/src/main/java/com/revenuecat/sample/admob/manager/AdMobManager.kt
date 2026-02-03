@@ -22,6 +22,7 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
@@ -80,6 +81,7 @@ class AdMobManager(private val context: Context) {
         adView.onPaidEventListener = OnPaidEventListener { adValue ->
             val responseInfo = adView.responseInfo
             trackAdRevenue(
+                adFormat = AdFormat.BANNER,
                 adUnitId = adUnitId,
                 placement = placement,
                 responseInfo = responseInfo,
@@ -92,24 +94,24 @@ class AdMobManager(private val context: Context) {
             override fun onAdLoaded() {
                 Log.d(TAG, "Banner ad loaded successfully")
                 val responseInfo = adView.responseInfo
-                trackAdLoaded(adUnitId, placement, responseInfo)
+                trackAdLoaded(AdFormat.BANNER, adUnitId, placement, responseInfo)
             }
 
             override fun onAdImpression() {
                 Log.d(TAG, "Banner ad displayed (impression recorded)")
                 val responseInfo = adView.responseInfo
-                trackAdDisplayed(adUnitId, placement, responseInfo)
+                trackAdDisplayed(AdFormat.BANNER, adUnitId, placement, responseInfo)
             }
 
             override fun onAdClicked() {
                 Log.d(TAG, "Banner ad clicked (opened)")
                 val responseInfo = adView.responseInfo
-                trackAdOpened(adUnitId, placement, responseInfo)
+                trackAdOpened(AdFormat.BANNER, adUnitId, placement, responseInfo)
             }
 
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                 Log.e(TAG, "Banner ad failed to load: ${loadAdError.message}")
-                trackAdFailedToLoad(adUnitId, placement, loadAdError)
+                trackAdFailedToLoad(AdFormat.BANNER, adUnitId, placement, loadAdError)
             }
         }
 
@@ -152,11 +154,12 @@ class AdMobManager(private val context: Context) {
                     interstitialAd = ad
 
                     val responseInfo = ad.responseInfo
-                    trackAdLoaded(adUnitId, placement, responseInfo)
+                    trackAdLoaded(AdFormat.INTERSTITIAL, adUnitId, placement, responseInfo)
 
                     // Set up OnPaidEventListener for revenue tracking
                     ad.onPaidEventListener = OnPaidEventListener { adValue ->
                         trackAdRevenue(
+                            adFormat = AdFormat.INTERSTITIAL,
                             adUnitId = adUnitId,
                             placement = placement,
                             responseInfo = ad.responseInfo,
@@ -168,12 +171,12 @@ class AdMobManager(private val context: Context) {
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdShowedFullScreenContent() {
                             Log.d(TAG, "Interstitial ad displayed")
-                            trackAdDisplayed(adUnitId, placement, ad.responseInfo)
+                            trackAdDisplayed(AdFormat.INTERSTITIAL, adUnitId, placement, ad.responseInfo)
                         }
 
                         override fun onAdClicked() {
                             Log.d(TAG, "Interstitial ad clicked (opened)")
-                            trackAdOpened(adUnitId, placement, ad.responseInfo)
+                            trackAdOpened(AdFormat.INTERSTITIAL, adUnitId, placement, ad.responseInfo)
                         }
 
                         override fun onAdDismissedFullScreenContent() {
@@ -193,7 +196,7 @@ class AdMobManager(private val context: Context) {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     Log.e(TAG, "Interstitial ad failed to load: ${loadAdError.message}")
                     interstitialAd = null
-                    trackAdFailedToLoad(adUnitId, placement, loadAdError)
+                    trackAdFailedToLoad(AdFormat.INTERSTITIAL, adUnitId, placement, loadAdError)
                     onAdFailedToLoad?.invoke(loadAdError.message)
                 }
             }
@@ -254,11 +257,12 @@ class AdMobManager(private val context: Context) {
                     appOpenAd = ad
 
                     val responseInfo = ad.responseInfo
-                    trackAdLoaded(adUnitId, placement, responseInfo)
+                    trackAdLoaded(AdFormat.APP_OPEN, adUnitId, placement, responseInfo)
 
                     // Set up OnPaidEventListener for revenue tracking
                     ad.onPaidEventListener = OnPaidEventListener { adValue ->
                         trackAdRevenue(
+                            adFormat = AdFormat.APP_OPEN,
                             adUnitId = adUnitId,
                             placement = placement,
                             responseInfo = ad.responseInfo,
@@ -270,12 +274,12 @@ class AdMobManager(private val context: Context) {
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdShowedFullScreenContent() {
                             Log.d(TAG, "App open ad displayed")
-                            trackAdDisplayed(adUnitId, placement, ad.responseInfo)
+                            trackAdDisplayed(AdFormat.APP_OPEN, adUnitId, placement, ad.responseInfo)
                         }
 
                         override fun onAdClicked() {
                             Log.d(TAG, "App open ad clicked (opened)")
-                            trackAdOpened(adUnitId, placement, ad.responseInfo)
+                            trackAdOpened(AdFormat.APP_OPEN, adUnitId, placement, ad.responseInfo)
                         }
 
                         override fun onAdDismissedFullScreenContent() {
@@ -295,7 +299,7 @@ class AdMobManager(private val context: Context) {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     Log.e(TAG, "App open ad failed to load: ${loadAdError.message}")
                     appOpenAd = null
-                    trackAdFailedToLoad(adUnitId, placement, loadAdError)
+                    trackAdFailedToLoad(AdFormat.APP_OPEN, adUnitId, placement, loadAdError)
                     onAdFailedToLoad?.invoke(loadAdError.message)
                 }
             }
@@ -350,11 +354,12 @@ class AdMobManager(private val context: Context) {
                 currentNativeAd = nativeAd
 
                 val responseInfo = nativeAd.responseInfo
-                trackAdLoaded(adUnitId, placement, responseInfo)
+                trackAdLoaded(AdFormat.NATIVE, adUnitId, placement, responseInfo)
 
                 // Set up OnPaidEventListener for revenue tracking
                 nativeAd.setOnPaidEventListener { adValue ->
                     trackAdRevenue(
+                        adFormat = AdFormat.NATIVE,
                         adUnitId = adUnitId,
                         placement = placement,
                         responseInfo = nativeAd.responseInfo,
@@ -368,13 +373,13 @@ class AdMobManager(private val context: Context) {
                 override fun onAdClicked() {
                     Log.d(TAG, "Native ad clicked (opened)")
                     currentNativeAd?.let { nativeAd ->
-                        trackAdOpened(adUnitId, placement, nativeAd.responseInfo)
+                        trackAdOpened(AdFormat.NATIVE, adUnitId, placement, nativeAd.responseInfo)
                     }
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     Log.e(TAG, "Native ad failed to load: ${loadAdError.message}")
-                    trackAdFailedToLoad(adUnitId, placement, loadAdError)
+                    trackAdFailedToLoad(AdFormat.NATIVE, adUnitId, placement, loadAdError)
                     onAdFailedToLoad?.invoke(loadAdError.message)
                 }
             })
@@ -399,7 +404,7 @@ class AdMobManager(private val context: Context) {
         nativeAd: NativeAd
     ) {
         Log.d(TAG, "Native ad displayed (manually tracked)")
-        trackAdDisplayed(adUnitId, placement, nativeAd.responseInfo)
+        trackAdDisplayed(AdFormat.NATIVE, adUnitId, placement, nativeAd.responseInfo)
     }
 
     /**
@@ -425,6 +430,7 @@ class AdMobManager(private val context: Context) {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     Log.d(TAG, "Expected error occurred: ${loadAdError.message}")
                     trackAdFailedToLoad(
+                        AdFormat.INTERSTITIAL,
                         Constants.AdMob.INVALID_AD_UNIT_ID,
                         placement,
                         loadAdError
@@ -444,6 +450,7 @@ class AdMobManager(private val context: Context) {
      * Maps to: Purchases.sharedInstance.adTracker.trackAdLoaded()
      */
     private fun trackAdLoaded(
+        adFormat: AdFormat,
         adUnitId: String,
         placement: String,
         responseInfo: ResponseInfo?
@@ -452,12 +459,13 @@ class AdMobManager(private val context: Context) {
             val data = AdLoadedData(
                 networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = adFormat,
                 placement = placement,
                 adUnitId = adUnitId,
                 impressionId = responseInfo?.responseId ?: ""
             )
             Purchases.sharedInstance.adTracker.trackAdLoaded(data)
-            Log.d(TAG, "✅ Tracked: Ad Loaded - placement=$placement")
+            Log.d(TAG, "✅ Tracked: Ad Loaded (format=${adFormat}) - placement=$placement")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to track ad loaded event", e)
         }
@@ -469,6 +477,7 @@ class AdMobManager(private val context: Context) {
      * Maps to: Purchases.sharedInstance.adTracker.trackAdDisplayed()
      */
     private fun trackAdDisplayed(
+        adFormat: AdFormat,
         adUnitId: String,
         placement: String,
         responseInfo: ResponseInfo?
@@ -477,12 +486,13 @@ class AdMobManager(private val context: Context) {
             val data = AdDisplayedData(
                 networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = adFormat,
                 placement = placement,
                 adUnitId = adUnitId,
                 impressionId = responseInfo?.responseId ?: ""
             )
             Purchases.sharedInstance.adTracker.trackAdDisplayed(data)
-            Log.d(TAG, "✅ Tracked: Ad Displayed - placement=$placement")
+            Log.d(TAG, "✅ Tracked: Ad Displayed (format=${adFormat}) - placement=$placement")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to track ad displayed event", e)
         }
@@ -494,6 +504,7 @@ class AdMobManager(private val context: Context) {
      * Maps to: Purchases.sharedInstance.adTracker.trackAdOpened()
      */
     private fun trackAdOpened(
+        adFormat: AdFormat,
         adUnitId: String,
         placement: String,
         responseInfo: ResponseInfo?
@@ -502,12 +513,13 @@ class AdMobManager(private val context: Context) {
             val data = AdOpenedData(
                 networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = adFormat,
                 placement = placement,
                 adUnitId = adUnitId,
                 impressionId = responseInfo?.responseId ?: ""
             )
             Purchases.sharedInstance.adTracker.trackAdOpened(data)
-            Log.d(TAG, "✅ Tracked: Ad Opened - placement=$placement")
+            Log.d(TAG, "✅ Tracked: Ad Opened (format=${adFormat}) - placement=$placement")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to track ad opened event", e)
         }
@@ -523,6 +535,7 @@ class AdMobManager(private val context: Context) {
      * RevenueCat expects revenueMicros, so we pass the value directly.
      */
     private fun trackAdRevenue(
+        adFormat: AdFormat,
         adUnitId: String,
         placement: String,
         responseInfo: ResponseInfo?,
@@ -532,6 +545,7 @@ class AdMobManager(private val context: Context) {
             val data = AdRevenueData(
                 networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = adFormat,
                 placement = placement,
                 adUnitId = adUnitId,
                 impressionId = responseInfo?.responseId ?: "",
@@ -542,7 +556,7 @@ class AdMobManager(private val context: Context) {
             Purchases.sharedInstance.adTracker.trackAdRevenue(data)
 
             val revenueInDollars = adValue.valueMicros / 1_000_000.0
-            Log.d(TAG, "✅ Tracked: Ad Revenue - $${revenueInDollars} ${adValue.currencyCode} " +
+            Log.d(TAG, "✅ Tracked: Ad Revenue (format=${adFormat}) - $${revenueInDollars} ${adValue.currencyCode} " +
                     "(precision: ${data.precision}) - placement=$placement")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to track ad revenue event", e)
@@ -555,6 +569,7 @@ class AdMobManager(private val context: Context) {
      * Maps to: Purchases.sharedInstance.adTracker.trackAdFailedToLoad()
      */
     private fun trackAdFailedToLoad(
+        adFormat: AdFormat,
         adUnitId: String,
         placement: String,
         loadAdError: LoadAdError
@@ -563,12 +578,13 @@ class AdMobManager(private val context: Context) {
             val data = AdFailedToLoadData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
+                adFormat = adFormat,
                 placement = placement,
                 adUnitId = adUnitId,
                 mediatorErrorCode = loadAdError.code
             )
             Purchases.sharedInstance.adTracker.trackAdFailedToLoad(data)
-            Log.d(TAG, "✅ Tracked: Ad Failed to Load - code=${loadAdError.code}, " +
+            Log.d(TAG, "✅ Tracked: Ad Failed to Load (format=${adFormat}) - code=${loadAdError.code}, " +
                     "message=${loadAdError.message}, placement=$placement")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to track ad failed to load event", e)

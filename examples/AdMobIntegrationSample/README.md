@@ -62,7 +62,7 @@ This suppresses the "internal RevenueCat API" warnings during compilation.
 - **Android Studio** Hedgehog or later
 - **Android API 26+** (Android 8.0 Oreo or higher)
 - **Kotlin 2.0.21**
-- **RevenueCat SDK 9.17.0-SNAPSHOT** or later
+- **RevenueCat SDK 9.19.4** or later
 - **Google Mobile Ads SDK 24.9.0**
 
 ---
@@ -224,6 +224,7 @@ adView.onPaidEventListener = OnPaidEventListener { adValue ->
         data = AdRevenueData(
             networkName = adView.responseInfo?.mediationAdapterClassName ?: "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-xxxxx",
             impressionId = adView.responseInfo?.responseId ?: "",
@@ -329,7 +330,7 @@ This limitation only affects native and native video ad formats. Banner and inte
 ### Issue: Build errors or warnings about `@ExperimentalPreviewRevenueCatPurchasesAPI`
 
 **Solution:** Make sure you have:
-1. The latest RevenueCat SDK (9.17.0-SNAPSHOT or later)
+1. The latest RevenueCat SDK (9.19.4 or later)
 2. Both code-level and module-level opt-in configured
 
 See the [Required Setup](#required-setup) section above for detailed instructions on configuring the opt-in.
