@@ -16,7 +16,6 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
-import com.revenuecat.purchases.paywalls.components.common.SerializableReplacementMode
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -35,8 +34,8 @@ class ProductChangeCalculatorTest {
     private lateinit var calculator: ProductChangeCalculator
 
     private val defaultProductChangeConfig = ProductChangeConfig(
-        upgradeReplacementMode = SerializableReplacementMode.CHARGE_PRORATED_PRICE,
-        downgradeReplacementMode = SerializableReplacementMode.DEFERRED,
+        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
     )
 
     @Before
@@ -270,8 +269,8 @@ class ProductChangeCalculatorTest {
         )
 
         val customConfig = ProductChangeConfig(
-            upgradeReplacementMode = SerializableReplacementMode.CHARGE_FULL_PRICE,
-            downgradeReplacementMode = SerializableReplacementMode.WITH_TIME_PRORATION,
+            upgradeReplacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            downgradeReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
         )
 
         val result = calculator.calculateProductChangeInfo(

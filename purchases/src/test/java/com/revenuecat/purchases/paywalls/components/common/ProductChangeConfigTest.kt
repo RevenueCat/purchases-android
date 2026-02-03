@@ -29,8 +29,8 @@ class ProductChangeConfigTest(
                 Args(
                     json = """{}""",
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = SerializableReplacementMode.CHARGE_PRORATED_PRICE,
-                        downgradeReplacementMode = SerializableReplacementMode.DEFERRED,
+                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+                        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
                     ),
                 ),
             ),
@@ -44,8 +44,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = SerializableReplacementMode.CHARGE_PRORATED_PRICE,
-                        downgradeReplacementMode = SerializableReplacementMode.DEFERRED,
+                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+                        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
                     ),
                 ),
             ),
@@ -59,8 +59,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = SerializableReplacementMode.CHARGE_FULL_PRICE,
-                        downgradeReplacementMode = SerializableReplacementMode.WITH_TIME_PRORATION,
+                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+                        downgradeReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
                     ),
                 ),
             ),
@@ -74,8 +74,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = SerializableReplacementMode.WITHOUT_PRORATION,
-                        downgradeReplacementMode = SerializableReplacementMode.WITHOUT_PRORATION,
+                        upgradeReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
+                        downgradeReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
                     ),
                 ),
             ),
@@ -87,67 +87,5 @@ class ProductChangeConfigTest(
         val actual = JsonTools.json.decodeFromString<ProductChangeConfig>(args.json)
 
         assert(actual == args.expected)
-    }
-}
-
-@RunWith(Parameterized::class)
-class SerializableReplacementModeTest(
-    @Suppress("UNUSED_PARAMETER") name: String,
-    private val args: Args,
-) {
-
-    class Args(
-        val mode: SerializableReplacementMode,
-        val expectedGoogleMode: GoogleReplacementMode,
-    )
-
-    companion object {
-
-        @JvmStatic
-        @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
-            arrayOf(
-                "WITHOUT_PRORATION",
-                Args(
-                    mode = SerializableReplacementMode.WITHOUT_PRORATION,
-                    expectedGoogleMode = GoogleReplacementMode.WITHOUT_PRORATION,
-                ),
-            ),
-            arrayOf(
-                "WITH_TIME_PRORATION",
-                Args(
-                    mode = SerializableReplacementMode.WITH_TIME_PRORATION,
-                    expectedGoogleMode = GoogleReplacementMode.WITH_TIME_PRORATION,
-                ),
-            ),
-            arrayOf(
-                "CHARGE_FULL_PRICE",
-                Args(
-                    mode = SerializableReplacementMode.CHARGE_FULL_PRICE,
-                    expectedGoogleMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
-                ),
-            ),
-            arrayOf(
-                "CHARGE_PRORATED_PRICE",
-                Args(
-                    mode = SerializableReplacementMode.CHARGE_PRORATED_PRICE,
-                    expectedGoogleMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-                ),
-            ),
-            arrayOf(
-                "DEFERRED",
-                Args(
-                    mode = SerializableReplacementMode.DEFERRED,
-                    expectedGoogleMode = GoogleReplacementMode.DEFERRED,
-                ),
-            ),
-        )
-    }
-
-    @Test
-    fun `Should properly convert to GoogleReplacementMode`() {
-        val actual = args.mode.toGoogleReplacementMode()
-
-        assert(actual == args.expectedGoogleMode)
     }
 }

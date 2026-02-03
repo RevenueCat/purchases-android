@@ -5,6 +5,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -59,9 +60,8 @@ internal class ProductChangeCalculator(
     ): ProductChangeInfo? {
         val oldSubscriptionId = activePlayStoreSubscription.productIdentifier
         val oldBasePlanId = activePlayStoreSubscription.productPlanIdentifier
-        val newProductIdentifier = packageToPurchase.product.id
 
-        val (newSubscriptionId, _) = parseProductIdentifier(newProductIdentifier)
+        val (newSubscriptionId, _) = packageToPurchase.product.subscriptionIdentifiers()
 
         if (oldSubscriptionId == newSubscriptionId) {
             Logger.d("Same product ($newSubscriptionId), Google handles base plan change automatically")
@@ -83,13 +83,13 @@ internal class ProductChangeCalculator(
                 "Detected upgrade: $oldSubscriptionId -> $newSubscriptionId " +
                     "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
             )
-            productChangeConfig.upgradeReplacementMode.toGoogleReplacementMode()
+            productChangeConfig.upgradeReplacementMode
         } else {
             Logger.d(
                 "Detected downgrade: $oldSubscriptionId -> $newSubscriptionId " +
                     "(old: $oldNormalizedPrice, new: $newNormalizedPrice, sandbox: $isSandbox)",
             )
-            productChangeConfig.downgradeReplacementMode.toGoogleReplacementMode()
+            productChangeConfig.downgradeReplacementMode
         }
 
         return ProductChangeInfo(
@@ -133,6 +133,13 @@ internal class ProductChangeCalculator(
                 totalMonths >= MONTHS_IN_HALF_YEAR -> SANDBOX_HALF_YEAR_MINUTES
                 totalMonths >= MONTHS_IN_QUARTER -> SANDBOX_QUARTER_MINUTES
                 else -> SANDBOX_MONTHLY_MINUTES
+            }
+        }
+
+        internal fun StoreProduct.subscriptionIdentifiers(): Pair<String, String?> {
+            return when (this) {
+                is GoogleStoreProduct -> this.productId to this.basePlanId
+                else -> parseProductIdentifier(this.id)
             }
         }
     }
