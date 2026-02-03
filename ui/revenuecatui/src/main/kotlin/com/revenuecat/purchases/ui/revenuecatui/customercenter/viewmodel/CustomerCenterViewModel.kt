@@ -135,6 +135,17 @@ internal interface CustomerCenterViewModel {
     fun showCreateSupportTicket()
 
     fun dismissSupportTicketSuccessSnackbar()
+
+    /**
+     * Called when the activity is stopped. Used to track if the user backgrounded the app.
+     * @param isChangingConfigurations true if the stop is due to a configuration change (e.g., rotation)
+     */
+    fun onActivityStopped(isChangingConfigurations: Boolean)
+
+    /**
+     * Called when the activity is started. Triggers a refresh if the user is returning from background.
+     */
+    fun onActivityStarted()
 }
 
 @Stable
@@ -182,6 +193,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
+    private var wasBackgrounded = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -967,9 +979,28 @@ internal class CustomerCenterViewModelImpl(
             _state.update { currentState ->
                 if (isRefresh && currentState is CustomerCenterState.Success) {
                     // On error during refresh, keep the existing state but clear isRefreshing
+                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
                     currentState.copy(isRefreshing = false)
                 } else {
                     CustomerCenterState.Error(e.error)
+                }
+            }
+        }
+    }
+
+    override fun onActivityStopped(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) {
+            wasBackgrounded = true
+        }
+    }
+
+    override fun onActivityStarted() {
+        if (wasBackgrounded) {
+            wasBackgrounded = false
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+                viewModelScope.launch {
+                    refreshCustomerCenter()
                 }
             }
         }

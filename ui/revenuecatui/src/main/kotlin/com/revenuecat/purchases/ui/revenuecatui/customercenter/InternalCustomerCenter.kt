@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,22 +30,23 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.PurchasesError
@@ -112,26 +114,29 @@ internal fun InternalCustomerCenter(
         viewModel.trackImpressionIfNeeded()
     }
 
-    // Refresh Customer Center data when activity resumes after being paused
+    // Refresh Customer Center data when activity resumes after being backgrounded.
     // This matches iOS behavior where we refresh when the manage subscriptions sheet is dismissed.
-    // When the user opens the manage subscriptions screen (Google Play Store), the activity pauses.
-    // When they return and dismiss it, the activity resumes, and we refresh to show updated subscription status.
-    var wasPaused by remember { mutableStateOf(false) }
-    val currentState by rememberUpdatedState(state)
-    LifecycleResumeEffect(Unit) {
-        // Refresh when resuming after being paused (user returned from manage subscriptions screen)
-        // Only refresh if we have a loaded state (to avoid refreshing during initial load)
-        // and not already refreshing (to avoid race condition)
-        val stateSnapshot = currentState
-        if (wasPaused && stateSnapshot is CustomerCenterState.Success && !stateSnapshot.isRefreshing) {
-            coroutineScope.launch {
-                viewModel.refreshCustomerCenter()
+    // When the user opens the manage subscriptions screen (Google Play Store), the activity stops.
+    // When they return, the activity starts again, and we refresh to show updated subscription status.
+    // Using ON_STOP/ON_START with isChangingConfigurations check to properly handle configuration changes
+    // (e.g., rotation) without triggering false refreshes.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val activity = context as? Activity
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    viewModel.onActivityStopped(activity?.isChangingConfigurations == true)
+                }
+                Lifecycle.Event.ON_START -> {
+                    viewModel.onActivityStarted()
+                }
+                else -> {}
             }
         }
-        wasPaused = false
-
-        onPauseOrDispose {
-            wasPaused = true
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
