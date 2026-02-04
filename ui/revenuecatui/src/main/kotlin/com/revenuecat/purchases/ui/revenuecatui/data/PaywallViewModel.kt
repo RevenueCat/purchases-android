@@ -501,7 +501,6 @@ internal class PaywallViewModelImpl(
                     }
                     val purchaseParamsBuilder = PurchaseParams.Builder(activity, packageToPurchase)
 
-                    // Apply product change configuration if detected
                     if (productChangeInfo != null) {
                         Logger.d(
                             "Performing product change from ${productChangeInfo.oldProductId} " +

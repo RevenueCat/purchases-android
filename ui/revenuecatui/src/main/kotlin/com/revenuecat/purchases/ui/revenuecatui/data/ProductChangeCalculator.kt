@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.models.GoogleReplacementMode
@@ -47,7 +48,7 @@ internal class ProductChangeCalculator(
                         productChangeConfig = productChangeConfig,
                     )
                 }
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        } catch (e: PurchasesException) {
             Logger.e("Error determining product change info: ${e.message}")
             null
         }
