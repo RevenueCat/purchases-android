@@ -136,13 +136,13 @@ private fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
 ): Pair<URI?, ImageComponentStyle?> {
-    // Fallback style without border/shadow/margin/padding - parent Box handles those
     val fallbackImageViewStyle: ImageComponentStyle? = remember(style.fallbackSources) {
         style.fallbackSources?.let { sources ->
             ImageComponentStyle(
                 sources = sources,
                 visible = style.visible,
                 size = style.size,
+                // parent Box already handles padding, border, etc
                 padding = PaddingValues(0.dp),
                 margin = PaddingValues(0.dp),
                 shape = null,
@@ -152,7 +152,7 @@ private fun rememberVideoContentState(
                 contentScale = style.contentScale,
                 rcPackage = style.rcPackage,
                 tabIndex = style.tabIndex,
-                overrides = emptyList(),
+                overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
                 ignoreTopWindowInsets = style.ignoreTopWindowInsets,
             )
         }
