@@ -81,7 +81,6 @@ internal class StackComponentState(
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
     private val selected by derivedStateOf {
         if (style.rcPackage != null) {
-            // Fallback to package identifier comparison for backwards compatibility
             style.rcPackage.identifier == selectedPackageProvider()?.identifier
         } else if (style.tabIndex != null) {
             style.tabIndex == selectedTabIndexProvider()
