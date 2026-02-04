@@ -103,7 +103,6 @@ package com.revenuecat.purchases.ui.revenuecatui {
   }
 
   public interface PurchaseLogic {
-    method public default suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig? productChangeConfig, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
     method public suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
     method public suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
   }
@@ -127,9 +126,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
 
   public abstract class PurchaseLogicWithCallback implements com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
     ctor public PurchaseLogicWithCallback();
-    method public final suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig? productChangeConfig, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
     method public final suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
-    method public void performPurchaseWithCompletion(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig? productChangeConfig, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
     method public abstract void performPurchaseWithCompletion(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
     method public final suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
     method public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);

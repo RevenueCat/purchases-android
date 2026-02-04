@@ -458,6 +458,8 @@ internal class PaywallViewModelImpl(
         }
 
         try {
+            val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
+
             trackPaywallPurchaseInitiated(packageToPurchase)
 
             val productChangeInfo = productChangeConfig?.let {
@@ -466,17 +468,11 @@ internal class PaywallViewModelImpl(
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    val logic = checkNotNull(purchaseLogic) {
+                    checkNotNull(customPurchaseHandler) {
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
-                    when (
-                        val result = logic.performPurchase(
-                            activity,
-                            packageToPurchase,
-                            productChangeConfig,
-                        )
-                    ) {
+                    when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
                             _purchaseCompleted.value = true
@@ -496,7 +492,7 @@ internal class PaywallViewModelImpl(
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     listener?.onPurchaseStarted(packageToPurchase)
-                    if (purchaseLogic != null) {
+                    if (customPurchaseHandler != null) {
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
