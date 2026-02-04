@@ -13,10 +13,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
@@ -58,11 +58,33 @@ internal fun VideoComponentView(
         var videoReady by remember { mutableStateOf(false) }
         val view = LocalView.current
 
-        // Get video URL and fallback - only when visible to avoid initializing all videos at once
-        val (videoUrl, fallbackStyle) = if (isVisible) {
-            rememberVideoContentState(style, videoState.videoUrls, repository)
+        // Fallback style - always available so it shows while scrolling
+        val fallbackStyle = remember(style.fallbackSources) {
+            style.fallbackSources?.let { sources ->
+                ImageComponentStyle(
+                    sources = sources,
+                    visible = style.visible,
+                    size = style.size,
+                    padding = PaddingValues(0.dp),
+                    margin = PaddingValues(0.dp),
+                    shape = null,
+                    border = null,
+                    shadow = null,
+                    overlay = style.overlay,
+                    contentScale = style.contentScale,
+                    rcPackage = style.rcPackage,
+                    tabIndex = style.tabIndex,
+                    overrides = emptyList(),
+                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                )
+            }
+        }
+
+        // Get video URL - only when visible to avoid initializing all videos at once
+        val videoUrl = if (isVisible) {
+            rememberVideoContentState(style, videoState.videoUrls, repository).first
         } else {
-            null to null
+            null
         }
 
         Box(
@@ -74,14 +96,10 @@ internal fun VideoComponentView(
                 .clip(composeShape)
                 .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) }
                 .onGloballyPositioned { coordinates ->
-                    isVisible = coordinates.isVisibleInWindow(view.width, view.height)
+                    isVisible = coordinates.boundsInWindow().isVisibleInViewport(view.width, view.height)
                 },
         ) {
-            // Show fallback until video's first frame is rendered
-            if (fallbackStyle != null && !videoReady) {
-                ImageComponentView(fallbackStyle, state)
-            }
-
+            // VideoView renders first (underneath)
             if (isVisible && videoUrl != null) {
                 VideoView(
                     videoUri = videoUrl.toString(),
@@ -98,37 +116,18 @@ internal fun VideoComponentView(
                     onReady = { videoReady = true },
                 )
             }
+
+            // Fallback shows on top until video's first frame is rendered
+            if (fallbackStyle != null && !videoReady) {
+                ImageComponentView(fallbackStyle, state)
+            }
         }
     }
 }
 
 @JvmSynthetic
-internal fun LayoutCoordinates.isVisibleInWindow(windowWidth: Int, windowHeight: Int): Boolean {
-    val position = positionInWindow()
-    return isVisibleInWindow(
-        componentX = position.x,
-        componentY = position.y,
-        componentWidth = size.width,
-        componentHeight = size.height,
-        windowWidth = windowWidth,
-        windowHeight = windowHeight,
-    )
-}
-
-@Suppress("LongParameterList")
-@JvmSynthetic
-internal fun isVisibleInWindow(
-    componentX: Float,
-    componentY: Float,
-    componentWidth: Int,
-    componentHeight: Int,
-    windowWidth: Int,
-    windowHeight: Int,
-): Boolean {
-    val componentRight = componentX + componentWidth
-    val componentBottom = componentY + componentHeight
-    return componentX < windowWidth && componentRight > 0 &&
-        componentY < windowHeight && componentBottom > 0
+internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): Boolean {
+    return right > 0 && bottom > 0 && left < viewportWidth && top < viewportHeight
 }
 
 @Composable
