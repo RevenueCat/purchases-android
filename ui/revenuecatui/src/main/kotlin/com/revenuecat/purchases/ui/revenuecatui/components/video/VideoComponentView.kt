@@ -58,33 +58,11 @@ internal fun VideoComponentView(
         var videoReady by remember { mutableStateOf(false) }
         val view = LocalView.current
 
-        // Get video URL - only when visible to avoid initializing all videos at once
-        val videoUrl = if (isVisible) {
-            rememberVideoContentState(style, videoState.videoUrls, repository).first
+        // Get video URL and fallback - only when visible to avoid initializing all videos at once
+        val (videoUrl, fallbackStyle) = if (isVisible) {
+            rememberVideoContentState(style, videoState.videoUrls, repository)
         } else {
-            null
-        }
-
-        // Stripped fallback (no border/shadow) for showing until first frame renders
-        val firstFrameFallback = remember(style.fallbackSources) {
-            style.fallbackSources?.let { sources ->
-                ImageComponentStyle(
-                    sources = sources,
-                    visible = style.visible,
-                    size = style.size,
-                    padding = PaddingValues(0.dp),
-                    margin = PaddingValues(0.dp),
-                    shape = null,
-                    border = null,
-                    shadow = null,
-                    overlay = style.overlay,
-                    contentScale = style.contentScale,
-                    rcPackage = style.rcPackage,
-                    tabIndex = style.tabIndex,
-                    overrides = emptyList(),
-                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-                )
-            }
+            null to null
         }
 
         Box(
@@ -100,8 +78,8 @@ internal fun VideoComponentView(
                 },
         ) {
             // Show fallback until video's first frame is rendered
-            if (firstFrameFallback != null && !videoReady) {
-                ImageComponentView(firstFrameFallback, state)
+            if (fallbackStyle != null && !videoReady) {
+                ImageComponentView(fallbackStyle, state)
             }
 
             if (isVisible && videoUrl != null) {
@@ -159,28 +137,25 @@ private fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
 ): Pair<URI?, ImageComponentStyle?> {
-    var fallbackImageViewStyle: ImageComponentStyle? by remember(style.fallbackSources) {
-        if (style.fallbackSources != null) {
-            mutableStateOf(
-                ImageComponentStyle(
-                    sources = style.fallbackSources,
-                    visible = style.visible,
-                    size = style.size,
-                    padding = style.padding,
-                    margin = style.margin,
-                    shape = style.shape,
-                    border = style.border,
-                    shadow = style.shadow,
-                    overlay = style.overlay,
-                    contentScale = style.contentScale,
-                    rcPackage = style.rcPackage,
-                    tabIndex = style.tabIndex,
-                    overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
-                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-                ),
+    // Fallback style without border/shadow/margin/padding - parent Box handles those
+    val fallbackImageViewStyle: ImageComponentStyle? = remember(style.fallbackSources) {
+        style.fallbackSources?.let { sources ->
+            ImageComponentStyle(
+                sources = sources,
+                visible = style.visible,
+                size = style.size,
+                padding = PaddingValues(0.dp),
+                margin = PaddingValues(0.dp),
+                shape = null,
+                border = null,
+                shadow = null,
+                overlay = style.overlay,
+                contentScale = style.contentScale,
+                rcPackage = style.rcPackage,
+                tabIndex = style.tabIndex,
+                overrides = emptyList(),
+                ignoreTopWindowInsets = style.ignoreTopWindowInsets,
             )
-        } else {
-            mutableStateOf(null)
         }
     }
 
@@ -196,8 +171,6 @@ private fun rememberVideoContentState(
 
             val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
             videoUrl = url
-            // If we have a cached video, no need to display a fallback image
-            fallbackImageViewStyle = null
         } catch (_: Exception) {
             videoUrl = videoUrls.url.toString().let(::URI)
         }
@@ -209,18 +182,10 @@ private fun rememberVideoContentState(
             ?.run {
                 videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
 
-                if (videoUrl != null) {
-                    // If we have a cached video, no need to display a fallback image
-                    fallbackImageViewStyle = null
-                }
-
                 LaunchedEffect(Unit) {
                     fetchVideoUrl(setLowResVideoURLFirst = videoUrl == null)
                 }
             }
-    } else {
-        // If we have a cached video, no need to display a fallback image
-        fallbackImageViewStyle = null
     }
 
     if (videoUrl == null) {
