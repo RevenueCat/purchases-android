@@ -54,7 +54,6 @@ internal fun rememberUpdatedImageComponentState(
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
 )
 
-@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
