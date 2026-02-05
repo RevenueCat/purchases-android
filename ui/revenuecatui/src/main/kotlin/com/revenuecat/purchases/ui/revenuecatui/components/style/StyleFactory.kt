@@ -63,8 +63,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderSt
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -246,10 +248,10 @@ internal class StyleFactory(
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
-        val packageUniqueId: String?
-            get() = packageInfo?.uniqueId
         val resolvedOffer: ResolvedOffer?
             get() = packageInfo?.resolvedOffer
+        val offerEligibility: OfferEligibility?
+            get() = packageInfo?.let { calculateOfferEligibility(it.resolvedOffer, it.pkg) }
 
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
@@ -737,9 +739,9 @@ internal class StyleFactory(
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
             overrides = presentedOverrides,
@@ -787,9 +789,9 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
             variableLocalizations = variableLocalizations,
@@ -827,9 +829,9 @@ internal class StyleFactory(
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
         )
@@ -877,9 +879,9 @@ internal class StyleFactory(
             padding = component.padding?.toPaddingValues() ?: PaddingValues(),
             margin = component.margin?.toPaddingValues() ?: PaddingValues(),
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
             autoplay = component.autoplay,
@@ -916,9 +918,9 @@ internal class StyleFactory(
                 margin = component.margin.toPaddingValues(),
                 iconBackground = background,
                 rcPackage = rcPackage,
-                packageUniqueId = packageUniqueId,
                 resolvedOffer = resolvedOffer,
                 tabIndex = tabControlIndex,
+                offerEligibility = offerEligibility,
                 overrides = presentedOverrides,
             )
         }
@@ -944,9 +946,9 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             items = items,
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }
@@ -980,9 +982,9 @@ internal class StyleFactory(
             icon = icon,
             connector = connectorStyle,
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }
@@ -1019,9 +1021,9 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
-            packageUniqueId = packageUniqueId,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }

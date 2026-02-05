@@ -31,7 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -44,6 +43,7 @@ internal fun rememberUpdatedTextComponentState(
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
 )
 
 @Stable
@@ -54,10 +54,10 @@ private fun rememberUpdatedTextComponentState(
     localeProvider: () -> Locale,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
+    selectedOfferEligibilityProvider: () -> OfferEligibility,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
-    // Create countdown state once if this text is inside a countdown component
     val countdownState = style.countdownDate?.let { date ->
         rememberCountdownState(date)
     }
@@ -69,6 +69,7 @@ private fun rememberUpdatedTextComponentState(
             localeProvider = localeProvider,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -85,8 +86,22 @@ internal class TextComponentState(
     private val localeProvider: () -> Locale,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+
+    private val isSelected by derivedStateOf {
+        style.computeIsSelected(
+            selectedPackageInfo = selectedPackageInfoProvider(),
+            selectedTabIndex = selectedTabIndexProvider(),
+        )
+    }
+
+    private val offerEligibility by derivedStateOf {
+        style.resolveOfferEligibility(
+            selectedOfferEligibility = selectedOfferEligibilityProvider(),
+        )
+    }
 
     /**
      * The current countdown time, if this text is inside a countdown component.
@@ -97,16 +112,6 @@ internal class TextComponentState(
      */
     var countdownTime by mutableStateOf<CountdownTime?>(null)
         private set
-
-    private val selected by derivedStateOf {
-        val selectedInfo = selectedPackageInfoProvider()
-        when {
-            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
-            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
-            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
-            else -> false
-        }
-    }
 
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
@@ -128,19 +133,9 @@ internal class TextComponentState(
     val countFrom: CountdownComponent.CountFrom
         get() = style.countFrom
 
-    private val offerEligibility by derivedStateOf {
-        if (style.rcPackage != null) {
-            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
-        } else {
-            selectedPackageInfoProvider()?.let {
-                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
-            } ?: OfferEligibility.Ineligible
-        }
-    }
-
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val componentState = if (isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
         style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }

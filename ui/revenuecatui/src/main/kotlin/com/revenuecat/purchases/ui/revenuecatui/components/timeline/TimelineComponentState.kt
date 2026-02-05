@@ -16,7 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -28,6 +27,7 @@ internal fun rememberUpdatedTimelineComponentState(
     style = style,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
 )
 
 @Stable
@@ -37,6 +37,7 @@ private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
+    selectedOfferEligibilityProvider: () -> OfferEligibility,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -46,6 +47,7 @@ private fun rememberUpdatedTimelineComponentState(
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(windowSize = windowSize)
@@ -58,33 +60,27 @@ internal class TimelineComponentState(
     private val style: TimelineComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
 
-    private val selected by derivedStateOf {
-        val selectedInfo = selectedPackageInfoProvider()
-        when {
-            style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
-            style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
-            style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
-            else -> false
-        }
+    private val isSelected by derivedStateOf {
+        style.computeIsSelected(
+            selectedPackageInfo = selectedPackageInfoProvider(),
+            selectedTabIndex = selectedTabIndexProvider(),
+        )
     }
 
     private val offerEligibility by derivedStateOf {
-        if (style.rcPackage != null) {
-            calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
-        } else {
-            selectedPackageInfoProvider()?.let {
-                calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
-            } ?: OfferEligibility.Ineligible
-        }
+        style.resolveOfferEligibility(
+            selectedOfferEligibility = selectedOfferEligibilityProvider(),
+        )
     }
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val componentState = if (isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
         style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
@@ -115,20 +111,19 @@ internal class TimelineComponentState(
 
     @get:JvmSynthetic
     val items by derivedStateOf {
-        style.items.map {
+        style.items.map { itemStyle ->
             ItemState(
-                initialWindowSize,
-                it,
-                selectedPackageInfoProvider,
-                selectedTabIndexProvider,
+                initialWindowSize = windowSize,
+                style = itemStyle,
+                selectedPackageInfoProvider = selectedPackageInfoProvider,
+                selectedTabIndexProvider = selectedTabIndexProvider,
+                selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
             )
         }
     }
 
     @JvmSynthetic
-    fun update(
-        windowSize: WindowWidthSizeClass? = null,
-    ) {
+    fun update(windowSize: WindowWidthSizeClass? = null) {
         if (windowSize != null) this.windowSize = windowSize
     }
 
@@ -138,33 +133,27 @@ internal class TimelineComponentState(
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,
+        private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
 
-        private val selected by derivedStateOf {
-            val selectedInfo = selectedPackageInfoProvider()
-            when {
-                style.packageUniqueId != null -> style.packageUniqueId == selectedInfo?.uniqueId
-                style.rcPackage != null -> style.rcPackage.identifier == selectedInfo?.rcPackage?.identifier
-                style.tabIndex != null -> style.tabIndex == selectedTabIndexProvider()
-                else -> false
-            }
+        private val isSelected by derivedStateOf {
+            style.computeIsSelected(
+                selectedPackageInfo = selectedPackageInfoProvider(),
+                selectedTabIndex = selectedTabIndexProvider(),
+            )
         }
 
         private val offerEligibility by derivedStateOf {
-            if (style.rcPackage != null) {
-                calculateOfferEligibility(style.resolvedOffer, style.rcPackage)
-            } else {
-                selectedPackageInfoProvider()?.let {
-                    calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
-                } ?: OfferEligibility.Ineligible
-            }
+            style.resolveOfferEligibility(
+                selectedOfferEligibility = selectedOfferEligibilityProvider(),
+            )
         }
 
         private val presentedPartial by derivedStateOf {
             val windowCondition = ScreenCondition.from(windowSize)
-            val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+            val componentState = if (isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
             style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
         }

@@ -23,10 +23,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
@@ -153,6 +155,7 @@ internal sealed interface PaywallState {
                 val rcPackage: Package,
                 val resolvedOffer: ResolvedOffer? = null,
                 val uniqueId: String,
+                val offerEligibility: OfferEligibility,
             )
 
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
@@ -239,6 +242,7 @@ internal sealed interface PaywallState {
                             rcPackage = info.pkg,
                             resolvedOffer = info.resolvedOffer,
                             uniqueId = uniqueId,
+                            offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
                         )
                     }
                 }
@@ -247,6 +251,10 @@ internal sealed interface PaywallState {
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
                 return packages.packagesOutsideTabs.find { it.uniqueId == uniqueId }
                     ?: packages.packagesByTab.values.flatten().find { it.uniqueId == uniqueId }
+            }
+
+            val selectedOfferEligibility by derivedStateOf {
+                selectedPackageInfo?.offerEligibility ?: OfferEligibility.Ineligible
             }
 
             val mostExpensivePricePerMonthMicros by derivedStateOf {

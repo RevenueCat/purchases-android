@@ -411,6 +411,7 @@ internal class PaywallViewModelImpl(
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
                         uniqueId = it.identifier,
+                        offerEligibility = currentState.selectedOfferEligibility,
                     )
                 } ?: currentState.selectedPackageInfo
                 performPurchaseIfNecessary(activity, selectedPackageInfo)

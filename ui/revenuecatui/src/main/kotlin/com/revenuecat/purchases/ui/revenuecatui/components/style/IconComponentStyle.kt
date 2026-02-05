@@ -19,6 +19,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
@@ -52,28 +54,29 @@ internal class IconComponentStyle(
      * available.
      */
     @get:JvmSynthetic
-    val rcPackage: Package?,
-    /**
-     * Unique identifier for the package, combining package ID and offer ID.
-     * Used for selection comparison when multiple components reference the same package with different offers.
-     */
-    @get:JvmSynthetic
-    val packageUniqueId: String? = null,
+    override val rcPackage: Package?,
     /**
      * The resolved offer for this package, containing the subscription option and promo offer status.
      * Used to determine offer eligibility and pricing phase information.
      */
     @get:JvmSynthetic
-    val resolvedOffer: ResolvedOffer? = null,
+    override val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for icons inside tab control elements. Not for all icons within a tab.
      */
     @get:JvmSynthetic
-    val tabIndex: Int?,
+    override val tabIndex: Int?,
+    /**
+     * The pre-computed offer eligibility for this component's package context.
+     * Used for applying conditional overrides based on intro/promo offer status.
+     * Null if this component is not in a package scope.
+     */
+    @get:JvmSynthetic
+    override val offerEligibility: OfferEligibility? = null,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedIconPartial>>,
-) : ComponentStyle {
+) : ComponentStyle, PackageContext {
     @Immutable
     internal class Background(
         @get:JvmSynthetic
