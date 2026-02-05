@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.FileRepository
@@ -93,11 +95,12 @@ private fun rememberVideoContentState(
                     sources = style.fallbackSources,
                     visible = style.visible,
                     size = style.size,
-                    padding = style.padding,
-                    margin = style.margin,
-                    shape = style.shape,
-                    border = style.border,
-                    shadow = style.shadow,
+                    // parent Box already handles padding, border, etc
+                    padding = PaddingValues(0.dp),
+                    margin = PaddingValues(0.dp),
+                    shape = null,
+                    border = null,
+                    shadow = null,
                     overlay = style.overlay,
                     contentScale = style.contentScale,
                     rcPackage = style.rcPackage,
