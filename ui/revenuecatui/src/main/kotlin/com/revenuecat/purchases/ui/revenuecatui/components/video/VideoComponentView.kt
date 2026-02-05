@@ -55,7 +55,7 @@ internal fun VideoComponentView(
         val composeShape by remember(videoState.shape) { derivedStateOf { videoState.shape ?: RectangleShape } }
 
         var isVisible by remember { mutableStateOf(false) }
-        var videoReady by remember { mutableStateOf(false) }
+        var videoReady by remember(isVisible) { mutableStateOf(false) }
         val view = LocalView.current
 
         // Fallback style - always available so it shows while scrolling
