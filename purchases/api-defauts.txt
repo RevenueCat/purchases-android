@@ -752,18 +752,16 @@ package com.revenuecat.purchases.ads.events.types {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdFailedToLoadData {
-    ctor public AdFailedToLoadData(String networkName, String mediatorName, String adFormat, String? placement, String adUnitId, Integer? mediatorErrorCode);
+    ctor public AdFailedToLoadData(String mediatorName, String adFormat, String? placement, String adUnitId, Integer? mediatorErrorCode);
     method public String getAdFormat();
     method public String getAdUnitId();
     method public Integer? getMediatorErrorCode();
     method public String getMediatorName();
-    method public String getNetworkName();
     method public String? getPlacement();
     property public final String adFormat;
     property public final String adUnitId;
     property public final Integer? mediatorErrorCode;
     property public final String mediatorName;
-    property public final String networkName;
     property public final String? placement;
   }
 
