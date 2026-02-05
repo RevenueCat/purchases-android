@@ -548,7 +548,6 @@ class EventsManagerTest {
         val adEvent = AdEvent.FailedToLoad(
             id = "ad-event-id-789",
             timestamp = 1699270688886,
-            networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
             adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
@@ -559,7 +558,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
         )
     }
 
