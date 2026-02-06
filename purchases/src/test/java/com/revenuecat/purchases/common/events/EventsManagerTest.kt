@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.events
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -50,7 +51,7 @@ class EventsManagerTest {
         ),
         data = PaywallEvent.Data(
             paywallIdentifier = "paywallID",
-            offeringIdentifier = "offeringID",
+            presentedOfferingContext = PresentedOfferingContext("offeringID"),
             paywallRevision = 5,
             sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
             displayMode = "footer",
@@ -770,7 +771,7 @@ class EventsManagerTest {
         for (i in 0 until 1700) {
             eventsManager.track(paywallEvent.copy(
                 data = paywallEvent.data.copy(
-                    offeringIdentifier = "offeringID_${i}_" + "x".repeat(1000),
+                    presentedOfferingContext = PresentedOfferingContext("offeringID_${i}_" + "x".repeat(1000)),
                 )
             ))
         }

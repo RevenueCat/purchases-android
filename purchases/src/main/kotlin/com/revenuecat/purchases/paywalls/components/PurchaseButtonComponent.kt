@@ -96,5 +96,5 @@ internal object PurchaseButtonMethodDeserializer : SealedDeserializerWithDefault
         "web_product_selection" to { PurchaseButtonComponent.Method.WebProductSelection.serializer() },
         "custom_web_checkout" to { PurchaseButtonComponent.Method.CustomWebCheckout.serializer() },
     ),
-    defaultValue = { type -> PurchaseButtonComponent.Method.Unknown },
+    defaultValue = { PurchaseButtonComponent.Method.Unknown },
 )

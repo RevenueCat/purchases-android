@@ -293,9 +293,22 @@ internal class PostReceiptHelper(
         }
 
         if (shouldCacheTransactionMetadata) {
+            val paywallPresentedOfferingContext = presentedPaywall?.data?.presentedOfferingContext
+            // This will make sure we add presented offering context info for purchases when
+            // PurchasesAreCompletedBy.MY_APP is used together with paywalls
+            val effectiveReceiptInfo = if (
+                receiptInfo.presentedOfferingContext == null &&
+                paywallPresentedOfferingContext != null
+            ) {
+                receiptInfo.copy(
+                    presentedOfferingContext = paywallPresentedOfferingContext,
+                )
+            } else {
+                receiptInfo
+            }
             val dataToCache = LocalTransactionMetadata(
                 token = purchaseToken,
-                receiptInfo = receiptInfo,
+                receiptInfo = effectiveReceiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
             )

@@ -82,7 +82,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             type = type.value,
             appUserID = appUserID,
             sessionID = data.sessionIdentifier.toString(),
-            offeringID = data.offeringIdentifier,
+            offeringID = data.presentedOfferingContext.offeringIdentifier,
             paywallID = data.paywallIdentifier,
             paywallRevision = data.paywallRevision,
             timestamp = creationData.date.time,
