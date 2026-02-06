@@ -103,13 +103,13 @@ internal sealed class OfferEligibility {
     val hasMultipleDiscountedPhases: Boolean
         get() = this is IntroOfferMultiple || this is PromoOfferMultiple
 
-    /** Whether this represents a single-phase intro offer (for IntroOffer condition matching) */
-    val isSinglePhaseIntroOffer: Boolean
-        get() = this is IntroOfferSingle
+    /** Whether this represents any intro offer (single or multiple phase) */
+    val isIntroOffer: Boolean
+        get() = this is IntroOfferSingle || this is IntroOfferMultiple
 
-    /** Whether this represents a single-phase promo offer (for PromoOffer condition matching) */
-    val isSinglePhasePromoOffer: Boolean
-        get() = this is PromoOfferSingle
+    /** Whether this represents any promo offer (single or multiple phase) */
+    val isPromoOffer: Boolean
+        get() = this is PromoOfferSingle || this is PromoOfferMultiple
 }
 
 @Preview(showBackground = true)

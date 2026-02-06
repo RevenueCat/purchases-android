@@ -169,6 +169,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     properties = it,
                 ))
             }
+            promoOffer?.let {
+                overrides.add(PresentedOverride(
+                    conditions = listOf(ComponentOverride.Condition.PromoOffer),
+                    properties = it,
+                ))
+            }
             multipleIntroOffers?.let {
                 overrides.add(PresentedOverride(
                     conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
@@ -178,12 +184,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             selected?.let {
                 overrides.add(PresentedOverride(
                     conditions = listOf(ComponentOverride.Condition.Selected),
-                    properties = it,
-                ))
-            }
-            promoOffer?.let {
-                overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.PromoOffer),
                     properties = it,
                 ))
             }
@@ -265,13 +265,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "IntroOfferMultiple without MultiplePhaseOffers override uses screen size fallback",
+                "should pick intro when all overrides applicable, but selected and multiple intro override unavailable",
                 Args(
                     availableOverrides = buildPresentedOverrides(multipleIntroOffers = null, selected = null),
                     windowSize = MEDIUM,
                     offerEligibility = IntroOfferMultiple,
                     state = SELECTED,
-                    expected = mediumPartial,
+                    expected = introOfferPartial,
                 ),
             ),
             arrayOf(
@@ -793,6 +793,20 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     offerEligibility = PromoOfferMultiple,
                     state = DEFAULT,
                     expected = multipleIntroOffersPartial,
+                ),
+            ),
+            arrayOf(
+                "PromoOfferMultiple without MultiplePhaseOffers override falls back to PromoOffer",
+                Args(
+                    availableOverrides = buildPresentedOverrides(
+                        multipleIntroOffers = null,
+                        selected = null,
+                        promoOffer = promoOfferPartial,
+                    ),
+                    windowSize = MEDIUM,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
                 ),
             ),
             arrayOf(
