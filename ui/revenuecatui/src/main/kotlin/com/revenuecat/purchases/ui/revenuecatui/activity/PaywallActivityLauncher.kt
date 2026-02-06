@@ -127,6 +127,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     }
 
     @JvmName("launchWithOfferingId")
+    @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
     fun launch(
@@ -135,6 +136,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
@@ -145,6 +147,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
+                customVariables = customVariables,
             ),
         )
     }
@@ -161,6 +164,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
+     * @param customVariables Custom variables to be used in paywall text. These values will replace
+     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     @Suppress("LongParameterList")
     @JvmOverloads
@@ -171,6 +176,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
         paywallDisplayCallback: PaywallDisplayCallback? = null,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -188,6 +194,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
+                        customVariables = customVariables,
                     ),
                 )
             }
@@ -263,6 +270,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
         paywallDisplayCallback: PaywallDisplayCallback? = null,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -280,6 +288,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
+                        customVariables = customVariables,
                     ),
                 )
             }
@@ -295,14 +304,18 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
+     * @param customVariables Custom variables to be used in paywall text. These values will replace
+     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
+    @Suppress("LongParameterList")
     @JvmOverloads
     fun launchIfNeeded(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -318,6 +331,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
+                        customVariables = customVariables,
                     ),
                 )
             }
