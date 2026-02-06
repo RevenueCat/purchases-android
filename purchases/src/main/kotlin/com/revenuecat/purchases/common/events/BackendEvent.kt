@@ -122,7 +122,7 @@ internal sealed class BackendEvent : Event {
         @SerialName("timestamp_ms")
         val timestamp: Long,
         @SerialName("network_name")
-        val networkName: String,
+        val networkName: String? = null,
         @SerialName("mediator_name")
         val mediatorName: String,
         @SerialName("ad_format")

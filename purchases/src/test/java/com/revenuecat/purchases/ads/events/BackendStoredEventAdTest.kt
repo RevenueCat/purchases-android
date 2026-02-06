@@ -254,10 +254,9 @@ class BackendStoredEventAdTest {
 
     @Test
     fun `AdEvent FailedToLoad converts correctly`() {
-        val revenueEvent = AdEvent.FailedToLoad(
+        val failedToLoadEvent = AdEvent.FailedToLoad(
             id = "event-id-789",
             timestamp = 1111111111L,
-            networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
             adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
@@ -265,7 +264,7 @@ class BackendStoredEventAdTest {
             mediatorErrorCode = 123,
         )
 
-        val storedEvent = revenueEvent.toBackendStoredEvent(appUserID, appSessionID)
+        val storedEvent = failedToLoadEvent.toBackendStoredEvent(appUserID, appSessionID)
 
         assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
         val adStoredEvent = storedEvent as BackendStoredEvent.Ad
@@ -273,7 +272,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.version).isEqualTo(BackendEvent.AD_EVENT_SCHEMA_VERSION)
         assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_failed_to_load")
         assertThat(adStoredEvent.event.timestamp).isEqualTo(1111111111L)
-        assertThat(adStoredEvent.event.networkName).isEqualTo("Google AdMob")
+        assertThat(adStoredEvent.event.networkName).isNull()
         assertThat(adStoredEvent.event.mediatorName).isEqualTo("AdMob")
         assertThat(adStoredEvent.event.adFormat).isEqualTo("banner")
         assertThat(adStoredEvent.event.placement).isEqualTo("rewarded_video")
