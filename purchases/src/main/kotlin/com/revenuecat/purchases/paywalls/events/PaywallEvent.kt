@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.paywalls.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
@@ -77,7 +79,8 @@ data class PaywallEvent(
     @Serializable
     data class Data(
         val paywallIdentifier: String?,
-        val offeringIdentifier: String,
+        @Serializable(with = PresentedOfferingContextSerializer::class)
+        val presentedOfferingContext: PresentedOfferingContext,
         val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
         val sessionIdentifier: UUID,
@@ -100,7 +103,7 @@ data class PaywallEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
-            offeringId = data.offeringIdentifier,
+            offeringId = data.presentedOfferingContext.offeringIdentifier,
         )
     }
 }

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -20,7 +20,14 @@ class PaywallEventSerializationTests {
             ),
             data = PaywallEvent.Data(
                 paywallIdentifier = "paywallID",
-                offeringIdentifier = "offeringID",
+                presentedOfferingContext = PresentedOfferingContext(
+                    offeringIdentifier = "offeringID",
+                    placementIdentifier = "placementID",
+                    targetingContext = PresentedOfferingContext.TargetingContext(
+                        revision = 5,
+                        ruleId = "ruleID",
+                    )
+                ),
                 paywallRevision = 5,
                 sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
                 displayMode = "footer",
@@ -40,7 +47,7 @@ class PaywallEventSerializationTests {
             ),
             data = PaywallEvent.Data(
                 paywallIdentifier = "paywallID",
-                offeringIdentifier = "offeringID",
+                presentedOfferingContext = PresentedOfferingContext("offeringID"),
                 paywallRevision = 3,
                 sessionIdentifier = UUID.fromString("415107f4-98bf-4b68-a582-eb27bcb6e222"),
                 displayMode = "fullscreen",
@@ -66,7 +73,11 @@ class PaywallEventSerializationTests {
                     "}," +
                     "\"data\":{" +
                         "\"paywallIdentifier\":\"paywallID\"," +
-                        "\"offeringIdentifier\":\"offeringID\"," +
+                        "\"presentedOfferingContext\":{" +
+                            "\"offeringIdentifier\":\"offeringID\"," +
+                            "\"placementIdentifier\":\"placementID\"," +
+                            "\"targetingContext\":{\"revision\":5,\"ruleId\":\"ruleID\"}" +
+                        "}," +
                         "\"paywallRevision\":5," +
                         "\"sessionIdentifier\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
                         "\"displayMode\":\"footer\"," +
@@ -99,7 +110,11 @@ class PaywallEventSerializationTests {
                     "}," +
                     "\"data\":{" +
                         "\"paywallIdentifier\":\"paywallID\"," +
-                        "\"offeringIdentifier\":\"offeringID\"," +
+                        "\"presentedOfferingContext\":{" +
+                            "\"offeringIdentifier\":\"offeringID\"," +
+                            "\"placementIdentifier\":null," +
+                            "\"targetingContext\":null" +
+                        "}," +
                         "\"paywallRevision\":3," +
                         "\"sessionIdentifier\":\"415107f4-98bf-4b68-a582-eb27bcb6e222\"," +
                         "\"displayMode\":\"fullscreen\"," +
