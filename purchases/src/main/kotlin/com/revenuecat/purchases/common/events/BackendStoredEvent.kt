@@ -272,7 +272,6 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             version = eventVersion,
             type = type.value,
             timestamp = timestamp,
-            networkName = networkName,
             mediatorName = mediatorName.value,
             adFormat = adFormat.value,
             placement = placement,

@@ -25,7 +25,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val eventVersion: Int
     val type: AdEventType
     val timestamp: Long
-    val networkName: String
+    val networkName: String?
     val mediatorName: AdMediatorName
     val adFormat: AdFormat
     val placement: String?
@@ -37,7 +37,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.DISPLAYED,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val networkName: String,
+        override val networkName: String?,
         override val mediatorName: AdMediatorName,
         override val adFormat: AdFormat,
         override val placement: String?,
@@ -50,7 +50,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.OPENED,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val networkName: String,
+        override val networkName: String?,
         override val mediatorName: AdMediatorName,
         override val adFormat: AdFormat,
         override val placement: String?,
@@ -63,7 +63,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.REVENUE,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val networkName: String,
+        override val networkName: String?,
         override val mediatorName: AdMediatorName,
         override val adFormat: AdFormat,
         override val placement: String?,
@@ -79,7 +79,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.LOADED,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val networkName: String,
+        override val networkName: String?,
         override val mediatorName: AdMediatorName,
         override val adFormat: AdFormat,
         override val placement: String?,
@@ -92,12 +92,13 @@ internal sealed interface AdEvent : FeatureEvent {
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.FAILED_TO_LOAD,
         override val timestamp: Long = System.currentTimeMillis(),
-        override val networkName: String,
         override val mediatorName: AdMediatorName,
         override val adFormat: AdFormat,
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
         val mediatorErrorCode: Int?,
-    ) : AdEvent
+    ) : AdEvent {
+        override val networkName: String? = null
+    }
 }

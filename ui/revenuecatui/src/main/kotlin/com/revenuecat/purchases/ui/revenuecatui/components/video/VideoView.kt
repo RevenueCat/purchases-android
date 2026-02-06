@@ -44,6 +44,7 @@ internal fun VideoView(
     loop: Boolean = false,
     muteAudio: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
+    onReady: (() -> Unit)? = null,
 ) {
     Video(
         scaleType = if (contentScale == ContentScale.Fit) {
@@ -57,6 +58,7 @@ internal fun VideoView(
         loop = loop,
         muteAudio = muteAudio,
         modifier = modifier,
+        onReady = onReady,
     )
 }
 
@@ -88,6 +90,8 @@ private class TextureVideoView @JvmOverloads constructor(
     private var looping = false
     private var autoStart = true
     private var scaleType = ScaleType.FIT
+    private var firstFrameRendered = false
+    private var onReadyCallback: (() -> Unit)? = null
 
     // resume state across surface re-create (e.g., rotation)
     private var resumePosMs = 0
@@ -142,7 +146,10 @@ private class TextureVideoView @JvmOverloads constructor(
             }
 
             override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
-                // No-op
+                if (!firstFrameRendered && prepared) {
+                    firstFrameRendered = true
+                    onReadyCallback?.invoke()
+                }
             }
         }
 
@@ -198,6 +205,7 @@ private class TextureVideoView @JvmOverloads constructor(
     fun setVideoURI(uri: Uri) {
         this.uri = uri
         prepared = false
+        firstFrameRendered = false
         // Only reset position if we don't have a saved position
         if (resumePosMs == 0) {
             resumePlayWhenReady = autoStart
@@ -218,6 +226,13 @@ private class TextureVideoView @JvmOverloads constructor(
 
     fun setAutoStart(enabled: Boolean) {
         autoStart = enabled
+    }
+
+    fun setOnReadyCallback(callback: (() -> Unit)?) {
+        onReadyCallback = callback
+        if (firstFrameRendered && callback != null) {
+            callback.invoke()
+        }
     }
 
     fun release() {
@@ -385,6 +400,7 @@ private fun Video(
     loop: Boolean,
     muteAudio: Boolean,
     modifier: Modifier = Modifier,
+    onReady: (() -> Unit)? = null,
 ) {
     val key = "video_${scaleType}_$videoUri"
 
@@ -446,6 +462,7 @@ private fun Video(
                     setScaleType(scaleType)
                     setLooping(loop)
                     setAutoStart(usePlay)
+                    setOnReadyCallback(onReady)
                     setVideoURI(videoUri)
                     // Set the resume position - this will be applied when video is prepared
                     if (usePosition > 0) {
@@ -460,9 +477,8 @@ private fun Video(
             },
             modifier = Modifier.fillMaxSize(),
             update = { view ->
-                videoView.value = view // Update reference
-                // Minimal update - avoid operations that cause restarts
-                // Scale type is set in factory, no need to update here
+                videoView.value = view
+                view.setOnReadyCallback(onReady)
             },
             onRelease = { view ->
                 // Capture playback state BEFORE releasing

@@ -195,7 +195,6 @@ class AdTrackerTest {
 
         adTracker.trackAdFailedToLoad(
             data = AdFailedToLoadData(
-                networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = AdFormat.APP_OPEN,
                 placement = "interstitial_level_complete",
@@ -206,7 +205,7 @@ class AdTrackerTest {
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.FailedToLoad>()) }
 
-        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.networkName).isNull()
         assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
         assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.APP_OPEN)
         assertThat(eventSlot.captured.placement).isEqualTo("interstitial_level_complete")
