@@ -79,7 +79,7 @@ private class PaywallActivityLauncherAPI {
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
             edgeToEdge = true,
-            paywallDisplayCallback = paywallDisplayCallback,
+            customVariables = mapOf("key" to CustomVariableValue.String("value")),
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
@@ -87,8 +87,8 @@ private class PaywallActivityLauncherAPI {
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
             edgeToEdge = true,
-            paywallDisplayCallback = paywallDisplayCallback,
             customVariables = mapOf("key" to CustomVariableValue.String("value")),
+            paywallDisplayCallback = paywallDisplayCallback,
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",

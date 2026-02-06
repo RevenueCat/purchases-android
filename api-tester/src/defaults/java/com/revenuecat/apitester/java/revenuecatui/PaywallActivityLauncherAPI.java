@@ -50,10 +50,10 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true);
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, paywallDisplayCallback);
         Map<String, CustomVariableValue> customVariables = new HashMap<>();
         customVariables.put("key", new CustomVariableValue.String("value"));
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, paywallDisplayCallback, customVariables);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables, paywallDisplayCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);

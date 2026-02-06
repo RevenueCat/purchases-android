@@ -163,9 +163,9 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
-     * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      * @param customVariables Custom variables to be used in paywall text. These values will replace
      * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
+     * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @Suppress("LongParameterList")
     @JvmOverloads
@@ -175,8 +175,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
-        paywallDisplayCallback: PaywallDisplayCallback? = null,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -269,8 +269,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
-        paywallDisplayCallback: PaywallDisplayCallback? = null,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -279,12 +279,10 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringIdAndPresentedOfferingContext = offeringIdentifier?.let {
-                            OfferingSelection.IdAndPresentedOfferingContext(
-                                offeringId = it,
-                                presentedOfferingContext = presentedOfferingContext,
-                            )
-                        },
+                        offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                            offeringId = offeringIdentifier,
+                            presentedOfferingContext = presentedOfferingContext,
+                        ),
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
