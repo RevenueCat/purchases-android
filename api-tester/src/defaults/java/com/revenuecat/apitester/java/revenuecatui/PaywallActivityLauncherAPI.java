@@ -6,10 +6,14 @@ import androidx.activity.result.ActivityResultCaller;
 import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class PaywallActivityLauncherAPI {
@@ -46,11 +50,15 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true);
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, paywallDisplayCallback);
+        Map<String, CustomVariableValue> customVariables = new HashMap<>();
+        customVariables.put("key", new CustomVariableValue.String("value"));
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables, paywallDisplayCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(null, null, true, customerInfo -> null);
+        launcher.launchIfNeeded(offering, fontProvider, true, true, customVariables, customerInfo -> null);
     }
 
     static void checkPaywallDisplayCallback() {

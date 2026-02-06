@@ -12,6 +12,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableKeyValidator
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -23,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 /**
  * View that wraps the [Paywall] Composable to display the Paywall through XML layouts and the View system.
  */
+@Suppress("TooManyFunctions")
 class PaywallView : CompatComposeView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
@@ -36,6 +39,7 @@ class PaywallView : CompatComposeView {
     /**
      * Constructor when creating the view programmatically.
      */
+    @Suppress("LongParameterList")
     @JvmOverloads
     constructor(
         context: Context,
@@ -44,6 +48,7 @@ class PaywallView : CompatComposeView {
         fontProvider: FontProvider? = null,
         shouldDisplayDismissButton: Boolean? = null,
         dismissHandler: (() -> Unit)? = null,
+        customVariables: Map<String, CustomVariableValue>? = null,
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
@@ -55,6 +60,7 @@ class PaywallView : CompatComposeView {
         }
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
         this.initialFontProvider = fontProvider
+        this.initialCustomVariables = customVariables
         init(context, null)
     }
 
@@ -65,6 +71,7 @@ class PaywallView : CompatComposeView {
     )
     private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
     private var initialFontProvider: FontProvider? = null
+    private var initialCustomVariables: Map<String, CustomVariableValue>? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -143,6 +150,17 @@ class PaywallView : CompatComposeView {
         paywallOptions = paywallOptions.copy(shouldDisplayDismissButton = shouldDisplayDismissButton)
     }
 
+    /**
+     * Sets custom variables to be used in paywall text. These values will replace
+     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
+     *
+     * @param variables A map of variable names to their [CustomVariableValue] values.
+     */
+    fun setCustomVariables(variables: Map<String, CustomVariableValue>) {
+        CustomVariableKeyValidator.validate(variables)
+        paywallOptions = paywallOptions.copy(customVariables = variables.toMap())
+    }
+
     override fun onBackPressed() {
         dismissHandler?.run { dismiss() } ?: super.onBackPressed()
     }
@@ -154,6 +172,7 @@ class PaywallView : CompatComposeView {
             .setFontProvider(initialFontProvider)
             .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
+            .setCustomVariables(initialCustomVariables ?: emptyMap())
             .build()
     }
 
