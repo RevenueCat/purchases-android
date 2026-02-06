@@ -457,7 +457,7 @@ class AdMobManager(private val context: Context) {
     ) {
         try {
             val data = AdLoadedData(
-                networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
+                networkName = responseInfo?.mediationAdapterClassName,
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = adFormat,
                 placement = placement,
@@ -484,7 +484,7 @@ class AdMobManager(private val context: Context) {
     ) {
         try {
             val data = AdDisplayedData(
-                networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
+                networkName = responseInfo?.mediationAdapterClassName,
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = adFormat,
                 placement = placement,
@@ -511,7 +511,7 @@ class AdMobManager(private val context: Context) {
     ) {
         try {
             val data = AdOpenedData(
-                networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
+                networkName = responseInfo?.mediationAdapterClassName,
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = adFormat,
                 placement = placement,
@@ -543,7 +543,7 @@ class AdMobManager(private val context: Context) {
     ) {
         try {
             val data = AdRevenueData(
-                networkName = responseInfo?.mediationAdapterClassName ?: "Google AdMob",
+                networkName = responseInfo?.mediationAdapterClassName,
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = adFormat,
                 placement = placement,
@@ -576,7 +576,6 @@ class AdMobManager(private val context: Context) {
     ) {
         try {
             val data = AdFailedToLoadData(
-                networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
                 adFormat = adFormat,
                 placement = placement,
