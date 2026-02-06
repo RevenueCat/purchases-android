@@ -111,6 +111,7 @@ internal interface CustomerCenterViewModel {
      * Used when returning from external screens (e.g., manage subscriptions).
      */
     suspend fun refreshCustomerCenter()
+
     fun openURL(
         context: Context,
         url: String,

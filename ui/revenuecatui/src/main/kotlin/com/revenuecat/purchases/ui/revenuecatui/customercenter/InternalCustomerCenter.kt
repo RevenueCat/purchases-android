@@ -3,7 +3,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -42,11 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.PurchasesError
@@ -121,7 +120,7 @@ internal fun InternalCustomerCenter(
     // Using ON_STOP/ON_START with isChangingConfigurations check to properly handle configuration changes
     // (e.g., rotation) without triggering false refreshes.
     val lifecycleOwner = LocalLifecycleOwner.current
-    val activity = context as? Activity
+    val activity = context.getActivity()
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
