@@ -132,6 +132,7 @@ private fun rememberProcessedText(
                 variableDataProvider = state.variableDataProvider,
                 packageContext = variableContext,
                 rcPackage = packageToUse,
+                subscriptionOption = textState.subscriptionOption,
                 currencyLocale = currencyLocale,
                 dateLocale = dateLocale,
                 date = state.currentDate,

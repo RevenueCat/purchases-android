@@ -36,6 +36,9 @@ class ComponentOverride<T : PartialComponent>(
         object Selected : Condition
 
         @Serializable
+        object PromoOffer : Condition
+
+        @Serializable
         object Unsupported : Condition
     }
 }
@@ -50,6 +53,7 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "intro_offer" to { Condition.IntroOffer.serializer() },
         "multiple_intro_offers" to { Condition.MultiplePhaseOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
+        "promo_offer" to { Condition.PromoOffer.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

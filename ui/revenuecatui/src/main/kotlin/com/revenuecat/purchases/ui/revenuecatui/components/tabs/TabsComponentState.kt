@@ -11,16 +11,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 
 @Stable
 @JvmSynthetic
@@ -28,18 +27,17 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TabsComponentState =
-    rememberUpdatedTabsComponentState(
-        style = style,
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-    )
+): TabsComponentState = rememberUpdatedTabsComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+)
 
 @Stable
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedTabsComponentState(
+private fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -47,12 +45,10 @@ internal fun rememberUpdatedTabsComponentState(
         TabsComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
         )
     }.apply {
-        update(
-            windowSize = windowSize,
-        )
+        update(windowSize = windowSize)
     }
 }
 
@@ -60,20 +56,21 @@ internal fun rememberUpdatedTabsComponentState(
 internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TabsComponentStyle,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
-    /**
-     * The package to consider for intro offer eligibility.
-     */
-    private val applicablePackage by derivedStateOf { selectedPackageProvider() }
+    private val offerEligibility by derivedStateOf {
+        selectedPackageInfoProvider()?.let {
+            calculateOfferEligibility(it.resolvedOffer, it.rcPackage)
+        } ?: OfferEligibility.Ineligible
+    }
+
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = ComponentViewState.DEFAULT // A TabsComponent is never selected.
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val componentState = ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
     }
 
     @get:JvmSynthetic

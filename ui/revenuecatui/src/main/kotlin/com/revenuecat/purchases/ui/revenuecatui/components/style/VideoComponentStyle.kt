@@ -14,7 +14,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
 @Suppress("LongParameterList")
 @Immutable
@@ -54,13 +57,26 @@ internal data class VideoComponentStyle(
      * available.
      */
     @get:JvmSynthetic
-    val rcPackage: Package?,
+    override val rcPackage: Package?,
+    /**
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
+     */
+    @get:JvmSynthetic
+    override val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for video inside tab control elements. Not for all video within a tab.
      */
     @get:JvmSynthetic
-    val tabIndex: Int?,
+    override val tabIndex: Int?,
+    /**
+     * The pre-computed offer eligibility for this component's package context.
+     * Used for applying conditional overrides based on intro/promo offer status.
+     * Null if this component is not in a package scope.
+     */
+    @get:JvmSynthetic
+    override val offerEligibility: OfferEligibility? = null,
     /**
      * This will be read by the parent stack, if that `StackComponentStyle` has `applyTopWindowInsets` set to true.
      */
@@ -68,4 +84,4 @@ internal data class VideoComponentStyle(
     val ignoreTopWindowInsets: Boolean = false,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedVideoPartial>>,
-) : ComponentStyle
+) : ComponentStyle, PackageContext

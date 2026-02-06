@@ -14,6 +14,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import java.util.Date
 
 @Suppress("LongParameterList")
@@ -50,13 +53,26 @@ internal data class StackComponentStyle(
      * available.
      */
     @get:JvmSynthetic
-    val rcPackage: Package?,
+    override val rcPackage: Package?,
+    /**
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
+     */
+    @get:JvmSynthetic
+    override val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.
      */
     @get:JvmSynthetic
-    val tabIndex: Int?,
+    override val tabIndex: Int?,
+    /**
+     * The pre-computed offer eligibility for this component's package context.
+     * Used for applying conditional overrides based on intro/promo offer status.
+     * Null if this component is not in a package scope.
+     */
+    @get:JvmSynthetic
+    override val offerEligibility: OfferEligibility? = null,
     /**
      * If this is non-null, it means this stack is inside a countdown component.
      */
@@ -77,4 +93,4 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyBottomWindowInsets: Boolean = false,
-) : ComponentStyle
+) : ComponentStyle, PackageContext
