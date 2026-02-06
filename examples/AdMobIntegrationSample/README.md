@@ -222,7 +222,7 @@ AdMob provides revenue data via `OnPaidEventListener`:
 adView.onPaidEventListener = OnPaidEventListener { adValue ->
     Purchases.sharedInstance.adTracker.trackAdRevenue(
         data = AdRevenueData(
-            networkName = adView.responseInfo?.mediationAdapterClassName ?: "Google AdMob",
+            networkName = adView.responseInfo?.mediationAdapterClassName,
             mediatorName = AdMediatorName.AD_MOB,
             adFormat = AdFormat.BANNER,
             placement = "banner_home",
