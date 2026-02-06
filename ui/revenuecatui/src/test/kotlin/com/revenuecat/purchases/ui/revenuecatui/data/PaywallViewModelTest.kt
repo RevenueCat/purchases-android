@@ -1351,6 +1351,40 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `event data uses presentedOfferingContext from offering packages`() {
+        // Create an offering with a specific offeringId and packages that have presentedOfferingContext
+        val offeringId = "test-offering-id"
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                TestData.Packages.monthly.copy(offeringId),
+                TestData.Packages.annual.copy(offeringId),
+            ),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        val model = create(offering = offering)
+        model.trackPaywallImpressionIfNeeded()
+
+        // Verify that the event uses PresentedOfferingContext from the first package
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.presentedOfferingContext).isEqualTo(
+                        PresentedOfferingContext(offeringId)
+                    )
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.IMPRESSION)
+                },
+            )
+        }
+    }
+
+    @Test
     fun `trackPaywallImpression does nothing if state is loading`() {
         delayFetchingOfferings()
         val model = create()

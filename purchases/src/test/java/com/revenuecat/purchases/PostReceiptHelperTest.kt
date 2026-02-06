@@ -2159,6 +2159,151 @@ class PostReceiptHelperTest {
     }
 
     @Test
+    fun `postTransactionAndConsumeIfNeeded uses paywall presentedOfferingContext when receiptInfo context is null`() {
+        // Create a transaction without presentedOfferingContext
+        val transactionWithoutContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            null, // No presentedOfferingContext
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Create a paywall event with presentedOfferingContext
+        val paywallOfferingContext = PresentedOfferingContext("paywall_offering_id")
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywall_id",
+                paywallOfferingContext,
+                10,
+                UUID.randomUUID(),
+                "footer",
+                "es_ES",
+                false,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockGooglePurchase.products.first(),
+            ),
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+
+        paywallPresentedCache.receiveEvent(paywallEvent)
+        mockPostReceiptSuccess(storeTransaction = transactionWithoutContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithoutContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata uses the paywall's presentedOfferingContext
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithoutContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext)
+            .isEqualTo(paywallOfferingContext)
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded keeps receiptInfo as-is when both contexts are null`() {
+        // Create a transaction without presentedOfferingContext
+        val transactionWithoutContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            null, // No presentedOfferingContext
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Don't add any paywall event to the cache (no paywall context available)
+        mockPostReceiptSuccess(storeTransaction = transactionWithoutContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithoutContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata has null presentedOfferingContext
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithoutContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded preserves receiptInfo context when it already exists`() {
+        // Create a transaction with presentedOfferingContext
+        val transactionContext = PresentedOfferingContext("transaction_offering_id")
+        val transactionWithContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            transactionContext,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Create a paywall event with a different presentedOfferingContext
+        val paywallOfferingContext = PresentedOfferingContext("paywall_offering_id")
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywall_id",
+                paywallOfferingContext,
+                10,
+                UUID.randomUUID(),
+                "footer",
+                "es_ES",
+                false,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockGooglePurchase.products.first(),
+            ),
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+
+        paywallPresentedCache.receiveEvent(paywallEvent)
+        mockPostReceiptSuccess(storeTransaction = transactionWithContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata preserves the transaction's presentedOfferingContext
+        // (not overwritten by paywall's context)
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext)
+            .isEqualTo(transactionContext)
+    }
+
+    @Test
     fun `postTransactionAndConsumeIfNeeded passes current PurchasesAreCompletedBy when no cached metadata`() {
         mockPostReceiptSuccess()
 
