@@ -4,6 +4,7 @@ import android.os.Handler
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class ProductDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val mainHandler: Handler,

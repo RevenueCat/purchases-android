@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.networking.HTTPResult
 
 /**
  * Indicates where the data originally came from (before caching).
  */
-internal enum class HTTPResponseOriginalSource {
+@InternalRevenueCatAPI
+enum class HTTPResponseOriginalSource {
     /**
      * Original data came from normal network fetch.
      */
@@ -25,6 +27,7 @@ internal enum class HTTPResponseOriginalSource {
 /**
  * Converts HTTPResult to OriginalDataSource based on response characteristics.
  */
+@OptIn(InternalRevenueCatAPI::class)
 internal val HTTPResult.originalDataSource: HTTPResponseOriginalSource
     get() {
         if (isLoadShedderResponse && isFallbackURL) {
