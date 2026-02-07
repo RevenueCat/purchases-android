@@ -19,6 +19,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -46,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
@@ -157,6 +160,60 @@ internal fun InternalPaywall(
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     viewModel.trackPaywallImpressionIfNeeded()
+    val context = LocalContext.current
+    val activity = context.getActivity()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Check if we should show the default paywall (when there's a validation warning)
+    if (state.validationWarning != null) {
+        val defaultBackground = MaterialTheme.colorScheme.background
+        val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+        Box(
+            modifier = Modifier
+                .conditional(state.isInFullScreenMode) {
+                    Modifier
+                        .fillMaxHeight()
+                        .background(defaultBackground)
+                }
+                .conditional(!state.isInFullScreenMode) {
+                    Modifier
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = UIConstant.defaultCornerRadius,
+                                topEnd = UIConstant.defaultCornerRadius,
+                            ),
+                        )
+                        .background(defaultBackground)
+                },
+        ) {
+            DefaultPaywallView(
+                packages = state.offering.availablePackages,
+                warning = state.validationWarning,
+                onPurchase = { pkg ->
+                    if (activity != null) {
+                        coroutineScope.launch {
+                            viewModel.handlePackagePurchase(activity, pkg)
+                        }
+                    } else {
+                        Logger.e("Activity is null, cannot initiate purchase")
+                    }
+                },
+                onRestore = {
+                    coroutineScope.launch {
+                        viewModel.handleRestorePurchases()
+                    }
+                },
+            )
+            CloseButton(
+                shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                color = defaultOnSurface,
+                actionInProgress = viewModel.actionInProgress.value,
+                onClick = viewModel::closePaywall,
+            )
+        }
+        return
+    }
+
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
         modifier = Modifier
