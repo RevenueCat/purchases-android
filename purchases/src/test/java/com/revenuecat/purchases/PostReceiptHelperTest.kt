@@ -1626,7 +1626,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data not available`() {
+    fun `postTransactionAndConsumeIfNeeded does not consume products if product data not available`() {
         mockPostReceiptSuccess(
             purchasedProductsInfo = mapOf()
         )
@@ -1646,14 +1646,14 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = true,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource
             )
         }
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data product id does not match transactions`() {
+    fun `postTransactionAndConsumeIfNeeded does not consume products if product data product id does not match transactions`() {
         mockPostReceiptSuccess(
             purchasedProductsInfo = mapOf("other_product" to false)
         )
@@ -1673,7 +1673,7 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = true,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource
             )
         }
