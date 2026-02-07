@@ -32,7 +32,7 @@ internal sealed class BackendEvent : Event {
     @OptIn(InternalRevenueCatAPI::class)
     @Serializable
     @SerialName("customer_center")
-    data class CustomerCenter constructor(
+    data class CustomerCenter(
         val id: String,
         @SerialName("revision_id")
         val revisionID: Int,
@@ -53,6 +53,18 @@ internal sealed class BackendEvent : Event {
         val url: String?,
         @SerialName("survey_option_id")
         val surveyOptionID: String?,
+
+        // only valid for promo offer events
+        val source: String?,
+        @SerialName("store_promo_offer_id")
+        val storeOfferID: String?,
+        @SerialName("product_id")
+        val productID: String?,
+        @SerialName("target_product_id")
+        val targetProductID: String?,
+        val error: String?,
+        @SerialName("transaction_id")
+        val transactionID: String?,
     ) : BackendEvent()
 
     /**
