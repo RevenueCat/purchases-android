@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback
@@ -149,7 +150,7 @@ private class PaywallActivityLauncherAPI {
         activityLauncher.launch(options)
 
         // LaunchIfNeeded with requiredEntitlementIdentifier
-        val optionsWithEntitlement = PaywallActivityLaunchOptions.Builder()
+        val optionsWithEntitlement = PaywallActivityLaunchIfNeededOptions.Builder()
             .setRequiredEntitlementIdentifier("premium")
             .setOffering(offering)
             .setCustomVariables(customVariables)
@@ -158,7 +159,7 @@ private class PaywallActivityLauncherAPI {
         activityLauncher.launchIfNeeded(optionsWithEntitlement)
 
         // LaunchIfNeeded with shouldDisplayBlock
-        val optionsWithBlock = PaywallActivityLaunchOptions.Builder()
+        val optionsWithBlock = PaywallActivityLaunchIfNeededOptions.Builder()
             .setShouldDisplayBlock { customerInfo ->
                 customerInfo.entitlements.active.isEmpty()
             }

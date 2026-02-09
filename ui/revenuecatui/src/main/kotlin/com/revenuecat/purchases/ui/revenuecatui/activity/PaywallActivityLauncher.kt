@@ -371,15 +371,14 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     /**
      * Launch the paywall activity conditionally with the specified options.
      *
-     * The paywall will be displayed based on:
-     * - [PaywallActivityLaunchOptions.requiredEntitlementIdentifier]: Only show if user doesn't have this entitlement
-     * - [PaywallActivityLaunchOptions.shouldDisplayBlock]: Only show if this block returns true
-     *
-     * If neither is set, the paywall will always be displayed (equivalent to [launch]).
+     * The paywall will be displayed based on one of these conditions (exactly one must be set):
+     * - [PaywallActivityLaunchIfNeededOptions.requiredEntitlementIdentifier]: Only show if user doesn't have this
+     *   entitlement
+     * - [PaywallActivityLaunchIfNeededOptions.shouldDisplayBlock]: Only show if this block returns true
      *
      * Example with entitlement check:
      * ```kotlin
-     * val options = PaywallActivityLaunchOptions.Builder()
+     * val options = PaywallActivityLaunchIfNeededOptions.Builder()
      *     .setRequiredEntitlementIdentifier("premium")
      *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
      *     .setPaywallDisplayCallback(object : PaywallDisplayCallback {
@@ -394,7 +393,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      *
      * Example with custom condition:
      * ```kotlin
-     * val options = PaywallActivityLaunchOptions.Builder()
+     * val options = PaywallActivityLaunchIfNeededOptions.Builder()
      *     .setShouldDisplayBlock { customerInfo ->
      *         customerInfo.entitlements.active.isEmpty()
      *     }
@@ -404,18 +403,16 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * launcher.launchIfNeeded(options)
      * ```
      *
-     * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
+     * @param options The launch options configured via [PaywallActivityLaunchIfNeededOptions.Builder].
+     *                Must have either [PaywallActivityLaunchIfNeededOptions.Builder.setRequiredEntitlementIdentifier]
+     *                or [PaywallActivityLaunchIfNeededOptions.Builder.setShouldDisplayBlock] set.
      */
-    fun launchIfNeeded(options: PaywallActivityLaunchOptions) {
-        val shouldDisplayBlock = when {
-            options.requiredEntitlementIdentifier != null ->
-                shouldDisplayBlockForEntitlementIdentifier(options.requiredEntitlementIdentifier)
-            options.shouldDisplayBlock != null -> options.shouldDisplayBlock
-            else -> {
-                // No condition set, just launch directly
-                launch(options)
-                return
-            }
+    fun launchIfNeeded(options: PaywallActivityLaunchIfNeededOptions) {
+        val shouldDisplayBlock = if (options.requiredEntitlementIdentifier != null) {
+            shouldDisplayBlockForEntitlementIdentifier(options.requiredEntitlementIdentifier)
+        } else {
+            // shouldDisplayBlock is guaranteed to be non-null by PaywallActivityLaunchIfNeededOptions.Builder
+            options.shouldDisplayBlock!!
         }
 
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
