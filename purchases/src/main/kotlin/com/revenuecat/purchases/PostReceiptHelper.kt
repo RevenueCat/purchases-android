@@ -146,12 +146,14 @@ internal class PostReceiptHelper(
     fun postRemainingCachedTransactionMetadata(
         appUserID: String,
         allowSharingPlayStoreAccount: Boolean,
+        pendingTransactionsTokens: Set<String>,
         onNoTransactionsToSync: () -> Unit,
         onError: ((PurchasesError) -> Unit),
         onSuccess: ((CustomerInfo) -> Unit),
     ) {
         val results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>> = ConcurrentLinkedQueue()
         val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
+            .filterNot { pendingTransactionsTokens.contains(it.token) }
         if (transactionMetadataToSync.isEmpty()) {
             onNoTransactionsToSync()
             return
@@ -291,9 +293,22 @@ internal class PostReceiptHelper(
         }
 
         if (shouldCacheTransactionMetadata) {
+            val paywallPresentedOfferingContext = presentedPaywall?.data?.presentedOfferingContext
+            // This will make sure we add presented offering context info for purchases when
+            // PurchasesAreCompletedBy.MY_APP is used together with paywalls
+            val effectiveReceiptInfo = if (
+                receiptInfo.presentedOfferingContext == null &&
+                paywallPresentedOfferingContext != null
+            ) {
+                receiptInfo.copy(
+                    presentedOfferingContext = paywallPresentedOfferingContext,
+                )
+            } else {
+                receiptInfo
+            }
             val dataToCache = LocalTransactionMetadata(
                 token = purchaseToken,
-                receiptInfo = receiptInfo,
+                receiptInfo = effectiveReceiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
             )

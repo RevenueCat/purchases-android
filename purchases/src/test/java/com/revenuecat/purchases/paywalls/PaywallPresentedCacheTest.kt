@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import org.assertj.core.api.Assertions.assertThat
@@ -220,7 +221,7 @@ class PaywallPresentedCacheTest {
             ),
             data = PaywallEvent.Data(
                 paywallIdentifier = "test_paywall",
-                offeringIdentifier = "test_offering",
+                presentedOfferingContext = PresentedOfferingContext("test_offering"),
                 paywallRevision = 1,
                 sessionIdentifier = UUID.randomUUID(),
                 displayMode = "full_screen",

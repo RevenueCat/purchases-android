@@ -1,3 +1,38 @@
+## 9.20.2
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* CC-628: Refresh Customer Center UI after subscription cancellation (#3061) via Facundo Menzella (@facumenzella)
+### Paywallv2
+#### 🐞 Bugfixes
+* Improve carousel performance with videos (#3070) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Make networkName nullable in ad event data types (#3076) via Pol Miro (@polmiro)
+* Remove networkName from AdFailedToLoad event (#3074) via Pol Miro (@polmiro)
+
+## 9.20.1
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Video's fallback image has double border (#3071) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Rename `MultipleIntroOffers` override to `MultiplePhaseOffers` (#3069) via Cesar de la Vega (@vegaro)
+* Add LeakCanary (#3068) via Rick (@rickvdl)
+* Avoid posting stored metadata in pending transactions (#3065) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3066) via RevenueCat Git Bot (@RCGitBot)
+
+## 9.20.0
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add custom variables support for v2 paywalls (#3020) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* [AUTOMATIC] Update golden test files for backend integration tests (#3060) via RevenueCat Git Bot (@RCGitBot)
+* Add loading placeholder for the customer center (#3053) via Jaewoong Eum (@skydoves)
+
 ## 9.19.4
 ### 🔄 Other Changes
 * Add internal API to debug tracked events (#3054) via Toni Rico (@tonidero)
