@@ -259,6 +259,13 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
+    @Deprecated(
+        message = "Use launchIfNeeded(PaywallActivityLaunchOptions) instead for customVariables support",
+        replaceWith = ReplaceWith(
+            "launchIfNeeded(PaywallActivityLaunchOptions.Builder().setRequiredEntitlementIdentifier" +
+                "(requiredEntitlementIdentifier).build())",
+        ),
+    )
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
@@ -266,7 +273,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
-        customVariables: Map<String, CustomVariableValue> = emptyMap(),
         paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
@@ -283,7 +289,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
-                        customVariables = customVariables,
                     ),
                 )
             }
@@ -301,7 +306,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * Default is true for Android 15+, false otherwise.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
-    @Suppress("LongParameterList")
     @JvmOverloads
     fun launchIfNeeded(
         offering: Offering? = null,
