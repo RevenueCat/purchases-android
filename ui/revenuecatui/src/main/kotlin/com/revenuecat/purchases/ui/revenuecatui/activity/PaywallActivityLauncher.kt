@@ -36,6 +36,7 @@ interface PaywallDisplayCallback {
  * This can be instantiated with an [ActivityResultCaller] instance
  * like a [ComponentActivity] or a [Fragment].
  */
+@Suppress("TooManyFunctions")
 class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
 
@@ -163,8 +164,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
-     * @param customVariables Custom variables to be used in paywall text. These values will replace
-     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @Suppress("LongParameterList")
@@ -175,7 +174,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
-        customVariables: Map<String, CustomVariableValue> = emptyMap(),
         paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
@@ -194,7 +192,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
-                        customVariables = customVariables,
                     ),
                 )
             }
@@ -302,8 +299,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
      * Default is true for Android 15+, false otherwise.
-     * @param customVariables Custom variables to be used in paywall text. These values will replace
-     * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @Suppress("LongParameterList")
@@ -313,7 +308,6 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
-        customVariables: Map<String, CustomVariableValue> = emptyMap(),
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -329,7 +323,113 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
-                        customVariables = customVariables,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * Launch the paywall activity with the specified options.
+     *
+     * This method provides a builder-based API for launching paywalls with custom configuration
+     * including custom variables.
+     *
+     * Example:
+     * ```kotlin
+     * val options = PaywallActivityLaunchOptions.Builder()
+     *     .setOffering(offering)
+     *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
+     *     .build()
+     *
+     * launcher.launch(options)
+     * ```
+     *
+     * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
+     */
+    fun launch(options: PaywallActivityLaunchOptions) {
+        activityResultLauncher.launch(
+            PaywallActivityArgs(
+                offeringIdAndPresentedOfferingContext = options.offering?.let {
+                    OfferingSelection.IdAndPresentedOfferingContext(
+                        offeringId = it.identifier,
+                        presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                    )
+                },
+                fontProvider = options.fontProvider,
+                shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                edgeToEdge = options.edgeToEdge,
+                customVariables = options.customVariables,
+            ),
+        )
+    }
+
+    /**
+     * Launch the paywall activity conditionally with the specified options.
+     *
+     * The paywall will be displayed based on:
+     * - [PaywallActivityLaunchOptions.requiredEntitlementIdentifier]: Only show if user doesn't have this entitlement
+     * - [PaywallActivityLaunchOptions.shouldDisplayBlock]: Only show if this block returns true
+     *
+     * If neither is set, the paywall will always be displayed (equivalent to [launch]).
+     *
+     * Example with entitlement check:
+     * ```kotlin
+     * val options = PaywallActivityLaunchOptions.Builder()
+     *     .setRequiredEntitlementIdentifier("premium")
+     *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
+     *     .setPaywallDisplayCallback(object : PaywallDisplayCallback {
+     *         override fun onPaywallDisplayResult(wasDisplayed: Boolean) {
+     *             // Handle result
+     *         }
+     *     })
+     *     .build()
+     *
+     * launcher.launchIfNeeded(options)
+     * ```
+     *
+     * Example with custom condition:
+     * ```kotlin
+     * val options = PaywallActivityLaunchOptions.Builder()
+     *     .setShouldDisplayBlock { customerInfo ->
+     *         customerInfo.entitlements.active.isEmpty()
+     *     }
+     *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
+     *     .build()
+     *
+     * launcher.launchIfNeeded(options)
+     * ```
+     *
+     * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
+     */
+    fun launchIfNeeded(options: PaywallActivityLaunchOptions) {
+        val shouldDisplayBlock = when {
+            options.requiredEntitlementIdentifier != null ->
+                shouldDisplayBlockForEntitlementIdentifier(options.requiredEntitlementIdentifier)
+            options.shouldDisplayBlock != null -> options.shouldDisplayBlock
+            else -> {
+                // No condition set, just launch directly
+                launch(options)
+                return
+            }
+        }
+
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            options.paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
+            if (shouldDisplay) {
+                launchPaywallWithArgs(
+                    PaywallActivityArgs(
+                        requiredEntitlementIdentifier = options.requiredEntitlementIdentifier,
+                        offeringIdAndPresentedOfferingContext = options.offering?.let {
+                            OfferingSelection.IdAndPresentedOfferingContext(
+                                offeringId = it.identifier,
+                                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                            )
+                        },
+                        fontProvider = options.fontProvider,
+                        shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                        edgeToEdge = options.edgeToEdge,
+                        customVariables = options.customVariables,
                     ),
                 )
             }

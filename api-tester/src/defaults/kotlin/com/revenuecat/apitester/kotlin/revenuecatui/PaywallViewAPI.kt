@@ -26,8 +26,6 @@ private class PaywallViewAPI {
         listener: PaywallListener,
         fontProvider: FontProvider,
         shouldDisplayDismissButton: Boolean?,
-        dismissHandler: () -> Unit,
-        customVariables: Map<String, CustomVariableValue>,
     ) {
         PaywallView(context)
         PaywallView(context, attrs)
@@ -36,16 +34,10 @@ private class PaywallViewAPI {
         PaywallView(context, offering, listener)
         PaywallView(context, offering, listener, fontProvider)
         PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton)
-        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler)
-        PaywallView(
-            context,
-            offering,
-            listener,
-            fontProvider,
-            shouldDisplayDismissButton,
-            dismissHandler,
-            customVariables,
-        )
+        // Trailing lambda syntax for dismissHandler works correctly
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton) {
+            // dismiss
+        }
     }
 
     fun checkMethods(

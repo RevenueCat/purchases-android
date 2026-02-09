@@ -31,9 +31,6 @@ final class PaywallViewAPI {
         PaywallView paywallView6 = new PaywallView(context, offering, listener, fontProvider);
         PaywallView paywallView7 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton);
         PaywallView paywallView8 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, () -> null);
-        Map<String, CustomVariableValue> customVariables = new HashMap<>();
-        customVariables.put("key", new CustomVariableValue.String("value"));
-        PaywallView paywallView9 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, () -> null, customVariables);
     }
 
     static void checkMethods(PaywallView paywallView, PaywallListener listener, PresentedOfferingContext context) {

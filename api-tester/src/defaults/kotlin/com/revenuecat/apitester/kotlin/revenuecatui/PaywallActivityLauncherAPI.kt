@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
@@ -79,15 +80,6 @@ private class PaywallActivityLauncherAPI {
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
             edgeToEdge = true,
-            customVariables = mapOf("key" to CustomVariableValue.String("value")),
-        )
-        activityLauncher.launchIfNeeded(
-            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
-            offering = offering,
-            fontProvider = fontProvider,
-            shouldDisplayDismissButton = true,
-            edgeToEdge = true,
-            customVariables = mapOf("key" to CustomVariableValue.String("value")),
             paywallDisplayCallback = paywallDisplayCallback,
         )
         activityLauncher.launchIfNeeded(
@@ -114,6 +106,7 @@ private class PaywallActivityLauncherAPI {
             edgeToEdge = true,
             paywallDisplayCallback = paywallDisplayCallback,
         )
+        // Trailing lambda syntax works correctly
         activityLauncher.launchIfNeeded {
             val customerInfo: CustomerInfo = it
             true
@@ -131,11 +124,48 @@ private class PaywallActivityLauncherAPI {
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
             edgeToEdge = true,
-            customVariables = mapOf("key" to CustomVariableValue.String("value")),
         ) {
             val customerInfo: CustomerInfo = it
             true
         }
+    }
+
+    fun checkBuilderPattern(
+        activityLauncher: PaywallActivityLauncher,
+        offering: Offering,
+        fontProvider: ParcelizableFontProvider,
+        paywallDisplayCallback: PaywallDisplayCallback,
+    ) {
+        val customVariables = mapOf("key" to CustomVariableValue.String("value"))
+
+        // Basic launch with builder
+        val options = PaywallActivityLaunchOptions.Builder()
+            .setOffering(offering)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(true)
+            .setEdgeToEdge(true)
+            .setCustomVariables(customVariables)
+            .build()
+        activityLauncher.launch(options)
+
+        // LaunchIfNeeded with requiredEntitlementIdentifier
+        val optionsWithEntitlement = PaywallActivityLaunchOptions.Builder()
+            .setRequiredEntitlementIdentifier("premium")
+            .setOffering(offering)
+            .setCustomVariables(customVariables)
+            .setPaywallDisplayCallback(paywallDisplayCallback)
+            .build()
+        activityLauncher.launchIfNeeded(optionsWithEntitlement)
+
+        // LaunchIfNeeded with shouldDisplayBlock
+        val optionsWithBlock = PaywallActivityLaunchOptions.Builder()
+            .setShouldDisplayBlock { customerInfo ->
+                customerInfo.entitlements.active.isEmpty()
+            }
+            .setOffering(offering)
+            .setCustomVariables(customVariables)
+            .build()
+        activityLauncher.launchIfNeeded(optionsWithBlock)
     }
 
     fun checkPaywallDisplayCallback() {

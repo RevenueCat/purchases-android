@@ -48,7 +48,6 @@ class PaywallView : CompatComposeView {
         fontProvider: FontProvider? = null,
         shouldDisplayDismissButton: Boolean? = null,
         dismissHandler: (() -> Unit)? = null,
-        customVariables: Map<String, CustomVariableValue>? = null,
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
@@ -60,7 +59,6 @@ class PaywallView : CompatComposeView {
         }
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
         this.initialFontProvider = fontProvider
-        this.initialCustomVariables = customVariables
         init(context, null)
     }
 
@@ -71,7 +69,6 @@ class PaywallView : CompatComposeView {
     )
     private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
     private var initialFontProvider: FontProvider? = null
-    private var initialCustomVariables: Map<String, CustomVariableValue>? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -172,7 +169,6 @@ class PaywallView : CompatComposeView {
             .setFontProvider(initialFontProvider)
             .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
-            .setCustomVariables(initialCustomVariables ?: emptyMap())
             .build()
     }
 

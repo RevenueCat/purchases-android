@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
@@ -32,7 +33,7 @@ final class PaywallActivityLauncherAPI {
         PaywallActivityLauncher launcher3 = new PaywallActivityLauncher(resultCaller, resultHandler);
         launcher.launch();
         launcher.launch(offering);
-        launcher.launch(null);
+        launcher.launch((Offering) null);
         launcher.launch(offering, fontProvider);
         launcher.launch(offering, null);
         launcher.launch(null, fontProvider);
@@ -50,15 +51,49 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true);
-        Map<String, CustomVariableValue> customVariables = new HashMap<>();
-        customVariables.put("key", new CustomVariableValue.String("value"));
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables);
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, customVariables, paywallDisplayCallback);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, true, paywallDisplayCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(null, null, true, customerInfo -> null);
-        launcher.launchIfNeeded(offering, fontProvider, true, true, customVariables, customerInfo -> null);
+        launcher.launchIfNeeded(null, null, true, true, customerInfo -> null);
+    }
+
+    static void checkBuilderPattern(
+            PaywallActivityLauncher launcher,
+            Offering offering,
+            ParcelizableFontProvider fontProvider,
+            PaywallDisplayCallback paywallDisplayCallback
+    ) {
+        Map<String, CustomVariableValue> customVariables = new HashMap<>();
+        customVariables.put("key", new CustomVariableValue.String("value"));
+
+        // Basic launch with builder
+        PaywallActivityLaunchOptions options = new PaywallActivityLaunchOptions.Builder()
+                .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
+                .setCustomVariables(customVariables)
+                .build();
+        launcher.launch(options);
+
+        // LaunchIfNeeded with requiredEntitlementIdentifier
+        PaywallActivityLaunchOptions optionsWithEntitlement = new PaywallActivityLaunchOptions.Builder()
+                .setRequiredEntitlementIdentifier("premium")
+                .setOffering(offering)
+                .setCustomVariables(customVariables)
+                .setPaywallDisplayCallback(paywallDisplayCallback)
+                .build();
+        launcher.launchIfNeeded(optionsWithEntitlement);
+
+        // LaunchIfNeeded with shouldDisplayBlock
+        PaywallActivityLaunchOptions optionsWithBlock = new PaywallActivityLaunchOptions.Builder()
+                .setShouldDisplayBlock(customerInfo -> customerInfo.getEntitlements().getActive().isEmpty())
+                .setOffering(offering)
+                .setCustomVariables(customVariables)
+                .build();
+        launcher.launchIfNeeded(optionsWithBlock);
     }
 
     static void checkPaywallDisplayCallback() {
