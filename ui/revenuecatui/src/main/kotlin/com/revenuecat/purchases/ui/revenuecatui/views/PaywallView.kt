@@ -157,8 +157,8 @@ class PaywallView : CompatComposeView {
      * @param variables A map of variable names to their [CustomVariableValue] values.
      */
     fun setCustomVariables(variables: Map<String, CustomVariableValue>) {
-        CustomVariableKeyValidator.validate(variables)
-        paywallOptions = paywallOptions.copy(customVariables = variables.toMap())
+        val validVariables = CustomVariableKeyValidator.validateAndFilter(variables)
+        paywallOptions = paywallOptions.copy(customVariables = validVariables)
     }
 
     override fun onBackPressed() {
