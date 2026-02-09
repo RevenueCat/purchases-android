@@ -1,8 +1,11 @@
 ## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* CC-628: Refresh Customer Center UI after subscription cancellation (#3061) via Facundo Menzella (@facumenzella)
 ### Paywallv2
-#### ✨ New Features
-* Add custom variables support for v2 paywalls (#3020) via Facundo Menzella (@facumenzella)
+#### 🐞 Bugfixes
+* Improve carousel performance with videos (#3070) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* [AUTOMATIC] Update golden test files for backend integration tests (#3060) via RevenueCat Git Bot (@RCGitBot)
-* Add loading placeholder for the customer center (#3053) via Jaewoong Eum (@skydoves)
+* Make networkName nullable in ad event data types (#3076) via Pol Miro (@polmiro)
+* Remove networkName from AdFailedToLoad event (#3074) via Pol Miro (@polmiro)

@@ -6,7 +6,6 @@ import dev.drewhamilton.poko.Poko
 /**
  * Data for tracking when an ad has failed to load.
  *
- * @property networkName The name of the ad network.
  * @property mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
  * @property adFormat The format of the ad. See [AdFormat] for common values.
  * @property placement The placement of the ad, if available.
@@ -16,7 +15,6 @@ import dev.drewhamilton.poko.Poko
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 class AdFailedToLoadData(
-    val networkName: String,
     val mediatorName: AdMediatorName,
     val adFormat: AdFormat,
     val placement: String?,

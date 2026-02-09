@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -592,12 +593,15 @@ class PaywallViewModelTest {
         val expectedPaywall = defaultOffering.paywall!!
 
         verifyPaywall(state, expectedPaywall)
-        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.monthly })
-            .isNotNull
-        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.annual })
-            .isNotNull
-        assertThat(state.templateConfiguration.packages.all.firstOrNull { it.rcPackage == TestData.Packages.lifetime })
-            .isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull {
+            it.rcPackage == TestData.Packages.monthly.copy(defaultOffering.identifier)
+        }).isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull {
+            it.rcPackage == TestData.Packages.annual.copy(defaultOffering.identifier)
+        }).isNotNull
+        assertThat(state.templateConfiguration.packages.all.firstOrNull {
+            it.rcPackage == TestData.Packages.lifetime.copy(defaultOffering.identifier)
+        }).isNotNull
         assertThat(state.templateConfiguration.packages.all.size).isEqualTo(3)
     }
 
@@ -1232,7 +1236,9 @@ class PaywallViewModelTest {
                     val paywallEvent = event as? PaywallEvent
                         ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
 
-                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(paywallEvent.data.presentedOfferingContext).isEqualTo(
+                        PresentedOfferingContext(defaultOffering.identifier)
+                    )
                     assertThat(paywallEvent.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
                     assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
                     assertThat(paywallEvent.data.darkMode).isFalse
@@ -1270,11 +1276,15 @@ class PaywallViewModelTest {
     @Test
     fun `handlePackagePurchase cancellation tracks cancel event`(): Unit = runBlocking {
         // Arrange
+        val offeringId = "offering-id"
         val offering = Offering(
-            identifier = "offering-id",
+            identifier = offeringId,
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            availablePackages = listOf(
+                TestData.Packages.monthly.copy(offeringId),
+                TestData.Packages.annual.copy(offeringId),
+            ),
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering).apply {
@@ -1338,6 +1348,40 @@ class PaywallViewModelTest {
 
         // Assert
         verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
+    }
+
+    @Test
+    fun `event data uses presentedOfferingContext from offering packages`() {
+        // Create an offering with a specific offeringId and packages that have presentedOfferingContext
+        val offeringId = "test-offering-id"
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                TestData.Packages.monthly.copy(offeringId),
+                TestData.Packages.annual.copy(offeringId),
+            ),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        val model = create(offering = offering)
+        model.trackPaywallImpressionIfNeeded()
+
+        // Verify that the event uses PresentedOfferingContext from the first package
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as? PaywallEvent
+                        ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
+
+                    assertThat(paywallEvent.data.presentedOfferingContext).isEqualTo(
+                        PresentedOfferingContext(offeringId)
+                    )
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.IMPRESSION)
+                },
+            )
+        }
     }
 
     @Test
@@ -1795,7 +1839,9 @@ class PaywallViewModelTest {
                     val paywallEvent = event as? PaywallEvent
                         ?: error("Expected PaywallEvent but got ${event::class.simpleName}")
 
-                    assertThat(paywallEvent.data.offeringIdentifier).isEqualTo(offeringIdentifier)
+                    assertThat(paywallEvent.data.presentedOfferingContext).isEqualTo(
+                        PresentedOfferingContext(offeringIdentifier)
+                    )
                     assertThat(paywallEvent.data.paywallRevision).isEqualTo(paywallRevision)
                     assertThat(paywallEvent.data.displayMode).isEqualTo("full_screen")
                     assertThat(paywallEvent.data.darkMode).isFalse

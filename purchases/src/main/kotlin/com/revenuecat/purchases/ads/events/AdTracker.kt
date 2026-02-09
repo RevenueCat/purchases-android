@@ -101,7 +101,6 @@ class AdTracker internal constructor(
     fun trackAdFailedToLoad(data: AdFailedToLoadData) {
         eventsManager.track(
             event = AdEvent.FailedToLoad(
-                networkName = data.networkName,
                 mediatorName = data.mediatorName,
                 adFormat = data.adFormat,
                 placement = data.placement,

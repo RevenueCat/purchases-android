@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -756,7 +757,7 @@ internal class PaywallViewModelImpl(
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             paywallIdentifier = paywallId,
-            offeringIdentifier = offering.identifier,
+            presentedOfferingContext = offering.presentedOfferingContext,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -773,7 +774,7 @@ internal class PaywallViewModelImpl(
         }
         return PaywallEvent.Data(
             paywallIdentifier = paywallData.data.id,
-            offeringIdentifier = offering.identifier,
+            presentedOfferingContext = offering.presentedOfferingContext,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -789,4 +790,7 @@ internal class PaywallViewModelImpl(
         offering.paywallComponents?.uiConfig?.customVariables
             ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
             ?: emptyMap()
+
+    private val Offering.presentedOfferingContext: PresentedOfferingContext
+        get() = availablePackages.firstOrNull()?.presentedOfferingContext ?: PresentedOfferingContext(identifier)
 }
