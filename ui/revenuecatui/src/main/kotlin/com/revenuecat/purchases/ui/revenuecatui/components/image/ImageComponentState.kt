@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -109,24 +110,19 @@ internal class ImageComponentState(
     private var darkMode by mutableStateOf(initialDarkMode)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    private val isSelected by derivedStateOf {
-        style.computeIsSelected(
-            selectedPackageInfo = selectedPackageInfoProvider(),
-            selectedTabIndex = selectedTabIndexProvider(),
-        )
-    }
-
-    private val offerEligibility by derivedStateOf {
-        style.resolveOfferEligibility(
-            selectedOfferEligibility = selectedOfferEligibilityProvider(),
-        )
-    }
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()

@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -75,24 +76,19 @@ internal class IconComponentState(
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    private val isSelected by derivedStateOf {
-        style.computeIsSelected(
-            selectedPackageInfo = selectedPackageInfoProvider(),
-            selectedTabIndex = selectedTabIndexProvider(),
-        )
-    }
-
-    private val offerEligibility by derivedStateOf {
-        style.resolveOfferEligibility(
-            selectedOfferEligibility = selectedOfferEligibilityProvider(),
-        )
-    }
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
     }
     private val baseUrl: String by derivedStateOf {
         presentedPartial?.partial?.baseUrl ?: style.baseUrl
