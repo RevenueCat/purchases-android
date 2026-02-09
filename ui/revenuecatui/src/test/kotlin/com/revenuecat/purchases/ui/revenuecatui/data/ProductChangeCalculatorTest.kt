@@ -9,6 +9,9 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
 import com.revenuecat.purchases.models.GoogleReplacementMode
@@ -314,7 +317,9 @@ class ProductChangeCalculatorTest {
 
     @Test
     fun `returns null when exception is thrown`() = runTest {
-        coEvery { purchases.awaitCustomerInfo() } throws RuntimeException("Network error")
+        coEvery { purchases.awaitCustomerInfo() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.NetworkError, "Network error"),
+        )
 
         val packageToPurchase = createSubscriptionPackage(
             productId = "com.test.subscription:monthly",
