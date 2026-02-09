@@ -19,6 +19,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -99,6 +100,7 @@ internal class PaywallViewModelImpl(
     private var isDarkMode: Boolean,
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
+    private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -399,7 +401,10 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchase(activity, selectedPackage.rcPackage)
+                performPurchase(
+                    activity = activity,
+                    packageToPurchase = selectedPackage.rcPackage,
+                )
             }
             is PaywallState.Loaded.Components -> {
                 // Purchase the provided package if not null, otherwise purchase the selected package.
@@ -408,7 +413,8 @@ internal class PaywallViewModelImpl(
                         rcPackage = it,
                     )
                 } ?: currentState.selectedPackageInfo
-                performPurchaseIfNecessary(activity, selectedPackageInfo)
+                val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
+                performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
             }
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -420,16 +426,25 @@ internal class PaywallViewModelImpl(
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
+        productChangeConfig: ProductChangeConfig?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
         } else {
-            performPurchase(activity, packageInfo.rcPackage)
+            performPurchase(
+                activity = activity,
+                packageToPurchase = packageInfo.rcPackage,
+                productChangeConfig = productChangeConfig,
+            )
         }
     }
 
-    @Suppress("LongMethod", "NestedBlockDepth")
-    private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+    @Suppress("LongMethod", "NestedBlockDepth", "CyclomaticComplexMethod")
+    private suspend fun performPurchase(
+        activity: Activity,
+        packageToPurchase: Package,
+        productChangeConfig: ProductChangeConfig? = null,
+    ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCoroutine { continuation ->
@@ -447,6 +462,10 @@ internal class PaywallViewModelImpl(
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
             trackPaywallPurchaseInitiated(packageToPurchase)
+
+            val productChangeInfo = productChangeConfig?.let {
+                productChangeCalculator.calculateProductChangeInfo(packageToPurchase, it)
+            }
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
@@ -481,9 +500,19 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+                    val purchaseParamsBuilder = PurchaseParams.Builder(activity, packageToPurchase)
+
+                    if (productChangeInfo != null) {
+                        Logger.d(
+                            "Performing product change from ${productChangeInfo.oldProductId} " +
+                                "with mode ${productChangeInfo.replacementMode}",
+                        )
+                        purchaseParamsBuilder
+                            .oldProductId(productChangeInfo.oldProductId)
+                            .googleReplacementMode(productChangeInfo.replacementMode)
+                    }
+
+                    val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
