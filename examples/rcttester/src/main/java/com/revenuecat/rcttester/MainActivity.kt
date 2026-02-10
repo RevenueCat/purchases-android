@@ -46,7 +46,7 @@ fun RCTTesterApp(application: MainApplication) {
     }
     var configuration by remember {
         mutableStateOf(
-            SDKConfiguration.load(application) ?: SDKConfiguration.default(application),
+            SDKConfiguration.load(application) ?: SDKConfiguration.default(),
         )
     }
 

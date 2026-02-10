@@ -59,11 +59,11 @@ dependencies {
     // RevenueCat SDK
     implementation(project(":purchases"))
     implementation(project(":ui:revenuecatui"))
-    
+
     // AndroidX Core
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    
+
     // Compose
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
@@ -72,19 +72,19 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
-    
+
     // Navigation
     implementation(libs.navigation.compose)
-    
+
     // DataStore for configuration persistence
     implementation(libs.androidx.datastore.preferences)
-    
+
     // Coroutines (included transitively via lifecycle-runtime-ktx, but explicit for clarity)
     implementation(libs.coroutines.core)
-    
+
     // Serialization for configuration persistence
     implementation(libs.kotlinx.serialization.json)
-    
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

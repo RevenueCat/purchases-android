@@ -34,8 +34,8 @@ fun ConfigurationSummarySection(
 private fun ConfigurationRow(
     label: String,
     value: String,
-    monospace: Boolean = false,
     modifier: Modifier = Modifier,
+    monospace: Boolean = false,
 ) {
     Row(
         modifier = modifier
@@ -56,23 +56,28 @@ private fun ConfigurationRow(
     }
 }
 
-private fun redactAPIKey(apiKey: String): String {
-    if (apiKey.isEmpty()) return "—"
+private const val DEFAULT_PREFIX_LENGTH = 4
+private const val DEFAULT_SUFFIX_LENGTH = 4
 
-    val prefix: String
+private fun redactAPIKey(apiKey: String): String {
+    if (apiKey.isEmpty()) {
+        return "—"
+    }
+
     val underscoreIndex = apiKey.indexOf('_')
-    prefix = if (underscoreIndex != -1) {
+    val prefix = if (underscoreIndex != -1) {
         apiKey.substring(0, underscoreIndex + 1)
     } else {
-        apiKey.take(4)
+        apiKey.take(DEFAULT_PREFIX_LENGTH)
     }
 
-    val suffix = apiKey.takeLast(4)
+    val suffix = apiKey.takeLast(DEFAULT_SUFFIX_LENGTH)
 
     // Avoid showing duplicates if key is too short
-    if (apiKey.length <= prefix.length + 4) {
-        return apiKey
+    val minKeyLength = prefix.length + DEFAULT_SUFFIX_LENGTH
+    return if (apiKey.length <= minKeyLength) {
+        apiKey
+    } else {
+        "$prefix•••••$suffix"
     }
-
-    return "$prefix•••••$suffix"
 }

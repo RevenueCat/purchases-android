@@ -1,14 +1,18 @@
 package com.revenuecat.rcttester
 
 import android.app.Application
-import com.revenuecat.rcttester.config.SDKConfiguration
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.rcttester.config.SDKConfiguration
 
 class MainApplication : Application() {
     var isSDKConfigured = false
         private set
+
+    private companion object {
+        private const val MIN_API_KEY_LENGTH = 10
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -19,35 +23,50 @@ class MainApplication : Application() {
         // Load saved configuration and configure SDK if available
         // Only configure if not already configured
         if (!Purchases.isConfigured) {
-            val savedConfiguration = SDKConfiguration.load(this)
-            if (savedConfiguration != null) {
-                // Sanitize API key - remove newlines and trim
-                val sanitizedApiKey = savedConfiguration.apiKey.trim().replace("\n", "").replace("\r", "")
-                if (sanitizedApiKey.isNotBlank() && sanitizedApiKey.length > 10) {
-                    // Only configure if API key looks valid (at least 10 chars)
-                    val sanitizedConfig = savedConfiguration.copy(apiKey = sanitizedApiKey)
-                    try {
-                        configureSDK(sanitizedConfig)
-                    } catch (e: Exception) {
-                        // If configuration fails, clear the saved config
-                        android.util.Log.e("RCTTester", "Failed to configure SDK: ${e.message}", e)
-                        // Clear invalid configuration
-                        val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
-                        prefs.edit().clear().apply()
-                        isSDKConfigured = false
-                    }
-                } else {
-                    // Invalid API key, clear it
-                    android.util.Log.w("RCTTester", "Invalid API key found, clearing configuration")
-                    val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
-                    prefs.edit().clear().apply()
-                    isSDKConfigured = false
-                }
-            }
+            configureFromSavedSettings()
         } else {
             // SDK already configured, mark as configured
             isSDKConfigured = true
         }
+    }
+
+    private fun configureFromSavedSettings() {
+        val savedConfiguration = SDKConfiguration.load(this) ?: return
+        val sanitizedApiKey = sanitizeApiKey(savedConfiguration.apiKey)
+        if (!isValidApiKey(sanitizedApiKey)) {
+            clearInvalidConfiguration()
+            return
+        }
+        val sanitizedConfig = savedConfiguration.copy(apiKey = sanitizedApiKey)
+        try {
+            configureSDK(sanitizedConfig)
+        } catch (e: IllegalStateException) {
+            handleConfigurationError(e)
+        }
+    }
+
+    private fun sanitizeApiKey(apiKey: String): String {
+        return apiKey.trim()
+            .replace("\n", "")
+            .replace("\r", "")
+    }
+
+    private fun isValidApiKey(apiKey: String): Boolean {
+        return apiKey.isNotBlank() && apiKey.length > MIN_API_KEY_LENGTH
+    }
+
+    private fun clearInvalidConfiguration() {
+        android.util.Log.w("RCTTester", "Invalid API key found, clearing configuration")
+        val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        isSDKConfigured = false
+    }
+
+    private fun handleConfigurationError(e: IllegalStateException) {
+        android.util.Log.e("RCTTester", "Failed to configure SDK: ${e.message}", e)
+        val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        isSDKConfigured = false
     }
 
     fun configureSDK(configuration: SDKConfiguration) {
@@ -62,8 +81,9 @@ class MainApplication : Application() {
             return
         }
 
+        val purchasesAreCompletedBy = sanitizedConfig.toPurchasesAreCompletedBy()
         val builder = PurchasesConfiguration.Builder(this, sanitizedApiKey)
-            .purchasesAreCompletedBy(sanitizedConfig.toPurchasesAreCompletedBy())
+            .purchasesAreCompletedBy(purchasesAreCompletedBy)
 
         // Set app user ID if provided, otherwise SDK will generate anonymous ID
         if (sanitizedConfig.appUserID.isNotBlank()) {

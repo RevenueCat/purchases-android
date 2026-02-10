@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,75 +46,106 @@ fun MainScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // SDK Configuration Section
-            item {
-                Card(
-                    modifier = Modifier.fillMaxSize(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "SDK Configuration",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        ConfigurationSummarySection(configuration = configuration)
-                    }
-                }
-            }
+        MainScreenContent(
+            configuration = configuration,
+            onConfigurationUpdate = onConfigurationUpdate,
+            onNavigateToOfferings = onNavigateToOfferings,
+            paddingValues = paddingValues,
+        )
+    }
+}
 
-            // User Section
-            item {
-                Card(
-                    modifier = Modifier.fillMaxSize(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "User",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        UserSummarySection(
-                            configuration = configuration,
-                            onConfigurationUpdate = onConfigurationUpdate,
-                        )
-                    }
-                }
-            }
-
-            // Offerings Section
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(onClick = onNavigateToOfferings),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                ) {
-                    ListItem(
-                        headlineContent = { Text("View Offerings") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.List,
-                                contentDescription = null,
-                            )
-                        },
-                    )
-                }
-            }
+@Composable
+private fun MainScreenContent(
+    configuration: SDKConfiguration,
+    onConfigurationUpdate: (SDKConfiguration) -> Unit,
+    onNavigateToOfferings: () -> Unit,
+    paddingValues: androidx.compose.foundation.layout.PaddingValues,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            ConfigurationCard(configuration = configuration)
         }
+        item {
+            UserCard(
+                configuration = configuration,
+                onConfigurationUpdate = onConfigurationUpdate,
+            )
+        }
+        item {
+            OfferingsCard(onNavigateToOfferings = onNavigateToOfferings)
+        }
+    }
+}
+
+@Composable
+private fun ConfigurationCard(configuration: SDKConfiguration) {
+    Card(
+        modifier = Modifier.fillMaxSize(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "SDK Configuration",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            ConfigurationSummarySection(configuration = configuration)
+        }
+    }
+}
+
+@Composable
+private fun UserCard(
+    configuration: SDKConfiguration,
+    onConfigurationUpdate: (SDKConfiguration) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxSize(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "User",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            UserSummarySection(
+                configuration = configuration,
+                onConfigurationUpdate = onConfigurationUpdate,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OfferingsCard(onNavigateToOfferings: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(onClick = onNavigateToOfferings),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        ListItem(
+            headlineContent = { Text("View Offerings") },
+            leadingContent = {
+                Icon(
+                    Icons.Default.List,
+                    contentDescription = null,
+                )
+            },
+        )
     }
 }

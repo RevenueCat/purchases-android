@@ -45,107 +45,19 @@ fun ConfigurationScreen(
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     Scaffold(modifier = modifier) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth(),
-        ) {
-            // API Key Section
-            Text(
-                text = "RevenueCat API Key",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { newValue: String -> apiKey = newValue },
-                label = { Text("API Key") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            )
-            Text(
-                text = "Your RevenueCat API key. Can also be set via BuildConfig.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
-            )
-
-            // App User ID Section
-            Text(
-                text = "App User ID",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            OutlinedTextField(
-                value = appUserID,
-                onValueChange = { newValue: String -> appUserID = newValue },
-                label = { Text("App User ID") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            )
-            Text(
-                text = "Leave empty to let the SDK generate an anonymous user ID.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
-            )
-
-            // Purchases Completed By Section
-            Text(
-                text = "Purchases Are Completed By",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            ExposedDropdownMenuBox(
-                expanded = dropdownExpanded,
-                onExpandedChange = { dropdownExpanded = it },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                OutlinedTextField(
-                    value = purchasesAreCompletedBy.displayName,
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text("Purchases Completed By") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
-                    },
-                    modifier = Modifier
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                )
-                ExposedDropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false },
-                ) {
-                    PurchasesCompletedByType.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.displayName) },
-                            onClick = {
-                                purchasesAreCompletedBy = option
-                                dropdownExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
-            Text(
-                text = purchasesCompletedByFooter(purchasesAreCompletedBy),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Configure Button
-            Button(
-                onClick = {
-                    // Sanitize API key - trim whitespace and newlines
+        ConfigurationScreenContent(
+            state = ConfigurationScreenState(
+                apiKey = apiKey,
+                appUserID = appUserID,
+                purchasesAreCompletedBy = purchasesAreCompletedBy,
+                dropdownExpanded = dropdownExpanded,
+            ),
+            callbacks = ConfigurationScreenCallbacks(
+                onApiKeyChange = { apiKey = it },
+                onAppUserIDChange = { appUserID = it },
+                onPurchasesAreCompletedByChange = { purchasesAreCompletedBy = it },
+                onDropdownExpandedChange = { dropdownExpanded = it },
+                onConfigure = {
                     val sanitizedApiKey = apiKey.trim().replace("\n", "").replace("\r", "")
                     onConfigure(
                         SDKConfiguration(
@@ -155,19 +67,193 @@ fun ConfigurationScreen(
                         ),
                     )
                 },
-                enabled = apiKey.trim().isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
+            ),
+            paddingValues = paddingValues,
+        )
+    }
+}
+
+private data class ConfigurationScreenState(
+    val apiKey: String,
+    val appUserID: String,
+    val purchasesAreCompletedBy: PurchasesCompletedByType,
+    val dropdownExpanded: Boolean,
+)
+
+private data class ConfigurationScreenCallbacks(
+    val onApiKeyChange: (String) -> Unit,
+    val onAppUserIDChange: (String) -> Unit,
+    val onPurchasesAreCompletedByChange: (PurchasesCompletedByType) -> Unit,
+    val onDropdownExpandedChange: (Boolean) -> Unit,
+    val onConfigure: () -> Unit,
+)
+
+@Composable
+private fun ConfigurationScreenContent(
+    state: ConfigurationScreenState,
+    callbacks: ConfigurationScreenCallbacks,
+    paddingValues: androidx.compose.foundation.layout.PaddingValues,
+) {
+    Column(
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+            .fillMaxWidth(),
+    ) {
+        ApiKeySection(
+            apiKey = state.apiKey,
+            onApiKeyChange = callbacks.onApiKeyChange,
+        )
+        AppUserIDSection(
+            appUserID = state.appUserID,
+            onAppUserIDChange = callbacks.onAppUserIDChange,
+        )
+        PurchasesCompletedBySection(
+            purchasesAreCompletedBy = state.purchasesAreCompletedBy,
+            dropdownExpanded = state.dropdownExpanded,
+            onPurchasesAreCompletedByChange = callbacks.onPurchasesAreCompletedByChange,
+            onDropdownExpandedChange = callbacks.onDropdownExpandedChange,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        ConfigureButton(
+            apiKey = state.apiKey,
+            onConfigure = callbacks.onConfigure,
+        )
+    }
+}
+
+@Composable
+private fun ApiKeySection(
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit,
+) {
+    Column {
+        Text(
+            text = "RevenueCat API Key",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = onApiKeyChange,
+            label = { Text("API Key") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+        )
+        Text(
+            text = "Your RevenueCat API key. Can also be set via BuildConfig.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+    }
+}
+
+@Composable
+private fun AppUserIDSection(
+    appUserID: String,
+    onAppUserIDChange: (String) -> Unit,
+) {
+    Column {
+        Text(
+            text = "App User ID",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        OutlinedTextField(
+            value = appUserID,
+            onValueChange = onAppUserIDChange,
+            label = { Text("App User ID") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+        )
+        Text(
+            text = "Leave empty to let the SDK generate an anonymous user ID.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PurchasesCompletedBySection(
+    purchasesAreCompletedBy: PurchasesCompletedByType,
+    dropdownExpanded: Boolean,
+    onPurchasesAreCompletedByChange: (PurchasesCompletedByType) -> Unit,
+    onDropdownExpandedChange: (Boolean) -> Unit,
+) {
+    Column {
+        Text(
+            text = "Purchases Are Completed By",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        ExposedDropdownMenuBox(
+            expanded = dropdownExpanded,
+            onExpandedChange = onDropdownExpandedChange,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            OutlinedTextField(
+                value = purchasesAreCompletedBy.displayName,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Purchases Completed By") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
+                },
+                modifier = Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+            )
+            ExposedDropdownMenu(
+                expanded = dropdownExpanded,
+                onDismissRequest = { onDropdownExpandedChange(false) },
             ) {
-                Text("Configure SDK")
+                PurchasesCompletedByType.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.displayName) },
+                        onClick = {
+                            onPurchasesAreCompletedByChange(option)
+                            onDropdownExpandedChange(false)
+                        },
+                    )
+                }
             }
         }
+        Text(
+            text = purchasesCompletedByFooter(purchasesAreCompletedBy),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+    }
+}
+
+@Composable
+private fun ConfigureButton(
+    apiKey: String,
+    onConfigure: () -> Unit,
+) {
+    Button(
+        onClick = onConfigure,
+        enabled = apiKey.trim().isNotBlank(),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("Configure SDK")
     }
 }
 
 private fun purchasesCompletedByFooter(option: PurchasesCompletedByType): String {
     return when (option) {
         PurchasesCompletedByType.REVENUECAT ->
-            "All purchases are done through RevenueCat's purchase methods. RevenueCat will also finish transactions after successful receipt posting."
+            "All purchases are done through RevenueCat's purchase methods. " +
+                "RevenueCat will also finish transactions after successful receipt posting."
         PurchasesCompletedByType.MY_APP ->
             "The app is responsible for finishing transactions (also known as 'Observer Mode')."
     }

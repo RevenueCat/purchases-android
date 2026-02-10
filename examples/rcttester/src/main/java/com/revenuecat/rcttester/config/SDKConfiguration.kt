@@ -29,7 +29,8 @@ data class SDKConfiguration(
             val jsonString = prefs.getString(KEY_CONFIG, null) ?: return null
             return try {
                 json.decodeFromString<SDKConfiguration>(jsonString)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                android.util.Log.w("SDKConfiguration", "Failed to decode configuration", e)
                 null
             }
         }
@@ -37,9 +38,9 @@ data class SDKConfiguration(
         /**
          * Default configuration
          */
-        fun default(context: Context): SDKConfiguration {
+        fun default(): SDKConfiguration {
             return SDKConfiguration(
-                apiKey = Constants.getApiKey(context),
+                apiKey = Constants.DEFAULT_API_KEY,
                 appUserID = "",
                 purchasesAreCompletedBy = PurchasesCompletedByType.REVENUECAT,
             )
@@ -69,7 +70,7 @@ data class SDKConfiguration(
 @Serializable
 enum class PurchasesCompletedByType {
     REVENUECAT,
-    MY_APP;
+    MY_APP, ;
 
     val displayName: String
         get() = when (this) {
