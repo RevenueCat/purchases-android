@@ -131,6 +131,13 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
+    @Deprecated(
+        message = "Use launchWithOptions(PaywallActivityLaunchOptions) instead",
+        replaceWith = ReplaceWith(
+            "launchWithOptions(PaywallActivityLaunchOptions.Builder()" +
+                ".setOfferingIdentifier(offeringIdentifier, presentedOfferingContext).build())",
+        ),
+    )
     fun launch(
         offeringIdentifier: String,
         presentedOfferingContext: PresentedOfferingContext,
@@ -139,18 +146,15 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         edgeToEdge: Boolean = defaultEdgeToEdge,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
-        activityResultLauncher.launch(
-            PaywallActivityArgs(
-                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                    offeringId = offeringIdentifier,
-                    presentedOfferingContext = presentedOfferingContext,
-                ),
-                fontProvider = fontProvider,
-                shouldDisplayDismissButton = shouldDisplayDismissButton,
-                edgeToEdge = edgeToEdge,
-                customVariables = customVariables,
-            ),
-        )
+        @OptIn(InternalRevenueCatAPI::class)
+        val options = PaywallActivityLaunchOptions.Builder()
+            .setOfferingIdentifier(offeringIdentifier, presentedOfferingContext)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
+            .setEdgeToEdge(edgeToEdge)
+            .setCustomVariables(customVariables)
+            .build()
+        launchWithOptions(options)
     }
 
     /**
@@ -345,14 +349,22 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
      */
     fun launchWithOptions(options: PaywallActivityLaunchOptions) {
+        // Support both public Offering API and internal offeringIdentifier API
+        val offeringIdAndContext = when {
+            options.offeringIdentifier != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = options.offeringIdentifier,
+                presentedOfferingContext = options.presentedOfferingContext,
+            )
+            options.offering != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = options.offering.identifier,
+                presentedOfferingContext = options.offering.availablePackages
+                    .firstOrNull()?.presentedOfferingContext,
+            )
+            else -> null
+        }
         activityResultLauncher.launch(
             PaywallActivityArgs(
-                offeringIdAndPresentedOfferingContext = options.offering?.let {
-                    OfferingSelection.IdAndPresentedOfferingContext(
-                        offeringId = it.identifier,
-                        presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
-                    )
-                },
+                offeringIdAndPresentedOfferingContext = offeringIdAndContext,
                 fontProvider = options.fontProvider,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 edgeToEdge = options.edgeToEdge,

@@ -149,22 +149,29 @@ private class PaywallActivityLauncherAPI {
             .build()
         activityLauncher.launchWithOptions(options)
 
-        // LaunchIfNeeded with requiredEntitlementIdentifier
+        // LaunchIfNeeded with requiredEntitlementIdentifier (all builder methods)
         val optionsWithEntitlement = PaywallActivityLaunchIfNeededOptions.Builder()
             .setRequiredEntitlementIdentifier("premium")
             .setOffering(offering)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(true)
+            .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
             .setPaywallDisplayCallback(paywallDisplayCallback)
             .build()
         activityLauncher.launchIfNeededWithOptions(optionsWithEntitlement)
 
-        // LaunchIfNeeded with shouldDisplayBlock
+        // LaunchIfNeeded with shouldDisplayBlock (all builder methods)
         val optionsWithBlock = PaywallActivityLaunchIfNeededOptions.Builder()
             .setShouldDisplayBlock { customerInfo ->
                 customerInfo.entitlements.active.isEmpty()
             }
             .setOffering(offering)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(true)
+            .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
+            .setPaywallDisplayCallback(paywallDisplayCallback)
             .build()
         activityLauncher.launchIfNeededWithOptions(optionsWithBlock)
     }

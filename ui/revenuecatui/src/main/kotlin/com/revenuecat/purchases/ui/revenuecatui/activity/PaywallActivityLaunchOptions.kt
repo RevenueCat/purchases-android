@@ -25,12 +25,16 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
  * For conditional launches (showing the paywall only when certain conditions are met),
  * use [PaywallActivityLaunchIfNeededOptions] instead.
  */
+@Suppress("LongParameterList")
 class PaywallActivityLaunchOptions private constructor(
     internal val offering: Offering?,
     internal val fontProvider: ParcelizableFontProvider?,
     internal val shouldDisplayDismissButton: Boolean,
     internal val edgeToEdge: Boolean,
     internal val customVariables: Map<String, CustomVariableValue>,
+    // Internal properties for hybrid SDK support
+    internal val offeringIdentifier: String?,
+    internal val presentedOfferingContext: PresentedOfferingContext?,
 ) {
     /**
      * Builder for creating [PaywallActivityLaunchOptions].
@@ -42,12 +46,34 @@ class PaywallActivityLaunchOptions private constructor(
         private var edgeToEdge: Boolean = defaultEdgeToEdge
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
+        // Internal properties for hybrid SDK support
+        private var offeringIdentifier: String? = null
+        private var presentedOfferingContext: PresentedOfferingContext? = null
+
         /**
          * Sets the offering to be shown in the paywall.
          * If not set, the current offering will be shown.
          */
         fun setOffering(offering: Offering?) = apply {
             this.offering = offering
+            // Clear internal offering fields when using public API
+            this.offeringIdentifier = null
+            this.presentedOfferingContext = null
+        }
+
+        /**
+         * Internal method for hybrid SDKs to set offering by identifier and context.
+         * This is mutually exclusive with [setOffering].
+         */
+        @InternalRevenueCatAPI
+        fun setOfferingIdentifier(
+            offeringIdentifier: String,
+            presentedOfferingContext: PresentedOfferingContext,
+        ) = apply {
+            this.offeringIdentifier = offeringIdentifier
+            this.presentedOfferingContext = presentedOfferingContext
+            // Clear public offering when using internal API
+            this.offering = null
         }
 
         /**
@@ -97,6 +123,8 @@ class PaywallActivityLaunchOptions private constructor(
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
                 customVariables = customVariables,
+                offeringIdentifier = offeringIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
             )
         }
     }
