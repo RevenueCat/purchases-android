@@ -34,7 +34,7 @@ final class PaywallActivityLauncherAPI {
         PaywallActivityLauncher launcher3 = new PaywallActivityLauncher(resultCaller, resultHandler);
         launcher.launch();
         launcher.launch(offering);
-        launcher.launch((Offering) null);
+        launcher.launch(null);
         launcher.launch(offering, fontProvider);
         launcher.launch(offering, null);
         launcher.launch(null, fontProvider);
@@ -77,7 +77,7 @@ final class PaywallActivityLauncherAPI {
                 .setEdgeToEdge(true)
                 .setCustomVariables(customVariables)
                 .build();
-        launcher.launch(options);
+        launcher.launchWithOptions(options);
 
         // LaunchIfNeeded with requiredEntitlementIdentifier
         PaywallActivityLaunchIfNeededOptions optionsWithEntitlement = new PaywallActivityLaunchIfNeededOptions.Builder()
@@ -86,7 +86,7 @@ final class PaywallActivityLauncherAPI {
                 .setCustomVariables(customVariables)
                 .setPaywallDisplayCallback(paywallDisplayCallback)
                 .build();
-        launcher.launchIfNeeded(optionsWithEntitlement);
+        launcher.launchIfNeededWithOptions(optionsWithEntitlement);
 
         // LaunchIfNeeded with shouldDisplayBlock
         PaywallActivityLaunchIfNeededOptions optionsWithBlock = new PaywallActivityLaunchIfNeededOptions.Builder()
@@ -94,7 +94,7 @@ final class PaywallActivityLauncherAPI {
                 .setOffering(offering)
                 .setCustomVariables(customVariables)
                 .build();
-        launcher.launchIfNeeded(optionsWithBlock);
+        launcher.launchIfNeededWithOptions(optionsWithBlock);
     }
 
     static void checkPaywallDisplayCallback() {

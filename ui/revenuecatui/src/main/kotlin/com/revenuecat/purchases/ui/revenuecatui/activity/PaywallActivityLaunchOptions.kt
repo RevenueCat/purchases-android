@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
@@ -17,7 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
  *     .setShouldDisplayDismissButton(true)
  *     .build()
  *
- * launcher.launch(options)
+ * launcher.launchWithOptions(options)
  * ```
  *
  * For conditional launches (showing the paywall only when certain conditions are met),
@@ -117,7 +119,7 @@ class PaywallActivityLaunchOptions private constructor(
  *     .setPaywallDisplayCallback(callback)
  *     .build()
  *
- * launcher.launchIfNeeded(options)
+ * launcher.launchIfNeededWithOptions(options)
  * ```
  *
  * Example with custom condition:
@@ -129,7 +131,7 @@ class PaywallActivityLaunchOptions private constructor(
  *     .setOffering(offering)
  *     .build()
  *
- * launcher.launchIfNeeded(options)
+ * launcher.launchIfNeededWithOptions(options)
  * ```
  */
 @Suppress("LongParameterList")
@@ -142,6 +144,9 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
     internal val requiredEntitlementIdentifier: String?,
     internal val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     internal val paywallDisplayCallback: PaywallDisplayCallback?,
+    // Internal properties for hybrid SDK support
+    internal val offeringIdentifier: String?,
+    internal val presentedOfferingContext: PresentedOfferingContext?,
 ) {
     /**
      * Builder for creating [PaywallActivityLaunchIfNeededOptions].
@@ -159,12 +164,34 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
         private var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         private var paywallDisplayCallback: PaywallDisplayCallback? = null
 
+        // Internal properties for hybrid SDK support
+        private var offeringIdentifier: String? = null
+        private var presentedOfferingContext: PresentedOfferingContext? = null
+
         /**
          * Sets the offering to be shown in the paywall.
          * If not set, the current offering will be shown.
          */
         fun setOffering(offering: Offering?) = apply {
             this.offering = offering
+            // Clear internal offering fields when using public API
+            this.offeringIdentifier = null
+            this.presentedOfferingContext = null
+        }
+
+        /**
+         * Internal method for hybrid SDKs to set offering by identifier and context.
+         * This is mutually exclusive with [setOffering].
+         */
+        @InternalRevenueCatAPI
+        fun setOfferingIdentifier(
+            offeringIdentifier: String,
+            presentedOfferingContext: PresentedOfferingContext,
+        ) = apply {
+            this.offeringIdentifier = offeringIdentifier
+            this.presentedOfferingContext = presentedOfferingContext
+            // Clear public offering when using internal API
+            this.offering = null
         }
 
         /**
@@ -257,6 +284,8 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
                 requiredEntitlementIdentifier = requiredEntitlementIdentifier,
                 shouldDisplayBlock = shouldDisplayBlock,
                 paywallDisplayCallback = paywallDisplayCallback,
+                offeringIdentifier = offeringIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
             )
         }
     }

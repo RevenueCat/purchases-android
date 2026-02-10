@@ -147,7 +147,7 @@ private class PaywallActivityLauncherAPI {
             .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
             .build()
-        activityLauncher.launch(options)
+        activityLauncher.launchWithOptions(options)
 
         // LaunchIfNeeded with requiredEntitlementIdentifier
         val optionsWithEntitlement = PaywallActivityLaunchIfNeededOptions.Builder()
@@ -156,7 +156,7 @@ private class PaywallActivityLauncherAPI {
             .setCustomVariables(customVariables)
             .setPaywallDisplayCallback(paywallDisplayCallback)
             .build()
-        activityLauncher.launchIfNeeded(optionsWithEntitlement)
+        activityLauncher.launchIfNeededWithOptions(optionsWithEntitlement)
 
         // LaunchIfNeeded with shouldDisplayBlock
         val optionsWithBlock = PaywallActivityLaunchIfNeededOptions.Builder()
@@ -166,7 +166,7 @@ private class PaywallActivityLauncherAPI {
             .setOffering(offering)
             .setCustomVariables(customVariables)
             .build()
-        activityLauncher.launchIfNeeded(optionsWithBlock)
+        activityLauncher.launchIfNeededWithOptions(optionsWithBlock)
     }
 
     fun checkPaywallDisplayCallback() {

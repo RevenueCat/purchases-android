@@ -173,13 +173,11 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
     method public void launch(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
-    method public void launch(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions options);
     method @Deprecated @kotlin.jvm.JvmSynthetic public void launch(String offeringIdentifier, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
     method public void launchIfNeeded(optional com.revenuecat.purchases.Offering? offering, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
-    method public void launchIfNeeded(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions options);
     method public void launchIfNeeded(String requiredEntitlementIdentifier);
     method public void launchIfNeeded(String requiredEntitlementIdentifier, optional com.revenuecat.purchases.Offering? offering);
     method public void launchIfNeeded(String requiredEntitlementIdentifier, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
@@ -188,6 +186,8 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void launchIfNeeded(String requiredEntitlementIdentifier, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback? paywallDisplayCallback);
     method @Deprecated @kotlin.jvm.JvmSynthetic public void launchIfNeeded(String requiredEntitlementIdentifier, String offeringIdentifier, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback? paywallDisplayCallback);
     method public void launchIfNeeded(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
+    method public void launchIfNeededWithOptions(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions options);
+    method public void launchWithOptions(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions options);
   }
 
   public interface PaywallDisplayCallback {
