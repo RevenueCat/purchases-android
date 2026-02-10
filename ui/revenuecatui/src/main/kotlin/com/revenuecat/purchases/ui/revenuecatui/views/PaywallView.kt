@@ -39,7 +39,6 @@ class PaywallView : CompatComposeView {
     /**
      * Constructor when creating the view programmatically.
      */
-    @Suppress("LongParameterList")
     @JvmOverloads
     constructor(
         context: Context,

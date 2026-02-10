@@ -34,7 +34,8 @@ private class PaywallViewAPI {
         PaywallView(context, offering, listener)
         PaywallView(context, offering, listener, fontProvider)
         PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton)
-        // Trailing lambda syntax for dismissHandler works correctly
+        // Both named parameter and trailing lambda syntax work for dismissHandler
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler = {})
         PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton) {
             // dismiss
         }
