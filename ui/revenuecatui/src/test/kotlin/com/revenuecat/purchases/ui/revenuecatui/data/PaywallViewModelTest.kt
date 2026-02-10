@@ -1997,6 +1997,53 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue
     }
 
+    @Test
+    fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
+        val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
+        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+            option = promoSubscriptionOption,
+        )
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = resolvedOffer,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button without promotional offer uses default option`(): Unit = runBlocking {
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = null,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
     // endregion product change
 
     private fun create(

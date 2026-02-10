@@ -594,12 +594,18 @@ internal class StyleFactory(
     ): Result<ButtonComponentStyle.Action, NonEmptyList<PaywallValidationError>> {
         if (method == null) {
             return Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                ButtonComponentStyle.Action.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                ),
             )
         }
         return when (method) {
             is PurchaseButtonComponent.Method.InAppCheckout -> Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                ButtonComponentStyle.Action.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                ),
             )
 
             is PurchaseButtonComponent.Method.WebCheckout -> {
@@ -636,7 +642,10 @@ internal class StyleFactory(
             is PurchaseButtonComponent.Method.Unknown -> {
                 Logger.e("Unknown purchase button method. Defaulting to purchasing current/default package.")
                 Result.Success(
-                    ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                    ButtonComponentStyle.Action.PurchasePackage(
+                        rcPackage = rcPackage,
+                        resolvedOffer = resolvedOffer,
+                    ),
                 )
             }
         }
