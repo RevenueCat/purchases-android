@@ -83,7 +83,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
-            .setCustomPaywallHandlerFactoryInternal(customPaywallHandlerFactory)
+            .setCustomPaywallHandlerFactory(customPaywallHandlerFactory)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -326,21 +326,6 @@ open class PurchasesConfiguration(builder: Builder) {
         ) = apply {
             this.customPaywallHandlerFactory = factory
         }
-
-        /**
-         * Internal method for setting the custom paywall handler factory.
-         * Use [setCustomPaywallHandlerFactory] instead.
-         *
-         * @param factory The factory instance
-         */
-        @Deprecated(
-            "Use setCustomPaywallHandlerFactory instead",
-            ReplaceWith("setCustomPaywallHandlerFactory(factory)"),
-        )
-        @InternalRevenueCatAPI
-        fun setCustomPaywallHandlerFactoryInternal(
-            factory: CustomPaywallHandlerFactory?,
-        ) = setCustomPaywallHandlerFactory(factory)
 
         /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.

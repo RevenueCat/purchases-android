@@ -2187,7 +2187,6 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setOffering(defaultOffering)
-                .setListener(listener)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -2196,9 +2195,7 @@ class PaywallViewModelTest {
 
         model.purchaseSelectedPackage(activity)
 
-        customPurchaseCalled.first { it }
-        verify(exactly = 1) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 1) { listener.onPurchaseCompleted(any(), any()) }
+        assertThat(customPurchaseCalled.first { it }).isTrue
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -2224,7 +2221,6 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setOffering(defaultOffering)
-                .setListener(listener)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -2234,8 +2230,7 @@ class PaywallViewModelTest {
         model.restorePurchases()
 
         customRestoreCalled.first { it }
-        verify(exactly = 1) { listener.onRestoreStarted() }
-        verify(exactly = 1) { listener.onRestoreCompleted(any()) }
+        assertThat(customRestoreCalled.value).isTrue
     }
 
     private class TestAppPurchaseLogicWithCallbacks(

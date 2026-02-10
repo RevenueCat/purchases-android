@@ -154,53 +154,49 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.customPaywallHandlerFactory).isNull()
     }
 
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `PurchasesConfiguration sets customPaywallHandlerFactory correctly`() {
         val mockFactory: CustomPaywallHandlerFactory = mockk()
-        val purchasesConfiguration = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
+        val purchasesConfiguration = builder.setCustomPaywallHandlerFactory(mockFactory).build()
         assertThat(purchasesConfiguration.customPaywallHandlerFactory).isEqualTo(mockFactory)
     }
 
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `PurchasesConfiguration handles null customPaywallHandlerFactory`() {
         val mockFactory: CustomPaywallHandlerFactory = mockk()
         val purchasesConfiguration = builder
-            .setCustomPaywallHandlerFactoryInternal(mockFactory)
-            .setCustomPaywallHandlerFactoryInternal(null)
+            .setCustomPaywallHandlerFactory(mockFactory)
+            .setCustomPaywallHandlerFactory(null)
             .build()
         assertThat(purchasesConfiguration.customPaywallHandlerFactory).isNull()
     }
 
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `PurchasesConfiguration copy includes customPaywallHandlerFactory`() {
+        every { context.isDeviceProtectedStorage } returns true
         val mockFactory: CustomPaywallHandlerFactory = mockk()
-        val originalConfig = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
+        val originalConfig = builder.setCustomPaywallHandlerFactory(mockFactory).build()
         val copiedConfig = originalConfig.copy(appUserID = "new-user-id")
         assertThat(copiedConfig.customPaywallHandlerFactory).isEqualTo(mockFactory)
     }
 
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `PurchasesConfiguration equals includes customPaywallHandlerFactory`() {
         val mockFactory: CustomPaywallHandlerFactory = mockk()
-        val config1 = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
-        val config2 = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
-        val config3 = builder.setCustomPaywallHandlerFactoryInternal(null).build()
+        val config1 = builder.setCustomPaywallHandlerFactory(mockFactory).build()
+        val config2 = builder.setCustomPaywallHandlerFactory(mockFactory).build()
+        val config3 = builder.setCustomPaywallHandlerFactory(null).build()
 
         assertThat(config1).isEqualTo(config2)
         assertThat(config1).isNotEqualTo(config3)
     }
 
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `PurchasesConfiguration hashCode includes customPaywallHandlerFactory`() {
         val mockFactory: CustomPaywallHandlerFactory = mockk()
-        val config1 = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
-        val config2 = builder.setCustomPaywallHandlerFactoryInternal(mockFactory).build()
-        val config3 = builder.setCustomPaywallHandlerFactoryInternal(null).build()
+        val config1 = builder.setCustomPaywallHandlerFactory(mockFactory).build()
+        val config2 = builder.setCustomPaywallHandlerFactory(mockFactory).build()
+        val config3 = builder.setCustomPaywallHandlerFactory(null).build()
 
         assertThat(config1.hashCode()).isEqualTo(config2.hashCode())
         assertThat(config1.hashCode()).isNotEqualTo(config3.hashCode())
