@@ -80,7 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
@@ -192,7 +192,7 @@ private fun Template4MainContent(
                     textWithNoIntroOffer = it.localization.offerDetails,
                     textWithIntroOffer = it.localization.offerDetailsWithIntroOffer,
                     textWithMultipleIntroOffers = it.localization.offerDetailsWithMultipleIntroOffers,
-                    eligibility = it.introEligibility,
+                    eligibility = it.offerEligibility,
                     color = colors.text1,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,

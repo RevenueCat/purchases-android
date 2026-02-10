@@ -36,6 +36,7 @@ interface PaywallDisplayCallback {
  * This can be instantiated with an [ActivityResultCaller] instance
  * like a [ComponentActivity] or a [Fragment].
  */
+@Suppress("TooManyFunctions")
 class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
 
@@ -127,26 +128,33 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     }
 
     @JvmName("launchWithOfferingId")
+    @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
+    @Deprecated(
+        message = "Use launchWithOptions(PaywallActivityLaunchOptions) instead",
+        replaceWith = ReplaceWith(
+            "launchWithOptions(PaywallActivityLaunchOptions.Builder()" +
+                ".setOfferingIdentifier(offeringIdentifier, presentedOfferingContext).build())",
+        ),
+    )
     fun launch(
         offeringIdentifier: String,
         presentedOfferingContext: PresentedOfferingContext,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
     ) {
-        activityResultLauncher.launch(
-            PaywallActivityArgs(
-                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                    offeringId = offeringIdentifier,
-                    presentedOfferingContext = presentedOfferingContext,
-                ),
-                fontProvider = fontProvider,
-                shouldDisplayDismissButton = shouldDisplayDismissButton,
-                edgeToEdge = edgeToEdge,
-            ),
-        )
+        @OptIn(InternalRevenueCatAPI::class)
+        val options = PaywallActivityLaunchOptions.Builder()
+            .setOfferingIdentifier(offeringIdentifier, presentedOfferingContext)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
+            .setEdgeToEdge(edgeToEdge)
+            .setCustomVariables(customVariables)
+            .build()
+        launchWithOptions(options)
     }
 
     /**
@@ -255,6 +263,14 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @Suppress("LongParameterList")
     @InternalRevenueCatAPI
     @JvmOverloads
+    @Deprecated(
+        message = "Use launchIfNeededWithOptions(PaywallActivityLaunchIfNeededOptions) instead " +
+            "for customVariables support",
+        replaceWith = ReplaceWith(
+            "launchIfNeededWithOptions(PaywallActivityLaunchIfNeededOptions.Builder()" +
+                ".setRequiredEntitlementIdentifier(requiredEntitlementIdentifier).build())",
+        ),
+    )
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
@@ -264,26 +280,16 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         edgeToEdge: Boolean = defaultEdgeToEdge,
         paywallDisplayCallback: PaywallDisplayCallback? = null,
     ) {
-        val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
-        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
-            paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
-            if (shouldDisplay) {
-                launchPaywallWithArgs(
-                    PaywallActivityArgs(
-                        requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringIdAndPresentedOfferingContext = offeringIdentifier?.let {
-                            OfferingSelection.IdAndPresentedOfferingContext(
-                                offeringId = it,
-                                presentedOfferingContext = presentedOfferingContext,
-                            )
-                        },
-                        fontProvider = fontProvider,
-                        shouldDisplayDismissButton = shouldDisplayDismissButton,
-                        edgeToEdge = edgeToEdge,
-                    ),
-                )
-            }
-        }
+        @OptIn(InternalRevenueCatAPI::class)
+        val options = PaywallActivityLaunchIfNeededOptions.Builder()
+            .setRequiredEntitlementIdentifier(requiredEntitlementIdentifier)
+            .setOfferingIdentifier(offeringIdentifier, presentedOfferingContext)
+            .setFontProvider(fontProvider)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
+            .setEdgeToEdge(edgeToEdge)
+            .setPaywallDisplayCallback(paywallDisplayCallback)
+            .build()
+        launchIfNeededWithOptions(options)
     }
 
     /**
@@ -318,6 +324,98 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                         edgeToEdge = edgeToEdge,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * Launch the paywall activity with the specified options.
+     *
+     * This method provides a builder-based API for launching paywalls with custom configuration.
+     *
+     * Example:
+     * ```kotlin
+     * val options = PaywallActivityLaunchOptions.Builder()
+     *     .setOffering(offering)
+     *     .build()
+     *
+     * launcher.launchWithOptions(options)
+     * ```
+     *
+     * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
+     */
+    fun launchWithOptions(options: PaywallActivityLaunchOptions) {
+        activityResultLauncher.launch(
+            PaywallActivityArgs(
+                offeringIdAndPresentedOfferingContext = options.toOfferingSelection(),
+                fontProvider = options.fontProvider,
+                shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                edgeToEdge = options.edgeToEdge,
+                customVariables = options.customVariables,
+            ),
+        )
+    }
+
+    /**
+     * Launch the paywall activity conditionally with the specified options.
+     *
+     * The paywall will be displayed based on one of these conditions (exactly one must be set):
+     * - [PaywallActivityLaunchIfNeededOptions.requiredEntitlementIdentifier]: Only show if user doesn't have this
+     *   entitlement
+     * - [PaywallActivityLaunchIfNeededOptions.shouldDisplayBlock]: Only show if this block returns true
+     *
+     * Example with entitlement check:
+     * ```kotlin
+     * val options = PaywallActivityLaunchIfNeededOptions.Builder()
+     *     .setRequiredEntitlementIdentifier("premium")
+     *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
+     *     .setPaywallDisplayCallback(object : PaywallDisplayCallback {
+     *         override fun onPaywallDisplayResult(wasDisplayed: Boolean) {
+     *             // Handle result
+     *         }
+     *     })
+     *     .build()
+     *
+     * launcher.launchIfNeededWithOptions(options)
+     * ```
+     *
+     * Example with custom condition:
+     * ```kotlin
+     * val options = PaywallActivityLaunchIfNeededOptions.Builder()
+     *     .setShouldDisplayBlock { customerInfo ->
+     *         customerInfo.entitlements.active.isEmpty()
+     *     }
+     *     .setCustomVariables(mapOf("user_name" to CustomVariableValue.String("John")))
+     *     .build()
+     *
+     * launcher.launchIfNeededWithOptions(options)
+     * ```
+     *
+     * @param options The launch options configured via [PaywallActivityLaunchIfNeededOptions.Builder].
+     *                Must have either [PaywallActivityLaunchIfNeededOptions.Builder.setRequiredEntitlementIdentifier]
+     *                or [PaywallActivityLaunchIfNeededOptions.Builder.setShouldDisplayBlock] set.
+     */
+    fun launchIfNeededWithOptions(options: PaywallActivityLaunchIfNeededOptions) {
+        val shouldDisplayBlock = if (options.requiredEntitlementIdentifier != null) {
+            shouldDisplayBlockForEntitlementIdentifier(options.requiredEntitlementIdentifier)
+        } else {
+            // shouldDisplayBlock is guaranteed to be non-null by PaywallActivityLaunchIfNeededOptions.Builder
+            options.shouldDisplayBlock!!
+        }
+
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            options.paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
+            if (shouldDisplay) {
+                launchPaywallWithArgs(
+                    PaywallActivityArgs(
+                        requiredEntitlementIdentifier = options.requiredEntitlementIdentifier,
+                        offeringIdAndPresentedOfferingContext = options.toOfferingSelection(),
+                        fontProvider = options.fontProvider,
+                        shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                        edgeToEdge = options.edgeToEdge,
+                        customVariables = options.customVariables,
                     ),
                 )
             }

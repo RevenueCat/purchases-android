@@ -19,7 +19,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -37,10 +36,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Stable
 @JvmSynthetic
@@ -48,22 +47,23 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): ImageComponentState =
-    rememberUpdatedImageComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-    )
+): ImageComponentState = rememberUpdatedImageComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+)
 
 @Stable
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedImageComponentState(
+private fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
     localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
+    selectedOfferEligibilityProvider: () -> OfferEligibility,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -78,8 +78,9 @@ internal fun rememberUpdatedImageComponentState(
             initialLayoutDirection = layoutDirection,
             style = style,
             localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
         )
     }.apply {
         update(
@@ -100,36 +101,28 @@ internal class ImageComponentState(
     initialLayoutDirection: LayoutDirection,
     private val style: ImageComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
-        }
-    }
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    /**
-     * The package to consider for intro offer eligibility.
-     */
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
-    }
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()

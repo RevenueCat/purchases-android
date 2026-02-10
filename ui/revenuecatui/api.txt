@@ -136,6 +136,35 @@ package com.revenuecat.purchases.ui.revenuecatui {
 
 package com.revenuecat.purchases.ui.revenuecatui.activity {
 
+  public final class PaywallActivityLaunchIfNeededOptions {
+  }
+
+  public static final class PaywallActivityLaunchIfNeededOptions.Builder {
+    ctor public PaywallActivityLaunchIfNeededOptions.Builder();
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions build();
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setEdgeToEdge(boolean edgeToEdge);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setOffering(com.revenuecat.purchases.Offering? offering);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setPaywallDisplayCallback(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback? paywallDisplayCallback);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setRequiredEntitlementIdentifier(String requiredEntitlementIdentifier);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setShouldDisplayBlock(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions.Builder setShouldDisplayDismissButton(boolean shouldDisplayDismissButton);
+  }
+
+  public final class PaywallActivityLaunchOptions {
+  }
+
+  public static final class PaywallActivityLaunchOptions.Builder {
+    ctor public PaywallActivityLaunchOptions.Builder();
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions build();
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setEdgeToEdge(boolean edgeToEdge);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setOffering(com.revenuecat.purchases.Offering? offering);
+    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setShouldDisplayDismissButton(boolean shouldDisplayDismissButton);
+  }
+
   public final class PaywallActivityLauncher {
     ctor public PaywallActivityLauncher(androidx.activity.result.ActivityResultCaller resultCaller, com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler resultHandler);
     method public void launch();
@@ -157,6 +186,8 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public void launchIfNeeded(String requiredEntitlementIdentifier, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback? paywallDisplayCallback);
     method @Deprecated @kotlin.jvm.JvmSynthetic public void launchIfNeeded(String requiredEntitlementIdentifier, String offeringIdentifier, optional com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider, optional boolean shouldDisplayDismissButton, optional boolean edgeToEdge, optional com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback? paywallDisplayCallback);
     method public void launchIfNeeded(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean> shouldDisplayBlock);
+    method public void launchIfNeededWithOptions(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions options);
+    method public void launchWithOptions(com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions options);
   }
 
   public interface PaywallDisplayCallback {
@@ -421,6 +452,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     method public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
     method public androidx.lifecycle.ViewModelStore getViewModelStore();
     method public void onBackPressed();
+    method public void setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> variables);
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method public void setDisplayDismissButton(boolean shouldDisplayDismissButton);
     method public void setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);

@@ -5,9 +5,13 @@ import android.util.AttributeSet;
 
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.PresentedOfferingContext;
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class PaywallViewAPI {
@@ -38,5 +42,8 @@ final class PaywallViewAPI {
         paywallView.setOfferingId("offeringId");
         paywallView.setOfferingId(null, null);
         paywallView.setOfferingId("offeringId", context);
+        Map<String, CustomVariableValue> customVariables = new HashMap<>();
+        customVariables.put("key", new CustomVariableValue.String("value"));
+        paywallView.setCustomVariables(customVariables);
     }
 }
