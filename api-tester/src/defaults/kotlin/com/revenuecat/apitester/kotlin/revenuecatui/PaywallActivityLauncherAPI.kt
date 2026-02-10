@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions
@@ -133,6 +134,7 @@ private class PaywallActivityLauncherAPI {
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
     fun checkBuilderPattern(
         activityLauncher: PaywallActivityLauncher,
         offering: Offering,

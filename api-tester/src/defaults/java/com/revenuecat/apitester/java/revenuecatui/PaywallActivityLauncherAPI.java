@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions;
@@ -62,6 +63,7 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded(null, null, true, true, customerInfo -> null);
     }
 
+    @ExperimentalPreviewRevenueCatUIPurchasesAPI
     static void checkBuilderPattern(
             PaywallActivityLauncher launcher,
             Offering offering,

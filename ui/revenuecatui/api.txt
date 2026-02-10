@@ -163,9 +163,9 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
     method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setEdgeToEdge(boolean edgeToEdge);
     method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setFontProvider(com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider? fontProvider);
-    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
+    method @com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
     method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setOffering(com.revenuecat.purchases.Offering? offering);
-    method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setPurchaseLogic(com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic);
+    method @com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setPurchaseLogic(com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic);
     method public com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions.Builder setShouldDisplayDismissButton(boolean shouldDisplayDismissButton);
   }
 

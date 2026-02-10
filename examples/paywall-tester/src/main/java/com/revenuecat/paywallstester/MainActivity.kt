@@ -21,6 +21,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         Log.e(TAG, "LAUNCH PAYWALL RESULT: $result")
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
     fun launchPaywall(offering: Offering? = null, edgeToEdge: Boolean = false) {
         val options = PaywallActivityLaunchOptions.Builder()
             .setOffering(offering)

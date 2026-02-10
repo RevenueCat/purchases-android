@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
@@ -139,6 +140,7 @@ private constructor(
          * Sets custom purchase logic to handle purchases directly by the application
          * rather than by RevenueCat.
          */
+        @ExperimentalPreviewRevenueCatUIPurchasesAPI
         fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
             this.purchaseLogic = purchaseLogic
         }
@@ -147,6 +149,7 @@ private constructor(
          * Sets a listener to receive paywall events such as purchase completion,
          * restoration, and errors.
          */
+        @ExperimentalPreviewRevenueCatUIPurchasesAPI
         fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
         }
@@ -354,6 +357,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Sets custom purchase logic to handle purchases directly by the application
          * rather than by RevenueCat.
          */
+        @ExperimentalPreviewRevenueCatUIPurchasesAPI
         fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
             this.purchaseLogic = purchaseLogic
         }
@@ -362,6 +366,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Sets a listener to receive paywall events such as purchase completion,
          * restoration, and errors.
          */
+        @ExperimentalPreviewRevenueCatUIPurchasesAPI
         fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
         }
