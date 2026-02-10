@@ -60,6 +60,27 @@ class OfferVariableProcessingTests {
             product = productWithIntroOffer,
             presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
+
+        private val productWithNoIntroOffer = TestStoreProduct(
+            id = "com.revenuecat.monthly_product_no_intro",
+            name = "Monthly",
+            title = "Monthly (App name)",
+            description = "Monthly",
+            price = fullPrice,
+            period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+        )
+
+        private val packageWithNoIntroOffer = Package(
+            identifier = "package_monthly_no_intro",
+            packageType = PackageType.MONTHLY,
+            product = productWithNoIntroOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
+        )
+
+        private val optionWithNoDiscountPhases = mockk<SubscriptionOption> {
+            every { freePhase } returns null
+            every { introPhase } returns null
+        }
     }
 
     @Test
@@ -149,6 +170,126 @@ class OfferVariableProcessingTests {
 
         assertThat(result).isEqualTo("2 weeks")
     }
+
+    // region Fallback tests - offer variables fall back to product values when no discount phase
+
+    @Test
+    fun `offer price falls back to product price when subscription option has no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("$10.00")
+    }
+
+    @Test
+    fun `offer price falls back to product price when no subscription option and no intro offer`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = null,
+        )
+
+        assertThat(result).isEqualTo("$10.00")
+    }
+
+    @Test
+    fun `offer period falls back to product period when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("month")
+    }
+
+    @Test
+    fun `offer period abbreviated falls back to product period abbreviated when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_abbreviated }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("mo")
+    }
+
+    @Test
+    fun `offer period with unit falls back to product period with unit when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_with_unit }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("1 month")
+    }
+
+    @Test
+    fun `offer period in days falls back to product period in days when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_in_days }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month ≈ 30 days
+        assertThat(result).isEqualTo("30")
+    }
+
+    @Test
+    fun `offer period in weeks falls back to product period in weeks when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_in_weeks }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month ≈ 4 weeks
+        assertThat(result).isEqualTo("4")
+    }
+
+    @Test
+    fun `offer period in months falls back to product period in months when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_in_months }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("1")
+    }
+
+    @Test
+    fun `offer period in years falls back to product period in years when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_period_in_years }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month ≈ 0.08 years → rounds to 0
+        assertThat(result).isEqualTo("0")
+    }
+
+    @Test
+    fun `offer variables still use intro offer from package when subscription option has discount phases`() {
+        val template = "{{ product.offer_price }}"
+
+        val result = processTemplate(
+            template = template,
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = null,
+        )
+
+        // Should use the intro price, not fall back
+        assertThat(result).isEqualTo("$1.00")
+    }
+
+    // endregion
 
     @Test
     fun `secondary offer uses subscription option intro phase when free phase exists`() {
