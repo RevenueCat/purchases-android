@@ -15,15 +15,17 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run unit tests with backend integration tests
 ./gradlew test -PRUN_INTEGRATION_TESTS=true
 
-# Run unit tests for specific modules
-./gradlew :purchases:testDefaultsDebugUnitTest
+# Run unit tests for specific modules (flavor format: {apis}{billingclient}{buildType})
+./gradlew :purchases:testDefaultsBc8DebugUnitTest
+./gradlew :purchases:testDefaultsBc7DebugUnitTest
 ./gradlew :ui:revenuecatui:testDefaultsDebugUnitTest
 
 # Run Android instrumentation tests
 ./gradlew connectedAndroidTest
 
 # Run instrumentation tests for specific modules
-./gradlew :purchases:connectedDefaultsDebugAndroidTest
+./gradlew :purchases:connectedDefaultsBc8DebugAndroidTest
+./gradlew :purchases:connectedDefaultsBc7DebugAndroidTest
 ./gradlew :ui:revenuecatui:connectedDefaultsDebugAndroidTest
 
 # Run integration tests (requires device/emulator)
@@ -44,10 +46,10 @@ This file provides guidance to AI coding agents when working with code in this r
 # Create detekt baseline
 ./gradlew detektAllBaseline
 
-# API compatibility check
+# API compatibility check (using Metalava)
 ./scripts/api-check.sh
 
-# Generate API signatures
+# Generate API signatures (using Metalava)
 ./scripts/api-dump.sh
 ```
 
@@ -76,9 +78,9 @@ bundle exec fastlane run_backend_integration_tests
 This is a multi-module Android project with clear separation of concerns:
 
 - **`:purchases`** - Core SDK module containing main API, business logic, networking, billing abstractions
-- **`:ui:revenuecatui`** - Jetpack Compose UI module for paywalls and customer center (min SDK 24)
-- **`:ui:debugview`** - Debug utilities and UI for development
-- **`:feature:amazon`** - Amazon Appstore integration as separate feature module
+- **`:ui:revenuecatui`** - Jetpack Compose UI module for paywalls and customer center (min SDK 24, depends on `:purchases`)
+- **`:ui:debugview`** - Debug utilities and UI for development (depends on `:purchases`)
+- **`:feature:amazon`** - Amazon Appstore integration as separate feature module (depends on `:purchases`)
 - **`:bom`** - Bill of Materials for dependency management
 - **`:baselineprofile`** - Performance optimization profiles
 - **`:integration-tests`** - Integration test suite
@@ -89,32 +91,24 @@ This is a multi-module Android project with clear separation of concerns:
 #### Core Purchases Module
 - **Orchestrator Pattern**: `PurchasesOrchestrator` as central coordinator
 - **Abstract Factory**: `BillingAbstract` for different store implementations
-- **Repository Pattern**: `Backend` for networking, `DeviceCache` for local storage
+- **Backend/Cache Layer**: `Backend` for networking, `DeviceCache` for local storage
 - **Manager Pattern**: `IdentityManager`, `SubscriberAttributesManager`, `EventsManager`
 
 #### UI Modules
 - **MVVM Pattern**: ViewModels with Jetpack Compose UI
 - **Main Components**: `PaywallViewModel`, `CustomerCenterViewModel`
 
-### Package Organization
-```
-com.revenuecat.purchases/
-├── common/                  # Shared utilities, networking, caching, events
-├── google/                  # Google Play Billing implementation
-├── amazon/                  # Amazon Appstore implementation
-├── identity/                # User identity management
-├── subscriberattributes/    # Subscriber attributes system
-├── paywalls/               # Paywall data and components
-├── customercenter/         # Customer center functionality
-├── models/                 # Data models and DTOs
-├── interfaces/             # Public API contracts
-└── utils/                  # Utility functions
-```
-
 ### Product Flavors
-The `purchases` module has 2 flavors:
-- **`defaults`** - Standard Google Play implementation
-- **`customEntitlementComputation`** - Custom entitlement computation variant
+The `purchases` module has 2 flavor dimensions:
+- **`apis`**: `defaults` (standard) or `customEntitlementComputation` (custom entitlement computation variant)
+- **`billingclient`**: `bc8` (default, Billing Client 8) or `bc7` (Billing Client 7)
+
+Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitlementComputationBc7Release`.
+
+### API Annotations
+- **`@InternalRevenueCatAPI`** - APIs that are public only to be accessible by other modules or hybrid SDKs, not intended for external developer use
+- **`@ExperimentalPreviewRevenueCatPurchasesAPI`** - Public APIs for developers that may change before being made stable
+- **`@ExperimentalPreviewRevenueCatUIPurchasesAPI`** - Same as above but for the `:ui:revenuecatui` module
 
 ## Testing Framework
 
@@ -141,7 +135,8 @@ The `purchases` module has 2 flavors:
 3. Pre-commit hooks automatically run detekt on commits
 
 ### Code Quality
-- **Detekt**: Static code analysis with auto-correction
+- **Lint**: Android lint for static code analysis (`./gradlew lint`)
+- **Detekt**: Static code analysis with auto-correction (`./gradlew detektAll`)
 - **Pre-commit Hook**: Runs detekt before each commit
 - **API Compatibility**: Metalava for API checking and signature generation
 - **Baseline Profiles**: Performance optimization for improved startup
@@ -182,8 +177,16 @@ The `purchases` module has 2 flavors:
 ### Sample Applications
 - **MagicWeather**: Standard sample app
 - **MagicWeatherCompose**: Compose-based sample
+- **CustomEntitlementComputationSample**: Sample for custom entitlement computation flavor
 - **purchase-tester**: Testing app for purchase flows
 - **paywall-tester**: Testing app for paywall UI
+- **web-purchase-redemption-sample**: Sample for web purchase redemption
+
+### Test Apps
+- **e2etests**: End-to-end tests
+- **sdksizetesting**: SDK size measurement
+- **testpurchasesandroidcompatibility**: Android compatibility testing for purchases
+- **testpurchasesuiandroidcompatibility**: Android compatibility testing for UI
 
 ### Release Process
 - **Fastlane**: Automated release management
