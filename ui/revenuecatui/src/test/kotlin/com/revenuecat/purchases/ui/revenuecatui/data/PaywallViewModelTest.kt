@@ -1855,7 +1855,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1910,7 +1910,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1981,7 +1981,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
