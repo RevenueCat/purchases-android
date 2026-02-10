@@ -10,6 +10,8 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -22,6 +24,8 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandler
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerParams
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -121,14 +125,19 @@ internal class PaywallViewModelImpl(
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private var customPaywallHandler: CustomPaywallHandler? = null
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private val listener: PaywallListener?
-        get() = options.listener
+        get() = options.listener ?: customPaywallHandler?.paywallListener
 
     private val mode: PaywallMode
         get() = options.mode
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private val purchaseLogic: PurchaseLogic?
-        get() = options.purchaseLogic
+        get() = options.purchaseLogic ?: customPaywallHandler?.purchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
 
@@ -141,9 +150,32 @@ internal class PaywallViewModelImpl(
         val needsUpdateState = this.options.hashCode() != options.hashCode()
         // Some properties not considered for equality (hashCode) may have changed
         // (e.g. the listener may change in some re-renderers)
+
+        // Reset custom handler if offering selection changes
+        val oldOfferingSelection = this.options.offeringSelection
+        val newOfferingSelection = options.offeringSelection
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        if (oldOfferingSelection != newOfferingSelection) {
+            customPaywallHandler = null
+        }
+
         this.options = options
         if (needsUpdateState) {
             updateState()
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private fun initializeCustomPaywallHandlerIfNeeded(offering: Offering) {
+        // Only initialize once per offering
+        if (customPaywallHandler == null) {
+            purchases.customPaywallHandlerFactory?.let { factory ->
+                val params = CustomPaywallHandlerParams(offering)
+                customPaywallHandler = factory.createCustomPaywallHandler(params)
+                customPaywallHandler?.let {
+                    Logger.d("Custom paywall handler created for offering: ${offering.identifier}")
+                }
+            }
         }
     }
 
@@ -508,7 +540,7 @@ internal class PaywallViewModelImpl(
     }
 
     private fun validateState() {
-        if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.purchaseLogic == null) {
+        if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && purchaseLogic == null) {
             _state.value = PaywallState.Error(
                 "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is " +
                     ".MY_APP. App purchases will not be successful.",
@@ -539,6 +571,7 @@ internal class PaywallViewModelImpl(
                         "The RevenueCat dashboard does not have a current offering configured.",
                     )
                 } else {
+                    initializeCustomPaywallHandlerIfNeeded(currentOffering)
                     _state.value = calculateState(
                         currentOffering,
                         _colorScheme.value,

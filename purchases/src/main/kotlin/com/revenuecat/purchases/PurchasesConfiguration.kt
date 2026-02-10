@@ -3,12 +3,14 @@ package com.revenuecat.purchases
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerFactory
 import java.util.concurrent.ExecutorService
 
 /**
  * Holds parameters to initialize the SDK. Create an instance of this class using the [Builder] and pass it to
  * [Purchases.configure].
  */
+@OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 open class PurchasesConfiguration(builder: Builder) {
 
     val context: Context
@@ -38,6 +40,9 @@ open class PurchasesConfiguration(builder: Builder) {
     val automaticDeviceIdentifierCollectionEnabled: Boolean
     val preferredUILocaleOverride: String?
 
+    @InternalRevenueCatAPI
+    val customPaywallHandlerFactory: CustomPaywallHandlerFactory?
+
     init {
         this.context =
             if (builder.context.isDeviceProtectedStorageCompat) {
@@ -58,6 +63,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+        this.customPaywallHandlerFactory = builder.customPaywallHandlerFactory
     }
 
     internal fun copy(
@@ -77,6 +83,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
+            .setCustomPaywallHandlerFactoryInternal(customPaywallHandlerFactory)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -121,6 +128,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var customPaywallHandlerFactory: CustomPaywallHandlerFactory? = null
 
         /**
          * A unique id for identifying the user
@@ -301,6 +311,38 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Sets a factory for creating custom paywall handlers based on the offering being displayed.
+         *
+         * This allows you to provide different [com.revenuecat.purchases.ui.revenuecatui.PaywallListener]
+         * and [com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic] implementations for different offerings.
+         * The factory is called once when a paywall is displayed.
+         *
+         * @param factory A factory that creates custom paywall handler instances, or null to disable
+         * @return The builder instance for method chaining
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun setCustomPaywallHandlerFactory(
+            factory: CustomPaywallHandlerFactory?,
+        ) = apply {
+            this.customPaywallHandlerFactory = factory
+        }
+
+        /**
+         * Internal method for setting the custom paywall handler factory.
+         * Use [setCustomPaywallHandlerFactory] instead.
+         *
+         * @param factory The factory instance
+         */
+        @Deprecated(
+            "Use setCustomPaywallHandlerFactory instead",
+            ReplaceWith("setCustomPaywallHandlerFactory(factory)"),
+        )
+        @InternalRevenueCatAPI
+        fun setCustomPaywallHandlerFactoryInternal(
+            factory: CustomPaywallHandlerFactory?,
+        ) = setCustomPaywallHandlerFactory(factory)
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         open fun build(): PurchasesConfiguration {
@@ -308,6 +350,7 @@ open class PurchasesConfiguration(builder: Builder) {
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -325,6 +368,7 @@ open class PurchasesConfiguration(builder: Builder) {
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+        if (customPaywallHandlerFactory != other.customPaywallHandlerFactory) return false
 
         return true
     }
@@ -341,6 +385,7 @@ open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+        result = 31 * result + (customPaywallHandlerFactory?.hashCode() ?: 0)
         return result
     }
 }

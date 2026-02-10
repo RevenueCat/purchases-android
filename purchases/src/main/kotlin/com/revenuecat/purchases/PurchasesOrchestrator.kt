@@ -95,6 +95,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerFactory
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
@@ -234,6 +235,15 @@ internal class PurchasesOrchestrator(
 
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
+
+    /**
+     * Factory for creating custom paywall handlers. Marked as InternalRevenueCatAPI
+     * because it's only accessed by the RevenueCatUI module.
+     */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @InternalRevenueCatAPI
+    val customPaywallHandlerFactory: CustomPaywallHandlerFactory?
+        get() = initialConfiguration.customPaywallHandlerFactory
 
     init {
         // Initialize locale provider with the initial preferred locale override

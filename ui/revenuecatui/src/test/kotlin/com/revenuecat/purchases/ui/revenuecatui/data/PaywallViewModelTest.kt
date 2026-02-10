@@ -7,6 +7,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -31,6 +33,8 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandler
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerFactory
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -70,6 +74,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
@@ -205,6 +210,7 @@ class PaywallViewModelTest {
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
         every { purchases.preferredUILocaleOverride } returns null
+        every { purchases.customPaywallHandlerFactory } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -1869,6 +1875,367 @@ class PaywallViewModelTest {
             delay(100)
             offerings
         }
+    }
+
+    // Custom Paywall Handler Factory Tests
+
+    @Test
+    fun `Factory is called with correct offering when paywall is displayed`() = runTest {
+        var capturedOffering: Offering? = null
+        val factory = CustomPaywallHandlerFactory { params ->
+            capturedOffering = params.offering
+            null
+        }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        create()
+
+        assertThat(capturedOffering).isNotNull
+        assertThat(capturedOffering?.identifier).isEqualTo(defaultOffering.identifier)
+    }
+
+    @Test
+    fun `Handler paywallListener is used when options listener is null`() = runTest {
+        val factoryListener = mockk<PaywallListener> {
+            every { onPurchaseStarted(any()) } just runs
+            every { onPurchaseCompleted(any(), any()) } just runs
+            every { onPurchaseError(any()) } just runs
+            every { onRestoreStarted() } just runs
+            every { onRestoreCompleted(any()) } just runs
+            every { onRestoreError(any()) } just runs
+            every { onPurchaseCancelled() } just runs
+            every { onPurchasePackageInitiated(any(), any()) } answers {
+                val resume = secondArg<Resumable>()
+                resume(true)
+            }
+        }
+        val handler = object : CustomPaywallHandler {
+            override val paywallListener = factoryListener
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            transaction,
+            customerInfo,
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setOffering(defaultOffering)
+                .build(), // No listener set
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        verify(exactly = 1) { factoryListener.onPurchaseStarted(any()) }
+        verify(exactly = 1) { factoryListener.onPurchaseCompleted(any(), any()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Handler purchaseLogic is used when options purchaseLogic is null`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        val factoryPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+        val handler = object : CustomPaywallHandler {
+            override val purchaseLogic = factoryPurchaseLogic
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setOffering(defaultOffering)
+                .setListener(listener)
+                .build(), // No purchaseLogic set
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+        assertThat(customPurchaseCalled.value).isTrue
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Options listener takes precedence over handler paywallListener`() = runTest {
+        val factoryListener = mockk<PaywallListener> {
+            every { onPurchaseStarted(any()) } just runs
+            every { onPurchaseCompleted(any(), any()) } just runs
+        }
+        val handler = object : CustomPaywallHandler {
+            override val paywallListener = factoryListener
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            transaction,
+            customerInfo,
+        )
+
+        val model = create() // Uses the listener from setUp
+
+        model.purchaseSelectedPackage(activity)
+
+        // Verify options listener was called, not factory listener
+        verify(exactly = 1) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 1) { listener.onPurchaseCompleted(any(), any()) }
+        verify(exactly = 0) { factoryListener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { factoryListener.onPurchaseCompleted(any(), any()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Options purchaseLogic takes precedence over handler purchaseLogic`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val factoryPurchaseCalled = MutableStateFlow(false)
+        val factoryPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            factoryPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+        val handler = object : CustomPaywallHandler {
+            override val purchaseLogic = factoryPurchaseLogic
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val optionsPurchaseCalled = MutableStateFlow(false)
+        val optionsPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            optionsPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(customPurchaseLogic = optionsPurchaseLogic)
+
+        model.purchaseSelectedPackage(activity)
+
+        optionsPurchaseCalled.first { it }
+        assertThat(optionsPurchaseCalled.value).isTrue
+        assertThat(factoryPurchaseCalled.value).isFalse
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Factory returns null - no handler is used`() = runTest {
+        val factory = CustomPaywallHandlerFactory { null }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            transaction,
+            customerInfo,
+        )
+
+        val model = create()
+
+        model.purchaseSelectedPackage(activity)
+
+        // Regular listener should still work
+        verify(exactly = 1) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 1) { listener.onPurchaseCompleted(any(), any()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Handler is cached - factory only called once per offering`() = runTest {
+        var factoryCallCount = 0
+        val factory = CustomPaywallHandlerFactory { _ ->
+            factoryCallCount++
+            null
+        }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val model = create()
+
+        // Wait for state to load
+        runBlocking {
+            val state = model.state.first { it !is PaywallState.Loading }
+            assertThat(state).isInstanceOf(PaywallState.Loaded::class.java)
+        }
+
+        assertThat(factoryCallCount).isEqualTo(1)
+
+        // Trigger another state update
+        model.refreshStateIfLocaleChanged()
+
+        // Factory should not be called again
+        assertThat(factoryCallCount).isEqualTo(1)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Handler is reset when offering changes`() = runTest {
+        var factoryCallCount = 0
+        val factory = CustomPaywallHandlerFactory { _ ->
+            factoryCallCount++
+            null
+        }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val model = create()
+
+        runBlocking {
+            model.state.first { it !is PaywallState.Loading }
+        }
+
+        assertThat(factoryCallCount).isEqualTo(1)
+
+        // Change offering
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(TestData.template1Offering)
+                .build()
+        )
+
+        runBlocking {
+            model.state.first { it !is PaywallState.Loading }
+        }
+
+        // Factory should be called again for new offering
+        assertThat(factoryCallCount).isEqualTo(2)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `Listener from handler is called during purchase flow`() = runTest {
+        val factoryListener = mockk<PaywallListener> {
+            every { onPurchaseStarted(any()) } just runs
+            every { onPurchaseCompleted(any(), any()) } just runs
+            every { onPurchaseError(any()) } just runs
+            every { onPurchasePackageInitiated(any(), any()) } answers {
+                val resume = secondArg<Resumable>()
+                resume(true)
+            }
+        }
+        val handler = object : CustomPaywallHandler {
+            override val paywallListener = factoryListener
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            transaction,
+            customerInfo,
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setOffering(defaultOffering)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        verifyOrder {
+            factoryListener.onPurchaseStarted(any())
+            factoryListener.onPurchaseCompleted(any(), any())
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `PurchaseLogic from handler is called for purchase when MY_APP mode`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        val factoryPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+        val handler = object : CustomPaywallHandler {
+            override val purchaseLogic = factoryPurchaseLogic
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setOffering(defaultOffering)
+                .setListener(listener)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+        verify(exactly = 1) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 1) { listener.onPurchaseCompleted(any(), any()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `PurchaseLogic from handler is called for restore when MY_APP mode`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customRestoreCalled = MutableStateFlow(false)
+        val factoryPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            null,
+            customRestoreCalled,
+            null,
+            PurchaseLogicResult.Success,
+        )
+        val handler = object : CustomPaywallHandler {
+            override val purchaseLogic = factoryPurchaseLogic
+        }
+        val factory = CustomPaywallHandlerFactory { handler }
+        every { purchases.customPaywallHandlerFactory } returns factory
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setOffering(defaultOffering)
+                .setListener(listener)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.restorePurchases()
+
+        customRestoreCalled.first { it }
+        verify(exactly = 1) { listener.onRestoreStarted() }
+        verify(exactly = 1) { listener.onRestoreCompleted(any()) }
     }
 
     private class TestAppPurchaseLogicWithCallbacks(

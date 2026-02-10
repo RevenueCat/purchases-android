@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerFactory
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
@@ -167,6 +168,11 @@ class Purchases internal constructor(
      */
     val store: Store
         get() = purchasesOrchestrator.store
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @InternalRevenueCatAPI
+    val customPaywallHandlerFactory: CustomPaywallHandlerFactory?
+        get() = purchasesOrchestrator.customPaywallHandlerFactory
 
     /**
      * The currently configured FileRepository

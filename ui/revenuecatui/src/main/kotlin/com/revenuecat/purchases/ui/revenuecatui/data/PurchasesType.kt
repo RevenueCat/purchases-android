@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.CustomPaywallHandlerFactory
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
@@ -59,6 +61,9 @@ internal interface PurchasesType {
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    val customPaywallHandlerFactory: CustomPaywallHandlerFactory?
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
@@ -125,6 +130,10 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    override val customPaywallHandlerFactory: CustomPaywallHandlerFactory?
+        get() = purchases.customPaywallHandlerFactory
 
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
