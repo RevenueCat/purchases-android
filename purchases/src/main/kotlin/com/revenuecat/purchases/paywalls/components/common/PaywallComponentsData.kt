@@ -40,4 +40,7 @@ class PaywallComponentsData(
     @get:JvmSynthetic
     @SerialName("exit_offers")
     val exitOffers: ExitOffers? = null,
+    @get:JvmSynthetic
+    @SerialName("play_store_product_change_mode")
+    val productChangeConfig: ProductChangeConfig? = null,
 )

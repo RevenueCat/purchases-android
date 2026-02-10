@@ -115,7 +115,7 @@ class StackComponentViewTests {
                     clickHandler = { },
                     modifier = Modifier.testTag("stack")
                 )
-                  },
+            },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
@@ -166,12 +166,12 @@ class StackComponentViewTests {
             },
             act = {
                 StackComponentView(
-                style = it,
-                state = state,
-                clickHandler = { },
-                modifier = Modifier.testTag("stack")
-            )
-                  },
+                    style = it,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("stack")
+                )
+            },
             assert = { theme ->
                 theme.setLight()
                 onNodeWithTag("stack")
