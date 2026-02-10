@@ -1,6 +1,5 @@
 package com.revenuecat.rcttester.ui.offerings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -35,13 +35,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.PurchasesTransactionException
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,11 +63,18 @@ fun OfferingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val activity = remember { context.findActivity() }
+    val coroutineScope = rememberCoroutineScope()
+    
     var offerings by remember { mutableStateOf<Offerings?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedOfferingForMetadata by remember { mutableStateOf<Offering?>(null) }
+    var selectedOfferingForPaywall by remember { mutableStateOf<Offering?>(null) }
     var refreshKey by remember { mutableStateOf(0) }
+    var purchasingPackageId by remember { mutableStateOf<String?>(null) }
+    var purchaseResult by remember { mutableStateOf<PurchaseResult?>(null) }
 
     LaunchedEffect(refreshKey) {
         isLoading = true
@@ -163,6 +184,31 @@ fun OfferingsScreen(
                                     offering = offering,
                                     isCurrent = offering.identifier == currentOffering?.identifier,
                                     onShowMetadata = { selectedOfferingForMetadata = offering },
+                                    onPresentPaywall = { selectedOfferingForPaywall = offering },
+                                    onPurchasePackage = { packageItem ->
+                                        purchasingPackageId = packageItem.identifier
+                                        coroutineScope.launch {
+                                            try {
+                                                val purchaseParams = PurchaseParams.Builder(activity, packageItem).build()
+                                                val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
+                                                purchaseResult = PurchaseResult.Success(
+                                                    orderId = result.storeTransaction.orderId ?: "Unknown",
+                                                    customerInfo = result.customerInfo
+                                                )
+                                            } catch (e: PurchasesTransactionException) {
+                                                purchaseResult = if (e.userCancelled) {
+                                                    PurchaseResult.Cancelled
+                                                } else {
+                                                    PurchaseResult.Error(e.message ?: "Unknown error", e.code)
+                                                }
+                                            } catch (e: Exception) {
+                                                purchaseResult = PurchaseResult.Error(e.message ?: "Unknown error", null)
+                                            } finally {
+                                                purchasingPackageId = null
+                                            }
+                                        }
+                                    },
+                                    purchasingPackageId = purchasingPackageId,
                                 )
                             }
                         }
@@ -179,6 +225,39 @@ fun OfferingsScreen(
             onDismiss = { selectedOfferingForMetadata = null },
         )
     }
+    
+    // Purchase Result Dialog
+    purchaseResult?.let { result ->
+        PurchaseResultDialog(
+            result = result,
+            onDismiss = { purchaseResult = null },
+        )
+    }
+    
+    // Paywall Dialog
+    selectedOfferingForPaywall?.let { offering ->
+        PaywallDialog(
+            PaywallDialogOptions.Builder()
+                .setDismissRequest { selectedOfferingForPaywall = null }
+                .setOffering(offering)
+                .build(),
+        )
+    }
+}
+
+private fun Context.findActivity(): Activity {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    error("No activity found")
+}
+
+private sealed class PurchaseResult {
+    data class Success(val orderId: String, val customerInfo: com.revenuecat.purchases.CustomerInfo) : PurchaseResult()
+    object Cancelled : PurchaseResult()
+    data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }
 
 @Composable
@@ -186,6 +265,9 @@ private fun OfferingCard(
     offering: Offering,
     isCurrent: Boolean,
     onShowMetadata: () -> Unit,
+    onPresentPaywall: () -> Unit,
+    onPurchasePackage: (Package) -> Unit,
+    purchasingPackageId: String?,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -236,9 +318,13 @@ private fun OfferingCard(
                     fontWeight = FontWeight.Bold,
                 )
                 offering.availablePackages.forEach { packageItem ->
+                    val isThisPackagePurchasing = purchasingPackageId == packageItem.identifier
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -251,11 +337,22 @@ private fun OfferingCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Text(
-                            text = packageItem.product.price.formatted,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                        )
+                        Button(
+                            onClick = { onPurchasePackage(packageItem) },
+                            enabled = purchasingPackageId == null,
+                        ) {
+                            if (isThisPackagePurchasing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .height(20.dp)
+                                        .width(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.5.dp,
+                                )
+                            } else {
+                                Text(packageItem.product.price.formatted)
+                            }
+                        }
                     }
                 }
             } else {
@@ -264,6 +361,16 @@ private fun OfferingCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            // Present Paywall button (if offering has a paywall)
+            if (offering.hasPaywall) {
+                Button(
+                    onClick = onPresentPaywall,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Present Paywall")
+                }
             }
         }
     }
@@ -279,6 +386,7 @@ private fun OfferingMetadataDialog(
         title = { Text("Offering Details") },
         text = {
             LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
@@ -288,33 +396,42 @@ private fun OfferingMetadataDialog(
                     MetadataRow("Description", offering.serverDescription)
                 }
                 item {
-                    MetadataRow("Has Paywall", if (offering.webCheckoutURL != null) "Yes" else "No")
+                    MetadataRow("Has Paywall", if (offering.hasPaywall) "Yes" else "No")
                 }
                 item {
                     Text(
                         text = "Packages (${offering.availablePackages.size})",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 items(offering.availablePackages) { packageItem ->
                     Column(
-                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
                     ) {
                         Text(
                             text = packageItem.product.title,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start,
                         )
                         Text(
                             text = packageItem.identifier,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start,
                         )
                         Text(
                             text = packageItem.product.price.formatted,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start,
                         )
                     }
                 }
@@ -361,4 +478,40 @@ private fun MetadataRow(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
+}
+
+@Composable
+private fun PurchaseResultDialog(
+    result: PurchaseResult,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                when (result) {
+                    is PurchaseResult.Success -> "Purchase Successful"
+                    is PurchaseResult.Cancelled -> "Purchase Cancelled"
+                    is PurchaseResult.Error -> "Purchase Failed"
+                }
+            )
+        },
+        text = {
+            Text(
+                when (result) {
+                    is PurchaseResult.Success -> {
+                        val activeEntitlements = result.customerInfo.entitlements.active.keys.joinToString(", ")
+                        "Order ID: ${result.orderId}\n\nActive Entitlements: ${if (activeEntitlements.isEmpty()) "None" else activeEntitlements}"
+                    }
+                    is PurchaseResult.Cancelled -> "The purchase was cancelled."
+                    is PurchaseResult.Error -> result.message
+                }
+            )
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("OK")
+            }
+        },
+    )
 }

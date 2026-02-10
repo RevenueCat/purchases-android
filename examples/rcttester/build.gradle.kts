@@ -58,6 +58,7 @@ android {
 dependencies {
     // RevenueCat SDK
     implementation(project(":purchases"))
+    implementation(project(":ui:revenuecatui"))
     
     // AndroidX Core
     implementation(libs.androidx.core)
