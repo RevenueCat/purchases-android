@@ -9,18 +9,25 @@ internal data class PaywallActivityNonSerializableArgs(
 )
 
 internal object PaywallActivityNonSerializableArgsStore {
-    private var currentArgs: PaywallActivityNonSerializableArgs? = null
+    private val argsMap = mutableMapOf<Int, PaywallActivityNonSerializableArgs>()
 
     @Synchronized
-    fun set(args: PaywallActivityNonSerializableArgs) {
-        currentArgs = args
+    fun store(args: PaywallActivityNonSerializableArgs): Int {
+        val key = System.identityHashCode(args)
+        argsMap[key] = args
+        return key
     }
 
     @Synchronized
-    fun get(): PaywallActivityNonSerializableArgs? = currentArgs
+    fun get(key: Int): PaywallActivityNonSerializableArgs? = argsMap[key]
+
+    @Synchronized
+    fun remove(key: Int) {
+        argsMap.remove(key)
+    }
 
     @Synchronized
     fun clear() {
-        currentArgs = null
+        argsMap.clear()
     }
 }

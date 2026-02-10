@@ -115,8 +115,10 @@ internal class PaywallActivity : ComponentActivity() {
             return
         }
 
-        val nonSerializableArgs = PaywallActivityNonSerializableArgsStore.get()
-        if (args?.hasNonSerializableArgs == true && nonSerializableArgs == null) {
+        val nonSerializableArgs = args?.nonSerializableArgsKey?.let {
+            PaywallActivityNonSerializableArgsStore.get(it)
+        }
+        if (args?.nonSerializableArgsKey != null && nonSerializableArgs == null) {
             Logger.w(
                 "PaywallActivity was recreated after process death but non-serializable args " +
                     "(PurchaseLogic/PaywallListener) were lost. Finishing activity.",

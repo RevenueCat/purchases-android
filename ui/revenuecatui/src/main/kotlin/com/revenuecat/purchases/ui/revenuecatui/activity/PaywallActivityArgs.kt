@@ -21,7 +21,7 @@ internal data class PaywallActivityArgs(
     val edgeToEdge: Boolean = defaultEdgeToEdge,
     val wasLaunchedThroughSDK: Boolean = true,
     val customVariables: Map<String, CustomVariableValue> = emptyMap(),
-    val hasNonSerializableArgs: Boolean = false,
+    val nonSerializableArgsKey: Int? = null,
 ) : Parcelable {
     constructor(
         requiredEntitlementIdentifier: String? = null,
@@ -31,7 +31,7 @@ internal data class PaywallActivityArgs(
         edgeToEdge: Boolean = defaultEdgeToEdge,
         wasLaunchedThroughSDK: Boolean = true,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
-        hasNonSerializableArgs: Boolean = false,
+        nonSerializableArgsKey: Int? = null,
     ) : this(
         requiredEntitlementIdentifier,
         offeringIdAndPresentedOfferingContext,
@@ -40,6 +40,6 @@ internal data class PaywallActivityArgs(
         edgeToEdge,
         wasLaunchedThroughSDK,
         customVariables,
-        hasNonSerializableArgs,
+        nonSerializableArgsKey,
     )
 }
