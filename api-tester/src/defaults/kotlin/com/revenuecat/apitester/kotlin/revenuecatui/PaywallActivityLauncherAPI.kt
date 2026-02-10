@@ -6,6 +6,8 @@ import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -136,6 +138,8 @@ private class PaywallActivityLauncherAPI {
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
         paywallDisplayCallback: PaywallDisplayCallback,
+        purchaseLogic: PurchaseLogic,
+        listener: PaywallListener,
     ) {
         val customVariables = mapOf("key" to CustomVariableValue.String("value"))
 
@@ -146,6 +150,8 @@ private class PaywallActivityLauncherAPI {
             .setShouldDisplayDismissButton(true)
             .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
+            .setPurchaseLogic(purchaseLogic)
+            .setListener(listener)
             .build()
         activityLauncher.launchWithOptions(options)
 
@@ -158,6 +164,8 @@ private class PaywallActivityLauncherAPI {
             .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
             .setPaywallDisplayCallback(paywallDisplayCallback)
+            .setPurchaseLogic(purchaseLogic)
+            .setListener(listener)
             .build()
         activityLauncher.launchIfNeededWithOptions(optionsWithEntitlement)
 
@@ -172,6 +180,8 @@ private class PaywallActivityLauncherAPI {
             .setEdgeToEdge(true)
             .setCustomVariables(customVariables)
             .setPaywallDisplayCallback(paywallDisplayCallback)
+            .setPurchaseLogic(null)
+            .setListener(null)
             .build()
         activityLauncher.launchIfNeededWithOptions(optionsWithBlock)
     }

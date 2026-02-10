@@ -7,6 +7,8 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
 /**
@@ -26,13 +28,16 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
  * For conditional launches (showing the paywall only when certain conditions are met),
  * use [PaywallActivityLaunchIfNeededOptions] instead.
  */
+class PaywallActivityLaunchOptions
 @Suppress("LongParameterList")
-class PaywallActivityLaunchOptions private constructor(
+private constructor(
     internal val offering: Offering?,
     internal val fontProvider: ParcelizableFontProvider?,
     internal val shouldDisplayDismissButton: Boolean,
     internal val edgeToEdge: Boolean,
     internal val customVariables: Map<String, CustomVariableValue>,
+    internal val purchaseLogic: PurchaseLogic?,
+    internal val listener: PaywallListener?,
     // Internal properties for hybrid SDK support
     internal val offeringIdentifier: String?,
     internal val presentedOfferingContext: PresentedOfferingContext?,
@@ -60,6 +65,8 @@ class PaywallActivityLaunchOptions private constructor(
         private var shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON
         private var edgeToEdge: Boolean = defaultEdgeToEdge
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        private var purchaseLogic: PurchaseLogic? = null
+        private var listener: PaywallListener? = null
 
         // Internal properties for hybrid SDK support
         private var offeringIdentifier: String? = null
@@ -129,6 +136,22 @@ class PaywallActivityLaunchOptions private constructor(
         }
 
         /**
+         * Sets custom purchase logic to handle purchases directly by the application
+         * rather than by RevenueCat.
+         */
+        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+            this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Sets a listener to receive paywall events such as purchase completion,
+         * restoration, and errors.
+         */
+        fun setListener(listener: PaywallListener?) = apply {
+            this.listener = listener
+        }
+
+        /**
          * Builds the [PaywallActivityLaunchOptions] instance.
          */
         fun build(): PaywallActivityLaunchOptions {
@@ -138,6 +161,8 @@ class PaywallActivityLaunchOptions private constructor(
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
                 customVariables = customVariables,
+                purchaseLogic = purchaseLogic,
+                listener = listener,
                 offeringIdentifier = offeringIdentifier,
                 presentedOfferingContext = presentedOfferingContext,
             )
@@ -190,6 +215,8 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
     // Internal properties for hybrid SDK support
     internal val offeringIdentifier: String?,
     internal val presentedOfferingContext: PresentedOfferingContext?,
+    internal val purchaseLogic: PurchaseLogic?,
+    internal val listener: PaywallListener?,
 ) {
     internal fun toOfferingSelection(): OfferingSelection.IdAndPresentedOfferingContext? {
         return when {
@@ -211,6 +238,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
      * You must set either [setRequiredEntitlementIdentifier] or [setShouldDisplayBlock]
      * before calling [build]. These are mutually exclusive - setting one will clear the other.
      */
+    @Suppress("TooManyFunctions")
     class Builder {
         private var offering: Offering? = null
         private var fontProvider: ParcelizableFontProvider? = null
@@ -220,6 +248,8 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
         private var requiredEntitlementIdentifier: String? = null
         private var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         private var paywallDisplayCallback: PaywallDisplayCallback? = null
+        private var purchaseLogic: PurchaseLogic? = null
+        private var listener: PaywallListener? = null
 
         // Internal properties for hybrid SDK support
         private var offeringIdentifier: String? = null
@@ -321,6 +351,22 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
         }
 
         /**
+         * Sets custom purchase logic to handle purchases directly by the application
+         * rather than by RevenueCat.
+         */
+        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+            this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Sets a listener to receive paywall events such as purchase completion,
+         * restoration, and errors.
+         */
+        fun setListener(listener: PaywallListener?) = apply {
+            this.listener = listener
+        }
+
+        /**
          * Builds the [PaywallActivityLaunchIfNeededOptions] instance.
          *
          * @throws IllegalStateException if neither [setRequiredEntitlementIdentifier] nor
@@ -343,6 +389,8 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
                 paywallDisplayCallback = paywallDisplayCallback,
                 offeringIdentifier = offeringIdentifier,
                 presentedOfferingContext = presentedOfferingContext,
+                purchaseLogic = purchaseLogic,
+                listener = listener,
             )
         }
     }
