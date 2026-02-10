@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
 /**
@@ -36,6 +37,20 @@ class PaywallActivityLaunchOptions private constructor(
     internal val offeringIdentifier: String?,
     internal val presentedOfferingContext: PresentedOfferingContext?,
 ) {
+    internal fun toOfferingSelection(): OfferingSelection.IdAndPresentedOfferingContext? {
+        return when {
+            offeringIdentifier != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
+            )
+            offering != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offering.identifier,
+                presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+            )
+            else -> null
+        }
+    }
+
     /**
      * Builder for creating [PaywallActivityLaunchOptions].
      */
@@ -176,6 +191,20 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
     internal val offeringIdentifier: String?,
     internal val presentedOfferingContext: PresentedOfferingContext?,
 ) {
+    internal fun toOfferingSelection(): OfferingSelection.IdAndPresentedOfferingContext? {
+        return when {
+            offeringIdentifier != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
+            )
+            offering != null -> OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offering.identifier,
+                presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+            )
+            else -> null
+        }
+    }
+
     /**
      * Builder for creating [PaywallActivityLaunchIfNeededOptions].
      *

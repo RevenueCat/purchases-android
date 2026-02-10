@@ -79,20 +79,27 @@ final class PaywallActivityLauncherAPI {
                 .build();
         launcher.launchWithOptions(options);
 
-        // LaunchIfNeeded with requiredEntitlementIdentifier
+        // LaunchIfNeeded with requiredEntitlementIdentifier (all builder methods)
         PaywallActivityLaunchIfNeededOptions optionsWithEntitlement = new PaywallActivityLaunchIfNeededOptions.Builder()
                 .setRequiredEntitlementIdentifier("premium")
                 .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
                 .setCustomVariables(customVariables)
                 .setPaywallDisplayCallback(paywallDisplayCallback)
                 .build();
         launcher.launchIfNeededWithOptions(optionsWithEntitlement);
 
-        // LaunchIfNeeded with shouldDisplayBlock
+        // LaunchIfNeeded with shouldDisplayBlock (all builder methods)
         PaywallActivityLaunchIfNeededOptions optionsWithBlock = new PaywallActivityLaunchIfNeededOptions.Builder()
                 .setShouldDisplayBlock(customerInfo -> customerInfo.getEntitlements().getActive().isEmpty())
                 .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
                 .setCustomVariables(customVariables)
+                .setPaywallDisplayCallback(paywallDisplayCallback)
                 .build();
         launcher.launchIfNeededWithOptions(optionsWithBlock);
     }
