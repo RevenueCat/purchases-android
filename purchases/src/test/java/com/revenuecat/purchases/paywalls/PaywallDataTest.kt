@@ -20,7 +20,7 @@ private const val PAYWALLDATA_EMPTY_IMAGES = "paywalldata-empty-images.json"
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class PaywallDataTest {
+public class PaywallDataTest {
     @Test
     fun `test PaywallData properties`() {
         val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)

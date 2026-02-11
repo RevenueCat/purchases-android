@@ -45,7 +45,7 @@ internal open class DeviceCache(
     private val apiKey: String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : StorefrontProvider {
-    companion object {
+    public companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
@@ -87,18 +87,18 @@ internal open class DeviceCache(
     // region app user id
 
     @Synchronized
-    fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
+    public fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
 
     @Synchronized
-    fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
+    public fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
     @Synchronized
-    fun cacheAppUserID(appUserID: String) {
+    public fun cacheAppUserID(appUserID: String) {
         cacheAppUserID(appUserID, preferences.edit()).apply()
     }
 
     @Synchronized
-    fun cacheAppUserID(
+    public fun cacheAppUserID(
         appUserID: String,
         cacheEditor: SharedPreferences.Editor,
     ): SharedPreferences.Editor {
@@ -140,12 +140,12 @@ internal open class DeviceCache(
     // endregion
 
     // region purchaser info
-    fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+    public fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
+    public fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress
-    fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
+    public fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return preferences.getString(customerInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
@@ -200,11 +200,11 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
+    public fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
         getCustomerInfoCachesLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
-    fun clearCustomerInfoCacheTimestamp(appUserID: String) {
+    public fun clearCustomerInfoCacheTimestamp(appUserID: String) {
         preferences.edit().clearCustomerInfoCacheTimestamp(appUserID).apply()
     }
 
@@ -216,7 +216,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearCustomerInfoCache(
+    public fun clearCustomerInfoCache(
         appUserID: String,
         editor: SharedPreferences.Editor,
     ) {
@@ -257,13 +257,13 @@ internal open class DeviceCache(
     // endregion
 
     // region virtual currencies
-    fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+    public fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
 
-    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+    public fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress("SwallowedException", "ForbiddenComment")
     @Synchronized
-    fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
+    public fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
         return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
             ?.let { json ->
                 try {
@@ -301,19 +301,19 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
+    public fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
         getVirtualCurrenciesCacheLastUpdated(appUserID)
             .isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
-    fun clearVirtualCurrenciesCache(appUserID: String) {
+    public fun clearVirtualCurrenciesCache(appUserID: String) {
         val editor = preferences.edit()
         clearVirtualCurrenciesCache(appUserID, editor)
         editor.apply()
     }
 
     @Synchronized
-    fun clearVirtualCurrenciesCache(
+    public fun clearVirtualCurrenciesCache(
         appUserID: String,
         editor: SharedPreferences.Editor,
     ) {
@@ -411,7 +411,7 @@ internal open class DeviceCache(
      * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
      */
     @Synchronized
-    fun cleanPreviouslySentTokens(
+    public fun cleanPreviouslySentTokens(
         hashedTokens: Set<String>,
     ) {
         log(LogIntent.DEBUG) { ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN }
@@ -427,7 +427,7 @@ internal open class DeviceCache(
      * been posted to our backend yet.
      */
     @Synchronized
-    fun getActivePurchasesNotInCache(
+    public fun getActivePurchasesNotInCache(
         hashedTokens: Map<String, StoreTransaction>,
     ): List<StoreTransaction> {
         return hashedTokens
@@ -541,13 +541,13 @@ internal open class DeviceCache(
         ).apply()
     }
 
-    fun remove(
+    public fun remove(
         cacheKey: String,
     ) {
         preferences.edit().remove(cacheKey).apply()
     }
 
-    fun findKeysThatStartWith(
+    public fun findKeysThatStartWith(
         cacheKey: String,
     ): Set<String> {
         return try {
@@ -559,7 +559,7 @@ internal open class DeviceCache(
         }
     }
 
-    fun newKey(
+    public fun newKey(
         key: String,
     ) = "$apiKeyPrefix.$key"
 

@@ -22,7 +22,7 @@ internal class DiagnosticsSynchronizer(
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
 ) : DiagnosticsEventTrackerListener {
-    companion object {
+    public companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
 

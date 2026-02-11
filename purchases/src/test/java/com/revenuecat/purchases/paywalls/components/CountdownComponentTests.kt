@@ -19,9 +19,9 @@ internal class CountdownComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val hasEndStack: Boolean,
-            val hasFallback: Boolean,
+            public val json: String,
+            public val hasEndStack: Boolean,
+            public val hasFallback: Boolean,
         )
 
         companion object {

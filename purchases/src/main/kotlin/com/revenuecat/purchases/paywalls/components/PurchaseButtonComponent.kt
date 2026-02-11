@@ -27,7 +27,7 @@ public class PurchaseButtonComponent(
         WEB_PRODUCT_SELECTION,
         ;
 
-        fun toMethod() = when (this) {
+        public fun toMethod() = when (this) {
             IN_APP_CHECKOUT -> Method.InAppCheckout
             WEB_CHECKOUT -> Method.WebCheckout()
             WEB_PRODUCT_SELECTION -> Method.WebProductSelection()

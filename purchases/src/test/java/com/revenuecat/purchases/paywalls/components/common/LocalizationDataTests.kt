@@ -14,16 +14,16 @@ internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String,
 
     class Args(
         @Language("json")
-        val serialized: String,
-        val deserialized: LocalizationData,
+        public val serialized: String,
+        public val deserialized: LocalizationData,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "String",
                 Args(

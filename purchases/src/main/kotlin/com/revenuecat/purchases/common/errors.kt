@@ -41,8 +41,8 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendExpiredWebRedemptionToken(7853),
     ;
 
-    companion object {
-        fun valueOf(backendErrorCode: Int): BackendErrorCode? {
+    public companion object {
+        public fun valueOf(backendErrorCode: Int): BackendErrorCode? {
             return values().firstOrNull { it.value == backendErrorCode }
         }
     }
@@ -127,6 +127,6 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
 }
 
 internal data class SubscriberAttributeError(
-    val keyName: String,
-    val message: String,
+    public val keyName: String,
+    public val message: String,
 )

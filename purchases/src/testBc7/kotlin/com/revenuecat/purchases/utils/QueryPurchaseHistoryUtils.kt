@@ -13,7 +13,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 
-fun BillingClient.mockQueryPurchaseHistory(
+public fun BillingClient.mockQueryPurchaseHistory(
     result: BillingResult,
     history: List<PurchaseHistoryRecord>,
 ): Any {
@@ -50,7 +50,7 @@ fun BillingClient.mockQueryPurchaseHistory(
     return mockBuilder
 }
 
-fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
+public fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
     @BillingClient.ProductType googleType: String,
     builder: Any,
 ) {

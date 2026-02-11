@@ -49,8 +49,8 @@ internal class ImageUrlsTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: ThemeImageUrls,
+            public val json: String,
+            public val expected: ThemeImageUrls,
         )
 
         companion object {

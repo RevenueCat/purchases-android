@@ -26,12 +26,12 @@ public class PaywallColor(
     /**
      * The original Hex representation for this color.
      */
-    val stringRepresentation: String,
+    public val stringRepresentation: String,
     /**
      * The underlying `Color`.
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    val underlyingColor: Color?,
+    public val underlyingColor: Color?,
 ) {
     /**
      * The color converted to a @ColorInt representation

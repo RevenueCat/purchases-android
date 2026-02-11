@@ -132,7 +132,7 @@ internal class BillingWrapper(
         private val pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) {
         @UiThread
-        fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
+        public fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
             val pendingPurchaseParams = PendingPurchasesParams.newBuilder()
                 .enableOneTimeProducts()
                 .apply { if (pendingTransactionsForPrepaidPlansEnabled) enablePrepaidPlans() }
@@ -362,7 +362,7 @@ internal class BillingWrapper(
         }
     }
 
-    fun queryPurchaseHistoryAsync(
+    public fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
@@ -1047,7 +1047,7 @@ internal class BillingWrapper(
     private fun buildSubscriptionProductDetailsParams(
         purchaseInfo: GooglePurchasingData.Subscription,
     ): List<BillingFlowParams.ProductDetailsParams> {
-        fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
+        public fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
             return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
                 setOfferToken(subscription.token)
                 setProductDetails(subscription.productDetails)

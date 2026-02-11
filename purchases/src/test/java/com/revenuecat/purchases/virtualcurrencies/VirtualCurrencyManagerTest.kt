@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class VirtualCurrencyManagerTest {
+public class VirtualCurrencyManagerTest {
 
     private val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
         JSONObject(Responses.validFullVirtualCurrenciesResponse)

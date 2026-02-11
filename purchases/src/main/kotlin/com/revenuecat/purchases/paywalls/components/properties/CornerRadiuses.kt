@@ -57,7 +57,7 @@ sealed interface CornerRadiuses {
 
         constructor(all: Double) : this(all, all, all, all)
 
-        fun copy(
+        public fun copy(
             topLeading: Double = this.topLeading,
             topTrailing: Double = this.topTrailing,
             bottomLeading: Double = this.bottomLeading,

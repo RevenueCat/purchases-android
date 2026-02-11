@@ -21,10 +21,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
+public class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
-    fun setup() {
+    public fun setup() {
         ensureBlockFinishes { latch ->
             setUpTest(entitlementVerificationMode = EntitlementVerificationMode.INFORMATIONAL) {
                 latch.countDown()
@@ -33,7 +33,7 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun initialCustomerInfoIsVerified() = runTestActivityLifecycleScope {
+    public fun initialCustomerInfoIsVerified() = runTestActivityLifecycleScope {
         confirmProductionBackendEnvironment()
 
         val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
@@ -42,7 +42,7 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun canPurchaseProductWithVerificationStatusCorrect() {
+    public fun canPurchaseProductWithVerificationStatusCorrect() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
         val storeTransaction = StoreTransactionFactory.createStoreTransaction()
         mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -69,7 +69,7 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun verificationChangesAfterSuccessIsNotified() = runTestActivityLifecycleScope {
+    public fun verificationChangesAfterSuccessIsNotified() = runTestActivityLifecycleScope {
         confirmProductionBackendEnvironment()
 
         val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
@@ -82,7 +82,7 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun initialCustomerInfoFailsToVerify() = runTestActivityLifecycleScope {
+    public fun initialCustomerInfoFailsToVerify() = runTestActivityLifecycleScope {
         confirmProductionBackendEnvironment()
 
         Purchases.sharedInstance.forceSigningErrors = true
@@ -92,7 +92,7 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun canPurchaseProductFailingToVerifyStatus() {
+    public fun canPurchaseProductFailingToVerifyStatus() {
         Purchases.sharedInstance.forceSigningErrors = true
 
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()

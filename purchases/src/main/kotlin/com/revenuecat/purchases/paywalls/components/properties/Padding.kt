@@ -30,7 +30,7 @@ public class Padding(
      */
     @get:JvmSynthetic val trailing: Double = 0.0,
 ) {
-    companion object {
+    public companion object {
         @get:JvmSynthetic
         val zero = Padding(0.0, 0.0, 0.0, 0.0)
 

@@ -40,7 +40,7 @@ import org.robolectric.annotation.Config
 @OptIn(ExperimentalSerializationApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class ReceiptInfoTest {
+public class ReceiptInfoTest {
 
     private val productIdentifier = "com.myproduct"
     private val json = Json.Default

@@ -21,7 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PurchasesFactoryTest {
+public class PurchasesFactoryTest {
 
     private val applicationMock = mockk<Context>()
     private val contextMock = mockk<Context>().apply {
@@ -34,7 +34,7 @@ class PurchasesFactoryTest {
     private lateinit var purchasesFactory: PurchasesFactory
 
     @Before
-    fun setup() {
+    public fun setup() {
         purchasesFactory = PurchasesFactory(isDebugBuild = { true }, apiKeyValidatorMock)
 
         every {
@@ -43,7 +43,7 @@ class PurchasesFactoryTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         clearAllMocks()
     }
 

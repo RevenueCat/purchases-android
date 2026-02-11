@@ -29,7 +29,7 @@ public enum class CacheFetchPolicy {
 
     ;
 
-    companion object {
-        fun default() = CACHED_OR_FETCHED
+    public companion object {
+        public fun default() = CACHED_OR_FETCHED
     }
 }

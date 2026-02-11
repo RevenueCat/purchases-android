@@ -11,15 +11,15 @@ internal class DimensionTests(@Suppress("UNUSED_PARAMETER") name: String, privat
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: Dimension,
+        public val json: String,
+        public val expected: Dimension,
     )
 
-    companion object {
+    public companion object {
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "vertical",
                 Args(

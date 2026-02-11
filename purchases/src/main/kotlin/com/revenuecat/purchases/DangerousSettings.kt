@@ -9,13 +9,13 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 @Poko
-class DangerousSettings internal constructor(
+public class DangerousSettings internal constructor(
     /**
      * Disable or enable syncing purchases automatically. If this is disabled, RevenueCat will not sync any purchase
      * automatically, and you will have to call syncPurchases whenever a new purchase is completed in order to send it
      * to the RevenueCat's backend. Auto syncing of purchases is enabled by default.
      */
-    val autoSyncPurchases: Boolean = true,
+    public val autoSyncPurchases: Boolean = true,
 
     internal val customEntitlementComputation: Boolean = false,
 ) : Parcelable {

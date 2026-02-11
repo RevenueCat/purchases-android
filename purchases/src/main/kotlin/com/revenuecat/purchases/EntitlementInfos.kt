@@ -12,8 +12,8 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 public class EntitlementInfos(
-    val all: Map<String, EntitlementInfo>,
-    val verification: VerificationResult,
+    public val all: Map<String, EntitlementInfo>,
+    public val verification: VerificationResult,
 ) : Parcelable {
 
     @Deprecated(
@@ -33,7 +33,7 @@ public class EntitlementInfos(
      * Retrieves an specific entitlementInfo by its entitlement identifier. It's equivalent to
      * accessing the `all` map by entitlement identifier.
      */
-    operator fun get(s: String) = all[s]
+    public operator fun get(s: String) = all[s]
 
     /** @suppress */
     override fun equals(other: Any?): Boolean {

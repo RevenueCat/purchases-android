@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class CustomerInfoTest {
+public class CustomerInfoTest {
 
     private val fullCustomerInfo: CustomerInfo by lazy {
         createCustomerInfo(Responses.validFullPurchaserResponse)
@@ -36,7 +36,7 @@ class CustomerInfoTest {
     }
 
     @Test(expected = JSONException::class)
-    fun failsToBeCreatedWithEmptyJSONObject() {
+    public fun failsToBeCreatedWithEmptyJSONObject() {
         createCustomerInfo("{}")
     }
 

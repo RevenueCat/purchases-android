@@ -32,10 +32,10 @@ import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
 
-    companion object {
+    public companion object {
         @BeforeClass
         @JvmStatic
-        fun setupClass() {
+        public fun setupClass() {
             if (!canRunIntegrationTests()) {
                 error("You need to set required constants in Constants.kt")
             }
@@ -99,7 +99,7 @@ open class BasePurchasesIntegrationTest {
         .filter { it.isNotEmpty() }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         _activity = null
         forceServerErrorsStrategy = null
         Purchases.resetSingleton()

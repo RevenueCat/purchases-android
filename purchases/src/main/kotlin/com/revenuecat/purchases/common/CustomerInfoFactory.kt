@@ -43,7 +43,7 @@ internal object CustomerInfoFactory {
     }
 
     @Throws(JSONException::class)
-    fun buildCustomerInfo(
+    public fun buildCustomerInfo(
         body: JSONObject,
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,

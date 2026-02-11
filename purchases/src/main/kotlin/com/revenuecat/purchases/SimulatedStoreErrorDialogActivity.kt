@@ -9,10 +9,10 @@ import com.revenuecat.purchases.common.errorLog
 
 internal class SimulatedStoreErrorDialogActivity : Activity() {
 
-    companion object {
+    public companion object {
         private const val redactedApiKeyExtra = "redactedApiKey"
 
-        fun show(context: Context, redactedApiKey: String) {
+        public fun show(context: Context, redactedApiKey: String) {
             val intent = Intent(context, SimulatedStoreErrorDialogActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 putExtra(redactedApiKeyExtra, redactedApiKey)

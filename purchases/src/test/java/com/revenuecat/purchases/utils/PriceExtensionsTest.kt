@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
-class PriceExtensionsTest {
+public class PriceExtensionsTest {
     @Test
     fun `formattedPricePerMonth correctly formats USD in US locale`() {
         val price = Price("$59.99", 59_990_000, "USD")

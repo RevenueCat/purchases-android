@@ -7,7 +7,7 @@ import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetche
 
 internal object AttributionFetcherFactory {
 
-    fun createAttributionFetcher(
+    public fun createAttributionFetcher(
         store: Store,
         dispatcher: Dispatcher,
     ) = when (store) {

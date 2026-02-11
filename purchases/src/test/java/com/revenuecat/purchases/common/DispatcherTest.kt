@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DispatcherTest {
+public class DispatcherTest {
 
     private val mockExecutorService: ExecutorService = mockk()
     private val dispatcherWithMockExecutor = Dispatcher(mockExecutorService)
@@ -46,18 +46,18 @@ class DispatcherTest {
 
 
     @Before
-    fun setup() {
+    public fun setup() {
         currentThreadExecutorService = CurrentThreadExecutorService()
         dispatcher = Dispatcher(currentThreadExecutorService)
     }
 
     @Test
-    fun canBeCreated() {
+    public fun canBeCreated() {
         assertThat(dispatcher).isNotNull
     }
 
     @Test
-    fun executesInExecutor() {
+    public fun executesInExecutor() {
         val result = HTTPResult.createResult()
 
         every {
@@ -80,7 +80,7 @@ class DispatcherTest {
     }
 
     @Test
-    fun asyncCallHandlesFailures() {
+    public fun asyncCallHandlesFailures() {
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 throw JSONException("an exception")
@@ -97,7 +97,7 @@ class DispatcherTest {
     }
 
     @Test
-    fun asyncCallHandlesSuccess() {
+    public fun asyncCallHandlesSuccess() {
         val result = HTTPResult.createResult()
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -115,7 +115,7 @@ class DispatcherTest {
     }
 
     @Test
-    fun closeStopsThreads() {
+    public fun closeStopsThreads() {
         every {
             mockExecutorService.shutdownNow()
         } returns null
@@ -128,7 +128,7 @@ class DispatcherTest {
     }
 
     @Test
-    fun securityExceptionsAreCorrectlyConvertedToPurchaseErrors() {
+    public fun securityExceptionsAreCorrectlyConvertedToPurchaseErrors() {
         val errorHolder = AtomicReference<PurchasesError>()
 
         val call = object : Dispatcher.AsyncCall() {

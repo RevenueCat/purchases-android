@@ -22,5 +22,5 @@ public class PaywallComponentsConfig(
     @get:JvmSynthetic val background: Background,
     @get:JvmSynthetic
     @SerialName("sticky_footer")
-    val stickyFooter: StickyFooterComponent? = null,
+    public val stickyFooter: StickyFooterComponent? = null,
 )

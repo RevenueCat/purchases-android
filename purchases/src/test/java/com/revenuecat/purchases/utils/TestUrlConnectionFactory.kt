@@ -10,7 +10,7 @@ internal class TestUrlConnection(
     var disconnectCallCount = 0
         private set
 
-    val isDisconnected: Boolean
+    public val isDisconnected: Boolean
         get() = disconnectCallCount > 0
 
     override fun disconnect() {
@@ -22,7 +22,7 @@ internal class TestUrlConnectionFactory(
     private val mockedConnections: Map<String, TestUrlConnection>
 ): UrlConnectionFactory {
     private val _createdConnections = mutableListOf<String>()
-    val createdConnections: List<String>
+    public val createdConnections: List<String>
         get() = _createdConnections.toList()
 
     override fun createConnection(url: String, requestMethod: String): UrlConnection {
@@ -30,7 +30,7 @@ internal class TestUrlConnectionFactory(
         return mockedConnections[url] ?: throw IllegalArgumentException("No mocked connection for URL: $url")
     }
 
-    fun clear() {
+    public fun clear() {
         _createdConnections.clear()
     }
 }

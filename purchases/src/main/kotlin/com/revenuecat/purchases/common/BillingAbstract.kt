@@ -30,7 +30,7 @@ internal abstract class BillingAbstract(
     public var purchasesUpdatedListener: PurchasesUpdatedListener? = null
 
     interface StateListener {
-        fun onConnected()
+        public fun onConnected()
     }
 
     abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
@@ -39,7 +39,7 @@ internal abstract class BillingAbstract(
 
     protected abstract fun endConnection()
 
-    fun close() {
+    public fun close() {
         purchasesUpdatedListener = null
         endConnection()
     }
@@ -129,7 +129,7 @@ internal abstract class BillingAbstract(
     }
 
     interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<StoreTransaction>)
-        fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
+        public fun onPurchasesUpdated(purchases: List<StoreTransaction>)
+        public fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 }

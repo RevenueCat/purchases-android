@@ -19,7 +19,7 @@ import java.util.Date
 import java.util.Locale
 
 @SuppressWarnings("LongParameterList")
-fun dummyAmazonProduct(
+public fun dummyAmazonProduct(
     sku: String = "premium",
     productType: ProductType = ProductType.SUBSCRIPTION,
     description: String = "A product description",
@@ -43,7 +43,7 @@ fun dummyAmazonProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-fun stubStoreProductForAmazon(
+public fun stubStoreProductForAmazon(
     productId: String,
     type: com.revenuecat.purchases.ProductType = com.revenuecat.purchases.ProductType.SUBS,
     price: Price = Price("\$1.00", MICRO_MULTIPLIER.toLong(), "USD"),
@@ -105,7 +105,7 @@ private data class StubPurchasingData(
         get() = com.revenuecat.purchases.ProductType.SUBS
 }
 
-fun dummyReceipt(
+public fun dummyReceipt(
     sku: String = "premium",
     productType: ProductType = ProductType.SUBSCRIPTION,
     purchaseDate: Date = Date(),
@@ -121,7 +121,7 @@ fun dummyReceipt(
         .build()
 }
 
-fun dummyUserData(
+public fun dummyUserData(
     marketplace: String = "US",
     storeUserId: String = "user_id",
     lwaConsentStatus: String = "CONSENTED"

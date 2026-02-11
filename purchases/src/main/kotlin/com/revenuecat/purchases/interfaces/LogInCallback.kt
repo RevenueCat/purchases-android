@@ -17,11 +17,11 @@ public interface LogInCallback {
      * @param created [Boolean] true if a new user has been registered in the backend,
      * false if the user had already been registered.
      */
-    fun onReceived(customerInfo: CustomerInfo, created: Boolean)
+    public fun onReceived(customerInfo: CustomerInfo, created: Boolean)
 
     /**
      * Will be called after the call has completed with an error.
      * @param error A [PurchasesError] containing the reason for the failure of the call
      */
-    fun onError(error: PurchasesError)
+    public fun onError(error: PurchasesError)
 }

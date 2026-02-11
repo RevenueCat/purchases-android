@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-object Constants {
+public object Constants {
     const val apiKey = "REVENUECAT_API_KEY"
     const val proxyUrl = "NO_PROXY_URL"
     const val googlePurchaseToken = "GOOGLE_PURCHASE_TOKEN"
@@ -11,7 +11,7 @@ object Constants {
     const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
 
     private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
-    val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
+    public val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
 
     enum class BackendEnvironment {
         PRODUCTION,

@@ -35,7 +35,7 @@ internal abstract class OfferingParser {
      */
     @OptIn(InternalRevenueCatAPI::class)
     @JvmOverloads
-    fun createOfferings(
+    public fun createOfferings(
         offeringsJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
@@ -110,7 +110,7 @@ internal abstract class OfferingParser {
 
     @OptIn(InternalRevenueCatAPI::class)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun createOffering(
+    public fun createOffering(
         offeringJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         uiConfig: UiConfig?,
@@ -175,7 +175,7 @@ internal abstract class OfferingParser {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun createPackage(
+    public fun createPackage(
         packageJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         presentedOfferingContext: PresentedOfferingContext,

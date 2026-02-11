@@ -34,7 +34,7 @@ public class CustomActionData(
      * This identifier is configured in the Customer Center dashboard and allows
      * applications to distinguish between different types of custom actions.
      */
-    val actionIdentifier: String,
+    public val actionIdentifier: String,
 
     /**
      * The product identifier of the purchase being viewed in a detail screen, if any.
@@ -46,5 +46,5 @@ public class CustomActionData(
      * - When triggered from a purchase detail screen: Contains the product identifier of that purchase
      * - When triggered from the management screen: Will be `null`
      */
-    val purchaseIdentifier: String?,
+    public val purchaseIdentifier: String?,
 )

@@ -19,13 +19,13 @@ import dev.drewhamilton.poko.Poko
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class AdRevenueData(
-    val networkName: String?,
-    val mediatorName: AdMediatorName,
-    val adFormat: AdFormat,
-    val placement: String?,
-    val adUnitId: String,
-    val impressionId: String,
-    val revenueMicros: Long,
-    val currency: String,
-    val precision: AdRevenuePrecision,
+    public val networkName: String?,
+    public val mediatorName: AdMediatorName,
+    public val adFormat: AdFormat,
+    public val placement: String?,
+    public val adUnitId: String,
+    public val impressionId: String,
+    public val revenueMicros: Long,
+    public val currency: String,
+    public val precision: AdRevenuePrecision,
 )

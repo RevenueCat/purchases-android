@@ -18,7 +18,7 @@ internal class PostTransactionWithProductDetailsHelper(
      */
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongParameterList", "LongMethod")
-    fun postTransactions(
+    public fun postTransactions(
         transactions: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,

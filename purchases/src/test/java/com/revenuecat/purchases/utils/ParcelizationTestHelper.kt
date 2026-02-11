@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 
-inline fun <reified T : Parcelable> testParcelization(value: T?, areSame: Boolean = false) {
+public inline fun <reified T : Parcelable> testParcelization(value: T?, areSame: Boolean = false) {
     val key = "key"
 
     // We don't have a good way to access the CREATOR (especially if the

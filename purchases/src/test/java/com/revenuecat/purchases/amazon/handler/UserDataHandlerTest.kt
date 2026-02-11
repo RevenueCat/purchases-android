@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class UserDataHandlerTest {
+public class UserDataHandlerTest {
 
     private lateinit var underTest: UserDataHandler
     private lateinit var mainHandler: Handler
@@ -51,7 +51,7 @@ class UserDataHandlerTest {
     private val mainHandlerCallbacks: MutableList<Runnable> = ArrayList()
 
     @Before
-    fun setup() {
+    public fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         mainHandlerCallbacks.clear()
         timestampProvider = MockTimestampProvider()

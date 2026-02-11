@@ -30,7 +30,7 @@ internal object OfferingStrings {
     const val MISSING_PRODUCT_DETAILS = "Missing productDetails: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
     const val EMPTY_PRODUCT_ID_LIST = "productId list is empty, skipping queryProductDetailsAsync call"
-    fun getConfigurationErrorNoProductsForOfferings(
+    public fun getConfigurationErrorNoProductsForOfferings(
         apiKeyValidationResult: APIKeyValidator.ValidationResult,
         configuredStore: Store,
     ): String {

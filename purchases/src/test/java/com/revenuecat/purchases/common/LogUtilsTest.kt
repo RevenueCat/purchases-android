@@ -7,15 +7,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class LogUtilsTest {
+public class LogUtilsTest {
     @Test
-    fun logLevelWithDebugLogsEnabled() {
+    public fun logLevelWithDebugLogsEnabled() {
         assertThat(LogLevel.debugLogsEnabled(true)).isEqualTo(LogLevel.DEBUG)
         assertThat(LogLevel.debugLogsEnabled(false)).isEqualTo(LogLevel.INFO)
     }
 
     @Test
-    fun logLevelDebugLogsEnabled() {
+    public fun logLevelDebugLogsEnabled() {
         assertThat(LogLevel.VERBOSE.debugLogsEnabled).isEqualTo(true)
         assertThat(LogLevel.DEBUG.debugLogsEnabled).isEqualTo(true)
         assertThat(LogLevel.INFO.debugLogsEnabled).isEqualTo(false)

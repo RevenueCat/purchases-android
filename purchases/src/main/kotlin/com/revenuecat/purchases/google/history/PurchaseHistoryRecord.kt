@@ -11,9 +11,9 @@ import org.json.JSONObject
  * This includes the purchase data and its cryptographic signature.
  */
 internal data class PurchaseHistoryRecord(
-    val purchaseData: PurchaseData,
-    val signature: String,
-    val rawJson: String,
+    public val purchaseData: PurchaseData,
+    public val signature: String,
+    public val rawJson: String,
 ) {
     public fun toStoreTransaction(type: ProductType): StoreTransaction {
         return StoreTransaction(

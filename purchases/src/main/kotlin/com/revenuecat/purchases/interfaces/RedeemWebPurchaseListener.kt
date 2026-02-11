@@ -58,5 +58,5 @@ public fun interface RedeemWebPurchaseListener {
     /**
      * Called when a RevenueCat Web purchase redemption finishes with the result of the operation.
      */
-    fun handleResult(result: Result)
+    public fun handleResult(result: Result)
 }

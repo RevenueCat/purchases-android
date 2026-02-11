@@ -18,9 +18,9 @@ internal sealed class BillingResponse {
     object NetworkError : BillingResponse()
     object Unknown : BillingResponse()
 
-    companion object {
+    public companion object {
         @Suppress("CyclomaticComplexMethod")
-        fun fromCode(code: Int): BillingResponse {
+        public fun fromCode(code: Int): BillingResponse {
             return when (code) {
                 BillingResponseCode.SERVICE_TIMEOUT -> ServiceUnavailable
                 BillingResponseCode.FEATURE_NOT_SUPPORTED -> FeatureNotSupported

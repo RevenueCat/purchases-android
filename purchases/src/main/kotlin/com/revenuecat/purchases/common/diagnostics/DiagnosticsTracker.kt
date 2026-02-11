@@ -22,7 +22,7 @@ import java.util.UUID
 import kotlin.time.Duration
 
 internal fun interface DiagnosticsEventTrackerListener {
-    fun onEventTracked()
+    public fun onEventTracked()
 }
 
 /**
@@ -79,10 +79,10 @@ internal class DiagnosticsTracker(
         emptyMap()
     }
 
-    var listener: DiagnosticsEventTrackerListener? = null
+    public var listener: DiagnosticsEventTrackerListener? = null
 
     @Suppress("LongParameterList")
-    fun trackHttpRequestPerformed(
+    public fun trackHttpRequestPerformed(
         host: String,
         endpoint: Endpoint,
         responseTime: Duration,
@@ -114,7 +114,7 @@ internal class DiagnosticsTracker(
 
     // region Google
 
-    fun trackGoogleQueryProductDetailsRequest(
+    public fun trackGoogleQueryProductDetailsRequest(
         requestedProductIds: Set<String>,
         productType: String,
         billingResponseCode: Int,
@@ -133,7 +133,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleQueryPurchasesRequest(
+    public fun trackGoogleQueryPurchasesRequest(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -152,7 +152,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleQueryPurchaseHistoryRequest(
+    public fun trackGoogleQueryPurchaseHistoryRequest(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -194,7 +194,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGooglePurchaseStarted(
+    public fun trackGooglePurchaseStarted(
         productId: String,
         oldProductId: String?,
         hasIntroTrial: Boolean?,
@@ -211,7 +211,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGooglePurchaseUpdateReceived(
+    public fun trackGooglePurchaseUpdateReceived(
         productIds: List<String>?,
         purchaseStatuses: List<String>?,
         billingResponseCode: Int,
@@ -232,7 +232,7 @@ internal class DiagnosticsTracker(
 
     // region Amazon
 
-    fun trackAmazonQueryProductDetailsRequest(
+    public fun trackAmazonQueryProductDetailsRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
         requestedProductIds: Set<String>,
@@ -247,7 +247,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackAmazonQueryPurchasesRequest(
+    public fun trackAmazonQueryPurchasesRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
         foundProductIds: List<String>?,
@@ -262,7 +262,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackAmazonPurchaseAttempt(
+    public fun trackAmazonPurchaseAttempt(
         productId: String,
         requestStatus: String?,
         errorCode: Int?,
@@ -310,7 +310,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackProductDetailsNotSupported(
+    public fun trackProductDetailsNotSupported(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
@@ -325,7 +325,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackCustomerInfoVerificationResultIfNeeded(
+    public fun trackCustomerInfoVerificationResultIfNeeded(
         customerInfo: CustomerInfo,
     ) {
         val verificationResult = customerInfo.entitlements.verification
@@ -391,7 +391,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    fun trackGetOfferingsResult(
+    public fun trackGetOfferingsResult(
         requestedProductIds: Set<String>?,
         notFoundProductIds: Set<String>?,
         errorMessage: String?,
@@ -427,7 +427,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGetProductsResult(
+    public fun trackGetProductsResult(
         requestedProductIds: Set<String>,
         notFoundProductIds: Set<String>,
         errorMessage: String?,
@@ -457,7 +457,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackSyncPurchasesResult(
+    public fun trackSyncPurchasesResult(
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
@@ -483,7 +483,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackRestorePurchasesResult(
+    public fun trackRestorePurchasesResult(
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
@@ -510,7 +510,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    fun trackGetCustomerInfoResult(
+    public fun trackGetCustomerInfoResult(
         cacheFetchPolicy: CacheFetchPolicy,
         verificationResult: VerificationResult?,
         hadUnsyncedPurchasesBefore: Boolean?,
@@ -546,7 +546,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    fun trackPurchaseResult(
+    public fun trackPurchaseResult(
         productId: String,
         productType: ProductType,
         errorCode: Int?,

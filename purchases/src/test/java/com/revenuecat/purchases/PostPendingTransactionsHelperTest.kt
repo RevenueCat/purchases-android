@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PostPendingTransactionsHelperTest {
+public class PostPendingTransactionsHelperTest {
 
     private val allowSharingPlayStoreAccount = true
     private val appUserId = "test-app-user-id"
@@ -41,7 +41,7 @@ class PostPendingTransactionsHelperTest {
     private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         appConfig = mockk()
         deviceCache = mockk()
         billing = mockk()

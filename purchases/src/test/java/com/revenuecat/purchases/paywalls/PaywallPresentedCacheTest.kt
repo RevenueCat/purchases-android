@@ -14,12 +14,12 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class PaywallPresentedCacheTest {
+public class PaywallPresentedCacheTest {
 
     private lateinit var cache: PaywallPresentedCache
 
     @Before
-    fun setup() {
+    public fun setup() {
         cache = PaywallPresentedCache()
     }
 

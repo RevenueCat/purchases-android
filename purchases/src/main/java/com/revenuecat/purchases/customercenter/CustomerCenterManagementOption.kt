@@ -6,7 +6,7 @@ import dev.drewhamilton.poko.Poko
 /**
  * Interface representing different customer center management options.
  */
-interface CustomerCenterManagementOption {
+public interface CustomerCenterManagementOption {
     /**
      * Action to cancel the current operation
      */
@@ -31,7 +31,7 @@ interface CustomerCenterManagementOption {
      */
     @Poko
     class CustomAction(
-        val actionIdentifier: String,
-        val purchaseIdentifier: String?,
+        public val actionIdentifier: String,
+        public val purchaseIdentifier: String?,
     ) : CustomerCenterManagementOption
 }

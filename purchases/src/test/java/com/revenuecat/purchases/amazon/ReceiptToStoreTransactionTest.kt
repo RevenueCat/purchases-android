@@ -15,7 +15,7 @@ import java.util.Date
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 
 @RunWith(AndroidJUnit4::class)
-class ReceiptToStoreTransactionTest {
+public class ReceiptToStoreTransactionTest {
 
     private val presentedOfferingContext = PresentedOfferingContext("offering")
 

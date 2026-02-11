@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class AdEventsRequest(
-    val events: List<BackendEvent.Ad>,
+    public val events: List<BackendEvent.Ad>,
 ) {
     /**
      * Generates a cache key based on the hash codes of the contained events.

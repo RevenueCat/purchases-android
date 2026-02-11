@@ -28,7 +28,7 @@ public class PaywallData(
     /**
      * The unique identifier for this paywall.
      */
-    val id: String? = null,
+    public val id: String? = null,
 
     /**
      * The type of template used to display this paywall.
@@ -38,7 +38,7 @@ public class PaywallData(
     /**
      * Generic configuration for any paywall.
      */
-    val config: Configuration,
+    public val config: Configuration,
 
     /**
      * The base remote URL where assets for this paywall are stored.
@@ -48,7 +48,7 @@ public class PaywallData(
     /**
      * The revision identifier for this paywall.
      */
-    val revision: Int = 0,
+    public val revision: Int = 0,
 
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 
@@ -57,7 +57,7 @@ public class PaywallData(
 
     @SerialName("zero_decimal_place_countries")
     @Serializable(with = GoogleListSerializer::class)
-    val zeroDecimalPlaceCountries: List<String> = emptyList(),
+    public val zeroDecimalPlaceCountries: List<String> = emptyList(),
 
     /**
      * The default locale to be used on a paywall if the preferred languages aren't found.
@@ -148,7 +148,7 @@ public class PaywallData(
     }
 
     @InternalRevenueCatAPI
-    fun copy(
+    public fun copy(
         templateName: String = this.templateName,
         config: Configuration = this.config,
         assetBaseURL: URL = this.assetBaseURL,
@@ -193,7 +193,7 @@ public class PaywallData(
         internal val legacyImages: Images? = null,
 
         @SerialName("images_by_tier")
-        val imagesByTier: Map<String, Images>? = null,
+        public val imagesByTier: Map<String, Images>? = null,
 
         /**
          * Whether the background image will be blurred (in templates with one).
@@ -210,36 +210,36 @@ public class PaywallData(
          */
         @SerialName("tos_url")
         @Serializable(with = OptionalURLSerializer::class)
-        val termsOfServiceURL: URL? = null,
+        public val termsOfServiceURL: URL? = null,
 
         /**
          * If set, the paywall will display a privacy policy link.
          */
         @SerialName("privacy_url")
         @Serializable(with = OptionalURLSerializer::class)
-        val privacyURL: URL? = null,
+        public val privacyURL: URL? = null,
 
         /**
          * The set of colors used for single-tier paywalls.
          */
-        val colors: ColorInformation,
+        public val colors: ColorInformation,
 
         /**
          * The set of colors used for multi-tier paywalls.
          */
         @SerialName("colors_by_tier")
-        val colorsByTier: Map<String, ColorInformation>? = null,
+        public val colorsByTier: Map<String, ColorInformation>? = null,
 
         /**
          * Tiers used for multi-tier paywalls.
          */
-        val tiers: List<Tier>? = null,
+        public val tiers: List<Tier>? = null,
 
         /**
          * The tier to be selected by default.
          */
         @SerialName("default_tier")
-        val defaultTier: String? = null,
+        public val defaultTier: String? = null,
     ) {
         constructor(
             packageIds: List<String>,
@@ -268,7 +268,7 @@ public class PaywallData(
         )
 
         @InternalRevenueCatAPI
-        fun copy(
+        public fun copy(
             packageIds: List<String> = this.packageIds,
             defaultPackage: String? = this.defaultPackage,
             imagesWebp: Images? = this.imagesWebp,
@@ -317,19 +317,19 @@ public class PaywallData(
              * Image displayed as a header in a template.
              */
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val header: String? = null,
+            public val header: String? = null,
 
             /**
              * Image displayed as a background in a template.
              */
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val background: String? = null,
+            public val background: String? = null,
 
             /**
              * Image displayed as an app icon in a template.
              */
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val icon: String? = null,
+            public val icon: String? = null,
         ) {
             internal val all: List<String>
                 get() = listOfNotNull(header, background, icon)
@@ -341,19 +341,19 @@ public class PaywallData(
             /**
              * RevenueCat generated id to match tiers with localizations.
              */
-            val id: String,
+            public val id: String,
 
             /**
              * The list of package identifiers this tier will display.
              */
             @SerialName("packages")
-            val packageIds: List<String>,
+            public val packageIds: List<String>,
 
             /**
              * The package to be selected by default.
              */
             @SerialName("default_package")
-            val defaultPackageId: String,
+            public val defaultPackageId: String,
         )
 
         @Serializable
@@ -362,12 +362,12 @@ public class PaywallData(
             /**
              * Set of colors for light mode.
              */
-            val light: Colors,
+            public val light: Colors,
 
             /**
              * Set of colors for dark mode.
              */
-            val dark: Colors? = null,
+            public val dark: Colors? = null,
         )
 
         @Serializable
@@ -413,7 +413,7 @@ public class PaywallData(
              */
             @SerialName("call_to_action_secondary_background")
             @Serializable(with = PaywallColor.Serializer::class)
-            val callToActionSecondaryBackground: PaywallColor? = null,
+            public val callToActionSecondaryBackground: PaywallColor? = null,
 
             /**
              * Primary accent color.
@@ -444,28 +444,28 @@ public class PaywallData(
              */
             @SerialName("tier_control_background")
             @Serializable(with = PaywallColor.Serializer::class)
-            val tierControlBackground: PaywallColor? = null,
+            public val tierControlBackground: PaywallColor? = null,
 
             /**
              * Tier control foreground color.
              */
             @SerialName("tier_control_foreground")
             @Serializable(with = PaywallColor.Serializer::class)
-            val tierControlForeground: PaywallColor? = null,
+            public val tierControlForeground: PaywallColor? = null,
 
             /**
              * Tier control selected background color.
              */
             @SerialName("tier_control_selected_background")
             @Serializable(with = PaywallColor.Serializer::class)
-            val tierControlSelectedBackground: PaywallColor? = null,
+            public val tierControlSelectedBackground: PaywallColor? = null,
 
             /**
              * Tier control selected foreground color.
              */
             @SerialName("tier_control_selected_foreground")
             @Serializable(with = PaywallColor.Serializer::class)
-            val tierControlSelectedForeground: PaywallColor? = null,
+            public val tierControlSelectedForeground: PaywallColor? = null,
         )
     }
 
@@ -561,12 +561,12 @@ public class PaywallData(
             /**
              * The title of the feature.
              */
-            val title: String,
+            public val title: String,
 
             /**
              * An optional description of the feature.
              */
-            val content: String? = null,
+            public val content: String? = null,
 
             /**
              * An optional icon for the feature.
@@ -594,34 +594,34 @@ public class PaywallData(
              *
              */
             @SerialName("offer_name")
-            val offerName: String,
+            public val offerName: String,
 
             /**
              *
              */
             @SerialName("offer_details")
-            val offerDetails: String,
+            public val offerDetails: String,
 
             /**
              *
              */
             @SerialName("offer_details_with_intro_offer")
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val offerDetailsWithIntroOffer: String? = null,
+            public val offerDetailsWithIntroOffer: String? = null,
 
             /**
              *
              */
             @SerialName("offer_details_with_multiple_intro_offers")
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val offerDetailsWithMultipleIntroOffers: String? = null,
+            public val offerDetailsWithMultipleIntroOffers: String? = null,
 
             /**
              *
              */
             @SerialName("offer_badge")
             @Serializable(with = EmptyStringToNullSerializer::class)
-            val offerBadge: String? = null,
+            public val offerBadge: String? = null,
         )
     }
 }

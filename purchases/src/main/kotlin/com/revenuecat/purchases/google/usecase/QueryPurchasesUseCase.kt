@@ -9,16 +9,16 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreTransaction
 
 internal data class QueryPurchasesUseCaseParams(
-    val dateProvider: DateProvider = DefaultDateProvider(),
-    val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    public val dateProvider: DateProvider = DefaultDateProvider(),
+    public val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
 internal class QueryPurchasesUseCase(
     private val useCaseParams: QueryPurchasesUseCaseParams,
-    val onSuccess: (Map<String, StoreTransaction>) -> Unit,
-    val onError: (PurchasesError) -> Unit,
-    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
+    public val onSuccess: (Map<String, StoreTransaction>) -> Unit,
+    public val onError: (PurchasesError) -> Unit,
+    public val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) : BillingClientUseCase<Map<String, StoreTransaction>>(useCaseParams, onError, executeRequestOnUIThread) {
 

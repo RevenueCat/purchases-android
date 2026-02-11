@@ -7,7 +7,7 @@ import java.util.concurrent.RejectedExecutionException
 internal class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
-    var calledDelay: Delay? = null
+    public var calledDelay: Delay? = null
 
     override fun enqueue(command: Runnable, delay: Delay) {
         calledDelay = delay

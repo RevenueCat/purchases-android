@@ -8,13 +8,13 @@ private fun ByteArray.copyOf(component: Signature.Component): ByteArray {
 }
 
 internal data class Signature(
-    val intermediateKey: ByteArray,
-    val intermediateKeyExpiration: ByteArray,
-    val intermediateKeySignature: ByteArray,
-    val salt: ByteArray,
-    val payload: ByteArray,
+    public val intermediateKey: ByteArray,
+    public val intermediateKeyExpiration: ByteArray,
+    public val intermediateKeySignature: ByteArray,
+    public val salt: ByteArray,
+    public val payload: ByteArray,
 ) {
-    companion object {
+    public companion object {
         internal fun fromString(signature: String): Signature {
             val signatureBytes = Base64.decode(signature, Base64.DEFAULT)
             val expectedSize = Component.totalSize

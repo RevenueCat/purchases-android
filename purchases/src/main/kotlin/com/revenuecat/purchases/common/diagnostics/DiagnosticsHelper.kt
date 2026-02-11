@@ -9,11 +9,11 @@ internal class DiagnosticsHelper(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val sharedPreferences: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
 ) {
-    companion object {
+    public companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
 
-        fun initializeSharedPreferences(context: Context): SharedPreferences =
+        public fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
                 Context.MODE_PRIVATE,

@@ -29,10 +29,10 @@ internal enum class CustomerInfoOriginalSource {
     OFFLINE_ENTITLEMENTS,
     ;
 
-    companion object {
+    public companion object {
         val DEFAULT = MAIN
 
-        fun fromString(originalSourceString: String?): CustomerInfoOriginalSource {
+        public fun fromString(originalSourceString: String?): CustomerInfoOriginalSource {
             return if (originalSourceString != null) {
                 try {
                     CustomerInfoOriginalSource.valueOf(originalSourceString)
@@ -70,16 +70,16 @@ internal enum class CustomerInfoOriginalSource {
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class CustomerInfo internal constructor(
-    val entitlements: EntitlementInfos,
-    val allExpirationDatesByProduct: Map<String, Date?>,
-    val allPurchaseDatesByProduct: Map<String, Date?>,
-    val requestDate: Date,
-    val schemaVersion: Int,
-    val firstSeen: Date,
-    val originalAppUserId: String,
-    val managementURL: Uri?,
-    val originalPurchaseDate: Date?,
+public class CustomerInfo internal constructor(
+    public val entitlements: EntitlementInfos,
+    public val allExpirationDatesByProduct: Map<String, Date?>,
+    public val allPurchaseDatesByProduct: Map<String, Date?>,
+    public val requestDate: Date,
+    public val schemaVersion: Int,
+    public val firstSeen: Date,
+    public val originalAppUserId: String,
+    public val managementURL: Uri?,
+    public val originalPurchaseDate: Date?,
     private val jsonObject: JSONObject,
     internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
     internal val loadedFromCache: Boolean = false,
@@ -286,13 +286,13 @@ class CustomerInfo internal constructor(
  * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
 private data class ComparableData(
-    val entitlements: EntitlementInfos,
-    val allExpirationDatesByProduct: Map<String, Date?>,
-    val allPurchaseDatesByProduct: Map<String, Date?>,
-    val schemaVersion: Int,
-    val firstSeen: Date,
-    val originalAppUserId: String,
-    val originalPurchaseDate: Date?,
+    public val entitlements: EntitlementInfos,
+    public val allExpirationDatesByProduct: Map<String, Date?>,
+    public val allPurchaseDatesByProduct: Map<String, Date?>,
+    public val schemaVersion: Int,
+    public val firstSeen: Date,
+    public val originalAppUserId: String,
+    public val originalPurchaseDate: Date?,
 ) {
     constructor(
         customerInfo: CustomerInfo,

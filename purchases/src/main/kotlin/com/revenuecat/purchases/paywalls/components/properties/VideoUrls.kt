@@ -24,19 +24,19 @@ public class ThemeVideoUrls(
 @Immutable
 public class VideoUrls(
     @get:JvmSynthetic
-    val width: UInt,
+    public val width: UInt,
     @get:JvmSynthetic
-    val height: UInt,
+    public val height: UInt,
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
-    val url: URL,
+    public val url: URL,
     @get:JvmSynthetic
-    val checksum: Checksum? = null,
+    public val checksum: Checksum? = null,
     @get:JvmSynthetic
     @SerialName("url_low_res")
     @Serializable(with = URLSerializer::class)
-    val urlLowRes: URL? = null,
+    public val urlLowRes: URL? = null,
     @get:JvmSynthetic
     @SerialName("checksum_low_res")
-    val checksumLowRes: Checksum? = null,
+    public val checksumLowRes: Checksum? = null,
 )

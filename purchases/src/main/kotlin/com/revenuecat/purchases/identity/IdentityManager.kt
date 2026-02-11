@@ -36,10 +36,10 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
 ) {
-    companion object {
+    public companion object {
         private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
 
-        fun isUserIDAnonymous(appUserID: String): Boolean {
+        public fun isUserIDAnonymous(appUserID: String): Boolean {
             return anonymousIdRegex.matches(appUserID)
         }
     }
@@ -50,7 +50,7 @@ internal class IdentityManager(
     // region Public functions
 
     @Synchronized
-    fun configure(
+    public fun configure(
         appUserID: String?,
     ) {
         if (appUserID?.isBlank() == true) {
@@ -75,7 +75,7 @@ internal class IdentityManager(
         }
     }
 
-    suspend fun aliasCurrentUserIdTo(
+    public suspend fun aliasCurrentUserIdTo(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID
@@ -101,7 +101,7 @@ internal class IdentityManager(
         }
     }
 
-    fun logIn(
+    public fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
         onError: (PurchasesError) -> Unit,

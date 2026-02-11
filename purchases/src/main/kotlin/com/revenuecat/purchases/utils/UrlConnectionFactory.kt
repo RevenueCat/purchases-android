@@ -5,13 +5,13 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 internal interface UrlConnectionFactory {
-    fun createConnection(url: String, requestMethod: String = "GET"): UrlConnection
+    public fun createConnection(url: String, requestMethod: String = "GET"): UrlConnection
 }
 
 internal interface UrlConnection {
-    val responseCode: Int
-    val inputStream: InputStream
-    fun disconnect()
+    public val responseCode: Int
+    public val inputStream: InputStream
+    public fun disconnect()
 }
 
 private const val TIMEOUT = 5000

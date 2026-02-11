@@ -9,7 +9,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class SignatureVerificationModeTest {
+public class SignatureVerificationModeTest {
 
     @Test
     fun `fromEntitlementVerificationMode transforms verification mode correctly`() {

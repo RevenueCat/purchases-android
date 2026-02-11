@@ -24,15 +24,15 @@ import java.net.URL
 public class Offering
 @OptIn(InternalRevenueCatAPI::class)
 constructor(
-    val identifier: String,
-    val serverDescription: String,
-    val metadata: Map<String, Any>,
-    val availablePackages: List<Package>,
+    public val identifier: String,
+    public val serverDescription: String,
+    public val metadata: Map<String, Any>,
+    public val availablePackages: List<Package>,
     @InternalRevenueCatAPI
-    val paywall: PaywallData? = null,
+    public val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
-    val paywallComponents: PaywallComponents? = null,
-    val webCheckoutURL: URL? = null,
+    public val paywallComponents: PaywallComponents? = null,
+    public val webCheckoutURL: URL? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
     constructor(
@@ -107,7 +107,7 @@ constructor(
      * Retrieves a specific package by identifier, use this to access custom package types configured
      * in the RevenueCat dashboard. Equivalent to calling `getPackage`.
      */
-    operator fun get(s: String) = getPackage(s)
+    public operator fun get(s: String) = getPackage(s)
 
     /**
      * Retrieves a specific package by identifier, use this to access custom package types configured
@@ -116,7 +116,7 @@ constructor(
      */
     @Throws(NoSuchElementException::class)
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getPackage(identifier: String) =
+    public fun getPackage(identifier: String) =
         availablePackages.first { it.identifier == identifier }
 
     /**

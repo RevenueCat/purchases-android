@@ -19,9 +19,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Parcelize
 public class VirtualCurrency @InternalRevenueCatAPI constructor(
-    val balance: Int,
-    val name: String,
-    val code: String,
+    public val balance: Int,
+    public val name: String,
+    public val code: String,
     @SerialName("description")
-    val serverDescription: String? = null,
+    public val serverDescription: String? = null,
 ) : Parcelable

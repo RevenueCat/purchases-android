@@ -7,20 +7,20 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private val args: PaywallTransitionTest.Args) {
+public class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private val args: PaywallTransitionTest.Args) {
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: PaywallTransition,
+        public val json: String,
+        public val expected: PaywallTransition,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "fade_and_scale ease-in-out",
                 Args(

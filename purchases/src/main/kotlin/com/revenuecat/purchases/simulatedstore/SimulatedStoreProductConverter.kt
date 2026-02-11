@@ -19,7 +19,7 @@ internal object SimulatedStoreProductConverter {
     @JvmSynthetic
     @Suppress("LongMethod")
     @Throws(PurchasesException::class)
-    fun convertToStoreProduct(
+    public fun convertToStoreProduct(
         productResponse: WebBillingProductResponse,
         locale: Locale = Locale.getDefault(),
     ): TestStoreProduct {

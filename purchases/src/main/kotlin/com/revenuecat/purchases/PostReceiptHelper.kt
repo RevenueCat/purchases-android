@@ -46,7 +46,7 @@ internal class PostReceiptHelper(
      * This method will post a token and receiptInfo to the backend without consuming any purchases.
      * It will store that the token was sent to the backend so it doesn't send it again.
      */
-    fun postTokenWithoutConsuming(
+    public fun postTokenWithoutConsuming(
         purchaseToken: String,
         receiptInfo: ReceiptInfo,
         isRestore: Boolean,
@@ -88,7 +88,7 @@ internal class PostReceiptHelper(
      * This method will post a StoreTransaction and optionally a StoreProduct info to the backend.
      * It will consume the purchase if finishTransactions is true.
      */
-    fun postTransactionAndConsumeIfNeeded(
+    public fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,
         subscriptionOptionForProductIDs: Map<String, SubscriptionOption>?,
@@ -143,7 +143,7 @@ internal class PostReceiptHelper(
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    fun postRemainingCachedTransactionMetadata(
+    public fun postRemainingCachedTransactionMetadata(
         appUserID: String,
         allowSharingPlayStoreAccount: Boolean,
         pendingTransactionsTokens: Set<String>,

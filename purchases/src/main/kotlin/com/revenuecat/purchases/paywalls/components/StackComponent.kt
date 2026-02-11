@@ -30,36 +30,36 @@ import kotlinx.serialization.Serializable
 @Immutable
 public class StackComponent(
     @get:JvmSynthetic
-    val components: List<PaywallComponent>,
+    public val components: List<PaywallComponent>,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val dimension: Dimension = Vertical(CENTER, START),
+    public val dimension: Dimension = Vertical(CENTER, START),
     @get:JvmSynthetic
-    val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
     @get:JvmSynthetic
-    val spacing: Float? = null,
+    public val spacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val padding: Padding = zero,
+    public val padding: Padding = zero,
     @get:JvmSynthetic
-    val margin: Padding = zero,
+    public val margin: Padding = zero,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
-    val badge: Badge? = null,
+    public val badge: Badge? = null,
     @get:JvmSynthetic
-    val overflow: Overflow? = null,
+    public val overflow: Overflow? = null,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
@@ -78,32 +78,32 @@ public class StackComponent(
 @Immutable
 public class PartialStackComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    public val visible: Boolean? = true,
     @get:JvmSynthetic
-    val dimension: Dimension? = null,
+    public val dimension: Dimension? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
-    val spacing: Float? = null,
+    public val spacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
-    val badge: Badge? = null,
+    public val badge: Badge? = null,
     @get:JvmSynthetic
-    val overflow: StackComponent.Overflow? = null,
+    public val overflow: StackComponent.Overflow? = null,
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)

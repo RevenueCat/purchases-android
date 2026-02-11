@@ -7,7 +7,7 @@ import io.mockk.every
 import io.mockk.mockk
 
 @SuppressWarnings("MagicNumber")
-fun mockOneTimePurchaseOfferDetails(
+public fun mockOneTimePurchaseOfferDetails(
     price: Double = 4.99,
     priceCurrencyCodeValue: String = "USD",
     offerTokenProvided: String = "mockOfferToken",

@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 @Serializable(with = ShapeDeserializer::class)
 sealed interface Shape {
 
-    companion object {
+    public companion object {
         private val pillCornerRadiuses = CornerRadiuses.Percentage(all = 50)
     }
 

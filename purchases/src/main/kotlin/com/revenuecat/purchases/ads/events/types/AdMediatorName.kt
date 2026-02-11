@@ -8,11 +8,11 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmInline
 value class AdMediatorName internal constructor(internal val value: String) {
-    companion object {
+    public companion object {
         val AD_MOB = AdMediatorName("AdMob")
         val APP_LOVIN = AdMediatorName("AppLovin")
 
-        fun fromString(value: String): AdMediatorName {
+        public fun fromString(value: String): AdMediatorName {
             return when (value.trim()) {
                 "AdMob" -> AD_MOB
                 "AppLovin" -> APP_LOVIN

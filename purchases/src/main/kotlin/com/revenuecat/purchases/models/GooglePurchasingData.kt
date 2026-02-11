@@ -5,7 +5,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
 
-sealed class GooglePurchasingData : PurchasingData {
+public sealed class GooglePurchasingData : PurchasingData {
     @Poko
     class InAppProduct(
         override val productId: String,

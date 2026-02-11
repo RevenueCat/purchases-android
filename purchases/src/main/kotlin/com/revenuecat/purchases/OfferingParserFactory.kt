@@ -8,7 +8,7 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
 
-    fun createOfferingParser(
+    public fun createOfferingParser(
         store: Store,
     ): OfferingParser {
         return when (store) {

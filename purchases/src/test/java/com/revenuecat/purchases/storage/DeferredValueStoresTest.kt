@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class DeferredValueStoresTest : CoroutineTest() {
+public class DeferredValueStoresTest : CoroutineTest() {
     private val subject = KeyedDeferredValueStore<String, Int>()
 
     var keyedWasCalled = false
@@ -58,4 +58,4 @@ class DeferredValueStoresTest : CoroutineTest() {
     }
 }
 
-class TestException : Throwable()
+public class TestException : Throwable()

@@ -12,16 +12,16 @@ internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private v
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: Shadow,
+        public val json: String,
+        public val expected: Shadow,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "everything zero - ints as string",
                 Args(

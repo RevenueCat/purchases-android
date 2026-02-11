@@ -11,11 +11,11 @@ internal class VariableLocalizationKeyTests(
     private val expected: VariableLocalizationKey,
 ) {
 
-    companion object {
+    public companion object {
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = VariableLocalizationKey.values().map { expected ->
+        public fun parameters(): Collection<*> = VariableLocalizationKey.values().map { expected ->
             val serialized = when (expected) {
                 VariableLocalizationKey.DAY -> "\"day\""
                 VariableLocalizationKey.DAILY -> "\"daily\""

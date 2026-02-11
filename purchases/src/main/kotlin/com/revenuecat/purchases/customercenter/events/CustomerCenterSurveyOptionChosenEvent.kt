@@ -15,11 +15,11 @@ import java.util.UUID
 @InternalRevenueCatAPI
 @Poko
 public class CustomerCenterSurveyOptionChosenEvent(
-    val creationData: CreationData = CreationData(),
-    val data: Data,
+    public val creationData: CreationData = CreationData(),
+    public val data: Data,
 ) : FeatureEvent {
 
-    companion object {
+    public companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal val json = Json.Default
     }

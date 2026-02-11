@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import kotlin.test.assertIs
 
 @RunWith(AndroidJUnit4::class)
-class BillingFactoryTest {
+public class BillingFactoryTest {
 
     @Test
     fun `BillingWrapper can be created`() {

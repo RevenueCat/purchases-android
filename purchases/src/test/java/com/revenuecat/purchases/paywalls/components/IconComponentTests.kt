@@ -25,8 +25,8 @@ internal class IconComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: IconComponent,
+            public val json: String,
+            public val expected: IconComponent,
         )
 
         companion object {
@@ -222,8 +222,8 @@ internal class IconComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialIconComponent,
+            public val json: String,
+            public val expected: PartialIconComponent,
         )
 
         companion object {

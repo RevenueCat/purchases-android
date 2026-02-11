@@ -23,14 +23,14 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class OfferingsSourceTest {
+public class OfferingsSourceTest {
 
     private lateinit var offeringParser: OfferingParser
     private lateinit var deviceCache: DeviceCache
     private lateinit var offeringsCache: OfferingsCache
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         offeringParser = GoogleOfferingParser()
         deviceCache = mockk()
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit

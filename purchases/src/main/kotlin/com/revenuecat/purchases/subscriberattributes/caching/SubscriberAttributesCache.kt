@@ -38,27 +38,27 @@ internal class SubscriberAttributesCache(
     }
 
     @Synchronized
-    fun getAllStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap =
+    public fun getAllStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap =
         deviceCache.getJSONObjectOrNull(subscriberAttributesCacheKey)
             ?.buildSubscriberAttributesMapPerUser() ?: emptyMap()
 
     @Synchronized
-    fun getAllStoredSubscriberAttributes(appUserID: AppUserID): SubscriberAttributeMap =
+    public fun getAllStoredSubscriberAttributes(appUserID: AppUserID): SubscriberAttributeMap =
         getAllStoredSubscriberAttributes()[appUserID] ?: emptyMap()
 
     @Synchronized
-    fun getUnsyncedSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap =
+    public fun getUnsyncedSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap =
         getAllStoredSubscriberAttributes()
             .mapValues { (appUserID, attributesForUser) ->
                 attributesForUser.filterUnsynced(appUserID)
             }.filterValues { it.isNotEmpty() }
 
     @Synchronized
-    fun getUnsyncedSubscriberAttributes(appUserID: String) =
+    public fun getUnsyncedSubscriberAttributes(appUserID: String) =
         getAllStoredSubscriberAttributes(appUserID).filterUnsynced(appUserID)
 
     @Synchronized
-    fun clearAllSubscriberAttributesFromUser(appUserID: AppUserID) {
+    public fun clearAllSubscriberAttributesFromUser(appUserID: AppUserID) {
         log(LogIntent.DEBUG) { AttributionStrings.DELETING_ATTRIBUTES.format(appUserID) }
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
@@ -77,7 +77,7 @@ internal class SubscriberAttributesCache(
     }
 
     @Synchronized
-    fun cleanUpSubscriberAttributeCache(
+    public fun cleanUpSubscriberAttributeCache(
         currentAppUserID: String,
         cacheEditor: SharedPreferences.Editor,
     ) {

@@ -14,7 +14,7 @@ import com.revenuecat.purchases.common.events.EventsManager
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @ExperimentalPreviewRevenueCatPurchasesAPI
-class AdTracker internal constructor(
+public class AdTracker internal constructor(
     private val eventsManager: EventsManager,
 ) {
 

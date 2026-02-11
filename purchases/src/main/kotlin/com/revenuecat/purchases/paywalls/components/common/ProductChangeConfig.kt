@@ -26,7 +26,7 @@ public class ProductChangeConfig(
     @get:JvmSynthetic
     @Serializable(with = UpgradeReplacementModeDeserializer::class)
     @SerialName("upgrade_replacement_mode")
-    val upgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+    public val upgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
 
     /**
      * Replacement mode to use for downgrades (moving to a lower price per unit time).
@@ -35,5 +35,5 @@ public class ProductChangeConfig(
     @get:JvmSynthetic
     @Serializable(with = DowngradeReplacementModeDeserializer::class)
     @SerialName("downgrade_replacement_mode")
-    val downgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.DEFERRED,
+    public val downgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.DEFERRED,
 )

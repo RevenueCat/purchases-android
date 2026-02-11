@@ -33,22 +33,22 @@ public class Period(
     /**
      * The number of period units.
      */
-    val value: Int,
+    public val value: Int,
 
     /**
      * The increment of time that a subscription period is specified in.
      */
-    val unit: Unit,
+    public val unit: Unit,
 
     /**
      * Specified in ISO 8601 format. For example, P1W equates to one week,
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year
      */
-    val iso8601: String,
+    public val iso8601: String,
 ) : Parcelable {
 
-    companion object Factory {
+    public companion object Factory {
         /**
          * Creates a [Period] object from an ISO 8601 string. Supports both ISO 8601-1 and ISO 8601-2 formats.
          * You shouldn't normally need to call this method directly since `Period` objects are created by the SDK.
@@ -56,7 +56,7 @@ public class Period(
          *
          * @param iso8601 The ISO 8601 string to parse
          */
-        fun create(iso8601: String): Period {
+        public fun create(iso8601: String): Period {
             val pair = iso8601.toPeriod()
             return Period(pair.first, pair.second, iso8601)
         }

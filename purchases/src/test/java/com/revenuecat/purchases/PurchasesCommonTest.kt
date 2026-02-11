@@ -70,16 +70,16 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val initiationSource = PostReceiptInitiationSource.PURCHASE
 
     @After
-    fun removeMocks() {
+    public fun removeMocks() {
         unmockkStatic(BillingClient::class)
     }
     @Test
-    fun canBeCreated() {
+    public fun canBeCreated() {
         assertThat(purchases).isNotNull
     }
 
     @Test
-    fun canBeSetupWithoutAppUserID() {
+    public fun canBeSetupWithoutAppUserID() {
         anonymousSetup(true)
         assertThat(purchases).isNotNull
 
@@ -136,7 +136,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // region get products
 
     @Test
-    fun getsAllProducts() {
+    public fun getsAllProducts() {
         val subProductIds = listOf("onemonth_freetrial")
         val inappProductIds = listOf("normal_purchase")
         val productIds = subProductIds + inappProductIds
@@ -161,7 +161,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun getsSubscriptionProducts() {
+    public fun getsSubscriptionProducts() {
         val subProductIds = listOf("onemonth_freetrial")
         val inappProductIds = listOf("normal_purchase")
         val productIds = subProductIds + inappProductIds
@@ -187,7 +187,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun getsNonSubscriptionProducts() {
+    public fun getsNonSubscriptionProducts() {
         val subProductIds = listOf("onemonth_freetrial")
         val inappProductIds = listOf("normal_purchase")
         val productIds = subProductIds + inappProductIds
@@ -945,7 +945,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun canMakePurchase() {
+    public fun canMakePurchase() {
         val storeProduct = stubStoreProduct("abc")
         val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
@@ -965,7 +965,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun canMakePurchaseWithoutProvidingOption() {
+    public fun canMakePurchaseWithoutProvidingOption() {
         val storeProduct = stubStoreProduct("productId")
         val purchaseProductParams = getPurchaseParams(storeProduct)
         purchases.purchaseWith(
@@ -985,7 +985,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun canMakePurchaseOfAPackage() {
+    public fun canMakePurchaseOfAPackage() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchasePackageParams = getPurchaseParams(packageToPurchase)
@@ -1141,7 +1141,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun canMakePurchaseUpgradeOfAPackage() {
+    public fun canMakePurchaseUpgradeOfAPackage() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val oldPurchase = mockPurchaseFound()
         val purchasePackageUpgradeParams = getPurchaseParams(
@@ -1373,7 +1373,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun doesntPostIfNotOK() {
+    public fun doesntPostIfNotOK() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
         verify(exactly = 0) {
@@ -1392,7 +1392,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun passesUpErrors() {
+    public fun passesUpErrors() {
         var errorCalled = false
         val storeProduct = stubStoreProduct("productId")
         val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
@@ -2065,7 +2065,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // region customer info
 
     @Test
-    fun doesNotGetCustomerInfoOnCreated() {
+    public fun doesNotGetCustomerInfoOnCreated() {
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(appUserId, any(), any(), any())
         }
@@ -2570,7 +2570,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // region restoring
 
     @Test
-    fun isRestoreWhenUsingNullAppUserID() {
+    public fun isRestoreWhenUsingNullAppUserID() {
         anonymousSetup(true)
 
         val productId = "onemonth_freetrial"
@@ -2595,7 +2595,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun doesntRestoreNormally() {
+    public fun doesntRestoreNormally() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
@@ -2635,7 +2635,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun closeCloses() {
+    public fun closeCloses() {
         mockCloseActions()
 
         purchases.close()

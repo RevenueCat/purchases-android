@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import kotlin.test.DefaultAsserter.fail
 
 @RunWith(AndroidJUnit4::class)
-class PurchaseParamsValidatorTest {
+public class PurchaseParamsValidatorTest {
 
     @Test
     fun `purchaseParams with storeProduct passes validation`() {

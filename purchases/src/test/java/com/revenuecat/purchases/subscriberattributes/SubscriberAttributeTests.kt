@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
-class SubscriberAttributeTests {
+public class SubscriberAttributeTests {
 
     @Test
     fun `timestamp is correctly set`() {

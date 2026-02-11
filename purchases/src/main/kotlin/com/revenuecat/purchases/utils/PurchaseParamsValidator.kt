@@ -13,7 +13,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import kotlin.jvm.Throws
 
 internal class PurchaseParamsValidator {
-    companion object {
+    public companion object {
         /**
          * Maximum number of add-on products allowed in a multi-line purchase.
          */

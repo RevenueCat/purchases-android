@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
-class StoreProductTest {
+public class StoreProductTest {
 
     private val productId = "product-id"
     private val basePlanId = "base-plan-id"

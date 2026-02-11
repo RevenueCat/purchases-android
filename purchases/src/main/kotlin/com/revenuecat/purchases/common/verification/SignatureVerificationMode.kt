@@ -3,8 +3,8 @@ package com.revenuecat.purchases.common.verification
 import com.revenuecat.purchases.EntitlementVerificationMode
 
 internal sealed class SignatureVerificationMode {
-    companion object {
-        fun fromEntitlementVerificationMode(
+    public companion object {
+        public fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
             rootVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {

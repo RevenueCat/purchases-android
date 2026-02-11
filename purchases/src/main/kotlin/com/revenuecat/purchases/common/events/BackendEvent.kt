@@ -151,7 +151,7 @@ internal sealed class BackendEvent : Event {
     /**
      * Companion object containing constants related to backend events.
      */
-    companion object {
+    public companion object {
         /**
          * Defines the version number of the paywall event schema.
          */

@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class VirtualCurrenciesTest {
+public class VirtualCurrenciesTest {
 
     private val virtualCurrency = VirtualCurrency(
         name = "Test VC",

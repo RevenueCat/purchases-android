@@ -18,7 +18,7 @@ internal class OfferingsCache(
     ),
     private val localeProvider: LocaleProvider,
 ) {
-    companion object {
+    public companion object {
         const val ORIGINAL_SOURCE_KEY = "rc_original_source"
     }
 
@@ -49,14 +49,14 @@ internal class OfferingsCache(
         get() = offeringsCachedObject.cachedInstance
 
     @Synchronized
-    fun isOfferingsCacheStale(appInBackground: Boolean): Boolean =
+    public fun isOfferingsCacheStale(appInBackground: Boolean): Boolean =
         // Time-based staleness, or
         offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
             // Locale-based staleness
             cachedLanguageTags != localeProvider.currentLocalesLanguageTags
 
     @Synchronized
-    fun forceCacheStale() {
+    public fun forceCacheStale() {
         offeringsCachedObject.clearCacheTimestamp()
         cachedLanguageTags = null
     }

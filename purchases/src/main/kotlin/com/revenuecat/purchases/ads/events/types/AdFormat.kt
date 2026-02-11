@@ -8,7 +8,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmInline
 value class AdFormat internal constructor(internal val value: String) {
-    companion object {
+    public companion object {
         val OTHER = AdFormat("other")
         val BANNER = AdFormat("banner")
         val INTERSTITIAL = AdFormat("interstitial")
@@ -18,7 +18,7 @@ value class AdFormat internal constructor(internal val value: String) {
         val APP_OPEN = AdFormat("app_open")
         val MREC = AdFormat("mrec")
 
-        fun fromString(value: String): AdFormat {
+        public fun fromString(value: String): AdFormat {
             return when (value.trim()) {
                 "other" -> OTHER
                 "banner" -> BANNER

@@ -16,12 +16,12 @@ public interface ReceiveOfferingsCallback {
      *
      * @param offerings
      */
-    fun onReceived(offerings: Offerings)
+    public fun onReceived(offerings: Offerings)
 
     /**
      * Will be called after an error fetching offerings
      *
      * @param error A [PurchasesError] containing the reason for the failure when fetching offerings.
      */
-    fun onError(error: PurchasesError)
+    public fun onError(error: PurchasesError)
 }

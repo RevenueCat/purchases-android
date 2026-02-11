@@ -156,7 +156,7 @@ public class TestStoreProduct @JvmOverloads constructor(
 
 private class TestSubscriptionOption(
     override val pricingPhases: List<PricingPhase>,
-    val basePlanId: String = "testBasePlanId",
+    public val basePlanId: String = "testBasePlanId",
     override val tags: List<String> = emptyList(),
     override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(
         offeringIdentifier = "offering",

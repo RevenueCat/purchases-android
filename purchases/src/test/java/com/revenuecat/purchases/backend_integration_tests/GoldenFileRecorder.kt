@@ -8,13 +8,13 @@ import java.io.File
 /**
  * Data class representing a recorded HTTP request in the golden file format.
  */
-data class RecordedRequest(
-    val url: String,
-    val method: String,
-    val headers: Map<String, String>,
-    val body: String?
+public data class RecordedRequest(
+    public val url: String,
+    public val method: String,
+    public val headers: Map<String, String>,
+    public val body: String?
 ) {
-    fun toJSON(): JSONObject {
+    public fun toJSON(): JSONObject {
         return JSONObject().apply {
             put("url", url)
             put("method", method)
@@ -34,12 +34,12 @@ data class RecordedRequest(
 /**
  * Data class representing a recorded HTTP response in the golden file format.
  */
-data class RecordedResponse(
-    val statusCode: Int,
-    val headers: Map<String, String>,
-    val body: String?
+public data class RecordedResponse(
+    public val statusCode: Int,
+    public val headers: Map<String, String>,
+    public val body: String?
 ) {
-    fun toJSON(): JSONObject {
+    public fun toJSON(): JSONObject {
         return JSONObject().apply {
             put("statusCode", statusCode)
             put("headers", sortJsonObject(JSONObject(headers)))
@@ -79,7 +79,7 @@ private fun sortJsonObject(json: JSONObject): JSONObject {
  * HTTP requests and responses for backend integration tests.
  * Verification is done through git version control.
  */
-class GoldenFileRecorder(
+public class GoldenFileRecorder(
     private val className: String,
     private val testName: String,
     private val baseDirectory: File,
@@ -87,7 +87,7 @@ class GoldenFileRecorder(
     private val bodyFieldsToIgnore: Set<String> = DEFAULT_BODY_FIELDS_TO_IGNORE
 ) : RequestResponseListener {
 
-    companion object {
+    public companion object {
         /**
          * Default headers to ignore during recording as they contain dynamic values.
          * Supports regex patterns for flexible matching.

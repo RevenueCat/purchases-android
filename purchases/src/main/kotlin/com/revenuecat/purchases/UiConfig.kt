@@ -36,16 +36,16 @@ value class FontAlias(@get:JvmSynthetic val value: String)
 @Serializable
 public class UiConfig(
     @get:JvmSynthetic
-    val app: AppConfig = AppConfig(),
+    public val app: AppConfig = AppConfig(),
     @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
     @get:JvmSynthetic
-    val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
+    public val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
     @SerialName("variable_config")
     @get:JvmSynthetic
-    val variableConfig: VariableConfig = VariableConfig(),
+    public val variableConfig: VariableConfig = VariableConfig(),
     @SerialName("custom_variables")
     @get:JvmSynthetic
-    val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
+    public val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
 ) {
 
     @InternalRevenueCatAPI
@@ -62,7 +62,7 @@ public class UiConfig(
         @Serializable
         class FontsConfig(
             @get:JvmSynthetic
-            val android: FontInfo,
+            public val android: FontInfo,
         ) {
 
             @InternalRevenueCatAPI

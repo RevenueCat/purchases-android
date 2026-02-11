@@ -18,16 +18,16 @@ internal class StickyFooterComponentTests(
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: StickyFooterComponent,
+        public val json: String,
+        public val expected: StickyFooterComponent,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "non-empty stack",
                 Args(

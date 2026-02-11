@@ -18,14 +18,14 @@ internal class CustomerCenterRoot(
 
 @InternalRevenueCatAPI
 @Serializable
-data class CustomerCenterConfigData(
+public data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
-    val appearance: Appearance,
-    val localization: Localization,
-    val support: Support,
+    public val appearance: Appearance,
+    public val localization: Localization,
+    public val support: Support,
     @SerialName("last_published_app_version")
     @Serializable(with = EmptyStringToNullSerializer::class)
-    val lastPublishedAppVersion: String? = null,
+    public val lastPublishedAppVersion: String? = null,
 ) {
     @Serializable
     data class Localization(
@@ -428,7 +428,7 @@ data class CustomerCenterConfigData(
                 }
         }
 
-        fun commonLocalizedString(key: CommonLocalizedString): String {
+        public fun commonLocalizedString(key: CommonLocalizedString): String {
             return localizedStrings[key.name.lowercase()] ?: key.defaultValue
         }
     }
@@ -449,9 +449,9 @@ data class CustomerCenterConfigData(
             @Serializable
             data class PromotionalOffer(
                 @SerialName("android_offer_id") val androidOfferId: String,
-                val eligible: Boolean,
-                val title: String,
-                val subtitle: String,
+                public val eligible: Boolean,
+                public val title: String,
+                public val subtitle: String,
                 @SerialName("product_mapping") val productMapping: Map<String, String>,
                 @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
                     emptyMap(),
@@ -494,13 +494,13 @@ data class CustomerCenterConfigData(
 
             @Serializable
             data class FeedbackSurvey(
-                val title: String,
-                val options: List<Option>,
+                public val title: String,
+                public val options: List<Option>,
             ) : PathDetail() {
                 @Serializable
                 data class Option(
-                    val id: String,
-                    val title: String,
+                    public val id: String,
+                    public val title: String,
                     @SerialName("promotional_offer") val promotionalOffer: PromotionalOffer? = null,
                 )
             }
@@ -532,15 +532,15 @@ data class CustomerCenterConfigData(
         @Serializable
         data class ColorInformation(
             @SerialName("accent_color") @Serializable(with = PaywallColor.Serializer::class)
-            val accentColor: RCColor? = null,
+            public val accentColor: RCColor? = null,
             @SerialName("text_color") @Serializable(with = PaywallColor.Serializer::class)
-            val textColor: RCColor? = null,
+            public val textColor: RCColor? = null,
             @SerialName("background_color") @Serializable(with = PaywallColor.Serializer::class)
-            val backgroundColor: RCColor? = null,
+            public val backgroundColor: RCColor? = null,
             @SerialName("button_text_color") @Serializable(with = PaywallColor.Serializer::class)
-            val buttonTextColor: RCColor? = null,
+            public val buttonTextColor: RCColor? = null,
             @SerialName("button_background_color") @Serializable(with = PaywallColor.Serializer::class)
-            val buttonBackgroundColor: RCColor? = null,
+            public val buttonBackgroundColor: RCColor? = null,
         )
     }
 
@@ -590,11 +590,11 @@ data class CustomerCenterConfigData(
         @Serializable
         data class SupportTickets(
             @SerialName("allow_creation")
-            val allowCreation: Boolean = false,
+            public val allowCreation: Boolean = false,
             @SerialName("customer_details")
-            val customerDetails: CustomerDetails = CustomerDetails(),
+            public val customerDetails: CustomerDetails = CustomerDetails(),
             @SerialName("customer_type")
-            val customerType: CustomerType = CustomerType.NOT_ACTIVE,
+            public val customerType: CustomerType = CustomerType.NOT_ACTIVE,
         ) {
             @Serializable
             enum class CustomerType {
@@ -614,28 +614,28 @@ data class CustomerCenterConfigData(
             @Serializable
             data class CustomerDetails(
                 @SerialName("active_entitlements")
-                val activeEntitlements: Boolean = false,
+                public val activeEntitlements: Boolean = false,
                 @SerialName("app_user_id")
-                val appUserId: Boolean = false,
+                public val appUserId: Boolean = false,
                 @SerialName("att_consent")
-                val attConsent: Boolean = false,
-                val country: Boolean = false,
+                public val attConsent: Boolean = false,
+                public val country: Boolean = false,
                 @SerialName("device_version")
-                val deviceVersion: Boolean = false,
-                val email: Boolean = false,
+                public val deviceVersion: Boolean = false,
+                public val email: Boolean = false,
                 @SerialName("facebook_anon_id")
-                val facebookAnonId: Boolean = false,
-                val idfa: Boolean = false,
-                val idfv: Boolean = false,
-                val ip: Boolean = false,
+                public val facebookAnonId: Boolean = false,
+                public val idfa: Boolean = false,
+                public val idfv: Boolean = false,
+                public val ip: Boolean = false,
                 @SerialName("last_opened")
-                val lastOpened: Boolean = false,
+                public val lastOpened: Boolean = false,
                 @SerialName("last_seen_app_version")
-                val lastSeenAppVersion: Boolean = false,
+                public val lastSeenAppVersion: Boolean = false,
                 @SerialName("total_spent")
-                val totalSpent: Boolean = false,
+                public val totalSpent: Boolean = false,
                 @SerialName("user_since")
-                val userSince: Boolean = false,
+                public val userSince: Boolean = false,
             )
 
             fun allowsActiveCustomers(): Boolean {

@@ -26,7 +26,7 @@ internal class HTTPTimeoutManagerTest {
         override val now: Date
             get() = Date(currentTime.get())
 
-        fun advanceTime(millis: Long) {
+        public fun advanceTime(millis: Long) {
             currentTime.addAndGet(millis)
         }
     }
@@ -36,7 +36,7 @@ internal class HTTPTimeoutManagerTest {
     private lateinit var timeoutManager: HTTPTimeoutManager
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { runningTests } returns false
         }

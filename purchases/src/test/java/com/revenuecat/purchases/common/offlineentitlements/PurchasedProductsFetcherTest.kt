@@ -25,7 +25,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class PurchasedProductsFetcherTest {
+public class PurchasedProductsFetcherTest {
     private lateinit var fetcher: PurchasedProductsFetcher
 
     private lateinit var deviceCache: DeviceCache
@@ -42,7 +42,7 @@ class PurchasedProductsFetcherTest {
     }
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         deviceCache = mockk()
         billing = mockk()
         dateProvider = object : DateProvider {

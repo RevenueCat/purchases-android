@@ -29,8 +29,8 @@ internal class TabsComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PaywallComponent,
+            public val json: String,
+            public val expected: PaywallComponent,
         )
 
         companion object {
@@ -436,8 +436,8 @@ internal class TabsComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialTabsComponent,
+            public val json: String,
+            public val expected: PartialTabsComponent,
         )
 
         companion object {

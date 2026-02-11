@@ -8,10 +8,10 @@ import com.amazon.device.iap.model.RequestId
 
 internal interface PurchasingServiceProvider : Parcelable {
 
-    fun registerListener(context: Context, listener: PurchasingListener)
-    fun getProductData(skus: Set<String>): RequestId
-    fun getUserData(): RequestId
-    fun purchase(sku: String): RequestId
-    fun getPurchaseUpdates(reset: Boolean): RequestId
-    fun notifyFulfillment(receiptId: String, fulfillmentResult: FulfillmentResult)
+    public fun registerListener(context: Context, listener: PurchasingListener)
+    public fun getProductData(skus: Set<String>): RequestId
+    public fun getUserData(): RequestId
+    public fun purchase(sku: String): RequestId
+    public fun getPurchaseUpdates(reset: Boolean): RequestId
+    public fun notifyFulfillment(receiptId: String, fulfillmentResult: FulfillmentResult)
 }

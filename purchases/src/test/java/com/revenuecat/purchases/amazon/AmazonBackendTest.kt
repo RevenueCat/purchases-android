@@ -28,7 +28,7 @@ import java.net.URL
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-class AmazonBackendTest {
+public class AmazonBackendTest {
 
     private lateinit var mockClient: HTTPClient
     private lateinit var mockAppConfig: AppConfig
@@ -42,7 +42,7 @@ class AmazonBackendTest {
     private lateinit var underTest: AmazonBackend
 
     @Before
-    fun setup() {
+    public fun setup() {
         mockClient = mockk()
         mockAppConfig = mockk<AppConfig>().apply {
             every { baseURL } returns this@AmazonBackendTest.baseURL
@@ -56,7 +56,7 @@ class AmazonBackendTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         receivedOnSuccess = null
         receivedError = null
         clearAllMocks()

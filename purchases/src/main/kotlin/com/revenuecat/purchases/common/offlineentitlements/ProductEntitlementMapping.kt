@@ -10,18 +10,18 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 internal data class ProductEntitlementMapping(
-    val mappings: Map<String, Mapping>,
+    public val mappings: Map<String, Mapping>,
     internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
-    val loadedFromCache: Boolean = false,
+    public val loadedFromCache: Boolean = false,
 ) {
-    companion object {
+    public companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
         private const val PRODUCT_ID_KEY = "product_identifier"
         private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
         private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
 
-        fun fromJson(
+        public fun fromJson(
             json: JSONObject,
             loadedFromCache: Boolean = false,
         ): ProductEntitlementMapping {
@@ -49,7 +49,7 @@ internal data class ProductEntitlementMapping(
             return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
         }
 
-        fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
+        public fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
             val jsonCopy = json.copy(deep = false)
             val jsonWithSource = jsonCopy.put(ORIGINAL_SOURCE_KEY, httpResult.originalDataSource.name)
             return fromJson(jsonWithSource, loadedFromCache = false)

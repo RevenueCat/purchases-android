@@ -29,7 +29,7 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * configuration. See https://developer.android.com/identity/data/autobackup.
  */
 public class RevenueCatBackupAgent : BackupAgentHelper() {
-    companion object {
+    public companion object {
         const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
     }
 

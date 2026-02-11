@@ -43,14 +43,14 @@ import org.robolectric.annotation.Config as AnnotationConfig
 internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Before
-    fun setupClient() {
+    public fun setupClient() {
         mockSigningManager = mockk()
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         client = createClient()
     }
 
     @Test
-    fun canPerformASimpleGet() {
+    public fun canPerformASimpleGet() {
         enqueue(
             Endpoint.LogIn.getPath(),
             expectedResult = HTTPResult.createResult()
@@ -64,7 +64,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun forwardsTheResponseCode() {
+    public fun forwardsTheResponseCode() {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint.getPath(),
@@ -79,7 +79,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun parsesTheBody() {
+    public fun parsesTheBody() {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint.getPath(),
@@ -159,7 +159,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     // Headers
     @Test
-    fun addsHeadersToRequest() {
+    public fun addsHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
@@ -178,7 +178,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun addsDefaultHeadersToRequest() {
+    public fun addsDefaultHeadersToRequest() {
         client = createClient(
             localeProvider = FakeLocaleProvider("en-US", "ja-JP"),
         )
@@ -265,7 +265,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun addsETagHeadersToRequest() {
+    public fun addsETagHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
 
@@ -292,7 +292,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun doesNotAddNullETagHeadersToRequest() {
+    public fun doesNotAddNullETagHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
 
@@ -338,7 +338,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun addsPostBody() {
+    public fun addsPostBody() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
@@ -1263,10 +1263,10 @@ internal class ParameterizedNonJsonResponseBodyTest(
     private val statusCode: Int,
 ) : BaseHTTPClientTest() {
 
-    companion object {
+    public companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}, statusCode={1}")
-        fun parameters(): Collection<Array<Any>> {
+        public fun parameters(): Collection<Array<Any>> {
             return listOf(
                 arrayOf(Endpoint.GetOfferings("test_user"), 500),
                 arrayOf(Endpoint.GetOfferings("test_user"), 503),
@@ -1279,7 +1279,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
     }
 
     @Before
-    fun setupClient() {
+    public fun setupClient() {
         mockSigningManager = mockk()
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         client = createClient()
@@ -1358,10 +1358,10 @@ internal class ParameterizedConnectionFailureFallbackTest(
     private val endpoint: Endpoint,
 ) : BaseHTTPClientTest() {
 
-    companion object {
+    public companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "endpoint={0}")
-        fun parameters(): Collection<Array<Any>> {
+        public fun parameters(): Collection<Array<Any>> {
             return listOf(
                 arrayOf(Endpoint.GetOfferings("test_user")),
                 arrayOf(Endpoint.GetProductEntitlementMapping),
@@ -1370,7 +1370,7 @@ internal class ParameterizedConnectionFailureFallbackTest(
     }
 
     @Before
-    fun setupClient() {
+    public fun setupClient() {
         mockSigningManager = mockk()
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         client = createClient()

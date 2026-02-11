@@ -9,18 +9,18 @@ import java.io.File
 @Poko
 public class DownloadedFont(
     @get:JvmSynthetic
-    val weight: Int,
+    public val weight: Int,
     @get:JvmSynthetic
-    val style: FontStyle,
+    public val style: FontStyle,
     @get:JvmSynthetic
-    val file: File,
+    public val file: File,
 )
 
 @InternalRevenueCatAPI
 @Poko
 public class DownloadedFontFamily(
     @get:JvmSynthetic
-    val family: String,
+    public val family: String,
     @get:JvmSynthetic
-    val fonts: List<DownloadedFont> = emptyList(),
+    public val fonts: List<DownloadedFont> = emptyList(),
 )

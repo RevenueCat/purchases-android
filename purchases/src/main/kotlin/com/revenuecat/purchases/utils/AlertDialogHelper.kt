@@ -5,7 +5,7 @@ import android.app.AlertDialog
 
 internal interface AlertDialogHelper {
     @Suppress("LongParameterList")
-    fun showDialog(
+    public fun showDialog(
         activity: Activity,
         title: String,
         message: String,

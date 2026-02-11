@@ -11,16 +11,16 @@ internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, p
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: CornerRadiuses.Dp,
+        public val json: String,
+        public val expected: CornerRadiuses.Dp,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "ints",
                 Args(

@@ -16,8 +16,8 @@ import java.util.Observable
 
 @Suppress("TooManyFunctions")
 internal class SubscriberAttributesManager(
-    val deviceCache: SubscriberAttributesCache,
-    val backend: SubscriberAttributesPoster,
+    public val deviceCache: SubscriberAttributesCache,
+    public val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
     private val automaticDeviceIdentifierCollectionEnabled: Boolean,
 ) {
@@ -48,7 +48,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun setAttribute(
+    public fun setAttribute(
         key: SubscriberAttributeKey,
         value: String?,
         appUserID: String,
@@ -56,7 +56,7 @@ internal class SubscriberAttributesManager(
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
-    fun synchronizeSubscriberAttributesForAllUsers(
+    public fun synchronizeSubscriberAttributesForAllUsers(
         currentAppUserID: AppUserID,
         completion: (() -> Unit)? = null,
     ) {
@@ -130,7 +130,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun markAsSynced(
+    public fun markAsSynced(
         appUserID: String,
         attributesToMarkAsSynced: Map<String, SubscriberAttribute>,
         attributeErrors: List<SubscriberAttributeError>,
@@ -209,7 +209,7 @@ internal class SubscriberAttributesManager(
     /**
      * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
-    fun collectDeviceIdentifiers(
+    public fun collectDeviceIdentifiers(
         appUserID: String,
         applicationContext: Application,
     ) {
@@ -222,7 +222,7 @@ internal class SubscriberAttributesManager(
      * Set the specific ID for the specified attribution network. It also collects GPS ID, ANDROID ID and sets
      * IP to true automatically.
      */
-    fun setAttributionID(
+    public fun setAttributionID(
         attributionKey: SubscriberAttributeKey.AttributionIds,
         value: String?,
         appUserID: String,
@@ -285,7 +285,7 @@ internal class SubscriberAttributesManager(
         }
 
         @Synchronized
-        fun waitUntilIdle(completion: () -> Unit) {
+        public fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) {
                 completion()
             } else {

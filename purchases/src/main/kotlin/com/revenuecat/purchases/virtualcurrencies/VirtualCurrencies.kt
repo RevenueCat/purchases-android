@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 public class VirtualCurrencies @InternalRevenueCatAPI constructor(
     @SerialName("virtual_currencies")
-    val all: Map<String, VirtualCurrency>,
+    public val all: Map<String, VirtualCurrency>,
 ) : Parcelable {
 
     /**
@@ -26,5 +26,5 @@ public class VirtualCurrencies @InternalRevenueCatAPI constructor(
      * @param code The code of the virtual currency to retrieve
      * @return The virtual currency, or null if not found
      */
-    operator fun get(code: String): VirtualCurrency? = all[code]
+    public operator fun get(code: String): VirtualCurrency? = all[code]
 }

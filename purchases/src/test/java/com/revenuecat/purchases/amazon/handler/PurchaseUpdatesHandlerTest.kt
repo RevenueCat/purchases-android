@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
-class PurchaseUpdatesHandlerTest {
+public class PurchaseUpdatesHandlerTest {
 
     private lateinit var underTest: PurchaseUpdatesHandler
     private val apiKey = "api_key"
@@ -52,7 +52,7 @@ class PurchaseUpdatesHandlerTest {
     }
 
     @Before
-    fun setup() {
+    public fun setup() {
         cache = MockDeviceCache(mockk(), apiKey)
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         underTest = PurchaseUpdatesHandler(purchasingServiceProvider)

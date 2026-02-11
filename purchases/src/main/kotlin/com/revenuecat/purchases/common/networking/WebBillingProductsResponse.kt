@@ -10,10 +10,10 @@ internal data class WebBillingProductsResponse(
 
 @Serializable
 internal data class WebBillingProductResponse(
-    val identifier: String,
+    public val identifier: String,
     @SerialName("product_type") val productType: String,
-    val title: String,
-    val description: String? = null,
+    public val title: String,
+    public val description: String? = null,
     @SerialName("default_purchase_option_id") val defaultPurchaseOptionId: String? = null,
     @SerialName("purchase_options") val purchaseOptions: Map<String, WebBillingPurchaseOption>,
 )
@@ -21,14 +21,14 @@ internal data class WebBillingProductResponse(
 @Serializable
 internal data class WebBillingPurchaseOption(
     @SerialName("base_price") val basePrice: WebBillingPrice? = null,
-    val base: WebBillingPhase? = null,
-    val trial: WebBillingPhase? = null,
+    public val base: WebBillingPhase? = null,
+    public val trial: WebBillingPhase? = null,
     @SerialName("intro_price") val introPrice: WebBillingPhase? = null,
 )
 
 @Serializable
 internal data class WebBillingPhase(
-    val price: WebBillingPrice? = null,
+    public val price: WebBillingPrice? = null,
     @SerialName("period_duration") val periodDuration: String? = null,
     @SerialName("cycle_count") val cycleCount: Int = 1,
 )
@@ -36,5 +36,5 @@ internal data class WebBillingPhase(
 @Serializable
 internal data class WebBillingPrice(
     @SerialName("amount_micros") val amountMicros: Long,
-    val currency: String,
+    public val currency: String,
 )

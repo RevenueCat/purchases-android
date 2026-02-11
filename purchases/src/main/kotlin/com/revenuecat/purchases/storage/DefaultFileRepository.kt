@@ -37,7 +37,7 @@ public interface FileRepository {
      * @param checksums Optional checksums for each URL (must match length of urls if provided)
      * @return The Job that is executing the prefetch
      */
-    fun prefetch(urls: List<Pair<URL, Checksum?>>)
+    public fun prefetch(urls: List<Pair<URL, Checksum?>>)
 
     /**
      * Create and/or get the cached file url.
@@ -45,7 +45,7 @@ public interface FileRepository {
      * @param checksum Optional checksum to validate the downloaded file
      * @return The local file's URI where the data can be found after caching is complete.
      */
-    suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
+    public suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
 
     /**
      * Get the cached file url if it exists.
@@ -53,7 +53,7 @@ public interface FileRepository {
      * @param checksum Optional checksum (files cached with different checksums are separate)
      * @return The local file's URI where the data can be found after caching is complete.
      * */
-    fun getFile(url: URL, checksum: Checksum? = null): URI?
+    public fun getFile(url: URL, checksum: Checksum? = null): URI?
 }
 
 /**
@@ -61,9 +61,9 @@ public interface FileRepository {
  */
 @InternalRevenueCatAPI
 public interface LocalFileCache {
-    fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
-    fun cachedContentExists(uri: URI): Boolean
-    fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
+    public fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
+    public fun cachedContentExists(uri: URI): Boolean
+    public fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
 }
 
 @InternalRevenueCatAPI
@@ -77,8 +77,8 @@ internal class DefaultFileRepository(
 ) : FileRepository {
 
     internal data class CacheKey(
-        val url: URL,
-        val checksum: Checksum?,
+        public val url: URL,
+        public val checksum: Checksum?,
     )
 
     constructor(
@@ -303,7 +303,7 @@ internal class DefaultFileCache(
         return checksum == computedChecksum
     }
 
-    companion object {
+    public companion object {
         private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }

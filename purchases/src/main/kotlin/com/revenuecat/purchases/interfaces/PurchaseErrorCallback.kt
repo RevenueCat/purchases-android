@@ -9,5 +9,5 @@ public interface PurchaseErrorCallback {
      * @param userCancelled A boolean indicating if the user cancelled the purchase. In that case the error will also be
      * [PurchasesErrorCode.PurchaseCancelledError]
      */
-    fun onError(error: PurchasesError, userCancelled: Boolean)
+    public fun onError(error: PurchasesError, userCancelled: Boolean)
 }

@@ -52,7 +52,7 @@ import java.util.Locale
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
-class Purchases internal constructor(
+public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
     /**
@@ -233,7 +233,7 @@ class Purchases internal constructor(
      * the user has. Consider that when waiting for this operation to complete.
      */
     @JvmOverloads
-    fun syncPurchases(
+    public fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
         purchasesOrchestrator.syncPurchases(listener)
@@ -256,7 +256,7 @@ class Purchases internal constructor(
         "syncObserverModeAmazonPurchase is being deprecated in favor of syncAmazonPurchase.",
         ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price)"),
     )
-    fun syncObserverModeAmazonPurchase(
+    public fun syncObserverModeAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -290,7 +290,7 @@ class Purchases internal constructor(
         "Use syncAmazonPurchase with purchaseTime parameter instead.",
         ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price, purchaseTime)"),
     )
-    fun syncAmazonPurchase(
+    public fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -323,7 +323,7 @@ class Purchases internal constructor(
      * Can be obtained from the PurchaseResponse > Receipt > purchaseTime.
      */
     @Suppress("LongParameterList")
-    fun syncAmazonPurchase(
+    public fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -354,7 +354,7 @@ class Purchases internal constructor(
      * @param [listener] Called when subscriber attribute syncing is finished and offerings are available. Called
      * immediately if rate limit is reached.
      */
-    fun syncAttributesAndOfferingsIfNeeded(
+    public fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback)
@@ -370,7 +370,7 @@ class Purchases internal constructor(
      *
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
-    fun getOfferings(
+    public fun getOfferings(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
@@ -381,7 +381,7 @@ class Purchases internal constructor(
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
-    fun getProducts(
+    public fun getProducts(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -394,7 +394,7 @@ class Purchases internal constructor(
      * @param [type] A product type to filter (no filtering applied if null)
      * @param [callback] Response callback
      */
-    fun getProducts(
+    public fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
         callback: GetStoreProductsCallback,
@@ -416,7 +416,7 @@ class Purchases internal constructor(
      *   @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
      *   @params [callback] The PurchaseCallback that will be called when purchase completes.
      */
-    fun purchase(
+    public fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
@@ -439,7 +439,7 @@ class Purchases internal constructor(
         "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()"),
     )
-    fun purchaseProduct(
+    public fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
@@ -463,7 +463,7 @@ class Purchases internal constructor(
         "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()"),
     )
-    fun purchasePackage(
+    public fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         listener: PurchaseCallback,
@@ -485,7 +485,7 @@ class Purchases internal constructor(
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
      * @param [callback] The listener that will be called when purchase restore completes.
      */
-    fun restorePurchases(
+    public fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         purchasesOrchestrator.restorePurchases(callback)
@@ -498,7 +498,7 @@ class Purchases internal constructor(
      * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logIn(
+    public fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null,
     ) {
@@ -529,7 +529,7 @@ class Purchases internal constructor(
      * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
         purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), true, callback)
@@ -541,7 +541,7 @@ class Purchases internal constructor(
      * @param callback A listener called when purchaser info is available and not stale.
      * Purchaser info can be null if an error occurred.
      */
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
         callback: ReceiveCustomerInfoCallback,
     ) {
@@ -553,7 +553,7 @@ class Purchases internal constructor(
      *
      * @param callback A listener called when the virtual currencies are available.
      */
-    fun getVirtualCurrencies(
+    public fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
         purchasesOrchestrator.getVirtualCurrencies(callback = callback)
@@ -601,7 +601,7 @@ class Purchases internal constructor(
      * For more info: https://rev.cat/googleplayinappmessaging
      */
     @JvmOverloads
-    fun showInAppMessagesIfNeeded(
+    public fun showInAppMessagesIfNeeded(
         activity: Activity,
         inAppMessageTypes: List<InAppMessageType> = listOf(InAppMessageType.BILLING_ISSUES),
     ) {
@@ -646,7 +646,7 @@ class Purchases internal constructor(
      * @param onError Called when there's an error creating the support ticket.
      */
     @InternalRevenueCatAPI
-    fun createSupportTicket(
+    public fun createSupportTicket(
         email: String,
         description: String,
         onSuccess: (Boolean) -> Unit,
@@ -983,7 +983,7 @@ class Purchases internal constructor(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    fun getCachedFontFamilyOrStartDownload(
+    public fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily? {
         return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
@@ -1027,7 +1027,7 @@ class Purchases internal constructor(
      *
      * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
      */
-    fun overridePreferredUILocale(localeString: String?): Boolean {
+    public fun overridePreferredUILocale(localeString: String?): Boolean {
         return purchasesOrchestrator.overridePreferredUILocale(localeString)
     }
 
@@ -1040,7 +1040,7 @@ class Purchases internal constructor(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
         ReplaceWith("getProducts()"),
     )
-    fun getSubscriptionSkus(
+    public fun getSubscriptionSkus(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -1056,7 +1056,7 @@ class Purchases internal constructor(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
         ReplaceWith("getProducts()"),
     )
-    fun getNonSubscriptionSkus(
+    public fun getNonSubscriptionSkus(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -1089,10 +1089,10 @@ class Purchases internal constructor(
     }
 
     // region Static
-    companion object {
+    public companion object {
 
         @InternalRevenueCatAPI
-        fun getImageLoader(context: Context): Any {
+        public fun getImageLoader(context: Context): Any {
             return PurchasesOrchestrator.getImageLoader(context)
         }
 
@@ -1102,7 +1102,7 @@ class Purchases internal constructor(
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
         @JvmStatic
-        fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
+        public fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
             val intentData = intent.data ?: return null
             return DeepLinkParser.parseWebPurchaseRedemption(intentData)
         }
@@ -1113,7 +1113,7 @@ class Purchases internal constructor(
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
         @JvmStatic
-        fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
+        public fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
             try {
                 val uri = Uri.parse(string)
                 return DeepLinkParser.parseWebPurchaseRedemption(uri)
@@ -1128,7 +1128,7 @@ class Purchases internal constructor(
          * being used
          */
         @JvmStatic
-        var platformInfo: PlatformInfo
+        public var platformInfo: PlatformInfo
             get() = PurchasesOrchestrator.platformInfo
             set(value) { PurchasesOrchestrator.platformInfo = value }
 
@@ -1137,7 +1137,7 @@ class Purchases internal constructor(
          */
         @JvmStatic
         @Deprecated(message = "Use logLevel instead")
-        var debugLogsEnabled
+        public var debugLogsEnabled
             get() = PurchasesOrchestrator.debugLogsEnabled
             set(value) {
                 PurchasesOrchestrator.debugLogsEnabled = value
@@ -1148,7 +1148,7 @@ class Purchases internal constructor(
          * By default, LogLevel.DEBUG in debug builds, and LogLevel.INFO in release builds.
          */
         @JvmStatic
-        var logLevel: LogLevel
+        public var logLevel: LogLevel
             get() = PurchasesOrchestrator.logLevel
             set(value) {
                 PurchasesOrchestrator.logLevel = value
@@ -1162,7 +1162,7 @@ class Purchases internal constructor(
          * If you wish to receive Debug level messages, see [debugLogsEnabled].
          */
         @JvmStatic
-        var logHandler: LogHandler
+        public var logHandler: LogHandler
             @Synchronized get() = PurchasesOrchestrator.logHandler
 
             @Synchronized set(value) {
@@ -1178,7 +1178,7 @@ class Purchases internal constructor(
          * @throws UninitializedPropertyAccessException if the shared instance has not been configured.
          */
         @JvmStatic
-        var sharedInstance: Purchases
+        public var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
@@ -1200,7 +1200,7 @@ class Purchases internal constructor(
          * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
-        var proxyURL: URL?
+        public var proxyURL: URL?
             get() = PurchasesOrchestrator.proxyURL
             set(value) { PurchasesOrchestrator.proxyURL = value }
 
@@ -1208,7 +1208,7 @@ class Purchases internal constructor(
          * True if [configure] has been called and [Purchases.sharedInstance] is set
          */
         @JvmStatic
-        val isConfigured: Boolean
+        public val isConfigured: Boolean
             get() = this.backingFieldSharedInstance != null
 
         /**
@@ -1218,7 +1218,7 @@ class Purchases internal constructor(
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmStatic
-        fun configure(
+        public fun configure(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
@@ -1255,7 +1255,7 @@ class Purchases internal constructor(
          */
         @JvmStatic
         @JvmOverloads
-        fun canMakePayments(
+        public fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,

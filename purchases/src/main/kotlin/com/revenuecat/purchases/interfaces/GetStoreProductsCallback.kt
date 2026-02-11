@@ -11,12 +11,12 @@ public interface GetStoreProductsCallback {
      * Not found products will be ignored.
      */
     @JvmSuppressWildcards
-    fun onReceived(storeProducts: List<StoreProduct>)
+    public fun onReceived(storeProducts: List<StoreProduct>)
 
     /**
      * Will be called after the purchase has completed with error
      *
      * @param error A [PurchasesError] containing the reason for the failure when fetching the [StoreProduct]
      */
-    fun onError(error: PurchasesError)
+    public fun onError(error: PurchasesError)
 }

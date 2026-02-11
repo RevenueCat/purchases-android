@@ -119,14 +119,14 @@ internal class PurchasesOrchestrator(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    var appConfig: AppConfig,
+    public var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val offlineEntitlementsManager: OfflineEntitlementsManager,
+    public val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
@@ -151,12 +151,12 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
-    val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
+    public val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
-    val fileRepository: FileRepository = DefaultFileRepository(application),
+    public val fileRepository: FileRepository = DefaultFileRepository(application),
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    val adTracker: AdTracker = AdTracker(adEventsManager),
+    public val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -333,7 +333,7 @@ internal class PurchasesOrchestrator(
         flushEvents(Delay.NONE)
     }
 
-    fun redeemWebPurchase(
+    public fun redeemWebPurchase(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
@@ -376,7 +376,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun syncAttributesAndOfferingsIfNeeded(
+    public fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
@@ -406,7 +406,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun syncPurchases(
+    public fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
         if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
@@ -430,7 +430,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun syncAmazonPurchase(
+    public fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -508,7 +508,7 @@ internal class PurchasesOrchestrator(
      * importing RevenueCatUI in your project. The locale override will take effect the next time
      * a paywall or customer center is displayed.
      */
-    fun overridePreferredUILocale(localeString: String?): Boolean {
+    public fun overridePreferredUILocale(localeString: String?): Boolean {
         val previousLocale = _preferredUILocaleOverride
 
         if (previousLocale == localeString) {
@@ -531,7 +531,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun getOfferings(
+    public fun getOfferings(
         listener: ReceiveOfferingsCallback,
         fetchCurrent: Boolean = false,
     ) {
@@ -544,7 +544,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun getProducts(
+    public fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
         callback: GetStoreProductsCallback,
@@ -597,7 +597,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun purchase(
+    public fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
@@ -631,7 +631,7 @@ internal class PurchasesOrchestrator(
     }
 
     @Suppress("LongMethod")
-    fun restorePurchases(
+    public fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
@@ -717,7 +717,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun logIn(
+    public fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null,
     ) {
@@ -789,7 +789,7 @@ internal class PurchasesOrchestrator(
         getCustomerInfo(CacheFetchPolicy.default(), trackDiagnostics = false, callback)
     }
 
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
         trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
@@ -820,7 +820,7 @@ internal class PurchasesOrchestrator(
         deviceCache.clearCustomerInfoCache(appUserID)
     }
 
-    fun getProductsOfTypes(
+    public fun getProductsOfTypes(
         productIds: Set<String>,
         types: Set<ProductType>,
         callback: GetStoreProductsCallback,
@@ -859,7 +859,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun createSupportTicket(
+    public fun createSupportTicket(
         email: String,
         description: String,
         onSuccess: (Boolean) -> Unit,
@@ -1186,7 +1186,7 @@ internal class PurchasesOrchestrator(
     //endregion
 
     // region Virtual Currencies
-    fun getVirtualCurrencies(
+    public fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
         virtualCurrencyManager.virtualCurrencies(callback = callback)
@@ -1219,7 +1219,7 @@ internal class PurchasesOrchestrator(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    fun getCachedFontFamilyOrStartDownload(
+    public fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily? {
         return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
@@ -1736,7 +1736,7 @@ internal class PurchasesOrchestrator(
             version = null,
         )
 
-        var debugLogsEnabled
+        public var debugLogsEnabled
             get() = logLevel.debugLogsEnabled
             set(value) {
                 logLevel = LogLevel.debugLogsEnabled(value)
@@ -1763,7 +1763,7 @@ internal class PurchasesOrchestrator(
 
         @Suppress("MagicNumber")
         @Synchronized
-        fun getImageLoader(context: Context): ImageLoader {
+        public fun getImageLoader(context: Context): ImageLoader {
             val currentImageLoader = cachedImageLoader
             return if (currentImageLoader == null) {
                 val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
@@ -1795,7 +1795,7 @@ internal class PurchasesOrchestrator(
          *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
-        fun canMakePayments(
+        public fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,

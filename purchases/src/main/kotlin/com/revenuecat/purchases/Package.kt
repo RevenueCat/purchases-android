@@ -16,11 +16,11 @@ import java.net.URL
  */
 @Poko
 public class Package @JvmOverloads constructor(
-    val identifier: String,
-    val packageType: PackageType,
-    val product: StoreProduct,
-    val presentedOfferingContext: PresentedOfferingContext,
-    val webCheckoutURL: URL? = null,
+    public val identifier: String,
+    public val packageType: PackageType,
+    public val product: StoreProduct,
+    public val presentedOfferingContext: PresentedOfferingContext,
+    public val webCheckoutURL: URL? = null,
 ) {
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",

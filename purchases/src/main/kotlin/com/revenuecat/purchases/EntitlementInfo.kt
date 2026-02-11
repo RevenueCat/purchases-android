@@ -44,22 +44,22 @@ import java.util.Date
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
 public class EntitlementInfo(
-    val identifier: String,
-    val isActive: Boolean,
-    val willRenew: Boolean,
-    val periodType: PeriodType,
-    val latestPurchaseDate: Date,
-    val originalPurchaseDate: Date,
-    val expirationDate: Date?,
-    val store: Store,
-    val productIdentifier: String,
-    val productPlanIdentifier: String?,
-    val isSandbox: Boolean,
-    val unsubscribeDetectedAt: Date?,
-    val billingIssueDetectedAt: Date?,
-    val ownershipType: OwnershipType,
+    public val identifier: String,
+    public val isActive: Boolean,
+    public val willRenew: Boolean,
+    public val periodType: PeriodType,
+    public val latestPurchaseDate: Date,
+    public val originalPurchaseDate: Date,
+    public val expirationDate: Date?,
+    public val store: Store,
+    public val productIdentifier: String,
+    public val productPlanIdentifier: String?,
+    public val isSandbox: Boolean,
+    public val unsubscribeDetectedAt: Date?,
+    public val billingIssueDetectedAt: Date?,
+    public val ownershipType: OwnershipType,
     private val jsonObject: JSONObject,
-    val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
+    public val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     @Deprecated(
@@ -253,7 +253,7 @@ public enum class Store {
 
     internal companion object {
         @JvmSynthetic
-        fun fromString(text: String): Store {
+        public fun fromString(text: String): Store {
             return when (text) {
                 "app_store" -> APP_STORE
                 "mac_app_store" -> MAC_APP_STORE

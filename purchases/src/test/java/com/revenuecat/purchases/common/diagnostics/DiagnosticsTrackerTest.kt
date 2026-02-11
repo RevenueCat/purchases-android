@@ -43,7 +43,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DiagnosticsTrackerTest {
+public class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
@@ -63,7 +63,7 @@ class DiagnosticsTrackerTest {
     private lateinit var context: Context
 
     @Before
-    fun setup() {
+    public fun setup() {
         mockkStatic("com.revenuecat.purchases.common.UtilsKt")
         context = mockk<Context>(relaxed = true).apply {
             every { playStoreVersionName } returns "123"
@@ -85,7 +85,7 @@ class DiagnosticsTrackerTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 

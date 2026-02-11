@@ -29,8 +29,8 @@ internal class StackComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: StackComponent,
+            public val json: String,
+            public val expected: StackComponent,
         )
 
         companion object {
@@ -273,8 +273,8 @@ internal class StackComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialStackComponent,
+            public val json: String,
+            public val expected: PartialStackComponent,
         )
 
         companion object {

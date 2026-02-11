@@ -24,7 +24,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
+public class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls
 
@@ -32,7 +32,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     var instantExecutorRule = InstantTaskExecutorRule()
 
     @Before
-    fun setup() {
+    public fun setup() {
         ensureBlockFinishes { latch ->
             setUpTest {
                 latch.countDown()
@@ -41,7 +41,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun customerInfoCannotBeFetchedFromFallbackURLSoUsesAnOfflineCalculatedOne() = runTest {
+    public fun customerInfoCannotBeFetchedFromFallbackURLSoUsesAnOfflineCalculatedOne() = runTest {
         waitForProductEntitlementMappingToUpdate()
 
         val appUserID = Purchases.sharedInstance.appUserID
@@ -55,7 +55,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun offeringsCanBeFetchedFromFallbackURL() = runTest {
+    public fun offeringsCanBeFetchedFromFallbackURL() = runTest {
         mockBillingAbstract.mockQueryProductDetails()
 
         val offerings = Purchases.sharedInstance.awaitOfferings()
@@ -63,17 +63,17 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun productEntitlementMappingCanBeFetchedFromFallbackURL() = runTest {
+    public fun productEntitlementMappingCanBeFetchedFromFallbackURL() = runTest {
         waitForProductEntitlementMappingToUpdate()
     }
 
     @Test
-    fun canMakePurchasesFromFallbackURLUsingOfflineEntitlements() = runTest {
+    public fun canMakePurchasesFromFallbackURLUsingOfflineEntitlements() = runTest {
         performPurchase()
     }
 
     @Test
-    fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() = runTest {
+    public fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() = runTest {
         performPurchase()
 
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
@@ -84,7 +84,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() = runTest {
+    public fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() = runTest {
         val activePurchases = performPurchase()
 
         // Should have entitlements using offline entitlement

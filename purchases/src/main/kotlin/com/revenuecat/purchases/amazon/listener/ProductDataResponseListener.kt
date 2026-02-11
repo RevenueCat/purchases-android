@@ -20,7 +20,7 @@ internal interface ProductDataResponseListener : PurchasingListener {
         /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
     }
 
-    fun getProductData(
+    public fun getProductData(
         skus: Set<String>,
         marketplace: String,
         onReceive: (List<StoreProduct>) -> Unit,

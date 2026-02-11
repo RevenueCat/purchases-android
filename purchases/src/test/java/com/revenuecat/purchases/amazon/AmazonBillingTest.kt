@@ -53,7 +53,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
-class AmazonBillingTest {
+public class AmazonBillingTest {
     private companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
@@ -78,7 +78,7 @@ class AmazonBillingTest {
 
     private val capturedCachedReceiptSkus = slot<Map<String, String>>()
 
-    fun setup() {
+    public fun setup() {
         underTest = AmazonBilling(
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
@@ -103,7 +103,7 @@ class AmazonBillingTest {
         underTest.purchasesUpdatedListener = mockk()
     }
 
-    fun setupNotFinishingTransactions() {
+    public fun setupNotFinishingTransactions() {
         underTest = AmazonBilling(
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
@@ -128,7 +128,7 @@ class AmazonBillingTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         clearAllMocks()
     }
 

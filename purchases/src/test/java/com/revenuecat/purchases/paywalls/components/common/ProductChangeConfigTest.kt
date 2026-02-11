@@ -8,22 +8,22 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-class ProductChangeConfigTest(
+public class ProductChangeConfigTest(
     @Suppress("UNUSED_PARAMETER") name: String,
     private val args: Args,
 ) {
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: ProductChangeConfig,
+        public val json: String,
+        public val expected: ProductChangeConfig,
     )
 
-    companion object {
+    public companion object {
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "default values when empty",
                 Args(

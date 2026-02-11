@@ -16,21 +16,21 @@ private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderRe
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
 internal data class HTTPResult(
-    val responseCode: Int,
-    val payload: String,
-    val origin: Origin,
-    val requestDate: Date?,
-    val verificationResult: VerificationResult,
-    val isLoadShedderResponse: Boolean,
-    val isFallbackURL: Boolean,
+    public val responseCode: Int,
+    public val payload: String,
+    public val origin: Origin,
+    public val requestDate: Date?,
+    public val verificationResult: VerificationResult,
+    public val isLoadShedderResponse: Boolean,
+    public val isFallbackURL: Boolean,
 ) {
-    companion object {
+    public companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         const val SIGNATURE_HEADER_NAME = "X-Signature"
         const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
         const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
 
-        fun deserialize(serialized: String): HTTPResult {
+        public fun deserialize(serialized: String): HTTPResult {
             val jsonObject = JSONObject(serialized)
             val responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE)
             val payload = jsonObject.getString(SERIALIZATION_NAME_PAYLOAD)

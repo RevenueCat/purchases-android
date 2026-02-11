@@ -7,7 +7,7 @@ import org.junit.runner.RunWith
 import kotlin.text.Typography.nbsp
 
 @RunWith(AndroidJUnit4::class)
-class PriceExtractorTest {
+public class PriceExtractorTest {
 
     @Test
     fun `US marketplace $7 dot 12`() {

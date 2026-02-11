@@ -19,7 +19,7 @@ import java.util.UUID
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
-class DiagnosticsTrackerFunctionalTest {
+public class DiagnosticsTrackerFunctionalTest {
 
     private val testFolder = "temp_test_folder"
 
@@ -28,7 +28,7 @@ class DiagnosticsTrackerFunctionalTest {
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     @Before
-    fun setup() {
+    public fun setup() {
         val tempTestFolder = File(testFolder)
         if (tempTestFolder.exists()) {
             error("Temp test folder should not exist before starting tests")
@@ -54,7 +54,7 @@ class DiagnosticsTrackerFunctionalTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         val tempTestFolder = File(testFolder)
         tempTestFolder.deleteRecursively()
     }

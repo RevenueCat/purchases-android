@@ -21,16 +21,16 @@ internal class PaywallComponentsDataTests(
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: PaywallComponentsData,
+        public val json: String,
+        public val expected: PaywallComponentsData,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "revision present",
                 Args(

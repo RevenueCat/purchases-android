@@ -28,33 +28,33 @@ import kotlinx.serialization.Serializable
 @Immutable
 public class ImageComponent(
     @get:JvmSynthetic
-    val source: ThemeImageUrls,
+    public val source: ThemeImageUrls,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
     @SerialName("override_source_lid")
-    val overrideSourceLid: LocalizationKey? = null,
+    public val overrideSourceLid: LocalizationKey? = null,
     @get:JvmSynthetic
     @SerialName("mask_shape")
-    val maskShape: MaskShape? = null,
+    public val maskShape: MaskShape? = null,
     @get:JvmSynthetic
     @SerialName("color_overlay")
-    val colorOverlay: ColorScheme? = null,
+    public val colorOverlay: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("fit_mode")
-    val fitMode: FitMode = FIT,
+    public val fitMode: FitMode = FIT,
     @get:JvmSynthetic
-    val padding: Padding = zero,
+    public val padding: Padding = zero,
     @get:JvmSynthetic
-    val margin: Padding = zero,
+    public val margin: Padding = zero,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialImageComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialImageComponent>> = emptyList(),
 ) : PaywallComponent
 
 @Suppress("LongParameterList")
@@ -64,29 +64,29 @@ public class ImageComponent(
 @Immutable
 public class PartialImageComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    public val visible: Boolean? = true,
     @get:JvmSynthetic
-    val source: ThemeImageUrls? = null,
+    public val source: ThemeImageUrls? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
     @SerialName("override_source_lid")
-    val overrideSourceLid: LocalizationKey? = null,
+    public val overrideSourceLid: LocalizationKey? = null,
     @get:JvmSynthetic
     @SerialName("fit_mode")
-    val fitMode: FitMode? = null,
+    public val fitMode: FitMode? = null,
     @get:JvmSynthetic
     @SerialName("mask_shape")
-    val maskShape: MaskShape? = null,
+    public val maskShape: MaskShape? = null,
     @get:JvmSynthetic
     @SerialName("color_overlay")
-    val colorOverlay: ColorScheme? = null,
+    public val colorOverlay: ColorScheme? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
 ) : PartialComponent

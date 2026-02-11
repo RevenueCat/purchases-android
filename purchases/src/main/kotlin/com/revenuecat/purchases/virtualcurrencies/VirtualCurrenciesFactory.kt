@@ -23,7 +23,7 @@ internal object VirtualCurrenciesFactory {
     }
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    fun buildVirtualCurrencies(
+    public fun buildVirtualCurrencies(
         body: JSONObject,
     ): VirtualCurrencies {
         return JsonProvider.defaultJson.decodeFromString<VirtualCurrencies>(
@@ -32,7 +32,7 @@ internal object VirtualCurrenciesFactory {
     }
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    fun buildVirtualCurrencies(
+    public fun buildVirtualCurrencies(
         jsonString: String,
     ): VirtualCurrencies {
         return JsonProvider.defaultJson.decodeFromString<VirtualCurrencies>(

@@ -25,8 +25,8 @@ internal class ComponentOverridesTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: List<ComponentOverride<PartialTextComponent>>,
+            public val json: String,
+            public val expected: List<ComponentOverride<PartialTextComponent>>,
         )
 
         companion object {
@@ -171,8 +171,8 @@ internal class ComponentOverridesTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: List<ComponentOverride<PartialImageComponent>>,
+            public val json: String,
+            public val expected: List<ComponentOverride<PartialImageComponent>>,
         )
 
         companion object {

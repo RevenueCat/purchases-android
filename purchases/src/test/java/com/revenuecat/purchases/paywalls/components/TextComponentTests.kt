@@ -25,8 +25,8 @@ internal class TextComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: TextComponent,
+            public val json: String,
+            public val expected: TextComponent,
         )
 
         companion object {
@@ -221,8 +221,8 @@ internal class TextComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialTextComponent,
+            public val json: String,
+            public val expected: PartialTextComponent,
         )
 
         companion object {

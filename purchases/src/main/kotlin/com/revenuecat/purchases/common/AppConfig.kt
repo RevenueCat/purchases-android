@@ -13,20 +13,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
-    val showInAppMessagesAutomatically: Boolean,
-    val platformInfo: PlatformInfo,
+    public val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+    public val showInAppMessagesAutomatically: Boolean,
+    public val platformInfo: PlatformInfo,
     proxyURL: URL?,
-    val store: Store,
-    val isDebugBuild: Boolean,
-    val apiKeyValidationResult: APIKeyValidator.ValidationResult,
-    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
+    public val store: Store,
+    public val isDebugBuild: Boolean,
+    public val apiKeyValidationResult: APIKeyValidator.ValidationResult,
+    public val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
-    val runningTests: Boolean = false,
+    public val runningTests: Boolean = false,
     forceSigningErrors: Boolean = false,
     baseUrlString: String = Companion.baseUrlString,
 ) {
-    companion object {
+    public companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
         val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
         val adEventsURL = URL("https://a.revenue.cat/")

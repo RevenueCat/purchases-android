@@ -126,14 +126,14 @@ public interface StoreProduct {
         "Replaced with copyWithPresentedOfferingContext",
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
     )
-    fun copyWithOfferingId(offeringId: String): StoreProduct
+    public fun copyWithOfferingId(offeringId: String): StoreProduct
 
     /**
      * For internal RevenueCat use.
      *
      * Creates a copy of this `StoreProduct` with the specified `presentedOfferingContext` set.
      */
-    fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct
+    public fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct
 
     /**
      * Null for INAPP products. The price of the [StoreProduct] in the given locale in a daily recurrence.
@@ -143,7 +143,7 @@ public interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun pricePerDay(locale: Locale = Locale.getDefault()): Price? {
+    public fun pricePerDay(locale: Locale = Locale.getDefault()): Price? {
         return period?.let { price.pricePerDay(it, locale) }
     }
 

@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class OfflineEntitlementsManagerTest {
+public class OfflineEntitlementsManagerTest {
 
     private val appUserID = "test-app-user-id"
 
@@ -42,7 +42,7 @@ class OfflineEntitlementsManagerTest {
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         backendSuccessSlot = slot()
         backendErrorSlot = slot()
 

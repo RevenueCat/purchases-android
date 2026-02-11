@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
-class PriceFactoryTest {
+public class PriceFactoryTest {
 
     @Test
     fun `creates price with US locale correctly`() {

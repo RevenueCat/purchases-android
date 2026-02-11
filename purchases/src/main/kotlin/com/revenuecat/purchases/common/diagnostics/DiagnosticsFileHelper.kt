@@ -9,7 +9,7 @@ import com.revenuecat.purchases.utils.EventsFileHelper
 internal class DiagnosticsFileHelper(
     private val fileHelper: FileHelper,
 ) : EventsFileHelper<DiagnosticsEntry>(fileHelper, DIAGNOSTICS_FILE_PATH, null) {
-    companion object {
+    public companion object {
         const val DIAGNOSTICS_FILE_PATH = "RevenueCat/diagnostics/diagnostic_entries.jsonl"
         const val DIAGNOSTICS_FILE_LIMIT_IN_KB = 500
         const val DIAGNOSTICS_FILE_SYNC_LIMIT_IN_KB = 200

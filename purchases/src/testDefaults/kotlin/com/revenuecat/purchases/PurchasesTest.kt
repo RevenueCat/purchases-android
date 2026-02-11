@@ -74,7 +74,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     private var receivedProducts: List<StoreProduct>? = null
 
     @Test
-    fun getsSubscriptionSkus() {
+    public fun getsSubscriptionSkus() {
         val skus = listOf("onemonth_freetrial")
 
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.SUBS)
@@ -96,7 +96,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun canOverrideAnonMode() {
+    public fun canOverrideAnonMode() {
         purchases.allowSharingPlayStoreAccount = true
 
         val productId = "onemonth_freetrial"
@@ -1276,7 +1276,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region restore purchases
 
     @Test
-    fun restoringPurchasesGetsHistory() {
+    public fun restoringPurchasesGetsHistory() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1303,7 +1303,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun historicalPurchasesPassedToBackend() {
+    public fun historicalPurchasesPassedToBackend() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         val inAppTransactions = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
         val subTransactions = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS)
@@ -1353,7 +1353,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun failedToRestorePurchases() {
+    public fun failedToRestorePurchases() {
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1377,7 +1377,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun restoringCallsRestoreCallback() {
+    public fun restoringCallsRestoreCallback() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         val productIdSub = "onemonth_freetrial_sub"
@@ -1440,7 +1440,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun whenNoTokensRestoringPurchasesStillCallListener() {
+    public fun whenNoTokensRestoringPurchasesStillCallListener() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
@@ -2118,7 +2118,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedAddOns = subscription.addOnProducts
         assertThat(capturedAddOns?.size).isEqualTo(2)
 
-        fun validateAddOnMatchesSubscriptionOption(
+        public fun validateAddOnMatchesSubscriptionOption(
             addOn: GooglePurchasingData,
             expectedSubscriptionOption: GoogleSubscriptionOption
         ) {

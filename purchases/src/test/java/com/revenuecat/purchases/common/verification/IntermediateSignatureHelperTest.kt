@@ -10,14 +10,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class IntermediateSignatureHelperTest {
+public class IntermediateSignatureHelperTest {
 
     private val validSignature = Signature.fromString("xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsK4PUFrNz9mRS0v/InK81CwXmtbGoTy1bD8d+PValEX9dY+8zon/CM8Bx4oA2pUFgtHSaedPJfqnTjNPh0l0O62iWADAwrsih4z//uQoruUD3T5WXa2w7s7LFMnRFuRQY3uKz0StgC/qkPAufCtqzZqQZR1zDu9MxDzmG6eNAqcM3fsIV5sQIMmI3P0dEMDK5cM/YG")
 
     private lateinit var intermediateSignatureHelper: IntermediateSignatureHelper
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         intermediateSignatureHelper = IntermediateSignatureHelper(
             DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         )

@@ -7,14 +7,14 @@ import kotlin.time.Duration.Companion.days
 internal data class DateActive(val isActive: Boolean, val inGracePeriod: Boolean)
 
 internal class DateHelper private constructor() {
-    companion object {
+    public companion object {
         private val ENTITLEMENT_GRACE_PERIOD = 3.days
 
         /**
          * Calculates whether a subscription/entitlement is currently active according to the expiration date and last
          * successful request date, while considering a given grace period
          */
-        fun isDateActive(
+        public fun isDateActive(
             expirationDate: Date?,
             requestDate: Date,
             gracePeriod: Duration = ENTITLEMENT_GRACE_PERIOD,

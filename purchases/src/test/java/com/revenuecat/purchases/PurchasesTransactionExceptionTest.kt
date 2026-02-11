@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class PurchasesTransactionExceptionTest {
+public class PurchasesTransactionExceptionTest {
 
     @Test
     fun `error matches originating error`() {

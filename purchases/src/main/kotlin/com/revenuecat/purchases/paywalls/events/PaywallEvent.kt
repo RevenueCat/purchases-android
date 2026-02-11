@@ -76,10 +76,10 @@ public enum class ExitOfferType(val value: String) {
  */
 @InternalRevenueCatAPI
 @Serializable
-data class PaywallEvent(
-    val creationData: CreationData,
-    val data: Data,
-    val type: PaywallEventType,
+public data class PaywallEvent(
+    public val creationData: CreationData,
+    public val data: Data,
+    public val type: PaywallEventType,
 ) : FeatureEvent {
 
     @Serializable

@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class SimulatedStoreBillingWrapperTest {
+public class SimulatedStoreBillingWrapperTest {
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var mainHandler: Handler
@@ -46,7 +46,7 @@ class SimulatedStoreBillingWrapperTest {
     private lateinit var purchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener
 
     @Before
-    fun setup() {
+    public fun setup() {
         deviceCache = mockk()
         mainHandler = mockk()
         purchasesStateProvider = mockk()

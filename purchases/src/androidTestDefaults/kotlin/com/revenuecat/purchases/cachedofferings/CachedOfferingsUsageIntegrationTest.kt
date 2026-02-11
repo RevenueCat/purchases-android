@@ -22,13 +22,13 @@ import org.junit.runner.RunWith
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
-class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
+public class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
 
     @Before
-    fun setup() {
+    public fun setup() {
         ensureBlockFinishes { latch ->
             setUpTest {
                 latch.countDown()
@@ -39,7 +39,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest {
+    public fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
@@ -50,7 +50,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest {
+    public fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(
@@ -71,7 +71,7 @@ class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest {
+    public fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest {
         Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(

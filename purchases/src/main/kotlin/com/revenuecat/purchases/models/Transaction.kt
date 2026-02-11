@@ -15,25 +15,25 @@ import java.util.Locale
 @Parcelize
 @Poko
 public class Transaction(
-    val transactionIdentifier: String,
+    public val transactionIdentifier: String,
     @Deprecated(
         "Use transactionIdentifier instead",
         ReplaceWith("transactionIdentifier"),
     )
-    val revenuecatId: String,
-    val productIdentifier: String,
+    public val revenuecatId: String,
+    public val productIdentifier: String,
     @Deprecated(
         "Use productIdentifier instead",
         ReplaceWith("productIdentifier"),
     )
-    val productId: String,
-    val purchaseDate: Date,
-    val storeTransactionId: String?,
-    val store: Store,
-    val displayName: String?,
-    val isSandbox: Boolean = false,
-    val originalPurchaseDate: Date?,
-    val price: Price?,
+    public val productId: String,
+    public val purchaseDate: Date,
+    public val storeTransactionId: String?,
+    public val store: Store,
+    public val displayName: String?,
+    public val isSandbox: Boolean = false,
+    public val originalPurchaseDate: Date?,
+    public val price: Price?,
 ) : Parcelable {
 
     @Deprecated(

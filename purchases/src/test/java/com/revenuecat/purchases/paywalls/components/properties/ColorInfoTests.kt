@@ -18,8 +18,8 @@ internal class ColorInfoTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: ColorInfo,
+            public val json: String,
+            public val expected: ColorInfo,
         )
 
         companion object {
@@ -172,8 +172,8 @@ internal class ColorInfoTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: ColorScheme,
+            public val json: String,
+            public val expected: ColorScheme,
         )
 
         companion object {

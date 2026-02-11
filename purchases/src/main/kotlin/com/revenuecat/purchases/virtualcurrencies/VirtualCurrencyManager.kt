@@ -18,7 +18,7 @@ internal class VirtualCurrencyManager(
     private val appConfig: AppConfig,
 ) {
     @Synchronized
-    fun virtualCurrencies(
+    public fun virtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
         val appUserID = identityManager.currentAppUserID

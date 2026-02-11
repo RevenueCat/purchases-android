@@ -8,7 +8,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class EndpointTest {
+public class EndpointTest {
 
     private val allEndpoints = listOf(
         Endpoint.GetCustomerInfo("test-user-id"),

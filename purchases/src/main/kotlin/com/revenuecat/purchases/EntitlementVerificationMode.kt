@@ -26,7 +26,7 @@ public enum class EntitlementVerificationMode {
     // Hidden ENFORCED mode during feature beta
     // ENFORCED;
 
-    companion object {
+    public companion object {
         /**
          * Default entitlement verification mode.
          */

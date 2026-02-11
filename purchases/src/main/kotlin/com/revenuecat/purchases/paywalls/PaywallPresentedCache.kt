@@ -18,7 +18,7 @@ internal class PaywallPresentedCache {
     }
 
     @Synchronized
-    fun getAndRemovePurchaseInitiatedEventIfNeeded(
+    public fun getAndRemovePurchaseInitiatedEventIfNeeded(
         purchasedProductIDs: List<String>,
         purchaseTimestamp: Long?,
     ): PaywallEvent? {

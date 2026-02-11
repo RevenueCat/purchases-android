@@ -18,16 +18,16 @@ internal class PurchaseButtonComponentTests(
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: PurchaseButtonComponent,
+        public val json: String,
+        public val expected: PurchaseButtonComponent,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "non-empty stack",
                 Args(

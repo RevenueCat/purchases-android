@@ -8,5 +8,5 @@ public enum class LogLevel {
     ERROR,
     ;
 
-    companion object
+    public companion object
 }

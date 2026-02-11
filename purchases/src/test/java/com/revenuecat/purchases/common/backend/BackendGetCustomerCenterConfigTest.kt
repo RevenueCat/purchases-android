@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
-class BackendGetCustomerCenterConfigTest {
+public class BackendGetCustomerCenterConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
     private val MOCK_RESPONSE_FILENAME = "get_customer_center_config_success.json"
@@ -193,7 +193,7 @@ class BackendGetCustomerCenterConfigTest {
     )
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false

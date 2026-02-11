@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PurchaseParamsTest {
+public class PurchaseParamsTest {
 
     @Test
     fun `Initializing with Package sets proper presentedOfferingIdentifier`() {

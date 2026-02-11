@@ -41,7 +41,7 @@ import java.util.Date
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
-class EventsManagerTest {
+public class EventsManagerTest {
 
     private val userID = "testAppUserId"
     private val paywallEvent = PaywallEvent(
@@ -98,7 +98,7 @@ class EventsManagerTest {
     private lateinit var eventsManager: EventsManager
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         val tempTestFolder = File(testFolder)
         if (tempTestFolder.exists()) {
             error("Temp test folder should not exist before starting tests")
@@ -136,7 +136,7 @@ class EventsManagerTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         val tempTestFolder = File(testFolder)
         tempTestFolder.deleteRecursively()
     }

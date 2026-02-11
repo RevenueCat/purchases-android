@@ -12,8 +12,8 @@ import java.util.UUID
 @InternalRevenueCatAPI
 @Poko
 public class CustomerCenterImpressionEvent(
-    val creationData: CreationData = CreationData(),
-    val data: Data,
+    public val creationData: CreationData = CreationData(),
+    public val data: Data,
 ) : FeatureEvent {
     @Poko
     class CreationData(

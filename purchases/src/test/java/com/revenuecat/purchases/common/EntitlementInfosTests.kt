@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class EntitlementInfosTests {
+public class EntitlementInfosTests {
 
     private var response = JSONObject()
 

@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ParcelableTests {
+public class ParcelableTests {
 
     private val price = Price(
         "$3.99",

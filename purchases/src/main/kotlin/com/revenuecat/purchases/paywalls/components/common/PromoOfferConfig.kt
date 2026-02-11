@@ -27,7 +27,7 @@ public class PromoOfferConfig(
      */
     @get:JvmSynthetic
     @SerialName("offer_id")
-    val offerId: String,
+    public val offerId: String,
 )
 
 @OptIn(InternalRevenueCatAPI::class)

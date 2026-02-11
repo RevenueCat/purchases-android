@@ -21,8 +21,8 @@ internal class ButtonComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: ButtonComponent,
+            public val json: String,
+            public val expected: ButtonComponent,
         )
 
         companion object {
@@ -624,8 +624,8 @@ internal class ButtonComponentTests {
 
         class Args(
             @Language("json")
-            val serialized: String,
-            val deserialized: ButtonComponent.Action,
+            public val serialized: String,
+            public val deserialized: ButtonComponent.Action,
         )
 
         companion object {

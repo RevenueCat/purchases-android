@@ -15,9 +15,9 @@ import dev.drewhamilton.poko.Poko
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class AdFailedToLoadData(
-    val mediatorName: AdMediatorName,
-    val adFormat: AdFormat,
-    val placement: String?,
-    val adUnitId: String,
-    val mediatorErrorCode: Int?,
+    public val mediatorName: AdMediatorName,
+    public val adFormat: AdFormat,
+    public val placement: String?,
+    public val adUnitId: String,
+    public val mediatorErrorCode: Int?,
 )

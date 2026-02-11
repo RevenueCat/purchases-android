@@ -20,5 +20,5 @@ internal interface UserDataResponseListener : PurchasingListener {
         /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
     }
 
-    fun getUserData(onSuccess: (UserData) -> Unit, onError: (PurchasesError) -> Unit)
+    public fun getUserData(onSuccess: (UserData) -> Unit, onError: (PurchasesError) -> Unit)
 }

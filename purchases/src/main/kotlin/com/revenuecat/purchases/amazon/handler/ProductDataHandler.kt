@@ -22,7 +22,7 @@ internal class ProductDataHandler(
     private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
-    companion object {
+    public companion object {
         private const val GET_PRODUCT_DATA_TIMEOUT_MILLIS = 10_000L
     }
 

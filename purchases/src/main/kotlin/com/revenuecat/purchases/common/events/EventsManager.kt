@@ -49,7 +49,7 @@ internal class EventsManager(
     ) -> Unit,
 ) {
 
-    companion object {
+    public companion object {
         private const val FLUSH_COUNT = 50
         private const val MAX_FLUSH_BATCHES = 10
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
@@ -81,7 +81,7 @@ internal class EventsManager(
          * @param fileHelper The file helper used for event storage.
          * @return An `EventsFileHelper` for `BackendStoredEvent`.
          */
-        fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
+        public fun backendEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
                 EVENTS_FILE_PATH_NEW,
@@ -96,7 +96,7 @@ internal class EventsManager(
          * @param fileHelper The file helper used for event storage.
          * @return An `EventsFileHelper` for `BackendStoredEvent.Ad`.
          */
-        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
+        public fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
                 AD_EVENTS_FILE_PATH,
@@ -111,7 +111,7 @@ internal class EventsManager(
          * @param fileHelper The file helper used for event storage.
          * @return An `EventsFileHelper` for `PaywallStoredEvent`.
          */
-        fun paywalls(fileHelper: FileHelper): EventsFileHelper<PaywallStoredEvent> {
+        public fun paywalls(fileHelper: FileHelper): EventsFileHelper<PaywallStoredEvent> {
             return EventsFileHelper(
                 fileHelper,
                 PAYWALL_EVENTS_FILE_PATH,

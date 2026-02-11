@@ -27,27 +27,27 @@ import kotlinx.serialization.Serializable
 public class IconComponent(
     @get:JvmSynthetic
     @SerialName("base_url")
-    val baseUrl: String,
+    public val baseUrl: String,
     @get:JvmSynthetic
     @SerialName("icon_name")
-    val iconName: String,
+    public val iconName: String,
     @get:JvmSynthetic
-    val formats: Formats,
+    public val formats: Formats,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
-    val color: ColorScheme? = null,
+    public val color: ColorScheme? = null,
     @get:JvmSynthetic
-    val padding: Padding = zero,
+    public val padding: Padding = zero,
     @get:JvmSynthetic
-    val margin: Padding = zero,
+    public val margin: Padding = zero,
     @get:JvmSynthetic
     @SerialName("icon_background")
-    val iconBackground: IconBackground? = null,
+    public val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Poko
@@ -80,24 +80,24 @@ public class IconComponent(
 @Immutable
 public class PartialIconComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    public val visible: Boolean? = true,
     @get:JvmSynthetic
     @SerialName("base_url")
-    val baseUrl: String? = null,
+    public val baseUrl: String? = null,
     @get:JvmSynthetic
     @SerialName("icon_name")
-    val iconName: String? = null,
+    public val iconName: String? = null,
     @get:JvmSynthetic
-    val formats: Formats? = null,
+    public val formats: Formats? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
-    val color: ColorScheme? = null,
+    public val color: ColorScheme? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
     @SerialName("icon_background")
-    val iconBackground: IconBackground? = null,
+    public val iconBackground: IconBackground? = null,
 ) : PartialComponent

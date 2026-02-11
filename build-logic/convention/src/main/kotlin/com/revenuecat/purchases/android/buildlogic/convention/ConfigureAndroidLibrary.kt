@@ -48,6 +48,7 @@ internal fun Project.configureAndroidLibrary() {
     }
 
     extensions.configure<KotlinAndroidProjectExtension> {
+        explicitApi()
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
             val kotlinLanguageVersion = libs.getVersion("kotlinLanguage")

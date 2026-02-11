@@ -27,23 +27,23 @@ public class PricingPhase(
     /**
      * Billing period for which the [PricingPhase] applies.
      */
-    val billingPeriod: Period,
+    public val billingPeriod: Period,
 
     /**
      * [RecurrenceMode] of the [PricingPhase]
      */
-    val recurrenceMode: RecurrenceMode,
+    public val recurrenceMode: RecurrenceMode,
 
     /**
      * Number of cycles for which the pricing phase applies.
      * Null for INFINITE_RECURRING or NON_RECURRING recurrence modes.
      */
-    val billingCycleCount: Int?,
+    public val billingCycleCount: Int?,
 
     /**
      * [Price] of the [PricingPhase]
      */
-    val price: Price,
+    public val price: Price,
 ) : Parcelable {
 
     /**
@@ -75,7 +75,7 @@ public class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerDay(locale: Locale = Locale.getDefault()): Price =
+    public fun pricePerDay(locale: Locale = Locale.getDefault()): Price =
         price.pricePerDay(billingPeriod, locale)
 
     /**
@@ -85,7 +85,7 @@ public class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price =
+    public fun pricePerWeek(locale: Locale = Locale.getDefault()): Price =
         price.pricePerWeek(billingPeriod, locale)
 
     /**
@@ -95,7 +95,7 @@ public class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price =
+    public fun pricePerMonth(locale: Locale = Locale.getDefault()): Price =
         price.pricePerMonth(billingPeriod, locale)
 
     /**
@@ -105,7 +105,7 @@ public class PricingPhase(
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
-    fun pricePerYear(locale: Locale = Locale.getDefault()): Price =
+    public fun pricePerYear(locale: Locale = Locale.getDefault()): Price =
         price.pricePerYear(billingPeriod, locale)
 
     /**
@@ -125,7 +125,7 @@ public class PricingPhase(
         replaceWith = ReplaceWith("pricePerMonth(locale).formatted"),
     )
     @JvmOverloads
-    fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
+    public fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
         return pricePerMonth(locale).formatted
     }
 }

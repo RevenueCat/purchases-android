@@ -3,9 +3,9 @@ package com.revenuecat.purchases.common.networking
 import android.net.Uri
 
 internal sealed class Endpoint(
-    val pathTemplate: String,
-    val name: String,
-    val fallbackPath: String? = null,
+    public val pathTemplate: String,
+    public val name: String,
+    public val fallbackPath: String? = null,
 ) {
     abstract fun getPath(useFallback: Boolean = false): String
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
@@ -43,8 +43,8 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
     data class GetAmazonReceipt(
-        val userId: String,
-        val receiptId: String,
+        public val userId: String,
+        public val receiptId: String,
     ) : Endpoint("/v1/receipts/amazon/%s/%s", "get_amazon_receipt") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId), receiptId)
     }

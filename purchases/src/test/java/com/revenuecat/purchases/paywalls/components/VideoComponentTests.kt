@@ -19,7 +19,7 @@ import org.intellij.lang.annotations.Language
 import org.junit.Test
 import java.net.URL
 
-class VideoComponentTests {
+public class VideoComponentTests {
     @Language("json")
     val json = """
         {

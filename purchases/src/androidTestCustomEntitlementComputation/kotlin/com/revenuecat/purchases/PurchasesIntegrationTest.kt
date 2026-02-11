@@ -15,12 +15,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
+public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     private val userID = "integrationTestAppUserID"
 
     @Before
-    fun setup() {
+    public fun setup() {
         ensureBlockFinishes { latch ->
             setUpTest(appUserID = userID) {
                 latch.countDown()
@@ -31,14 +31,14 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     // region tests
 
     @Test
-    fun sdkCanBeConfigured() {
+    public fun sdkCanBeConfigured() {
         onActivityReady {
             assertThat(Purchases.sharedInstance.appUserID).isEqualTo(userID)
         }
     }
 
     @Test
-    fun settingCustomerInfoListenerDoesNotTriggerUpdate() {
+    public fun settingCustomerInfoListenerDoesNotTriggerUpdate() {
         var listenerCalled = false
         onActivityReady {
             Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
@@ -49,7 +49,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun canFetchOfferings() = runTestActivityLifecycleScope {
+    public fun canFetchOfferings() = runTestActivityLifecycleScope {
         mockBillingAbstract.mockQueryProductDetails()
 
         val offerings = Purchases.sharedInstance.awaitOfferings()
@@ -63,7 +63,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun offeringsArePersistedAndUsedOnServerErrors() = runTestActivityLifecycleScope {
+    public fun offeringsArePersistedAndUsedOnServerErrors() = runTestActivityLifecycleScope {
         mockBillingAbstract.mockQueryProductDetails()
 
         val offerings = Purchases.sharedInstance.awaitOfferings()
@@ -84,7 +84,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun canPurchaseSubsProduct() {
+    public fun canPurchaseSubsProduct() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
         val storeTransaction = StoreTransactionFactory.createStoreTransaction()
         mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
@@ -120,7 +120,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun purchaseTriggersCustomerInfoListener() {
+    public fun purchaseTriggersCustomerInfoListener() {
         val listenerCalledValues = mutableListOf<CustomerInfo>()
 
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
@@ -144,7 +144,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun switchUserWorks() {
+    public fun switchUserWorks() {
         onActivityReady {
             assertThat(Purchases.sharedInstance.appUserID).isEqualTo(userID)
             val anotherUserID = "anotherTestUserID"

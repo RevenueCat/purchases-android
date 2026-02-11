@@ -21,5 +21,5 @@ internal interface PurchaseUpdatesResponseListener : PurchasingListener {
         /* intentionally ignored. Use PurchaseResponseListener instead */
     }
 
-    fun queryPurchases(onSuccess: (List<Receipt>, UserData) -> Unit, onError: (PurchasesError) -> Unit)
+    public fun queryPurchases(onSuccess: (List<Receipt>, UserData) -> Unit, onError: (PurchasesError) -> Unit)
 }

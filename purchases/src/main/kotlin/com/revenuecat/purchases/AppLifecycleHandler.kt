@@ -32,6 +32,6 @@ internal class AppLifecycleHandler(
 }
 
 internal interface LifecycleDelegate {
-    fun onAppBackgrounded()
-    fun onAppForegrounded()
+    public fun onAppBackgrounded()
+    public fun onAppForegrounded()
 }

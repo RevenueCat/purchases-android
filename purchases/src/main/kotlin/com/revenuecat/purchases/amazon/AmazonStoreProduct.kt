@@ -66,17 +66,17 @@ public class AmazonStoreProduct @JvmOverloads constructor(
     /**
      * The icon URL of the product.
      */
-    val iconUrl: String,
+    public val iconUrl: String,
 
     /**
      * The [Period] of a subscription's free trial. Null for INAPP.
      */
-    val freeTrialPeriod: Period?,
+    public val freeTrialPeriod: Period?,
 
     /**
      * JSONObject representing the original [Product] class from Amazon.
      */
-    val originalProductJSON: JSONObject,
+    public val originalProductJSON: JSONObject,
 
     /**
      * The context from which this product was obtained.
@@ -239,17 +239,17 @@ val StoreProduct.amazonProduct: AmazonStoreProduct?
  * and to avoid complicating parcelization
  */
 private data class ComparableData(
-    val id: String,
-    val type: ProductType,
-    val title: String,
-    val description: String,
-    val period: Period?,
-    val price: Price,
-    val subscriptionOptions: SubscriptionOptions?,
-    val defaultOption: SubscriptionOption?,
-    val iconUrl: String,
-    val freeTrialPeriod: Period?,
-    val presentedOfferingContext: PresentedOfferingContext?,
+    public val id: String,
+    public val type: ProductType,
+    public val title: String,
+    public val description: String,
+    public val period: Period?,
+    public val price: Price,
+    public val subscriptionOptions: SubscriptionOptions?,
+    public val defaultOption: SubscriptionOption?,
+    public val iconUrl: String,
+    public val freeTrialPeriod: Period?,
+    public val presentedOfferingContext: PresentedOfferingContext?,
 ) {
     constructor(
         amazonStoreProduct: AmazonStoreProduct,

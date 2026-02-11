@@ -15,18 +15,18 @@ import java.net.URL
 public class ImageUrls(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
-    val original: URL,
+    public val original: URL,
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
-    val webp: URL,
+    public val webp: URL,
     @get:JvmSynthetic
     @SerialName("webp_low_res")
     @Serializable(with = URLSerializer::class)
-    val webpLowRes: URL,
+    public val webpLowRes: URL,
     @get:JvmSynthetic
-    val width: UInt,
+    public val width: UInt,
     @get:JvmSynthetic
-    val height: UInt,
+    public val height: UInt,
 )
 
 @InternalRevenueCatAPI

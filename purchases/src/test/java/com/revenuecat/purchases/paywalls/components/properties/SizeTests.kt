@@ -15,8 +15,8 @@ internal class SizeTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: SizeConstraint,
+            public val json: String,
+            public val expected: SizeConstraint,
         )
 
         companion object {
@@ -129,8 +129,8 @@ internal class SizeTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: Size,
+            public val json: String,
+            public val expected: Size,
         )
 
         companion object {

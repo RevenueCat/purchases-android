@@ -16,14 +16,14 @@ import kotlinx.serialization.Serializable
 public class PackageComponent(
     @get:JvmSynthetic
     @SerialName("package_id")
-    val packageId: String,
+    public val packageId: String,
     @get:JvmSynthetic
     @SerialName("is_selected_by_default")
-    val isSelectedByDefault: Boolean,
+    public val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
     @get:JvmSynthetic
     @Serializable(with = ResilientPromoOfferConfigSerializer::class)
     @SerialName("play_store_offer")
-    val playStoreOffer: PromoOfferConfig? = null,
+    public val playStoreOffer: PromoOfferConfig? = null,
 ) : PaywallComponent

@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(AndroidJUnit4::class)
-class SubscriptionOptionsTest {
+public class SubscriptionOptionsTest {
     private val discountTag = "discount"
 
     private val productId = "product_id"
@@ -113,12 +113,12 @@ class SubscriptionOptionsTest {
 }
 
 @RunWith(Parameterized::class)
-class PeriodOfferTest(private val period: String, private val days: Int) {
+public class PeriodOfferTest(private val period: String, private val days: Int) {
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Parameterized.Parameters
-        fun data() : Collection<Array<Any>> {
+        public fun data() : Collection<Array<Any>> {
             return listOf(
                 arrayOf("P1Y", 365),
                 arrayOf("P2Y", 730),

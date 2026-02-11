@@ -7,8 +7,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PeriodTest {
-    companion object {
+public class PeriodTest {
+    public companion object {
         private val MAX_OFFSET = Offset.offset(0.0001)
     }
 

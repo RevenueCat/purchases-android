@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class StoreProductConversionsTest {
+public class StoreProductConversionsTest {
     @Test
     fun `list of invalid ProductDetails with no price maps to empty list`() {
         val productDetail1 = mockProductDetails(

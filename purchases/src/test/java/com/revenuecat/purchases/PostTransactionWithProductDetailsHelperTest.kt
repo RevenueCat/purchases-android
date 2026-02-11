@@ -22,7 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class PostTransactionWithProductDetailsHelperTest {
+public class PostTransactionWithProductDetailsHelperTest {
 
     private val allowSharingPlayStoreAccount = true
     private val appUserID = "appUserID"
@@ -40,7 +40,7 @@ class PostTransactionWithProductDetailsHelperTest {
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         billing = mockk()
         postReceiptHelper = mockk()
 

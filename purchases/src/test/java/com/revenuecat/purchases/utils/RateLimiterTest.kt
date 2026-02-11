@@ -11,7 +11,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class RateLimiterTest {
+public class RateLimiterTest {
     @Test
     fun `test allows correct number of accesses`() {
         val rateLimiter = RateLimiter(5, 60.seconds)

@@ -55,7 +55,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class PostReceiptHelperTest {
+public class PostReceiptHelperTest {
 
     private val appUserID = "test-app-user-id"
     private val mockStoreProduct = stubStoreProduct("productId")
@@ -135,7 +135,7 @@ class PostReceiptHelperTest {
     private lateinit var postReceiptHelper: PostReceiptHelper
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         appConfig = mockk()
         backend = mockk()
         billing = mockk()

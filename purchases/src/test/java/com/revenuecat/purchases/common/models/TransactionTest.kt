@@ -9,7 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class TransactionTest {
+public class TransactionTest {
     private val id = "72c26cc69c"
     private val productId = "productID"
     private val dateString = "1990-08-30T02:40:36Z"

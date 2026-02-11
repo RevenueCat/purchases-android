@@ -37,19 +37,19 @@ internal class OfflineEntitlementsManager(
         }
     }
 
-    fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+    public fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String,
     ) = isServerError &&
         isOfflineEntitlementsEnabled() &&
         deviceCache.getCachedCustomerInfo(appUserId) == null
 
-    fun shouldCalculateOfflineCustomerInfoInPostReceipt(
+    public fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
     @Suppress("FunctionOnlyReturningConstant")
-    fun calculateAndCacheOfflineCustomerInfo(
+    public fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,

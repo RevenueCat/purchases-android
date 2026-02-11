@@ -32,7 +32,7 @@ internal interface UseCaseParams {
 internal abstract class BillingClientUseCase<T>(
     private val useCaseParams: UseCaseParams,
     private val onError: PurchasesErrorCallback,
-    val executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+    public val executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) {
 
     abstract val errorMessage: String
@@ -43,7 +43,7 @@ internal abstract class BillingClientUseCase<T>(
     private var retryAttempt: Int = 0
     private var retryBackoff = RETRY_TIMER_START
 
-    fun run(
+    public fun run(
         delayMilliseconds: Long = 0,
     ) {
         executeRequestOnUIThread(delayMilliseconds) { connectionError ->
@@ -58,7 +58,7 @@ internal abstract class BillingClientUseCase<T>(
     abstract fun executeAsync()
     abstract fun onOk(received: T)
 
-    fun processResult(
+    public fun processResult(
         billingResult: BillingResult,
         response: T,
         onSuccess: (T) -> Unit = ::onOk,

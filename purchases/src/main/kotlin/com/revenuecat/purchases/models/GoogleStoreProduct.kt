@@ -24,12 +24,12 @@ constructor(
      * For subscriptions, this is the high-level productId set up for a subscription in the Play Console,
      * unique to an entitlement.
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The basePlanId for subscription products. Null for INAPP.
      */
-    val basePlanId: String?,
+    public val basePlanId: String?,
 
     /**
      * Type of product. One of [ProductType].
@@ -91,7 +91,7 @@ constructor(
     /**
      * The [ProductDetails] object returned from BillingClient that was used to construct this product.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The offering ID this `GoogleStoreProduct` was returned from.

@@ -12,5 +12,5 @@ public fun interface TrackedEventListener {
      * Called when a feature event is tracked.
      * @param event The tracked feature event.
      */
-    fun onEventTracked(event: FeatureEvent)
+    public fun onEventTracked(event: FeatureEvent)
 }

@@ -4,6 +4,6 @@ import dev.drewhamilton.poko.Poko
 
 @Poko
 public class PlatformInfo(
-    val flavor: String,
-    val version: String?,
+    public val flavor: String,
+    public val version: String?,
 )

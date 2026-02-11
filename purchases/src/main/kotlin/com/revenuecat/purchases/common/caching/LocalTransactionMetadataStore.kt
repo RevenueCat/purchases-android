@@ -20,7 +20,7 @@ internal class LocalTransactionMetadataStore(
     private companion object {
         const val KEY_PREFIX = "local_transaction_metadata_"
 
-        fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
+        public fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
             context.getSharedPreferences(
                 "com.revenuecat.purchases.transaction_metadata.$apiKey",
                 Context.MODE_PRIVATE,
@@ -28,7 +28,7 @@ internal class LocalTransactionMetadataStore(
     }
 
     @Synchronized
-    fun cacheLocalTransactionMetadata(
+    public fun cacheLocalTransactionMetadata(
         purchaseToken: String,
         data: LocalTransactionMetadata,
     ) {

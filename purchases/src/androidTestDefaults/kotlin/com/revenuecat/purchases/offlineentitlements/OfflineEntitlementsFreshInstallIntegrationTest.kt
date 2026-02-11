@@ -14,12 +14,12 @@ import org.junit.runner.RunWith
 
 @Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
+public class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         ensureBlockFinishes { latch ->
             setUpTest {
                 latch.countDown()
@@ -28,7 +28,7 @@ class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEnt
     }
 
     @Test
-    fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
+    public fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getCustomerInfoWith(
                 onError = {
@@ -44,13 +44,13 @@ class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEnt
 }
 
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
+public class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override val initialActivePurchasesToUse = initialActivePurchases
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         ensureBlockFinishes { latch ->
             setUpTest {
                 mockBillingAbstract.mockQueryProductDetails()
@@ -60,7 +60,7 @@ class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOffli
     }
 
     @Test
-    fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
+    public fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getCustomerInfoWith(
                 onError = {

@@ -69,7 +69,7 @@ internal class PurchasesFactory(
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
-    fun createPurchases(
+    public fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,

@@ -31,7 +31,7 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @OptIn(InternalRevenueCatAPI::class)
-class OfferingsTest {
+public class OfferingsTest {
 
     private val productIdentifier = "com.myproduct"
     private val inAppProductIdentifier = "com.myproduct.lifetime"

@@ -74,8 +74,8 @@ public enum class GoogleReplacementMode(
         out.writeString(this.name)
     }
 
-    companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
-        fun fromPlayBillingClientMode(
+    public companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
+        public fun fromPlayBillingClientMode(
             @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?,
         ): GoogleReplacementMode? {
             return playBillingClientMode?.let {

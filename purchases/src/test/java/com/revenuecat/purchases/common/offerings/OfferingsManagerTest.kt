@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class OfferingsManagerTest {
+public class OfferingsManagerTest {
 
     private val appUserId = "fakeUserID"
     private val productId = STUB_PRODUCT_IDENTIFIER
@@ -49,7 +49,7 @@ class OfferingsManagerTest {
     private lateinit var offeringsManager: OfferingsManager
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         cache = mockk()
         backend = mockk()
         offeringsFactory = mockk()
@@ -288,7 +288,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun getOfferingsIsCached() {
+    public fun getOfferingsIsCached() {
         every {
             cache.cachedOfferings
         } returns null

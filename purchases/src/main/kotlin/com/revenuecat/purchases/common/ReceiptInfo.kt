@@ -18,30 +18,30 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class ReceiptInfo(
-    val productIDs: List<String>,
-    val purchaseTime: Long? = null,
+    public val productIDs: List<String>,
+    public val purchaseTime: Long? = null,
     @Serializable(with = PresentedOfferingContextSerializer::class)
-    val presentedOfferingContext: PresentedOfferingContext? = null,
-    val price: Double? = null,
-    val formattedPrice: String? = null,
-    val currency: String? = null,
+    public val presentedOfferingContext: PresentedOfferingContext? = null,
+    public val price: Double? = null,
+    public val formattedPrice: String? = null,
+    public val currency: String? = null,
     @Serializable(with = PeriodSerializer::class)
-    val period: Period? = null,
-    val pricingPhases: List<
+    public val period: Period? = null,
+    public val pricingPhases: List<
         @Serializable(with = PricingPhaseSerializer::class)
         PricingPhase,
         >? = null,
     @Serializable(with = ReplacementModeSerializer::class)
-    val replacementMode: ReplacementMode? = null,
-    val platformProductIds: List<Map<String, String?>> = emptyList(),
-    val sdkOriginated: Boolean = false,
+    public val replacementMode: ReplacementMode? = null,
+    public val platformProductIds: List<Map<String, String?>> = emptyList(),
+    public val sdkOriginated: Boolean = false,
     // Amazon-only fields
-    val storeUserID: String? = null,
-    val marketplace: String? = null,
+    public val storeUserID: String? = null,
+    public val marketplace: String? = null,
 ) {
-    companion object {
+    public companion object {
         @OptIn(InternalRevenueCatAPI::class)
-        fun from(
+        public fun from(
             storeTransaction: StoreTransaction,
             storeProduct: StoreProduct?,
             subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>?,
@@ -118,8 +118,8 @@ private open class PlatformProductId(open val productId: String) {
 
 private class GooglePlatformProductId(
     override val productId: String,
-    val basePlanId: String? = null,
-    val offerId: String? = null,
+    public val basePlanId: String? = null,
+    public val offerId: String? = null,
 ) : PlatformProductId(productId) {
     override val asMap: Map<String, String?>
         get() = mapOf(

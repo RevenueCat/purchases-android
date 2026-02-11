@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 @Immutable
 public class Border(
     @get:JvmSynthetic
-    val color: ColorScheme,
+    public val color: ColorScheme,
     @get:JvmSynthetic
-    val width: Double,
+    public val width: Double,
 )

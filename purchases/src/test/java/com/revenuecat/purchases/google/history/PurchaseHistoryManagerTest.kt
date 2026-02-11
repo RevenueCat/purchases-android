@@ -42,7 +42,7 @@ internal class PurchaseHistoryManagerTest {
     private lateinit var serviceConnectionSlot: CapturingSlot<ServiceConnection>
 
     @Before
-    fun setup() {
+    public fun setup() {
         context = mockk()
         mockBillingService = mockk()
         serviceConnectionSlot = slot()
@@ -63,7 +63,7 @@ internal class PurchaseHistoryManagerTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         clearAllMocks()
     }
 

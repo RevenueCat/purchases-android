@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class JsonElementExtensionsTest {
+public class JsonElementExtensionsTest {
     @Test
     fun `can convert map with different types of elements`() {
         val mapOfElements: JsonElement = JsonObject(

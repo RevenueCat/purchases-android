@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class LocalTransactionMetadataStoreTest {
+public class LocalTransactionMetadataStoreTest {
 
     private val json = JsonTools.json
 
@@ -59,7 +59,7 @@ class LocalTransactionMetadataStoreTest {
     )
 
     @Before
-    fun setup() {
+    public fun setup() {
         context = mockk(relaxed = true)
         sharedPreferences = mockk(relaxed = true)
         editor = mockk(relaxed = true)

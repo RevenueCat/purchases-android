@@ -89,8 +89,8 @@ internal class ComponentsConfigTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PaywallComponentsConfig,
+            public val json: String,
+            public val expected: PaywallComponentsConfig,
         )
 
         companion object {

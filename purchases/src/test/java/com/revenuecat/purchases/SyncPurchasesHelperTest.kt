@@ -23,7 +23,7 @@ import java.util.Date
 import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
-class SyncPurchasesHelperTest {
+public class SyncPurchasesHelperTest {
 
     private val appUserID = "test-app-user-id"
     private val initiationSource = PostReceiptInitiationSource.RESTORE
@@ -41,7 +41,7 @@ class SyncPurchasesHelperTest {
     private lateinit var syncPurchasesHelper: SyncPurchasesHelper
 
     @Before
-    fun setUp() {
+    public fun setUp() {
         billing = mockk()
         identityManager = mockk()
         customerInfoHelper = mockk()

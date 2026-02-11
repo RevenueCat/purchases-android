@@ -4,7 +4,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchasingData
 import dev.drewhamilton.poko.Poko
 
-sealed class AmazonPurchasingData : PurchasingData {
+public sealed class AmazonPurchasingData : PurchasingData {
     @Poko
     class Product(
         public val storeProduct: AmazonStoreProduct,

@@ -114,7 +114,7 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
-    companion object {
+    public companion object {
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
         private const val NEW_APP_USER_ID = "new_app_user_id"
@@ -178,7 +178,7 @@ internal class Backend(
         this.dispatcher.close()
     }
 
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
@@ -246,7 +246,7 @@ internal class Backend(
     }
 
     @SuppressWarnings("LongParameterList", "ForbiddenComment")
-    fun postReceiptData(
+    public fun postReceiptData(
         purchaseToken: String,
         appUserID: String,
         isRestore: Boolean,
@@ -365,7 +365,7 @@ internal class Backend(
         }
     }
 
-    fun getOfferings(
+    public fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
@@ -425,7 +425,7 @@ internal class Backend(
         }
     }
 
-    fun logIn(
+    public fun logIn(
         appUserID: String,
         newAppUserID: String,
         onSuccessHandler: (CustomerInfo, Boolean) -> Unit,
@@ -489,7 +489,7 @@ internal class Backend(
         }
     }
 
-    fun aliasUsers(
+    public fun aliasUsers(
         oldAppUserID: String,
         newAppUserID: String,
         onSuccessHandler: () -> Unit,
@@ -540,7 +540,7 @@ internal class Backend(
         }
     }
 
-    fun postDiagnostics(
+    public fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
         onErrorHandler: (PurchasesError, Boolean) -> Unit,
@@ -594,7 +594,7 @@ internal class Backend(
         }
     }
 
-    fun postEvents(
+    public fun postEvents(
         paywallEventRequest: EventsRequest,
         baseURL: URL,
         delay: Delay,
@@ -655,7 +655,7 @@ internal class Backend(
         }
     }
 
-    fun getProductEntitlementMapping(
+    public fun getProductEntitlementMapping(
         onSuccessHandler: (ProductEntitlementMapping) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
     ) {
@@ -708,7 +708,7 @@ internal class Backend(
         }
     }
 
-    fun getCustomerCenterConfig(
+    public fun getCustomerCenterConfig(
         appUserID: String,
         onSuccessHandler: (CustomerCenterConfigData) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
@@ -767,7 +767,7 @@ internal class Backend(
         }
     }
 
-    fun postCreateSupportTicket(
+    public fun postCreateSupportTicket(
         appUserID: String,
         email: String,
         description: String,
@@ -832,7 +832,7 @@ internal class Backend(
     }
 
     @Suppress("NestedBlockDepth")
-    fun postRedeemWebPurchase(
+    public fun postRedeemWebPurchase(
         appUserID: String,
         redemptionToken: String,
         onResultHandler: (RedeemWebPurchaseListener.Result) -> Unit,
@@ -906,7 +906,7 @@ internal class Backend(
         }
     }
 
-    fun getVirtualCurrencies(
+    public fun getVirtualCurrencies(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (VirtualCurrencies) -> Unit,
@@ -972,7 +972,7 @@ internal class Backend(
         }
     }
 
-    fun getWebBillingProducts(
+    public fun getWebBillingProducts(
         appUserID: String,
         productIds: Set<String>,
         onSuccess: (WebBillingProductsResponse) -> Unit,
@@ -1098,8 +1098,8 @@ internal class Backend(
 }
 
 internal data class BackgroundAwareCallbackCacheKey(
-    val cacheKey: List<String>,
-    val appInBackground: Boolean,
+    public val cacheKey: List<String>,
+    public val appInBackground: Boolean,
 )
 
 internal fun PricingPhase.toMap(): Map<String, Any?> {

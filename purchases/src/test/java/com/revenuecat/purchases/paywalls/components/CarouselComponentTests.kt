@@ -26,8 +26,8 @@ internal class CarouselComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: CarouselComponent,
+            public val json: String,
+            public val expected: CarouselComponent,
         )
 
         companion object {
@@ -425,8 +425,8 @@ internal class CarouselComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialCarouselComponent,
+            public val json: String,
+            public val expected: PartialCarouselComponent,
         )
 
         companion object {

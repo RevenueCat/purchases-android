@@ -11,7 +11,7 @@ import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class BackendStoredEventAdTest {
+public class BackendStoredEventAdTest {
 
     private val appUserID = "test-user-123"
     private val appSessionID = "session-456"

@@ -9,5 +9,5 @@ public interface PurchaseCallback : PurchaseErrorCallback {
      * @param storeTransaction StoreTransaction object for the purchased product.
      * @param customerInfo Updated [CustomerInfo].
      */
-    fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo)
+    public fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo)
 }

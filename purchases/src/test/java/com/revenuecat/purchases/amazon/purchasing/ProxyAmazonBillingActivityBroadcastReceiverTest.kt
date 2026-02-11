@@ -14,13 +14,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ProxyAmazonBillingActivityBroadcastReceiverTest {
+public class ProxyAmazonBillingActivityBroadcastReceiverTest {
 
     private lateinit var underTest: ProxyAmazonBillingActivityBroadcastReceiver
     private lateinit var mockActivity: Activity
 
     @Before
-    fun setup() {
+    public fun setup() {
         mockActivity = mockk()
         every {
             mockActivity.finish()

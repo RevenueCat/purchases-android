@@ -23,8 +23,8 @@ internal class TimelineComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: TimelineComponent,
+            public val json: String,
+            public val expected: TimelineComponent,
         )
 
         companion object {
@@ -269,8 +269,8 @@ internal class TimelineComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialTimelineComponent,
+            public val json: String,
+            public val expected: PartialTimelineComponent,
         )
 
         companion object {
@@ -363,8 +363,8 @@ internal class TimelineComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialTimelineComponentItem,
+            public val json: String,
+            public val expected: PartialTimelineComponentItem,
         )
 
         companion object {

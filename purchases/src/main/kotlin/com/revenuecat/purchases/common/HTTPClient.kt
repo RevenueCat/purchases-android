@@ -50,7 +50,7 @@ import kotlin.time.Duration
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal interface RequestResponseListener {
     @Suppress("LongParameterList")
-    fun onRequestResponse(
+    public fun onRequestResponse(
         url: String,
         method: String,
         requestHeaders: Map<String, String>,
@@ -66,7 +66,7 @@ internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    val signingManager: SigningManager,
+    public val signingManager: SigningManager,
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
@@ -138,7 +138,7 @@ internal class HTTPClient(
      */
     @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "InstanceOfCheckForException")
     @Throws(JSONException::class, IOException::class)
-    fun performRequest(
+    public fun performRequest(
         baseURL: URL,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
@@ -148,10 +148,10 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        fun canUseFallback(): Boolean =
+        public fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
-        fun performRequestToFallbackURL(): HTTPResult {
+        public fun performRequestToFallbackURL(): HTTPResult {
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(LogIntent.DEBUG) {
                 NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(

@@ -35,7 +35,7 @@ constructor(
         const val BLOCKSTORE_USER_ID_KEY = "com.revenuecat.purchases.app_user_id"
         const val BLOCKSTORE_MAX_ENTRIES = 16
 
-        fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
+        public fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
             return try {
                 Blockstore.getClient(applicationContext)
             } catch (e: NoClassDefFoundError) {
@@ -72,7 +72,7 @@ constructor(
     }
 
     public fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
-        fun callCompletion() {
+        public fun callCompletion() {
             mainScope.launch {
                 callback()
             }

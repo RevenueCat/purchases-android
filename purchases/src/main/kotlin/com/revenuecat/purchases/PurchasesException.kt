@@ -1,7 +1,7 @@
 package com.revenuecat.purchases
 
 open class PurchasesException internal constructor(
-    val error: PurchasesError,
+    public val error: PurchasesError,
     internal val overridenMessage: String? = null,
 ) : Exception() {
 

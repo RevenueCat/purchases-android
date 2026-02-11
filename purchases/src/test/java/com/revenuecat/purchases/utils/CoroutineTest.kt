@@ -16,7 +16,7 @@ import kotlin.reflect.KClass
  * Alternatively, just include the contents of this class in your own test to get the same functionality.
  */
 abstract class CoroutineTest {
-    suspend fun assertThrows(expectedType: KClass<out Throwable>, block: suspend () -> Unit): Unit = try {
+    public suspend fun assertThrows(expectedType: KClass<out Throwable>, block: suspend () -> Unit): Unit = try {
         block()
         AssertionsForClassTypes.fail("Expected ${expectedType.simpleName} to be thrown")
     } catch (e: Throwable) {
@@ -36,7 +36,7 @@ abstract class CoroutineTest {
  * Sets up a test so that it uses a [UnconfinedTestDispatcher]. This allows the tests to be run synchronously and
  * deterministically.
  */
-class CoroutineTestRule : TestWatcher() {
+public class CoroutineTestRule : TestWatcher() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val dispatcher = UnconfinedTestDispatcher()

@@ -4,7 +4,7 @@ import android.app.Application
 
 internal interface DeviceIdentifiersFetcher {
 
-    fun getDeviceIdentifiers(
+    public fun getDeviceIdentifiers(
         applicationContext: Application,
         completion: (deviceIdentifiers: Map<String, String>) -> Unit,
     )

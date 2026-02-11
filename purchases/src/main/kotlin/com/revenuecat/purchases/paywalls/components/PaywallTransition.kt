@@ -20,7 +20,7 @@ public class PaywallTransition(
     @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
     @get:JvmSynthetic
     @SerialName("displacement_strategy")
-    val displacementStrategy: DisplacementStrategy,
+    public val displacementStrategy: DisplacementStrategy,
     @get:JvmSynthetic val animation: PaywallAnimation? = null,
 ) {
 

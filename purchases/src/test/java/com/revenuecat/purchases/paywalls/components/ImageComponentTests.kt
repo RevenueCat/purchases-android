@@ -27,8 +27,8 @@ internal class ImageComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: ImageComponent,
+            public val json: String,
+            public val expected: ImageComponent,
         )
 
         companion object {
@@ -184,8 +184,8 @@ internal class ImageComponentTests {
 
         class Args(
             @Language("json")
-            val json: String,
-            val expected: PartialImageComponent,
+            public val json: String,
+            public val expected: PartialImageComponent,
         )
 
         companion object {

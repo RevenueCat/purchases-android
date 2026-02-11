@@ -10,12 +10,12 @@ import java.lang.ref.WeakReference
 
 internal class ProxyAmazonBillingActivityBroadcastReceiver(activity: Activity) : BroadcastReceiver() {
 
-    companion object {
+    public companion object {
         const val PURCHASE_FINISHED_ACTION = "com.revenuecat.purchases.purchase_finished"
 
-        fun newPurchaseFinishedIntentFilter(): IntentFilter = IntentFilter(PURCHASE_FINISHED_ACTION)
+        public fun newPurchaseFinishedIntentFilter(): IntentFilter = IntentFilter(PURCHASE_FINISHED_ACTION)
 
-        fun newPurchaseFinishedIntent(packageName: String): Intent {
+        public fun newPurchaseFinishedIntent(packageName: String): Intent {
             return Intent(PURCHASE_FINISHED_ACTION).also { intent ->
                 intent.setPackage(packageName)
             }

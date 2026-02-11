@@ -132,10 +132,10 @@ private object ActionSerializer : KSerializer<Action> {
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
 private class ActionSurrogate(
-    val type: ActionTypeSurrogate,
-    val destination: DestinationSurrogate? = null,
-    val url: UrlSurrogate? = null,
-    val sheet: Destination.Sheet? = null,
+    public val type: ActionTypeSurrogate,
+    public val destination: DestinationSurrogate? = null,
+    public val url: UrlSurrogate? = null,
+    public val sheet: Destination.Sheet? = null,
 ) {
     constructor(action: Action) : this(
         type = when (action) {
@@ -204,7 +204,7 @@ private class ActionSurrogate(
         },
     )
 
-    fun toAction(): Action =
+    public fun toAction(): Action =
         when (type) {
             ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases

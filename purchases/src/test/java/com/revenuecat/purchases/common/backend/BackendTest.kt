@@ -82,10 +82,10 @@ private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class BackendTest {
+public class BackendTest {
 
     @Before
-    fun setup() {
+    public fun setup() {
         mockkObject(CustomerInfoFactory)
         mockkObject(VirtualCurrenciesFactory)
         receivedError = null
@@ -101,7 +101,7 @@ class BackendTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         unmockkObject(CustomerInfoFactory)
         unmockkObject(VirtualCurrenciesFactory)
     }
@@ -245,12 +245,12 @@ class BackendTest {
 
     // region general backend functionality
     @Test
-    fun canBeCreated() {
+    public fun canBeCreated() {
         assertThat(backend).isNotNull
     }
 
     @Test
-    fun getSubscriberInfoCallsProperURL() {
+    public fun getSubscriberInfoCallsProperURL() {
 
         val info = getCustomerInfo(200, null, null)
 
@@ -259,7 +259,7 @@ class BackendTest {
     }
 
     @Test
-    fun getSubscriberInfoFailsIfNot20X() {
+    public fun getSubscriberInfoFailsIfNot20X() {
         val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
 
         getCustomerInfo(failureCode, null, null)
@@ -269,7 +269,7 @@ class BackendTest {
     }
 
     @Test
-    fun clientErrorCallsErrorHandler() {
+    public fun clientErrorCallsErrorHandler() {
         getCustomerInfo(200, IOException(), null)
 
         assertThat(receivedCustomerInfo).isNull()
@@ -277,7 +277,7 @@ class BackendTest {
     }
 
     @Test
-    fun attemptsToParseErrorMessageFromServer() {
+    public fun attemptsToParseErrorMessageFromServer() {
         getCustomerInfo(404, null, "{'code': 7225, 'message': 'Dude not found'}")
 
         assertThat(receivedError).`as`("Received error is not null").isNotNull
@@ -286,7 +286,7 @@ class BackendTest {
     }
 
     @Test
-    fun handlesMissingMessageInErrorBody() {
+    public fun handlesMissingMessageInErrorBody() {
         getCustomerInfo(404, null, "{'no_message': 'Dude not found'}")
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
@@ -318,7 +318,7 @@ class BackendTest {
     }
 
     @Test
-    fun doesntDispatchIfClosed() {
+    public fun doesntDispatchIfClosed() {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
@@ -350,7 +350,7 @@ class BackendTest {
     // region getCustomerInfo
 
     @Test
-    fun getCustomerInfoCallsProperURL() {
+    public fun getCustomerInfoCallsProperURL() {
 
         val info = getCustomerInfo(200, null, null)
 
@@ -359,7 +359,7 @@ class BackendTest {
     }
 
     @Test
-    fun getCustomerInfoFailsIfNot20X() {
+    public fun getCustomerInfoFailsIfNot20X() {
         val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
 
         getCustomerInfo(failureCode, null, null)
@@ -468,7 +468,7 @@ class BackendTest {
     // region postReceipt
 
     @Test
-    fun postReceiptCallsProperURL() {
+    public fun postReceiptCallsProperURL() {
         val info = mockPostReceiptResponseAndPost(
             backend,
             responseCode = 200,
@@ -742,7 +742,7 @@ class BackendTest {
     }
 
     @Test
-    fun postReceiptCallsFailsFor4XX() {
+    public fun postReceiptCallsFailsFor4XX() {
         mockPostReceiptResponseAndPost(
             backend,
             responseCode = 401,
@@ -880,7 +880,7 @@ class BackendTest {
     }
 
     @Test
-    fun postReceiptNotFinishingTransactions() {
+    public fun postReceiptNotFinishingTransactions() {
         val info = mockPostReceiptResponseAndPost(
             backend,
             responseCode = 200,
@@ -2445,7 +2445,7 @@ class BackendTest {
     // region getVirtualCurrencies
 
     @Test
-    fun getVirtualCurrenciesCallsProperURL() {
+    public fun getVirtualCurrenciesCallsProperURL() {
         val virtualCurrencies = getVirtualCurrencies(200, null, null)
 
         assertThat(receivedVirtualCurrencies).isNotNull
@@ -2501,7 +2501,7 @@ class BackendTest {
     }
 
     @Test
-    fun getVirtualCurrenciesFailsIf40X() {
+    public fun getVirtualCurrenciesFailsIf40X() {
         val failureCode = 400
 
         getVirtualCurrencies(failureCode, null, null)
@@ -2511,7 +2511,7 @@ class BackendTest {
     }
 
     @Test
-    fun getVirtualCurrenciesFailsIf50X() {
+    public fun getVirtualCurrenciesFailsIf50X() {
         val failureCode = 500
 
         getVirtualCurrencies(failureCode, null, null)
@@ -2710,7 +2710,7 @@ class BackendTest {
     // region WebBilling products
 
     @Test
-    fun getWebBillingProductsCallsProperURL() {
+    public fun getWebBillingProductsCallsProperURL() {
         val productIDs = setOf("product1", "product2")
         val response = getWebBillingProductsResponse(200, productIDs, null, null)
 
@@ -2792,7 +2792,7 @@ class BackendTest {
     }
 
     @Test
-    fun getWebBillingProductsFailsIf40X() {
+    public fun getWebBillingProductsFailsIf40X() {
         val failureCode = 400
 
         getWebBillingProductsResponse(failureCode, emptySet(), null, null)
@@ -2802,7 +2802,7 @@ class BackendTest {
     }
 
     @Test
-    fun getWebBillingProductsFailsIf50X() {
+    public fun getWebBillingProductsFailsIf50X() {
         val failureCode = 500
 
         getWebBillingProductsResponse(failureCode, emptySet(), null, null)
@@ -2867,7 +2867,7 @@ class BackendTest {
     // region Alias Users
 
     @Test
-    fun getAliasUsersCallsProperURL() {
+    public fun getAliasUsersCallsProperURL() {
         postAliasUsers(responseCode = 200)
 
         assertThat(receivedAliasUsersCallCount).isEqualTo(1)
@@ -2901,7 +2901,7 @@ class BackendTest {
     }
 
     @Test
-    fun getAliasUsersProductsFailsIf40X() {
+    public fun getAliasUsersProductsFailsIf40X() {
         val failureCode = 400
 
         postAliasUsers(responseCode = failureCode)
@@ -2911,7 +2911,7 @@ class BackendTest {
     }
 
     @Test
-    fun getAliasUsersProductsFailsIf50X() {
+    public fun getAliasUsersProductsFailsIf50X() {
         val failureCode = 500
 
         postAliasUsers(responseCode = failureCode)

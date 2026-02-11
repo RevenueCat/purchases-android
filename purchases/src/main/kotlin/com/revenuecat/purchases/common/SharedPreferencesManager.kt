@@ -23,7 +23,7 @@ internal class SharedPreferencesManager(
     },
 ) {
 
-    companion object {
+    public companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
@@ -66,7 +66,7 @@ internal class SharedPreferencesManager(
 
         val revenueCatKeys = getRevenueCatKeysToMigrate()
 
-        val legacyPrefs by legacySharedPreferences
+        public val legacyPrefs by legacySharedPreferences
         val revenueCatPrefs = revenueCatSharedPreferences
         revenueCatPrefs.edit {
             for (key in revenueCatKeys) {
@@ -80,7 +80,7 @@ internal class SharedPreferencesManager(
     }
 
     private fun getRevenueCatKeysToMigrate(): List<String> {
-        val legacyPrefs by legacySharedPreferences
+        public val legacyPrefs by legacySharedPreferences
         val revenueCatKeys = legacyPrefs.all.keys.filter { key ->
             key.startsWith(SHARED_PREFERENCES_PREFIX)
         }

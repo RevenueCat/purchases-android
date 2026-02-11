@@ -8,10 +8,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ErrorsTest {
+public class ErrorsTest {
 
     @Test
-    fun errorIsSerializable() {
+    public fun errorIsSerializable() {
         val purchasesError = PurchasesError(
             PurchasesErrorCode.ConfigurationError,
             "Underlying error message",

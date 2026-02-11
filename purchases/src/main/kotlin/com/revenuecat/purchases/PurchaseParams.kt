@@ -96,7 +96,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Default is set from the Package, StoreProduct, or SubscriptionOption used in the constructor.
          */
-        fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
+        public fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
             this.presentedOfferingContext = presentedOfferingContext
         }
 
@@ -109,7 +109,7 @@ public class PurchaseParams(val builder: Builder) {
          * Default is false.
          * Ignored for Amazon Appstore purchases.
          */
-        fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
+        public fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
         }
 
@@ -123,7 +123,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
-        fun oldProductId(oldProductId: String) = apply {
+        public fun oldProductId(oldProductId: String) = apply {
             this.oldProductId = oldProductId
         }
 
@@ -133,7 +133,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
          */
-        fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
+        public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
             this.googleReplacementMode = googleReplacementMode
         }
 
@@ -152,7 +152,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons packages per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnPackages(addOnPackages: List<Package>) = apply {
+        public fun addOnPackages(addOnPackages: List<Package>) = apply {
             this.addOnStoreProducts(addOnPackages.map { it.product })
         }
 
@@ -171,7 +171,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+        public fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 
@@ -189,7 +189,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
+        public fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnSubscriptionOptions
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 

@@ -10,7 +10,7 @@ import java.util.Date
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
-class PaywallEventSerializationTests {
+public class PaywallEventSerializationTests {
 
     private val impressionEvent = PaywallStoredEvent(
         event = PaywallEvent(

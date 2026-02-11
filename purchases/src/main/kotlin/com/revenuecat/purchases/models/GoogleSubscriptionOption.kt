@@ -14,18 +14,18 @@ public class GoogleSubscriptionOption @JvmOverloads constructor(
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The id of the base plan that this `GoogleSubscriptionOption` belongs to.
      */
-    val basePlanId: String,
+    public val basePlanId: String,
 
     /**
      * If this represents an offer, the offerId set in the Play Console.
      * Null otherwise.
      */
-    val offerId: String?,
+    public val offerId: String?,
 
     /**
      * Pricing phases defining a user's payment plan for the product over time.
@@ -42,13 +42,13 @@ public class GoogleSubscriptionOption @JvmOverloads constructor(
      * The `ProductDetails` object this `GoogleSubscriptionOption` was created from.
      * Use to get underlying BillingClient information.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The token used to purchase this `GoogleSubscriptionOption`, whether it represents
      * a base plan or an offer.
      */
-    val offerToken: String,
+    public val offerToken: String,
 
     /**
      * The context from which this subscription option was obtained.

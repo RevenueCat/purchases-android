@@ -16,11 +16,11 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 @Parcelize
 @Immutable
 public class PurchasesError(
-    val code: PurchasesErrorCode,
-    val underlyingErrorMessage: String? = null,
+    public val code: PurchasesErrorCode,
+    public val underlyingErrorMessage: String? = null,
 ) : Parcelable, Serializable {
 
-    companion object {
+    public companion object {
         private const val serialVersionUID = 81719171L
     }
 

@@ -11,16 +11,16 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
 
     class Args(
         @Language("json")
-        val json: String,
-        val expected: Shape,
+        public val json: String,
+        public val expected: Shape,
     )
 
-    companion object {
+    public companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<*> = listOf(
+        public fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "rectangle - corners present",
                 Args(

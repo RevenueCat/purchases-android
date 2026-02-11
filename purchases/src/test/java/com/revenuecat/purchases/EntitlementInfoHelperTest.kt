@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
-class EntitlementInfoHelperTest {
+public class EntitlementInfoHelperTest {
 
     private val mockCache = mockk<DeviceCache>()
     private val mockBackend = mockk<Backend>()
@@ -45,7 +45,7 @@ class EntitlementInfoHelperTest {
     private lateinit var customerInfoHelper: CustomerInfoHelper
 
     @Before
-    fun setup() {
+    public fun setup() {
         setupMockInfo()
         setupCacheMock()
         setupHandlerMock()
@@ -68,7 +68,7 @@ class EntitlementInfoHelperTest {
     }
 
     @After
-    fun tearDown() {
+    public fun tearDown() {
         clearAllMocks()
     }
 
