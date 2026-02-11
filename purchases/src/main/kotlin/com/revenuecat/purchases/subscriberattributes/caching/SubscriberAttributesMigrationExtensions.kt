@@ -17,10 +17,10 @@ internal fun SubscriberAttributesCache.migrateSubscriberAttributes(
     legacySubscriberAttributesForAppUserID: SubscriberAttributesPerAppUserIDMap,
     cacheEditor: SharedPreferences.Editor,
 ) {
-    public val storedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap =
+    val storedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap =
         getAllStoredSubscriberAttributes()
 
-    public val updatedStoredSubscriberAttributesForAll: MutableMap<String, SubscriberAttributeMap> =
+    val updatedStoredSubscriberAttributesForAll: MutableMap<String, SubscriberAttributeMap> =
         storedSubscriberAttributesForAll.toMutableMap()
 
     legacySubscriberAttributesForAppUserID.forEach { (appUserID: AppUserID, legacy: SubscriberAttributeMap) ->

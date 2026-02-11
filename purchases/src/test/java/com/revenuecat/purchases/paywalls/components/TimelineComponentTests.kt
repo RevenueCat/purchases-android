@@ -19,12 +19,12 @@ import org.junit.runners.Parameterized
 internal class TimelineComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeTimelineComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeTimelineComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: TimelineComponent,
+            val json: String,
+            val expected: TimelineComponent,
         )
 
         companion object {
@@ -32,7 +32,7 @@ internal class TimelineComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -262,15 +262,15 @@ internal class TimelineComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialTimelineComponentTests(
+    public class DeserializePartialTimelineComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialTimelineComponent,
+            val json: String,
+            val expected: PartialTimelineComponent,
         )
 
         companion object {
@@ -278,7 +278,7 @@ internal class TimelineComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -356,15 +356,15 @@ internal class TimelineComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialTimelineComponentItemTests(
+    public class DeserializePartialTimelineComponentItemTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialTimelineComponentItem,
+            val json: String,
+            val expected: PartialTimelineComponentItem,
         )
 
         companion object {
@@ -372,7 +372,7 @@ internal class TimelineComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -438,7 +438,7 @@ internal class TimelineComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = TimelineComponent.IconAlignment.values().map { expected ->
+            public fun parameters(): Collection<*> = TimelineComponent.IconAlignment.values().map { expected ->
                 val serialized = when (expected) {
                     TimelineComponent.IconAlignment.Title -> "\"title\""
                     TimelineComponent.IconAlignment.TitleAndDescription -> "\"title_and_description\""

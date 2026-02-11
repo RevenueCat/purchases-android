@@ -53,23 +53,23 @@ public class IconComponent(
     @Poko
     @Serializable
     @Immutable
-    class Formats(
+    public class Formats(
         @get:JvmSynthetic
-        public val webp: String,
+        val webp: String,
     )
 
     @Poko
     @Serializable
     @Immutable
-    class IconBackground(
+    public class IconBackground(
         @get:JvmSynthetic
-        public val color: ColorScheme,
+        val color: ColorScheme,
         @get:JvmSynthetic
-        public val shape: MaskShape,
+        val shape: MaskShape,
         @get:JvmSynthetic
-        public val border: Border? = null,
+        val border: Border? = null,
         @get:JvmSynthetic
-        public val shadow: Shadow? = null,
+        val shadow: Shadow? = null,
     )
 }
 

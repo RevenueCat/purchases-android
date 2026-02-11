@@ -26,25 +26,25 @@ public class CustomerCenterSurveyOptionChosenEvent(
 
     @InternalRevenueCatAPI
     @Poko
-    class CreationData(
-        public val id: UUID = UUID.randomUUID(),
-        public val date: Date = Date(),
+    public class CreationData(
+        val id: UUID = UUID.randomUUID(),
+        val date: Date = Date(),
     )
 
     @InternalRevenueCatAPI
     @Poko
     @SuppressWarnings("LongParameterList")
-    class Data(
-        public val timestamp: Date,
-        public val darkMode: Boolean,
-        public val locale: String,
-        public val version: Int = 1,
-        public val revisionID: Int = 1,
-        public val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
-        public val path: CustomerCenterConfigData.HelpPath.PathType,
-        public val url: String?, // URL if CUSTOM_URL
-        public val surveyOptionID: String,
-        public val additionalContext: String? = null, // null for now until we support
+    public class Data(
+        val timestamp: Date,
+        val darkMode: Boolean,
+        val locale: String,
+        val version: Int = 1,
+        val revisionID: Int = 1,
+        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+        val path: CustomerCenterConfigData.HelpPath.PathType,
+        val url: String?, // URL if CUSTOM_URL
+        val surveyOptionID: String,
+        val additionalContext: String? = null, // null for now until we support
 
         // isSandbox not available in Android
     ) {

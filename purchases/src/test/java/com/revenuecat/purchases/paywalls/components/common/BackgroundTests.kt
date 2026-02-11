@@ -17,10 +17,10 @@ import java.net.URL
 @RunWith(Parameterized::class)
 internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: Background,
+        val json: String,
+        val expected: Background,
     )
 
     public companion object {

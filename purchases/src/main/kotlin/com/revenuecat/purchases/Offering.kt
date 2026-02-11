@@ -52,9 +52,9 @@ constructor(
 
     @InternalRevenueCatAPI
     @Poko
-    class PaywallComponents(
-        public val uiConfig: UiConfig,
-        public val data: PaywallComponentsData,
+    public class PaywallComponents(
+        val uiConfig: UiConfig,
+        val data: PaywallComponentsData,
     )
 
     /**
@@ -68,37 +68,37 @@ constructor(
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
      */
-    val lifetime by lazy { findPackage(PackageType.LIFETIME) }
+    public val lifetime: Package? by lazy { findPackage(PackageType.LIFETIME) }
 
     /**
      * Annual package type configured in the RevenueCat dashboard, if available.
      */
-    val annual by lazy { findPackage(PackageType.ANNUAL) }
+    public val annual: Package? by lazy { findPackage(PackageType.ANNUAL) }
 
     /**
      * Six month package type configured in the RevenueCat dashboard, if available.
      */
-    val sixMonth by lazy { findPackage(PackageType.SIX_MONTH) }
+    public val sixMonth: Package? by lazy { findPackage(PackageType.SIX_MONTH) }
 
     /**
      * Three month package type configured in the RevenueCat dashboard, if available.
      */
-    val threeMonth by lazy { findPackage(PackageType.THREE_MONTH) }
+    public val threeMonth: Package? by lazy { findPackage(PackageType.THREE_MONTH) }
 
     /**
      * Two month package type configured in the RevenueCat dashboard, if available.
      */
-    val twoMonth by lazy { findPackage(PackageType.TWO_MONTH) }
+    public val twoMonth: Package? by lazy { findPackage(PackageType.TWO_MONTH) }
 
     /**
      * Monthly package type configured in the RevenueCat dashboard, if available.
      */
-    val monthly by lazy { findPackage(PackageType.MONTHLY) }
+    public val monthly: Package? by lazy { findPackage(PackageType.MONTHLY) }
 
     /**
      * Weekly package type configured in the RevenueCat dashboard, if available.
      */
-    val weekly by lazy { findPackage(PackageType.WEEKLY) }
+    public val weekly: Package? by lazy { findPackage(PackageType.WEEKLY) }
 
     private fun findPackage(packageType: PackageType) =
         availablePackages.firstOrNull { it.identifier == packageType.identifier }

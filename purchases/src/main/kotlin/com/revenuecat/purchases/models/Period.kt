@@ -63,7 +63,7 @@ public class Period(
     }
 
     @SuppressWarnings("MagicNumber")
-    enum class Unit {
+    public enum class Unit {
         DAY,
         WEEK,
         MONTH,

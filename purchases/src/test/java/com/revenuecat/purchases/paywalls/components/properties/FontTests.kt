@@ -10,13 +10,13 @@ import org.junit.runners.Parameterized
 internal class FontTests {
 
     @RunWith(Parameterized::class)
-    class FontWeightTests(private val serialized: String, private val expected: FontWeight) {
+    public class FontWeightTests(private val serialized: String, private val expected: FontWeight) {
 
         companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = FontWeight.values().map { expected ->
+            public fun parameters(): Collection<*> = FontWeight.values().map { expected ->
                 val serialized = when (expected) {
                     FontWeight.EXTRA_LIGHT -> "\"extra_light\""
                     FontWeight.THIN -> "\"thin\""
@@ -45,13 +45,13 @@ internal class FontTests {
     }
 
     @RunWith(Parameterized::class)
-    class FontSizeTests(private val serialized: String, private val expected: FontSize) {
+    public class FontSizeTests(private val serialized: String, private val expected: FontSize) {
 
         companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = FontSize.values().map { expected ->
+            public fun parameters(): Collection<*> = FontSize.values().map { expected ->
                 val serialized = when (expected) {
                     FontSize.HEADING_XXL -> "\"heading_xxl\""
                     FontSize.HEADING_XL -> "\"heading_xl\""

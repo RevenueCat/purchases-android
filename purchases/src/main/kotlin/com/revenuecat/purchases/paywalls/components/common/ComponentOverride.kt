@@ -11,35 +11,35 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 public class ComponentOverride<T : PartialComponent>(
-    @get:JvmSynthetic val conditions: List<Condition>,
-    @get:JvmSynthetic val properties: T,
+    public @get:JvmSynthetic val conditions: List<Condition>,
+    public @get:JvmSynthetic val properties: T,
 ) {
 
     @Serializable(with = ConditionSerializer::class)
     sealed interface Condition {
         @Serializable
-        object Compact : Condition
+        public object Compact : Condition
 
         @Serializable
-        object Medium : Condition
+        public object Medium : Condition
 
         @Serializable
-        object Expanded : Condition
+        public object Expanded : Condition
 
         @Serializable
-        object IntroOffer : Condition
+        public object IntroOffer : Condition
 
         @Serializable
-        object MultiplePhaseOffers : Condition
+        public object MultiplePhaseOffers : Condition
 
         @Serializable
-        object Selected : Condition
+        public object Selected : Condition
 
         @Serializable
-        object PromoOffer : Condition
+        public object PromoOffer : Condition
 
         @Serializable
-        object Unsupported : Condition
+        public object Unsupported : Condition
     }
 }
 

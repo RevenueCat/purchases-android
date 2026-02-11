@@ -10,19 +10,19 @@ public interface CustomerCenterManagementOption {
     /**
      * Action to cancel the current operation
      */
-    object Cancel : CustomerCenterManagementOption
+    public object Cancel : CustomerCenterManagementOption
 
     /**
      * Action to open a custom URL
      * @property uri The URI to open
      */
     @Poko
-    class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
+    public class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
 
     /**
      * Action to handle a missing purchase
      */
-    object MissingPurchase : CustomerCenterManagementOption
+    public object MissingPurchase : CustomerCenterManagementOption
 
     /**
      * Action representing a custom action configured in the Customer Center dashboard.
@@ -30,8 +30,8 @@ public interface CustomerCenterManagementOption {
      * @property purchaseIdentifier The optional product identifier of the active purchase
      */
     @Poko
-    class CustomAction(
-        public val actionIdentifier: String,
-        public val purchaseIdentifier: String?,
+    public class CustomAction(
+        val actionIdentifier: String,
+        val purchaseIdentifier: String?,
     ) : CustomerCenterManagementOption
 }

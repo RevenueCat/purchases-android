@@ -19,7 +19,7 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
      * @param apiKey: the API Key for your app. Obtained from the RevenueCat dashboard.
      * @param appUserID: a unique id for identifying the user.
      */
-    class Builder(
+    public class Builder(
         private val context: Context,
         private val apiKey: String,
         private val appUserID: String,

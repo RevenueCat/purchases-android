@@ -15,39 +15,39 @@ sealed interface Background {
     // SerialNames are handled by the BackgroundDeserializer
 
     @Serializable
-    data class Unknown(@get:JvmSynthetic val type: String) : Background
+    public data class Unknown(@get:JvmSynthetic val type: String) : Background
 
     @Serializable
-    data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
+    public data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
 
     @Serializable
-    data class Image(
-        @get:JvmSynthetic val value: ThemeImageUrls,
+    public data class Image(
+        public @get:JvmSynthetic val value: ThemeImageUrls,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        public val fitMode: FitMode = FitMode.FILL,
+        val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        public val colorOverlay: ColorScheme? = null,
+        val colorOverlay: ColorScheme? = null,
     ) : Background
 
     @Serializable
-    data class Video(
-        @get:JvmSynthetic val value: ThemeVideoUrls,
+    public data class Video(
+        public @get:JvmSynthetic val value: ThemeVideoUrls,
         @get:JvmSynthetic
         @SerialName("fallback_image")
-        public val fallbackImage: ThemeImageUrls,
+        val fallbackImage: ThemeImageUrls,
         @get:JvmSynthetic
-        public val loop: Boolean,
+        val loop: Boolean,
         @get:JvmSynthetic
         @SerialName("mute_audio")
-        public val muteAudio: Boolean,
+        val muteAudio: Boolean,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        public val fitMode: FitMode = FitMode.FILL,
+        val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        public val colorOverlay: ColorScheme? = null,
+        val colorOverlay: ColorScheme? = null,
     ) : Background
 }
 

@@ -77,8 +77,8 @@ internal class DefaultFileRepository(
 ) : FileRepository {
 
     internal data class CacheKey(
-        public val url: URL,
-        public val checksum: Checksum?,
+        val url: URL,
+        val checksum: Checksum?,
     )
 
     constructor(
@@ -167,26 +167,26 @@ internal class DefaultFileRepository(
     /**
      * File repository error cases.
      */
-    sealed class Error(message: String) : IOException(message) {
+    public sealed class Error(message: String) : IOException(message) {
         /**
          * Used when creating the folder on disk fails.
          */
-        class FailedToCreateCacheDirectory(url: String) : Error("Failed to create cache directory for $url")
+        public class FailedToCreateCacheDirectory(url: String) : Error("Failed to create cache directory for $url")
 
         /**
          * Used when saving the file on disk fails.
          */
-        class FailedToSaveCachedFile(message: String) : Error(message)
+        public class FailedToSaveCachedFile(message: String) : Error(message)
 
         /**
          * Used when fetching the data fails.
          */
-        class FailedToFetchFileFromRemoteSource(message: String) : Error(message)
+        public class FailedToFetchFileFromRemoteSource(message: String) : Error(message)
 
         /**
          * Used when checksum validation fails.
          */
-        class ChecksumValidationFailed(message: String) : Error(message)
+        public class ChecksumValidationFailed(message: String) : Error(message)
     }
 }
 

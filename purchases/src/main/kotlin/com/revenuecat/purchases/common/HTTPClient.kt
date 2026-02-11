@@ -148,10 +148,10 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
-        public fun canUseFallback(): Boolean =
+        fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
-        public fun performRequestToFallbackURL(): HTTPResult {
+        fun performRequestToFallbackURL(): HTTPResult {
             val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
             log(LogIntent.DEBUG) {
                 NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(

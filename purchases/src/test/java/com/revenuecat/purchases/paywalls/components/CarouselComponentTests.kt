@@ -22,12 +22,12 @@ import org.junit.runners.Parameterized
 internal class CarouselComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeCarouselComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeCarouselComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: CarouselComponent,
+            val json: String,
+            val expected: CarouselComponent,
         )
 
         companion object {
@@ -35,7 +35,7 @@ internal class CarouselComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -418,15 +418,15 @@ internal class CarouselComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialCarouselComponentTests(
+    public class DeserializePartialCarouselComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialCarouselComponent,
+            val json: String,
+            val expected: PartialCarouselComponent,
         )
 
         companion object {
@@ -434,7 +434,7 @@ internal class CarouselComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

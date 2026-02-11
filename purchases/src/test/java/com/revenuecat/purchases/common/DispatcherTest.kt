@@ -246,7 +246,7 @@ public class DispatcherTest {
         }
     }
 
-    class CurrentThreadExecutorService(
+    public class CurrentThreadExecutorService(
         private val callerRunsPolicy: CallerRunsPolicy = CallerRunsPolicy()
     ): ThreadPoolExecutor(
         0,

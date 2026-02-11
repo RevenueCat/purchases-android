@@ -48,7 +48,7 @@ public class TimelineComponent(
 ) : PaywallComponent {
 
     @Serializable(with = TimelineIconAlignmentDeserializer::class)
-    enum class IconAlignment {
+    public enum class IconAlignment {
         // SerialNames are handled by the TimelineIconAlignmentDeserializer.
 
         Title,
@@ -58,31 +58,31 @@ public class TimelineComponent(
     @Poko
     @Serializable
     @Immutable
-    class Item(
+    public class Item(
         @get:JvmSynthetic
-        public val title: TextComponent,
+        val title: TextComponent,
         @get:JvmSynthetic
-        public val visible: Boolean? = null,
+        val visible: Boolean? = null,
         @get:JvmSynthetic
-        public val description: TextComponent? = null,
+        val description: TextComponent? = null,
         @get:JvmSynthetic
-        public val icon: IconComponent,
+        val icon: IconComponent,
         @get:JvmSynthetic
-        public val connector: Connector? = null,
+        val connector: Connector? = null,
         @get:JvmSynthetic
-        public val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
+        val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
     )
 
     @Poko
     @Serializable
     @Immutable
-    class Connector(
+    public class Connector(
         @get:JvmSynthetic
-        public val width: Int,
+        val width: Int,
         @get:JvmSynthetic
-        public val margin: Padding,
+        val margin: Padding,
         @get:JvmSynthetic
-        public val color: ColorScheme,
+        val color: ColorScheme,
     )
 }
 

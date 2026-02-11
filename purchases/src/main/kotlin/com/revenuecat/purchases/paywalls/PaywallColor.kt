@@ -39,7 +39,7 @@ public class PaywallColor(
     @ColorInt
     public val colorInt: Int = parseRGBAColor(stringRepresentation)
 
-    object Serializer : KSerializer<PaywallColor> {
+    public object Serializer : KSerializer<PaywallColor> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PaywallColor", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): PaywallColor {

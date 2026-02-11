@@ -71,7 +71,7 @@ internal data class HTTPResult(
         }
     }
 
-    enum class Origin {
+    public enum class Origin {
         BACKEND, CACHE
     }
 

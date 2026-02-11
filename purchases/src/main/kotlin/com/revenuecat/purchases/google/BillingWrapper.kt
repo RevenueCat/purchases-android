@@ -127,7 +127,7 @@ internal class BillingWrapper(
     public val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
 
-    class ClientFactory(
+    public class ClientFactory(
         private val context: Context,
         private val pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) {
@@ -1047,7 +1047,7 @@ internal class BillingWrapper(
     private fun buildSubscriptionProductDetailsParams(
         purchaseInfo: GooglePurchasingData.Subscription,
     ): List<BillingFlowParams.ProductDetailsParams> {
-        public fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
+        fun buildProductDetailParams(subscription: Subscription): BillingFlowParams.ProductDetailsParams {
             return BillingFlowParams.ProductDetailsParams.newBuilder().apply {
                 setOfferToken(subscription.token)
                 setProductDetails(subscription.productDetails)

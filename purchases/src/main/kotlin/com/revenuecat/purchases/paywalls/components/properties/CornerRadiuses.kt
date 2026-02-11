@@ -23,31 +23,31 @@ sealed interface CornerRadiuses {
     @Poko
     @Immutable
     @Serializable
-    class Dp(
+    public class Dp(
         /**
          * The top-leading, or top-start, corner radius, in dp.
          */
         @get:JvmSynthetic
         @SerialName("top_leading")
-        public val topLeading: Double,
+        val topLeading: Double,
         /**
          * The top-trailing, or top-end, corner radius, in dp.
          */
         @get:JvmSynthetic
         @SerialName("top_trailing")
-        public val topTrailing: Double,
+        val topTrailing: Double,
         /**
          * The bottom-leading, or bottom-start, corner radius, in dp.
          */
         @get:JvmSynthetic
         @SerialName("bottom_leading")
-        public val bottomLeading: Double,
+        val bottomLeading: Double,
         /**
          * The bottom-trailing, or bottom-end, corner radius, in dp.
          */
         @get:JvmSynthetic
         @SerialName("bottom_trailing")
-        public val bottomTrailing: Double,
+        val bottomTrailing: Double,
     ) : CornerRadiuses {
         companion object {
             @get:JvmSynthetic val zero = Dp(0.0, 0.0, 0.0, 0.0)
@@ -73,35 +73,35 @@ sealed interface CornerRadiuses {
     @Poko
     @Immutable
     @Serializable
-    class Percentage(
+    public class Percentage(
         /**
          * The top-leading, or top-start, corner radius, in percentage [0-100].
          */
         @get:JvmSynthetic
         @IntRange(from = 0, to = 100)
         @SerialName("top_leading")
-        public val topLeading: Int,
+        val topLeading: Int,
         /**
          * The top-trailing, or top-end, corner radius, in percentage [0-100].
          */
         @get:JvmSynthetic
         @IntRange(from = 0, to = 100)
         @SerialName("top_trailing")
-        public val topTrailing: Int,
+        val topTrailing: Int,
         /**
          * The bottom-leading, or bottom-start, corner radius, in percentage [0-100].
          */
         @get:JvmSynthetic
         @IntRange(from = 0, to = 100)
         @SerialName("bottom_leading")
-        public val bottomLeading: Int,
+        val bottomLeading: Int,
         /**
          * The bottom-trailing, or bottom-end, corner radius, in percentage [0-100].
          */
         @get:JvmSynthetic
         @IntRange(from = 0, to = 100)
         @SerialName("bottom_trailing")
-        public val bottomTrailing: Int,
+        val bottomTrailing: Int,
     ) : CornerRadiuses {
 
         constructor(all: Int) : this(all, all, all, all)

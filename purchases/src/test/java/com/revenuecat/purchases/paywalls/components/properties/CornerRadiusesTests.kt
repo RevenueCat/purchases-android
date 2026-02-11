@@ -9,10 +9,10 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class CornerRadiusesTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: CornerRadiuses.Dp,
+        val json: String,
+        val expected: CornerRadiuses.Dp,
     )
 
     public companion object {

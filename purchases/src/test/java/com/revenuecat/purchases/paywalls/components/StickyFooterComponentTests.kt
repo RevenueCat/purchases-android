@@ -16,10 +16,10 @@ internal class StickyFooterComponentTests(
     private val args: Args,
 ) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: StickyFooterComponent,
+        val json: String,
+        val expected: StickyFooterComponent,
     )
 
     public companion object {

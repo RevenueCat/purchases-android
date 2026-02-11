@@ -16,11 +16,11 @@ public class ParameterizedPricingPhaseTest(
     private val expected: Expected,
 ) {
 
-    class Expected(
-        public val daily: Price,
-        public val weekly: Price,
-        public val monthly: Price,
-        public val yearly: Price,
+    public class Expected(
+        val daily: Price,
+        val weekly: Price,
+        val monthly: Price,
+        val yearly: Price,
     )
 
     public companion object {

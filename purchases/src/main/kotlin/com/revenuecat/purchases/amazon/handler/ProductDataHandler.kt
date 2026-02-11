@@ -27,10 +27,10 @@ internal class ProductDataHandler(
     }
 
     private data class Request(
-        public val skuList: List<String>,
-        public val marketplace: String,
-        public val onReceive: StoreProductsCallback,
-        public val onError: PurchasesErrorCallback,
+        val skuList: List<String>,
+        val marketplace: String,
+        val onReceive: StoreProductsCallback,
+        val onError: PurchasesErrorCallback,
     )
 
     @get:Synchronized

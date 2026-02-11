@@ -26,7 +26,7 @@ internal class APIKeyValidator {
         OTHER_PLATFORM,
     }
 
-    enum class ValidationResult {
+    public enum class ValidationResult {
         VALID,
         GOOGLE_KEY_AMAZON_STORE,
         AMAZON_KEY_GOOGLE_STORE,

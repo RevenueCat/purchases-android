@@ -16,19 +16,19 @@ sealed interface MaskShape {
     @Poko
     @Immutable
     @Serializable
-    class Rectangle(
+    public class Rectangle(
         @get:JvmSynthetic
-        public val corners: CornerRadiuses? = null,
+        val corners: CornerRadiuses? = null,
     ) : MaskShape
 
     @Serializable
-    object Concave : MaskShape
+    public object Concave : MaskShape
 
     @Serializable
-    object Convex : MaskShape
+    public object Convex : MaskShape
 
     @Serializable
-    object Circle : MaskShape
+    public object Circle : MaskShape
 }
 
 @OptIn(InternalRevenueCatAPI::class)

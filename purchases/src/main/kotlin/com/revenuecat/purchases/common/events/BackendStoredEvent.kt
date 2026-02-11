@@ -24,7 +24,7 @@ internal sealed class BackendStoredEvent : Event {
      */
     @Serializable
     @SerialName("customer_center")
-    data class CustomerCenter(val event: BackendEvent.CustomerCenter) : BackendStoredEvent()
+    public data class CustomerCenter(val event: BackendEvent.CustomerCenter) : BackendStoredEvent()
 
     /**
      * Represents a stored event related to Paywalls.
@@ -33,7 +33,7 @@ internal sealed class BackendStoredEvent : Event {
      */
     @Serializable
     @SerialName("paywalls")
-    data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
+    public data class Paywalls(val event: BackendEvent.Paywalls) : BackendStoredEvent()
 
     /**
      * Represents a stored event related to Ads.
@@ -42,7 +42,7 @@ internal sealed class BackendStoredEvent : Event {
      */
     @Serializable
     @SerialName("ad")
-    data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
+    public data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
 }
 
 /**

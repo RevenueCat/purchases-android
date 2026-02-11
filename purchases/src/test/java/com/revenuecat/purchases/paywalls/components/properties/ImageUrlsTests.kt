@@ -11,7 +11,7 @@ import java.net.URL
 @RunWith(Enclosed::class)
 internal class ImageUrlsTests {
 
-    class DeserializeImageUrlsTests {
+    public class DeserializeImageUrlsTests {
 
         @Test
         fun `Should properly deserialize ImageUrls`() {
@@ -45,12 +45,12 @@ internal class ImageUrlsTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializeThemeImageUrlsTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeThemeImageUrlsTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: ThemeImageUrls,
+            val json: String,
+            val expected: ThemeImageUrls,
         )
 
         companion object {
@@ -58,7 +58,7 @@ internal class ImageUrlsTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "light and dark",
                     Args(

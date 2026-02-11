@@ -19,10 +19,10 @@ internal class PaywallComponentsDataTests(
     private val args: Args,
 ) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: PaywallComponentsData,
+        val json: String,
+        val expected: PaywallComponentsData,
     )
 
     public companion object {

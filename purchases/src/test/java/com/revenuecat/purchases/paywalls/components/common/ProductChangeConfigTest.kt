@@ -13,10 +13,10 @@ public class ProductChangeConfigTest(
     private val args: Args,
 ) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: ProductChangeConfig,
+        val json: String,
+        val expected: ProductChangeConfig,
     )
 
     public companion object {

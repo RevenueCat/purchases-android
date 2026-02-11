@@ -28,8 +28,8 @@ internal class UserDataHandler(
     }
 
     private data class Request(
-        public val onReceive: (UserData) -> Unit,
-        public val onError: PurchasesErrorCallback,
+        val onReceive: (UserData) -> Unit,
+        val onError: PurchasesErrorCallback,
     )
 
     @get:Synchronized

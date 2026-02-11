@@ -22,7 +22,7 @@ internal class HTTPTimeoutManager(
         const val TEST_DIVIDER = 10L // When running tests, we reduce timeouts
     }
 
-    enum class RequestResult {
+    public enum class RequestResult {
         /**
          * Request succeeded on the main backend
          */

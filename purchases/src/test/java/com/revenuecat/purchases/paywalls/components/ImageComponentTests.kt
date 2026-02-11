@@ -23,12 +23,12 @@ import java.net.URL
 internal class ImageComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeImageComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeImageComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: ImageComponent,
+            val json: String,
+            val expected: ImageComponent,
         )
 
         companion object {
@@ -36,7 +36,7 @@ internal class ImageComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -177,15 +177,15 @@ internal class ImageComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialImageComponentTests(
+    public class DeserializePartialImageComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialImageComponent,
+            val json: String,
+            val expected: PartialImageComponent,
         )
 
         companion object {
@@ -193,7 +193,7 @@ internal class ImageComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

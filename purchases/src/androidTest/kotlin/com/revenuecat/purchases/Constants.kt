@@ -13,14 +13,14 @@ public object Constants {
     private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
     public val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
 
-    enum class BackendEnvironment {
+    public enum class BackendEnvironment {
         PRODUCTION,
         LOAD_SHEDDER_US_EAST_1,
         LOAD_SHEDDER_US_EAST_2,
         ;
 
         companion object {
-            fun valueForString(backendEnvironmentString: String): BackendEnvironment {
+            public fun valueForString(backendEnvironmentString: String): BackendEnvironment {
                 return when (backendEnvironmentString) {
                     "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1
                     "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2

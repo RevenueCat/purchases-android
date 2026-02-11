@@ -14,8 +14,8 @@ import java.net.URL
 @Serializable
 @Immutable
 public class ThemeVideoUrls(
-    @get:JvmSynthetic val light: VideoUrls,
-    @get:JvmSynthetic val dark: VideoUrls?,
+    public @get:JvmSynthetic val light: VideoUrls,
+    public @get:JvmSynthetic val dark: VideoUrls?,
 )
 
 @InternalRevenueCatAPI

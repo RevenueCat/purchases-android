@@ -72,7 +72,7 @@ constructor(
     }
 
     public fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
-        public fun callCompletion() {
+        fun callCompletion() {
             mainScope.launch {
                 callback()
             }

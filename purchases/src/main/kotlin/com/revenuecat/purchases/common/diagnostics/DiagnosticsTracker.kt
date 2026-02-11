@@ -383,7 +383,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    enum class CacheStatus {
+    public enum class CacheStatus {
         NOT_CHECKED,
         NOT_FOUND,
         STALE,

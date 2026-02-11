@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
- class LogLevelTest {
+ public class LogLevelTest {
     @Test
     public fun testLogLevelComparable() {
         assertThat(com.revenuecat.purchases.LogLevel.VERBOSE).isLessThan(com.revenuecat.purchases.LogLevel.DEBUG)

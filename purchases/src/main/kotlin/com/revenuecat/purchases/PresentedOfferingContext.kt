@@ -47,16 +47,16 @@ public class PresentedOfferingContext @JvmOverloads constructor(
 
     @Parcelize
     @Poko
-    class TargetingContext(
+    public class TargetingContext(
         /**
          * The revision of the targeting used to obtain this object.
          */
-        public val revision: Int,
+        val revision: Int,
 
         /**
          * The rule id from the targeting used to obtain this object.
          */
-        public val ruleId: String,
+        val ruleId: String,
     ) : Parcelable
 }
 

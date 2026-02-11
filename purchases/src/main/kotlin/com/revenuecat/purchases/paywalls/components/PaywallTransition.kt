@@ -17,11 +17,11 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 public class PaywallTransition(
-    @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
+    public @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
     @get:JvmSynthetic
     @SerialName("displacement_strategy")
     public val displacementStrategy: DisplacementStrategy,
-    @get:JvmSynthetic val animation: PaywallAnimation? = null,
+    public @get:JvmSynthetic val animation: PaywallAnimation? = null,
 ) {
 
     /**
@@ -34,7 +34,7 @@ public class PaywallTransition(
      * as the new view inserts itself.
      */
     @Serializable(with = DisplacementStrategyDeserializer::class)
-    enum class DisplacementStrategy {
+    public enum class DisplacementStrategy {
         @SerialName("greedy")
         GREEDY,
 
@@ -43,7 +43,7 @@ public class PaywallTransition(
     }
 
     @Serializable(with = TransitionTypeSerializer::class)
-    enum class TransitionType {
+    public enum class TransitionType {
         FADE,
         FADE_AND_SCALE,
         SCALE,

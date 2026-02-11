@@ -56,10 +56,10 @@ internal data class ProductEntitlementMapping(
         }
     }
 
-    data class Mapping(
-        public val productIdentifier: String,
-        public val basePlanId: String?,
-        public val entitlements: List<String>,
+    public data class Mapping(
+        val productIdentifier: String,
+        val basePlanId: String?,
+        val entitlements: List<String>,
     )
 
     public fun toJson() = JSONObject().apply {

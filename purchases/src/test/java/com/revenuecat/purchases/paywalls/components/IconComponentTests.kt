@@ -21,12 +21,12 @@ import org.junit.runners.Parameterized
 internal class IconComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeIconComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeIconComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: IconComponent,
+            val json: String,
+            val expected: IconComponent,
         )
 
         companion object {
@@ -34,7 +34,7 @@ internal class IconComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -215,15 +215,15 @@ internal class IconComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialIconComponentTests(
+    public class DeserializePartialIconComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialIconComponent,
+            val json: String,
+            val expected: PartialIconComponent,
         )
 
         companion object {
@@ -231,7 +231,7 @@ internal class IconComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

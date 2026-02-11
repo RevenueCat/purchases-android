@@ -264,7 +264,7 @@ public class CustomerInfo internal constructor(
     /**
      * @hide
      */
-    override fun toString() =
+    override fun toString(): String =
         "<CustomerInfo\n " +
             "latestExpirationDate: $latestExpirationDate\n" +
             "activeSubscriptions:  ${activeSubscriptions.map {
@@ -275,8 +275,8 @@ public class CustomerInfo internal constructor(
             "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
             "requestDate: $requestDate\n>"
 
-    override fun equals(other: Any?) = other is CustomerInfo && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    override fun equals(other: Any?): Boolean = other is CustomerInfo && ComparableData(this) == ComparableData(other)
+    override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**

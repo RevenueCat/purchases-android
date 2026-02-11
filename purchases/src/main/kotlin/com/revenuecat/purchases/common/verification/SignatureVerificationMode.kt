@@ -22,11 +22,11 @@ internal sealed class SignatureVerificationMode {
             return IntermediateSignatureHelper(DefaultSignatureVerifier())
         }
     }
-    object Disabled : SignatureVerificationMode()
-    data class Informational(
+    public object Disabled : SignatureVerificationMode()
+    public data class Informational(
         override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
-    data class Enforced(
+    public data class Enforced(
         override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
 

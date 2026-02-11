@@ -11,15 +11,15 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 public class ComponentsConfig(
-    @get:JvmSynthetic val base: PaywallComponentsConfig,
+    public @get:JvmSynthetic val base: PaywallComponentsConfig,
 )
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
 public class PaywallComponentsConfig(
-    @get:JvmSynthetic val stack: StackComponent,
-    @get:JvmSynthetic val background: Background,
+    public @get:JvmSynthetic val stack: StackComponent,
+    public @get:JvmSynthetic val background: Background,
     @get:JvmSynthetic
     @SerialName("sticky_footer")
     public val stickyFooter: StickyFooterComponent? = null,

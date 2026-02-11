@@ -99,11 +99,11 @@ public class TabsComponent(
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class Tab(
+    public class Tab(
         @get:JvmSynthetic
-        public val id: String,
+        val id: String,
         @get:JvmSynthetic
-        public val stack: StackComponent,
+        val stack: StackComponent,
     )
 
     @InternalRevenueCatAPI
@@ -113,13 +113,13 @@ public class TabsComponent(
         @Poko
         @Serializable
         @SerialName("buttons")
-        class Buttons(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Buttons(@get:JvmSynthetic val stack: StackComponent) : TabControl
 
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         @SerialName("toggle")
-        class Toggle(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Toggle(@get:JvmSynthetic val stack: StackComponent) : TabControl
     }
 }
 

@@ -21,12 +21,12 @@ import org.junit.runners.Parameterized
 internal class TextComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeTextComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeTextComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: TextComponent,
+            val json: String,
+            val expected: TextComponent,
         )
 
         companion object {
@@ -34,7 +34,7 @@ internal class TextComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -214,15 +214,15 @@ internal class TextComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialTextComponentTests(
+    public class DeserializePartialTextComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialTextComponent,
+            val json: String,
+            val expected: PartialTextComponent,
         )
 
         companion object {
@@ -230,7 +230,7 @@ internal class TextComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

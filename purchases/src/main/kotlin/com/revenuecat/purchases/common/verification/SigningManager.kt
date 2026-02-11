@@ -24,14 +24,14 @@ internal class SigningManager(
     }
 
     private data class Parameters(
-        public val salt: ByteArray,
-        public val apiKey: String,
-        public val nonce: String?,
-        public val urlPath: String,
-        public val postParamsHashHeader: String?,
-        public val requestTime: String,
-        public val eTag: String?,
-        public val body: String?,
+        val salt: ByteArray,
+        val apiKey: String,
+        val nonce: String?,
+        val urlPath: String,
+        val postParamsHashHeader: String?,
+        val requestTime: String,
+        val eTag: String?,
+        val body: String?,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

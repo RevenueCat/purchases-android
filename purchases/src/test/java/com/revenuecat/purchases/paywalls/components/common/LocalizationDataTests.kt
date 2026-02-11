@@ -12,10 +12,10 @@ import java.net.URL
 @RunWith(Parameterized::class)
 internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val serialized: String,
-        public val deserialized: LocalizationData,
+        val serialized: String,
+        val deserialized: LocalizationData,
     )
 
     public companion object {

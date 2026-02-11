@@ -27,13 +27,13 @@ public class EntitlementInfos(
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
      */
-    val active = all.filter { it.value.isActive }
+    public val active: Map<String, EntitlementInfo> = all.filter { it.value.isActive }
 
     /**
      * Retrieves an specific entitlementInfo by its entitlement identifier. It's equivalent to
      * accessing the `all` map by entitlement identifier.
      */
-    public operator fun get(s: String) = all[s]
+    public operator fun get(s: String): EntitlementInfo? = all[s]
 
     /** @suppress */
     override fun equals(other: Any?): Boolean {

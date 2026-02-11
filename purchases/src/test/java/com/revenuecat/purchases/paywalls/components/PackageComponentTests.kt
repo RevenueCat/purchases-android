@@ -37,10 +37,10 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
         currentLogHandler = previousLogHandler
     }
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: PackageComponent,
+        val json: String,
+        val expected: PackageComponent,
     )
 
     public companion object {

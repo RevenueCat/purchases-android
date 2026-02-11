@@ -66,7 +66,7 @@ internal class SharedPreferencesManager(
 
         val revenueCatKeys = getRevenueCatKeysToMigrate()
 
-        public val legacyPrefs by legacySharedPreferences
+        val legacyPrefs by legacySharedPreferences
         val revenueCatPrefs = revenueCatSharedPreferences
         revenueCatPrefs.edit {
             for (key in revenueCatKeys) {
@@ -80,7 +80,7 @@ internal class SharedPreferencesManager(
     }
 
     private fun getRevenueCatKeysToMigrate(): List<String> {
-        public val legacyPrefs by legacySharedPreferences
+        val legacyPrefs by legacySharedPreferences
         val revenueCatKeys = legacyPrefs.all.keys.filter { key ->
             key.startsWith(SHARED_PREFERENCES_PREFIX)
         }

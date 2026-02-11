@@ -7,17 +7,17 @@ import dev.drewhamilton.poko.Poko
 
 public sealed class GooglePurchasingData : PurchasingData {
     @Poko
-    class InAppProduct(
+    public class InAppProduct(
         override val productId: String,
-        public val productDetails: ProductDetails,
+        val productDetails: ProductDetails,
     ) : GooglePurchasingData()
 
     @Poko
-    class Subscription @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
+    public class Subscription @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
         override val productId: String,
-        public val optionId: String,
-        public val productDetails: ProductDetails,
-        public val token: String,
+        val optionId: String,
+        val productDetails: ProductDetails,
+        val token: String,
 
         // These two properties are marked with @get:JvmSynthetic because their synthesized
         // getters were not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
@@ -26,10 +26,10 @@ public sealed class GooglePurchasingData : PurchasingData {
         // properties.
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
-        public val billingPeriod: Period? = null,
+        val billingPeriod: Period? = null,
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
-        public val addOnProducts: List<GooglePurchasingData>? = null,
+        val addOnProducts: List<GooglePurchasingData>? = null,
     ) : GooglePurchasingData() {
 
         // This recreates the constructor without billingPeriod and addOnProducts so that we have a copy

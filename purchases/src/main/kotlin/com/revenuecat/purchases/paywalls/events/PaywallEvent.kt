@@ -83,29 +83,29 @@ public data class PaywallEvent(
 ) : FeatureEvent {
 
     @Serializable
-    data class CreationData(
+    public data class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        public val id: UUID,
+        val id: UUID,
         @Serializable(with = DateSerializer::class)
-        public val date: Date,
+        val date: Date,
     )
 
     @Serializable(with = PaywallEventDataSerializer::class)
-    data class Data(
-        public val paywallIdentifier: String?,
-        public val presentedOfferingContext: PresentedOfferingContext,
-        public val paywallRevision: Int,
+    public data class Data(
+        val paywallIdentifier: String?,
+        val presentedOfferingContext: PresentedOfferingContext,
+        val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
-        public val sessionIdentifier: UUID,
-        public val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
-        public val localeIdentifier: String,
-        public val darkMode: Boolean,
-        public val exitOfferType: ExitOfferType? = null,
-        public val exitOfferingIdentifier: String? = null,
-        public val packageIdentifier: String? = null,
-        public val productIdentifier: String? = null,
-        public val errorCode: Int? = null,
-        public val errorMessage: String? = null,
+        val sessionIdentifier: UUID,
+        val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
+        val localeIdentifier: String,
+        val darkMode: Boolean,
+        val exitOfferType: ExitOfferType? = null,
+        val exitOfferingIdentifier: String? = null,
+        val packageIdentifier: String? = null,
+        val productIdentifier: String? = null,
+        val errorCode: Int? = null,
+        val errorMessage: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {

@@ -24,18 +24,18 @@ sealed interface ColorInfo {
     @Immutable
     @Serializable
     @SerialName("hex")
-    class Hex(
+    public class Hex(
         @get:JvmSynthetic
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
-        public val value: Int,
+        val value: Int,
     ) : ColorInfo
 
     @Poko
     @Immutable
     @Serializable
     @SerialName("alias")
-    class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
+    public class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
 
     sealed interface Gradient : ColorInfo {
 
@@ -43,17 +43,17 @@ sealed interface ColorInfo {
         @Immutable
         @Serializable
         @SerialName("linear")
-        class Linear(
-            @get:JvmSynthetic val degrees: Float,
-            @get:JvmSynthetic val points: List<Point>,
+        public class Linear(
+            public @get:JvmSynthetic val degrees: Float,
+            public @get:JvmSynthetic val points: List<Point>,
         ) : Gradient
 
         @Poko
         @Immutable
         @Serializable
         @SerialName("radial")
-        class Radial(
-            @get:JvmSynthetic val points: List<Point>,
+        public class Radial(
+            public @get:JvmSynthetic val points: List<Point>,
         ) : Gradient
 
         /**
@@ -62,14 +62,14 @@ sealed interface ColorInfo {
         @Poko
         @Immutable
         @Serializable
-        class Point(
+        public class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
-            @get:JvmSynthetic val color: Int,
+            public @get:JvmSynthetic val color: Int,
             /**
              * A percentage value in the range 0..100.
              */
-            @get:JvmSynthetic val percent: Float,
+            public @get:JvmSynthetic val percent: Float,
         )
     }
 }
@@ -79,8 +79,8 @@ sealed interface ColorInfo {
 @Immutable
 @Serializable
 public class ColorScheme(
-    @get:JvmSynthetic val light: ColorInfo,
-    @get:JvmSynthetic val dark: ColorInfo? = null,
+    public @get:JvmSynthetic val light: ColorInfo,
+    public @get:JvmSynthetic val dark: ColorInfo? = null,
 )
 
 /**

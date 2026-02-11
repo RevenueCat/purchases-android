@@ -13,6 +13,6 @@ package com.revenuecat.purchases.utils
  *   of both purchases and revenuecatui.
  */
 internal sealed class Result<out A, out B> {
-    class Success<A>(val value: A) : Result<A, Nothing>()
-    class Error<B>(val value: B) : Result<Nothing, B>()
+    public class Success<A>(val value: A) : Result<A, Nothing>()
+    public class Error<B>(val value: B) : Result<Nothing, B>()
 }

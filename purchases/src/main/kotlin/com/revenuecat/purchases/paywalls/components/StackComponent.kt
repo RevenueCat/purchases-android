@@ -63,7 +63,7 @@ public class StackComponent(
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
-    enum class Overflow {
+    public enum class Overflow {
         // SerialNames are handled by the StackOverflowDeserializer
 
         NONE,

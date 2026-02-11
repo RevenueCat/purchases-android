@@ -10,10 +10,10 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: Shadow,
+        val json: String,
+        val expected: Shadow,
     )
 
     public companion object {

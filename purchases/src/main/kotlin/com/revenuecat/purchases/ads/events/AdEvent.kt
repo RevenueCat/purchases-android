@@ -32,7 +32,7 @@ internal sealed interface AdEvent : FeatureEvent {
     public val adUnitId: String
     public val impressionId: String?
 
-    class Displayed(
+    public class Displayed(
         override val id: String = UUID.randomUUID().toString(),
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.DISPLAYED,
@@ -45,7 +45,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val impressionId: String,
     ) : AdEvent
 
-    class Open(
+    public class Open(
         override val id: String = UUID.randomUUID().toString(),
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.OPENED,
@@ -58,7 +58,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val impressionId: String,
     ) : AdEvent
 
-    class Revenue(
+    public class Revenue(
         override val id: String = UUID.randomUUID().toString(),
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.REVENUE,
@@ -69,12 +69,12 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
-        public val revenueMicros: Long,
-        public val currency: String,
-        public val precision: AdRevenuePrecision,
+        val revenueMicros: Long,
+        val currency: String,
+        val precision: AdRevenuePrecision,
     ) : AdEvent
 
-    class Loaded(
+    public class Loaded(
         override val id: String = UUID.randomUUID().toString(),
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.LOADED,
@@ -87,7 +87,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val impressionId: String,
     ) : AdEvent
 
-    class FailedToLoad(
+    public class FailedToLoad(
         override val id: String = UUID.randomUUID().toString(),
         override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
         override val type: AdEventType = AdEventType.FAILED_TO_LOAD,
@@ -97,7 +97,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
-        public val mediatorErrorCode: Int?,
+        val mediatorErrorCode: Int?,
     ) : AdEvent {
         override val networkName: String? = null
     }

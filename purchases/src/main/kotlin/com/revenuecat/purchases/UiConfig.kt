@@ -51,18 +51,18 @@ public class UiConfig(
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class AppConfig(
+    public class AppConfig(
         @get:JvmSynthetic
-        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
-        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
     ) {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
-        class FontsConfig(
+        public class FontsConfig(
             @get:JvmSynthetic
-            public val android: FontInfo,
+            val android: FontInfo,
         ) {
 
             @InternalRevenueCatAPI
@@ -72,20 +72,20 @@ public class UiConfig(
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(
-                    @get:JvmSynthetic val value: String,
-                    @get:JvmSynthetic val url: String? = null,
-                    @get:JvmSynthetic val hash: String? = null,
-                    @get:JvmSynthetic val family: String? = null,
-                    @get:JvmSynthetic val weight: Int? = null,
-                    @get:JvmSynthetic val style: FontStyle? = null,
+                public class Name(
+                    public @get:JvmSynthetic val value: String,
+                    public @get:JvmSynthetic val url: String? = null,
+                    public @get:JvmSynthetic val hash: String? = null,
+                    public @get:JvmSynthetic val family: String? = null,
+                    public @get:JvmSynthetic val weight: Int? = null,
+                    public @get:JvmSynthetic val style: FontStyle? = null,
                 ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                public class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
             }
         }
     }
@@ -93,23 +93,23 @@ public class UiConfig(
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class VariableConfig(
+    public class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        val variableCompatibilityMap: Map<String, String> = emptyMap(),
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        val functionCompatibilityMap: Map<String, String> = emptyMap(),
     )
 
     @InternalRevenueCatAPI
     @Poko
     @Serializable(with = CustomVariableDefinitionSerializer::class)
-    class CustomVariableDefinition(
+    public class CustomVariableDefinition(
         @get:JvmSynthetic
-        public val type: String,
+        val type: String,
         @get:JvmSynthetic
-        public val defaultValue: Any,
+        val defaultValue: Any,
     )
 }
 

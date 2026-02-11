@@ -10,10 +10,10 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class BorderTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: Border,
+        val json: String,
+        val expected: Border,
     )
 
     public companion object {

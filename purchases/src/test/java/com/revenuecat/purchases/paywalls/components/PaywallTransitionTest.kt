@@ -9,10 +9,10 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 public class PaywallTransitionTest(@Suppress("UNUSED_PARAMETER") name: String, private val args: PaywallTransitionTest.Args) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: PaywallTransition,
+        val json: String,
+        val expected: PaywallTransition,
     )
 
     public companion object {

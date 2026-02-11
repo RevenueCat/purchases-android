@@ -15,19 +15,19 @@ import kotlin.test.assertNull
 internal class CountdownComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeCountdownComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeCountdownComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val hasEndStack: Boolean,
-            public val hasFallback: Boolean,
+            val json: String,
+            val hasEndStack: Boolean,
+            val hasFallback: Boolean,
         )
 
         companion object {
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "simple_countdown",
                     Args(

@@ -32,7 +32,7 @@ public class StoreTest {
     @Test
     fun `serialization defaults to UNKNOWN_STORE for unknown values`() {
         @Serializable
-        data class TestWrapper(@SerialName("store") val store: Store)
+        public data class TestWrapper(@SerialName("store") val store: Store)
 
         val json = JsonTools.json
 

@@ -25,12 +25,12 @@ import org.junit.runners.Parameterized
 internal class StackComponentTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeStackComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeStackComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: StackComponent,
+            val json: String,
+            val expected: StackComponent,
         )
 
         companion object {
@@ -38,7 +38,7 @@ internal class StackComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -266,15 +266,15 @@ internal class StackComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializePartialStackComponentTests(
+    public class DeserializePartialStackComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: PartialStackComponent,
+            val json: String,
+            val expected: PartialStackComponent,
         )
 
         companion object {
@@ -282,7 +282,7 @@ internal class StackComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -434,7 +434,7 @@ internal class StackComponentTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = StackComponent.Overflow.values().map { expected ->
+            public fun parameters(): Collection<*> = StackComponent.Overflow.values().map { expected ->
                 val serialized = when (expected) {
                     StackComponent.Overflow.NONE -> "\"none\""
                     StackComponent.Overflow.SCROLL -> "\"scroll\""

@@ -13,14 +13,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Immutable
 public class Badge(
-    @get:JvmSynthetic val stack: StackComponent,
-    @get:JvmSynthetic val style: Style,
-    @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
+    public @get:JvmSynthetic val stack: StackComponent,
+    public @get:JvmSynthetic val style: Style,
+    public @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
 ) {
 
     @InternalRevenueCatAPI
     @Serializable(with = BadgeStyleSerializer::class)
-    enum class Style {
+    public enum class Style {
         @SerialName("overlay")
         Overlay,
 

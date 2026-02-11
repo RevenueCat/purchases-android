@@ -21,13 +21,13 @@ sealed interface Shape {
     @Serializable
     @Poko
     @Immutable
-    class Rectangle(
+    public class Rectangle(
         @get:JvmSynthetic
-        public val corners: CornerRadiuses? = null,
+        val corners: CornerRadiuses? = null,
     ) : Shape
 
     @Serializable
-    object Pill : Shape
+    public object Pill : Shape
 
     public val cornerRadiuses: CornerRadiuses
         get() = when (this) {

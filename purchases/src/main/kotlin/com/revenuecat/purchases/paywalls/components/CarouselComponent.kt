@@ -72,19 +72,19 @@ public class CarouselComponent(
 
     @Poko
     @Serializable
-    class AutoAdvancePages(
+    public class AutoAdvancePages(
         @get:JvmSynthetic
         @SerialName("ms_time_per_page")
-        public val msTimePerPage: Int,
+        val msTimePerPage: Int,
         @get:JvmSynthetic
         @SerialName("ms_transition_time")
-        public val msTransitionTime: Int,
+        val msTransitionTime: Int,
         @get:JvmSynthetic
         @SerialName("transition_type")
-        public val transitionType: TransitionType?,
+        val transitionType: TransitionType?,
     ) {
         @Serializable(with = CarouselTransitionTypeDeserializer::class)
-        enum class TransitionType {
+        public enum class TransitionType {
             // SerialNames are handled by the CarouselTransitionTypeDeserializer.
             FADE,
             SLIDE,
@@ -94,49 +94,49 @@ public class CarouselComponent(
     @Poko
     @Serializable
     @Immutable
-    class PageControl(
+    public class PageControl(
         @get:JvmSynthetic
-        public val position: Position,
+        val position: Position,
         @get:JvmSynthetic
-        public val spacing: Int? = null,
+        val spacing: Int? = null,
         @get:JvmSynthetic
-        public val padding: Padding = Padding.zero,
+        val padding: Padding = Padding.zero,
         @get:JvmSynthetic
-        public val margin: Padding = Padding.zero,
+        val margin: Padding = Padding.zero,
         @get:JvmSynthetic
         @SerialName("background_color")
-        public val backgroundColor: ColorScheme? = null,
+        val backgroundColor: ColorScheme? = null,
         @get:JvmSynthetic
-        public val shape: Shape? = null,
+        val shape: Shape? = null,
         @get:JvmSynthetic
-        public val border: Border? = null,
+        val border: Border? = null,
         @get:JvmSynthetic
-        public val shadow: Shadow? = null,
+        val shadow: Shadow? = null,
         @get:JvmSynthetic
-        public val active: Indicator,
+        val active: Indicator,
         @get:JvmSynthetic
-        public val default: Indicator,
+        val default: Indicator,
     ) {
 
         @Poko
         @Serializable
-        class Indicator(
+        public class Indicator(
             @get:JvmSynthetic
-            public val width: UInt,
+            val width: UInt,
             @get:JvmSynthetic
-            public val height: UInt,
+            val height: UInt,
             @get:JvmSynthetic
-            public val color: ColorScheme,
+            val color: ColorScheme,
             @get:JvmSynthetic
             @SerialName("stroke_color")
-            public val strokeColor: ColorScheme? = null,
+            val strokeColor: ColorScheme? = null,
             @get:JvmSynthetic
             @SerialName("stroke_width")
-            public val strokeWidth: UInt? = null,
+            val strokeWidth: UInt? = null,
         )
 
         @Serializable(with = CarouselPageControlPositionDeserializer::class)
-        enum class Position {
+        public enum class Position {
             // SerialNames are handled by the CarouselPageControlPositionDeserializer.
             TOP,
             BOTTOM,

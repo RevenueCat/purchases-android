@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
-typealias PurchasesErrorCallback = (PurchasesError) -> Unit
+public typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
 /**
  * This class represents an error

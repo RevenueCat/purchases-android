@@ -18,15 +18,15 @@ internal class ComponentOverridesTests {
     // to make sure deserialization of generics works as expected.
 
     @RunWith(ParameterizedRobolectricTestRunner::class)
-    class ComponentOverridesPartialTextComponentTests(
+    public class ComponentOverridesPartialTextComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: List<ComponentOverride<PartialTextComponent>>,
+            val json: String,
+            val expected: List<ComponentOverride<PartialTextComponent>>,
         )
 
         companion object {
@@ -34,7 +34,7 @@ internal class ComponentOverridesTests {
             @Suppress("LongMethod")
             @JvmStatic
             @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all conditions present",
                     Args(
@@ -164,15 +164,15 @@ internal class ComponentOverridesTests {
     }
 
     @RunWith(Parameterized::class)
-    class ComponentOverridesPartialImageComponentTests(
+    public class ComponentOverridesPartialImageComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: List<ComponentOverride<PartialImageComponent>>,
+            val json: String,
+            val expected: List<ComponentOverride<PartialImageComponent>>,
         )
 
         companion object {
@@ -180,7 +180,7 @@ internal class ComponentOverridesTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all conditions present",
                     Args(
@@ -265,7 +265,7 @@ internal class ComponentOverridesTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializeComponentOverrideConditionTests(
+    public class DeserializeComponentOverrideConditionTests(
         private val serialized: String,
         private val expected: ComponentOverride.Condition,
     ) {
@@ -274,7 +274,7 @@ internal class ComponentOverridesTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf("{ \"type\": \"compact\" }", ComponentOverride.Condition.Compact),
                 arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
                 arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),

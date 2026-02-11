@@ -14,12 +14,12 @@ import org.junit.runners.Parameterized
 internal class ColorInfoTests {
 
     @RunWith(Parameterized::class)
-    class DeserializeColorInfoTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeColorInfoTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: ColorInfo,
+            val json: String,
+            val expected: ColorInfo,
         )
 
         companion object {
@@ -27,7 +27,7 @@ internal class ColorInfoTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "hex - rgba",
                     Args(
@@ -168,12 +168,12 @@ internal class ColorInfoTests {
     }
 
     @RunWith(Parameterized::class)
-    class DeserializeColorSchemeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    public class DeserializeColorSchemeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        class Args(
+        public class Args(
             @Language("json")
-            public val json: String,
-            public val expected: ColorScheme,
+            val json: String,
+            val expected: ColorScheme,
         )
 
         companion object {
@@ -181,7 +181,7 @@ internal class ColorInfoTests {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            fun parameters(): Collection<*> = listOf(
+            public fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "light and dark",
                     Args(

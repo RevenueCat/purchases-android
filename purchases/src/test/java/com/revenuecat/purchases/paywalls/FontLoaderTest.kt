@@ -261,9 +261,9 @@ public class FontLoaderTest {
     )
 
     private data class FontToVerify(
-        public val weight: Int,
-        public val style: FontStyle,
-        public val content: String = FONT_FILE_CONTENT
+        val weight: Int,
+        val style: FontStyle,
+        val content: String = FONT_FILE_CONTENT
     )
 
     private fun verifyDownloadedFontFamily(

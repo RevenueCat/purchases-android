@@ -16,10 +16,10 @@ internal class PurchaseButtonComponentTests(
     private val args: Args,
 ) {
 
-    class Args(
+    public class Args(
         @Language("json")
-        public val json: String,
-        public val expected: PurchaseButtonComponent,
+        val json: String,
+        val expected: PurchaseButtonComponent,
     )
 
     public companion object {
