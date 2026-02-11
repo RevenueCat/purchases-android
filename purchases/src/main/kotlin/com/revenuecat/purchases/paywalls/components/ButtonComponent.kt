@@ -31,7 +31,7 @@ public class ButtonComponent(
     @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
     @Stable
-    sealed interface Action {
+    public sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
@@ -51,7 +51,7 @@ public class ButtonComponent(
     @InternalRevenueCatAPI
     @Serializable
     @Stable
-    sealed interface Destination {
+    public sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable

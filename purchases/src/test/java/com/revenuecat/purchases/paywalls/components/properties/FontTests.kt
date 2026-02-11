@@ -12,7 +12,7 @@ internal class FontTests {
     @RunWith(Parameterized::class)
     public class FontWeightTests(private val serialized: String, private val expected: FontWeight) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
@@ -47,7 +47,7 @@ internal class FontTests {
     @RunWith(Parameterized::class)
     public class FontSizeTests(private val serialized: String, private val expected: FontSize) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")

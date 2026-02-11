@@ -18,11 +18,11 @@ internal class ColorInfoTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: ColorInfo,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -172,11 +172,11 @@ internal class ColorInfoTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: ColorScheme,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

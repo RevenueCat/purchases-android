@@ -72,7 +72,7 @@ public class GoogleSubscriptionOption @JvmOverloads constructor(
                 "productDetails, offerToken, PresentedOfferingContext(offeringIdentifier = presentedOfferingId))",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String,
         offerId: String?,

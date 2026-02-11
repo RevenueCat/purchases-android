@@ -29,7 +29,7 @@ internal class ProxyAmazonBillingActivityBroadcastReceiver(activity: Activity) :
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    var onReceiveCalled = false
+    public var onReceiveCalled = false
 
     override fun onReceive(context: Context, intent: Intent) {
         onReceiveCalled = true

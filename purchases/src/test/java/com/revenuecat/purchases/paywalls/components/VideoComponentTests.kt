@@ -21,7 +21,7 @@ import java.net.URL
 
 public class VideoComponentTests {
     @Language("json")
-    val json = """
+    public val json = """
         {
           "auto_play": true,
           "color_overlay": {

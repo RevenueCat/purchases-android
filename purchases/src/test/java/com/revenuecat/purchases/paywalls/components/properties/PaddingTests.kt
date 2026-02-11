@@ -11,7 +11,7 @@ internal class PaddingTests(@Suppress("UNUSED_PARAMETER") name: String, private 
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: Padding,
     )
 

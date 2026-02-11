@@ -30,7 +30,7 @@ public enum class EntitlementVerificationMode {
         /**
          * Default entitlement verification mode.
          */
-        val default: EntitlementVerificationMode
+        public val default: EntitlementVerificationMode
             get() = INFORMATIONAL
     }
 

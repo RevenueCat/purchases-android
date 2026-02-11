@@ -135,44 +135,44 @@ internal class Backend(
         get() = httpClient.signingManager.signatureVerificationMode
 
     @get:Synchronized @set:Synchronized
-    @Volatile var callbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<CustomerInfoCallback>>()
+    @Volatile public var callbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<CustomerInfoCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
+    @Volatile public var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var offeringsCallbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
+    @Volatile public var offeringsCallbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
+    @Volatile public var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
+    @Volatile public var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
+    @Volatile public var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var paywallEventsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PaywallEventsCallback>>()
+    @Volatile public var paywallEventsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PaywallEventsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
+    @Volatile public var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
+    @Volatile public var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
+    @Volatile public var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+    @Volatile public var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var virtualCurrenciesCallbacks =
+    @Volatile public var virtualCurrenciesCallbacks =
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+    @Volatile public var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     public fun close() {
         this.dispatcher.close()

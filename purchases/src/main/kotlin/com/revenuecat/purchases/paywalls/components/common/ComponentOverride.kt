@@ -16,7 +16,7 @@ public class ComponentOverride<T : PartialComponent>(
 ) {
 
     @Serializable(with = ConditionSerializer::class)
-    sealed interface Condition {
+    public sealed interface Condition {
         @Serializable
         public object Compact : Condition
 

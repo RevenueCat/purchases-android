@@ -18,7 +18,7 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @Stable
-sealed interface ColorInfo {
+public sealed interface ColorInfo {
 
     @Poko
     @Immutable
@@ -28,16 +28,16 @@ sealed interface ColorInfo {
         @get:JvmSynthetic
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
-        val value: Int,
+        public val value: Int,
     ) : ColorInfo
 
     @Poko
     @Immutable
     @Serializable
     @SerialName("alias")
-    public class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
+    public class Alias(@get:JvmSynthetic public val value: ColorAlias) : ColorInfo
 
-    sealed interface Gradient : ColorInfo {
+    public sealed interface Gradient : ColorInfo {
 
         @Poko
         @Immutable

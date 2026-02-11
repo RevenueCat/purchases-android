@@ -18,21 +18,21 @@ public class Offerings internal constructor(
     internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
     internal val loadedFromDiskCache: Boolean = false,
 ) {
-    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
+    public constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
     /**
      * Retrieves an specific offering by its identifier.
      * @param identifier Offering identifier
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    public fun getOffering(identifier: String) = all[identifier]
+    public fun getOffering(identifier: String): Offering? = all[identifier]
 
     /**
      * Retrieves an specific offering by its identifier. It's equivalent to
      * calling [getOffering(identifier)]
      * @param identifier Offering identifier
      */
-    public operator fun get(identifier: String) = getOffering(identifier)
+    public operator fun get(identifier: String): Offering? = getOffering(identifier)
 
     /**
      * Retrieves an specific offering by a placement identifier.
@@ -95,15 +95,15 @@ public class Offerings internal constructor(
     /**
      * @hide
      */
-    override fun toString() =
+    public override fun toString(): String =
         "<Offerings\n " +
             "current: $current\n" +
             "all:  $all,\n" +
             "placements: $placements,\n" +
             "targeting: $targeting\n>"
-    override fun equals(other: Any?) = other is Offerings &&
+    public override fun equals(other: Any?): Boolean = other is Offerings &&
         OfferingsComparableData(this) == OfferingsComparableData(other)
-    override fun hashCode() = OfferingsComparableData(this).hashCode()
+    public override fun hashCode(): Int = OfferingsComparableData(this).hashCode()
 }
 
 /**

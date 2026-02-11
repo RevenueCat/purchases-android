@@ -25,11 +25,11 @@ internal class TextComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: TextComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -221,11 +221,11 @@ internal class TextComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PartialTextComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

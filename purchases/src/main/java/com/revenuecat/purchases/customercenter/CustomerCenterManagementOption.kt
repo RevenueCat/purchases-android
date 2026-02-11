@@ -17,7 +17,7 @@ public interface CustomerCenterManagementOption {
      * @property uri The URI to open
      */
     @Poko
-    public class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
+    public class CustomUrl(public val uri: Uri) : CustomerCenterManagementOption
 
     /**
      * Action to handle a missing purchase
@@ -31,7 +31,7 @@ public interface CustomerCenterManagementOption {
      */
     @Poko
     public class CustomAction(
-        val actionIdentifier: String,
-        val purchaseIdentifier: String?,
+        public val actionIdentifier: String,
+        public val purchaseIdentifier: String?,
     ) : CustomerCenterManagementOption
 }

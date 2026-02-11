@@ -27,7 +27,7 @@ public class PurchaseButtonComponent(
         WEB_PRODUCT_SELECTION,
         ;
 
-        public fun toMethod() = when (this) {
+        public fun toMethod(): Method = when (this) {
             IN_APP_CHECKOUT -> Method.InAppCheckout
             WEB_CHECKOUT -> Method.WebCheckout()
             WEB_PRODUCT_SELECTION -> Method.WebProductSelection()
@@ -35,7 +35,7 @@ public class PurchaseButtonComponent(
     }
 
     @Serializable(with = PurchaseButtonMethodDeserializer::class)
-    sealed interface Method {
+    public sealed interface Method {
         @Serializable
         public object InAppCheckout : Method
 
@@ -76,9 +76,9 @@ public class PurchaseButtonComponent(
     @Immutable
     public data class CustomUrl(
         @SerialName("url_lid")
-        val urlLid: LocalizationKey,
+        public val urlLid: LocalizationKey,
         @SerialName("package_param")
-        val packageParam: String? = null,
+        public val packageParam: String? = null,
     )
 }
 

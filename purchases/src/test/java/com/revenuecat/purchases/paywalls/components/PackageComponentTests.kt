@@ -39,7 +39,7 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: PackageComponent,
     )
 

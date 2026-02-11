@@ -29,7 +29,7 @@ internal data class QueryPurchasesByTypeUseCaseParams(
     public val dateProvider: DateProvider = DefaultDateProvider(),
     public val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     override val appInBackground: Boolean,
-    @ProductType val productType: String,
+    @ProductType public val productType: String,
 ) : UseCaseParams
 
 internal class QueryPurchasesByTypeUseCase(

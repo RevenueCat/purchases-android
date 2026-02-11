@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Stable
 @Serializable
-sealed interface Dimension {
+public sealed interface Dimension {
 
     @Immutable
     @Serializable

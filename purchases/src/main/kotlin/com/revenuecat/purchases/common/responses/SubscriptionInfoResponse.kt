@@ -56,9 +56,9 @@ internal data class SubscriptionInfoResponse(
     @Serializable
     internal data class PriceResponse(
         @SerialName("amount")
-        val amount: Double,
+        public val amount: Double,
         @SerialName("currency")
-        val currencyCode: String,
+        public val currencyCode: String,
     ) {
 
         @OptIn(InternalRevenueCatAPI::class)

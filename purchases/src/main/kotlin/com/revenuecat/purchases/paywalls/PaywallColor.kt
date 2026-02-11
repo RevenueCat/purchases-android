@@ -54,7 +54,7 @@ public class PaywallColor(
     /**
      * Creates a color from a Hex string: `#RRGGBB` or `#RRGGBBAA`.
      */
-    constructor(stringRepresentation: String) : this(
+    public constructor(stringRepresentation: String) : this(
         stringRepresentation,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Color.valueOf(parseRGBAColor(stringRepresentation))
@@ -63,7 +63,7 @@ public class PaywallColor(
         },
     )
 
-    constructor(@ColorInt colorInt: Int) : this(
+    public constructor(@ColorInt colorInt: Int) : this(
         stringRepresentation = String.format(Locale.US, COLOR_HEX_FORMAT, COLOR_WHITE_HEX and colorInt),
         underlyingColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Color.valueOf(colorInt)

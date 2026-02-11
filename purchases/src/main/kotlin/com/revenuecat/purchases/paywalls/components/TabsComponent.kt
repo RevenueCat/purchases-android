@@ -101,25 +101,25 @@ public class TabsComponent(
     @Serializable
     public class Tab(
         @get:JvmSynthetic
-        val id: String,
+        public val id: String,
         @get:JvmSynthetic
-        val stack: StackComponent,
+        public val stack: StackComponent,
     )
 
     @InternalRevenueCatAPI
     @Serializable
-    sealed interface TabControl {
+    public sealed interface TabControl {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         @SerialName("buttons")
-        public class Buttons(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Buttons(@get:JvmSynthetic public val stack: StackComponent) : TabControl
 
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         @SerialName("toggle")
-        public class Toggle(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Toggle(@get:JvmSynthetic public val stack: StackComponent) : TabControl
     }
 }
 

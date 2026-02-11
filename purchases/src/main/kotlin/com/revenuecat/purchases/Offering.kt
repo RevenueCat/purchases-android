@@ -35,7 +35,7 @@ constructor(
     public val webCheckoutURL: URL? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
-    constructor(
+    public constructor(
         identifier: String,
         serverDescription: String,
         metadata: Map<String, Any>,
@@ -53,8 +53,8 @@ constructor(
     @InternalRevenueCatAPI
     @Poko
     public class PaywallComponents(
-        val uiConfig: UiConfig,
-        val data: PaywallComponentsData,
+        public val uiConfig: UiConfig,
+        public val data: PaywallComponentsData,
     )
 
     /**
@@ -107,7 +107,7 @@ constructor(
      * Retrieves a specific package by identifier, use this to access custom package types configured
      * in the RevenueCat dashboard. Equivalent to calling `getPackage`.
      */
-    public operator fun get(s: String) = getPackage(s)
+    public operator fun get(s: String): Package = getPackage(s)
 
     /**
      * Retrieves a specific package by identifier, use this to access custom package types configured
@@ -116,7 +116,7 @@ constructor(
      */
     @Throws(NoSuchElementException::class)
     @Suppress("MemberVisibilityCanBePrivate")
-    public fun getPackage(identifier: String) =
+    public fun getPackage(identifier: String): Package =
         availablePackages.first { it.identifier == identifier }
 
     /**

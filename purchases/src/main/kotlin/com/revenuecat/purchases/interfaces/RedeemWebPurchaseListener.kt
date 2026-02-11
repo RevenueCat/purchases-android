@@ -16,13 +16,13 @@ public fun interface RedeemWebPurchaseListener {
          * Indicates that the web purchase was redeemed successfully.
          */
         @Poko
-        public class Success(val customerInfo: CustomerInfo) : Result()
+        public class Success(public val customerInfo: CustomerInfo) : Result()
 
         /**
          * Indicates that an unknown error occurred during the redemption.
          */
         @Poko
-        public class Error(val error: PurchasesError) : Result()
+        public class Error(public val error: PurchasesError) : Result()
 
         /**
          * Indicates that the redemption token is invalid.
@@ -35,7 +35,7 @@ public fun interface RedeemWebPurchaseListener {
          * The email where it will be sent is indicated by the [obfuscatedEmail].
          */
         @Poko
-        public class Expired(val obfuscatedEmail: String) : Result()
+        public class Expired(public val obfuscatedEmail: String) : Result()
 
         /**
          * Indicates that the redemption couldn't be performed because the purchase belongs to a different user.
@@ -45,7 +45,7 @@ public fun interface RedeemWebPurchaseListener {
         /**
          * Whether the redemption was successful or not.
          */
-        val isSuccess: Boolean
+        public val isSuccess: Boolean
             get() = when (this) {
                 is Success -> true
                 is Error -> false

@@ -29,11 +29,11 @@ internal class StackComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: StackComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -273,11 +273,11 @@ internal class StackComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PartialStackComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -430,7 +430,7 @@ internal class StackComponentTests {
         private val expected: StackComponent.Overflow,
     ) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")

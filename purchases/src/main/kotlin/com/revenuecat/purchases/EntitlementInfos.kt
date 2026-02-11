@@ -20,7 +20,7 @@ public class EntitlementInfos(
         "Use the constructor with the verification parameter",
         ReplaceWith("EntitlementInfos(all, verification)"),
     )
-    constructor(
+    public constructor(
         all: Map<String, EntitlementInfo>,
     ) : this(all, VerificationResult.NOT_REQUESTED)
 

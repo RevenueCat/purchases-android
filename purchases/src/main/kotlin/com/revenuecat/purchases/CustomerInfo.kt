@@ -85,7 +85,7 @@ public class CustomerInfo internal constructor(
     internal val loadedFromCache: Boolean = false,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
-    constructor(
+    public constructor(
         entitlements: EntitlementInfos,
         allExpirationDatesByProduct: Map<String, Date?>,
         allPurchaseDatesByProduct: Map<String, Date?>,

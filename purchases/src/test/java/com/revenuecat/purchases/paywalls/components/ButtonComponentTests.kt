@@ -21,11 +21,11 @@ internal class ButtonComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: ButtonComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -591,7 +591,7 @@ internal class ButtonComponentTests {
         private val expected: ButtonComponent.UrlMethod,
     ) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
@@ -624,11 +624,11 @@ internal class ButtonComponentTests {
 
         public class Args(
             @Language("json")
-            val serialized: String,
+            public val serialized: String,
             val deserialized: ButtonComponent.Action,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

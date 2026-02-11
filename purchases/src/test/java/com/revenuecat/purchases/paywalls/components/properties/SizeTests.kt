@@ -15,11 +15,11 @@ internal class SizeTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: SizeConstraint,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -129,11 +129,11 @@ internal class SizeTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: Size,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

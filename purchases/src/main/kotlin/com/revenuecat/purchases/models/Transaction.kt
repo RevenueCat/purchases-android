@@ -38,7 +38,7 @@ public class Transaction(
 
     @Deprecated(
         message = """
-            Use the constructor with all fields instead. This constructor is missing the new fields: displayName, 
+            Use the constructor with all fields instead. This constructor is missing the new fields: displayName,
             isSandbox, originalPurchaseDate, and price
             """,
         replaceWith = ReplaceWith(
@@ -46,7 +46,7 @@ public class Transaction(
                 "storeTransactionId, store, displayName, isSandbox, originalPurchaseDate, price)",
         ),
     )
-    constructor(
+    public constructor(
         transactionIdentifier: String,
         revenuecatId: String,
         productIdentifier: String,

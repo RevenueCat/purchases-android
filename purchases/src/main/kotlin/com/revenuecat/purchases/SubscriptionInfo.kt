@@ -122,7 +122,7 @@ public class SubscriptionInfo(
 
     @Deprecated(
         message = """
-            Use the constructor with all fields instead. This constructor is missing the new fields: 
+            Use the constructor with all fields instead. This constructor is missing the new fields:
             autoResumeDate, displayName, price, and productPlanIdentifier
             """,
         replaceWith = ReplaceWith(
@@ -132,7 +132,7 @@ public class SubscriptionInfo(
                 "productPlanIdentifier, requestDate)",
         ),
     )
-    constructor(
+    public constructor(
         productIdentifier: String,
         purchaseDate: Date,
         originalPurchaseDate: Date?,
@@ -180,7 +180,7 @@ public class SubscriptionInfo(
                 "productPlanIdentifier, managementURL, requestDate)",
         ),
     )
-    constructor(
+    public constructor(
         productIdentifier: String,
         purchaseDate: Date,
         originalPurchaseDate: Date?,

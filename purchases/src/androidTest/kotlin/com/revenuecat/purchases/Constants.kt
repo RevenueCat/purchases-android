@@ -19,7 +19,7 @@ public object Constants {
         LOAD_SHEDDER_US_EAST_2,
         ;
 
-        companion object {
+        public companion object {
             public fun valueForString(backendEnvironmentString: String): BackendEnvironment {
                 return when (backendEnvironmentString) {
                     "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1

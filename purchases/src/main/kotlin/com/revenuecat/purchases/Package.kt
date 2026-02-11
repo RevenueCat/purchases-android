@@ -29,7 +29,7 @@ public class Package @JvmOverloads constructor(
                 "PresentedOfferingContext(offeringIdentifier = offering))",
         ),
     )
-    constructor(
+    public constructor(
         identifier: String,
         packageType: PackageType,
         product: StoreProduct,
@@ -63,7 +63,7 @@ public class Package @JvmOverloads constructor(
 /**
  *  Enumeration of all possible Package types.
  */
-public enum class PackageType(val identifier: String?) {
+public enum class PackageType(public val identifier: String?) {
     /**
      * A package that was defined with a custom identifier.
      */

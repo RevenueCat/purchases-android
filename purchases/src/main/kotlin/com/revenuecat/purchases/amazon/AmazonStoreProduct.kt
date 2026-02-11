@@ -94,7 +94,7 @@ public class AmazonStoreProduct @JvmOverloads constructor(
                 "presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         title: String,
@@ -131,7 +131,7 @@ public class AmazonStoreProduct @JvmOverloads constructor(
                 "PresentedOfferingContext(presentedOfferingIdentifier))",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         name: String,
@@ -201,7 +201,7 @@ public class AmazonStoreProduct @JvmOverloads constructor(
         return copyWithPresentedOfferingContext(newPresentedOfferingContext)
     }
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+    public override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,
@@ -219,9 +219,9 @@ public class AmazonStoreProduct @JvmOverloads constructor(
         )
     }
 
-    override fun equals(other: Any?) = other is AmazonStoreProduct &&
+    public override fun equals(other: Any?): Boolean = other is AmazonStoreProduct &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**
@@ -230,7 +230,7 @@ public class AmazonStoreProduct @JvmOverloads constructor(
  * `freeTrialPeriod`
  * `iconUrl`
  */
-val StoreProduct.amazonProduct: AmazonStoreProduct?
+public val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
 
 /**

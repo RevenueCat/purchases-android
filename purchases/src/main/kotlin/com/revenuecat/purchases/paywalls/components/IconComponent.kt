@@ -55,7 +55,7 @@ public class IconComponent(
     @Immutable
     public class Formats(
         @get:JvmSynthetic
-        val webp: String,
+        public val webp: String,
     )
 
     @Poko
@@ -63,13 +63,13 @@ public class IconComponent(
     @Immutable
     public class IconBackground(
         @get:JvmSynthetic
-        val color: ColorScheme,
+        public val color: ColorScheme,
         @get:JvmSynthetic
-        val shape: MaskShape,
+        public val shape: MaskShape,
         @get:JvmSynthetic
-        val border: Border? = null,
+        public val border: Border? = null,
         @get:JvmSynthetic
-        val shadow: Shadow? = null,
+        public val shadow: Shadow? = null,
     )
 }
 

@@ -29,11 +29,11 @@ internal class TabsComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PaywallComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -436,11 +436,11 @@ internal class TabsComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PartialTabsComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

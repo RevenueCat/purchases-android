@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService
  * Holds parameters to initialize the SDK. Create an instance of this class using the [Builder] and pass it to
  * [Purchases.configure].
  */
-open class PurchasesConfiguration(builder: Builder) {
+public open class PurchasesConfiguration(builder: Builder) {
 
     public val context: Context
     public val apiKey: String
@@ -84,7 +84,7 @@ open class PurchasesConfiguration(builder: Builder) {
     }
 
     @SuppressWarnings("TooManyFunctions")
-    open class Builder(
+    public open class Builder(
         @get:JvmSynthetic internal val context: Context,
         @get:JvmSynthetic internal val apiKey: String,
     ) {
@@ -125,7 +125,7 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * A unique id for identifying the user
          */
-        public fun appUserID(appUserID: String?) = apply {
+        public fun appUserID(appUserID: String?): Builder = apply {
             this.appUserID = appUserID
         }
 
@@ -136,7 +136,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * If this setting is disabled, you can show the snackbar by calling
          * [Purchases.showInAppMessagesIfNeeded]
          */
-        public fun showInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) = apply {
+        public fun showInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean): Builder = apply {
             this.showInAppMessagesAutomatically = showInAppMessagesAutomatically
         }
 
@@ -153,7 +153,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
             ),
         )
-        public fun observerMode(observerMode: Boolean) = apply {
+        public fun observerMode(observerMode: Boolean): Builder = apply {
             purchasesAreCompletedBy(
                 if (observerMode) {
                     PurchasesAreCompletedBy.MY_APP
@@ -176,7 +176,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * [revenuecat.com](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions)
          * and [developer.android.com](https://developer.android.com/google/play/billing/integrate#process).
          */
-        public fun purchasesAreCompletedBy(purchasesAreCompletedBy: PurchasesAreCompletedBy) = apply {
+        public fun purchasesAreCompletedBy(purchasesAreCompletedBy: PurchasesAreCompletedBy): Builder = apply {
             this.purchasesAreCompletedBy = purchasesAreCompletedBy
         }
 
@@ -184,7 +184,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * Executor service for performing backend operations. This can be used if you want to share an executor between
          * Purchases and your own code. If not passed in, one will be created.
          */
-        public fun service(service: ExecutorService) = apply {
+        public fun service(service: ExecutorService): Builder = apply {
             this.service = service
         }
 
@@ -192,7 +192,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * The store in which to make purchases. See [Store] for supported stores.
          * @see Store
          */
-        public fun store(store: Store) = apply {
+        public fun store(store: Store): Builder = apply {
             this.store = store
         }
 
@@ -202,7 +202,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * No personal identifiable information will be collected.
          * The default value is false.
          */
-        public fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
+        public fun diagnosticsEnabled(diagnosticsEnabled: Boolean): Builder = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
         }
 
@@ -228,7 +228,7 @@ open class PurchasesConfiguration(builder: Builder) {
         )
         @JvmSynthetic
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        public fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
+        public fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean): Builder = apply {
             if (enabled) {
                 this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
                 this.diagnosticsEnabled = true
@@ -251,14 +251,14 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default mode is disabled. Please see https://rev.cat/trusted-entitlements for more info.
          */
-        public fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode) = apply {
+        public fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode): Builder = apply {
             this.verificationMode = verificationMode
         }
 
         /**
          * Only use a Dangerous Setting if suggested by RevenueCat support team.
          */
-        public fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
+        public fun dangerousSettings(dangerousSettings: DangerousSettings): Builder = apply {
             this.dangerousSettings = dangerousSettings
         }
 
@@ -267,7 +267,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * in Google Play). Note that entitlements are not granted until payment is done.
          * Default is disabled.
          */
-        public fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean) = apply {
+        public fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean): Builder = apply {
             this.pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled
         }
 
@@ -282,7 +282,7 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default is enabled.
          */
-        public fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean) = apply {
+        public fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean): Builder = apply {
             this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
         }
 
@@ -296,19 +296,19 @@ open class PurchasesConfiguration(builder: Builder) {
          * **Note:** This only affects UI components from the RevenueCatUI module and requires
          * importing RevenueCatUI in your project.
          */
-        public fun preferredUILocaleOverride(localeString: String?) = apply {
+        public fun preferredUILocaleOverride(localeString: String?): Builder = apply {
             this.preferredUILocaleOverride = localeString
         }
 
         /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
-        open fun build(): PurchasesConfiguration {
+        public open fun build(): PurchasesConfiguration {
             return PurchasesConfiguration(this)
         }
     }
 
-    override fun equals(other: Any?): Boolean {
+    public override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
@@ -329,7 +329,7 @@ open class PurchasesConfiguration(builder: Builder) {
         return true
     }
 
-    override fun hashCode(): Int {
+    public override fun hashCode(): Int {
         var result = apiKey.hashCode()
         result = 31 * result + (appUserID?.hashCode() ?: 0)
         result = 31 * result + purchasesAreCompletedBy.hashCode()

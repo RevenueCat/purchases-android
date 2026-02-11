@@ -12,7 +12,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
 @Poko
-public class PurchaseParams(val builder: Builder) {
+public class PurchaseParams(public val builder: Builder) {
 
     public val isPersonalizedPrice: Boolean?
     public val oldProductId: String?
@@ -54,13 +54,13 @@ public class PurchaseParams(val builder: Builder) {
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
-    open class Builder private constructor(
+    public open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
-        constructor(activity: Activity, packageToPurchase: Package) :
+        public constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
@@ -68,10 +68,10 @@ public class PurchaseParams(val builder: Builder) {
                 packageToPurchase.product,
             )
 
-        constructor(activity: Activity, storeProduct: StoreProduct) :
+        public constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
 
-        constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
+        public constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
                 activity,
                 subscriptionOption.purchasingData,
@@ -96,7 +96,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Default is set from the Package, StoreProduct, or SubscriptionOption used in the constructor.
          */
-        public fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
+        public fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): Builder = apply {
             this.presentedOfferingContext = presentedOfferingContext
         }
 
@@ -109,7 +109,7 @@ public class PurchaseParams(val builder: Builder) {
          * Default is false.
          * Ignored for Amazon Appstore purchases.
          */
-        public fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
+        public fun isPersonalizedPrice(isPersonalizedPrice: Boolean): Builder = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
         }
 
@@ -123,7 +123,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
-        public fun oldProductId(oldProductId: String) = apply {
+        public fun oldProductId(oldProductId: String): Builder = apply {
             this.oldProductId = oldProductId
         }
 
@@ -133,7 +133,7 @@ public class PurchaseParams(val builder: Builder) {
          *
          * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
          */
-        public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
+        public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
         }
 
@@ -152,7 +152,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons packages per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        public fun addOnPackages(addOnPackages: List<Package>) = apply {
+        public fun addOnPackages(addOnPackages: List<Package>): Builder = apply {
             this.addOnStoreProducts(addOnPackages.map { it.product })
         }
 
@@ -171,7 +171,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        public fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+        public fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>): Builder = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 
@@ -189,7 +189,7 @@ public class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        public fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
+        public fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>): Builder = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnSubscriptionOptions
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 
@@ -221,7 +221,7 @@ public class PurchaseParams(val builder: Builder) {
             }
         }
 
-        open fun build(): PurchaseParams {
+        public open fun build(): PurchaseParams {
             return PurchaseParams(this)
         }
     }

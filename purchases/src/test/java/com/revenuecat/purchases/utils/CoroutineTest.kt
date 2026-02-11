@@ -39,7 +39,7 @@ abstract class CoroutineTest {
 public class CoroutineTestRule : TestWatcher() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val dispatcher = UnconfinedTestDispatcher()
+    public val dispatcher = UnconfinedTestDispatcher()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun starting(description: Description) {

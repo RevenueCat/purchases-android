@@ -19,12 +19,12 @@ internal class CountdownComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val hasEndStack: Boolean,
             val hasFallback: Boolean,
         )
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
             public fun parameters(): Collection<*> = listOf(

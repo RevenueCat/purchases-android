@@ -12,7 +12,7 @@ internal class AlignmentTests {
     @RunWith(Parameterized::class)
     public class HorizontalAlignmentTests(private val serialized: String, private val expected: HorizontalAlignment) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
@@ -41,7 +41,7 @@ internal class AlignmentTests {
     @RunWith(Parameterized::class)
     public class VerticalAlignmentTests(private val serialized: String, private val expected: VerticalAlignment) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
@@ -70,7 +70,7 @@ internal class AlignmentTests {
     @RunWith(Parameterized::class)
     public class TwoDimensionalAlignmentTests(private val serialized: String, private val expected: TwoDimensionalAlignment) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")

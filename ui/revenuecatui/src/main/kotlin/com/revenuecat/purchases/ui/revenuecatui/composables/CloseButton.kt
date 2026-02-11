@@ -13,7 +13,7 @@ import androidx.compose.ui.res.painterResource
 import com.revenuecat.purchases.ui.revenuecatui.R
 
 @Composable
-fun BoxScope.CloseButton(
+internal fun BoxScope.CloseButton(
     shouldDisplayDismissButton: Boolean,
     color: Color?,
     actionInProgress: Boolean,

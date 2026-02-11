@@ -27,7 +27,7 @@ import java.util.UUID
  */
 @InternalRevenueCatAPI
 @Serializable
-public enum class PaywallEventType(val value: String) {
+public enum class PaywallEventType(public val value: String) {
     /**
      * The paywall was shown to the user.
      */
@@ -64,7 +64,7 @@ public enum class PaywallEventType(val value: String) {
  */
 @InternalRevenueCatAPI
 @Serializable
-public enum class ExitOfferType(val value: String) {
+public enum class ExitOfferType(public val value: String) {
     /**
      * An exit offer shown when the user attempts to dismiss the paywall without interacting.
      */
@@ -85,9 +85,9 @@ public data class PaywallEvent(
     @Serializable
     public data class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        val id: UUID,
+        public val id: UUID,
         @Serializable(with = DateSerializer::class)
-        val date: Date,
+        public val date: Date,
     )
 
     @Serializable(with = PaywallEventDataSerializer::class)
@@ -96,7 +96,7 @@ public data class PaywallEvent(
         val presentedOfferingContext: PresentedOfferingContext,
         val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
-        val sessionIdentifier: UUID,
+        public val sessionIdentifier: UUID,
         val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
         val localeIdentifier: String,
         val darkMode: Boolean,

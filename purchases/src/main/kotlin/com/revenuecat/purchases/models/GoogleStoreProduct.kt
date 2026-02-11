@@ -148,7 +148,7 @@ constructor(
                 "period, subscriptionOptions, defaultOption, productDetails, presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String?,
         type: ProductType,
@@ -292,5 +292,5 @@ constructor(
  * `basePlanId`
  * `productDetails`
  */
-val StoreProduct.googleProduct: GoogleStoreProduct?
+public val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct

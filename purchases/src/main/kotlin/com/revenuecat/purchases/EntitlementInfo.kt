@@ -72,7 +72,7 @@ public class EntitlementInfo(
             "com.revenuecat.purchases.VerificationResult",
         ),
     )
-    constructor(
+    public constructor(
         identifier: String,
         isActive: Boolean,
         willRenew: Boolean,

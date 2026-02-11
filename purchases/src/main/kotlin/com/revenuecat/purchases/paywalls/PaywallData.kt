@@ -33,7 +33,7 @@ public class PaywallData(
     /**
      * The type of template used to display this paywall.
      */
-    @SerialName("template_name") val templateName: String,
+    @SerialName("template_name") public val templateName: String,
 
     /**
      * Generic configuration for any paywall.
@@ -43,7 +43,7 @@ public class PaywallData(
     /**
      * The base remote URL where assets for this paywall are stored.
      */
-    @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) val assetBaseURL: URL,
+    @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) public val assetBaseURL: URL,
 
     /**
      * The revision identifier for this paywall.
@@ -62,7 +62,7 @@ public class PaywallData(
     /**
      * The default locale to be used on a paywall if the preferred languages aren't found.
      */
-    @SerialName("default_locale") val defaultLocale: String? = null,
+    @SerialName("default_locale") public val defaultLocale: String? = null,
 ) {
 
     /**
@@ -173,18 +173,18 @@ public class PaywallData(
      */
     @Serializable
     @Poko
-    class Configuration(
+    public class Configuration(
         /**
          * The list of package identifiers this paywall will display.
          *
          * This defaults to an empty list for multi-tier configurations.
          */
-        @SerialName("packages") val packageIds: List<String> = emptyList(),
+        @SerialName("packages") public val packageIds: List<String> = emptyList(),
 
         /**
          * The package to be selected by default.
          */
-        @SerialName("default_package") val defaultPackage: String? = null,
+        @SerialName("default_package") public val defaultPackage: String? = null,
 
         @SerialName("images_webp")
         internal val imagesWebp: Images? = null,
@@ -198,12 +198,12 @@ public class PaywallData(
         /**
          * Whether the background image will be blurred (in templates with one).
          */
-        @SerialName("blurred_background_image") val blurredBackgroundImage: Boolean = false,
+        @SerialName("blurred_background_image") public val blurredBackgroundImage: Boolean = false,
 
         /**
          * Whether a restore purchases button should be displayed.
          */
-        @SerialName("display_restore_purchases") val displayRestorePurchases: Boolean = true,
+        @SerialName("display_restore_purchases") public val displayRestorePurchases: Boolean = true,
 
         /**
          * If set, the paywall will display a terms of service link.
@@ -241,7 +241,7 @@ public class PaywallData(
         @SerialName("default_tier")
         public val defaultTier: String? = null,
     ) {
-        constructor(
+        public constructor(
             packageIds: List<String>,
             defaultPackage: String? = null,
             images: Images,
@@ -301,7 +301,7 @@ public class PaywallData(
         /**
          * The images for this template.
          */
-        val images: Images
+        public val images: Images
             get() {
                 return Images(
                     header = imagesWebp?.header ?: legacyImages?.header,
@@ -312,7 +312,7 @@ public class PaywallData(
 
         @Serializable
         @Poko
-        class Images(
+        public class Images(
             /**
              * Image displayed as a header in a template.
              */
@@ -337,7 +337,7 @@ public class PaywallData(
 
         @Serializable
         @Poko
-        class Tier(
+        public class Tier(
             /**
              * RevenueCat generated id to match tiers with localizations.
              */
@@ -358,7 +358,7 @@ public class PaywallData(
 
         @Serializable
         @Poko
-        class ColorInformation(
+        public class ColorInformation(
             /**
              * Set of colors for light mode.
              */
@@ -372,41 +372,41 @@ public class PaywallData(
 
         @Serializable
         @Poko
-        class Colors(
+        public class Colors(
             /**
              * Color for the background of the paywall.
              */
-            @Serializable(with = PaywallColor.Serializer::class) val background: PaywallColor,
+            @Serializable(with = PaywallColor.Serializer::class) public val background: PaywallColor,
 
             /**
              * Color for the primary text element.
              */
             @SerialName("text_1")
-            @Serializable(with = PaywallColor.Serializer::class) val text1: PaywallColor,
+            @Serializable(with = PaywallColor.Serializer::class) public val text1: PaywallColor,
 
             /**
              * Color for secondary text element.
              */
             @SerialName("text_2")
-            @Serializable(with = PaywallColor.Serializer::class) val text2: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val text2: PaywallColor? = null,
 
             /**
              * Color for tertiary text element.
              */
             @SerialName("text_3")
-            @Serializable(with = PaywallColor.Serializer::class) val text3: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val text3: PaywallColor? = null,
 
             /**
              * Background color of the main call to action button.
              */
             @SerialName("call_to_action_background")
-            @Serializable(with = PaywallColor.Serializer::class) val callToActionBackground: PaywallColor,
+            @Serializable(with = PaywallColor.Serializer::class) public val callToActionBackground: PaywallColor,
 
             /**
              * Foreground color of the main call to action button.
              */
             @SerialName("call_to_action_foreground")
-            @Serializable(with = PaywallColor.Serializer::class) val callToActionForeground: PaywallColor,
+            @Serializable(with = PaywallColor.Serializer::class) public val callToActionForeground: PaywallColor,
 
             /**
              * If present, the CTA will create a vertical gradient from [callToActionBackground] to this color.
@@ -419,25 +419,25 @@ public class PaywallData(
              * Primary accent color.
              */
             @SerialName("accent_1")
-            @Serializable(with = PaywallColor.Serializer::class) val accent1: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val accent1: PaywallColor? = null,
 
             /**
              * Secondary accent color.
              */
             @SerialName("accent_2")
-            @Serializable(with = PaywallColor.Serializer::class) val accent2: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val accent2: PaywallColor? = null,
 
             /**
              * Tertiary accent color.
              */
             @SerialName("accent_3")
-            @Serializable(with = PaywallColor.Serializer::class) val accent3: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val accent3: PaywallColor? = null,
 
             /**
              * Close button accent color.
              */
             @SerialName("close_button")
-            @Serializable(with = PaywallColor.Serializer::class) val closeButton: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class) public val closeButton: PaywallColor? = null,
 
             /**
              * Tier control background color.
@@ -474,7 +474,7 @@ public class PaywallData(
      */
     @Serializable
     @Poko
-    class LocalizedConfiguration(
+    public class LocalizedConfiguration(
         /**
          * The title of the paywall screen.
          */
@@ -557,7 +557,7 @@ public class PaywallData(
          */
         @Serializable
         @Poko
-        class Feature(
+        public class Feature(
             /**
              * The title of the feature.
              */
@@ -572,11 +572,11 @@ public class PaywallData(
              * An optional icon for the feature.
              * This must be an icon identifier known by `RevenueCatUI`.
              */
-            @SerialName("icon_id") val iconID: String? = null,
+            @SerialName("icon_id") public val iconID: String? = null,
         ) {
             @JvmSynthetic
             @InternalRevenueCatAPI
-            fun copy(
+            public fun copy(
                 title: String = this.title,
                 content: String? = this.content,
                 iconID: String? = this.iconID,
@@ -589,7 +589,7 @@ public class PaywallData(
 
         @Serializable
         @Poko
-        class OfferOverride(
+        public class OfferOverride(
             /**
              *
              */

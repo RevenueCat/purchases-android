@@ -32,9 +32,9 @@ public class Padding(
 ) {
     public companion object {
         @get:JvmSynthetic
-        val zero = Padding(0.0, 0.0, 0.0, 0.0)
+        public val zero: Padding = Padding(0.0, 0.0, 0.0, 0.0)
 
         @get:JvmSynthetic
-        val default = Padding(10.0, 10.0, 20.0, 20.0)
+        public val default: Padding = Padding(10.0, 10.0, 20.0, 20.0)
     }
 }

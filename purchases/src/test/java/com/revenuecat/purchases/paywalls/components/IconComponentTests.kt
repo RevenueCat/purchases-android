@@ -25,11 +25,11 @@ internal class IconComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: IconComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -222,11 +222,11 @@ internal class IconComponentTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PartialIconComponent,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

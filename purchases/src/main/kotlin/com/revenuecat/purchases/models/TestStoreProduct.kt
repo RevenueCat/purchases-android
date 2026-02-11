@@ -30,7 +30,7 @@ public class TestStoreProduct @JvmOverloads constructor(
                 "freeTrialPricingPhase, introPricePricingPhase)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         name: String,
         title: String,
@@ -71,7 +71,7 @@ public class TestStoreProduct @JvmOverloads constructor(
                 "freeTrialPeriod, introPrice)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         title: String,
         description: String,

@@ -7,12 +7,12 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmInline
-value class AdRevenuePrecision internal constructor(internal val value: String) {
+public value class AdRevenuePrecision internal constructor(internal val value: String) {
     public companion object {
-        val EXACT = AdRevenuePrecision("exact")
-        val PUBLISHER_DEFINED = AdRevenuePrecision("publisher_defined")
-        val ESTIMATED = AdRevenuePrecision("estimated")
-        val UNKNOWN = AdRevenuePrecision("unknown")
+        public val EXACT: AdRevenuePrecision = AdRevenuePrecision("exact")
+        public val PUBLISHER_DEFINED: AdRevenuePrecision = AdRevenuePrecision("publisher_defined")
+        public val ESTIMATED: AdRevenuePrecision = AdRevenuePrecision("estimated")
+        public val UNKNOWN: AdRevenuePrecision = AdRevenuePrecision("unknown")
 
         public fun fromString(value: String): AdRevenuePrecision {
             return when (value.lowercase().trim()) {

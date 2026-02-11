@@ -52,7 +52,7 @@ public class PurchasesError(
 }
 
 @SuppressWarnings("MagicNumber")
-public enum class PurchasesErrorCode(val code: Int, val description: String) {
+public enum class PurchasesErrorCode(public val code: Int, public val description: String) {
     UnknownError(0, "Unknown error. Check the underlying error for more details."),
     PurchaseCancelledError(1, "Purchase was cancelled."),
     StoreProblemError(2, "There was a problem with the store."),

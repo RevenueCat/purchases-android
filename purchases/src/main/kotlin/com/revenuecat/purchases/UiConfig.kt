@@ -24,12 +24,12 @@ import kotlinx.serialization.json.jsonPrimitive
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class ColorAlias(@get:JvmSynthetic val value: String)
+public value class ColorAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class FontAlias(@get:JvmSynthetic val value: String)
+public value class FontAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Poko
@@ -53,21 +53,21 @@ public class UiConfig(
     @Serializable
     public class AppConfig(
         @get:JvmSynthetic
-        val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
-        val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
     ) {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         public class FontsConfig(
             @get:JvmSynthetic
-            val android: FontInfo,
+            public val android: FontInfo,
         ) {
 
             @InternalRevenueCatAPI
             @Serializable
-            sealed interface FontInfo {
+            public sealed interface FontInfo {
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
@@ -85,7 +85,7 @@ public class UiConfig(
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                public class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                public class GoogleFonts(@get:JvmSynthetic public val value: String) : FontInfo
             }
         }
     }
@@ -96,10 +96,10 @@ public class UiConfig(
     public class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
     )
 
     @InternalRevenueCatAPI
@@ -107,9 +107,9 @@ public class UiConfig(
     @Serializable(with = CustomVariableDefinitionSerializer::class)
     public class CustomVariableDefinition(
         @get:JvmSynthetic
-        val type: String,
+        public val type: String,
         @get:JvmSynthetic
-        val defaultValue: Any,
+        public val defaultValue: Any,
     )
 }
 

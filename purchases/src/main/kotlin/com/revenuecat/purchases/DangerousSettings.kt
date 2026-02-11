@@ -19,5 +19,5 @@ public class DangerousSettings internal constructor(
 
     internal val customEntitlementComputation: Boolean = false,
 ) : Parcelable {
-    constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
+    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
 }

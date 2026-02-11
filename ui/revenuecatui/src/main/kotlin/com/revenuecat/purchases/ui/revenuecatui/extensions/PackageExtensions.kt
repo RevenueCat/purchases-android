@@ -7,10 +7,10 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
-val Package.isSubscription: Boolean
+internal val Package.isSubscription: Boolean
     get() = product.type == ProductType.SUBS
 
-val Package.isMonthly: Boolean
+internal val Package.isMonthly: Boolean
     get() = product.period?.let { it.unit == Period.Unit.MONTH && it.value == 1 } ?: false
 
 /**

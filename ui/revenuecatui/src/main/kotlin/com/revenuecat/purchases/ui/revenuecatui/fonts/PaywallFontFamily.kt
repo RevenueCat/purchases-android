@@ -11,4 +11,4 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Poko
 @Immutable
-class PaywallFontFamily(val fonts: List<PaywallFont>) : Parcelable
+public class PaywallFontFamily(public val fonts: List<PaywallFont>) : Parcelable

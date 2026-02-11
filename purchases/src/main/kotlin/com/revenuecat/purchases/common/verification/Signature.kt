@@ -43,7 +43,7 @@ internal data class Signature(
         PAYLOAD(size = 64),
         ;
 
-        companion object {
+        public companion object {
             val totalSize: Int
                 get() = values().sumOf { it.size }
         }

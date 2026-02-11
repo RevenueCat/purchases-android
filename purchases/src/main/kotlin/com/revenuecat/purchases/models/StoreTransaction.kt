@@ -123,7 +123,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
 ) : Parcelable {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    constructor(
+    public constructor(
         orderId: String?,
         productIds: List<String>,
         type: ProductType,
@@ -160,7 +160,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Deprecated("Use constructor with presentedOfferingContext instead")
-    constructor(
+    public constructor(
         orderId: String?,
         productIds: List<String>,
         type: ProductType,
@@ -216,9 +216,9 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
     public val skus: List<String>
         get() = productIds
 
-    override fun equals(other: Any?) = other is StoreTransaction &&
+    public override fun equals(other: Any?): Boolean = other is StoreTransaction &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**

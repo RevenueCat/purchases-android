@@ -25,11 +25,11 @@ internal class ComponentOverridesTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: List<ComponentOverride<PartialTextComponent>>,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -171,11 +171,11 @@ internal class ComponentOverridesTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: List<ComponentOverride<PartialImageComponent>>,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
@@ -270,7 +270,7 @@ internal class ComponentOverridesTests {
         private val expected: ComponentOverride.Condition,
     ) {
 
-        companion object {
+        public companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")

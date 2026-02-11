@@ -17,7 +17,7 @@ internal class ImageUrlsTests {
         fun `Should properly deserialize ImageUrls`() {
             // Arrange
             @Language("json")
-            val json = """
+            public val json = """
                 {
                   "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
                   "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
@@ -49,11 +49,11 @@ internal class ImageUrlsTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: ThemeImageUrls,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

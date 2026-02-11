@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
-interface PaywallListener {
+public interface PaywallListener {
     /**
      * Called when a package purchase is about to be initiated, before the payment sheet is displayed.
      * This allows the app to perform any necessary preparation (e.g., authentication) before proceeding.
@@ -15,16 +15,16 @@ interface PaywallListener {
      * @param resume A callback that must be invoked to continue with the purchase flow.
      *               If not called, the purchase flow will not proceed.
      */
-    fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
+    public fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
         // Default implementation immediately resumes
         resume()
     }
 
-    fun onPurchaseStarted(rcPackage: Package) {}
-    fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
-    fun onPurchaseError(error: PurchasesError) {}
-    fun onPurchaseCancelled() {}
-    fun onRestoreStarted() {}
-    fun onRestoreCompleted(customerInfo: CustomerInfo) {}
-    fun onRestoreError(error: PurchasesError) {}
+    public fun onPurchaseStarted(rcPackage: Package) {}
+    public fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
+    public fun onPurchaseError(error: PurchasesError) {}
+    public fun onPurchaseCancelled() {}
+    public fun onRestoreStarted() {}
+    public fun onRestoreCompleted(customerInfo: CustomerInfo) {}
+    public fun onRestoreError(error: PurchasesError) {}
 }

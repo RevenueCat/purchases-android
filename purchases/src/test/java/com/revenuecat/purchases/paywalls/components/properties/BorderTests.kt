@@ -12,7 +12,7 @@ internal class BorderTests(@Suppress("UNUSED_PARAMETER") name: String, private v
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: Border,
     )
 

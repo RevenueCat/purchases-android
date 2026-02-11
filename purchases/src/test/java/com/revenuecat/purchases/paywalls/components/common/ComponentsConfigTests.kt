@@ -22,7 +22,7 @@ internal class ComponentsConfigTests {
         fun `Should properly deserialize ComponentsConfig`() {
             // Arrange
             @Language("json")
-            val json = """
+            public val json = """
                 {
                   "base": {
                     "stack": {
@@ -89,11 +89,11 @@ internal class ComponentsConfigTests {
 
         public class Args(
             @Language("json")
-            val json: String,
+            public val json: String,
             val expected: PaywallComponentsConfig,
         )
 
-        companion object {
+        public companion object {
 
             @Suppress("LongMethod")
             @JvmStatic

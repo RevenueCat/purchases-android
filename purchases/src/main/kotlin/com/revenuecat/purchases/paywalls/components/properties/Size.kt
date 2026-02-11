@@ -19,7 +19,7 @@ public class Size(
 @InternalRevenueCatAPI
 @Stable
 @Serializable(with = SizeConstraintDeserializer::class)
-sealed interface SizeConstraint {
+public sealed interface SizeConstraint {
     // SerialNames are handled by the SizeConstraintDeserializer.
 
     @Serializable

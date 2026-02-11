@@ -11,7 +11,7 @@ internal class ShapeTests(@Suppress("UNUSED_PARAMETER") name: String, private va
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: Shape,
     )
 

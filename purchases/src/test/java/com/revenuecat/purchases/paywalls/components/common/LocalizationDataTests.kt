@@ -14,7 +14,7 @@ internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String,
 
     public class Args(
         @Language("json")
-        val serialized: String,
+        public val serialized: String,
         val deserialized: LocalizationData,
     )
 

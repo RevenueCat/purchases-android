@@ -1128,7 +1128,7 @@ public class Purchases internal constructor(
          * being used
          */
         @JvmStatic
-        var platformInfo: PlatformInfo
+        public var platformInfo: PlatformInfo
             get() = PurchasesOrchestrator.platformInfo
             set(value) { PurchasesOrchestrator.platformInfo = value }
 
@@ -1148,7 +1148,7 @@ public class Purchases internal constructor(
          * By default, LogLevel.DEBUG in debug builds, and LogLevel.INFO in release builds.
          */
         @JvmStatic
-        var logLevel: LogLevel
+        public var logLevel: LogLevel
             get() = PurchasesOrchestrator.logLevel
             set(value) {
                 PurchasesOrchestrator.logLevel = value
@@ -1162,7 +1162,7 @@ public class Purchases internal constructor(
          * If you wish to receive Debug level messages, see [debugLogsEnabled].
          */
         @JvmStatic
-        var logHandler: LogHandler
+        public var logHandler: LogHandler
             @Synchronized get() = PurchasesOrchestrator.logHandler
 
             @Synchronized set(value) {
@@ -1178,7 +1178,7 @@ public class Purchases internal constructor(
          * @throws UninitializedPropertyAccessException if the shared instance has not been configured.
          */
         @JvmStatic
-        var sharedInstance: Purchases
+        public var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
@@ -1200,7 +1200,7 @@ public class Purchases internal constructor(
          * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
-        var proxyURL: URL?
+        public var proxyURL: URL?
             get() = PurchasesOrchestrator.proxyURL
             set(value) { PurchasesOrchestrator.proxyURL = value }
 
@@ -1208,7 +1208,7 @@ public class Purchases internal constructor(
          * True if [configure] has been called and [Purchases.sharedInstance] is set
          */
         @JvmStatic
-        val isConfigured: Boolean
+        public val isConfigured: Boolean
             get() = this.backingFieldSharedInstance != null
 
         /**

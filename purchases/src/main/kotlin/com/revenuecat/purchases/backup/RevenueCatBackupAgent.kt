@@ -30,7 +30,7 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  */
 public class RevenueCatBackupAgent : BackupAgentHelper() {
     public companion object {
-        const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
+        public const val REVENUECAT_PREFS_FILE_NAME: String = "com_revenuecat_purchases_preferences"
     }
 
     override fun onCreate() {

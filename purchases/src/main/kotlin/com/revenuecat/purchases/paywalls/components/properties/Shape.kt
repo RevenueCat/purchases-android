@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Stable
 @Serializable(with = ShapeDeserializer::class)
-sealed interface Shape {
+public sealed interface Shape {
 
     public companion object {
         private val pillCornerRadiuses = CornerRadiuses.Percentage(all = 50)
@@ -23,7 +23,7 @@ sealed interface Shape {
     @Immutable
     public class Rectangle(
         @get:JvmSynthetic
-        val corners: CornerRadiuses? = null,
+        public val corners: CornerRadiuses? = null,
     ) : Shape
 
     @Serializable

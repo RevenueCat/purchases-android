@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 
 @Composable
-fun DisableTouchesComposable(
+internal fun DisableTouchesComposable(
     shouldDisable: Boolean = true,
     content: @Composable () -> Unit,
 ) {

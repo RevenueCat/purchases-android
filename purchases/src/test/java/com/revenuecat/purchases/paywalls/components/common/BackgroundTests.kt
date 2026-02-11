@@ -19,7 +19,7 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: Background,
     )
 

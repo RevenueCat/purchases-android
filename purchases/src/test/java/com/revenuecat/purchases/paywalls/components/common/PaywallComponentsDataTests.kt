@@ -21,7 +21,7 @@ internal class PaywallComponentsDataTests(
 
     public class Args(
         @Language("json")
-        val json: String,
+        public val json: String,
         val expected: PaywallComponentsData,
     )
 
