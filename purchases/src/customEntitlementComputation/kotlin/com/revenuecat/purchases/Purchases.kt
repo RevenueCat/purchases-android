@@ -196,7 +196,7 @@ public class Purchases internal constructor(
      * Represents a valid RevenueCat deep link.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    sealed interface DeepLink {
+    public sealed interface DeepLink {
         /**
          * Represents a web redemption link, that can be redeemed using [Purchases.redeemWebPurchase]
          */
@@ -265,7 +265,7 @@ public class Purchases internal constructor(
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        public val frameworkVersion = PurchasesOrchestrator.frameworkVersion
+        public val frameworkVersion: String = PurchasesOrchestrator.frameworkVersion
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*

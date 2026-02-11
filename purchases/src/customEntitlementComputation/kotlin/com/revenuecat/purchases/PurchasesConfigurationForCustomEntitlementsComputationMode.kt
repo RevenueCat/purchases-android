@@ -51,12 +51,13 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
          * Creates a [PurchasesConfigurationForCustomEntitlementsComputationMode] instance with the specified
          * properties.
          */
-        public fun build() = PurchasesConfigurationForCustomEntitlementsComputationMode(
-            context = context,
-            apiKey = apiKey,
-            appUserID = appUserID,
-            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
-            pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
-        )
+        public fun build(): PurchasesConfigurationForCustomEntitlementsComputationMode =
+            PurchasesConfigurationForCustomEntitlementsComputationMode(
+                context = context,
+                apiKey = apiKey,
+                appUserID = appUserID,
+                showInAppMessagesAutomatically = showInAppMessagesAutomatically,
+                pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
+            )
     }
 }
