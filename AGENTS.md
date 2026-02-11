@@ -18,7 +18,8 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run unit tests for specific modules (flavor format: {apis}{billingclient}{buildType})
 ./gradlew :purchases:testDefaultsBc8DebugUnitTest
 ./gradlew :purchases:testDefaultsBc7DebugUnitTest
-./gradlew :ui:revenuecatui:testDefaultsDebugUnitTest
+./gradlew :ui:revenuecatui:testDefaultsBc8DebugUnitTest
+./gradlew :ui:revenuecatui:testDefaultsBc7DebugUnitTest
 
 # Run Android instrumentation tests
 ./gradlew connectedAndroidTest
@@ -26,7 +27,8 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run instrumentation tests for specific modules
 ./gradlew :purchases:connectedDefaultsBc8DebugAndroidTest
 ./gradlew :purchases:connectedDefaultsBc7DebugAndroidTest
-./gradlew :ui:revenuecatui:connectedDefaultsDebugAndroidTest
+./gradlew :ui:revenuecatui:connectedDefaultsBc8DebugAndroidTest
+./gradlew :ui:revenuecatui:connectedDefaultsBc7DebugAndroidTest
 
 # Run integration tests (requires device/emulator)
 ./gradlew :integration-tests:connectedDebugAndroidTest
@@ -151,7 +153,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **Jetpack Compose**: Modern UI framework
 - **Kotlinx Serialization**: JSON handling
 - **Google Tink**: Cryptography
-- **OkHttp**: HTTP networking foundation
+- **java.net.HttpURLConnection**: HTTP networking foundation
 
 ## Build Configuration
 
@@ -162,10 +164,10 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **Build Types**: Debug and release configurations
 
 ### Target Specifications
-- **Compile SDK**: 34
+- **Compile SDK**: 35
 - **Min SDK**: 21 (24 for UI modules)
 - **Java**: 8+
-- **Kotlin**: 1.8.0+
+- **Kotlin**: 2.0.21 (language level 1.8)
 
 ## Development Notes
 
