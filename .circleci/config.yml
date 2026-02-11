@@ -9,6 +9,14 @@ aliases:
       branches:
         ignore: /.*/
 
+  stable-release-tags: &stable-release-tags
+    filters:
+      tags:
+        ignore:
+          - /^.*-.*$/
+      branches:
+        ignore: /.*/
+
   release-branches: &release-branches
     filters:
       tags:
@@ -380,6 +388,17 @@ jobs:
             bundle exec fastlane android deploy
       - android/save_gradle_cache
       - android/save_build_cache
+
+  trigger-hybrid-common-update:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - run:
+          name: Trigger dependency update in purchases-hybrid-common
+          command: bundle exec fastlane trigger_hybrid_common_update
 
   prepare-next-version:
     <<: *android-executor
@@ -1046,6 +1065,10 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - trigger-hybrid-common-update:
+          requires:
+            - deploy
+          <<: *stable-release-tags
 
   on-main-branch:
     when:
