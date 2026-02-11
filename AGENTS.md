@@ -146,7 +146,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ### Main Entry Points
 - **`Purchases`** class: Primary SDK entry point
 - **`PurchasesConfiguration`**: Configuration builder
-- **UI Components**: `Paywall()`, `CustomerCenter()` composables
+- **UI Components**: `Paywall()`, `PaywallActivityLauncher`, `CustomerCenter()`, `ShowCustomerCenter` composables
 
 ### Key Dependencies
 - **Kotlin**: Primary language with coroutines for async operations
@@ -160,7 +160,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ### Gradle Structure
 - **Multi-module**: Uses `include()` statements in `settings.gradle.kts`
 - **Version Catalogs**: Centralized dependency management in `gradle/libs.versions.toml`
-- **Flavors**: Support for different store implementations
+- **Flavors**: Support for different API variants and billing client versions
 - **Build Types**: Debug and release configurations
 
 ### Target Specifications
