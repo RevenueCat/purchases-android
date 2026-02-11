@@ -1,6 +1,7 @@
 package com.revenuecat.rcttester
 
 import android.app.Application
+import android.util.Log
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -56,14 +57,14 @@ class MainApplication : Application() {
     }
 
     private fun clearInvalidConfiguration() {
-        android.util.Log.w("RCTTester", "Invalid API key found, clearing configuration")
+        Log.w("RCTTester", "Invalid API key found, clearing configuration")
         val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
         prefs.edit().clear().apply()
         isSDKConfigured = false
     }
 
     private fun handleConfigurationError(e: IllegalStateException) {
-        android.util.Log.e("RCTTester", "Failed to configure SDK: ${e.message}", e)
+        Log.e("RCTTester", "Failed to configure SDK: ${e.message}", e)
         val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
         prefs.edit().clear().apply()
         isSDKConfigured = false

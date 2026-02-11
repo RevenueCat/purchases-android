@@ -1,6 +1,7 @@
 package com.revenuecat.rcttester.config
 
 import android.content.Context
+import android.util.Log
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -30,7 +31,7 @@ data class SDKConfiguration(
             return try {
                 json.decodeFromString<SDKConfiguration>(jsonString)
             } catch (e: IllegalArgumentException) {
-                android.util.Log.w("SDKConfiguration", "Failed to decode configuration", e)
+                Log.w("SDKConfiguration", "Failed to decode configuration", e)
                 null
             }
         }
