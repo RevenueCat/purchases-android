@@ -495,7 +495,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product price per month when offer period can't display in months
+                    "\$0.16"
                 )
 
                 Variable.PRODUCT_OFFER_PRICE_PER_YEAR -> arrayOf(
@@ -506,7 +507,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product price per year when offer period can't display in years
+                    "\$2.00"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD -> arrayOf(
@@ -561,7 +563,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product period in months when offer period can't display in months
+                    "12"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> arrayOf(
@@ -572,7 +575,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product period in years when offer period can't display in years
+                    "1"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT -> arrayOf(

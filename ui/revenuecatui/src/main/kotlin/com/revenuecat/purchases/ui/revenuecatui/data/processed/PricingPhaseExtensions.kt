@@ -24,6 +24,30 @@ internal fun secondaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcP
     return option?.let { if (it.freePhase != null) it.introPhase else null }
 }
 
+internal fun resolveOfferPrice(
+    discountPhase: PricingPhase?,
+    localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    productFallback: () -> String?,
+): String? =
+    discountPhase?.productOfferPrice(localizedVariableKeys) ?: productFallback()
+
+internal fun resolveOfferPricePerPeriod(
+    discountPhase: PricingPhase?,
+    localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    unit: Period.Unit,
+    discountPriceCalculation: PricingPhase.() -> Price,
+    productFallback: () -> String?,
+): String? =
+    discountPhase?.productOfferPricePerPeriod(localizedVariableKeys, unit, discountPriceCalculation)
+        ?: productFallback()
+
+internal fun resolveOfferPeriod(
+    discountPhase: PricingPhase?,
+    discountValue: (PricingPhase) -> String?,
+    productFallback: () -> String?,
+): String? =
+    discountPhase?.let(discountValue) ?: productFallback()
+
 internal fun PricingPhase.productOfferPrice(
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =

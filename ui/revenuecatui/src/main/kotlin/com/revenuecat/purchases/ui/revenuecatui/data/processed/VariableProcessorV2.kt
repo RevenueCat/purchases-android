@@ -536,13 +536,22 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_OFFER_END_DATE ->
             primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferEndDate(dateLocale, date)
         Variable.PRODUCT_SECONDARY_OFFER_PRICE ->
-            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
+            resolveOfferPrice(
+                discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
+                localizedVariableKeys = localizedVariableKeys,
+            ) { rcPackage?.product?.price?.formatted }
 
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD ->
-            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriod(localizedVariableKeys)
+            resolveOfferPeriod(
+                discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
+                discountValue = { it.productOfferPeriod(localizedVariableKeys) },
+            ) { rcPackage?.productPeriod(localizedVariableKeys) }
 
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED ->
-            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodAbbreviated(localizedVariableKeys)
+            resolveOfferPeriod(
+                discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
+                discountValue = { it.productOfferPeriodAbbreviated(localizedVariableKeys) },
+            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name

@@ -323,6 +323,44 @@ class OfferVariableProcessingTests {
         assertThat(result).isEqualTo("$0.50")
     }
 
+    // region Secondary offer fallback tests
+
+    @Test
+    fun `secondary offer price falls back to product price when no secondary discount phase`() {
+        // optionWithNoDiscountPhases has no freePhase, so secondaryDiscountPhase returns null
+        val result = processTemplate(
+            template = "{{ product.secondary_offer_price }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("$10.00")
+    }
+
+    @Test
+    fun `secondary offer period falls back to product period when no secondary discount phase`() {
+        val result = processTemplate(
+            template = "{{ product.secondary_offer_period }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("month")
+    }
+
+    @Test
+    fun `secondary offer period abbreviated falls back to product period abbreviated when no secondary discount phase`() {
+        val result = processTemplate(
+            template = "{{ product.secondary_offer_period_abbreviated }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        assertThat(result).isEqualTo("mo")
+    }
+
+    // endregion
+
     private fun processTemplate(
         template: String,
         rcPackage: Package,
