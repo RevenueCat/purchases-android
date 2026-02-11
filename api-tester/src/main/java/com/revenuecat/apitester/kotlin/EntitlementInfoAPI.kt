@@ -98,6 +98,7 @@ private class EntitlementInfoAPI {
             Store.EXTERNAL,
             Store.PADDLE,
             Store.TEST_STORE,
+            Store.GALAXY,
             -> {}
         }.exhaustive
     }
