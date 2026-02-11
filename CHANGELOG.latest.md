@@ -1,11 +1,13 @@
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Send `PresentedOfferingContext` info when `PurchasesAreCompletedBy.MY_APP` and using paywalls (#3078) via Toni Rico (@tonidero)
+
 ## RevenueCatUI SDK
-### Customer Center
-#### 🐞 Bugfixes
-* CC-628: Refresh Customer Center UI after subscription cancellation (#3061) via Facundo Menzella (@facumenzella)
 ### Paywallv2
-#### 🐞 Bugfixes
-* Improve carousel performance with videos (#3070) via Cesar de la Vega (@vegaro)
+#### ✨ New Features
+* Add customVariables support to all PaywallActivityLauncher methods and PaywallView (#3075) via Facundo Menzella (@facumenzella)
+* Add support for promotional offers in paywalls (#3063) via Cesar de la Vega (@vegaro)
+* Add support for product changes in paywalls (#3062) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Make networkName nullable in ad event data types (#3076) via Pol Miro (@polmiro)
-* Remove networkName from AdFailedToLoad event (#3074) via Pol Miro (@polmiro)
+* Bump fastlane from 2.231.1 to 2.232.0 (#3080) via dependabot[bot] (@dependabot[bot])
