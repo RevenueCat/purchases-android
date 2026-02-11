@@ -838,7 +838,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
         coEvery {
@@ -871,7 +871,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedPackage = TestData.Packages.quarterly
         assertThat(selectedPackage).isNotEqualTo(expectedPackage)
@@ -938,7 +938,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
 
@@ -1291,7 +1291,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering).apply {
             val state = state.value as PaywallState.Loaded.Components
-            state.update(selectedPackage = TestData.Packages.monthly)
+            state.update(TestData.Packages.monthly.identifier)
             trackPaywallImpressionIfNeeded()
         }
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
@@ -1416,7 +1416,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
@@ -1495,7 +1495,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store error")
@@ -1536,7 +1536,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
         coEvery {
@@ -1752,17 +1752,17 @@ class PaywallViewModelTest {
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
-        state.update(TestData.Packages.annual)
+        state.update(TestData.Packages.monthly.identifier)
 
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
         ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
-        // If no selected package, uses URL without package param
+        // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -1774,7 +1774,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
-        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
@@ -1855,7 +1855,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1910,7 +1910,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1981,7 +1981,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1994,6 +1994,53 @@ class PaywallViewModelTest {
             )
         }
 
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
+        val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
+        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+            option = promoSubscriptionOption,
+        )
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = resolvedOffer,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button without promotional offer uses default option`(): Unit = runBlocking {
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = null,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
         assertThat(dismissInvoked).isTrue
     }
 

@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -626,7 +627,7 @@ internal class MockViewModel(
         private set
     var handlePackagePurchaseParams = mutableListOf<Pair<Activity, Package?>>()
         private set
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         handlePackagePurchaseCount++
         handlePackagePurchaseParams.add(activity to pkg)
         if (allowsPurchases) {

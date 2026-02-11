@@ -174,67 +174,79 @@ class CustomVariableValueTests {
     // region Key validation
 
     @Test
-    fun `valid key starting with letter is accepted`() {
-        // No exception should be thrown for valid keys
+    fun `valid key starting with letter is accepted and returned`() {
         val variables = mapOf("validKey" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
-    }
-
-    @Test
-    fun `valid key with underscores is accepted`() {
-        val variables = mapOf("valid_key_name" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
-    }
-
-    @Test
-    fun `valid key with numbers is accepted`() {
-        val variables = mapOf("key123" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
-    }
-
-    @Test
-    fun `valid key with mixed characters is accepted`() {
-        val variables = mapOf("player_score_2024" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEqualTo(variables)
         verify(exactly = 0) { Logger.w(any()) }
     }
 
     @Test
-    fun `invalid key starting with number logs warning`() {
+    fun `valid key with underscores is accepted and returned`() {
+        val variables = mapOf("valid_key_name" to CustomVariableValue.String("value"))
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEqualTo(variables)
+        verify(exactly = 0) { Logger.w(any()) }
+    }
+
+    @Test
+    fun `valid key with numbers is accepted and returned`() {
+        val variables = mapOf("key123" to CustomVariableValue.String("value"))
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEqualTo(variables)
+        verify(exactly = 0) { Logger.w(any()) }
+    }
+
+    @Test
+    fun `valid key with mixed characters is accepted and returned`() {
+        val variables = mapOf("player_score_2024" to CustomVariableValue.String("value"))
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEqualTo(variables)
+        verify(exactly = 0) { Logger.w(any()) }
+    }
+
+    @Test
+    fun `invalid key starting with number logs warning and is filtered out`() {
         val variables = mapOf("123key" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEmpty()
         verify { Logger.w(match { it.contains("123key") && it.contains("invalid") }) }
     }
 
     @Test
-    fun `invalid key with special characters logs warning`() {
+    fun `invalid key with special characters logs warning and is filtered out`() {
         val variables = mapOf("key-name" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEmpty()
         verify { Logger.w(match { it.contains("key-name") && it.contains("invalid") }) }
     }
 
     @Test
-    fun `invalid empty key logs warning`() {
+    fun `invalid empty key logs warning and is filtered out`() {
         val variables = mapOf("" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEmpty()
         verify { Logger.w(match { it.contains("invalid") }) }
     }
 
     @Test
-    fun `invalid key with spaces logs warning`() {
+    fun `invalid key with spaces logs warning and is filtered out`() {
         val variables = mapOf("key name" to CustomVariableValue.String("value"))
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEmpty()
         verify { Logger.w(match { it.contains("key name") && it.contains("invalid") }) }
     }
 
     @Test
-    fun `multiple invalid keys each log warning`() {
+    fun `multiple invalid keys log warnings and are filtered out while valid keys are kept`() {
+        val validValue = CustomVariableValue.String("value")
         val variables = mapOf(
-            "valid_key" to CustomVariableValue.String("value"),
+            "valid_key" to validValue,
             "123invalid" to CustomVariableValue.String("value"),
             "also-invalid" to CustomVariableValue.String("value"),
         )
-        CustomVariableKeyValidator.validate(variables)
+        val result = CustomVariableKeyValidator.validateAndFilter(variables)
+        assertThat(result).isEqualTo(mapOf("valid_key" to validValue))
         verify(exactly = 2) { Logger.w(any()) }
     }
 

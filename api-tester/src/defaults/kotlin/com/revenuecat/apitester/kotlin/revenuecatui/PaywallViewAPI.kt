@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
@@ -25,7 +26,6 @@ private class PaywallViewAPI {
         listener: PaywallListener,
         fontProvider: FontProvider,
         shouldDisplayDismissButton: Boolean?,
-        dismissHandler: () -> Unit,
     ) {
         PaywallView(context)
         PaywallView(context, attrs)
@@ -34,7 +34,11 @@ private class PaywallViewAPI {
         PaywallView(context, offering, listener)
         PaywallView(context, offering, listener, fontProvider)
         PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton)
-        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler)
+        // Both named parameter and trailing lambda syntax work for dismissHandler
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler = {})
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton) {
+            // dismiss
+        }
     }
 
     fun checkMethods(
@@ -42,6 +46,7 @@ private class PaywallViewAPI {
         paywallListener: PaywallListener,
         dismissHandler: () -> Unit,
         presentedOfferingContext: PresentedOfferingContext?,
+        customVariables: Map<String, CustomVariableValue>,
     ) {
         paywallView.setPaywallListener(null)
         paywallView.setPaywallListener(paywallListener)
@@ -51,5 +56,6 @@ private class PaywallViewAPI {
         paywallView.setOfferingId("offering_id")
         paywallView.setOfferingId(null, presentedOfferingContext)
         paywallView.setOfferingId("offering_id", presentedOfferingContext)
+        paywallView.setCustomVariables(customVariables)
     }
 }

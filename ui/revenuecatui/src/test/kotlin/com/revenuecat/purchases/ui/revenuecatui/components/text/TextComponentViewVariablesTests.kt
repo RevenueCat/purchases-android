@@ -1497,7 +1497,7 @@ internal class TextComponentViewVariablesTests(
 
         // Assert
         // Select the first package to make sure the variables reflect its values.
-        state.update(selectedPackage = packages.first())
+        state.update(packages.first().identifier)
 
         onNodeWithTag("text")
             .onChild()
