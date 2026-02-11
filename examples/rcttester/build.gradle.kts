@@ -18,8 +18,6 @@ android {
         versionCode = 2
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         // Library modules have a dimension used to separate different APIs.
         // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
@@ -85,12 +83,5 @@ dependencies {
     // Serialization for configuration persistence
     implementation(libs.kotlinx.serialization.json)
 
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.test.espresso.core)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.androidx.test.compose)
     debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.androidx.test.compose.manifest)
 }
