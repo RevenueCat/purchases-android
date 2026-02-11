@@ -26,18 +26,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 internal data class QueryProductDetailsUseCaseParams(
-    public val dateProvider: DateProvider = DefaultDateProvider(),
-    public val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    public val productIds: Set<String>,
-    public val productType: ProductType,
+    val dateProvider: DateProvider = DefaultDateProvider(),
+    val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    val productIds: Set<String>,
+    val productType: ProductType,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,
-    public val onReceive: StoreProductsCallback,
-    public val onError: PurchasesErrorCallback,
-    public val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
+    val onReceive: StoreProductsCallback,
+    val onError: PurchasesErrorCallback,
+    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) : BillingClientUseCase<QueryProductDetailsResult>(useCaseParams, onError, executeRequestOnUIThread) {
 

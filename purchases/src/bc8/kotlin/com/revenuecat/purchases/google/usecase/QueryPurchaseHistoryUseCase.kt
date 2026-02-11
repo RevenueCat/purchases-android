@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 internal data class QueryPurchaseHistoryUseCaseParams(
-    public val dateProvider: DateProvider = DefaultDateProvider(),
-    public val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    @BillingClient.ProductType public val productType: String,
+    val dateProvider: DateProvider = DefaultDateProvider(),
+    val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    @BillingClient.ProductType val productType: String,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
@@ -37,9 +37,9 @@ internal data class QueryPurchaseHistoryUseCaseParams(
  */
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,
-    public val onReceive: (List<StoreTransaction>) -> Unit,
-    public val onError: PurchasesErrorCallback,
-    public val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
+    val onReceive: (List<StoreTransaction>) -> Unit,
+    val onError: PurchasesErrorCallback,
+    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) : BillingClientUseCase<List<StoreTransaction>?>(useCaseParams, onError, executeRequestOnUIThread) {
 

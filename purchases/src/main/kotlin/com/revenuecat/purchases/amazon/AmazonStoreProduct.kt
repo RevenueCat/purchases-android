@@ -241,17 +241,17 @@ public val StoreProduct.amazonProduct: AmazonStoreProduct?
  * and to avoid complicating parcelization
  */
 private data class ComparableData(
-    public val id: String,
-    public val type: ProductType,
-    public val title: String,
-    public val description: String,
-    public val period: Period?,
-    public val price: Price,
-    public val subscriptionOptions: SubscriptionOptions?,
-    public val defaultOption: SubscriptionOption?,
-    public val iconUrl: String,
-    public val freeTrialPeriod: Period?,
-    public val presentedOfferingContext: PresentedOfferingContext?,
+    val id: String,
+    val type: ProductType,
+    val title: String,
+    val description: String,
+    val period: Period?,
+    val price: Price,
+    val subscriptionOptions: SubscriptionOptions?,
+    val defaultOption: SubscriptionOption?,
+    val iconUrl: String,
+    val freeTrialPeriod: Period?,
+    val presentedOfferingContext: PresentedOfferingContext?,
 ) {
     constructor(
         amazonStoreProduct: AmazonStoreProduct,

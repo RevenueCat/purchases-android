@@ -35,7 +35,7 @@ constructor(
         const val BLOCKSTORE_USER_ID_KEY = "com.revenuecat.purchases.app_user_id"
         const val BLOCKSTORE_MAX_ENTRIES = 16
 
-        public fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
+        fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
             return try {
                 Blockstore.getClient(applicationContext)
             } catch (e: NoClassDefFoundError) {
@@ -47,7 +47,7 @@ constructor(
         }
     }
 
-    public fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
+    fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
         if (blockstoreClient == null) return
         val currentUserId = identityManager.currentAppUserID
         if (
@@ -71,7 +71,7 @@ constructor(
         }
     }
 
-    public fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
+    fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
         fun callCompletion() {
             mainScope.launch {
                 callback()
@@ -113,7 +113,7 @@ constructor(
         }
     }
 
-    public fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
+    fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
         val blockstoreClient = this.blockstoreClient ?: run {
             callback()
             return

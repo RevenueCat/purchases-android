@@ -11,13 +11,13 @@ import com.revenuecat.purchases.api.R
 
 internal class ProxyAmazonBillingActivity : Activity() {
 
-    public companion object {
+    companion object {
         const val EXTRAS_RESULT_RECEIVER = "result_receiver"
         const val EXTRAS_SKU = "sku"
         const val EXTRAS_PURCHASING_SERVICE_PROVIDER = "purchasing_service_provider"
         const val EXTRAS_REQUEST_ID = "request_id"
 
-        public fun newStartIntent(
+        fun newStartIntent(
             context: Context,
             resultReceiver: ResultReceiver,
             sku: String,

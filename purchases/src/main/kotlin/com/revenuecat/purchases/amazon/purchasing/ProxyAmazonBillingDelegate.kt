@@ -23,7 +23,7 @@ internal class ProxyAmazonBillingDelegate {
     private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntentFilter()
 
     @SuppressLint("WrongConstant")
-    public fun onCreate(activity: Activity, savedInstanceState: Bundle?) {
+    fun onCreate(activity: Activity, savedInstanceState: Bundle?) {
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(activity)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             activity.registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
@@ -38,7 +38,7 @@ internal class ProxyAmazonBillingDelegate {
         }
     }
 
-    public fun onDestroy(activity: Activity) {
+    fun onDestroy(activity: Activity) {
         activity.unregisterReceiver(broadcastReceiver)
         broadcastReceiver = null
     }
