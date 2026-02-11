@@ -22,7 +22,7 @@ internal class ComponentsConfigTests {
         fun `Should properly deserialize ComponentsConfig`() {
             // Arrange
             @Language("json")
-            public val json = """
+            val json = """
                 {
                   "base": {
                     "stack": {

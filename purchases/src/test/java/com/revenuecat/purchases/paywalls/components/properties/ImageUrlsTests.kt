@@ -17,7 +17,7 @@ internal class ImageUrlsTests {
         fun `Should properly deserialize ImageUrls`() {
             // Arrange
             @Language("json")
-            public val json = """
+            val json = """
                 {
                   "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
                   "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",

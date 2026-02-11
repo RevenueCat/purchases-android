@@ -356,7 +356,7 @@ public fun stubStoreProductWithGoogleSubscriptionPurchaseData(
         stubSubscriptionOption("p1m", productId, period)
     )
 ): StoreProduct {
-    public val productDetails: ProductDetails = mockk()
+    val productDetails: ProductDetails = mockk()
 
     return object : StoreProduct by stubStoreProduct(productId, subscriptionOptions=subscriptionOptions) {
         override val purchasingData: PurchasingData

@@ -134,7 +134,7 @@ public class DeviceCacheTest {
 
     @Test
     fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
-        public val deprecatedValidCachedCustomerInfo by lazy {
+        val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
             }.toString()
@@ -147,7 +147,7 @@ public class DeviceCacheTest {
 
     @Test
     fun `given a valid customer info without request date, the JSON is parsed correctly`() {
-        public val deprecatedValidCachedCustomerInfo by lazy {
+        val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
             }.toString()
@@ -160,7 +160,7 @@ public class DeviceCacheTest {
 
     @Test
     fun `given a valid customer info with schema version, the JSON is parsed correctly`() {
-        public val deprecatedValidCachedCustomerInfo by lazy {
+        val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
                 put("customer_info_request_date", 1234567890L)
@@ -174,7 +174,7 @@ public class DeviceCacheTest {
 
     @Test
     fun `given a valid customer info with request date, the JSON is parsed correctly`() {
-        public val deprecatedValidCachedCustomerInfo by lazy {
+        val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
                 put("customer_info_request_date", 1234567890L)

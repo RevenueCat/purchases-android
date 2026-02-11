@@ -555,11 +555,11 @@ public class ETagManagerTest {
 
     @Test
     fun `verificationResults are expected between cache and backend`() {
-        public data class TestCase(
+        data class TestCase(
             val cachedVerificationResult: VerificationResult,
             val backendVerificationResult: VerificationResult,
-            val expectedVerificationResult: VerificationResult
-            )
+            val expectedVerificationResult: VerificationResult,
+        )
         val testCases = listOf(
             TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
             TestCase(NOT_REQUESTED, VERIFIED, VERIFIED),

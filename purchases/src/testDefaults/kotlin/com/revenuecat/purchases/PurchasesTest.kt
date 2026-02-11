@@ -2118,9 +2118,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedAddOns = subscription.addOnProducts
         assertThat(capturedAddOns?.size).isEqualTo(2)
 
-        public fun validateAddOnMatchesSubscriptionOption(
+        fun validateAddOnMatchesSubscriptionOption(
             addOn: GooglePurchasingData,
-            expectedSubscriptionOption: GoogleSubscriptionOption
+            expectedSubscriptionOption: GoogleSubscriptionOption,
         ) {
             assertThat(addOn.productId).isEqualTo(expectedSubscriptionOption.productId)
             assertThat((addOn as? GooglePurchasingData.Subscription)!!.optionId).isEqualTo(expectedSubscriptionOption.basePlanId)
