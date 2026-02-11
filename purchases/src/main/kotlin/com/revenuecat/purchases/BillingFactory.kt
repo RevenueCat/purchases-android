@@ -16,7 +16,7 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 internal object BillingFactory {
 
     @Suppress("LongParameterList")
-    public fun createBilling(
+    fun createBilling(
         store: Store,
         application: Application,
         backendHelper: BackendHelper,

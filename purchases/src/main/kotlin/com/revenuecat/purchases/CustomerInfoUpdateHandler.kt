@@ -25,7 +25,7 @@ internal class CustomerInfoUpdateHandler(
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
-    public var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
+    var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
         @Synchronized get
         set(value) {
             synchronized(this@CustomerInfoUpdateHandler) {
@@ -36,12 +36,12 @@ internal class CustomerInfoUpdateHandler(
 
     private var lastSentCustomerInfo: CustomerInfo? = null
 
-    public fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
+    fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
         deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, customerInfo)
         notifyListeners(customerInfo)
     }
 
-    public fun notifyListeners(customerInfo: CustomerInfo) {
+    fun notifyListeners(customerInfo: CustomerInfo) {
         synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
                 if (lastSentCustomerInfo != customerInfo) {

@@ -18,7 +18,7 @@ internal class WebPurchaseRedemptionHelper(
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
-    public fun handleRedeemWebPurchase(
+    fun handleRedeemWebPurchase(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {

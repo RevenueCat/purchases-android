@@ -8,7 +8,7 @@ internal object DeepLinkParser {
     private const val REDEEM_WEB_PURCHASE_HOST = "redeem_web_purchase"
 
     @Suppress("ReturnCount")
-    public fun parseWebPurchaseRedemption(data: Uri): WebPurchaseRedemption? {
+    fun parseWebPurchaseRedemption(data: Uri): WebPurchaseRedemption? {
         if (data.host == REDEEM_WEB_PURCHASE_HOST) {
             val redemptionToken = data.getQueryParameter("redemption_token")
             if (redemptionToken.isNullOrBlank()) {

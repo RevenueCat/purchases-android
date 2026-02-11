@@ -26,7 +26,7 @@ internal class OfferingFontPreDownloader(
         "monospace",
     )
 
-    public fun preDownloadOfferingFontsIfNeeded(offerings: Offerings) {
+    fun preDownloadOfferingFontsIfNeeded(offerings: Offerings) {
         // Getting the first offering's paywall components to check for fonts.
         // All offerings are expected to have the same fonts.
         val fontsToCheck = offerings.all.values

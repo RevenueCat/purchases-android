@@ -69,7 +69,7 @@ internal class PurchasesFactory(
 ) {
 
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
-    public fun createPurchases(
+    fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,
@@ -445,7 +445,7 @@ internal class PurchasesFactory(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    public fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
+    fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
             require(context.hasPermission(Manifest.permission.INTERNET)) {
                 "Purchases requires INTERNET permission."

@@ -2,7 +2,7 @@ package com.revenuecat.purchases.amazon
 
 internal object ISO3166Alpha2ToISO42170Converter {
 
-    public fun convertOrEmpty(iso3166Alpha2Code: String) = conversions[iso3166Alpha2Code] ?: ""
+    fun convertOrEmpty(iso3166Alpha2Code: String) = conversions[iso3166Alpha2Code] ?: ""
 
     private val conversions = mapOf(
         "AF" to "AFN",

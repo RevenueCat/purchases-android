@@ -11,11 +11,11 @@ internal interface GetCustomerCenterConfigCallback {
      * @param customerCenterConfig config for the customer center to be created
      */
     @OptIn(InternalRevenueCatAPI::class)
-    public fun onSuccess(customerCenterConfig: CustomerCenterConfigData)
+    fun onSuccess(customerCenterConfig: CustomerCenterConfigData)
 
     /**
      * Will be called after the call has completed with an error.
      * @param error A [PurchasesError] containing the reason for the failure of the call
      */
-    public fun onError(error: PurchasesError)
+    fun onError(error: PurchasesError)
 }

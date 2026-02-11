@@ -13,14 +13,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class LocalTransactionMetadata(
     @SerialName("token")
-    public val token: String,
+    val token: String,
 
     @SerialName("receipt_info")
-    public val receiptInfo: ReceiptInfo,
+    val receiptInfo: ReceiptInfo,
 
     @SerialName("paywall_data")
-    public val paywallPostReceiptData: PaywallPostReceiptData? = null,
+    val paywallPostReceiptData: PaywallPostReceiptData? = null,
 
     @SerialName("purchases_are_completed_by")
-    public val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
 )

@@ -20,7 +20,7 @@ internal class LocalTransactionMetadataStore(
     private companion object {
         const val KEY_PREFIX = "local_transaction_metadata_"
 
-        public fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
+        fun initializeSharedPreferences(context: Context, apiKey: String): SharedPreferences =
             context.getSharedPreferences(
                 "com.revenuecat.purchases.transaction_metadata.$apiKey",
                 Context.MODE_PRIVATE,
@@ -28,7 +28,7 @@ internal class LocalTransactionMetadataStore(
     }
 
     @Synchronized
-    public fun cacheLocalTransactionMetadata(
+    fun cacheLocalTransactionMetadata(
         purchaseToken: String,
         data: LocalTransactionMetadata,
     ) {
@@ -50,7 +50,7 @@ internal class LocalTransactionMetadataStore(
         }
     }
 
-    public fun getLocalTransactionMetadata(purchaseToken: String): LocalTransactionMetadata? {
+    fun getLocalTransactionMetadata(purchaseToken: String): LocalTransactionMetadata? {
         val tokenHash = getTokenHash(purchaseToken)
         val key = "$KEY_PREFIX$tokenHash"
         val jsonString = sharedPreferences.getString(key, null) ?: return null
@@ -64,7 +64,7 @@ internal class LocalTransactionMetadataStore(
         }
     }
 
-    public fun getAllLocalTransactionMetadata(): List<LocalTransactionMetadata> {
+    fun getAllLocalTransactionMetadata(): List<LocalTransactionMetadata> {
         val allKeys = sharedPreferences.all.keys.filter { it.startsWith(KEY_PREFIX) }
         val result = mutableListOf<LocalTransactionMetadata>()
 
@@ -85,7 +85,7 @@ internal class LocalTransactionMetadataStore(
     }
 
     @Synchronized
-    public fun clearLocalTransactionMetadata(purchaseTokens: Set<String>) {
+    fun clearLocalTransactionMetadata(purchaseTokens: Set<String>) {
         if (purchaseTokens.isEmpty()) {
             return
         }

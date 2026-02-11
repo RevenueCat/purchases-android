@@ -6,18 +6,18 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import java.net.URL
 
 internal fun interface ForceServerErrorStrategy {
-    public companion object {
+    companion object {
         val doNotFail = ForceServerErrorStrategy { _, _ -> false }
         val failAll = ForceServerErrorStrategy { _, _ -> true }
         val failExceptFallbackUrls = ForceServerErrorStrategy { baseURL, _ ->
             baseURL.toString() != AppConfig.fallbackURL.toString()
         }
     }
-    public val serverErrorURL: String
+    val serverErrorURL: String
         get() = "https://api.revenuecat.com/force-server-failure"
 
-    public fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean
-    public fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+    fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean
+    fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
         return null
     }
 }

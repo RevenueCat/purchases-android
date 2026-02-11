@@ -16,14 +16,14 @@ import org.json.JSONObject
 internal object VirtualCurrenciesFactory {
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    public fun buildVirtualCurrencies(httpResult: HTTPResult): VirtualCurrencies {
+    fun buildVirtualCurrencies(httpResult: HTTPResult): VirtualCurrencies {
         return buildVirtualCurrencies(
             body = httpResult.body,
         )
     }
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    public fun buildVirtualCurrencies(
+    fun buildVirtualCurrencies(
         body: JSONObject,
     ): VirtualCurrencies {
         return JsonProvider.defaultJson.decodeFromString<VirtualCurrencies>(
@@ -32,7 +32,7 @@ internal object VirtualCurrenciesFactory {
     }
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    public fun buildVirtualCurrencies(
+    fun buildVirtualCurrencies(
         jsonString: String,
     ): VirtualCurrencies {
         return JsonProvider.defaultJson.decodeFromString<VirtualCurrencies>(

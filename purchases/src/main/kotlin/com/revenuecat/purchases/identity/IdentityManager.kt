@@ -36,21 +36,21 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
 ) {
-    public companion object {
+    companion object {
         private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
 
-        public fun isUserIDAnonymous(appUserID: String): Boolean {
+        fun isUserIDAnonymous(appUserID: String): Boolean {
             return anonymousIdRegex.matches(appUserID)
         }
     }
 
-    public val currentAppUserID: String
+    val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
     // region Public functions
 
     @Synchronized
-    public fun configure(
+    fun configure(
         appUserID: String?,
     ) {
         if (appUserID?.isBlank() == true) {
@@ -75,7 +75,7 @@ internal class IdentityManager(
         }
     }
 
-    public suspend fun aliasCurrentUserIdTo(
+    suspend fun aliasCurrentUserIdTo(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID
@@ -101,7 +101,7 @@ internal class IdentityManager(
         }
     }
 
-    public fun logIn(
+    fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -143,13 +143,13 @@ internal class IdentityManager(
         }
     }
 
-    public fun switchUser(newAppUserID: String) {
+    fun switchUser(newAppUserID: String) {
         debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }
 
     @Synchronized
-    public fun logOut(completion: ((PurchasesError?) -> Unit)) {
+    fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
@@ -163,7 +163,7 @@ internal class IdentityManager(
     }
 
     @Synchronized
-    public fun currentUserIsAnonymous(): Boolean {
+    fun currentUserIsAnonymous(): Boolean {
         val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()

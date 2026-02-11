@@ -25,7 +25,7 @@ internal class SyncPurchasesHelper(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
-    public fun syncPurchases(
+    fun syncPurchases(
         isRestore: Boolean,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,

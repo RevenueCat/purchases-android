@@ -26,8 +26,8 @@ import kotlin.time.Duration
  * wasn't checked (e.g. due to a failure to query the purchases or because autoSyncPurchases being disabled)
  */
 private data class CustomerInfoDataResult(
-    public val result: Result<CustomerInfo, PurchasesError>,
-    public val hadUnsyncedPurchasesBefore: Boolean? = null,
+    val result: Result<CustomerInfo, PurchasesError>,
+    val hadUnsyncedPurchasesBefore: Boolean? = null,
 )
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -42,7 +42,7 @@ internal class CustomerInfoHelper(
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
-    public fun retrieveCustomerInfo(
+    fun retrieveCustomerInfo(
         appUserID: String,
         fetchPolicy: CacheFetchPolicy,
         appInBackground: Boolean,

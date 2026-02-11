@@ -22,7 +22,7 @@ internal class UserDataHandler(
     private val timestampProvider: TimestampProvider = DefaultTimestampProvider(),
 ) : UserDataResponseListener {
 
-    public companion object {
+    companion object {
         private const val GET_USER_DATA_TIMEOUT_MILLIS = 10_000L
         private const val CACHE_EXPIRATION_TIME_MILLIS = 300_000L
     }

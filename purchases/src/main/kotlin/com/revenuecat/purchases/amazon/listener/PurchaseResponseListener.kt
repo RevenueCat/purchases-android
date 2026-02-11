@@ -26,7 +26,7 @@ internal interface PurchaseResponseListener : PurchasingListener {
     }
 
     @SuppressWarnings("LongParameterList")
-    public fun purchase(
+    fun purchase(
         mainHandler: Handler,
         activity: Activity,
         appUserID: String,
