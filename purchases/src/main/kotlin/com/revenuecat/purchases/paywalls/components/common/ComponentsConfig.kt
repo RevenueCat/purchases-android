@@ -10,14 +10,14 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentsConfig(
+public class ComponentsConfig(
     @get:JvmSynthetic val base: PaywallComponentsConfig,
 )
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PaywallComponentsConfig(
+public class PaywallComponentsConfig(
     @get:JvmSynthetic val stack: StackComponent,
     @get:JvmSynthetic val background: Background,
     @get:JvmSynthetic

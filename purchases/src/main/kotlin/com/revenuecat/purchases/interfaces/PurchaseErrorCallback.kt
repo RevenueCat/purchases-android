@@ -2,7 +2,7 @@ package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.PurchasesError
 
-interface PurchaseErrorCallback {
+public interface PurchaseErrorCallback {
     /**
      * Will be called after the product change has completed with error
      * @param error A [PurchasesError] containing the reason for the failure when making the product change

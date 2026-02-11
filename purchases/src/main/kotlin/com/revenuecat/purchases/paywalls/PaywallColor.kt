@@ -22,7 +22,7 @@ private const val COLOR_WHITE_HEX = 0xFFFFFF
  */
 @InternalRevenueCatAPI
 @Poko
-class PaywallColor(
+public class PaywallColor(
     /**
      * The original Hex representation for this color.
      */
@@ -37,7 +37,7 @@ class PaywallColor(
      * The color converted to a @ColorInt representation
      */
     @ColorInt
-    val colorInt: Int = parseRGBAColor(stringRepresentation)
+    public val colorInt: Int = parseRGBAColor(stringRepresentation)
 
     object Serializer : KSerializer<PaywallColor> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PaywallColor", PrimitiveKind.STRING)

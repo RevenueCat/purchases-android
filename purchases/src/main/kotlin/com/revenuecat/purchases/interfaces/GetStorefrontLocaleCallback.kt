@@ -8,7 +8,7 @@ import java.util.Locale
  * Interface to be implemented when calling [getStorefrontLocale][com.revenuecat.purchases.Purchases.getStorefrontLocale]
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-interface GetStorefrontLocaleCallback {
+public interface GetStorefrontLocaleCallback {
     /**
      * Will be called after the call has completed.
      * @param storefrontLocale **Note:** this locale only has a region set.

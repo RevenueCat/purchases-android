@@ -20,16 +20,16 @@ internal class DiagnosticsHelper(
             )
     }
 
-    fun resetDiagnosticsStatus() {
+    public fun resetDiagnosticsStatus() {
         clearConsecutiveNumberOfErrors()
         diagnosticsFileHelper.deleteFile()
     }
 
-    fun clearConsecutiveNumberOfErrors() {
+    public fun clearConsecutiveNumberOfErrors() {
         sharedPreferences.value.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
     }
 
-    fun increaseConsecutiveNumberOfErrors(): Int {
+    public fun increaseConsecutiveNumberOfErrors(): Int {
         var count = sharedPreferences.value.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         sharedPreferences.value.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
         return count

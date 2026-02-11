@@ -28,7 +28,7 @@ sealed interface ColorInfo {
         @get:JvmSynthetic
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
-        val value: Int,
+        public val value: Int,
     ) : ColorInfo
 
     @Poko
@@ -78,7 +78,7 @@ sealed interface ColorInfo {
 @Poko
 @Immutable
 @Serializable
-class ColorScheme(
+public class ColorScheme(
     @get:JvmSynthetic val light: ColorInfo,
     @get:JvmSynthetic val dark: ColorInfo? = null,
 )

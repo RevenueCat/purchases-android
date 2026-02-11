@@ -109,7 +109,7 @@ internal class BillingWrapper(
     @get:Synchronized
     @set:Synchronized
     @Volatile
-    var billingClient: BillingClient? = null
+    public var billingClient: BillingClient? = null
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val purchaseContext = mutableMapOf<String, PurchaseContext>()
@@ -124,7 +124,7 @@ internal class BillingWrapper(
     @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
-    val appInBackground: Boolean
+    public val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
 
     class ClientFactory(

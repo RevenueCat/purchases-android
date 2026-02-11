@@ -44,7 +44,7 @@ internal class IdentityManager(
         }
     }
 
-    val currentAppUserID: String
+    public val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
     // region Public functions
@@ -143,13 +143,13 @@ internal class IdentityManager(
         }
     }
 
-    fun switchUser(newAppUserID: String) {
+    public fun switchUser(newAppUserID: String) {
         debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }
 
     @Synchronized
-    fun logOut(completion: ((PurchasesError?) -> Unit)) {
+    public fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
@@ -163,7 +163,7 @@ internal class IdentityManager(
     }
 
     @Synchronized
-    fun currentUserIsAnonymous(): Boolean {
+    public fun currentUserIsAnonymous(): Boolean {
         val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()

@@ -11,7 +11,7 @@ import dev.drewhamilton.poko.Poko
  */
 
 @Poko
-class TestStoreProduct @JvmOverloads constructor(
+public class TestStoreProduct @JvmOverloads constructor(
     override val id: String,
     override val name: String,
     override val title: String,

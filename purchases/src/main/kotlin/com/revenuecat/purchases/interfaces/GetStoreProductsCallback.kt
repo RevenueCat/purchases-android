@@ -3,7 +3,7 @@ package com.revenuecat.purchases.interfaces
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 
-interface GetStoreProductsCallback {
+public interface GetStoreProductsCallback {
     /**
      * Will be called after products have been fetched successfully
      *

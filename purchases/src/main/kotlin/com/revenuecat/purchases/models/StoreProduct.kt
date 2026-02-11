@@ -11,7 +11,7 @@ import java.util.Locale
 /**
  * Represents an in-app product's or subscription's listing details.
  */
-interface StoreProduct {
+public interface StoreProduct {
     /**
      * The product ID.
      * Google INAPP: "<productId>"
@@ -19,12 +19,12 @@ interface StoreProduct {
      * Amazon INAPP: "<sku>"
      * Amazon Sub: "<termSku>"
      */
-    val id: String
+    public val id: String
 
     /**
      * Type of product. One of [ProductType].
      */
-    val type: ProductType
+    public val type: ProductType
 
     /**
      * Price information for a non-subscription product.
@@ -32,7 +32,7 @@ interface StoreProduct {
      * Term price for an Amazon subscription.
      * For Google subscriptions, use SubscriptionOption's pricing phases for offer pricing.
      */
-    val price: Price
+    public val price: Price
 
     /**
      * Name of the product.
@@ -45,7 +45,7 @@ interface StoreProduct {
      * base plans don't have their own titles. Google suggests using the duration
      * as a way to title base plans.
      */
-    val name: String
+    public val name: String
 
     /**
      * Title of the product.
@@ -59,35 +59,35 @@ interface StoreProduct {
      * base plans don't have their own titles. Google suggests using the duration
      * as a way to title base plans.
      */
-    val title: String
+    public val title: String
 
     /**
      * The description of the product.
      */
-    val description: String
+    public val description: String
 
     /**
      * Subscription period.
      *
      * Note: Returned only for Google subscriptions. Null for Amazon or for INAPP products.
      */
-    val period: Period?
+    public val period: Period?
 
     /**
      * Contains all [SubscriptionOption]s. Null for Amazon or for INAPP products.
      */
-    val subscriptionOptions: SubscriptionOptions?
+    public val subscriptionOptions: SubscriptionOptions?
 
     /**
      * The default [SubscriptionOption] that will be used when purchasing and not specifying a different option.
      * Null for INAPP products.
      */
-    val defaultOption: SubscriptionOption?
+    public val defaultOption: SubscriptionOption?
 
     /**
      * Contains only data that is required to make the purchase.
      */
-    val purchasingData: PurchasingData
+    public val purchasingData: PurchasingData
 
     /**
      * The offering ID this `StoreProduct` was returned from.
@@ -98,7 +98,7 @@ interface StoreProduct {
         "Replaced with presentedOfferingContext",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val presentedOfferingIdentifier: String?
+    public val presentedOfferingIdentifier: String?
 
     /**
      * The context from which this product was obtained.
@@ -106,7 +106,7 @@ interface StoreProduct {
      * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
      * or on restores/syncs.
      */
-    val presentedOfferingContext: PresentedOfferingContext?
+    public val presentedOfferingContext: PresentedOfferingContext?
 
     /**
      * The sku of the StoreProduct
@@ -115,7 +115,7 @@ interface StoreProduct {
         "Replaced with id",
         ReplaceWith("id"),
     )
-    val sku: String
+    public val sku: String
 
     /**
      * For internal RevenueCat use.
@@ -155,7 +155,7 @@ interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price? {
+    public fun pricePerWeek(locale: Locale = Locale.getDefault()): Price? {
         return period?.let { price.pricePerWeek(it, locale) }
     }
 
@@ -167,7 +167,7 @@ interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price? {
+    public fun pricePerMonth(locale: Locale = Locale.getDefault()): Price? {
         return period?.let { price.pricePerMonth(it, locale) }
     }
 
@@ -179,7 +179,7 @@ interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun pricePerYear(locale: Locale = Locale.getDefault()): Price? {
+    public fun pricePerYear(locale: Locale = Locale.getDefault()): Price? {
         return period?.let { price.pricePerYear(it, locale) }
     }
 
@@ -191,7 +191,7 @@ interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun formattedPricePerMonth(locale: Locale = Locale.getDefault()): String? {
+    public fun formattedPricePerMonth(locale: Locale = Locale.getDefault()): String? {
         return pricePerMonth(locale)?.formatted
     }
 }

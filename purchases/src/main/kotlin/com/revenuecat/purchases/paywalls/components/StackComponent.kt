@@ -28,7 +28,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("stack")
 @Immutable
-class StackComponent(
+public class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
@@ -76,7 +76,7 @@ class StackComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialStackComponent(
+public class PartialStackComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

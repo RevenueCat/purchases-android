@@ -12,11 +12,11 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class PurchaseParams(val builder: Builder) {
+public class PurchaseParams(val builder: Builder) {
 
-    val isPersonalizedPrice: Boolean?
-    val oldProductId: String?
-    val googleReplacementMode: GoogleReplacementMode
+    public val isPersonalizedPrice: Boolean?
+    public val oldProductId: String?
+    public val googleReplacementMode: GoogleReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData

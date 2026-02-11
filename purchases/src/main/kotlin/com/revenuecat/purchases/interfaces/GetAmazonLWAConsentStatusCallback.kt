@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls to sync attributes and offerings.
  */
-interface GetAmazonLWAConsentStatusCallback {
+public interface GetAmazonLWAConsentStatusCallback {
     /**
      * Called when the consent status was successfully fetched.
      *

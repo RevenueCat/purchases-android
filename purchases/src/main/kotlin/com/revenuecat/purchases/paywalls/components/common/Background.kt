@@ -25,10 +25,10 @@ sealed interface Background {
         @get:JvmSynthetic val value: ThemeImageUrls,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        val fitMode: FitMode = FitMode.FILL,
+        public val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        val colorOverlay: ColorScheme? = null,
+        public val colorOverlay: ColorScheme? = null,
     ) : Background
 
     @Serializable
@@ -36,18 +36,18 @@ sealed interface Background {
         @get:JvmSynthetic val value: ThemeVideoUrls,
         @get:JvmSynthetic
         @SerialName("fallback_image")
-        val fallbackImage: ThemeImageUrls,
+        public val fallbackImage: ThemeImageUrls,
         @get:JvmSynthetic
-        val loop: Boolean,
+        public val loop: Boolean,
         @get:JvmSynthetic
         @SerialName("mute_audio")
-        val muteAudio: Boolean,
+        public val muteAudio: Boolean,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        val fitMode: FitMode = FitMode.FILL,
+        public val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        val colorOverlay: ColorScheme? = null,
+        public val colorOverlay: ColorScheme? = null,
     ) : Background
 }
 

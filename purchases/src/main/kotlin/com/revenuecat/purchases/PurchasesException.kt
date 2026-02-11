@@ -7,10 +7,10 @@ open class PurchasesException internal constructor(
 
     constructor(error: PurchasesError) : this(error, null)
 
-    val code: PurchasesErrorCode
+    public val code: PurchasesErrorCode
         get() = error.code
 
-    val underlyingErrorMessage: String?
+    public val underlyingErrorMessage: String?
         get() = error.underlyingErrorMessage
 
     override val message: String

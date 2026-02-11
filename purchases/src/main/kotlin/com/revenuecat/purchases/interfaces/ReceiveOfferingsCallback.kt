@@ -10,7 +10,7 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls to fetch [Offering].
  */
-interface ReceiveOfferingsCallback {
+public interface ReceiveOfferingsCallback {
     /**
      * Will be called after a successful fetch of offerings.
      *

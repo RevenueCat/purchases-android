@@ -34,7 +34,7 @@ import kotlinx.serialization.json.int
 @Serializable
 @SerialName("text")
 @Immutable
-class TextComponent
+public class TextComponent
 @Suppress("LongParameterList")
 constructor(
     @get:JvmSynthetic
@@ -77,7 +77,7 @@ constructor(
 @Poko
 @Serializable
 @Immutable
-class PartialTextComponent
+public class PartialTextComponent
 @Suppress("LongParameterList")
 constructor(
     @get:JvmSynthetic

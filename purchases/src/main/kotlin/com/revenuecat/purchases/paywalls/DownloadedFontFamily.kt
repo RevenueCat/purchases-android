@@ -7,7 +7,7 @@ import java.io.File
 
 @InternalRevenueCatAPI
 @Poko
-class DownloadedFont(
+public class DownloadedFont(
     @get:JvmSynthetic
     val weight: Int,
     @get:JvmSynthetic
@@ -18,7 +18,7 @@ class DownloadedFont(
 
 @InternalRevenueCatAPI
 @Poko
-class DownloadedFontFamily(
+public class DownloadedFontFamily(
     @get:JvmSynthetic
     val family: String,
     @get:JvmSynthetic

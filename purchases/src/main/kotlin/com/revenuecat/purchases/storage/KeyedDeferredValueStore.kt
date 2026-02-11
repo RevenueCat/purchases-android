@@ -4,12 +4,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.coroutines.Deferred
 
 @InternalRevenueCatAPI
-class KeyedDeferredValueStore<H, T>(
+public class KeyedDeferredValueStore<H, T>(
     private val lock: Any = object {},
 ) {
-    val deferred: MutableMap<H, Deferred<T>> = mutableMapOf()
+    public val deferred: MutableMap<H, Deferred<T>> = mutableMapOf()
 
-    fun getOrPut(key: H, task: () -> Deferred<T>) = synchronized(lock) {
+    public fun getOrPut(key: H, task: () -> Deferred<T>) = synchronized(lock) {
         deferred.get(key) ?: forgettingFailure(key, task).also { deferred.put(key, it) }
     }
 

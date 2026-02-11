@@ -37,10 +37,10 @@ internal class PurchaseHandler(
 ) : PurchaseResponseListener {
 
     private data class PurchaseRequest(
-        val storeProduct: StoreProduct,
-        val startTime: Date,
-        val onSuccess: (Receipt, UserData) -> Unit,
-        val onError: (PurchasesError) -> Unit,
+        public val storeProduct: StoreProduct,
+        public val startTime: Date,
+        public val onSuccess: (Receipt, UserData) -> Unit,
+        public val onError: (PurchasesError) -> Unit,
     )
 
     private val productTypes = mutableMapOf<String, ProductType>()

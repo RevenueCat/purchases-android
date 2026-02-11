@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 @Immutable
 @Serializable
 @SerialName("icon")
-class IconComponent(
+public class IconComponent(
     @get:JvmSynthetic
     @SerialName("base_url")
     val baseUrl: String,
@@ -55,7 +55,7 @@ class IconComponent(
     @Immutable
     class Formats(
         @get:JvmSynthetic
-        val webp: String,
+        public val webp: String,
     )
 
     @Poko
@@ -63,13 +63,13 @@ class IconComponent(
     @Immutable
     class IconBackground(
         @get:JvmSynthetic
-        val color: ColorScheme,
+        public val color: ColorScheme,
         @get:JvmSynthetic
-        val shape: MaskShape,
+        public val shape: MaskShape,
         @get:JvmSynthetic
-        val border: Border? = null,
+        public val border: Border? = null,
         @get:JvmSynthetic
-        val shadow: Shadow? = null,
+        public val shadow: Shadow? = null,
     )
 }
 
@@ -78,7 +78,7 @@ class IconComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialIconComponent(
+public class PartialIconComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

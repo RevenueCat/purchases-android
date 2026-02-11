@@ -145,7 +145,7 @@ internal class EventsManager(
      */
     @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
-    fun track(event: FeatureEvent) {
+    public fun track(event: FeatureEvent) {
         enqueue {
             debugLog { "Tracking event: $event" }
 
@@ -197,7 +197,7 @@ internal class EventsManager(
      * Initiates flushing of stored events to the backend.
      */
     @Synchronized
-    fun flushEvents(delay: Delay = Delay.DEFAULT) {
+    public fun flushEvents(delay: Delay = Delay.DEFAULT) {
         enqueue {
             if (flushInProgress.getAndSet(true)) {
                 debugLog { "Flush already in progress." }

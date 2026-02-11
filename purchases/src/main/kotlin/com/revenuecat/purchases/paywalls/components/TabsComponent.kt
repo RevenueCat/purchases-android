@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("tab_control_button")
 @Immutable
-class TabControlButtonComponent(
+public class TabControlButtonComponent(
     @get:JvmSynthetic
     @SerialName("tab_index")
     val tabIndex: Int,
@@ -38,7 +38,7 @@ class TabControlButtonComponent(
 @Serializable
 @SerialName("tab_control_toggle")
 @Immutable
-class TabControlToggleComponent(
+public class TabControlToggleComponent(
     @get:JvmSynthetic
     @SerialName("default_value")
     val defaultValue: Boolean,
@@ -59,14 +59,14 @@ class TabControlToggleComponent(
 @InternalRevenueCatAPI
 @Serializable
 @SerialName("tab_control")
-object TabControlComponent : PaywallComponent
+public object TabControlComponent : PaywallComponent
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
 @SerialName("tabs")
 @Immutable
-class TabsComponent(
+public class TabsComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic
@@ -101,9 +101,9 @@ class TabsComponent(
     @Serializable
     class Tab(
         @get:JvmSynthetic
-        val id: String,
+        public val id: String,
         @get:JvmSynthetic
-        val stack: StackComponent,
+        public val stack: StackComponent,
     )
 
     @InternalRevenueCatAPI
@@ -127,7 +127,7 @@ class TabsComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialTabsComponent(
+public class PartialTabsComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

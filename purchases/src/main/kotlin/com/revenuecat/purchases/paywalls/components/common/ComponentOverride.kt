@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentOverride<T : PartialComponent>(
+public class ComponentOverride<T : PartialComponent>(
     @get:JvmSynthetic val conditions: List<Condition>,
     @get:JvmSynthetic val properties: T,
 ) {

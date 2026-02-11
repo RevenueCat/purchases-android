@@ -12,7 +12,7 @@ import java.net.URL
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PaywallComponentsData(
+public class PaywallComponentsData(
     @get:JvmSynthetic
     val id: String? = null,
     @get:JvmSynthetic

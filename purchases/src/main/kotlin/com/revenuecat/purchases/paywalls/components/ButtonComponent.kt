@@ -22,7 +22,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 @SerialName("button")
 @Immutable
-class ButtonComponent(
+public class ButtonComponent(
     @get:JvmSynthetic val action: Action,
     @get:JvmSynthetic val stack: StackComponent,
     @get:JvmSynthetic val transition: PaywallTransition? = null,

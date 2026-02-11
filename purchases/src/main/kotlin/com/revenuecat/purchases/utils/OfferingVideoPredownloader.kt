@@ -20,7 +20,7 @@ internal class OfferingVideoPredownloader(
 ) {
     private val shouldPredownload: Boolean = canShowPaywalls
 
-    fun downloadVideos(offering: Offering) {
+    public fun downloadVideos(offering: Offering) {
         if (shouldPredownload) {
             // WIP: We will add a remote flag in the offering metadata that will indicate if we should
             // pre-download videos or not. For now, we want to only download the low-res to ensure we

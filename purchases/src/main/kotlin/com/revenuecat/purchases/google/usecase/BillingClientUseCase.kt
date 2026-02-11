@@ -26,7 +26,7 @@ internal val RETRY_TIMER_MAX_TIME = 15.minutes
 internal val RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND = 4.seconds
 
 internal interface UseCaseParams {
-    val appInBackground: Boolean
+    public val appInBackground: Boolean
 }
 
 internal abstract class BillingClientUseCase<T>(

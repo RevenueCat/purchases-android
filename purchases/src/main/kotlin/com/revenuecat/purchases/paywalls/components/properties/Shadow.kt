@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Immutable
 @Serializable
-class Shadow(
+public class Shadow(
     @get:JvmSynthetic val color: ColorScheme,
     @get:JvmSynthetic val radius: Double,
     @get:JvmSynthetic val x: Double,

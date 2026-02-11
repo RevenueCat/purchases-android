@@ -11,7 +11,7 @@ import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 
 @Poko
-class AmazonStoreProduct @JvmOverloads constructor(
+public class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The productId

@@ -29,7 +29,7 @@ private object PeriodConstants {
  */
 @Parcelize
 @Poko
-class Period(
+public class Period(
     /**
      * The number of period units.
      */
@@ -72,7 +72,7 @@ class Period(
     }
 
     @InternalRevenueCatAPI
-    val valueInDays: Double
+    public val valueInDays: Double
         get() = when (unit) {
             Unit.DAY -> value.toDouble()
             Unit.WEEK -> value * PeriodConstants.DAYS_PER_WEEK
@@ -88,7 +88,7 @@ class Period(
      * The period value in week units. This is an approximated value.
      */
     @InternalRevenueCatAPI
-    val valueInWeeks: Double
+    public val valueInWeeks: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_WEEK
             Unit.WEEK -> value.toDouble()
@@ -103,7 +103,7 @@ class Period(
     /**
      * The period value in month units. This is an approximated value.
      */
-    val valueInMonths: Double
+    public val valueInMonths: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_MONTH
             Unit.WEEK -> value / PeriodConstants.WEEKS_PER_MONTH
@@ -119,7 +119,7 @@ class Period(
      * The period value in week units. This is an approximated value.
      */
     @InternalRevenueCatAPI
-    val valueInYears: Double
+    public val valueInYears: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_YEAR
             Unit.WEEK -> value / PeriodConstants.WEEKS_PER_YEAR

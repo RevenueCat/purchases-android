@@ -23,7 +23,7 @@ class AdTracker internal constructor(
      *
      * @param data The ad display event data.
      */
-    fun trackAdDisplayed(data: AdDisplayedData) {
+    public fun trackAdDisplayed(data: AdDisplayedData) {
         eventsManager.track(
             event = AdEvent.Displayed(
                 networkName = data.networkName,
@@ -41,7 +41,7 @@ class AdTracker internal constructor(
      *
      * @param data The ad open event data.
      */
-    fun trackAdOpened(data: AdOpenedData) {
+    public fun trackAdOpened(data: AdOpenedData) {
         eventsManager.track(
             event = AdEvent.Open(
                 networkName = data.networkName,
@@ -59,7 +59,7 @@ class AdTracker internal constructor(
      *
      * @param data The ad revenue event data.
      */
-    fun trackAdRevenue(data: AdRevenueData) {
+    public fun trackAdRevenue(data: AdRevenueData) {
         eventsManager.track(
             event = AdEvent.Revenue(
                 networkName = data.networkName,
@@ -80,7 +80,7 @@ class AdTracker internal constructor(
      *
      * @param data The ad loaded event data.
      */
-    fun trackAdLoaded(data: AdLoadedData) {
+    public fun trackAdLoaded(data: AdLoadedData) {
         eventsManager.track(
             event = AdEvent.Loaded(
                 networkName = data.networkName,
@@ -98,7 +98,7 @@ class AdTracker internal constructor(
      *
      * @param data The ad failed to load event data.
      */
-    fun trackAdFailedToLoad(data: AdFailedToLoadData) {
+    public fun trackAdFailedToLoad(data: AdFailedToLoadData) {
         eventsManager.track(
             event = AdEvent.FailedToLoad(
                 mediatorName = data.mediatorName,

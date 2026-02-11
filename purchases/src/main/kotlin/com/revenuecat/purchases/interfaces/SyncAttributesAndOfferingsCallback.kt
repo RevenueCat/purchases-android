@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls to sync attributes and offerings.
  */
-interface SyncAttributesAndOfferingsCallback {
+public interface SyncAttributesAndOfferingsCallback {
     /**
      * Will be called after a successful syncing attributes and fetching of offerings.
      *

@@ -25,7 +25,7 @@ internal class SubscriberAttributesManager(
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
 
     @Synchronized
-    fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
+    public fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
         val attributesAsObjects = attributesToSet.map { (key, value) ->
             key to SubscriberAttribute(key, value)
         }.toMap()
@@ -112,7 +112,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun copyUnsyncedSubscriberAttributes(originalAppUserId: AppUserID, newAppUserID: AppUserID) {
+    public fun copyUnsyncedSubscriberAttributes(originalAppUserId: AppUserID, newAppUserID: AppUserID) {
         val unsyncedAttributesPreviousUser = deviceCache.getUnsyncedSubscriberAttributes(originalAppUserId)
         if (unsyncedAttributesPreviousUser.isEmpty()) {
             return
@@ -123,7 +123,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun getUnsyncedSubscriberAttributes(appUserID: String, completion: (SubscriberAttributeMap) -> Unit) {
+    public fun getUnsyncedSubscriberAttributes(appUserID: String, completion: (SubscriberAttributeMap) -> Unit) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
             completion(deviceCache.getUnsyncedSubscriberAttributes(appUserID))
         }
@@ -163,7 +163,7 @@ internal class SubscriberAttributesManager(
      * Convenience function to set attribution data from AppsFlyer's conversion data.
      */
     @Suppress("CyclomaticComplexMethod")
-    fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
+    public fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
         if (data == null) {
             return
         }

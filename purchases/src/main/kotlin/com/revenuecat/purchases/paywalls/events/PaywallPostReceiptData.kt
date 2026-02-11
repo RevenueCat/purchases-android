@@ -28,7 +28,7 @@ internal data class PaywallPostReceiptData(
         val json = Json.Default
     }
 
-    fun toMap(): Map<String, Any>? {
+    public fun toMap(): Map<String, Any>? {
         val map = json.encodeToJsonElement(this).asMap() ?: return null
         return map.filterNotNullValues()
     }

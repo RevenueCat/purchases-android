@@ -21,7 +21,7 @@ internal class SimulatedStoreErrorDialogActivity : Activity() {
         }
     }
 
-    val redactedApiKey: String
+    public val redactedApiKey: String
         get() = intent.getStringExtra(redactedApiKeyExtra) ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {

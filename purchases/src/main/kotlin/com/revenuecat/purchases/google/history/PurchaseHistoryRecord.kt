@@ -15,7 +15,7 @@ internal data class PurchaseHistoryRecord(
     val signature: String,
     val rawJson: String,
 ) {
-    fun toStoreTransaction(type: ProductType): StoreTransaction {
+    public fun toStoreTransaction(type: ProductType): StoreTransaction {
         return StoreTransaction(
             orderId = this.purchaseData.orderId,
             productIds = listOf(this.purchaseData.productId),

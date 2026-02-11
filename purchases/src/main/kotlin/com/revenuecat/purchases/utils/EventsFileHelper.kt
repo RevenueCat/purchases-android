@@ -16,7 +16,7 @@ internal open class EventsFileHelper<T : Event> (
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
     @Synchronized
-    fun appendEvent(event: T) {
+    public fun appendEvent(event: T) {
         fileHelper.appendToFile(
             filePath,
             (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
@@ -24,12 +24,12 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     @Synchronized
-    fun fileSizeInKB(): Double {
+    public fun fileSizeInKB(): Double {
         return fileHelper.fileSizeInKB(filePath)
     }
 
     @Synchronized
-    fun readFile(block: ((Sequence<T?>) -> Unit)) {
+    public fun readFile(block: ((Sequence<T?>) -> Unit)) {
         val eventDeserializer = eventDeserializer
         if (eventDeserializer == null || fileHelper.fileIsEmpty(filePath)) {
             block(emptySequence())
@@ -44,7 +44,7 @@ internal open class EventsFileHelper<T : Event> (
     // so adding this method to avoid the overhead of converting back to the model, then
     // back again to a JSONObject.
     @Synchronized
-    fun readFileAsJson(block: ((Sequence<JSONObject>) -> Unit)) {
+    public fun readFileAsJson(block: ((Sequence<JSONObject>) -> Unit)) {
         if (fileHelper.fileIsEmpty(filePath)) {
             block(emptySequence())
         } else {
@@ -55,12 +55,12 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     @Synchronized
-    fun clear(eventsToDeleteCount: Int) {
+    public fun clear(eventsToDeleteCount: Int) {
         fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount)
     }
 
     @Synchronized
-    fun deleteFile() {
+    public fun deleteFile() {
         if (!fileHelper.deleteFile(filePath)) {
             verboseLog { "Failed to delete events file in $filePath." }
         }

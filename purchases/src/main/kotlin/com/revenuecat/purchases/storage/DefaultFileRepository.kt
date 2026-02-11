@@ -30,7 +30,7 @@ import java.security.MessageDigest
  * A file repository that handles downloading and caching files from remote URLs.
  */
 @InternalRevenueCatAPI
-interface FileRepository {
+public interface FileRepository {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of the pairs of URL to their checksum to fetch data from.
@@ -60,7 +60,7 @@ interface FileRepository {
  * The file repository is a service capable of storing data and returning the URL where that stored data exists.
  */
 @InternalRevenueCatAPI
-interface LocalFileCache {
+public interface LocalFileCache {
     fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
     fun cachedContentExists(uri: URI): Boolean
     fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)

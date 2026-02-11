@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.utils
 
 internal interface TimestampProvider {
-    val currentTimeMillis: Long
+    public val currentTimeMillis: Long
 }
 
 internal class DefaultTimestampProvider : TimestampProvider {

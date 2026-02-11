@@ -263,9 +263,9 @@ internal class PostReceiptHelper(
 
     @OptIn(InternalRevenueCatAPI::class)
     private data class CachedDataToPost(
-        val localTransactionMetadata: LocalTransactionMetadata?,
-        val paywallEvent: PaywallEvent?,
-        val didCacheData: Boolean,
+        public val localTransactionMetadata: LocalTransactionMetadata?,
+        public val paywallEvent: PaywallEvent?,
+        public val didCacheData: Boolean,
     )
 
     /**

@@ -25,14 +25,14 @@ internal class OfferingsCache(
     private var cachedLanguageTags: String? = null
 
     @Synchronized
-    fun clearCache() {
+    public fun clearCache() {
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
         cachedLanguageTags = null
     }
 
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
+    public fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
         val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
             put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
         }
@@ -44,7 +44,7 @@ internal class OfferingsCache(
 
     // region Offerings cache
 
-    val cachedOfferings: Offerings?
+    public val cachedOfferings: Offerings?
         @Synchronized
         get() = offeringsCachedObject.cachedInstance
 
@@ -65,7 +65,7 @@ internal class OfferingsCache(
 
     // region Offerings response cache
 
-    val cachedOfferingsResponse: JSONObject?
+    public val cachedOfferingsResponse: JSONObject?
         @Synchronized
         get() = deviceCache.getOfferingsResponseCache()
 

@@ -21,7 +21,7 @@ internal data class PaywallStoredEvent(
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    fun toBackendEvent(): BackendEvent.Paywalls {
+    public fun toBackendEvent(): BackendEvent.Paywalls {
         return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
             version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,

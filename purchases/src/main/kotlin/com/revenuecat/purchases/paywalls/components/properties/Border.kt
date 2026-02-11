@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @Immutable
-class Border(
+public class Border(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic

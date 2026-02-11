@@ -57,12 +57,12 @@ internal data class ProductEntitlementMapping(
     }
 
     data class Mapping(
-        val productIdentifier: String,
-        val basePlanId: String?,
-        val entitlements: List<String>,
+        public val productIdentifier: String,
+        public val basePlanId: String?,
+        public val entitlements: List<String>,
     )
 
-    fun toJson() = JSONObject().apply {
+    public fun toJson() = JSONObject().apply {
         val mappingsObjects = mappings.mapValues { (_, value) ->
             JSONObject().apply {
                 put(PRODUCT_ID_KEY, value.productIdentifier)

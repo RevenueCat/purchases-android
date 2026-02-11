@@ -13,7 +13,7 @@ import java.util.Date
 @Serializable
 @SerialName("countdown")
 @Immutable
-class CountdownComponent(
+public class CountdownComponent(
     @get:JvmSynthetic val style: CountdownStyle,
     @SerialName("count_from")
     @get:JvmSynthetic val countFrom: CountFrom = CountFrom.DAYS,

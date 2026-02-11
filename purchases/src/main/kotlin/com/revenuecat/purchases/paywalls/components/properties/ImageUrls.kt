@@ -12,7 +12,7 @@ import java.net.URL
 @Poko
 @Serializable
 @Immutable
-class ImageUrls(
+public class ImageUrls(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
     val original: URL,
@@ -33,7 +33,7 @@ class ImageUrls(
 @Poko
 @Serializable
 @Immutable
-class ThemeImageUrls(
+public class ThemeImageUrls(
     @get:JvmSynthetic val light: ImageUrls,
     @get:JvmSynthetic val dark: ImageUrls? = null,
 )

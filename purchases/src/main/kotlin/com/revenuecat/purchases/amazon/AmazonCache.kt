@@ -17,7 +17,7 @@ internal class AmazonCache(
     }
 
     @Synchronized
-    fun cacheSkusByToken(receiptsToSkus: Map<String, String>) {
+    public fun cacheSkusByToken(receiptsToSkus: Map<String, String>) {
         log(LogIntent.DEBUG) { AmazonStrings.CACHING_RECEIPT_TERM_SKUS.format(receiptsToSkus) }
 
         val currentlyCached = getReceiptSkus()
@@ -30,7 +30,7 @@ internal class AmazonCache(
     }
 
     @Synchronized
-    fun getReceiptSkus(): Map<String, String> {
+    public fun getReceiptSkus(): Map<String, String> {
         val receiptToSkusJSONObject =
             deviceCache.getJSONObjectOrNull(amazonPostedTokensKey)?.getJSONObject(RECEIPTS_TO_SKUS_KEY)
 
@@ -38,7 +38,7 @@ internal class AmazonCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String) {
+    public fun addSuccessfullyPostedToken(token: String) {
         deviceCache.addSuccessfullyPostedToken(token)
     }
 }

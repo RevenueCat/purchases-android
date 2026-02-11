@@ -47,7 +47,7 @@ constructor(
         }
     }
 
-    fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
+    public fun storeUserIdIfNeeded(customerInfo: CustomerInfo) {
         if (blockstoreClient == null) return
         val currentUserId = identityManager.currentAppUserID
         if (
@@ -71,7 +71,7 @@ constructor(
         }
     }
 
-    fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
+    public fun aliasCurrentAndStoredUserIdsIfNeeded(callback: () -> Unit) {
         fun callCompletion() {
             mainScope.launch {
                 callback()
@@ -113,7 +113,7 @@ constructor(
         }
     }
 
-    fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
+    public fun clearUserIdBackupIfNeeded(callback: () -> Unit) {
         val blockstoreClient = this.blockstoreClient ?: run {
             callback()
             return

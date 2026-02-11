@@ -9,7 +9,7 @@ internal enum class PostReceiptInitiationSource {
     UNSYNCED_ACTIVE_PURCHASES,
     ;
 
-    val postReceiptFieldValue: String
+    public val postReceiptFieldValue: String
         get() = when (this) {
             RESTORE -> "restore"
             PURCHASE -> "purchase"

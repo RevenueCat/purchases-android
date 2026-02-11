@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Immutable
 @Serializable
-class Padding(
+public class Padding(
     /**
      * The top padding, in dp.
      */

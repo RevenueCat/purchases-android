@@ -27,7 +27,7 @@ import dev.drewhamilton.poko.Poko
  * }
  */
 @Poko
-class CustomActionData(
+public class CustomActionData(
     /**
      * The unique identifier for the custom action.
      *

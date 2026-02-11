@@ -94,7 +94,7 @@ internal sealed class Endpoint(
         }
     }
 
-    val supportsSignatureVerification: Boolean
+    public val supportsSignatureVerification: Boolean
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,
@@ -117,7 +117,7 @@ internal sealed class Endpoint(
                 false
         }
 
-    val needsNonceToPerformSigning: Boolean
+    public val needsNonceToPerformSigning: Boolean
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,
@@ -140,6 +140,6 @@ internal sealed class Endpoint(
                 false
         }
 
-    val supportsFallbackBaseURLs: Boolean
+    public val supportsFallbackBaseURLs: Boolean
         get() = fallbackPath != null
 }

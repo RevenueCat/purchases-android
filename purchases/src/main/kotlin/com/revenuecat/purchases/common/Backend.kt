@@ -131,7 +131,7 @@ internal class Backend(
         }
     }
 
-    val verificationMode: SignatureVerificationMode
+    public val verificationMode: SignatureVerificationMode
         get() = httpClient.signingManager.signatureVerificationMode
 
     @get:Synchronized @set:Synchronized
@@ -174,7 +174,7 @@ internal class Backend(
     @get:Synchronized @set:Synchronized
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
-    fun close() {
+    public fun close() {
         this.dispatcher.close()
     }
 
@@ -1032,7 +1032,7 @@ internal class Backend(
         }
     }
 
-    fun clearCaches() {
+    public fun clearCaches() {
         httpClient.clearCaches()
     }
 

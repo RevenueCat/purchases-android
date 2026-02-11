@@ -75,7 +75,7 @@ internal data class HTTPResult(
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payload
+    public val body: JSONObject = payload
         .takeIf { it.isNotBlank() }
         ?.let {
             try {
@@ -87,8 +87,8 @@ internal data class HTTPResult(
         }
         ?: JSONObject()
 
-    val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
-    val backendErrorMessage: String? = if (!isSuccessful()) {
+    public val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
+    public val backendErrorMessage: String? = if (!isSuccessful()) {
         body.optString(
             "message",
         ).takeIf { it.isNotBlank() }
@@ -96,7 +96,7 @@ internal data class HTTPResult(
         null
     }
 
-    fun serialize(): String {
+    public fun serialize(): String {
         val jsonObject = JSONObject().apply {
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
             put(SERIALIZATION_NAME_PAYLOAD, payload)

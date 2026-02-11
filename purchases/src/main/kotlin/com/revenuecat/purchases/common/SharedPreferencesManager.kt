@@ -37,7 +37,7 @@ internal class SharedPreferencesManager(
     /**
      * Gets the appropriate shared preferences, performing migration if needed
      */
-    fun getSharedPreferences(): SharedPreferences {
+    public fun getSharedPreferences(): SharedPreferences {
         synchronized(this) { ensureMigrated() }
         return revenueCatSharedPreferences
     }

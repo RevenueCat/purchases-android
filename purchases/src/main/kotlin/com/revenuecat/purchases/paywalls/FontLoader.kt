@@ -48,7 +48,7 @@ internal class FontLoader(
     private val cachedFontFamilyByFamilyName: MutableMap<String, DownloadedFontFamily> = mutableMapOf()
 
     @Suppress("ReturnCount")
-    fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
+    public fun getCachedFontFamilyOrStartDownload(fontInfo: FontInfo.Name): DownloadedFontFamily? {
         val fontInfoToDownload = when (val downloadableFontInfoResult = fontInfo.toDownloadableFontInfo()) {
             is RCResult.Success -> downloadableFontInfoResult.value
             is RCResult.Error -> {

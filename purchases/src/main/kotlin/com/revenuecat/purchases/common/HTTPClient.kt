@@ -449,7 +449,7 @@ internal class HTTPClient(
         }
     }
 
-    fun clearCaches() {
+    public fun clearCaches() {
         eTagManager.clearCaches()
     }
 

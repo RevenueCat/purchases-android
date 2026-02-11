@@ -13,7 +13,7 @@ internal class PaywallPresentedCache {
     private var lastPurchaseInitiatedEvent: PaywallEvent? = null
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun hasCachedPurchaseInitiatedData(): Boolean {
+    public fun hasCachedPurchaseInitiatedData(): Boolean {
         return lastPurchaseInitiatedEvent != null
     }
 
@@ -39,7 +39,7 @@ internal class PaywallPresentedCache {
     }
 
     @Synchronized
-    fun receiveEvent(event: PaywallEvent) {
+    public fun receiveEvent(event: PaywallEvent) {
         when (event.type) {
             PaywallEventType.PURCHASE_INITIATED -> {
                 verboseLog { "Caching paywall purchase initiated event." }

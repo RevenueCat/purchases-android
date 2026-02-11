@@ -20,7 +20,7 @@ import kotlinx.serialization.json.JsonObject
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PromoOfferConfig(
+public class PromoOfferConfig(
     /**
      * The offer identifier to use for this package.
      * On Android, this should match the offer ID configured in Google Play Console.

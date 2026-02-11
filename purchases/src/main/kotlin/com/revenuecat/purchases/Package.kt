@@ -15,7 +15,7 @@ import java.net.URL
  * this will be the URL for it linking directly to purchase this package.
  */
 @Poko
-class Package @JvmOverloads constructor(
+public class Package @JvmOverloads constructor(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
@@ -46,7 +46,7 @@ class Package @JvmOverloads constructor(
         "Use presentedOfferingContext.offeringIdentifier instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val offering: String
+    public val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
 
     internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
@@ -63,7 +63,7 @@ class Package @JvmOverloads constructor(
 /**
  *  Enumeration of all possible Package types.
  */
-enum class PackageType(val identifier: String?) {
+public enum class PackageType(val identifier: String?) {
     /**
      * A package that was defined with a custom identifier.
      */

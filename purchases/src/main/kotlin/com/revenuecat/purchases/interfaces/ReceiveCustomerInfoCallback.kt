@@ -10,7 +10,7 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls that return a [CustomerInfo]
  */
-interface ReceiveCustomerInfoCallback {
+public interface ReceiveCustomerInfoCallback {
     /**
      * Will be called after the call has completed.
      * @param customerInfo [CustomerInfo] class sent back when the call has completed

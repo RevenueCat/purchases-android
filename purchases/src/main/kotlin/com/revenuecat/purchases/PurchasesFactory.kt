@@ -445,7 +445,7 @@ internal class PurchasesFactory(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
+    public fun validateConfiguration(configuration: PurchasesConfiguration): APIKeyValidator.ValidationResult {
         with(configuration) {
             require(context.hasPermission(Manifest.permission.INTERNET)) {
                 "Purchases requires INTERNET permission."

@@ -21,7 +21,7 @@ import java.net.URL
  */
 @Suppress("UnsafeOptInUsageError")
 @Poko
-class Offering
+public class Offering
 @OptIn(InternalRevenueCatAPI::class)
 constructor(
     val identifier: String,
@@ -53,8 +53,8 @@ constructor(
     @InternalRevenueCatAPI
     @Poko
     class PaywallComponents(
-        val uiConfig: UiConfig,
-        val data: PaywallComponentsData,
+        public val uiConfig: UiConfig,
+        public val data: PaywallComponentsData,
     )
 
     /**
@@ -62,7 +62,7 @@ constructor(
      */
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
-    val hasPaywall: Boolean
+    public val hasPaywall: Boolean
         get() = paywall != null || paywallComponents != null
 
     /**
@@ -123,12 +123,12 @@ constructor(
      * Returns the `metadata` value associated to `key` for the expected `String` type
      * or `default` if not found, or it's not the expected `String` type.
      */
-    fun getMetadataString(key: String, default: String): String {
+    public fun getMetadataString(key: String, default: String): String {
         return this.metadata[key] as? String ?: default
     }
 
     @InternalRevenueCatAPI
-    fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
+    public fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
         return Offering(
             identifier = this.identifier,
             serverDescription = this.serverDescription,

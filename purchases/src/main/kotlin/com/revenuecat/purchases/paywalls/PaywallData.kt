@@ -24,7 +24,7 @@ import java.util.Locale
 @InternalRevenueCatAPI
 @Serializable
 @Poko
-class PaywallData(
+public class PaywallData(
     /**
      * The unique identifier for this paywall.
      */
@@ -69,14 +69,14 @@ class PaywallData(
      * Returns the [Locale] and [LocalizedConfiguration] to be used based on the current locale list
      * and the available locales for this paywall.
      */
-    val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
+    public val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
         get() {
             return localizedConfiguration(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
     @Suppress("ReturnCount")
-    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
+    public fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
             configForLocale(localeToCheck)?.let { localizedConfiguration ->
@@ -104,14 +104,14 @@ class PaywallData(
      *
      * @return [LocalizedConfiguration] for the given [Locale], if found.
      */
-    fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
+    public fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
                 requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
             }?.value
     }
 
-    val tieredLocalizedConfiguration: Pair<Locale, Map<String, LocalizedConfiguration>>
+    public val tieredLocalizedConfiguration: Pair<Locale, Map<String, LocalizedConfiguration>>
         get() {
             return tieredConfigForLocales(locales = getDefaultLocales())
         }
@@ -140,7 +140,7 @@ class PaywallData(
     }
 
     @VisibleForTesting
-    fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
+    public fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
         return localizationByTier[requiredLocale.toString()]
             ?: localizationByTier.entries.firstOrNull { (localeKey, _) ->
                 requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
@@ -478,19 +478,19 @@ class PaywallData(
         /**
          * The title of the paywall screen.
          */
-        val title: String,
+        public val title: String,
 
         /**
          * The subtitle of the paywall screen.
          */
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val subtitle: String? = null,
+        public val subtitle: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription.
          */
         @SerialName("call_to_action")
-        val callToAction: String,
+        public val callToAction: String,
 
         /**
          * The content of the main action button for purchasing a subscription when an intro offer is available.
@@ -498,7 +498,7 @@ class PaywallData(
          */
         @SerialName("call_to_action_with_intro_offer")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val callToActionWithIntroOffer: String? = null,
+        public val callToActionWithIntroOffer: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription when multiple intro offer are available.
@@ -507,14 +507,14 @@ class PaywallData(
          */
         @SerialName("call_to_action_with_multiple_intro_offers")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val callToActionWithMultipleIntroOffers: String? = null,
+        public val callToActionWithMultipleIntroOffers: String? = null,
 
         /**
          * Description for the offer to be purchased.
          */
         @SerialName("offer_details")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val offerDetails: String? = null,
+        public val offerDetails: String? = null,
 
         /**
          * Description for the offer to be purchased when an intro offer is available.
@@ -522,7 +522,7 @@ class PaywallData(
          */
         @SerialName("offer_details_with_intro_offer")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val offerDetailsWithIntroOffer: String? = null,
+        public val offerDetailsWithIntroOffer: String? = null,
 
         /**
          * Description for the offer to be purchased when multiple intro offers are available.
@@ -531,26 +531,26 @@ class PaywallData(
          */
         @SerialName("offer_details_with_multiple_intro_offers")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val offerDetailsWithMultipleIntroOffers: String? = null,
+        public val offerDetailsWithMultipleIntroOffers: String? = null,
 
         /**
          * The name representing each of the packages, most commonly a variable.
          */
         @SerialName("offer_name")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val offerName: String? = null,
+        public val offerName: String? = null,
 
         /**
          * An optional list of features that describe this paywall.
          */
-        val features: List<Feature> = emptyList(),
+        public val features: List<Feature> = emptyList(),
 
         @SerialName("tier_name")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val tierName: String? = null,
+        public val tierName: String? = null,
 
         @SerialName("offer_overrides")
-        val offerOverrides: Map<String, OfferOverride> = emptyMap(),
+        public val offerOverrides: Map<String, OfferOverride> = emptyMap(),
     ) {
         /**
          * An item to be showcased in a paywall.

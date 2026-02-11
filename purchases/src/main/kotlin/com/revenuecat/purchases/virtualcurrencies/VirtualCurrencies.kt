@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Parcelize
 @Serializable
-class VirtualCurrencies @InternalRevenueCatAPI constructor(
+public class VirtualCurrencies @InternalRevenueCatAPI constructor(
     @SerialName("virtual_currencies")
     val all: Map<String, VirtualCurrency>,
 ) : Parcelable {

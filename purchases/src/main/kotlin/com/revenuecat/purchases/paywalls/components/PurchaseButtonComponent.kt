@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("purchase_button")
 @Immutable
-class PurchaseButtonComponent(
+public class PurchaseButtonComponent(
     @get:JvmSynthetic val stack: StackComponent,
     @get:JvmSynthetic val action: Action? = null,
     @get:JvmSynthetic val method: Method? = null,
@@ -76,9 +76,9 @@ class PurchaseButtonComponent(
     @Immutable
     data class CustomUrl(
         @SerialName("url_lid")
-        val urlLid: LocalizationKey,
+        public val urlLid: LocalizationKey,
         @SerialName("package_param")
-        val packageParam: String? = null,
+        public val packageParam: String? = null,
     )
 }
 

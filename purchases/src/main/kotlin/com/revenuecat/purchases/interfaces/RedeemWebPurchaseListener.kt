@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
 /**
  * Interface to handle the redemption of a RevenueCat Web purchase.
  */
-fun interface RedeemWebPurchaseListener {
+public fun interface RedeemWebPurchaseListener {
     /**
      * Result of the redemption of a RevenueCat Web purchase.
      */

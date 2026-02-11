@@ -35,7 +35,7 @@ internal class APIKeyValidator {
         OTHER_PLATFORM,
     }
 
-    fun validateAndLog(apiKey: String, configuredStore: Store): ValidationResult {
+    public fun validateAndLog(apiKey: String, configuredStore: Store): ValidationResult {
         val validationResult = validate(apiKey, configuredStore)
         logValidationResult(validationResult)
         return validationResult
@@ -80,7 +80,7 @@ internal class APIKeyValidator {
         }
     }
 
-    fun redactApiKey(apiKey: String): String {
+    public fun redactApiKey(apiKey: String): String {
         val underscoreIndex = apiKey.indexOf('_')
         val prefix: String
         val remainder: String

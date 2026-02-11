@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ProductChangeConfig(
+public class ProductChangeConfig(
     /**
      * Replacement mode to use for upgrades (moving to a higher price per unit time).
      * Defaults to CHARGE_PRORATED_PRICE as recommended by Google.

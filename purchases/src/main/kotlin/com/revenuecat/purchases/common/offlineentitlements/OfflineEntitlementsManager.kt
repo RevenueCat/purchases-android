@@ -21,7 +21,7 @@ internal class OfflineEntitlementsManager(
     private val diagnosticsTracker: DiagnosticsTracker?,
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
-    val offlineCustomerInfo: CustomerInfo?
+    public val offlineCustomerInfo: CustomerInfo?
         get() = _offlineCustomerInfo
 
     @get:Synchronized @set:Synchronized
@@ -30,7 +30,7 @@ internal class OfflineEntitlementsManager(
     private val offlineCustomerInfoCallbackCache = mutableMapOf<String, List<OfflineCustomerInfoCallback>>()
 
     @Synchronized
-    fun resetOfflineCustomerInfoCache() {
+    public fun resetOfflineCustomerInfoCache() {
         if (_offlineCustomerInfo != null) {
             debugLog { OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE }
             _offlineCustomerInfo = null
@@ -97,7 +97,7 @@ internal class OfflineEntitlementsManager(
         )
     }
 
-    fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
+    public fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
             backend.getProductEntitlementMapping(

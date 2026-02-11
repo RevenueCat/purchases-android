@@ -11,7 +11,7 @@ import com.revenuecat.purchases.ReplacementMode
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-enum class GoogleReplacementMode(
+public enum class GoogleReplacementMode(
     @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
 ) : ReplacementMode {
     /**

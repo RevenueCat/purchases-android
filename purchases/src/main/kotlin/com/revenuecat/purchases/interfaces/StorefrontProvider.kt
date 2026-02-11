@@ -1,5 +1,5 @@
 package com.revenuecat.purchases.interfaces
 
-interface StorefrontProvider {
+public interface StorefrontProvider {
     fun getStorefront(): String?
 }

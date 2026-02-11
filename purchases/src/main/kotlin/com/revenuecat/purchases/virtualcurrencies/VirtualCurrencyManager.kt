@@ -48,7 +48,7 @@ internal class VirtualCurrencyManager(
     }
 
     @Synchronized
-    fun cachedVirtualCurrencies(): VirtualCurrencies? {
+    public fun cachedVirtualCurrencies(): VirtualCurrencies? {
         val appUserID = identityManager.currentAppUserID
         val isAppBackgrounded = appConfig.isAppBackgrounded
 
@@ -69,7 +69,7 @@ internal class VirtualCurrencyManager(
     }
 
     @Synchronized
-    fun invalidateVirtualCurrenciesCache() {
+    public fun invalidateVirtualCurrenciesCache() {
         val appUserID = identityManager.currentAppUserID
 
         log(LogIntent.DEBUG) {

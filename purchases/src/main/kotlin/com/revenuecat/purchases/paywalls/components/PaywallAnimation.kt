@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("animation")
-class PaywallAnimation(
+public class PaywallAnimation(
     @get:JvmSynthetic val type: AnimationType,
     @get:JvmSynthetic @SerialName("ms_delay") val msDelay: Int,
     @get:JvmSynthetic @SerialName("ms_duration") val msDuration: Int,

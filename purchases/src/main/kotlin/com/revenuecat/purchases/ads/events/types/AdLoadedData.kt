@@ -15,7 +15,7 @@ import dev.drewhamilton.poko.Poko
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
-class AdLoadedData(
+public class AdLoadedData(
     val networkName: String?,
     val mediatorName: AdMediatorName,
     val adFormat: AdFormat,

@@ -47,7 +47,7 @@ internal class HTTPTimeoutManager(
      * @param isFallback Whether this is a fallback request
      * @return The timeout in milliseconds
      */
-    fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
+    public fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
         // Check if reset is needed (10 minutes elapsed)
         if (shouldResetTimeout()) {
             resetTimeout()
@@ -71,7 +71,7 @@ internal class HTTPTimeoutManager(
      * Records the result of a request and updates internal state accordingly.
      * @param result The result of the request
      */
-    fun recordRequestResult(result: RequestResult) {
+    public fun recordRequestResult(result: RequestResult) {
         when (result) {
             RequestResult.SUCCESS_ON_MAIN_BACKEND -> {
                 resetTimeout()

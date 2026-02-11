@@ -13,7 +13,7 @@ import java.net.URL
 @Poko
 @Serializable
 @Immutable
-class ThemeVideoUrls(
+public class ThemeVideoUrls(
     @get:JvmSynthetic val light: VideoUrls,
     @get:JvmSynthetic val dark: VideoUrls?,
 )
@@ -22,7 +22,7 @@ class ThemeVideoUrls(
 @Poko
 @Serializable
 @Immutable
-class VideoUrls(
+public class VideoUrls(
     @get:JvmSynthetic
     val width: UInt,
     @get:JvmSynthetic

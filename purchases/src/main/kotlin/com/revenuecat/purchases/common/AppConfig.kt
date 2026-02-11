@@ -35,30 +35,30 @@ internal class AppConfig(
     }
 
     // Should only be used for tests
-    var forceSigningErrors: Boolean = forceSigningErrors
+    public var forceSigningErrors: Boolean = forceSigningErrors
         get() = runningTests && field
 
     private val _isAppBackgrounded: AtomicBoolean = AtomicBoolean(true)
-    var isAppBackgrounded: Boolean
+    public var isAppBackgrounded: Boolean
         get() = _isAppBackgrounded.get()
         set(value) {
             _isAppBackgrounded.set(value)
         }
 
     val enableOfflineEntitlements = true
-    val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
-    val versionName: String = context.versionName ?: ""
-    val packageName: String = context.packageName
-    var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
-    val baseURL: URL = proxyURL?.also {
+    public val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
+    public val versionName: String = context.versionName ?: ""
+    public val packageName: String = context.packageName
+    public var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
+    public val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO) { ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET }
     } ?: URL(baseUrlString)
-    val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
+    public val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
         emptyList()
     } else {
         listOf(fallbackURL)
     }
-    val customEntitlementComputation: Boolean
+    public val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
 
     val playStoreVersionName = context.playStoreVersionName

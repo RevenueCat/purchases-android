@@ -12,7 +12,7 @@ import java.util.Locale
  * Subscription purchases of the Customer.
  */
 @SuppressWarnings("LongParameterList")
-class SubscriptionInfo(
+public class SubscriptionInfo(
     /**
      * The product identifier.
      */
@@ -107,12 +107,12 @@ class SubscriptionInfo(
     /**
      * Whether the subscription is currently active.
      */
-    val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate).isActive
+    public val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate).isActive
 
     /**
      * Whether the subscription will renew at the next billing period.
      */
-    val willRenew: Boolean = EntitlementInfoHelper.getWillRenew(
+    public val willRenew: Boolean = EntitlementInfoHelper.getWillRenew(
         store,
         expiresDate,
         unsubscribeDetectedAt,

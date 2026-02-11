@@ -91,7 +91,7 @@ internal data class ReceiptInfo(
     }
 
     @IgnoredOnParcel
-    val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
+    public val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
 }
 
 private fun StoreProduct.platformProductId(): PlatformProductId {

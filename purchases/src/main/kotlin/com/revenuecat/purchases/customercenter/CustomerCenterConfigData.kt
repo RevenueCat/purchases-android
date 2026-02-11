@@ -29,7 +29,7 @@ data class CustomerCenterConfigData(
 ) {
     @Serializable
     data class Localization(
-        val locale: String,
+        public val locale: String,
         @SerialName("localized_strings") val localizedStrings: Map<String, String>,
     ) {
         enum class VariableName(val identifier: String) {
@@ -435,12 +435,12 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class HelpPath(
-        val id: String,
-        val title: String,
-        val type: PathType,
+        public val id: String,
+        public val title: String,
+        public val type: PathType,
         @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
         @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
-        val url: String? = null,
+        public val url: String? = null,
         @SerialName("open_method") val openMethod: OpenMethod? = null,
         @SerialName("action_identifier") val actionIdentifier: String? = null,
     ) {
@@ -526,8 +526,8 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class Appearance(
-        val light: ColorInformation? = null,
-        val dark: ColorInformation? = null,
+        public val light: ColorInformation? = null,
+        public val dark: ColorInformation? = null,
     ) {
         @Serializable
         data class ColorInformation(
@@ -546,7 +546,7 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class ScreenOffering(
-        val type: ScreenOfferingType,
+        public val type: ScreenOfferingType,
         @SerialName("offering_id") val offeringId: String? = null,
         @SerialName("button_text") val buttonText: String? = null,
     ) {
@@ -562,11 +562,11 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class Screen(
-        val type: ScreenType,
-        val title: String,
+        public val type: ScreenType,
+        public val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
-        val offering: ScreenOffering? = null,
+        public val offering: ScreenOffering? = null,
     ) {
         @Serializable
         enum class ScreenType {
@@ -579,13 +579,13 @@ data class CustomerCenterConfigData(
     @Serializable
     data class Support(
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val email: String? = null,
+        public val email: String? = null,
         @SerialName("should_warn_customer_to_update")
-        val shouldWarnCustomerToUpdate: Boolean? = null,
+        public val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
-        val displayVirtualCurrencies: Boolean? = null,
+        public val displayVirtualCurrencies: Boolean? = null,
         @SerialName("support_tickets")
-        val supportTickets: SupportTickets = SupportTickets(),
+        public val supportTickets: SupportTickets = SupportTickets(),
     ) {
         @Serializable
         data class SupportTickets(
@@ -650,11 +650,11 @@ data class CustomerCenterConfigData(
         }
     }
 
-    fun getManagementScreen(): CustomerCenterConfigData.Screen? {
+    public fun getManagementScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]
     }
 
-    fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
+    public fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]
     }
 }

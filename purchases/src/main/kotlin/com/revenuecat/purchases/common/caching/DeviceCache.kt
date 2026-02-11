@@ -53,11 +53,11 @@ internal open class DeviceCache(
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
-    val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
-    val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
+    public val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
+    public val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
-    val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
-    val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
+    public val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    public val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -80,7 +80,7 @@ internal open class DeviceCache(
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
-    fun startEditing(): SharedPreferences.Editor {
+    public fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
     }
 
@@ -106,7 +106,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearCachesForAppUserID(appUserID: String) {
+    public fun clearCachesForAppUserID(appUserID: String) {
         preferences.edit()
             .clearCustomerInfo()
             .clearAppUserID()
@@ -183,7 +183,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
+    public fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
             it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
@@ -209,7 +209,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearCustomerInfoCache(appUserID: String) {
+    public fun clearCustomerInfoCache(appUserID: String) {
         val editor = preferences.edit()
         clearCustomerInfoCache(appUserID, editor)
         editor.apply()
@@ -225,17 +225,17 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun setCustomerInfoCacheTimestampToNow(appUserID: String) {
+    public fun setCustomerInfoCacheTimestampToNow(appUserID: String) {
         setCustomerInfoCacheTimestamp(appUserID, dateProvider.now)
     }
 
     @Synchronized
-    fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
+    public fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
     }
 
     @Synchronized
-    fun setStorefront(countryCode: String) {
+    public fun setStorefront(countryCode: String) {
         verboseLog { BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode) }
         preferences.edit().putString(storefrontCacheKey, countryCode).apply()
     }
@@ -288,7 +288,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+    public fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
         val virtualCurrenciesJSONString = Json.Default.encodeToString(VirtualCurrencies.serializer(), virtualCurrencies)
 
         preferences.edit()
@@ -322,12 +322,12 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
+    public fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
         setVirtualCurrenciesCacheTimestamp(appUserID, dateProvider.now)
     }
 
     @Synchronized
-    fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
+    public fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), date.time).apply()
     }
 
@@ -366,7 +366,7 @@ internal open class DeviceCache(
     // region attribution data
 
     @Synchronized
-    fun cleanupOldAttributionData() {
+    public fun cleanupOldAttributionData() {
         val editor = preferences.edit()
         for (key in preferences.all.keys) {
             if (key != null && key.startsWith(attributionCacheKey)) {
@@ -381,7 +381,7 @@ internal open class DeviceCache(
     // region purchase tokens
 
     @Synchronized
-    fun getPreviouslySentHashedTokens(): Set<String> {
+    public fun getPreviouslySentHashedTokens(): Set<String> {
         return try {
             (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
                 log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
@@ -392,7 +392,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String) {
+    public fun addSuccessfullyPostedToken(token: String) {
         log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()) }
         getPreviouslySentHashedTokens().let {
             log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(it) }
@@ -440,12 +440,12 @@ internal open class DeviceCache(
     // region offerings response
 
     @Synchronized
-    fun getOfferingsResponseCache(): JSONObject? {
+    public fun getOfferingsResponseCache(): JSONObject? {
         return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
     @Synchronized
-    fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+    public fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
         preferences.edit()
             .putString(
                 offeringsResponseCacheKey,
@@ -454,7 +454,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearOfferingsResponseCache() {
+    public fun clearOfferingsResponseCache() {
         preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
@@ -463,7 +463,7 @@ internal open class DeviceCache(
     // region ProductEntitlementMapping
 
     @Synchronized
-    fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+    public fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
         val json = productEntitlementMapping.toJson()
         preferences.edit()
             .putString(
@@ -476,7 +476,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun setProductEntitlementMappingCacheTimestampToNow() {
+    public fun setProductEntitlementMappingCacheTimestampToNow() {
         setProductEntitlementMappingCacheTimestamp(dateProvider.now)
     }
 
@@ -485,7 +485,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun isProductEntitlementMappingCacheStale(): Boolean {
+    public fun isProductEntitlementMappingCacheStale(): Boolean {
         return getProductEntitlementMappingLastUpdated().isCacheStale(
             PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD,
             dateProvider,
@@ -494,7 +494,7 @@ internal open class DeviceCache(
 
     @Suppress("NestedBlockDepth")
     @Synchronized
-    fun getProductEntitlementMapping(): ProductEntitlementMapping? {
+    public fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
                 val jsonObject = JSONObject(jsonString)

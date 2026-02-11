@@ -12,6 +12,6 @@ internal data class AdEventsRequest(
      *
      * @return A list of string representations of hash codes for the events in the request.
      */
-    val cacheKey: List<String>
+    public val cacheKey: List<String>
         get() = events.map { it.hashCode().toString() }
 }

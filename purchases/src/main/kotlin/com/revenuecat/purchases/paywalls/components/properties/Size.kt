@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Immutable
 @Serializable
-class Size(
+public class Size(
     @get:JvmSynthetic val width: SizeConstraint,
     @get:JvmSynthetic val height: SizeConstraint,
 )

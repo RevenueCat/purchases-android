@@ -103,7 +103,7 @@ internal class OfferingsManager(
         }
     }
 
-    fun onAppForeground(appUserID: String) {
+    public fun onAppForeground(appUserID: String) {
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)

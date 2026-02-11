@@ -11,7 +11,7 @@ import kotlinx.parcelize.Parcelize
  * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-class EntitlementInfos(
+public class EntitlementInfos(
     val all: Map<String, EntitlementInfo>,
     val verification: VerificationResult,
 ) : Parcelable {

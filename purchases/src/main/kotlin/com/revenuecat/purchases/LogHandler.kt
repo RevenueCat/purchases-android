@@ -4,7 +4,7 @@ package com.revenuecat.purchases
  * Interface that allows handling logs manually.
  * See also [Purchases.logHandler]
  */
-interface LogHandler {
+public interface LogHandler {
     fun v(tag: String, msg: String)
     fun d(tag: String, msg: String)
     fun i(tag: String, msg: String)

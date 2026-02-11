@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("package")
 @Immutable
-class PackageComponent(
+public class PackageComponent(
     @get:JvmSynthetic
     @SerialName("package_id")
     val packageId: String,

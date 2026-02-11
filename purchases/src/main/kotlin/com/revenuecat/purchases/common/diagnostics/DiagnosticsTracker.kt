@@ -169,14 +169,14 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleBillingStartConnection() {
+    public fun trackGoogleBillingStartConnection() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
             properties = emptyMap(),
         )
     }
 
-    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+    public fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
             properties = mapOf(
@@ -187,7 +187,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleBillingServiceDisconnected() {
+    public fun trackGoogleBillingServiceDisconnected() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
             properties = emptyMap(),
@@ -283,7 +283,7 @@ internal class DiagnosticsTracker(
 
     // endregion
 
-    fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
+    public fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = commonProperties,
@@ -296,14 +296,14 @@ internal class DiagnosticsTracker(
         }
     }
 
-    fun trackMaxDiagnosticsSyncRetriesReached() {
+    public fun trackMaxDiagnosticsSyncRetriesReached() {
         trackEvent(
             eventName = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
             properties = emptyMap(),
         )
     }
 
-    fun trackClearingDiagnosticsAfterFailedSync() {
+    public fun trackClearingDiagnosticsAfterFailedSync() {
         trackEvent(
             eventName = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
             properties = emptyMap(),
@@ -342,14 +342,14 @@ internal class DiagnosticsTracker(
 
     // region Offline Entitlements
 
-    fun trackEnteredOfflineEntitlementsMode() {
+    public fun trackEnteredOfflineEntitlementsMode() {
         trackEvent(
             eventName = DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE,
             properties = mapOf(),
         )
     }
 
-    fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
+    public fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
         val reason = if (
             error.code == PurchasesErrorCode.UnsupportedError &&
             error.underlyingErrorMessage == OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
@@ -376,7 +376,7 @@ internal class DiagnosticsTracker(
 
     // region Get Offerings
 
-    fun trackGetOfferingsStarted() {
+    public fun trackGetOfferingsStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_OFFERINGS_STARTED,
             properties = emptyMap(),
@@ -418,7 +418,7 @@ internal class DiagnosticsTracker(
 
     // region Get Products
 
-    fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+    public fun trackGetProductsStarted(requestedProductIds: Set<String>) {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_PRODUCTS_STARTED,
             properties = mapOf(
@@ -450,7 +450,7 @@ internal class DiagnosticsTracker(
 
     // region Sync purchases
 
-    fun trackSyncPurchasesStarted() {
+    public fun trackSyncPurchasesStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.SYNC_PURCHASES_STARTED,
             properties = emptyMap(),
@@ -476,7 +476,7 @@ internal class DiagnosticsTracker(
 
     // region Restore purchases
 
-    fun trackRestorePurchasesStarted() {
+    public fun trackRestorePurchasesStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.RESTORE_PURCHASES_STARTED,
             properties = emptyMap(),
@@ -502,7 +502,7 @@ internal class DiagnosticsTracker(
 
     // region Get Customer Info
 
-    fun trackGetCustomerInfoStarted() {
+    public fun trackGetCustomerInfoStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_STARTED,
             properties = emptyMap(),
@@ -535,7 +535,7 @@ internal class DiagnosticsTracker(
 
     // region Purchase
 
-    fun trackPurchaseStarted(productId: String, productType: ProductType) {
+    public fun trackPurchaseStarted(productId: String, productType: ProductType) {
         trackEvent(
             eventName = DiagnosticsEntryName.PURCHASE_STARTED,
             properties = mapOf(
@@ -580,7 +580,7 @@ internal class DiagnosticsTracker(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
+    public fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
         }

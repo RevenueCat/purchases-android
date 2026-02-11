@@ -21,16 +21,16 @@ internal enum class AdEventType(val value: String) {
 }
 
 internal sealed interface AdEvent : FeatureEvent {
-    val id: String
-    val eventVersion: Int
-    val type: AdEventType
-    val timestamp: Long
-    val networkName: String?
-    val mediatorName: AdMediatorName
-    val adFormat: AdFormat
-    val placement: String?
-    val adUnitId: String
-    val impressionId: String?
+    public val id: String
+    public val eventVersion: Int
+    public val type: AdEventType
+    public val timestamp: Long
+    public val networkName: String?
+    public val mediatorName: AdMediatorName
+    public val adFormat: AdFormat
+    public val placement: String?
+    public val adUnitId: String
+    public val impressionId: String?
 
     class Displayed(
         override val id: String = UUID.randomUUID().toString(),
@@ -69,9 +69,9 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
-        val revenueMicros: Long,
-        val currency: String,
-        val precision: AdRevenuePrecision,
+        public val revenueMicros: Long,
+        public val currency: String,
+        public val precision: AdRevenuePrecision,
     ) : AdEvent
 
     class Loaded(
@@ -97,7 +97,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
-        val mediatorErrorCode: Int?,
+        public val mediatorErrorCode: Int?,
     ) : AdEvent {
         override val networkName: String? = null
     }

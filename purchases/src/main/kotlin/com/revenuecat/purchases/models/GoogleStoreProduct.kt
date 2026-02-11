@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
 import java.util.Locale
 
 @Poko
-class GoogleStoreProduct
+public class GoogleStoreProduct
 @JvmOverloads
 @Deprecated(
     "Replaced with constructor that takes a presentedOfferingContext",

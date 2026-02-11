@@ -27,7 +27,7 @@ import java.util.UUID
  */
 @InternalRevenueCatAPI
 @Serializable
-enum class PaywallEventType(val value: String) {
+public enum class PaywallEventType(val value: String) {
     /**
      * The paywall was shown to the user.
      */
@@ -64,7 +64,7 @@ enum class PaywallEventType(val value: String) {
  */
 @InternalRevenueCatAPI
 @Serializable
-enum class ExitOfferType(val value: String) {
+public enum class ExitOfferType(val value: String) {
     /**
      * An exit offer shown when the user attempts to dismiss the paywall without interacting.
      */
@@ -85,27 +85,27 @@ data class PaywallEvent(
     @Serializable
     data class CreationData(
         @Serializable(with = UUIDSerializer::class)
-        val id: UUID,
+        public val id: UUID,
         @Serializable(with = DateSerializer::class)
-        val date: Date,
+        public val date: Date,
     )
 
     @Serializable(with = PaywallEventDataSerializer::class)
     data class Data(
-        val paywallIdentifier: String?,
-        val presentedOfferingContext: PresentedOfferingContext,
-        val paywallRevision: Int,
+        public val paywallIdentifier: String?,
+        public val presentedOfferingContext: PresentedOfferingContext,
+        public val paywallRevision: Int,
         @Serializable(with = UUIDSerializer::class)
-        val sessionIdentifier: UUID,
-        val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
-        val localeIdentifier: String,
-        val darkMode: Boolean,
-        val exitOfferType: ExitOfferType? = null,
-        val exitOfferingIdentifier: String? = null,
-        val packageIdentifier: String? = null,
-        val productIdentifier: String? = null,
-        val errorCode: Int? = null,
-        val errorMessage: String? = null,
+        public val sessionIdentifier: UUID,
+        public val displayMode: String, // Refer to PaywallMode in the RevenueCatUI module.
+        public val localeIdentifier: String,
+        public val darkMode: Boolean,
+        public val exitOfferType: ExitOfferType? = null,
+        public val exitOfferingIdentifier: String? = null,
+        public val packageIdentifier: String? = null,
+        public val productIdentifier: String? = null,
+        public val errorCode: Int? = null,
+        public val errorMessage: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {

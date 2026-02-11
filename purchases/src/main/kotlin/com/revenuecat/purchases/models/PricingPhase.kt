@@ -23,7 +23,7 @@ import java.util.Locale
  */
 @Parcelize
 @Poko
-class PricingPhase(
+public class PricingPhase(
     /**
      * Billing period for which the [PricingPhase] applies.
      */
@@ -49,7 +49,7 @@ class PricingPhase(
     /**
      * Indicates how the pricing phase is charged for FINITE_RECURRING pricing phases
      */
-    val offerPaymentMode: OfferPaymentMode?
+    public val offerPaymentMode: OfferPaymentMode?
         get() {
             // billingCycleCount is null for INFINITE_RECURRING or NON_RECURRING recurrence modes
             // but validating for FINITE_RECURRING anyway

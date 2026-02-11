@@ -18,7 +18,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
+public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
@@ -202,7 +202,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
         "Use presentedOfferingContext",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val presentedOfferingIdentifier: String?
+    public val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
     /**
@@ -213,7 +213,7 @@ class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
         "Replaced with productIds",
         ReplaceWith("productIds"),
     )
-    val skus: List<String>
+    public val skus: List<String>
         get() = productIds
 
     override fun equals(other: Any?) = other is StoreTransaction &&
@@ -260,7 +260,7 @@ private data class ComparableData(
     )
 }
 
-enum class PurchaseType {
+public enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,

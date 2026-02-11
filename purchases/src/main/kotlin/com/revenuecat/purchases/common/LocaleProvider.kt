@@ -3,14 +3,14 @@ package com.revenuecat.purchases.common
 import androidx.core.os.LocaleListCompat
 
 internal interface LocaleProvider {
-    val currentLocalesLanguageTags: String
+    public val currentLocalesLanguageTags: String
 }
 
 internal class DefaultLocaleProvider : LocaleProvider {
 
     private var preferredLocaleOverride: String? = null
 
-    fun setPreferredLocaleOverride(localeString: String?) {
+    public fun setPreferredLocaleOverride(localeString: String?) {
         preferredLocaleOverride = localeString
     }
 

@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
  * The result of a successful purchase operation. Used in coroutines.
  */
 @Poko
-class PurchaseResult(
+public class PurchaseResult(
     /**
      * The [StoreTransaction] for this purchase.
      */

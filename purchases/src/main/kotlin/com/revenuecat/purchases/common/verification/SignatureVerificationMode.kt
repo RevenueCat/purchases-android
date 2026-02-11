@@ -30,7 +30,7 @@ internal sealed class SignatureVerificationMode {
         override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
 
-    val shouldVerify: Boolean
+    public val shouldVerify: Boolean
         get() = when (this) {
             Disabled ->
                 false

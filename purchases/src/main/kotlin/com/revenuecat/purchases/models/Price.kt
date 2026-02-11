@@ -14,7 +14,7 @@ import kotlinx.serialization.encoding.encodeStructure
 
 @Parcelize
 @Poko
-class Price(
+public class Price(
 
     /**
      * Formatted price of the item, including its currency sign. For example $3.00.

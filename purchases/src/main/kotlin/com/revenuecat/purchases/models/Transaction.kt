@@ -14,7 +14,7 @@ import java.util.Locale
 
 @Parcelize
 @Poko
-class Transaction(
+public class Transaction(
     val transactionIdentifier: String,
     @Deprecated(
         "Use transactionIdentifier instead",

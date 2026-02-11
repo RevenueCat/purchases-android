@@ -24,14 +24,14 @@ internal class SigningManager(
     }
 
     private data class Parameters(
-        val salt: ByteArray,
-        val apiKey: String,
-        val nonce: String?,
-        val urlPath: String,
-        val postParamsHashHeader: String?,
-        val requestTime: String,
-        val eTag: String?,
-        val body: String?,
+        public val salt: ByteArray,
+        public val apiKey: String,
+        public val nonce: String?,
+        public val urlPath: String,
+        public val postParamsHashHeader: String?,
+        public val requestTime: String,
+        public val eTag: String?,
+        public val body: String?,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -75,11 +75,11 @@ internal class SigningManager(
         }
     }
 
-    fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
+    public fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
         return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
-    fun createRandomNonce(): String {
+    public fun createRandomNonce(): String {
         val bytes = ByteArray(NONCE_BYTES_SIZE)
         SecureRandom().nextBytes(bytes)
         return String(Base64.encode(bytes, Base64.DEFAULT)).trim()

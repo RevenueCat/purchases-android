@@ -16,7 +16,7 @@ import org.json.JSONObject
 internal object VirtualCurrenciesFactory {
 
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
-    fun buildVirtualCurrencies(httpResult: HTTPResult): VirtualCurrencies {
+    public fun buildVirtualCurrencies(httpResult: HTTPResult): VirtualCurrencies {
         return buildVirtualCurrencies(
             body = httpResult.body,
         )

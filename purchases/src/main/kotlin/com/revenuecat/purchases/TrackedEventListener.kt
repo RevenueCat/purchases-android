@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
  * This is an internal debug API for monitoring events tracked by RevenueCatUI.
  */
 @InternalRevenueCatAPI
-fun interface TrackedEventListener {
+public fun interface TrackedEventListener {
     /**
      * Called when a feature event is tracked.
      * @param event The tracked feature event.

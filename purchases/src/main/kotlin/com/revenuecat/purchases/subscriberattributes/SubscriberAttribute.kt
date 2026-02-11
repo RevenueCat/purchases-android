@@ -41,7 +41,7 @@ internal data class SubscriberAttribute(
         isSynced = jsonObject.getBoolean(JSON_NAME_IS_SYNCED),
     )
 
-    fun toJSONObject() = JSONObject().apply {
+    public fun toJSONObject() = JSONObject().apply {
         put(JSON_NAME_KEY, key.backendKey)
         value?.let { put(JSON_NAME_VALUE, value) } ?: put(
             JSON_NAME_VALUE,

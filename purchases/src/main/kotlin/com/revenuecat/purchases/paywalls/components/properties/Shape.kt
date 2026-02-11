@@ -23,13 +23,13 @@ sealed interface Shape {
     @Immutable
     class Rectangle(
         @get:JvmSynthetic
-        val corners: CornerRadiuses? = null,
+        public val corners: CornerRadiuses? = null,
     ) : Shape
 
     @Serializable
     object Pill : Shape
 
-    val cornerRadiuses: CornerRadiuses
+    public val cornerRadiuses: CornerRadiuses
         get() = when (this) {
             is Rectangle -> corners ?: CornerRadiuses.Dp.zero
             else -> pillCornerRadiuses

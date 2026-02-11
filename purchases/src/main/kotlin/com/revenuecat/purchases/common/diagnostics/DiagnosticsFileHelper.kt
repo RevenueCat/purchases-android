@@ -16,12 +16,12 @@ internal class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun isDiagnosticsFileTooBig(): Boolean {
+    public fun isDiagnosticsFileTooBig(): Boolean {
         return diagnosticsFileSize() > DIAGNOSTICS_FILE_LIMIT_IN_KB
     }
 
     @Synchronized
-    fun isDiagnosticsFileBigEnoughToSync(): Boolean {
+    public fun isDiagnosticsFileBigEnoughToSync(): Boolean {
         return diagnosticsFileSize() > DIAGNOSTICS_FILE_SYNC_LIMIT_IN_KB
     }
 

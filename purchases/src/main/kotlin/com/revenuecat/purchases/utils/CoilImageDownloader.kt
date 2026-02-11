@@ -8,7 +8,7 @@ import com.revenuecat.purchases.PurchasesOrchestrator
 internal class CoilImageDownloader(
     private val applicationContext: Context,
 ) {
-    fun downloadImage(uri: Uri) {
+    public fun downloadImage(uri: Uri) {
         val loader = PurchasesOrchestrator.getImageLoader(applicationContext)
         val request = ImageRequest.Builder(applicationContext)
             .data(uri)

@@ -11,9 +11,9 @@ import java.util.concurrent.ExecutorService
  */
 open class PurchasesConfiguration(builder: Builder) {
 
-    val context: Context
-    val apiKey: String
-    val appUserID: String?
+    public val context: Context
+    public val apiKey: String
+    public val appUserID: String?
 
     @Deprecated(
         "observerMode is being deprecated in favor of purchasesAreCompletedBy.",
@@ -22,21 +22,21 @@ open class PurchasesConfiguration(builder: Builder) {
             "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
         ),
     )
-    val observerMode: Boolean
+    public val observerMode: Boolean
         get() = when (purchasesAreCompletedBy) {
             PurchasesAreCompletedBy.REVENUECAT -> false
             PurchasesAreCompletedBy.MY_APP -> true
         }
-    val purchasesAreCompletedBy: PurchasesAreCompletedBy
-    val showInAppMessagesAutomatically: Boolean
-    val service: ExecutorService?
-    val store: Store
-    val diagnosticsEnabled: Boolean
-    val dangerousSettings: DangerousSettings
-    val verificationMode: EntitlementVerificationMode
-    val pendingTransactionsForPrepaidPlansEnabled: Boolean
-    val automaticDeviceIdentifierCollectionEnabled: Boolean
-    val preferredUILocaleOverride: String?
+    public val purchasesAreCompletedBy: PurchasesAreCompletedBy
+    public val showInAppMessagesAutomatically: Boolean
+    public val service: ExecutorService?
+    public val store: Store
+    public val diagnosticsEnabled: Boolean
+    public val dangerousSettings: DangerousSettings
+    public val verificationMode: EntitlementVerificationMode
+    public val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    public val automaticDeviceIdentifierCollectionEnabled: Boolean
+    public val preferredUILocaleOverride: String?
 
     init {
         this.context =

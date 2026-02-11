@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PaywallTransition(
+public class PaywallTransition(
     @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
     @get:JvmSynthetic
     @SerialName("displacement_strategy")

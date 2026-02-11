@@ -33,26 +33,26 @@ internal sealed class BackendEvent : Event {
     @Serializable
     @SerialName("customer_center")
     data class CustomerCenter constructor(
-        val id: String,
+        public val id: String,
         @SerialName("revision_id")
-        val revisionID: Int,
-        val type: CustomerCenterEventType,
+        public val revisionID: Int,
+        public val type: CustomerCenterEventType,
         @SerialName("app_user_id")
-        val appUserID: String,
+        public val appUserID: String,
         @SerialName("app_session_id")
-        val appSessionID: String,
-        val timestamp: Long,
+        public val appSessionID: String,
+        public val timestamp: Long,
         @SerialName("dark_mode")
-        val darkMode: Boolean,
-        val locale: String,
+        public val darkMode: Boolean,
+        public val locale: String,
         @SerialName("display_mode")
-        val displayMode: CustomerCenterDisplayMode,
+        public val displayMode: CustomerCenterDisplayMode,
 
         // only valid for survey option chosen
-        val path: CustomerCenterConfigData.HelpPath.PathType?,
-        val url: String?,
+        public val path: CustomerCenterConfigData.HelpPath.PathType?,
+        public val url: String?,
         @SerialName("survey_option_id")
-        val surveyOptionID: String?,
+        public val surveyOptionID: String?,
     ) : BackendEvent()
 
     /**
@@ -79,73 +79,73 @@ internal sealed class BackendEvent : Event {
     @Serializable
     @SerialName("paywalls")
     data class Paywalls(
-        val id: String,
-        val version: Int,
-        val type: String,
+        public val id: String,
+        public val version: Int,
+        public val type: String,
         @SerialName("app_user_id")
-        val appUserID: String,
+        public val appUserID: String,
         @SerialName("session_id")
-        val sessionID: String,
+        public val sessionID: String,
         @SerialName("offering_id")
-        val offeringID: String,
+        public val offeringID: String,
         @SerialName("paywall_id")
-        val paywallID: String?,
+        public val paywallID: String?,
         @SerialName("paywall_revision")
-        val paywallRevision: Int,
-        val timestamp: Long,
+        public val paywallRevision: Int,
+        public val timestamp: Long,
         @SerialName("display_mode")
-        val displayMode: String,
+        public val displayMode: String,
         @SerialName("dark_mode")
-        val darkMode: Boolean,
+        public val darkMode: Boolean,
         @SerialName("locale")
-        val localeIdentifier: String,
+        public val localeIdentifier: String,
         @SerialName("exit_offer_type")
-        val exitOfferType: String? = null,
+        public val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
-        val exitOfferingID: String? = null,
+        public val exitOfferingID: String? = null,
         @SerialName("package_id")
-        val packageID: String? = null,
+        public val packageID: String? = null,
         @SerialName("product_id")
-        val productID: String? = null,
+        public val productID: String? = null,
         @SerialName("error_code")
-        val errorCode: Int? = null,
+        public val errorCode: Int? = null,
         @SerialName("error_message")
-        val errorMessage: String? = null,
+        public val errorMessage: String? = null,
     ) : BackendEvent()
 
     @Serializable
     @SerialName("ad")
     data class Ad(
-        val id: String,
-        val version: Int,
-        val type: String,
+        public val id: String,
+        public val version: Int,
+        public val type: String,
         @SerialName("timestamp_ms")
-        val timestamp: Long,
+        public val timestamp: Long,
         @SerialName("network_name")
-        val networkName: String? = null,
+        public val networkName: String? = null,
         @SerialName("mediator_name")
-        val mediatorName: String,
+        public val mediatorName: String,
         @SerialName("ad_format")
-        val adFormat: String? = null,
-        val placement: String?,
+        public val adFormat: String? = null,
+        public val placement: String?,
         @SerialName("ad_unit_id")
-        val adUnitId: String,
+        public val adUnitId: String,
         @SerialName("impression_id")
-        val impressionId: String?,
+        public val impressionId: String?,
         @SerialName("app_user_id")
-        val appUserID: String,
+        public val appUserID: String,
         @SerialName("app_session_id")
-        val appSessionID: String,
+        public val appSessionID: String,
 
         // Revenue event only fields
         @SerialName("revenue_micros")
-        val revenueMicros: Long? = null,
-        val currency: String? = null,
-        val precision: String? = null,
+        public val revenueMicros: Long? = null,
+        public val currency: String? = null,
+        public val precision: String? = null,
 
         // Failed to load event only fields
         @SerialName("mediator_error_code")
-        val mediatorErrorCode: Int? = null,
+        public val mediatorErrorCode: Int? = null,
     ) : BackendEvent()
 
     /**

@@ -22,7 +22,7 @@ internal class PurchaseParamsValidator {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Throws(PurchasesException::class)
-    fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
+    public fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
         if (purchaseParams.containsAddOnItems) {
             val addOnProductsValidationError = validateAddOnProducts(purchaseParams = purchaseParams)
             if (addOnProductsValidationError is Result.Error) {

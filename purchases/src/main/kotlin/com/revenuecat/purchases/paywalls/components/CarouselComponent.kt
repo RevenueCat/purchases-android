@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("carousel")
 @Immutable
-class CarouselComponent(
+public class CarouselComponent(
     @get:JvmSynthetic
     val pages: List<StackComponent>,
     @get:JvmSynthetic
@@ -75,13 +75,13 @@ class CarouselComponent(
     class AutoAdvancePages(
         @get:JvmSynthetic
         @SerialName("ms_time_per_page")
-        val msTimePerPage: Int,
+        public val msTimePerPage: Int,
         @get:JvmSynthetic
         @SerialName("ms_transition_time")
-        val msTransitionTime: Int,
+        public val msTransitionTime: Int,
         @get:JvmSynthetic
         @SerialName("transition_type")
-        val transitionType: TransitionType?,
+        public val transitionType: TransitionType?,
     ) {
         @Serializable(with = CarouselTransitionTypeDeserializer::class)
         enum class TransitionType {
@@ -96,26 +96,26 @@ class CarouselComponent(
     @Immutable
     class PageControl(
         @get:JvmSynthetic
-        val position: Position,
+        public val position: Position,
         @get:JvmSynthetic
-        val spacing: Int? = null,
+        public val spacing: Int? = null,
         @get:JvmSynthetic
-        val padding: Padding = Padding.zero,
+        public val padding: Padding = Padding.zero,
         @get:JvmSynthetic
-        val margin: Padding = Padding.zero,
+        public val margin: Padding = Padding.zero,
         @get:JvmSynthetic
         @SerialName("background_color")
-        val backgroundColor: ColorScheme? = null,
+        public val backgroundColor: ColorScheme? = null,
         @get:JvmSynthetic
-        val shape: Shape? = null,
+        public val shape: Shape? = null,
         @get:JvmSynthetic
-        val border: Border? = null,
+        public val border: Border? = null,
         @get:JvmSynthetic
-        val shadow: Shadow? = null,
+        public val shadow: Shadow? = null,
         @get:JvmSynthetic
-        val active: Indicator,
+        public val active: Indicator,
         @get:JvmSynthetic
-        val default: Indicator,
+        public val default: Indicator,
     ) {
 
         @Poko
@@ -149,7 +149,7 @@ class CarouselComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialCarouselComponent(
+public class PartialCarouselComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic

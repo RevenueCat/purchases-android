@@ -23,7 +23,7 @@ internal data class HTTPResultWithETag(
     val eTagData: ETagData,
     val httpResult: HTTPResult,
 ) {
-    fun serialize(): String {
+    public fun serialize(): String {
         return JSONObject().apply {
             put(SERIALIZATION_NAME_ETAG, eTagData.eTag)
             eTagData.lastRefreshTime?.let { put(SERIALIZATION_NAME_LAST_REFRESH_TIME, it.time) }

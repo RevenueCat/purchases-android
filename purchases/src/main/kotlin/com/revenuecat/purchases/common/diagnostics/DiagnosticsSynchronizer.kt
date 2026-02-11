@@ -32,7 +32,7 @@ internal class DiagnosticsSynchronizer(
 
     val isSyncing = AtomicBoolean(false)
 
-    fun syncDiagnosticsFileIfNeeded() {
+    public fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
                 if (isSyncing.getAndSet(true)) {

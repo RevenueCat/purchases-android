@@ -59,8 +59,8 @@ class Offerings internal constructor(
      * @property ruleId The rule id of the targeting that presented the offering.
      */
     internal data class Targeting(
-        val revision: Int,
-        val ruleId: String,
+        public val revision: Int,
+        public val ruleId: String,
     )
 
     /**
@@ -70,8 +70,8 @@ class Offerings internal constructor(
      * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
      */
     internal data class Placements(
-        val fallbackOfferingId: String?,
-        val offeringIdsByPlacement: Map<String, String?>,
+        public val fallbackOfferingId: String?,
+        public val offeringIdsByPlacement: Map<String, String?>,
     )
 
     internal fun copy(

@@ -128,7 +128,7 @@ internal object VariableLocalizationKeyMapSerializer : KSerializer<Map<VariableL
  */
 @InternalRevenueCatAPI
 @Serializable
-enum class VariableLocalizationKey {
+public enum class VariableLocalizationKey {
     @SerialName("day")
     DAY,
 

@@ -9,7 +9,7 @@ import dev.drewhamilton.poko.Poko
  * Defines an option for purchasing a Google subscription
  */
 @Poko
-class GoogleSubscriptionOption @JvmOverloads constructor(
+public class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId

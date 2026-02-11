@@ -6,7 +6,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 /**
  * Interface to be implemented when making calls that return a [VirtualCurrencies]
  */
-interface GetVirtualCurrenciesCallback {
+public interface GetVirtualCurrenciesCallback {
     /**
      * Will be called after the call has completed.
      * @param virtualCurrencies [VirtualCurrencies] class sent back when the call has completed

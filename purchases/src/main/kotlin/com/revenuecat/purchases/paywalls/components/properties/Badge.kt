@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @Immutable
-class Badge(
+public class Badge(
     @get:JvmSynthetic val stack: StackComponent,
     @get:JvmSynthetic val style: Style,
     @get:JvmSynthetic val alignment: TwoDimensionalAlignment,

@@ -34,7 +34,7 @@ value class FontAlias(@get:JvmSynthetic val value: String)
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class UiConfig(
+public class UiConfig(
     @get:JvmSynthetic
     val app: AppConfig = AppConfig(),
     @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
@@ -53,9 +53,9 @@ class UiConfig(
     @Serializable
     class AppConfig(
         @get:JvmSynthetic
-        val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
-        val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
     ) {
         @InternalRevenueCatAPI
         @Poko
@@ -96,10 +96,10 @@ class UiConfig(
     class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
     )
 
     @InternalRevenueCatAPI
@@ -107,9 +107,9 @@ class UiConfig(
     @Serializable(with = CustomVariableDefinitionSerializer::class)
     class CustomVariableDefinition(
         @get:JvmSynthetic
-        val type: String,
+        public val type: String,
         @get:JvmSynthetic
-        val defaultValue: Any,
+        public val defaultValue: Any,
     )
 }
 

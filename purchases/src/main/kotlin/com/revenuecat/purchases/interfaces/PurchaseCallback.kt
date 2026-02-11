@@ -3,7 +3,7 @@ package com.revenuecat.purchases.interfaces
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.models.StoreTransaction
 
-interface PurchaseCallback : PurchaseErrorCallback {
+public interface PurchaseCallback : PurchaseErrorCallback {
     /**
      * Will be called after the purchase has completed
      * @param storeTransaction StoreTransaction object for the purchased product.

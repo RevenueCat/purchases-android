@@ -18,7 +18,7 @@ import kotlinx.serialization.encoding.encodeStructure
  */
 @Parcelize
 @Poko
-class PresentedOfferingContext @JvmOverloads constructor(
+public class PresentedOfferingContext @JvmOverloads constructor(
     /**
      * The identifier of the offering used to obtain this object.
      */

@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
 sealed class AmazonPurchasingData : PurchasingData {
     @Poko
     class Product(
-        val storeProduct: AmazonStoreProduct,
+        public val storeProduct: AmazonStoreProduct,
     ) : AmazonPurchasingData() {
         override val productId: String
             get() = storeProduct.id

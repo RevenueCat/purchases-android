@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @Parcelize
-class VirtualCurrency @InternalRevenueCatAPI constructor(
+public class VirtualCurrency @InternalRevenueCatAPI constructor(
     val balance: Int,
     val name: String,
     val code: String,

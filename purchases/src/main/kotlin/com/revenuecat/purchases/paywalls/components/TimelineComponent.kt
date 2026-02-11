@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("timeline")
 @Immutable
-class TimelineComponent(
+public class TimelineComponent(
     @get:JvmSynthetic
     @SerialName("item_spacing")
     val itemSpacing: Int,
@@ -60,15 +60,15 @@ class TimelineComponent(
     @Immutable
     class Item(
         @get:JvmSynthetic
-        val title: TextComponent,
+        public val title: TextComponent,
         @get:JvmSynthetic
-        val visible: Boolean? = null,
+        public val visible: Boolean? = null,
         @get:JvmSynthetic
-        val description: TextComponent? = null,
+        public val description: TextComponent? = null,
         @get:JvmSynthetic
-        val icon: IconComponent,
+        public val icon: IconComponent,
         @get:JvmSynthetic
-        val connector: Connector? = null,
+        public val connector: Connector? = null,
         @get:JvmSynthetic
         val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
     )
@@ -78,11 +78,11 @@ class TimelineComponent(
     @Immutable
     class Connector(
         @get:JvmSynthetic
-        val width: Int,
+        public val width: Int,
         @get:JvmSynthetic
-        val margin: Padding,
+        public val margin: Padding,
         @get:JvmSynthetic
-        val color: ColorScheme,
+        public val color: ColorScheme,
     )
 }
 
@@ -91,7 +91,7 @@ class TimelineComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialTimelineComponent(
+public class PartialTimelineComponent(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic
@@ -118,7 +118,7 @@ class PartialTimelineComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialTimelineComponentItem(
+public class PartialTimelineComponentItem(
     @get:JvmSynthetic
     val visible: Boolean? = null,
     @get:JvmSynthetic

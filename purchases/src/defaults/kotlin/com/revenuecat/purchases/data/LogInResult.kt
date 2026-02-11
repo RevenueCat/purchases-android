@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
  * The result of a successful login operation. Used in coroutines.
  */
 @Poko
-class LogInResult(
+public class LogInResult(
     /**
      * The [CustomerInfo] associated with the logged in user.
      */

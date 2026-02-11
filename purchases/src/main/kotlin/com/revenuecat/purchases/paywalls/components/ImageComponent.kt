@@ -26,7 +26,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("image")
 @Immutable
-class ImageComponent(
+public class ImageComponent(
     @get:JvmSynthetic
     val source: ThemeImageUrls,
     @get:JvmSynthetic
@@ -62,7 +62,7 @@ class ImageComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialImageComponent(
+public class PartialImageComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

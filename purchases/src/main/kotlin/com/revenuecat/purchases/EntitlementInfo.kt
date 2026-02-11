@@ -43,7 +43,7 @@ import java.util.Date
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class EntitlementInfo(
+public class EntitlementInfo(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
@@ -179,7 +179,7 @@ class EntitlementInfo(
  * Enum of supported stores
  */
 @Serializable(with = StoreSerializer::class)
-enum class Store {
+public enum class Store {
     /**
      * For entitlements granted via Apple App Store.
      */
@@ -280,7 +280,7 @@ internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
  * Enum of supported period types for an entitlement.
  */
 @Serializable
-enum class PeriodType {
+public enum class PeriodType {
     /**
      * If the entitlement is not under an introductory or trial period.
      */
@@ -310,7 +310,7 @@ enum class PeriodType {
  * Enum of supported ownership types for an entitlement.
  */
 @Serializable
-enum class OwnershipType {
+public enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
      */
