@@ -57,53 +57,57 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
 
 internal sealed class SubscriberAttributeKey(val backendKey: String) {
 
-    public object Email : SubscriberAttributeKey(ReservedSubscriberAttribute.EMAIL.value)
-    public object DisplayName : SubscriberAttributeKey(ReservedSubscriberAttribute.DISPLAY_NAME.value)
-    public object PhoneNumber : SubscriberAttributeKey(ReservedSubscriberAttribute.PHONE_NUMBER.value)
-    public object FCMTokens : SubscriberAttributeKey(ReservedSubscriberAttribute.FCM_TOKENS.value)
-    public class Custom(value: String) : SubscriberAttributeKey(value)
+    object Email : SubscriberAttributeKey(ReservedSubscriberAttribute.EMAIL.value)
+    object DisplayName : SubscriberAttributeKey(ReservedSubscriberAttribute.DISPLAY_NAME.value)
+    object PhoneNumber : SubscriberAttributeKey(ReservedSubscriberAttribute.PHONE_NUMBER.value)
+    object FCMTokens : SubscriberAttributeKey(ReservedSubscriberAttribute.FCM_TOKENS.value)
+    class Custom(value: String) : SubscriberAttributeKey(value)
 
-    public sealed class DeviceIdentifiers {
-        public object GPSAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.GPS_AD_ID.value)
-        public object IP : SubscriberAttributeKey(ReservedSubscriberAttribute.IP.value)
-        public object DeviceVersion : SubscriberAttributeKey(ReservedSubscriberAttribute.DEVICE_VERSION.value)
-        public object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
+    sealed class DeviceIdentifiers {
+        object GPSAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.GPS_AD_ID.value)
+        object IP : SubscriberAttributeKey(ReservedSubscriberAttribute.IP.value)
+        object DeviceVersion : SubscriberAttributeKey(ReservedSubscriberAttribute.DEVICE_VERSION.value)
+        object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
-    public sealed class AttributionIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
-        public object Adjust : AttributionIds(ReservedSubscriberAttribute.ADJUST_ID)
-        public object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
-        public object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
-        public object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
-        public object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
-        public object Kochava : AttributionIds(ReservedSubscriberAttribute.KOCHAVA_DEVICE_ID)
-        public object Airbridge : AttributionIds(ReservedSubscriberAttribute.AIRBRIDGE_DEVICE_ID)
-        public object SolarEngineDistinctId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_DISTINCT_ID)
-        public object SolarEngineAccountId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_ACCOUNT_ID)
-        public object SolarEngineVisitorId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_VISITOR_ID)
+    sealed class AttributionIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(
+        backendKey.value,
+    ) {
+        object Adjust : AttributionIds(ReservedSubscriberAttribute.ADJUST_ID)
+        object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
+        object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
+        object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
+        object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
+        object Kochava : AttributionIds(ReservedSubscriberAttribute.KOCHAVA_DEVICE_ID)
+        object Airbridge : AttributionIds(ReservedSubscriberAttribute.AIRBRIDGE_DEVICE_ID)
+        object SolarEngineDistinctId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_DISTINCT_ID)
+        object SolarEngineAccountId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_ACCOUNT_ID)
+        object SolarEngineVisitorId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_VISITOR_ID)
     }
 
-    public sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
-        public object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
-        public object OneSignal : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
-        public object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)
-        public object Airship : IntegrationIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
-        public object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
-        public object TenjinAnalyticsInstallationId : IntegrationIds(
+    sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(
+        backendKey.value,
+    ) {
+        object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
+        object OneSignal : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
+        object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)
+        object Airship : IntegrationIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
+        object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
+        object TenjinAnalyticsInstallationId : IntegrationIds(
             ReservedSubscriberAttribute.TENJIN_ANALYTICS_INSTALLATION_ID,
         )
-        public object PostHogUserId : IntegrationIds(ReservedSubscriberAttribute.POSTHOG_USER_ID)
+        object PostHogUserId : IntegrationIds(ReservedSubscriberAttribute.POSTHOG_USER_ID)
     }
 
-    public sealed class CampaignParameters(
+    sealed class CampaignParameters(
         backendKey: ReservedSubscriberAttribute,
     ) : SubscriberAttributeKey(backendKey.value) {
-        public object MediaSource : CampaignParameters(ReservedSubscriberAttribute.MEDIA_SOURCE)
-        public object Campaign : CampaignParameters(ReservedSubscriberAttribute.CAMPAIGN)
-        public object AdGroup : CampaignParameters(ReservedSubscriberAttribute.AD_GROUP)
-        public object Ad : CampaignParameters(ReservedSubscriberAttribute.AD)
-        public object Keyword : CampaignParameters(ReservedSubscriberAttribute.KEYWORD)
-        public object Creative : CampaignParameters(ReservedSubscriberAttribute.CREATIVE)
+        object MediaSource : CampaignParameters(ReservedSubscriberAttribute.MEDIA_SOURCE)
+        object Campaign : CampaignParameters(ReservedSubscriberAttribute.CAMPAIGN)
+        object AdGroup : CampaignParameters(ReservedSubscriberAttribute.AD_GROUP)
+        object Ad : CampaignParameters(ReservedSubscriberAttribute.AD)
+        object Keyword : CampaignParameters(ReservedSubscriberAttribute.KEYWORD)
+        object Creative : CampaignParameters(ReservedSubscriberAttribute.CREATIVE)
     }
 
     override fun equals(other: Any?): Boolean {

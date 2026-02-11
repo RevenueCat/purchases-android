@@ -13,9 +13,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Immutable
 public class Badge(
-    public @get:JvmSynthetic val stack: StackComponent,
-    public @get:JvmSynthetic val style: Style,
-    public @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val style: Style,
+    @get:JvmSynthetic public val alignment: TwoDimensionalAlignment,
 ) {
 
     @InternalRevenueCatAPI

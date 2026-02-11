@@ -32,7 +32,11 @@ public class PaywallView : CompatComposeView {
         init(context, attrs)
     }
 
-    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr,
+    ) {
         init(context, attrs)
     }
 

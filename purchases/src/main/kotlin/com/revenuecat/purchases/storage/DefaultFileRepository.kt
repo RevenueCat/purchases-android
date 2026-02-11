@@ -167,16 +167,16 @@ internal class DefaultFileRepository(
     /**
      * File repository error cases.
      */
-    public sealed class Error(message: String) : IOException(message) {
+    sealed class Error(message: String) : IOException(message) {
         /**
          * Used when creating the folder on disk fails.
          */
-        public class FailedToCreateCacheDirectory(url: String) : Error("Failed to create cache directory for $url")
+        class FailedToCreateCacheDirectory(url: String) : Error("Failed to create cache directory for $url")
 
         /**
          * Used when saving the file on disk fails.
          */
-        public class FailedToSaveCachedFile(message: String) : Error(message)
+        class FailedToSaveCachedFile(message: String) : Error(message)
 
         /**
          * Used when fetching the data fails.

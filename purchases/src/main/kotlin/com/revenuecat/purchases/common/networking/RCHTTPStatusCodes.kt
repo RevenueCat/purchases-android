@@ -17,5 +17,7 @@ internal object RCHTTPStatusCodes {
     // Note: this means that all 4xx (except 404) are considered as successfully synced.
     // The reason is because it's likely due to a client error, so continuing to retry
     // won't yield any different results and instead kill pandas.
-    public fun isSynced(statusCode: Int) = isSuccessful(statusCode) || !(isServerError(statusCode) || statusCode == NOT_FOUND)
+    public fun isSynced(
+        statusCode: Int,
+    ) = isSuccessful(statusCode) || !(isServerError(statusCode) || statusCode == NOT_FOUND)
 }

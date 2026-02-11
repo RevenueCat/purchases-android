@@ -29,8 +29,8 @@ internal abstract class BillingAbstract(
     @Volatile
     public var purchasesUpdatedListener: PurchasesUpdatedListener? = null
 
-    public interface StateListener {
-        public fun onConnected()
+    interface StateListener {
+        fun onConnected()
     }
 
     abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
@@ -128,8 +128,8 @@ internal abstract class BillingAbstract(
         onSuccess(AmazonLWAConsentStatus.UNAVAILABLE)
     }
 
-    public interface PurchasesUpdatedListener {
-        public fun onPurchasesUpdated(purchases: List<StoreTransaction>)
-        public fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
+    interface PurchasesUpdatedListener {
+        fun onPurchasesUpdated(purchases: List<StoreTransaction>)
+        fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 }

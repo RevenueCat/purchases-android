@@ -24,7 +24,7 @@ import kotlin.time.Duration
 internal data class QueryPurchaseHistoryUseCaseParams(
     public val dateProvider: DateProvider = DefaultDateProvider(),
     public val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    public @BillingClient.ProductType val productType: String,
+    @BillingClient.ProductType public val productType: String,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 

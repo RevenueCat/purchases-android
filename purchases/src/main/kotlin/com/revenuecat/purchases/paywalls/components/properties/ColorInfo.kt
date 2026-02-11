@@ -44,8 +44,8 @@ public sealed interface ColorInfo {
         @Serializable
         @SerialName("linear")
         public class Linear(
-            public @get:JvmSynthetic val degrees: Float,
-            public @get:JvmSynthetic val points: List<Point>,
+            @get:JvmSynthetic public val degrees: Float,
+            @get:JvmSynthetic public val points: List<Point>,
         ) : Gradient
 
         @Poko
@@ -53,7 +53,7 @@ public sealed interface ColorInfo {
         @Serializable
         @SerialName("radial")
         public class Radial(
-            public @get:JvmSynthetic val points: List<Point>,
+            @get:JvmSynthetic public val points: List<Point>,
         ) : Gradient
 
         /**
@@ -65,11 +65,11 @@ public sealed interface ColorInfo {
         public class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
-            public @get:JvmSynthetic val color: Int,
+            @get:JvmSynthetic public val color: Int,
             /**
              * A percentage value in the range 0..100.
              */
-            public @get:JvmSynthetic val percent: Float,
+            @get:JvmSynthetic public val percent: Float,
         )
     }
 }
@@ -79,8 +79,8 @@ public sealed interface ColorInfo {
 @Immutable
 @Serializable
 public class ColorScheme(
-    public @get:JvmSynthetic val light: ColorInfo,
-    public @get:JvmSynthetic val dark: ColorInfo? = null,
+    @get:JvmSynthetic public val light: ColorInfo,
+    @get:JvmSynthetic public val dark: ColorInfo? = null,
 )
 
 /**

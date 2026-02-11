@@ -14,14 +14,14 @@ import java.util.Date
 @SerialName("countdown")
 @Immutable
 public class CountdownComponent(
-    public @get:JvmSynthetic val style: CountdownStyle,
+    @get:JvmSynthetic public val style: CountdownStyle,
     @SerialName("count_from")
-    public @get:JvmSynthetic val countFrom: CountFrom = CountFrom.DAYS,
+    @get:JvmSynthetic public val countFrom: CountFrom = CountFrom.DAYS,
     @SerialName("countdown_stack")
-    public @get:JvmSynthetic val countdownStack: StackComponent,
+    @get:JvmSynthetic public val countdownStack: StackComponent,
     @SerialName("end_stack")
-    public @get:JvmSynthetic val endStack: StackComponent? = null,
-    public @get:JvmSynthetic val fallback: StackComponent? = null,
+    @get:JvmSynthetic public val endStack: StackComponent? = null,
+    @get:JvmSynthetic public val fallback: StackComponent? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
@@ -29,9 +29,9 @@ public class CountdownComponent(
     @Serializable
     @Immutable
     public class CountdownStyle(
-        public @get:JvmSynthetic val type: String,
+        @get:JvmSynthetic public val type: String,
         @Serializable(with = ISO8601DateSerializer::class)
-        public @get:JvmSynthetic val date: Date,
+        @get:JvmSynthetic public val date: Date,
     )
 
     @InternalRevenueCatAPI

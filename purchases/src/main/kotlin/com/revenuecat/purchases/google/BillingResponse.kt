@@ -4,23 +4,23 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode
 
 internal sealed class BillingResponse {
 
-    public object FeatureNotSupported : BillingResponse()
-    public object ServiceDisconnected : BillingResponse()
-    public object OK : BillingResponse()
-    public object UserCanceled : BillingResponse()
-    public object ServiceUnavailable : BillingResponse()
-    public object BillingUnavailable : BillingResponse()
-    public object ItemUnavailable : BillingResponse()
-    public object DeveloperError : BillingResponse()
-    public object Error : BillingResponse()
-    public object ItemAlreadyOwned : BillingResponse()
-    public object ItemNotOwned : BillingResponse()
-    public object NetworkError : BillingResponse()
-    public object Unknown : BillingResponse()
+    object FeatureNotSupported : BillingResponse()
+    object ServiceDisconnected : BillingResponse()
+    object OK : BillingResponse()
+    object UserCanceled : BillingResponse()
+    object ServiceUnavailable : BillingResponse()
+    object BillingUnavailable : BillingResponse()
+    object ItemUnavailable : BillingResponse()
+    object DeveloperError : BillingResponse()
+    object Error : BillingResponse()
+    object ItemAlreadyOwned : BillingResponse()
+    object ItemNotOwned : BillingResponse()
+    object NetworkError : BillingResponse()
+    object Unknown : BillingResponse()
 
-    public companion object {
+    companion object {
         @Suppress("CyclomaticComplexMethod")
-        public fun fromCode(code: Int): BillingResponse {
+        fun fromCode(code: Int): BillingResponse {
             return when (code) {
                 BillingResponseCode.SERVICE_TIMEOUT -> ServiceUnavailable
                 BillingResponseCode.FEATURE_NOT_SUPPORTED -> FeatureNotSupported

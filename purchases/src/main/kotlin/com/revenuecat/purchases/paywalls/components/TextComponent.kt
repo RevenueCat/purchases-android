@@ -95,7 +95,8 @@ constructor(
     public val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
-    public val fontWeight: FontWeight? = null, // Kept for backwards compatibility, but should use fontWeightInt instead.
+    // Kept for backwards compatibility, but should use fontWeightInt instead.
+    public val fontWeight: FontWeight? = null,
     @get:JvmSynthetic
     @SerialName("font_weight_int")
     public val fontWeightInt: Int? = null,

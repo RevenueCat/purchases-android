@@ -34,6 +34,6 @@ public class ImageUrls(
 @Serializable
 @Immutable
 public class ThemeImageUrls(
-    public @get:JvmSynthetic val light: ImageUrls,
-    public @get:JvmSynthetic val dark: ImageUrls? = null,
+    @get:JvmSynthetic public val light: ImageUrls,
+    @get:JvmSynthetic public val dark: ImageUrls? = null,
 )

@@ -23,9 +23,9 @@ import kotlinx.serialization.encoding.Encoder
 @SerialName("button")
 @Immutable
 public class ButtonComponent(
-    public @get:JvmSynthetic val action: Action,
-    public @get:JvmSynthetic val stack: StackComponent,
-    public @get:JvmSynthetic val transition: PaywallTransition? = null,
+    @get:JvmSynthetic public val action: Action,
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val transition: PaywallTransition? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
@@ -63,32 +63,32 @@ public class ButtonComponent(
         @Serializable
         @Immutable
         public data class PrivacyPolicy(
-            public @get:JvmSynthetic val urlLid: LocalizationKey,
-            public @get:JvmSynthetic val method: UrlMethod,
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
         public data class Terms(
-            public @get:JvmSynthetic val urlLid: LocalizationKey,
-            public @get:JvmSynthetic val method: UrlMethod,
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
         public data class Url(
-            public @get:JvmSynthetic val urlLid: LocalizationKey,
-            public @get:JvmSynthetic val method: UrlMethod,
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
         public data class Sheet(
-            public @get:JvmSynthetic val id: String,
-            public @get:JvmSynthetic val name: String?,
-            public @get:JvmSynthetic val stack: StackComponent,
-            public @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
-            public @get:JvmSynthetic val size: Size?,
+            @get:JvmSynthetic public val id: String,
+            @get:JvmSynthetic public val name: String?,
+            @get:JvmSynthetic public val stack: StackComponent,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
+            @get:JvmSynthetic public val size: Size?,
         ) : Destination
     }
 

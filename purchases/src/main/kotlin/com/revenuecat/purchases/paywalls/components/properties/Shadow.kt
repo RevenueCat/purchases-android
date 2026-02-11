@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
 @Immutable
 @Serializable
 public class Shadow(
-    public @get:JvmSynthetic val color: ColorScheme,
-    public @get:JvmSynthetic val radius: Double,
-    public @get:JvmSynthetic val x: Double,
-    public @get:JvmSynthetic val y: Double,
+    @get:JvmSynthetic public val color: ColorScheme,
+    @get:JvmSynthetic public val radius: Double,
+    @get:JvmSynthetic public val x: Double,
+    @get:JvmSynthetic public val y: Double,
 )

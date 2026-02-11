@@ -109,7 +109,10 @@ internal object CustomerInfoFactory {
         )
     }
 
-    public fun parseSubscriptionInfos(subscriberJSONObject: JSONObject, requestDate: Date): Map<String, SubscriptionInfo> {
+    public fun parseSubscriptionInfos(
+        subscriberJSONObject: JSONObject,
+        requestDate: Date,
+    ): Map<String, SubscriptionInfo> {
         val subscriptionMap = mutableMapOf<String, SubscriptionInfo>()
         val subscriptions = subscriberJSONObject.getJSONObject("subscriptions")
         try {

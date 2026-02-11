@@ -3,8 +3,8 @@ package com.revenuecat.purchases.common.verification
 import com.revenuecat.purchases.EntitlementVerificationMode
 
 internal sealed class SignatureVerificationMode {
-    public companion object {
-        public fun fromEntitlementVerificationMode(
+    companion object {
+        fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
             rootVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {
@@ -22,15 +22,15 @@ internal sealed class SignatureVerificationMode {
             return IntermediateSignatureHelper(DefaultSignatureVerifier())
         }
     }
-    public object Disabled : SignatureVerificationMode()
-    public data class Informational(
+    object Disabled : SignatureVerificationMode()
+    data class Informational(
         override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
-    public data class Enforced(
+    data class Enforced(
         override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
 
-    public val shouldVerify: Boolean
+    val shouldVerify: Boolean
         get() = when (this) {
             Disabled ->
                 false

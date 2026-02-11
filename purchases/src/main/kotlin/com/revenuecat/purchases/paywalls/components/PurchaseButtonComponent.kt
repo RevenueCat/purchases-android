@@ -16,9 +16,9 @@ import kotlinx.serialization.Serializable
 @SerialName("purchase_button")
 @Immutable
 public class PurchaseButtonComponent(
-    public @get:JvmSynthetic val stack: StackComponent,
-    public @get:JvmSynthetic val action: Action? = null,
-    public @get:JvmSynthetic val method: Method? = null,
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val action: Action? = null,
+    @get:JvmSynthetic public val method: Method? = null,
 ) : PaywallComponent {
     @Serializable(with = ActionDeserializer::class)
     public enum class Action {
@@ -43,29 +43,29 @@ public class PurchaseButtonComponent(
         @Immutable
         public data class WebCheckout(
             @SerialName("auto_dismiss")
-            public @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            public @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable
         @Immutable
         public data class WebProductSelection(
             @SerialName("auto_dismiss")
-            public @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            public @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable
         @Immutable
         public data class CustomWebCheckout(
             @SerialName("custom_url")
-            public @get:JvmSynthetic val customUrl: CustomUrl,
+            @get:JvmSynthetic public val customUrl: CustomUrl,
             @SerialName("auto_dismiss")
-            public @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            public @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable

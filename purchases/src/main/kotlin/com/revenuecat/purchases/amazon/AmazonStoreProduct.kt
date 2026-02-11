@@ -201,7 +201,9 @@ public class AmazonStoreProduct @JvmOverloads constructor(
         return copyWithPresentedOfferingContext(newPresentedOfferingContext)
     }
 
-    public override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+    public override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,

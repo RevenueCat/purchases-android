@@ -3,18 +3,18 @@ package com.revenuecat.purchases.common.networking
 import android.net.Uri
 
 internal sealed class Endpoint(
-    public val pathTemplate: String,
-    public val name: String,
-    public val fallbackPath: String? = null,
+    val pathTemplate: String,
+    val name: String,
+    val fallbackPath: String? = null,
 ) {
     abstract fun getPath(useFallback: Boolean = false): String
-    public data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
+    data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    public object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
+    object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public data class GetOfferings(val userId: String) : Endpoint(
+    data class GetOfferings(val userId: String) : Endpoint(
         "/v1/subscribers/%s/offerings",
         "get_offerings",
         fallbackPath = "/v1/offerings",
@@ -27,28 +27,30 @@ internal sealed class Endpoint(
             }
         }
     }
-    public object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
+    object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
+    data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    public object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
+    object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
+    object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public data class PostAttributes(val userId: String) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
+    data class PostAttributes(
+        val userId: String,
+    ) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    public data class GetAmazonReceipt(
+    data class GetAmazonReceipt(
         val userId: String,
         val receiptId: String,
     ) : Endpoint("/v1/receipts/amazon/%s/%s", "get_amazon_receipt") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId), receiptId)
     }
-    public object GetProductEntitlementMapping : Endpoint(
+    object GetProductEntitlementMapping : Endpoint(
         "/v1/product_entitlement_mapping",
         "get_product_entitlement_mapping",
         fallbackPath = "/v1/product_entitlement_mapping",
@@ -61,31 +63,31 @@ internal sealed class Endpoint(
             }
         }
     }
-    public data class GetCustomerCenterConfig(val userId: String) : Endpoint(
+    data class GetCustomerCenterConfig(val userId: String) : Endpoint(
         "/v1/customercenter/%s",
         "get_customer_center_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    public object PostCreateSupportTicket : Endpoint(
+    object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
         "post_create_support_ticket",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public object PostRedeemWebPurchase : Endpoint(
+    object PostRedeemWebPurchase : Endpoint(
         "/v1/subscribers/redeem_purchase",
         "post_redeem_web_purchase",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    public data class GetVirtualCurrencies(val userId: String) : Endpoint(
+    data class GetVirtualCurrencies(val userId: String) : Endpoint(
         pathTemplate = "/v1/subscribers/%s/virtual_currencies",
         name = "get_virtual_currencies",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    public data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
+    data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
         name = "web_billing_get_products",
     ) {
@@ -94,7 +96,7 @@ internal sealed class Endpoint(
         }
     }
 
-    public val supportsSignatureVerification: Boolean
+    val supportsSignatureVerification: Boolean
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,
@@ -117,7 +119,7 @@ internal sealed class Endpoint(
                 false
         }
 
-    public val needsNonceToPerformSigning: Boolean
+    val needsNonceToPerformSigning: Boolean
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,
@@ -140,6 +142,6 @@ internal sealed class Endpoint(
                 false
         }
 
-    public val supportsFallbackBaseURLs: Boolean
+    val supportsFallbackBaseURLs: Boolean
         get() = fallbackPath != null
 }

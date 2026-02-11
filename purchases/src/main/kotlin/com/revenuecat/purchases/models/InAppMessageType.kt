@@ -5,7 +5,9 @@ import com.android.billingclient.api.InAppMessageParams
 /**
  * Enum mapping in-app message types
  */
-public enum class InAppMessageType(@InAppMessageParams.InAppMessageCategoryId internal val inAppMessageCategoryId: Int) {
+public enum class InAppMessageType(
+    @InAppMessageParams.InAppMessageCategoryId internal val inAppMessageCategoryId: Int,
+) {
     /**
      * In-app messages for billing issues.
      * If the user has had a payment declined, this will show a toast notification notifying them and

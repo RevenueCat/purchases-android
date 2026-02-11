@@ -10,18 +10,18 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 internal data class ProductEntitlementMapping(
-    public val mappings: Map<String, Mapping>,
-    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
-    public val loadedFromCache: Boolean = false,
+    val mappings: Map<String, Mapping>,
+    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val loadedFromCache: Boolean = false,
 ) {
-    public companion object {
+    companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
         private const val PRODUCT_ID_KEY = "product_identifier"
         private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
         private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
 
-        public fun fromJson(
+        fun fromJson(
             json: JSONObject,
             loadedFromCache: Boolean = false,
         ): ProductEntitlementMapping {
@@ -49,20 +49,20 @@ internal data class ProductEntitlementMapping(
             return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
         }
 
-        public fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
+        fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
             val jsonCopy = json.copy(deep = false)
             val jsonWithSource = jsonCopy.put(ORIGINAL_SOURCE_KEY, httpResult.originalDataSource.name)
             return fromJson(jsonWithSource, loadedFromCache = false)
         }
     }
 
-    public data class Mapping(
+    data class Mapping(
         val productIdentifier: String,
         val basePlanId: String?,
         val entitlements: List<String>,
     )
 
-    public fun toJson() = JSONObject().apply {
+    fun toJson() = JSONObject().apply {
         val mappingsObjects = mappings.mapValues { (_, value) ->
             JSONObject().apply {
                 put(PRODUCT_ID_KEY, value.productIdentifier)

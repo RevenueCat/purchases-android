@@ -14,10 +14,10 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 
 internal sealed class SyncPendingPurchaseResult {
-    public data class Success(val customerInfo: CustomerInfo) : SyncPendingPurchaseResult()
-    public data class Error(val error: PurchasesError) : SyncPendingPurchaseResult()
-    public object AutoSyncDisabled : SyncPendingPurchaseResult()
-    public object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
+    data class Success(val customerInfo: CustomerInfo) : SyncPendingPurchaseResult()
+    data class Error(val error: PurchasesError) : SyncPendingPurchaseResult()
+    object AutoSyncDisabled : SyncPendingPurchaseResult()
+    object NoPendingPurchasesToSync : SyncPendingPurchaseResult()
 }
 
 @Suppress("LongParameterList")

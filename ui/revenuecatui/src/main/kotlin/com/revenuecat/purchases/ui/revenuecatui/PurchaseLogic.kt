@@ -77,7 +77,10 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the restoration process.
      */
-    public abstract fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit)
+    public abstract fun performRestoreWithCompletion(
+        customerInfo: CustomerInfo,
+        completion: (PurchaseLogicResult) -> Unit,
+    )
 
     /**
      * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's

@@ -73,12 +73,12 @@ public class UiConfig(
                 @Serializable
                 @SerialName("name")
                 public class Name(
-                    public @get:JvmSynthetic val value: String,
-                    public @get:JvmSynthetic val url: String? = null,
-                    public @get:JvmSynthetic val hash: String? = null,
-                    public @get:JvmSynthetic val family: String? = null,
-                    public @get:JvmSynthetic val weight: Int? = null,
-                    public @get:JvmSynthetic val style: FontStyle? = null,
+                    @get:JvmSynthetic public val value: String,
+                    @get:JvmSynthetic public val url: String? = null,
+                    @get:JvmSynthetic public val hash: String? = null,
+                    @get:JvmSynthetic public val family: String? = null,
+                    @get:JvmSynthetic public val weight: Int? = null,
+                    @get:JvmSynthetic public val style: FontStyle? = null,
                 ) : FontInfo
 
                 @InternalRevenueCatAPI

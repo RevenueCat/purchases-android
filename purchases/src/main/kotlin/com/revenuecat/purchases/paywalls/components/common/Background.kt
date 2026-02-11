@@ -22,7 +22,7 @@ public sealed interface Background {
 
     @Serializable
     public data class Image(
-        public @get:JvmSynthetic val value: ThemeImageUrls,
+        @get:JvmSynthetic public val value: ThemeImageUrls,
         @get:JvmSynthetic
         @SerialName("fit_mode")
         public val fitMode: FitMode = FitMode.FILL,
@@ -33,7 +33,7 @@ public sealed interface Background {
 
     @Serializable
     public data class Video(
-        public @get:JvmSynthetic val value: ThemeVideoUrls,
+        @get:JvmSynthetic public val value: ThemeVideoUrls,
         @get:JvmSynthetic
         @SerialName("fallback_image")
         public val fallbackImage: ThemeImageUrls,

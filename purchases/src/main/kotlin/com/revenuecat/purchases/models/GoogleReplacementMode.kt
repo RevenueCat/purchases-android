@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ReplacementMode
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
 public enum class GoogleReplacementMode(
-    public @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
+    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode public val playBillingClientMode: Int,
 ) : ReplacementMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.

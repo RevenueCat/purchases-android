@@ -15,22 +15,22 @@ public sealed interface Dimension {
     @Serializable
     @SerialName("vertical")
     public data class Vertical(
-        public @get:JvmSynthetic val alignment: HorizontalAlignment,
-        public @get:JvmSynthetic val distribution: FlexDistribution,
+        @get:JvmSynthetic public val alignment: HorizontalAlignment,
+        @get:JvmSynthetic public val distribution: FlexDistribution,
     ) : Dimension
 
     @Immutable
     @Serializable
     @SerialName("horizontal")
     public data class Horizontal(
-        public @get:JvmSynthetic val alignment: VerticalAlignment,
-        public @get:JvmSynthetic val distribution: FlexDistribution,
+        @get:JvmSynthetic public val alignment: VerticalAlignment,
+        @get:JvmSynthetic public val distribution: FlexDistribution,
     ) : Dimension
 
     @Immutable
     @Serializable
     @SerialName("zlayer")
     public data class ZLayer(
-        public @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
+        @get:JvmSynthetic public val alignment: TwoDimensionalAlignment,
     ) : Dimension
 }

@@ -142,7 +142,8 @@ internal open class DeviceCache(
     // region purchaser info
     public fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    public fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
+    public fun customerInfoLastUpdatedCacheKey(appUserID: String) =
+        "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress
     public fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
@@ -259,7 +260,8 @@ internal open class DeviceCache(
     // region virtual currencies
     public fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
 
-    public fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+    public fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) =
+        "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress("SwallowedException", "ForbiddenComment")
     @Synchronized

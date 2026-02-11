@@ -17,11 +17,11 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 public class PaywallTransition(
-    public @get:JvmSynthetic val type: TransitionType = TransitionType.FADE,
+    @get:JvmSynthetic public val type: TransitionType = TransitionType.FADE,
     @get:JvmSynthetic
     @SerialName("displacement_strategy")
     public val displacementStrategy: DisplacementStrategy,
-    public @get:JvmSynthetic val animation: PaywallAnimation? = null,
+    @get:JvmSynthetic public val animation: PaywallAnimation? = null,
 ) {
 
     /**

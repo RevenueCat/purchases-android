@@ -582,7 +582,7 @@ private fun previewThemeImageUrls(widthPx: UInt, heightPx: UInt): ThemeImageUrls
  * Converts this drawable to a bitmap with a [background].
  */
 @Suppress("DestructuringDeclarationWithTooManyEntries")
-internal fun Drawable.toBitmap(
+public fun Drawable.toBitmap(
     @Px width: UInt,
     @Px height: UInt,
     @ColorInt background: Int,

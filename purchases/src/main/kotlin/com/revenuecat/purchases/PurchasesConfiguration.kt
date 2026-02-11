@@ -267,7 +267,9 @@ public open class PurchasesConfiguration(builder: Builder) {
          * in Google Play). Note that entitlements are not granted until payment is done.
          * Default is disabled.
          */
-        public fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean): Builder = apply {
+        public fun pendingTransactionsForPrepaidPlansEnabled(
+            pendingTransactionsForPrepaidPlansEnabled: Boolean,
+        ): Builder = apply {
             this.pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled
         }
 
@@ -282,7 +284,9 @@ public open class PurchasesConfiguration(builder: Builder) {
          *
          * Default is enabled.
          */
-        public fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean): Builder = apply {
+        public fun automaticDeviceIdentifierCollectionEnabled(
+            automaticDeviceIdentifierCollectionEnabled: Boolean,
+        ): Builder = apply {
             this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
         }
 

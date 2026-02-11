@@ -453,7 +453,8 @@ public data class CustomerCenterConfigData(
                 public val title: String,
                 public val subtitle: String,
                 @SerialName("product_mapping") public val productMapping: Map<String, String>,
-                @SerialName("cross_product_promotions") public val crossProductPromotions: Map<String, CrossProductPromotion> =
+                @SerialName("cross_product_promotions") public val crossProductPromotions:
+                Map<String, CrossProductPromotion> =
                     emptyMap(),
             ) : PathDetail() {
                 @Deprecated(

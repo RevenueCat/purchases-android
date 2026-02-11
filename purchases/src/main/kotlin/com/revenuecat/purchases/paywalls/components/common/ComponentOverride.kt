@@ -11,8 +11,8 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 public class ComponentOverride<T : PartialComponent>(
-    public @get:JvmSynthetic val conditions: List<Condition>,
-    public @get:JvmSynthetic val properties: T,
+    @get:JvmSynthetic public val conditions: List<Condition>,
+    @get:JvmSynthetic public val properties: T,
 ) {
 
     @Serializable(with = ConditionSerializer::class)
