@@ -15,16 +15,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -90,12 +94,14 @@ fun OfferingsScreen(
         )
     }
 
-    val onPurchasePackage: (Package) -> Unit = { packageItem ->
+    fun launchPurchase(packageItem: Package, purchaseAction: suspend (PurchaseManager) -> PurchaseOperationResult) {
+        val manager = purchaseManager ?: run {
+            purchaseResult = PurchaseResult.Error("Purchase manager not initialized", null)
+            return
+        }
         purchasingPackageId = packageItem.identifier
         coroutineScope.launch {
-            handlePurchase(activity, packageItem, purchaseManager) { result ->
-                purchaseResult = result
-            }
+            purchaseResult = purchaseAction(manager).toPurchaseResult()
             purchasingPackageId = null
         }
     }
@@ -118,7 +124,12 @@ fun OfferingsScreen(
             onDismissMetadata = { selectedOfferingForMetadata = null },
             onDismissPaywall = { selectedOfferingForPaywall = null },
             onDismissPurchaseResult = { purchaseResult = null },
-            onPurchasePackage = onPurchasePackage,
+            onPurchasePackage = { pkg ->
+                launchPurchase(pkg) { it.purchase(activity, pkg) }
+            },
+            onPurchaseProduct = { pkg ->
+                launchPurchase(pkg) { it.purchaseProduct(activity, pkg.product) }
+            },
         ),
         purchaseLogic = purchaseManager?.purchaseLogic,
         modifier = modifier,
@@ -144,6 +155,7 @@ private data class OfferingsScreenCallbacks(
     val onDismissPaywall: () -> Unit,
     val onDismissPurchaseResult: () -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,6 +191,7 @@ private fun OfferingsScreenContent(
                 onShowMetadata = callbacks.onShowMetadata,
                 onPresentPaywall = callbacks.onPresentPaywall,
                 onPurchasePackage = callbacks.onPurchasePackage,
+                onPurchaseProduct = callbacks.onPurchaseProduct,
             ),
             paddingValues = paddingValues,
         )
@@ -248,6 +261,7 @@ private data class OfferingsContentCallbacks(
     val onShowMetadata: (Offering) -> Unit,
     val onPresentPaywall: (Offering) -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
 )
 
 @Composable
@@ -281,9 +295,7 @@ private fun OfferingsContent(
                     OfferingsList(
                         offerings = state.offerings,
                         purchasingPackageId = state.purchasingPackageId,
-                        onShowMetadata = callbacks.onShowMetadata,
-                        onPresentPaywall = callbacks.onPresentPaywall,
-                        onPurchasePackage = callbacks.onPurchasePackage,
+                        callbacks = callbacks,
                     )
                 }
             }
@@ -342,9 +354,7 @@ private fun EmptyOfferingsView(
 private fun OfferingsList(
     offerings: Offerings,
     purchasingPackageId: String?,
-    onShowMetadata: (Offering) -> Unit,
-    onPresentPaywall: (Offering) -> Unit,
-    onPurchasePackage: (Package) -> Unit,
+    callbacks: OfferingsContentCallbacks,
 ) {
     val offeringsList = offerings.all.values.toList()
     val currentOffering = offerings.current
@@ -363,9 +373,10 @@ private fun OfferingsList(
                     purchasingPackageId = purchasingPackageId,
                 ),
                 callbacks = OfferingCardCallbacks(
-                    onShowMetadata = { onShowMetadata(offering) },
-                    onPresentPaywall = { onPresentPaywall(offering) },
-                    onPurchasePackage = onPurchasePackage,
+                    onShowMetadata = { callbacks.onShowMetadata(offering) },
+                    onPresentPaywall = { callbacks.onPresentPaywall(offering) },
+                    onPurchasePackage = callbacks.onPurchasePackage,
+                    onPurchaseProduct = callbacks.onPurchaseProduct,
                 ),
             )
         }
@@ -387,34 +398,22 @@ private fun sortOfferings(
     }
 }
 
-private suspend fun handlePurchase(
-    activity: Activity,
-    packageItem: Package,
-    purchaseManager: PurchaseManager?,
-    onResult: (PurchaseResult) -> Unit,
-) {
-    if (purchaseManager == null) {
-        onResult(PurchaseResult.Error("Purchase manager not initialized", null))
-        return
+private fun PurchaseOperationResult.toPurchaseResult(): PurchaseResult {
+    return when (this) {
+        is PurchaseOperationResult.Success -> PurchaseResult.Success(
+            customerInfo = customerInfo,
+        )
+        is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseResult.SuccessCustomImplementation
+        is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
+        is PurchaseOperationResult.Pending -> PurchaseResult.Error(
+            "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
+            null,
+        )
+        is PurchaseOperationResult.Failure -> PurchaseResult.Error(
+            error,
+            null,
+        )
     }
-    val result = purchaseManager.purchase(activity, packageItem)
-    onResult(
-        when (result) {
-            is PurchaseOperationResult.Success -> PurchaseResult.Success(
-                customerInfo = result.customerInfo,
-            )
-            is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseResult.SuccessCustomImplementation
-            is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
-            is PurchaseOperationResult.Pending -> PurchaseResult.Error(
-                "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
-                null,
-            )
-            is PurchaseOperationResult.Failure -> PurchaseResult.Error(
-                result.error,
-                null,
-            )
-        },
-    )
 }
 
 private fun Context.findActivity(): Activity {
@@ -446,6 +445,7 @@ private data class OfferingCardCallbacks(
     val onShowMetadata: () -> Unit,
     val onPresentPaywall: () -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
 )
 
 @Composable
@@ -474,6 +474,7 @@ private fun OfferingCard(
                 packages = data.offering.availablePackages,
                 purchasingPackageId = data.purchasingPackageId,
                 onPurchasePackage = callbacks.onPurchasePackage,
+                onPurchaseProduct = callbacks.onPurchaseProduct,
             )
 
             if (data.offering.hasPaywall) {
@@ -528,6 +529,7 @@ private fun OfferingCardPackages(
     packages: List<Package>,
     purchasingPackageId: String?,
     onPurchasePackage: (Package) -> Unit,
+    onPurchaseProduct: (Package) -> Unit,
 ) {
     if (packages.isNotEmpty()) {
         Text(
@@ -539,7 +541,8 @@ private fun OfferingCardPackages(
             PackageRow(
                 packageItem = packageItem,
                 isPurchasing = purchasingPackageId == packageItem.identifier,
-                onPurchase = { onPurchasePackage(packageItem) },
+                onPurchasePackage = { onPurchasePackage(packageItem) },
+                onPurchaseProduct = { onPurchaseProduct(packageItem) },
             )
         }
     } else {
@@ -555,7 +558,8 @@ private fun OfferingCardPackages(
 private fun PackageRow(
     packageItem: Package,
     isPurchasing: Boolean,
-    onPurchase: () -> Unit,
+    onPurchasePackage: () -> Unit,
+    onPurchaseProduct: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -575,8 +579,26 @@ private fun PackageRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        PurchaseButton(
+            priceFormatted = packageItem.product.price.formatted,
+            isPurchasing = isPurchasing,
+            onPurchasePackage = onPurchasePackage,
+            onPurchaseProduct = onPurchaseProduct,
+        )
+    }
+}
+
+@Composable
+private fun PurchaseButton(
+    priceFormatted: String,
+    isPurchasing: Boolean,
+    onPurchasePackage: () -> Unit,
+    onPurchaseProduct: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
         Button(
-            onClick = onPurchase,
+            onClick = { showMenu = true },
             enabled = !isPurchasing,
         ) {
             if (isPurchasing) {
@@ -588,8 +610,32 @@ private fun PackageRow(
                     strokeWidth = 2.5.dp,
                 )
             } else {
-                Text(packageItem.product.price.formatted)
+                Text(priceFormatted)
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
             }
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Purchase Package") },
+                onClick = {
+                    showMenu = false
+                    onPurchasePackage()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Purchase Product") },
+                onClick = {
+                    showMenu = false
+                    onPurchaseProduct()
+                },
+            )
         }
     }
 }

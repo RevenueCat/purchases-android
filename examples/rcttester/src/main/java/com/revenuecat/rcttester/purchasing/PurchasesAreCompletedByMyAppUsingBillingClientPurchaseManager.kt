@@ -9,10 +9,12 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -67,16 +69,30 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
         }
     }
 
-    @Suppress("ReturnCount")
     override suspend fun purchase(
         activity: Activity,
         rcPackage: Package,
+    ): PurchaseOperationResult {
+        return launchBillingFlow(activity, rcPackage.product)
+    }
+
+    override suspend fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+    ): PurchaseOperationResult {
+        return launchBillingFlow(activity, storeProduct)
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun launchBillingFlow(
+        activity: Activity,
+        storeProduct: StoreProduct,
     ): PurchaseOperationResult {
         if (!ensureConnected()) {
             return PurchaseOperationResult.Failure("Failed to connect to BillingClient")
         }
 
-        val googleProduct = rcPackage.product.googleProduct
+        val googleProduct = storeProduct.googleProduct
             ?: return PurchaseOperationResult.Failure("Product is not a Google product")
 
         if (purchaseContinuation != null) {
@@ -111,7 +127,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
             }
         }
 
-        return handlePurchaseResult(updateResult, rcPackage)
+        return handlePurchaseResult(updateResult, storeProduct.type)
     }
 
     fun onPurchasesUpdated(
@@ -129,7 +145,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
 
     private suspend fun handlePurchaseResult(
         result: PurchaseUpdateResult,
-        rcPackage: Package,
+        productType: ProductType,
     ): PurchaseOperationResult {
         val responseCode = result.billingResult.responseCode
         val debugMessage = result.billingResult.debugMessage
@@ -142,7 +158,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
                     return PurchaseOperationResult.Failure("Purchase OK but no purchases returned")
                 }
                 when (purchase.purchaseState) {
-                    Purchase.PurchaseState.PURCHASED -> handleSuccessfulPurchase(purchase, rcPackage)
+                    Purchase.PurchaseState.PURCHASED -> handleSuccessfulPurchase(purchase, productType)
                     Purchase.PurchaseState.PENDING -> PurchaseOperationResult.Pending
                     else -> {
                         Log.w(TAG, "Unexpected purchase state: ${purchase.purchaseState}")
@@ -167,11 +183,11 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
 
     private suspend fun handleSuccessfulPurchase(
         purchase: Purchase,
-        rcPackage: Package,
+        productType: ProductType,
     ): PurchaseOperationResult {
         acknowledgeHelper.finishTransaction(
             purchaseToken = purchase.purchaseToken,
-            productType = rcPackage.product.type,
+            productType = productType,
         )
         return PurchaseOperationResult.SuccessCustomImplementation
     }
