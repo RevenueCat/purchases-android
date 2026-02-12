@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class ScreenOfferingExtensionsTest {
+class ScreenOfferingExtensionsTest {
 
     private val mockPurchases = mockk<Purchases>()
     private val mockOfferings = mockk<Offerings>()
@@ -31,7 +31,7 @@ public class ScreenOfferingExtensionsTest {
     private val mockSpecificOffering = mockk<Offering>()
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         mockkObject(Purchases)
         every { Purchases.sharedInstance } returns mockPurchases
 
@@ -46,7 +46,7 @@ public class ScreenOfferingExtensionsTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkAll()
     }
 

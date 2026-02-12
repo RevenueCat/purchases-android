@@ -7,7 +7,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
-public class LocaleExtensionsTest {
+class LocaleExtensionsTest {
 
     @Test
     fun `toLocale - converts valid locale tags to correct locale`() {

@@ -19,9 +19,9 @@ import org.intellij.lang.annotations.Language
 import org.junit.Test
 import java.net.URL
 
-public class VideoComponentTests {
+class VideoComponentTests {
     @Language("json")
-    public val json = """
+    val json = """
         {
           "auto_play": true,
           "color_overlay": {

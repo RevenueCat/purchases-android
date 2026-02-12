@@ -5,7 +5,7 @@ import com.revenuecat.purchases.VerificationResult
 import org.json.JSONObject
 import java.util.Date
 
-public fun createCustomerInfo(
+fun createCustomerInfo(
     response: String,
     requestDate: Date? = null,
     verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
@@ -13,7 +13,7 @@ public fun createCustomerInfo(
     return createCustomerInfo(JSONObject(response), requestDate, verificationResult)
 }
 
-public fun createCustomerInfo(
+fun createCustomerInfo(
     jsonObject: JSONObject,
     requestDate: Date? = null,
     verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED

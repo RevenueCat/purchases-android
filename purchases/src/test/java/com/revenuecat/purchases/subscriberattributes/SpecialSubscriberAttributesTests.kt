@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.subscriberattributes.getSubscriberAttribu
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-public class SpecialSubscriberAttributesTests {
+class SpecialSubscriberAttributesTests {
 
     @Test
     fun `given an email key SubscriberAttributeKey can be created`() {

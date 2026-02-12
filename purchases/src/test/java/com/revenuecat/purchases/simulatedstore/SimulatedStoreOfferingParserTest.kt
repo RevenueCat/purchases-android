@@ -14,14 +14,14 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class SimulatedStoreOfferingParserTest {
+class SimulatedStoreOfferingParserTest {
 
     private lateinit var parser: SimulatedStoreOfferingParser
     private lateinit var mockProduct1: StoreProduct
     private lateinit var mockProduct2: StoreProduct
 
     @Before
-    public fun setup() {
+    fun setup() {
         parser = SimulatedStoreOfferingParser()
         mockProduct1 = mockk(relaxed = true) {
             every { copyWithPresentedOfferingContext(any()) } returns this@mockk

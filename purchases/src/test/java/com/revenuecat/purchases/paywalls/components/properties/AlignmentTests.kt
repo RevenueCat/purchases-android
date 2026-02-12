@@ -10,13 +10,13 @@ import org.junit.runners.Parameterized
 internal class AlignmentTests {
 
     @RunWith(Parameterized::class)
-    public class HorizontalAlignmentTests(private val serialized: String, private val expected: HorizontalAlignment) {
+    class HorizontalAlignmentTests(private val serialized: String, private val expected: HorizontalAlignment) {
 
-        public companion object {
+        companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = HorizontalAlignment.values().map { expected ->
+            fun parameters(): Collection<*> = HorizontalAlignment.values().map { expected ->
                 val serialized = when (expected) {
                     HorizontalAlignment.LEADING -> "\"leading\""
                     HorizontalAlignment.CENTER -> "\"center\""
@@ -39,13 +39,13 @@ internal class AlignmentTests {
     }
 
     @RunWith(Parameterized::class)
-    public class VerticalAlignmentTests(private val serialized: String, private val expected: VerticalAlignment) {
+    class VerticalAlignmentTests(private val serialized: String, private val expected: VerticalAlignment) {
 
-        public companion object {
+        companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = VerticalAlignment.values().map { expected ->
+            fun parameters(): Collection<*> = VerticalAlignment.values().map { expected ->
                 val serialized = when (expected) {
                     VerticalAlignment.TOP -> "\"top\""
                     VerticalAlignment.CENTER -> "\"center\""
@@ -68,13 +68,13 @@ internal class AlignmentTests {
     }
 
     @RunWith(Parameterized::class)
-    public class TwoDimensionalAlignmentTests(private val serialized: String, private val expected: TwoDimensionalAlignment) {
+    class TwoDimensionalAlignmentTests(private val serialized: String, private val expected: TwoDimensionalAlignment) {
 
-        public companion object {
+        companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = TwoDimensionalAlignment.values().map { expected ->
+            fun parameters(): Collection<*> = TwoDimensionalAlignment.values().map { expected ->
                 val serialized = when (expected) {
                     TwoDimensionalAlignment.CENTER -> "\"center\""
                     TwoDimensionalAlignment.LEADING -> "\"leading\""

@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class DangerousSettingsTest {
+class DangerousSettingsTest {
     @Test
     fun `default customEntitlementComputation is false`() {
         val dangerousSettings = DangerousSettings()

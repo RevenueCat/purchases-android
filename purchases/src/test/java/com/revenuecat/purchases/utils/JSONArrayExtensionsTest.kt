@@ -10,7 +10,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class JSONArrayExtensionsTest {
+class JSONArrayExtensionsTest {
     private val fromList = listOf(
         5,
         5.5,

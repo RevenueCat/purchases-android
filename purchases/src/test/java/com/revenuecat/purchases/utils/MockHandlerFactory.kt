@@ -5,8 +5,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 
-public object MockHandlerFactory {
-    public fun createMockHandler(): Handler {
+object MockHandlerFactory {
+    fun createMockHandler(): Handler {
         val handler = mockk<Handler>()
         val slot = slot<Runnable>()
         every {

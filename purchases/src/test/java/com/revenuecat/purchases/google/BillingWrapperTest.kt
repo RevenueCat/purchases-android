@@ -89,7 +89,7 @@ import java.util.Locale
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class BillingWrapperTest {
+class BillingWrapperTest {
 
     internal companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
@@ -125,7 +125,7 @@ public class BillingWrapperTest {
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     @Before
-    public fun setup() {
+    fun setup() {
         testScope = TestScope()
         storeProducts = null
         purchasesUpdatedListener = null
@@ -199,31 +199,31 @@ public class BillingWrapperTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         clearAllMocks()
     }
 
     @Test
-    public fun canBeCreated() {
+    fun canBeCreated() {
         assertThat(wrapper).`as`("Wrapper is not null").isNotNull
     }
 
     @Test
-    public fun callsBuildOnTheFactory() {
+    fun callsBuildOnTheFactory() {
         verify {
             mockClientFactory.buildClient(purchasesUpdatedListener!!)
         }
     }
 
     @Test
-    public fun connectsToPlayBilling() {
+    fun connectsToPlayBilling() {
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
     }
 
     @Test
-    public fun defersCallUntilConnected() {
+    fun defersCallUntilConnected() {
         every { mockClient.isReady } returns false
 
         val token = "token"
@@ -245,7 +245,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun canDeferMultipleCallsUntilConnected() {
+    fun canDeferMultipleCallsUntilConnected() {
         every { mockClient.isReady } returns false
 
         val token = "token"
@@ -277,7 +277,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun makingARequestTriggersAConnectionAttempt() {
+    fun makingARequestTriggersAConnectionAttempt() {
         every { mockClient.isReady } returns false
 
         val token = "token"
@@ -769,7 +769,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun defersBillingFlowIfNotConnected() {
+    fun defersBillingFlowIfNotConnected() {
         every {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
@@ -800,7 +800,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun callsLaunchFlowFromMainThread() {
+    fun callsLaunchFlowFromMainThread() {
         every {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
@@ -979,7 +979,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun purchasesUpdatedCallsAreForwarded() {
+    fun purchasesUpdatedCallsAreForwarded() {
         val purchases = listOf(stubGooglePurchase())
         val slot = slot<List<StoreTransaction>>()
         every {
@@ -1016,7 +1016,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun purchaseUpdateFailedCalledIfNotOK() {
+    fun purchaseUpdateFailedCalledIfNotOK() {
         every {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         } just Runs
@@ -1049,7 +1049,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun whenSettingListenerStartConnection() {
+    fun whenSettingListenerStartConnection() {
         verify {
             mockClient.startConnection(eq(wrapper))
         }
@@ -1058,7 +1058,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun whenExecutingRequestAndThereIsNoListenerDoNotTryToStartConnection() {
+    fun whenExecutingRequestAndThereIsNoListenerDoNotTryToStartConnection() {
         every {
             mockClient.endConnection()
         } just Runs
@@ -1074,7 +1074,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun closingBillingClientAfterEndingConnection() {
+    fun closingBillingClientAfterEndingConnection() {
         every {
             mockClient.endConnection()
         } just Runs
@@ -1088,7 +1088,7 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public fun newBillingClientIsCreatedWhenSettingListener() {
+    fun newBillingClientIsCreatedWhenSettingListener() {
         wrapper.purchasesUpdatedListener = mockPurchasesListener
 
         assertThat<BillingClient>(wrapper.billingClient).isNotNull

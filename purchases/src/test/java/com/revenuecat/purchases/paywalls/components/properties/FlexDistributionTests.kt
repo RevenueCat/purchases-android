@@ -8,11 +8,11 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class FlexDistributionTests(private val serialized: String, private val expected: FlexDistribution) {
 
-    public companion object {
+    companion object {
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = FlexDistribution.values().map { expected ->
+        fun parameters(): Collection<*> = FlexDistribution.values().map { expected ->
             val serialized = when (expected) {
                 FlexDistribution.START -> "\"start\""
                 FlexDistribution.END -> "\"end\""

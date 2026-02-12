@@ -11,7 +11,7 @@ import com.amazon.device.iap.model.ProductType as AmazonProductType
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 @RunWith(AndroidJUnit4::class)
-public class ProductConverterTest {
+class ProductConverterTest {
 
     @Test
     fun `sku is correctly assigned`() {
@@ -141,12 +141,12 @@ public class ProductConverterTest {
 }
 
 @RunWith(Parameterized::class)
-public class PeriodParsingTest(private val periodRaw: String, private val periodExpected: Period?) {
+class PeriodParsingTest(private val periodRaw: String, private val periodExpected: Period?) {
 
-    public companion object {
+    companion object {
         @JvmStatic
         @Parameterized.Parameters
-        public fun data() : Collection<Array<Any?>> {
+        fun data() : Collection<Array<Any?>> {
             return listOf(
                 arrayOf("Weekly", Period(1, Period.Unit.WEEK, "P1W")),
                 arrayOf("BiWeekly", Period(2, Period.Unit.WEEK, "P2W")),

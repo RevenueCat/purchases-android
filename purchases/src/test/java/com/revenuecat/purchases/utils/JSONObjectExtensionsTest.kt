@@ -10,7 +10,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class JSONObjectExtensionsTest {
+class JSONObjectExtensionsTest {
     private val fromMap = mapOf(
         "int" to 5,
         "double" to 5.5,

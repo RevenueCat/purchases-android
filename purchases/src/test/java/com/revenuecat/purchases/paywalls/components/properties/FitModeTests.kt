@@ -8,11 +8,11 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class FitModeTests(private val serialized: String, private val expected: FitMode) {
 
-    public companion object {
+    companion object {
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = FitMode.values().map { expected ->
+        fun parameters(): Collection<*> = FitMode.values().map { expected ->
             val serialized = when (expected) {
                 FitMode.FIT -> "\"fit\""
                 FitMode.FILL -> "\"fill\""

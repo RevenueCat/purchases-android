@@ -17,7 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class CustomerInfoUpdateHandlerTest {
+class CustomerInfoUpdateHandlerTest {
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var identityManager: IdentityManager
@@ -31,7 +31,7 @@ public class CustomerInfoUpdateHandlerTest {
     private val mockInfo = mockk<CustomerInfo>()
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         deviceCache = mockk()
         identityManager = mockk()
         offlineEntitlementsManager = mockk()

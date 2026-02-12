@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-public object Constants {
+object Constants {
     const val apiKey = "REVENUECAT_API_KEY"
     const val proxyUrl = "NO_PROXY_URL"
     const val googlePurchaseToken = "GOOGLE_PURCHASE_TOKEN"
@@ -11,16 +11,16 @@ public object Constants {
     const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
 
     private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
-    public val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
+    val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
 
-    public enum class BackendEnvironment {
+    enum class BackendEnvironment {
         PRODUCTION,
         LOAD_SHEDDER_US_EAST_1,
         LOAD_SHEDDER_US_EAST_2,
         ;
 
-        public companion object {
-            public fun valueForString(backendEnvironmentString: String): BackendEnvironment {
+        companion object {
+            fun valueForString(backendEnvironmentString: String): BackendEnvironment {
                 return when (backendEnvironmentString) {
                     "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1
                     "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2

@@ -104,7 +104,7 @@ internal open class BaseBillingUseCaseTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         clearAllMocks()
     }
 

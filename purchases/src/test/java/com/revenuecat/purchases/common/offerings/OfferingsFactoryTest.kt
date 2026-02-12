@@ -39,7 +39,7 @@ import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class OfferingsFactoryTest {
+class OfferingsFactoryTest {
 
     // language=JSON
     private val oneOfferingWithNoProductsResponse = JSONObject(
@@ -243,7 +243,7 @@ public class OfferingsFactoryTest {
     private lateinit var offeringsFactory: OfferingsFactory
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { store } returns Store.PLAY_STORE
             every { apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID

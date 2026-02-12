@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class PurchasesLoggerTest {
+class PurchasesLoggerTest {
     private class Handler : LogHandler {
         var verboseMessage: String? = null
         var debugMessage: String? = null
@@ -58,18 +58,18 @@ public class PurchasesLoggerTest {
     private lateinit var previousHandler: LogHandler
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         previousHandler = currentLogHandler
         currentLogHandler = handler
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         currentLogHandler = previousHandler
     }
 
     @Test
-    public fun verboseWithDebugLogs() {
+    fun verboseWithDebugLogs() {
         withChangedLevel(LogLevel.DEBUG) {
             verboseLog { message }
             assertThat(handler.verboseMessage).isNull()
@@ -77,7 +77,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun debugWithDebugLogsDisabled() {
+    fun debugWithDebugLogsDisabled() {
         withChangedLevel(LogLevel.INFO) {
             debugLog { message }
             assertThat(handler.debugMessage).isNull()
@@ -85,7 +85,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun debugWithDebugLogsEnabled() {
+    fun debugWithDebugLogsEnabled() {
         withChangedLevel(LogLevel.DEBUG) {
             debugLog { message }
             assertThat(handler.debugMessage).isEqualTo(message)
@@ -93,7 +93,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun debugWithVerboseLogs() {
+    fun debugWithVerboseLogs() {
         withChangedLevel(LogLevel.VERBOSE) {
             debugLog { message }
             assertThat(handler.debugMessage).isEqualTo(message)
@@ -101,7 +101,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun info() {
+    fun info() {
         withChangedLevel(LogLevel.INFO) {
             infoLog { message }
             assertThat(handler.infoMessage).isEqualTo(message)
@@ -109,7 +109,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun warning() {
+    fun warning() {
         withChangedLevel(LogLevel.WARN) {
             warnLog { message }
             assertThat(handler.warningMessage).isEqualTo(message)
@@ -117,7 +117,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun errorWithNoThrowable() {
+    fun errorWithNoThrowable() {
         withChangedLevel(LogLevel.ERROR) {
             errorLog { message }
             assertThat(handler.errorMessage).isEqualTo(message)
@@ -126,7 +126,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun errorWithThrowable() {
+    fun errorWithThrowable() {
         withChangedLevel(LogLevel.ERROR) {
             val throwable = ClassNotFoundException()
 
@@ -137,7 +137,7 @@ public class PurchasesLoggerTest {
     }
 
     @Test
-    public fun errorWithDebugLogs() {
+    fun errorWithDebugLogs() {
         withChangedLevel(LogLevel.DEBUG) {
             val throwable = ClassNotFoundException()
 

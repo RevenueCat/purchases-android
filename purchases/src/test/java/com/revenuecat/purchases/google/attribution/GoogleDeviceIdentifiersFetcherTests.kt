@@ -20,12 +20,12 @@ import org.junit.Test
 import java.io.IOException
 import java.util.concurrent.TimeoutException
 
-public class GoogleDeviceIdentifiersFetcherTests {
+class GoogleDeviceIdentifiersFetcherTests {
 
     private lateinit var underTest: GoogleDeviceIdentifiersFetcher
 
     @Before
-    public fun setup() {
+    fun setup() {
         underTest = GoogleDeviceIdentifiersFetcher(SyncDispatcher())
         mockkStatic(Log::class)
         every {
@@ -37,12 +37,12 @@ public class GoogleDeviceIdentifiersFetcherTests {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkStatic(Log::class)
     }
 
     @Test
-    public fun getDeviceIdentifiers() {
+    fun getDeviceIdentifiers() {
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,

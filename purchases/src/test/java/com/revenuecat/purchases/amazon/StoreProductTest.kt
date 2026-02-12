@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
-public class StoreProductTest {
+class StoreProductTest {
 
     private val price = Price(
         formatted = "$1.00",

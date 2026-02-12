@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.amazon.helpers
 
-public fun successfulRVSResponse(
+fun successfulRVSResponse(
     termSku: String = "premium.subscription.quarterly"
 ) = """
         {

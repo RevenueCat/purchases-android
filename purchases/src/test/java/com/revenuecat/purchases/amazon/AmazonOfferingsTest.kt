@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class AmazonOfferingsTest {
+class AmazonOfferingsTest {
 
     private val productSku = "com.myproduct"
     private val monthlyTermSku = "$productSku.monthly"

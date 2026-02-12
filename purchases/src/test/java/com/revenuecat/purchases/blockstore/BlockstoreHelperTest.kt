@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class BlockstoreHelperTest {
+class BlockstoreHelperTest {
 
     private lateinit var mockContext: Context
     private lateinit var mockIdentityManager: IdentityManager
@@ -47,7 +47,7 @@ public class BlockstoreHelperTest {
     private val expectedKey = "com.revenuecat.purchases.app_user_id"
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockContext = mockk()
         mockIdentityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns testAnonymousUserId

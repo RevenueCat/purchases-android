@@ -4,9 +4,9 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.currentLogHandler
 import org.assertj.core.api.Assertions.assertThat
 
-public data class LogMessage(val level: LogLevel, val message: String, val throwable: Throwable? = null)
+data class LogMessage(val level: LogLevel, val message: String, val throwable: Throwable? = null)
 
-public fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
+fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
     val previousLogLevel = Config.logLevel
     Config.logLevel = LogLevel.VERBOSE
     val logs = mutableListOf<LogMessage>()
@@ -38,26 +38,26 @@ public fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) 
     Config.logLevel = previousLogLevel
 }
 
-public fun assertLog(logMessage: LogMessage, block: () -> Unit) {
+fun assertLog(logMessage: LogMessage, block: () -> Unit) {
     assertLogs(listOf(logMessage), block)
 }
 
-public fun assertVerboseLog(logMessage: String, block: () -> Unit) {
+fun assertVerboseLog(logMessage: String, block: () -> Unit) {
     assertLog(LogMessage(LogLevel.VERBOSE, logMessage), block)
 }
 
-public fun assertDebugLog(logMessage: String, block: () -> Unit) {
+fun assertDebugLog(logMessage: String, block: () -> Unit) {
     assertLog(LogMessage(LogLevel.DEBUG, logMessage), block)
 }
 
-public fun assertInfoLog(logMessage: String, block: () -> Unit) {
+fun assertInfoLog(logMessage: String, block: () -> Unit) {
     assertLog(LogMessage(LogLevel.INFO, logMessage), block)
 }
 
-public fun assertWarnLog(logMessage: String, block: () -> Unit) {
+fun assertWarnLog(logMessage: String, block: () -> Unit) {
     assertLog(LogMessage(LogLevel.WARN, logMessage), block)
 }
 
-public fun assertErrorLog(logMessage: String, throwable: Throwable? = null, block: () -> Unit) {
+fun assertErrorLog(logMessage: String, throwable: Throwable? = null, block: () -> Unit) {
     assertLog(LogMessage(LogLevel.ERROR, logMessage, throwable), block)
 }

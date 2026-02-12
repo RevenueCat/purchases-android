@@ -39,7 +39,7 @@ import org.junit.runner.RunWith
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
-public class OfferingImagePreDownloaderTest {
+class OfferingImagePreDownloaderTest {
 
     private lateinit var coilImageDownloader: CoilImageDownloader
 
@@ -48,7 +48,7 @@ public class OfferingImagePreDownloaderTest {
     private val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
             every { downloadImage(any()) } just Runs
         }

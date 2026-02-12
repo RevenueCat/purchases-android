@@ -9,7 +9,7 @@ import io.mockk.mockk
 import org.json.JSONArray
 
 @SuppressWarnings("MagicNumber")
-public fun mockOneTimePurchaseOfferDetails(
+fun mockOneTimePurchaseOfferDetails(
     price: Double = 4.99,
     priceCurrencyCodeValue: String = "USD",
     offerToken: String = "mockOfferToken",
@@ -20,7 +20,7 @@ public fun mockOneTimePurchaseOfferDetails(
     every { zzb() } returns offerToken
 }
 
-public fun stubPurchaseHistoryRecord(
+fun stubPurchaseHistoryRecord(
     productIds: List<String> = listOf("monthly_intro_pricing_one_week"),
     purchaseTime: Long = System.currentTimeMillis(),
     purchaseToken: String = "abcdefghijkcopgbomfinlko.AO-J1OxJixLsieYN08n9hV4qBsvqvQo6wXesyAClWs-t7KnYLCm3-" +

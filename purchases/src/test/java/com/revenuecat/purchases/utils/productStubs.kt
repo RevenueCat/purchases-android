@@ -46,7 +46,7 @@ const val ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE = "{'offerings': [" +
     "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
 @SuppressWarnings("EmptyFunctionBlock")
-public fun stubStoreProduct(
+fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption(
         "monthly_base_plan",
@@ -145,7 +145,7 @@ public fun stubStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-public fun stubINAPPStoreProduct(
+fun stubINAPPStoreProduct(
     productId: String,
     presentedOfferingContext: PresentedOfferingContext? = null,
 ): StoreProduct = object : StoreProduct {
@@ -220,7 +220,7 @@ public fun stubINAPPStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-public fun stubSubscriptionOption(
+fun stubSubscriptionOption(
     id: String,
     productId: String,
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
@@ -246,7 +246,7 @@ public fun stubSubscriptionOption(
         get() = installmentsInfo
 }
 
-public fun stubFreeTrialPricingPhase(
+fun stubFreeTrialPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
 ) = stubPricingPhase(
@@ -257,7 +257,7 @@ public fun stubFreeTrialPricingPhase(
     billingCycleCount = 1,
 )
 
-public fun stubPricingPhase(
+fun stubPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
     price: Double = 4.99,
@@ -274,7 +274,7 @@ public fun stubPricingPhase(
     ),
 )
 
-public fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
+fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val packageObject = Package(
         "\$rc_monthly",
         PackageType.MONTHLY,
@@ -296,7 +296,7 @@ public fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerin
     return Pair(storeProduct, offerings)
 }
 
-public fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
+fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val packageObject = Package(
         "${inAppProduct.id} package",
         PackageType.CUSTOM,
@@ -318,12 +318,12 @@ public fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offer
     return Pair(inAppProduct, offerings)
 }
 
-public fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
+fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
     val storeProduct = stubStoreProduct(productId)
     return stubOfferings(storeProduct)
 }
 
-public fun getLifetimePackageJSON() =
+fun getLifetimePackageJSON() =
     JSONObject(
         """
                 {
@@ -333,7 +333,7 @@ public fun getLifetimePackageJSON() =
         """.trimIndent(),
     )
 
-public fun getAmazonPackageJSON(
+fun getAmazonPackageJSON(
     packageIdentifier: String = "com.myproduct",
     productIdentifier: String = "com.myproduct.monthly",
 ) =
@@ -347,7 +347,7 @@ public fun getAmazonPackageJSON(
     )
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-public fun stubStoreProductWithGoogleSubscriptionPurchaseData(
+fun stubStoreProductWithGoogleSubscriptionPurchaseData(
     productId: String = STUB_PRODUCT_IDENTIFIER,
     optionId: String = "optionId",
     token: String = "token",

@@ -11,19 +11,19 @@ import org.junit.runners.Parameterized
 import java.util.Locale
 
 @RunWith(Parameterized::class)
-public class ParameterizedPricingPhaseTest(
+class ParameterizedPricingPhaseTest(
     private val billingPeriodIso8601: String,
     private val expected: Expected,
 ) {
 
-    public class Expected(
+    class Expected(
         val daily: Price,
         val weekly: Price,
         val monthly: Price,
         val yearly: Price,
     )
 
-    public companion object {
+    companion object {
 
         private val BASE_PRICE = Price(
             formatted = "$99.99",
@@ -34,7 +34,7 @@ public class ParameterizedPricingPhaseTest(
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = listOf(
+        fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "P1D",
                 Expected(

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DispatcherTest {
+class DispatcherTest {
 
     private val mockExecutorService: ExecutorService = mockk()
     private val dispatcherWithMockExecutor = Dispatcher(mockExecutorService)
@@ -46,18 +46,18 @@ public class DispatcherTest {
 
 
     @Before
-    public fun setup() {
+    fun setup() {
         currentThreadExecutorService = CurrentThreadExecutorService()
         dispatcher = Dispatcher(currentThreadExecutorService)
     }
 
     @Test
-    public fun canBeCreated() {
+    fun canBeCreated() {
         assertThat(dispatcher).isNotNull
     }
 
     @Test
-    public fun executesInExecutor() {
+    fun executesInExecutor() {
         val result = HTTPResult.createResult()
 
         every {
@@ -80,7 +80,7 @@ public class DispatcherTest {
     }
 
     @Test
-    public fun asyncCallHandlesFailures() {
+    fun asyncCallHandlesFailures() {
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 throw JSONException("an exception")
@@ -97,7 +97,7 @@ public class DispatcherTest {
     }
 
     @Test
-    public fun asyncCallHandlesSuccess() {
+    fun asyncCallHandlesSuccess() {
         val result = HTTPResult.createResult()
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -115,7 +115,7 @@ public class DispatcherTest {
     }
 
     @Test
-    public fun closeStopsThreads() {
+    fun closeStopsThreads() {
         every {
             mockExecutorService.shutdownNow()
         } returns null
@@ -128,7 +128,7 @@ public class DispatcherTest {
     }
 
     @Test
-    public fun securityExceptionsAreCorrectlyConvertedToPurchaseErrors() {
+    fun securityExceptionsAreCorrectlyConvertedToPurchaseErrors() {
         val errorHolder = AtomicReference<PurchasesError>()
 
         val call = object : Dispatcher.AsyncCall() {
@@ -246,7 +246,7 @@ public class DispatcherTest {
         }
     }
 
-    public class CurrentThreadExecutorService(
+    class CurrentThreadExecutorService(
         private val callerRunsPolicy: CallerRunsPolicy = CallerRunsPolicy()
     ): ThreadPoolExecutor(
         0,

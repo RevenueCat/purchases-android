@@ -26,7 +26,7 @@ import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.json.JSONArray
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
-public fun mockProductDetails(
+fun mockProductDetails(
     productId: String = "sample_product_id",
     @BillingClient.ProductType type: String = BillingClient.ProductType.SUBS,
     oneTimePurchaseOfferDetails: OneTimePurchaseOfferDetails? = null,
@@ -45,7 +45,7 @@ public fun mockProductDetails(
     every { zza() } returns "mock-package-name" // This seems to return the packageName property from the response json
 }
 
-public fun mockSubscriptionOfferDetails(
+fun mockSubscriptionOfferDetails(
     tags: List<String> = emptyList(),
     token: String = "mock-subscription-offer-token",
     offerId: String = "mock-offer-id",
@@ -63,7 +63,7 @@ public fun mockSubscriptionOfferDetails(
     every { installmentPlanDetails } returns installmentDetails
 }
 
-public fun mockInstallmentPlandetails(
+fun mockInstallmentPlandetails(
     commitmentPaymentsCount: Int = 3,
     renewalCommitmentPaymentsCount: Int = 1,
 ): InstallmentPlanDetails {
@@ -74,7 +74,7 @@ public fun mockInstallmentPlandetails(
 }
 
 @SuppressWarnings("MagicNumber")
-public fun mockPricingPhase(
+fun mockPricingPhase(
     price: Double = 4.99,
     priceCurrencyCodeValue: String = "USD",
     billingPeriod: String = "P1M",
@@ -89,8 +89,8 @@ public fun mockPricingPhase(
     every { getRecurrenceMode() } returns recurrenceMode
 }
 
-public fun createMockProductDetailsNoOffers(): ProductDetails = mockProductDetails()
-public fun createMockProductDetailsFreeTrial(
+fun createMockProductDetailsNoOffers(): ProductDetails = mockProductDetails()
+fun createMockProductDetailsFreeTrial(
     productId: String = "mock-free-trial-subscription",
     priceAfterFreeTrial: Double = 4.99,
     freeTrialPeriod: String = "P7D",
@@ -126,7 +126,7 @@ public fun createMockProductDetailsFreeTrial(
         ),
     ),
 )
-public fun createMockOneTimeProductDetails(productId: String, price: Double = 4.99): ProductDetails = mockProductDetails(
+fun createMockOneTimeProductDetails(productId: String, price: Double = 4.99): ProductDetails = mockProductDetails(
     productId = productId,
     type = BillingClient.ProductType.INAPP,
     oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(
@@ -136,7 +136,7 @@ public fun createMockOneTimeProductDetails(productId: String, price: Double = 4.
 )
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
-public fun stubGooglePurchase(
+fun stubGooglePurchase(
     productIds: List<String> = listOf("com.revenuecat.lifetime"),
     purchaseTime: Long = System.currentTimeMillis(),
     purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
@@ -160,7 +160,7 @@ public fun stubGooglePurchase(
     signature,
 )
 
-public fun stubStoreTransactionFromGooglePurchase(
+fun stubStoreTransactionFromGooglePurchase(
     productIds: List<String>,
     purchaseTime: Long,
     purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
@@ -173,7 +173,7 @@ public fun stubStoreTransactionFromGooglePurchase(
     ).toStoreTransaction(ProductType.SUBS, null)
 }
 
-public fun BillingClient.mockQueryPurchases(
+fun BillingClient.mockQueryPurchases(
     result: BillingResult,
     purchases: List<Purchase>,
 ): Any {
@@ -210,7 +210,7 @@ public fun BillingClient.mockQueryPurchases(
     return mockBuilder
 }
 
-public fun BillingClient.verifyQueryPurchasesCalledWithType(
+fun BillingClient.verifyQueryPurchasesCalledWithType(
     @BillingClient.ProductType googleType: String,
     builder: Any,
 ) {
@@ -225,7 +225,7 @@ public fun BillingClient.verifyQueryPurchasesCalledWithType(
     clearStaticMockk(QueryPurchasesParams::class)
 }
 
-public fun BillingClient.mockQueryPurchasesAsync(
+fun BillingClient.mockQueryPurchasesAsync(
     subsResult: BillingResult,
     inAppResult: BillingResult,
     subPurchases: List<Purchase>,

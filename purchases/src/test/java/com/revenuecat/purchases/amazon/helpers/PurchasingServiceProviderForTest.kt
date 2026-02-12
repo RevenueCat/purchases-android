@@ -8,7 +8,7 @@ import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-public class PurchasingServiceProviderForTest : PurchasingServiceProvider {
+class PurchasingServiceProviderForTest : PurchasingServiceProvider {
 
     internal val listeners = mutableListOf<PurchasingListener>()
 

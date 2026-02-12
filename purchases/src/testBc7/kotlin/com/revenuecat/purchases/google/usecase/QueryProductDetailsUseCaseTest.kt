@@ -51,7 +51,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    public fun whenProductDetailsIsEmptyPassAnEmptyListToTheListener() {
+    fun whenProductDetailsIsEmptyPassAnEmptyListToTheListener() {
         mockEmptyProductDetailsResponse()
 
         val productIDs = setOf("product_a")

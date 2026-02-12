@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class OfferingFontPreDownloaderTest {
+class OfferingFontPreDownloaderTest {
 
     private val testPackageName = "com.test.app"
 
@@ -29,7 +29,7 @@ public class OfferingFontPreDownloaderTest {
     private lateinit var preDownloader: OfferingFontPreDownloader
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         context = mockk {
             every { packageName } returns testPackageName
             every { resources.getIdentifier(any(), "font", testPackageName) } returns 0

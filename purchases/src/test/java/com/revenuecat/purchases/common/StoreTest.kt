@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class StoreTest {
+class StoreTest {
     @Test
     fun `can parse all defined stores`() {
         assertThat(Store.fromString("app_store")).isEqualTo(Store.APP_STORE)

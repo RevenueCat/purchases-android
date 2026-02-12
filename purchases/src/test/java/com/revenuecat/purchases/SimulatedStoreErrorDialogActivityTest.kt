@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class SimulatedStoreErrorDialogActivityTest {
+class SimulatedStoreErrorDialogActivityTest {
 
     private val redactedApiKey = "test_redacted_api_key"
 

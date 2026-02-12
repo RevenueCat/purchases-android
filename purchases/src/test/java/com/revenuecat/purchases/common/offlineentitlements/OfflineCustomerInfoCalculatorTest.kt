@@ -38,7 +38,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class OfflineCustomerInfoCalculatorTest {
+class OfflineCustomerInfoCalculatorTest {
     private val oneHourAgo = 1.hours.ago()
     private val oneDayFromNow = 1.days.fromNow()
     private val requestDate = Date()
@@ -53,7 +53,7 @@ public class OfflineCustomerInfoCalculatorTest {
     private lateinit var offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         purchasedProductsFetcher = mockk()
         appConfig = mockk<AppConfig>().apply {
             every { store } returns Store.PLAY_STORE

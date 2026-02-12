@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class WebPurchaseRedemptionHelperTest {
+class WebPurchaseRedemptionHelperTest {
 
     private val userId = "test-user-id"
     private val redemptionToken = "test-redemption-token"
@@ -39,7 +39,7 @@ public class WebPurchaseRedemptionHelperTest {
     private lateinit var webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         customerInfo = mockk()
         backend = mockk()
         identityManager = mockk()

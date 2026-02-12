@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class APIKeyValidatorTest {
+class APIKeyValidatorTest {
 
     @Test
     fun `Validation result is google key but amazon store if API key is from google but store is amazon`() {

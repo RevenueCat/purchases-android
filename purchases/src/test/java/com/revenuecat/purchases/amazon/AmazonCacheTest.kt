@@ -11,14 +11,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class AmazonCacheTest {
+class AmazonCacheTest {
     private val apiKey = "api_key"
     private lateinit var cache: MockDeviceCache
 
     private lateinit var underTest: AmazonCache
 
     @Before
-    public fun setup() {
+    fun setup() {
         cache = MockDeviceCache(mockk(), apiKey)
         underTest = AmazonCache(cache)
     }

@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import kotlin.concurrent.thread
 
 @RunWith(RobolectricTestRunner::class)
-public class SharedPreferencesManagerTest {
+class SharedPreferencesManagerTest {
 
     private lateinit var mockContext: Context
     private lateinit var mockLegacyPrefs: SharedPreferences
@@ -28,14 +28,14 @@ public class SharedPreferencesManagerTest {
     private lateinit var mockLegacyEditor: SharedPreferences.Editor
     private lateinit var mockRevenueCatEditor: SharedPreferences.Editor
 
-    public companion object {
+    companion object {
         private const val REVENUECAT_KEY_1 = "com.revenuecat.purchases.apikey1"
         private const val REVENUECAT_KEY_2 = "com.revenuecat.purchases.apikey1.new"
         private const val NON_REVENUECAT_KEY = "some.other.key"
     }
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockContext = mockk()
         mockLegacyPrefs = mockk()
         mockRevenueCatPrefs = mockk()
@@ -53,7 +53,7 @@ public class SharedPreferencesManagerTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkAll()
     }
 

@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class OfferingsCacheTest {
+class OfferingsCacheTest {
 
     private val initialDate = Date(1685098228L) // Friday, May 26, 2023 10:50:28 AM GMT
     private lateinit var currentDate: Date
@@ -37,7 +37,7 @@ public class OfferingsCacheTest {
     private lateinit var offeringsCache: OfferingsCache
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         currentDate = initialDate
         deviceCache = mockk()
         dateProvider = object : DateProvider {
@@ -235,7 +235,7 @@ public class OfferingsCacheTest {
 
     // region helpers
 
-    public fun mockDeviceCacheOfferingResponse() {
+    fun mockDeviceCacheOfferingResponse() {
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
     }
 

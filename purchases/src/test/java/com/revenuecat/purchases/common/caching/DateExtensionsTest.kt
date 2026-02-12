@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DateExtensionsTest {
+class DateExtensionsTest {
 
     @Test
     fun `cache date is stale if more than 5 minutes old and app in foreground`() {

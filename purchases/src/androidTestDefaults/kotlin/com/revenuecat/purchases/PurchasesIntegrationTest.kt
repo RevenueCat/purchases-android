@@ -40,10 +40,10 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
-public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
+class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
-    public fun setup() {
+    fun setup() {
         ensureBlockFinishes { latch ->
             setUpTest {
                 latch.countDown()
@@ -54,14 +54,14 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     // region tests
 
     @Test
-    public fun sdkCanBeConfigured() {
+    fun sdkCanBeConfigured() {
         onActivityReady {
             assertThat(Purchases.sharedInstance.appUserID).isNotNull
         }
     }
 
     @Test
-    public fun customerInfoCanBeFetched() {
+    fun customerInfoCanBeFetched() {
         confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
@@ -78,7 +78,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
+    fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
         confirmProductionBackendEnvironment()
 
         val lock = CountDownLatch(1)
@@ -112,7 +112,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun canFetchOfferings() {
+    fun canFetchOfferings() {
         val lock = CountDownLatch(1)
 
         mockBillingAbstract.mockQueryProductDetails()
@@ -141,7 +141,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun offeringsArePersistedAndUsedOnServerErrors() {
+    fun offeringsArePersistedAndUsedOnServerErrors() {
         mockBillingAbstract.mockQueryProductDetails()
 
         ensureBlockFinishes { latch ->
@@ -175,12 +175,12 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun canPurchaseSubsProduct() {
+    fun canPurchaseSubsProduct() {
         performPurchase()
     }
 
     @Test
-    public fun canPurchaseSubsProductAndThenFetchCustomerInfo() {
+    fun canPurchaseSubsProductAndThenFetchCustomerInfo() {
         performPurchase()
 
         ensureBlockFinishes { latch ->
@@ -198,7 +198,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun testGetVirtualCurrenciesWithBalancesOfZero() {
+    fun testGetVirtualCurrenciesWithBalancesOfZero() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
@@ -229,7 +229,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
+    fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
@@ -260,7 +260,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
+    fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
@@ -291,7 +291,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    public fun testCachedVirtualCurrencies() {
+    fun testCachedVirtualCurrencies() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
@@ -438,7 +438,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @OptIn(DelicateCoroutinesApi::class)
     @Test
-    public fun failsWithUnknownHostIfInvalidSubdomain() {
+    fun failsWithUnknownHostIfInvalidSubdomain() {
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         ensureBlockFinishes { latch ->
@@ -462,7 +462,7 @@ public class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @OptIn(DelicateCoroutinesApi::class)
     @Test
-    public fun failsWithUnauthorizedIfValidURLButInvalidAuth() {
+    fun failsWithUnauthorizedIfValidURLButInvalidAuth() {
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         ensureBlockFinishes { latch ->

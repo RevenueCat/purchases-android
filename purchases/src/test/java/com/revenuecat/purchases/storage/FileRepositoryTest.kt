@@ -26,7 +26,7 @@ import java.net.URI
 import java.net.URL
 
 @OptIn(ExperimentalCoroutinesApi::class)
-public class FileRepositoryTest : CoroutineTest() {
+class FileRepositoryTest : CoroutineTest() {
     private companion object {
         const val TEST_URL = "https://www.sample.com"
         const val TEST_URI = "data:sample/some/path"

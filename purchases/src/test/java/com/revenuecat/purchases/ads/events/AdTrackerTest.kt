@@ -21,13 +21,13 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-public class AdTrackerTest {
+class AdTrackerTest {
 
     private lateinit var eventsManager: EventsManager
     private lateinit var adTracker: AdTracker
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         eventsManager = mockk()
         adTracker = AdTracker(eventsManager)
     }

@@ -12,18 +12,18 @@ import java.net.URL
 @RunWith(Parameterized::class)
 internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    public class Args(
+    class Args(
         @Language("json")
-        public val serialized: String,
+        val serialized: String,
         val deserialized: LocalizationData,
     )
 
-    public companion object {
+    companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = listOf(
+        fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "String",
                 Args(

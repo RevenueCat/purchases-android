@@ -40,7 +40,7 @@ import java.net.URL
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-public class SubscriberAttributesPosterTests {
+class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
     private val mockAppConfig = mockk<AppConfig>().apply {
@@ -118,7 +118,7 @@ public class SubscriberAttributesPosterTests {
         }
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockkObject(CustomerInfoFactory)
         receivedError = null
         receivedSyncedSuccessfully = null
@@ -129,7 +129,7 @@ public class SubscriberAttributesPosterTests {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkObject(CustomerInfoFactory)
     }
 

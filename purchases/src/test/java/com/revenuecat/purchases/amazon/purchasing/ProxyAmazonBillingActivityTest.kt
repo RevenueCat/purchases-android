@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class ProxyAmazonBillingActivityTest {
+class ProxyAmazonBillingActivityTest {
 
     val mockHandler = mockk<Handler>()
 

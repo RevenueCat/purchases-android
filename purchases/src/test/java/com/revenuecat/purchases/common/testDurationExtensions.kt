@@ -5,10 +5,10 @@ import com.revenuecat.purchases.utils.subtract
 import java.util.Date
 import kotlin.time.Duration
 
-public fun Duration.fromNow(): Date {
+fun Duration.fromNow(): Date {
     return Date().add(this)
 }
 
-public fun Duration.ago(): Date {
+fun Duration.ago(): Date {
     return Date().subtract(this)
 }

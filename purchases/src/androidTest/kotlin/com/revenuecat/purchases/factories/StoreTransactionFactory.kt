@@ -8,9 +8,9 @@ import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
-public object StoreTransactionFactory {
+object StoreTransactionFactory {
     @Suppress("LongParameterList")
-    public fun createStoreTransaction(
+    fun createStoreTransaction(
         orderId: String? = "test-order-id",
         skus: List<String> = listOf(Constants.productIdToPurchase),
         type: ProductType = ProductType.SUBS,

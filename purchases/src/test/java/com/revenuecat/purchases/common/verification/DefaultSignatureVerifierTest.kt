@@ -10,14 +10,14 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DefaultSignatureVerifierTest {
+class DefaultSignatureVerifierTest {
 
     private val testPublicKey = "WEvg1j3R0lppwHRfLup/lzYZMQMEj5csDHeQe/YP1p4="
 
     private lateinit var verifier: DefaultSignatureVerifier
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         verifier = DefaultSignatureVerifier(testPublicKey)
     }
 

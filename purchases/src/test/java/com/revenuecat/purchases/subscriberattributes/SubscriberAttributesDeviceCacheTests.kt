@@ -23,7 +23,7 @@ import java.util.Date
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
-public class SubscriberAttributesDeviceCacheTests {
+class SubscriberAttributesDeviceCacheTests {
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
 
@@ -34,7 +34,7 @@ public class SubscriberAttributesDeviceCacheTests {
     private val putStringSlot = slot<String>()
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockEditor = mockk<SharedPreferences.Editor>().apply {
             every {
                 putString("com.revenuecat.purchases.$apiKey.subscriberAttributes", capture(putStringSlot))

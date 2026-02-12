@@ -22,20 +22,20 @@ import org.junit.runners.Parameterized
 internal class CarouselComponentTests {
 
     @RunWith(Parameterized::class)
-    public class DeserializeCarouselComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class DeserializeCarouselComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: CarouselComponent,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(
@@ -418,23 +418,23 @@ internal class CarouselComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    public class DeserializePartialCarouselComponentTests(
+    class DeserializePartialCarouselComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: PartialCarouselComponent,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

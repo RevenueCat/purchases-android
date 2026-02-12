@@ -48,7 +48,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class SubscriberAttributesPurchasesTests {
+class SubscriberAttributesPurchasesTests {
 
     private lateinit var underTest: Purchases
     private val appUserId = "juan"
@@ -69,7 +69,7 @@ public class SubscriberAttributesPurchasesTests {
     private lateinit var applicationMock: Application
 
     @Before
-    public fun setup() {
+    fun setup() {
         every {
             offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs
@@ -137,7 +137,7 @@ public class SubscriberAttributesPurchasesTests {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         clearMocks(
             customerInfoHelperMock,
             customerInfoUpdateHandlerMock,

@@ -8,9 +8,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
- public class RecurrenceModeTest {
+ class RecurrenceModeTest {
     @Test
-    public fun testToRecurrenceMode() {
+    fun testToRecurrenceMode() {
         val unknown0 = 0.toRecurrenceMode()
         val infinite = 1.toRecurrenceMode()
         val finite = 2.toRecurrenceMode()

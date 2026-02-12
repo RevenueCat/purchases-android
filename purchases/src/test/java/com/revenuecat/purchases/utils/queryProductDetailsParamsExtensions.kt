@@ -8,7 +8,7 @@ val QueryProductDetailsParams.Product.productType
     get() = this.zzb()
 
 @Suppress("UNCHECKED_CAST")
-public val QueryProductDetailsParams.productList: List<QueryProductDetailsParams.Product>
+val QueryProductDetailsParams.productList: List<QueryProductDetailsParams.Product>
     get() = this.zza() as List<QueryProductDetailsParams.Product>
 val QueryProductDetailsParams.productType
     get() = this.zzb()

@@ -17,7 +17,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class ProductEntitlementMappingSourceTest {
+class ProductEntitlementMappingSourceTest {
 
     private lateinit var deviceCache: DeviceCache
 
@@ -51,7 +51,7 @@ public class ProductEntitlementMappingSourceTest {
     )
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         deviceCache = mockk()
     }
 

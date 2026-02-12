@@ -17,20 +17,20 @@ import org.junit.runners.Parameterized
 internal class ButtonComponentTests {
 
     @RunWith(Parameterized::class)
-    public class DeserializeButtonComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class DeserializeButtonComponentTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: ButtonComponent,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "restore_purchases",
                     Args(
@@ -591,11 +591,11 @@ internal class ButtonComponentTests {
         private val expected: ButtonComponent.UrlMethod,
     ) {
 
-        public companion object {
+        companion object {
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = ButtonComponent.UrlMethod.values().map { expected ->
+            fun parameters(): Collection<*> = ButtonComponent.UrlMethod.values().map { expected ->
                 val serialized = when (expected) {
                     ButtonComponent.UrlMethod.IN_APP_BROWSER -> "\"in_app_browser\""
                     ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> "\"external_browser\""
@@ -620,20 +620,20 @@ internal class ButtonComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    public class ActionSerializerTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class ActionSerializerTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val serialized: String,
+            val serialized: String,
             val deserialized: ButtonComponent.Action,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "restore_purchases",
                     Args(

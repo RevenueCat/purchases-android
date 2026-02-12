@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class EntitlementInfoTest {
+class EntitlementInfoTest {
 
     private val oneDayAgo = 1.days.ago()
     private val twoDaysAgo = 2.days.ago()

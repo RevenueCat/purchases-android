@@ -22,7 +22,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class ETagManagerTest {
+class ETagManagerTest {
 
     private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
     private val testDateProvider = object : DateProvider {
@@ -36,7 +36,7 @@ public class ETagManagerTest {
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
     @Before
-    public fun setup() {
+    fun setup() {
         every {
             mockedPrefs.edit()
         } returns mockEditor
@@ -558,8 +558,8 @@ public class ETagManagerTest {
         data class TestCase(
             val cachedVerificationResult: VerificationResult,
             val backendVerificationResult: VerificationResult,
-            val expectedVerificationResult: VerificationResult,
-        )
+            val expectedVerificationResult: VerificationResult
+            )
         val testCases = listOf(
             TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
             TestCase(NOT_REQUESTED, VERIFIED, VERIFIED),

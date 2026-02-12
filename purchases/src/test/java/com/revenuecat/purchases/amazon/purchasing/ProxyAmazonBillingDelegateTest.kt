@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class ProxyAmazonBillingDelegateTest {
+class ProxyAmazonBillingDelegateTest {
 
     private lateinit var underTest: ProxyAmazonBillingDelegate
     private lateinit var mockActivity: Activity
@@ -40,7 +40,7 @@ public class ProxyAmazonBillingDelegateTest {
     private val expectedSku = "sku"
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockActivity = mockk()
         mockApplicationContext = mockk()
         mockResultReceiver = mockk()

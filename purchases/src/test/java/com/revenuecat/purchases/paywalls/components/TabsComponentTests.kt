@@ -22,23 +22,23 @@ import org.junit.runners.Parameterized
 internal class TabsComponentTests {
 
     @RunWith(Parameterized::class)
-    public class DeserializeTabsComponentTests(
+    class DeserializeTabsComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: PaywallComponent,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "tab_control_button",
                     Args(
@@ -429,23 +429,23 @@ internal class TabsComponentTests {
     }
 
     @RunWith(Parameterized::class)
-    public class DeserializePartialTabsComponentTests(
+    class DeserializePartialTabsComponentTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: PartialTabsComponent,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "all values present",
                     Args(

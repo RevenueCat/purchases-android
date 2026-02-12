@@ -18,10 +18,10 @@ import org.junit.runner.RunWith
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
-public class AppConfigTest {
+class AppConfigTest {
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 

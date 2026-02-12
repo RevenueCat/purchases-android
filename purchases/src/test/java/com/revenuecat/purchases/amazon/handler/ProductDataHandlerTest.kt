@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class ProductDataHandlerTest {
+class ProductDataHandlerTest {
 
     private lateinit var underTest: ProductDataHandler
     private val apiKey = "api_key"
@@ -43,7 +43,7 @@ public class ProductDataHandlerTest {
     private val mainHandlerCallbacks: MutableList<Runnable> = ArrayList()
 
     @Before
-    public fun setup() {
+    fun setup() {
         cache = MockDeviceCache(mockk(), apiKey)
         mainHandlerCallbacks.clear()
         setupMainHandler()

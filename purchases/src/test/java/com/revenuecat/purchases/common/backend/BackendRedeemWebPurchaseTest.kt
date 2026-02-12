@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
-public class BackendRedeemWebPurchaseTest {
+class BackendRedeemWebPurchaseTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
 
@@ -45,7 +45,7 @@ public class BackendRedeemWebPurchaseTest {
     private val expectedCustomerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns mockBaseURL
             every { fallbackBaseURLs } returns emptyList()

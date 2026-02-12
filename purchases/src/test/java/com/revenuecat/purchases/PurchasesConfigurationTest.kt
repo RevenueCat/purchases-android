@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.ExecutorService
 
 @RunWith(AndroidJUnit4::class)
-public class PurchasesConfigurationTest {
+class PurchasesConfigurationTest {
 
     private val apiKey = "test-api-key"
 
@@ -24,7 +24,7 @@ public class PurchasesConfigurationTest {
     private lateinit var builder: PurchasesConfiguration.Builder
 
     @Before
-    public fun setup() {
+    fun setup() {
         context = mockk()
         applicationContext = mockk()
         every { context.applicationContext } returns applicationContext

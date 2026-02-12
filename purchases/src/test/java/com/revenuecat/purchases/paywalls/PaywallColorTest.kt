@@ -9,7 +9,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class PaywallColorTest {
+class PaywallColorTest {
     @Test
     fun `paywall color can be created from an RGB ColorInt`() {
         val stringRepresentation = "#FFAABB"

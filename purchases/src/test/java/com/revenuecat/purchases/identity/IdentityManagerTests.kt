@@ -34,7 +34,7 @@ import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class IdentityManagerTests {
+class IdentityManagerTests {
 
     private lateinit var cachedAppUserIDSlot: CapturingSlot<String>
     private lateinit var mockDeviceCache: DeviceCache
@@ -48,7 +48,7 @@ public class IdentityManagerTests {
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
 
     @Before
-    public fun setup() {
+    fun setup() {
         cachedAppUserIDSlot = slot()
         mockEditor = mockk<Editor>().apply {
             every { apply() } just Runs
@@ -85,7 +85,7 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testIsUserIdAnonymousWorksAsExpected() {
+    fun testIsUserIdAnonymousWorksAsExpected() {
         assertThat(IdentityManager.isUserIDAnonymous(stubAnonymousID)).isTrue()
         assertThat(IdentityManager.isUserIDAnonymous("")).isFalse()
         assertThat(IdentityManager.isUserIDAnonymous("test-user-id")).isFalse()
@@ -93,28 +93,28 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testConfigureWithAnonymousUserIDGeneratesAnAppUserID() {
+    fun testConfigureWithAnonymousUserIDGeneratesAnAppUserID() {
         mockCleanCaches()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
     }
 
     @Test
-    public fun testConfigureWithEmptyUserIDGeneratesAnAnonymousAppUserID() {
+    fun testConfigureWithEmptyUserIDGeneratesAnAnonymousAppUserID() {
         mockCleanCaches()
         identityManager.configure(" ")
         assertCorrectlyIdentifiedWithAnonymous()
     }
 
     @Test
-    public fun testAnonymousIDsMatchesFormat() {
+    fun testAnonymousIDsMatchesFormat() {
         mockCleanCaches()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
     }
 
     @Test
-    public fun testConfigureSavesTheIDInTheCache() {
+    fun testConfigureSavesTheIDInTheCache() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
         every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any()) } just Runs
@@ -123,7 +123,7 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testConfigureWithAnonymousUserSavesTheIDInTheCache() {
+    fun testConfigureWithAnonymousUserSavesTheIDInTheCache() {
         mockCleanCaches()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
@@ -444,7 +444,7 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testMigrationFromRandomIDConfiguringAnonymously() {
+    fun testMigrationFromRandomIDConfiguringAnonymously() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
@@ -454,7 +454,7 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testMigrationFromRandomIDConfiguringWithUser() {
+    fun testMigrationFromRandomIDConfiguringWithUser() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
@@ -464,7 +464,7 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testConfiguringWithIdentifiedDoesntUseCaches() {
+    fun testConfiguringWithIdentifiedDoesntUseCaches() {
         mockIdentifiedUser("cesar")
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
@@ -509,14 +509,14 @@ public class IdentityManagerTests {
     }
 
     @Test
-    public fun testConfigureCleansUpOldAttributionDataCacheForAnonymousUsers() {
+    fun testConfigureCleansUpOldAttributionDataCacheForAnonymousUsers() {
         mockCleanCaches()
         identityManager.configure(null)
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
     @Test
-    public fun testConfigureCleansUpOldAttributionDataCacheForNonAnonymousUsers() {
+    fun testConfigureCleansUpOldAttributionDataCacheForNonAnonymousUsers() {
         mockCleanCaches()
         identityManager.configure("cesar")
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }

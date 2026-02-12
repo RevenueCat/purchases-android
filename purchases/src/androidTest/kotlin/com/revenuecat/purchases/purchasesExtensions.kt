@@ -29,7 +29,7 @@ internal fun Purchases.Companion.configure(
     }
 }
 
-public fun Purchases.Companion.resetSingleton() {
+fun Purchases.Companion.resetSingleton() {
     backingFieldSharedInstance?.close()
     backingFieldSharedInstance = null
 }

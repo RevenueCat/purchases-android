@@ -11,20 +11,20 @@ import org.junit.runners.Parameterized
 internal class SizeTests {
 
     @RunWith(Parameterized::class)
-    public class DeserializeSizeConstraintTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class DeserializeSizeConstraintTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: SizeConstraint,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "fit - value absent",
                     Args(
@@ -125,20 +125,20 @@ internal class SizeTests {
     }
 
     @RunWith(Parameterized::class)
-    public class DeserializeSizeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class DeserializeSizeTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: Size,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "fit x fill",
                     Args(

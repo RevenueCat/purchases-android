@@ -42,7 +42,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    public fun canConsumeAToken() {
+    fun canConsumeAToken() {
         val token = "mockToken"
 
         wrapper.consumePurchase(

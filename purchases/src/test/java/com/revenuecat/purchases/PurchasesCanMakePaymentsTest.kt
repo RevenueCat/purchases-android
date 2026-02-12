@@ -36,13 +36,13 @@ import org.robolectric.annotation.Config
 internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockHandlerPost()
         mockkStatic(BillingClient::class)
     }
 
     @After
-    public fun removeMocks() {
+    fun removeMocks() {
         unmockkStatic(BillingClient::class)
         unmockkConstructor(Handler::class)
     }

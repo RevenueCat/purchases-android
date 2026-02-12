@@ -31,7 +31,7 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
     BaseOfflineEntitlementsIntegrationTest() {
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         ensureBlockFinishes { latch ->
             setUpTestWaitingForInitialRequests {
                 latch.countDown()
@@ -70,13 +70,13 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
 }
 
 @RunWith(AndroidJUnit4::class)
-public class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
+class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
 
     @Test
-    public fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
+    fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
         ensureBlockFinishes { latch ->
             forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
@@ -100,7 +100,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesI
     }
 
     @Test
-    public fun entersOfflineEntitlementsModeIfCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
+    fun entersOfflineEntitlementsModeIfCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
         ensureBlockFinishes { latch ->
             forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
 
@@ -123,11 +123,11 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesI
 }
 
 @RunWith(AndroidJUnit4::class)
-public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
-    public fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
+    fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         // It would fail in load shedder, since it fails to try to cache an initial CustomerInfo
         // without making a purchase
         confirmProductionBackendEnvironment()
@@ -160,7 +160,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun entersOfflineEntitlementsModeIfPurchaseRequestReturns500() {
+    fun entersOfflineEntitlementsModeIfPurchaseRequestReturns500() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
@@ -192,7 +192,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun doesNotEnterOfflineEntitlementsModeIfPurchasesConsumable() {
+    fun doesNotEnterOfflineEntitlementsModeIfPurchasesConsumable() {
         val inAppProduct = StoreProductFactory.createGoogleStoreProduct(type = ProductType.INAPP)
         val inAppTransaction = StoreTransactionFactory.createStoreTransaction(
             skus = listOf(inAppProduct.id),
@@ -221,7 +221,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun gettingCustomerInfoWhileInOfflineEntitlementsModeReturnsOfflineCustomerInfo() {
+    fun gettingCustomerInfoWhileInOfflineEntitlementsModeReturnsOfflineCustomerInfo() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
@@ -259,7 +259,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun sendsOfflinePurchasesAfterForegroundingApp() {
+    fun sendsOfflinePurchasesAfterForegroundingApp() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
@@ -291,7 +291,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun sendsOfflinePurchasesAfterRestartingApp() {
+    fun sendsOfflinePurchasesAfterRestartingApp() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
@@ -323,7 +323,7 @@ public class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchase
     }
 
     @Test
-    public fun recoversFromOfflineEntitlementsModeIfRestoreSucceeds() {
+    fun recoversFromOfflineEntitlementsModeIfRestoreSucceeds() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->

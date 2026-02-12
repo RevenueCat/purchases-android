@@ -16,21 +16,21 @@ import java.io.InputStream
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
-public class DefaultFileCacheTest {
+class DefaultFileCacheTest {
 
     private lateinit var context: Context
     private lateinit var cache: DefaultFileCache
     private lateinit var cacheDir: File
 
     @Before
-    public fun setup() {
+    fun setup() {
         context = ApplicationProvider.getApplicationContext()
         cache = DefaultFileCache(context)
         cacheDir = File(context.cacheDir, "rc_files")
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         // Clean up all files
         cacheDir.listFiles()?.forEach { it.delete() }
     }

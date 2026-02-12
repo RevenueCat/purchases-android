@@ -3,7 +3,7 @@ package com.revenuecat.purchases.models
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-public class ChecksumTest {
+class ChecksumTest {
 
     @Test
     fun `generate checksum from data - SHA256`() {

@@ -13,7 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class SubscriptionOptionTest {
+class SubscriptionOptionTest {
 
     private val productId = "product-id"
     private val basePlanId = "base-plan-id"

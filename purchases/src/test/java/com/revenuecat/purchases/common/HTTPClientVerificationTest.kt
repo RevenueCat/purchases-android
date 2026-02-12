@@ -25,7 +25,7 @@ import java.util.Date
 internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Before
-    public fun setupClient() {
+    fun setupClient() {
         mockSigningManager = mockk()
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Informational>()
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true

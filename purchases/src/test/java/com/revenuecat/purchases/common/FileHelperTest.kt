@@ -16,7 +16,7 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class FileHelperTest {
+class FileHelperTest {
 
     private val testFolder = "temp_test_folder"
     private val testFilePath = "RevenueCat/test_file.txt"
@@ -26,7 +26,7 @@ public class FileHelperTest {
     private lateinit var fileHelper: FileHelper
 
     @Before
-    public fun setup() {
+    fun setup() {
         val tempTestFolder = File(testFolder)
         if (tempTestFolder.exists()) {
             error("Temp test folder should not exist before starting tests")
@@ -40,7 +40,7 @@ public class FileHelperTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         val tempTestFolder = File(testFolder)
         tempTestFolder.deleteRecursively()
     }

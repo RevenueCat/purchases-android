@@ -10,18 +10,18 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 internal class ShadowTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
 
-    public class Args(
+    class Args(
         @Language("json")
-        public val json: String,
+        val json: String,
         val expected: Shadow,
     )
 
-    public companion object {
+    companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = listOf(
+        fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "everything zero - ints as string",
                 Args(

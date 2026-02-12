@@ -18,7 +18,7 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DiagnosticsFileHelperTest {
+class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
@@ -32,7 +32,7 @@ public class DiagnosticsFileHelperTest {
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
 
     @Before
-    public fun setup() {
+    fun setup() {
         fileHelper = mockk()
         diagnosticsFileHelper = DiagnosticsFileHelper(fileHelper)
     }

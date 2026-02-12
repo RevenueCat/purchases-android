@@ -13,12 +13,12 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class MapConverterTest {
+class MapConverterTest {
 
     private lateinit var mapConverter: MapConverter
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         mapConverter = MapConverter()
     }
 

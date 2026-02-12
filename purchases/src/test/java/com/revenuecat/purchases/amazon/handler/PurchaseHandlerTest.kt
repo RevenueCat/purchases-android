@@ -45,7 +45,7 @@ import java.util.Date
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
-public class PurchaseHandlerTest {
+class PurchaseHandlerTest {
 
     private lateinit var underTest: PurchaseHandler
     private lateinit var purchasingServiceProvider: PurchasingServiceProviderForTest
@@ -79,7 +79,7 @@ public class PurchaseHandlerTest {
     private val packageName = UUID.randomUUID().toString()
 
     @Before
-    public fun setup() {
+    fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         underTest = PurchaseHandler(purchasingServiceProvider, mockApplicationContext, mockDiagnosticsTracker)
 
@@ -102,7 +102,7 @@ public class PurchaseHandlerTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         clearAllMocks()
     }
 

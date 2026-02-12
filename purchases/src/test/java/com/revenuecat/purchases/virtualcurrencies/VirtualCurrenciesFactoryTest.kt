@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class VirtualCurrenciesFactoryTest {
+class VirtualCurrenciesFactoryTest {
     private val defaultVirtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
         JSONObject(Responses.validFullVirtualCurrenciesResponse)
     )

@@ -14,14 +14,14 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-public class AmazonDeviceIdentifiersFetcherTests {
+class AmazonDeviceIdentifiersFetcherTests {
 
     private lateinit var underTest: AmazonDeviceIdentifiersFetcher
     private val mockApplication = mockk<Application>()
     private val mockContentResolver = mockk<ContentResolver>()
 
     @Before
-    public fun setup() {
+    fun setup() {
         underTest = AmazonDeviceIdentifiersFetcher()
         every {
             mockApplication.contentResolver
@@ -35,7 +35,7 @@ public class AmazonDeviceIdentifiersFetcherTests {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkStatic(Settings.Secure::class)
         unmockkStatic(Log::class)
     }

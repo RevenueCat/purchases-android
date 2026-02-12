@@ -23,7 +23,7 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DiagnosticsSynchronizerTest {
+class DiagnosticsSynchronizerTest {
 
     private val testDiagnosticsEntryJSONs = listOf(
         JSONObject(mapOf("test-key" to "test-value")),
@@ -40,7 +40,7 @@ public class DiagnosticsSynchronizerTest {
     private lateinit var diagnosticsSynchronizer: DiagnosticsSynchronizer
 
     @Before
-    public fun setup() {
+    fun setup() {
         diagnosticsFileHelper = mockk()
         diagnosticsTracker = mockk()
         backend = mockk()

@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 
 @RunWith(JUnitParamsRunner::class)
 @Category(AndroidJUnit4::class)
-public class PriceExtensionsPricePerWeekTest : PriceExtensionsPricePerPeriodTest() {
+class PriceExtensionsPricePerWeekTest : PriceExtensionsPricePerPeriodTest() {
     @Test
     @Parameters(
         value = [

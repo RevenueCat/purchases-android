@@ -16,7 +16,7 @@ import org.junit.runners.Parameterized
 @RunWith(Enclosed::class)
 internal class ComponentsConfigTests {
 
-    public class DeserializeComponentsConfigTests {
+    class DeserializeComponentsConfigTests {
 
         @Test
         fun `Should properly deserialize ComponentsConfig`() {
@@ -82,23 +82,23 @@ internal class ComponentsConfigTests {
     }
 
     @RunWith(Parameterized::class)
-    public class DeserializePaywallComponentsConfigTests(
+    class DeserializePaywallComponentsConfigTests(
         @Suppress("UNUSED_PARAMETER") name: String,
         private val args: Args,
     ) {
 
-        public class Args(
+        class Args(
             @Language("json")
-            public val json: String,
+            val json: String,
             val expected: PaywallComponentsConfig,
         )
 
-        public companion object {
+        companion object {
 
             @Suppress("LongMethod")
             @JvmStatic
             @Parameterized.Parameters(name = "{0}")
-            public fun parameters(): Collection<*> = listOf(
+            fun parameters(): Collection<*> = listOf(
                 arrayOf(
                     "sticky footer present",
                     Args(

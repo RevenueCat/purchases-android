@@ -41,7 +41,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DeviceCacheTest {
+class DeviceCacheTest {
 
     private val validCachedCustomerInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).apply {
@@ -69,7 +69,7 @@ public class DeviceCacheTest {
     private val slotForPutLong = slot<Long>()
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockkObject(VirtualCurrenciesFactory)
         mockPrefs = mockk()
         mockEditor = mockk()
@@ -99,7 +99,7 @@ public class DeviceCacheTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         unmockkObject(VirtualCurrenciesFactory)
     }
 

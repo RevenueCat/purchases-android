@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
-public class CustomerInfoFactoryTest {
+class CustomerInfoFactoryTest {
 
     private val defaultCustomerInfo = CustomerInfoFactory.buildCustomerInfo(
         JSONObject(Responses.validFullPurchaserResponse),

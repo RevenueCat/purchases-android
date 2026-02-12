@@ -39,13 +39,13 @@ import kotlin.time.Duration.Companion.seconds
 @RunWith(AndroidJUnit4::class)
 internal abstract class BaseBackendIntegrationTest {
 
-    public companion object {
+    companion object {
         private val TIMEOUT = 10.seconds
         private val GOLDEN_FILES_BASE_DIR = File("src/test/resources/backend_integration_tests_golden")
 
         @BeforeClass
         @JvmStatic
-        public fun setupClass() {
+        fun setupClass() {
             if (!canRunIntegrationTests()) {
                 error("You need to set required constants in Constants.kt")
             }
@@ -73,7 +73,7 @@ internal abstract class BaseBackendIntegrationTest {
     lateinit var backend: Backend
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         goldenFileRecorder = GoldenFileRecorder(
             className = this::class.simpleName ?: "UnknownClass",
             testName = testName.methodName,

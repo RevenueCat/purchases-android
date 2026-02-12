@@ -15,7 +15,7 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class CustomerCenterConfigDataTest {
+class CustomerCenterConfigDataTest {
 
     @Test
     fun `CustomerCenterConfigData creation and equality`() {

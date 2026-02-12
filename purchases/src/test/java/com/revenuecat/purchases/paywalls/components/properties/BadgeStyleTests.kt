@@ -6,13 +6,13 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-public class BadgeStyleTests(private val serialized: String, private val expected: Badge.Style) {
+class BadgeStyleTests(private val serialized: String, private val expected: Badge.Style) {
 
-    public companion object {
+    companion object {
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = Badge.Style.values().map { expected ->
+        fun parameters(): Collection<*> = Badge.Style.values().map { expected ->
             val serialized = when (expected) {
                 Badge.Style.Overlay -> "\"overlay\""
                 Badge.Style.EdgeToEdge -> "\"edge_to_edge\""

@@ -12,14 +12,14 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class DiagnosticsEntryTest {
+class DiagnosticsEntryTest {
 
     private val testDate = Date(1675954145000L) // Thursday, February 9, 2023 2:49:05 PM GMT
 
     private lateinit var testDateProvider: DateProvider
 
     @Before
-    public fun setup() {
+    fun setup() {
         testDateProvider = object : DateProvider {
             override val now: Date
                 get() = testDate

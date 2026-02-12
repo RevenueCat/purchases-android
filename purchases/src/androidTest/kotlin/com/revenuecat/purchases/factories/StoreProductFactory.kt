@@ -14,9 +14,9 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import io.mockk.mockk
 
-public object StoreProductFactory {
+object StoreProductFactory {
 
-    public fun createPrice(
+    fun createPrice(
         price: String = "€5.49",
         priceAmountMicros: Long = 5490000,
         priceCurrencyCode: String = "EUR",
@@ -24,7 +24,7 @@ public object StoreProductFactory {
         return Price(price, priceAmountMicros, priceCurrencyCode)
     }
 
-    public fun createPeriod(
+    fun createPeriod(
         value: Int = 1,
         unit: Period.Unit = Period.Unit.MONTH,
         iso8601: String = "P1M",
@@ -32,7 +32,7 @@ public object StoreProductFactory {
         return Period(value, unit, iso8601)
     }
 
-    public fun createPricingPhase(
+    fun createPricingPhase(
         period: Period = createPeriod(),
         recurrenceMode: RecurrenceMode = RecurrenceMode.INFINITE_RECURRING,
         numberOfPeriods: Int = 0,
@@ -42,7 +42,7 @@ public object StoreProductFactory {
     }
 
     @Suppress("LongParameterList")
-    public fun createGoogleSubscriptionOption(
+    fun createGoogleSubscriptionOption(
         productId: String = Constants.productIdToPurchase,
         basePlanId: String = Constants.basePlanIdToPurchase,
         offerId: String? = null,
@@ -63,7 +63,7 @@ public object StoreProductFactory {
     }
 
     @Suppress("LongParameterList")
-    public fun createGoogleStoreProduct(
+    fun createGoogleStoreProduct(
         productId: String = Constants.productIdToPurchase,
         basePlanId: String? = Constants.basePlanIdToPurchase,
         type: ProductType = ProductType.SUBS,

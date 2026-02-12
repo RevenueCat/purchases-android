@@ -26,9 +26,9 @@ import java.security.MessageDigest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-public class FontLoaderTest {
+class FontLoaderTest {
 
-    public companion object {
+    companion object {
         private const val FONT_URL = "https://example.com/font.ttf"
         private const val FONT_FILE_CONTENT = "Test Font Content"
     }
@@ -43,7 +43,7 @@ public class FontLoaderTest {
     private lateinit var fontLoader: FontLoader
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         mockContext = mockk<Context>()
         mockCacheDir = File("test_font_loader_cache").apply { mkdirs() }
         testScope = TestScope()
@@ -52,7 +52,7 @@ public class FontLoaderTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         mockCacheDir.deleteRecursively()
     }
 

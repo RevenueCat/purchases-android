@@ -115,7 +115,7 @@ internal open class BasePurchasesTest {
         get() = true
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
         mockCache()
         mockPostReceiptHelper()
@@ -176,7 +176,7 @@ internal open class BasePurchasesTest {
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         Purchases.backingFieldSharedInstance = null
         clearMocks(
             mockCustomerInfoHelper,

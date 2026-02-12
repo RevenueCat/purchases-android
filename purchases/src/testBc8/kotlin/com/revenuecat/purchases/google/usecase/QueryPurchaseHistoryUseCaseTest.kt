@@ -152,7 +152,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    public fun queryHistoryCallsListenerIfOk() {
+    fun queryHistoryCallsListenerIfOk() {
         mockClient.mockQueryPurchasesAsync(
             subsResult = billingClientOKResult,
             inAppResult = billingClientOKResult,
@@ -174,7 +174,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    public fun queryHistoryErrorCalledIfNotOK() {
+    fun queryHistoryErrorCalledIfNotOK() {
         mockClient.mockQueryPurchasesAsync(
             subsResult = BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
             inAppResult = BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),

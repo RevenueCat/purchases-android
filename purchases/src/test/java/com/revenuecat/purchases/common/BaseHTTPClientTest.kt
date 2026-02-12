@@ -38,7 +38,7 @@ internal abstract class BaseHTTPClientTest {
     protected lateinit var mockStorefrontProvider: StorefrontProvider
 
     @Before
-    public fun setup() {
+    fun setup() {
         mockStorefrontProvider = mockk<StorefrontProvider>().apply {
             every { getStorefront() } returns countryCode
         }
@@ -48,7 +48,7 @@ internal abstract class BaseHTTPClientTest {
     }
 
     @After
-    public fun teardown() {
+    fun teardown() {
         clearAllMocks()
         server.shutdown()
     }

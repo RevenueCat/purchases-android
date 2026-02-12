@@ -39,7 +39,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-public class BackendPaywallEventTest {
+class BackendPaywallEventTest {
 
     private val paywallEventRequest = EventsRequest(listOf(
         BackendStoredEvent.Paywalls(
@@ -88,7 +88,7 @@ public class BackendPaywallEventTest {
     private lateinit var asyncBackend: Backend
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         appConfig = mockk()
         every { appConfig.fallbackBaseURLs } returns emptyList()
         httpClient = mockk()

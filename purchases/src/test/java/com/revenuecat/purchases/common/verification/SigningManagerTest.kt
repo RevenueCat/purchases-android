@@ -22,7 +22,7 @@ import java.security.SecureRandom
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-public class SigningManagerTest {
+class SigningManagerTest {
 
     private val apiKey = "test-api-key"
 
@@ -40,7 +40,7 @@ public class SigningManagerTest {
     )
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { forceSigningErrors } returns false
         }

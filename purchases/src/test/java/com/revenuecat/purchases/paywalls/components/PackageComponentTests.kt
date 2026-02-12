@@ -21,7 +21,7 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
     private lateinit var previousLogHandler: LogHandler
 
     @Before
-    public fun setUp() {
+    fun setUp() {
         previousLogHandler = currentLogHandler
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) = Unit
@@ -33,22 +33,22 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
     }
 
     @After
-    public fun tearDown() {
+    fun tearDown() {
         currentLogHandler = previousLogHandler
     }
 
-    public class Args(
+    class Args(
         @Language("json")
-        public val json: String,
+        val json: String,
         val expected: PackageComponent,
     )
 
-    public companion object {
+    companion object {
 
         @Suppress("LongMethod")
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        public fun parameters(): Collection<*> = listOf(
+        fun parameters(): Collection<*> = listOf(
             arrayOf(
                 "non-empty stack",
                 Args(

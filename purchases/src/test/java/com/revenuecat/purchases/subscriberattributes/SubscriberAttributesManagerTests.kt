@@ -27,7 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-public class SubscriberAttributesManagerTests {
+class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
     private val mockBackend: SubscriberAttributesPoster = mockk()
@@ -37,7 +37,7 @@ public class SubscriberAttributesManagerTests {
     private lateinit var underTest: SubscriberAttributesManager
 
     @Before
-    public fun setup() {
+    fun setup() {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
@@ -708,7 +708,7 @@ public class SubscriberAttributesManagerTests {
     }
 
     @Test
-    public fun collectDeviceIdentifiers() {
+    fun collectDeviceIdentifiers() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
         val mockContext = mockk<Application>(relaxed = true)
@@ -756,7 +756,7 @@ public class SubscriberAttributesManagerTests {
     }
 
     @Test
-    public fun setAttributionID() {
+    fun setAttributionID() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
         val mockContext = mockk<Application>(relaxed = true)
