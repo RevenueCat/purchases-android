@@ -24,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -39,7 +40,17 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.rcttester.config.SDKConfiguration
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/** Immutable snapshot of dialog visibility; updates trigger recomposition when held in mutableStateOf. */
+private data class DialogsData(
+    val showLoginDialog: Boolean = false,
+    val showLogoutDialog: Boolean = false,
+    val showErrorDialog: Boolean = false,
+    val errorMessage: String? = null,
+)
 
 @Composable
 fun UserSummarySection(
@@ -49,34 +60,56 @@ fun UserSummarySection(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val state = rememberUserSummaryState()
-    val dialogsState = rememberDialogsState()
+
+    var userSummaryState by remember {
+        mutableStateOf(
+            UserSummaryState(currentAppUserID = "Not configured"),
+        )
+    }
+    var dialogsData by remember { mutableStateOf(DialogsData()) }
 
     LaunchedEffect(Purchases.isConfigured) {
-        updateUserIDState(state)
+        if (Purchases.isConfigured) {
+            userSummaryState = userSummaryState.copy(
+                currentAppUserID = Purchases.sharedInstance.appUserID,
+                isAnonymous = Purchases.sharedInstance.isAnonymous,
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
         loadCustomerInfo(
-            onSuccess = { state.customerInfo = it },
-            onError = { dialogsState.errorMessage = it },
+            onSuccess = { userSummaryState = userSummaryState.copy(customerInfo = it) },
+            onError = { dialogsData = dialogsData.copy(showErrorDialog = true, errorMessage = it) },
         )
     }
 
     UserSummaryContent(
         modifier = modifier,
-        state = state.toUserSummaryState(),
-        callbacks = createUserSummaryCallbacks(
-            context = context,
-            state = state,
-            dialogsState = dialogsState,
+        state = userSummaryState,
+        callbacks = UserSummaryCallbacks(
+            onMenuExpandedChange = { userSummaryState = userSummaryState.copy(menuExpanded = it) },
+            onShowLoginDialog = {
+                userSummaryState = userSummaryState.copy(menuExpanded = false, newAppUserID = "")
+                dialogsData = dialogsData.copy(showLoginDialog = true)
+            },
+            onShowLogoutDialog = {
+                userSummaryState = userSummaryState.copy(menuExpanded = false)
+                dialogsData = dialogsData.copy(showLogoutDialog = true)
+            },
+            onCopyUserID = {
+                copyToClipboard(context, userSummaryState.currentAppUserID)
+                userSummaryState = userSummaryState.copy(menuExpanded = false)
+            },
         ),
     )
 
     UserSummaryDialogs(
         UserSummaryDialogsParams(
-            state = state,
-            dialogsState = dialogsState,
+            userSummaryState = userSummaryState,
+            setUserSummaryState = { userSummaryState = it },
+            dialogsData = dialogsData,
+            setDialogsData = { dialogsData = it },
             configuration = configuration,
             context = context,
             coroutineScope = coroutineScope,
@@ -85,119 +118,11 @@ fun UserSummarySection(
     )
 }
 
-@Composable
-private fun rememberUserSummaryState(): MutableUserSummaryState {
-    return remember {
-        MutableUserSummaryState(
-            customerInfo = null,
-            isLoading = false,
-            currentAppUserID = "Not configured",
-            isAnonymous = true,
-            menuExpanded = false,
-            newAppUserID = "",
-        )
-    }
-}
-
-@Composable
-private fun rememberDialogsState(): MutableDialogsState {
-    return remember {
-        MutableDialogsState(
-            showLoginDialog = false,
-            showLogoutDialog = false,
-            showErrorDialog = false,
-            errorMessage = null,
-        )
-    }
-}
-
-private class MutableUserSummaryState {
-    var customerInfo: CustomerInfo? = null
-    var isLoading: Boolean = false
-    var currentAppUserID: String = "Not configured"
-    var isAnonymous: Boolean = true
-    var menuExpanded: Boolean = false
-    var newAppUserID: String = ""
-
-    constructor(
-        customerInfo: CustomerInfo?,
-        isLoading: Boolean,
-        currentAppUserID: String,
-        isAnonymous: Boolean,
-        menuExpanded: Boolean,
-        newAppUserID: String,
-    ) {
-        this.customerInfo = customerInfo
-        this.isLoading = isLoading
-        this.currentAppUserID = currentAppUserID
-        this.isAnonymous = isAnonymous
-        this.menuExpanded = menuExpanded
-        this.newAppUserID = newAppUserID
-    }
-
-    fun toUserSummaryState(): UserSummaryState {
-        return UserSummaryState(
-            isLoading = isLoading,
-            currentAppUserID = currentAppUserID,
-            customerInfo = customerInfo,
-            menuExpanded = menuExpanded,
-            isAnonymous = isAnonymous,
-        )
-    }
-}
-
-private class MutableDialogsState {
-    var showLoginDialog: Boolean = false
-    var showLogoutDialog: Boolean = false
-    var showErrorDialog: Boolean = false
-    var errorMessage: String? = null
-
-    constructor(
-        showLoginDialog: Boolean,
-        showLogoutDialog: Boolean,
-        showErrorDialog: Boolean,
-        errorMessage: String?,
-    ) {
-        this.showLoginDialog = showLoginDialog
-        this.showLogoutDialog = showLogoutDialog
-        this.showErrorDialog = showErrorDialog
-        this.errorMessage = errorMessage
-    }
-}
-
-private fun updateUserIDState(state: MutableUserSummaryState) {
-    if (Purchases.isConfigured) {
-        state.currentAppUserID = Purchases.sharedInstance.appUserID
-        state.isAnonymous = Purchases.sharedInstance.isAnonymous
-    }
-}
-
-private fun createUserSummaryCallbacks(
-    context: Context,
-    state: MutableUserSummaryState,
-    dialogsState: MutableDialogsState,
-): UserSummaryCallbacks {
-    return UserSummaryCallbacks(
-        onMenuExpandedChange = { state.menuExpanded = it },
-        onShowLoginDialog = {
-            state.newAppUserID = ""
-            state.menuExpanded = false
-            dialogsState.showLoginDialog = true
-        },
-        onShowLogoutDialog = {
-            state.menuExpanded = false
-            dialogsState.showLogoutDialog = true
-        },
-        onCopyUserID = {
-            copyToClipboard(context, state.currentAppUserID)
-            state.menuExpanded = false
-        },
-    )
-}
-
 private data class UserSummaryDialogsParams(
-    val state: MutableUserSummaryState,
-    val dialogsState: MutableDialogsState,
+    val userSummaryState: UserSummaryState,
+    val setUserSummaryState: (UserSummaryState) -> Unit,
+    val dialogsData: DialogsData,
+    val setDialogsData: (DialogsData) -> Unit,
     val configuration: SDKConfiguration,
     val context: Context,
     val coroutineScope: kotlinx.coroutines.CoroutineScope,
@@ -206,16 +131,16 @@ private data class UserSummaryDialogsParams(
 
 @Composable
 private fun UserSummaryDialogs(params: UserSummaryDialogsParams) {
-    if (params.dialogsState.showLoginDialog) {
+    if (params.dialogsData.showLoginDialog) {
         LoginDialogForUserSummary(params)
     }
-    if (params.dialogsState.showLogoutDialog) {
+    if (params.dialogsData.showLogoutDialog) {
         LogoutDialogForUserSummary(params)
     }
-    if (params.dialogsState.showErrorDialog) {
+    if (params.dialogsData.showErrorDialog) {
         ErrorDialog(
-            errorMessage = params.dialogsState.errorMessage,
-            onDismiss = { params.dialogsState.showErrorDialog = false },
+            errorMessage = params.dialogsData.errorMessage,
+            onDismiss = { params.setDialogsData(params.dialogsData.copy(showErrorDialog = false)) },
         )
     }
 }
@@ -223,29 +148,34 @@ private fun UserSummaryDialogs(params: UserSummaryDialogsParams) {
 @Composable
 private fun LoginDialogForUserSummary(params: UserSummaryDialogsParams) {
     LoginDialog(
-        newAppUserID = params.state.newAppUserID,
-        onNewAppUserIDChange = { params.state.newAppUserID = it },
-        isLoading = params.state.isLoading,
-        onDismiss = { params.dialogsState.showLoginDialog = false },
+        newAppUserID = params.userSummaryState.newAppUserID,
+        onNewAppUserIDChange = { params.setUserSummaryState(params.userSummaryState.copy(newAppUserID = it)) },
+        isLoading = params.userSummaryState.isLoading,
+        onDismiss = { params.setDialogsData(params.dialogsData.copy(showLoginDialog = false)) },
         onLogin = {
             handleLogin(
                 LoginParams(
                     coroutineScope = params.coroutineScope,
-                    appUserID = params.state.newAppUserID,
+                    appUserID = params.userSummaryState.newAppUserID,
                     configuration = params.configuration,
                     context = params.context,
                     onConfigurationUpdate = params.onConfigurationUpdate,
                     onSuccess = { result ->
-                        params.state.customerInfo = result.customerInfo
-                        params.state.currentAppUserID = Purchases.sharedInstance.appUserID
-                        params.state.isAnonymous = Purchases.sharedInstance.isAnonymous
-                        params.dialogsState.showLoginDialog = false
+                        params.setUserSummaryState(
+                            params.userSummaryState.copy(
+                                customerInfo = result.customerInfo,
+                                currentAppUserID = Purchases.sharedInstance.appUserID,
+                                isAnonymous = Purchases.sharedInstance.isAnonymous,
+                            ),
+                        )
+                        params.setDialogsData(params.dialogsData.copy(showLoginDialog = false))
                     },
                     onError = {
-                        params.dialogsState.errorMessage = it
-                        params.dialogsState.showErrorDialog = true
+                        params.setDialogsData(
+                            params.dialogsData.copy(showErrorDialog = true, errorMessage = it),
+                        )
                     },
-                    onLoadingChange = { params.state.isLoading = it },
+                    onLoadingChange = { params.setUserSummaryState(params.userSummaryState.copy(isLoading = it)) },
                 ),
             )
         },
@@ -255,9 +185,9 @@ private fun LoginDialogForUserSummary(params: UserSummaryDialogsParams) {
 @Composable
 private fun LogoutDialogForUserSummary(params: UserSummaryDialogsParams) {
     LogoutDialog(
-        currentAppUserID = params.state.currentAppUserID,
-        isLoading = params.state.isLoading,
-        onDismiss = { params.dialogsState.showLogoutDialog = false },
+        currentAppUserID = params.userSummaryState.currentAppUserID,
+        isLoading = params.userSummaryState.isLoading,
+        onDismiss = { params.setDialogsData(params.dialogsData.copy(showLogoutDialog = false)) },
         onLogout = {
             handleLogout(
                 LogoutParams(
@@ -266,16 +196,21 @@ private fun LogoutDialogForUserSummary(params: UserSummaryDialogsParams) {
                     context = params.context,
                     onConfigurationUpdate = params.onConfigurationUpdate,
                     onSuccess = {
-                        params.state.customerInfo = it
-                        params.state.currentAppUserID = Purchases.sharedInstance.appUserID
-                        params.state.isAnonymous = Purchases.sharedInstance.isAnonymous
-                        params.dialogsState.showLogoutDialog = false
+                        params.setUserSummaryState(
+                            params.userSummaryState.copy(
+                                customerInfo = it,
+                                currentAppUserID = Purchases.sharedInstance.appUserID,
+                                isAnonymous = Purchases.sharedInstance.isAnonymous,
+                            ),
+                        )
+                        params.setDialogsData(params.dialogsData.copy(showLogoutDialog = false))
                     },
                     onError = {
-                        params.dialogsState.errorMessage = it
-                        params.dialogsState.showErrorDialog = true
+                        params.setDialogsData(
+                            params.dialogsData.copy(showErrorDialog = true, errorMessage = it),
+                        )
                     },
-                    onLoadingChange = { params.state.isLoading = it },
+                    onLoadingChange = { params.setUserSummaryState(params.userSummaryState.copy(isLoading = it)) },
                 ),
             )
         },
@@ -283,11 +218,12 @@ private fun LogoutDialogForUserSummary(params: UserSummaryDialogsParams) {
 }
 
 private data class UserSummaryState(
-    val isLoading: Boolean,
-    val currentAppUserID: String,
-    val customerInfo: CustomerInfo?,
-    val menuExpanded: Boolean,
-    val isAnonymous: Boolean,
+    val isLoading: Boolean = false,
+    val currentAppUserID: String = "Not configured",
+    val customerInfo: CustomerInfo? = null,
+    val menuExpanded: Boolean = false,
+    val isAnonymous: Boolean = true,
+    val newAppUserID: String = "",
 )
 
 private data class UserSummaryCallbacks(
@@ -539,17 +475,19 @@ private fun handleLogin(params: LoginParams) {
         return
     }
     params.coroutineScope.launch {
-        params.onLoadingChange(true)
+        withContext(Dispatchers.Main.immediate) { params.onLoadingChange(true) }
         try {
             val result = Purchases.sharedInstance.awaitLogIn(params.appUserID)
             val updatedConfig = params.configuration.copy(appUserID = params.appUserID)
             updatedConfig.save(params.context)
-            params.onConfigurationUpdate(updatedConfig)
-            params.onSuccess(result)
+            withContext(Dispatchers.Main.immediate) {
+                params.onConfigurationUpdate(updatedConfig)
+                params.onSuccess(result)
+            }
         } catch (e: PurchasesException) {
-            params.onError(e.message)
+            withContext(Dispatchers.Main.immediate) { params.onError(e.message) }
         } finally {
-            params.onLoadingChange(false)
+            withContext(Dispatchers.Main.immediate) { params.onLoadingChange(false) }
         }
     }
 }
@@ -570,17 +508,19 @@ private fun handleLogout(params: LogoutParams) {
         return
     }
     params.coroutineScope.launch {
-        params.onLoadingChange(true)
+        withContext(Dispatchers.Main.immediate) { params.onLoadingChange(true) }
         try {
             val customerInfo = Purchases.sharedInstance.awaitLogOut()
             val updatedConfig = params.configuration.copy(appUserID = "")
             updatedConfig.save(params.context)
-            params.onConfigurationUpdate(updatedConfig)
-            params.onSuccess(customerInfo)
+            withContext(Dispatchers.Main.immediate) {
+                params.onConfigurationUpdate(updatedConfig)
+                params.onSuccess(customerInfo)
+            }
         } catch (e: PurchasesException) {
-            params.onError(e.message)
+            withContext(Dispatchers.Main.immediate) { params.onError(e.message) }
         } finally {
-            params.onLoadingChange(false)
+            withContext(Dispatchers.Main.immediate) { params.onLoadingChange(false) }
         }
     }
 }

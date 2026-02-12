@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -190,7 +191,12 @@ private fun OfferingsScreenContent(
     state.purchaseResult?.let { result ->
         PurchaseResultDialog(
             result = result,
-            onDismiss = callbacks.onDismissPurchaseResult,
+            onDismiss = {
+                callbacks.onDismissPurchaseResult()
+                if (result is PurchaseResult.Success) {
+                    callbacks.onNavigateBack()
+                }
+            },
         )
     }
 
@@ -425,7 +431,7 @@ private fun Context.findActivity(): Activity {
 }
 
 private sealed class PurchaseResult {
-    data class Success(val orderId: String, val customerInfo: com.revenuecat.purchases.CustomerInfo) : PurchaseResult()
+    data class Success(val orderId: String, val customerInfo: CustomerInfo) : PurchaseResult()
     object Cancelled : PurchaseResult()
     data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }

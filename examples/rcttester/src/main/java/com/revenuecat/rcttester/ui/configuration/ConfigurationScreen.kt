@@ -1,6 +1,7 @@
 package com.revenuecat.rcttester.ui.configuration
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -92,7 +93,7 @@ private data class ConfigurationScreenCallbacks(
 private fun ConfigurationScreenContent(
     state: ConfigurationScreenState,
     callbacks: ConfigurationScreenCallbacks,
-    paddingValues: androidx.compose.foundation.layout.PaddingValues,
+    paddingValues: PaddingValues,
 ) {
     Column(
         modifier = Modifier

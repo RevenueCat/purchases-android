@@ -39,9 +39,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun RCTTesterApp(application: MainApplication) {
+    val isSDKConfigured by application.isSDKConfiguredState
+
     var currentScreen by remember {
         mutableStateOf<Screen>(
-            if (application.isSDKConfigured) Screen.Main else Screen.Configuration,
+            if (isSDKConfigured) Screen.Main else Screen.Configuration,
         )
     }
     var configuration by remember {
@@ -50,9 +52,9 @@ fun RCTTesterApp(application: MainApplication) {
         )
     }
 
-    // Navigate to main screen if SDK becomes configured
-    LaunchedEffect(application.isSDKConfigured) {
-        if (application.isSDKConfigured && currentScreen == Screen.Configuration) {
+    // Navigate to main screen when SDK becomes configured (observes isSDKConfiguredState)
+    LaunchedEffect(isSDKConfigured) {
+        if (isSDKConfigured && currentScreen == Screen.Configuration) {
             currentScreen = Screen.Main
         }
     }

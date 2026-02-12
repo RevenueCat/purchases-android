@@ -2,14 +2,22 @@ package com.revenuecat.rcttester
 
 import android.app.Application
 import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.rcttester.config.SDKConfiguration
 
 class MainApplication : Application() {
-    var isSDKConfigured = false
-        private set
+    /** Observable so Compose recomposes when SDK configuration changes. */
+    val isSDKConfiguredState: MutableState<Boolean> = mutableStateOf(false)
+
+    var isSDKConfigured: Boolean
+        get() = isSDKConfiguredState.value
+        private set(value) {
+            isSDKConfiguredState.value = value
+        }
 
     private companion object {
         private const val MIN_API_KEY_LENGTH = 10
@@ -76,22 +84,12 @@ class MainApplication : Application() {
         val sanitizedConfig = configuration.copy(apiKey = sanitizedApiKey)
         sanitizedConfig.save(this)
 
-        // Don't reconfigure if already configured with the same config
-        if (Purchases.isConfigured) {
-            isSDKConfigured = true
-            return
-        }
-
         val purchasesAreCompletedBy = sanitizedConfig.toPurchasesAreCompletedBy()
         val builder = PurchasesConfiguration.Builder(this, sanitizedApiKey)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
 
         // Set app user ID if provided, otherwise SDK will generate anonymous ID
-        if (sanitizedConfig.appUserID.isNotBlank()) {
-            builder.appUserID(sanitizedConfig.appUserID.trim())
-        } else {
-            builder.appUserID(null)
-        }
+        builder.appUserID(sanitizedConfig.appUserID.takeIf { it.isNotBlank() }?.trim())
 
         Purchases.configure(builder.build())
         isSDKConfigured = true

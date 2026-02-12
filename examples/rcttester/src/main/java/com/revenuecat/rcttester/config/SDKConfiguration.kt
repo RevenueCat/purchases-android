@@ -75,7 +75,7 @@ enum class PurchasesCompletedByType {
 
     val displayName: String
         get() = when (this) {
-            REVENUECAT -> ".revenueCat"
-            MY_APP -> ".myApp"
+            REVENUECAT -> "REVENUECAT"
+            MY_APP -> "MY_APP"
         }
 }
