@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.revenuecat.rcttester.config.SDKConfiguration
-import com.revenuecat.rcttester.purchasing.PurchaseManager
 import com.revenuecat.rcttester.purchasing.createPurchaseManager
 import com.revenuecat.rcttester.ui.configuration.ConfigurationScreen
 import com.revenuecat.rcttester.ui.main.MainScreen

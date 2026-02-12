@@ -48,6 +48,7 @@ class ObserverModeThroughRevenueCatPurchaseManager(context: Context) : PurchaseM
                 Purchases.sharedInstance.awaitSyncPurchases()
                 PurchaseLogicResult.Success
             } catch (e: PurchasesException) {
+                Log.e(TAG, "Failed to sync purchases", e)
                 PurchaseLogicResult.Error()
             }
         }

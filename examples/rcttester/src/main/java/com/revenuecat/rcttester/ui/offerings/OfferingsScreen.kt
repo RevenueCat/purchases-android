@@ -151,8 +151,8 @@ private data class OfferingsScreenCallbacks(
 private fun OfferingsScreenContent(
     state: OfferingsScreenState,
     callbacks: OfferingsScreenCallbacks,
-    purchaseLogic: PurchaseLogic? = null,
     modifier: Modifier = Modifier,
+    purchaseLogic: PurchaseLogic? = null,
 ) {
     Scaffold(
         topBar = {
