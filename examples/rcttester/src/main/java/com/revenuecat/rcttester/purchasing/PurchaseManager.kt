@@ -56,7 +56,7 @@ fun createPurchaseManager(context: Context, configuration: SDKConfiguration): Pu
                 PurchaseLogicType.THROUGH_REVENUECAT ->
                     PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(billingClient)
                 PurchaseLogicType.USING_BILLING_CLIENT_DIRECTLY ->
-                    error("BillingClient purchase manager is not yet implemented")
+                    ObserverModeBillingClientPurchaseManager(context)
             }
         }
     }
