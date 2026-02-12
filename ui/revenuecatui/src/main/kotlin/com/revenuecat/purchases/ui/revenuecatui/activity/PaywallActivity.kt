@@ -120,8 +120,8 @@ internal class PaywallActivity : ComponentActivity() {
         }
         if (args?.nonSerializableArgsKey != null && nonSerializableArgs == null) {
             Logger.w(
-                "PaywallActivity was recreated after process death but non-serializable args " +
-                    "(PurchaseLogic/PaywallListener) were lost. Finishing activity.",
+                "PaywallActivity was recreated after process death causing " +
+                    "PurchaseLogic and/or PaywallListener to be lost. Finishing activity.",
             )
             setResult(RESULT_OK, createResultIntent(PaywallResult.Cancelled))
             finish()
