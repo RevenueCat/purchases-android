@@ -1,20 +1,14 @@
 package com.revenuecat.rcttester.purchasing
 
 import android.app.Activity
-import android.content.Context
 import android.util.Log
-import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ConsumeParams
-import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitSyncPurchases
@@ -30,7 +24,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * Purchase manager for observer mode using BillingClient directly.
+ * Purchase manager for purchasesAreCompletedBy MY_APP using BillingClient directly.
  *
  * In this mode:
  * - `purchasesAreCompletedBy` is set to `MY_APP`
@@ -38,21 +32,13 @@ import kotlin.coroutines.suspendCoroutine
  * - The app uses its own BillingClient to launch the purchase flow
  * - After purchase, the app acknowledges/consumes and syncs with RevenueCat
  */
-class ObserverModeBillingClientPurchaseManager(context: Context) :
-    PurchaseManager,
-    PurchasesUpdatedListener {
+class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
+    private val billingClient: BillingClient,
+) : PurchaseManager {
 
     private var purchaseContinuation: CancellableContinuation<PurchaseUpdateResult>? = null
 
-    private val billingClient: BillingClient = BillingClient.newBuilder(context)
-        .enablePendingPurchases(
-            PendingPurchasesParams.newBuilder()
-                .enableOneTimeProducts()
-                .enablePrepaidPlans()
-                .build(),
-        )
-        .setListener(this)
-        .build()
+    private val acknowledgeHelper = BillingClientAcknowledgeHelper(billingClient)
 
     override val purchaseLogic: PurchaseLogic = object : PurchaseLogic {
         override suspend fun performPurchase(
@@ -126,7 +112,7 @@ class ObserverModeBillingClientPurchaseManager(context: Context) :
         return handlePurchaseResult(updateResult, rcPackage)
     }
 
-    override fun onPurchasesUpdated(
+    fun onPurchasesUpdated(
         billingResult: BillingResult,
         purchases: MutableList<Purchase>?,
     ) {
@@ -181,7 +167,7 @@ class ObserverModeBillingClientPurchaseManager(context: Context) :
         purchase: Purchase,
         rcPackage: Package,
     ): PurchaseOperationResult {
-        finishTransaction(
+        acknowledgeHelper.finishTransaction(
             purchaseToken = purchase.purchaseToken,
             productType = rcPackage.product.type,
         )
@@ -201,62 +187,6 @@ class ObserverModeBillingClientPurchaseManager(context: Context) :
         } catch (e: PurchasesException) {
             Log.e(TAG, "Failed to sync purchases for already-owned item", e)
             PurchaseOperationResult.Failure("Item already owned, sync failed: ${e.message}")
-        }
-    }
-
-    private suspend fun finishTransaction(purchaseToken: String, productType: ProductType) {
-        val success = when (productType) {
-            ProductType.INAPP -> consumePurchase(purchaseToken)
-            ProductType.SUBS -> acknowledgePurchase(purchaseToken)
-            ProductType.UNKNOWN -> {
-                Log.w(TAG, "Unknown product type, attempting acknowledge")
-                acknowledgePurchase(purchaseToken)
-            }
-        }
-        if (!success) {
-            Log.e(TAG, "Failed to finish transaction for token: $purchaseToken")
-        }
-    }
-
-    private suspend fun acknowledgePurchase(purchaseToken: String): Boolean {
-        return suspendCoroutine { continuation ->
-            val params = AcknowledgePurchaseParams.newBuilder()
-                .setPurchaseToken(purchaseToken)
-                .build()
-            billingClient.acknowledgePurchase(params) { billingResult ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    Log.d(TAG, "Acknowledged purchase: $purchaseToken")
-                    continuation.resume(true)
-                } else {
-                    Log.e(
-                        TAG,
-                        "Failed to acknowledge purchase: ${billingResult.responseCode} " +
-                            "- ${billingResult.debugMessage}",
-                    )
-                    continuation.resume(false)
-                }
-            }
-        }
-    }
-
-    private suspend fun consumePurchase(purchaseToken: String): Boolean {
-        return suspendCoroutine { continuation ->
-            val params = ConsumeParams.newBuilder()
-                .setPurchaseToken(purchaseToken)
-                .build()
-            billingClient.consumeAsync(params) { billingResult, _ ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    Log.d(TAG, "Consumed purchase: $purchaseToken")
-                    continuation.resume(true)
-                } else {
-                    Log.e(
-                        TAG,
-                        "Failed to consume purchase: ${billingResult.responseCode} " +
-                            "- ${billingResult.debugMessage}",
-                    )
-                    continuation.resume(false)
-                }
-            }
         }
     }
 
@@ -283,6 +213,6 @@ class ObserverModeBillingClientPurchaseManager(context: Context) :
     )
 
     companion object {
-        private const val TAG = "ObserverModeBillingClient"
+        private const val TAG = "MyAppBillingClient"
     }
 }

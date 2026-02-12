@@ -5,7 +5,6 @@ import android.util.Log
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
@@ -62,7 +61,7 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
 
             // In MY_APP mode, the SDK does NOT acknowledge/consume purchases.
             // We must do it ourselves to prevent Google from auto-refunding after 3 days.
-            finishTransaction(
+            acknowledgeHelper.finishTransaction(
                 purchaseToken = result.storeTransaction.purchaseToken,
                 productType = result.storeTransaction.type,
             )
@@ -74,20 +73,6 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
             } else {
                 PurchaseOperationResult.Failure(e.message ?: "Unknown error")
             }
-        }
-    }
-
-    private suspend fun finishTransaction(purchaseToken: String, productType: ProductType) {
-        val success = when (productType) {
-            ProductType.INAPP -> acknowledgeHelper.consumePurchase(purchaseToken)
-            ProductType.SUBS -> acknowledgeHelper.acknowledgePurchase(purchaseToken)
-            ProductType.UNKNOWN -> {
-                Log.w(TAG, "Unknown product type, attempting acknowledge")
-                acknowledgeHelper.acknowledgePurchase(purchaseToken)
-            }
-        }
-        if (!success) {
-            Log.e(TAG, "Failed to finish transaction for token: $purchaseToken")
         }
     }
 
