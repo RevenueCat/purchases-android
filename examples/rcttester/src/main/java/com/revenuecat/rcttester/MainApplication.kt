@@ -8,10 +8,16 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.rcttester.config.SDKConfiguration
+import com.revenuecat.rcttester.purchasing.PurchaseManager
+import com.revenuecat.rcttester.purchasing.createPurchaseManager
 
 class MainApplication : Application() {
     /** Observable so Compose recomposes when SDK configuration changes. */
     val isSDKConfiguredState: MutableState<Boolean> = mutableStateOf(false)
+
+    /** The current purchase manager, created when the SDK is configured. */
+    var purchaseManager: PurchaseManager? = null
+        private set
 
     var isSDKConfigured: Boolean
         get() = isSDKConfiguredState.value
@@ -92,6 +98,7 @@ class MainApplication : Application() {
         builder.appUserID(sanitizedConfig.appUserID.takeIf { it.isNotBlank() }?.trim())
 
         Purchases.configure(builder.build())
+        purchaseManager = createPurchaseManager(this, sanitizedConfig)
         isSDKConfigured = true
     }
 }

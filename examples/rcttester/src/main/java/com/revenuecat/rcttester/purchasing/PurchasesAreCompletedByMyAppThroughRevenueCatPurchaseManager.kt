@@ -1,8 +1,8 @@
 package com.revenuecat.rcttester.purchasing
 
 import android.app.Activity
-import android.content.Context
 import android.util.Log
+import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
@@ -12,12 +12,11 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitSyncPurchases
-import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 
 /**
- * Purchase manager for observer mode with RevenueCat purchase methods.
+ * Purchase manager for purchasesAreCompletedBy MY_APP with RevenueCat purchase methods.
  *
  * In this mode:
  * - `purchasesAreCompletedBy` is set to `MY_APP`
@@ -25,9 +24,11 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
  * - RevenueCat's `purchase()` is called, but transactions are NOT auto-finished
  * - The app must acknowledge/consume purchases itself to prevent Google auto-refunds
  */
-class ObserverModeThroughRevenueCatPurchaseManager(context: Context) : PurchaseManager {
+class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
+    billingClient: BillingClient,
+) : PurchaseManager {
 
-    private val acknowledgeHelper = BillingClientAcknowledgeHelper(context)
+    private val acknowledgeHelper = BillingClientAcknowledgeHelper(billingClient)
 
     override val purchaseLogic: PurchaseLogic = object : PurchaseLogic {
         override suspend fun performPurchase(
@@ -58,10 +59,6 @@ class ObserverModeThroughRevenueCatPurchaseManager(context: Context) : PurchaseM
         return try {
             val purchaseParams = PurchaseParams.Builder(activity, rcPackage).build()
             val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
-
-            if (result.storeTransaction.purchaseState == PurchaseState.PENDING) {
-                return PurchaseOperationResult.Pending
-            }
 
             // In MY_APP mode, the SDK does NOT acknowledge/consume purchases.
             // We must do it ourselves to prevent Google from auto-refunding after 3 days.
@@ -95,6 +92,6 @@ class ObserverModeThroughRevenueCatPurchaseManager(context: Context) : PurchaseM
     }
 
     companion object {
-        private const val TAG = "ObserverModeRC"
+        private const val TAG = "MyAppThroughRC"
     }
 }

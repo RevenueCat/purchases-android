@@ -85,7 +85,7 @@ enum class PurchasesCompletedByType {
 @Serializable
 enum class PurchaseLogicType {
     THROUGH_REVENUECAT,
-    USING_BILLING_CLIENT_DIRECTLY, 
+    USING_BILLING_CLIENT_DIRECTLY,
     ;
 
     val displayName: String

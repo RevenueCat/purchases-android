@@ -2,6 +2,8 @@ package com.revenuecat.rcttester.purchasing
 
 import android.app.Activity
 import android.content.Context
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
@@ -49,12 +51,25 @@ fun createPurchaseManager(context: Context, configuration: SDKConfiguration): Pu
     return when (configuration.purchasesAreCompletedBy) {
         PurchasesCompletedByType.REVENUECAT -> RevenueCatPurchaseManager()
         PurchasesCompletedByType.MY_APP -> {
+            val billingClient = createBillingClient(context)
             when (configuration.purchaseLogic) {
                 PurchaseLogicType.THROUGH_REVENUECAT ->
-                    ObserverModeThroughRevenueCatPurchaseManager(context)
+                    PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(billingClient)
                 PurchaseLogicType.USING_BILLING_CLIENT_DIRECTLY ->
                     error("BillingClient purchase manager is not yet implemented")
             }
         }
     }
+}
+
+private fun createBillingClient(context: Context): BillingClient {
+    return BillingClient.newBuilder(context)
+        .enablePendingPurchases(
+            PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .enablePrepaidPlans()
+                .build(),
+        )
+        .setListener { _, _ -> }
+        .build()
 }
