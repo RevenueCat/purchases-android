@@ -12,6 +12,8 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
@@ -39,6 +41,7 @@ public interface PaywallDisplayCallback {
 @Suppress("TooManyFunctions")
 public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
+    private var currentNonSerializableArgsKey: Int? = null
 
     // We need to know whether the activity is running or finished to avoid launching the paywall
     // after the activity has been destroyed. See https://github.com/RevenueCat/purchases-android/issues/1842.
@@ -47,7 +50,16 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
     private val weakFragment = WeakReference(resultCaller as? Fragment)
 
     init {
-        activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
+        val wrappedHandler = object : PaywallResultHandler {
+            override fun onActivityResult(result: PaywallResult) {
+                currentNonSerializableArgsKey?.let {
+                    PaywallActivityNonSerializableArgsStore.remove(it)
+                    currentNonSerializableArgsKey = null
+                }
+                resultHandler.onActivityResult(result)
+            }
+        }
+        activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), wrappedHandler)
     }
 
     /**
@@ -346,7 +358,11 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      *
      * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
      */
-    public fun launchWithOptions(options: PaywallActivityLaunchOptions) {
+    fun launchWithOptions(options: PaywallActivityLaunchOptions) {
+        val nonSerializableArgsKey = storeNonSerializableArgsIfNeeded(
+            options.purchaseLogic,
+            options.listener,
+        )
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringIdAndPresentedOfferingContext = options.toOfferingSelection(),
@@ -354,6 +370,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 edgeToEdge = options.edgeToEdge,
                 customVariables = options.customVariables,
+                nonSerializableArgsKey = nonSerializableArgsKey,
             ),
         )
     }
@@ -408,6 +425,10 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
             options.paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
             if (shouldDisplay) {
+                val nonSerializableArgsKey = storeNonSerializableArgsIfNeeded(
+                    options.purchaseLogic,
+                    options.listener,
+                )
                 launchPaywallWithArgs(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = options.requiredEntitlementIdentifier,
@@ -416,10 +437,25 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                         shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                         edgeToEdge = options.edgeToEdge,
                         customVariables = options.customVariables,
+                        nonSerializableArgsKey = nonSerializableArgsKey,
                     ),
                 )
             }
         }
+    }
+
+    private fun storeNonSerializableArgsIfNeeded(
+        purchaseLogic: PurchaseLogic?,
+        listener: PaywallListener?,
+    ): Int? {
+        if (purchaseLogic == null && listener == null) return null
+        val args = PaywallActivityNonSerializableArgs(
+            purchaseLogic = purchaseLogic,
+            listener = listener,
+        )
+        val key = PaywallActivityNonSerializableArgsStore.store(args)
+        currentNonSerializableArgsKey = key
+        return key
     }
 
     private fun launchPaywallWithArgs(args: PaywallActivityArgs) {
