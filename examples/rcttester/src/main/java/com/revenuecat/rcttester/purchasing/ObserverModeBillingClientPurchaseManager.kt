@@ -1,0 +1,288 @@
+package com.revenuecat.rcttester.purchasing
+
+import android.app.Activity
+import android.content.Context
+import android.util.Log
+import com.android.billingclient.api.AcknowledgePurchaseParams
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+/**
+ * Purchase manager for observer mode using BillingClient directly.
+ *
+ * In this mode:
+ * - `purchasesAreCompletedBy` is set to `MY_APP`
+ * - `purchaseLogic` is set to `USING_BILLING_CLIENT_DIRECTLY`
+ * - The app uses its own BillingClient to launch the purchase flow
+ * - After purchase, the app acknowledges/consumes and syncs with RevenueCat
+ */
+class ObserverModeBillingClientPurchaseManager(context: Context) :
+    PurchaseManager,
+    PurchasesUpdatedListener {
+
+    private var purchaseContinuation: CancellableContinuation<PurchaseUpdateResult>? = null
+
+    private val billingClient: BillingClient = BillingClient.newBuilder(context)
+        .enablePendingPurchases(
+            PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .enablePrepaidPlans()
+                .build(),
+        )
+        .setListener(this)
+        .build()
+
+    override val purchaseLogic: PurchaseLogic = object : PurchaseLogic {
+        override suspend fun performPurchase(
+            activity: Activity,
+            rcPackage: Package,
+        ): PurchaseLogicResult {
+            val result = purchase(activity, rcPackage)
+            return when (result) {
+                is PurchaseOperationResult.Success -> PurchaseLogicResult.Success
+                is PurchaseOperationResult.UserCancelled -> PurchaseLogicResult.Cancellation
+                is PurchaseOperationResult.Pending -> PurchaseLogicResult.Error()
+                is PurchaseOperationResult.Failure -> PurchaseLogicResult.Error()
+            }
+        }
+
+        override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
+            return try {
+                Purchases.sharedInstance.awaitSyncPurchases()
+                PurchaseLogicResult.Success
+            } catch (e: PurchasesException) {
+                Log.e(TAG, "Failed to sync purchases", e)
+                PurchaseLogicResult.Error(e.error)
+            }
+        }
+    }
+
+    @Suppress("ReturnCount")
+    override suspend fun purchase(
+        activity: Activity,
+        rcPackage: Package,
+    ): PurchaseOperationResult {
+        if (!ensureConnected()) {
+            return PurchaseOperationResult.Failure("Failed to connect to BillingClient")
+        }
+
+        val googleProduct = rcPackage.product.googleProduct
+            ?: return PurchaseOperationResult.Failure("Product is not a Google product")
+
+        if (purchaseContinuation != null) {
+            return PurchaseOperationResult.Failure("Purchase already in progress")
+        }
+
+        val productDetails = googleProduct.productDetails
+
+        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(productDetails)
+            .also { params ->
+                val subscriptionOption = googleProduct.defaultOption as? GoogleSubscriptionOption
+                subscriptionOption?.offerToken?.let { params.setOfferToken(it) }
+            }
+            .build()
+
+        val flowParams = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParams))
+            .build()
+
+        val updateResult = withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine { continuation ->
+                purchaseContinuation = continuation
+                continuation.invokeOnCancellation {
+                    purchaseContinuation = null
+                }
+                val launchResult = billingClient.launchBillingFlow(activity, flowParams)
+                if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                    purchaseContinuation = null
+                    continuation.resume(PurchaseUpdateResult(launchResult, null))
+                }
+            }
+        }
+
+        return handlePurchaseResult(updateResult, rcPackage)
+    }
+
+    override fun onPurchasesUpdated(
+        billingResult: BillingResult,
+        purchases: MutableList<Purchase>?,
+    ) {
+        val continuation = purchaseContinuation
+        purchaseContinuation = null
+        if (continuation != null) {
+            continuation.resume(PurchaseUpdateResult(billingResult, purchases))
+        } else {
+            Log.w(TAG, "Received onPurchasesUpdated but no continuation was set")
+        }
+    }
+
+    private suspend fun handlePurchaseResult(
+        result: PurchaseUpdateResult,
+        rcPackage: Package,
+    ): PurchaseOperationResult {
+        val responseCode = result.billingResult.responseCode
+        val debugMessage = result.billingResult.debugMessage
+
+        return when (responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                val purchase = result.purchases?.firstOrNull()
+                if (purchase == null) {
+                    Log.e(TAG, "Purchase OK but no purchases returned")
+                    return PurchaseOperationResult.Failure("Purchase OK but no purchases returned")
+                }
+                when (purchase.purchaseState) {
+                    Purchase.PurchaseState.PURCHASED -> handleSuccessfulPurchase(purchase, rcPackage)
+                    Purchase.PurchaseState.PENDING -> PurchaseOperationResult.Pending
+                    else -> {
+                        Log.w(TAG, "Unexpected purchase state: ${purchase.purchaseState}")
+                        PurchaseOperationResult.Failure(
+                            "Unexpected purchase state: ${purchase.purchaseState}",
+                        )
+                    }
+                }
+            }
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                PurchaseOperationResult.UserCancelled
+            }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                handleAlreadyOwned()
+            }
+            else -> {
+                Log.e(TAG, "Purchase failed: $responseCode - $debugMessage")
+                PurchaseOperationResult.Failure("Purchase failed: $responseCode - $debugMessage")
+            }
+        }
+    }
+
+    private suspend fun handleSuccessfulPurchase(
+        purchase: Purchase,
+        rcPackage: Package,
+    ): PurchaseOperationResult {
+        finishTransaction(
+            purchaseToken = purchase.purchaseToken,
+            productType = rcPackage.product.type,
+        )
+        return try {
+            val customerInfo = Purchases.sharedInstance.awaitSyncPurchases()
+            PurchaseOperationResult.Success(customerInfo)
+        } catch (e: PurchasesException) {
+            Log.e(TAG, "Failed to sync purchases after purchase", e)
+            PurchaseOperationResult.Failure("Purchase succeeded but sync failed: ${e.message}")
+        }
+    }
+
+    private suspend fun handleAlreadyOwned(): PurchaseOperationResult {
+        return try {
+            val customerInfo = Purchases.sharedInstance.awaitSyncPurchases()
+            PurchaseOperationResult.Success(customerInfo)
+        } catch (e: PurchasesException) {
+            Log.e(TAG, "Failed to sync purchases for already-owned item", e)
+            PurchaseOperationResult.Failure("Item already owned, sync failed: ${e.message}")
+        }
+    }
+
+    private suspend fun finishTransaction(purchaseToken: String, productType: ProductType) {
+        val success = when (productType) {
+            ProductType.INAPP -> consumePurchase(purchaseToken)
+            ProductType.SUBS -> acknowledgePurchase(purchaseToken)
+            ProductType.UNKNOWN -> {
+                Log.w(TAG, "Unknown product type, attempting acknowledge")
+                acknowledgePurchase(purchaseToken)
+            }
+        }
+        if (!success) {
+            Log.e(TAG, "Failed to finish transaction for token: $purchaseToken")
+        }
+    }
+
+    private suspend fun acknowledgePurchase(purchaseToken: String): Boolean {
+        return suspendCoroutine { continuation ->
+            val params = AcknowledgePurchaseParams.newBuilder()
+                .setPurchaseToken(purchaseToken)
+                .build()
+            billingClient.acknowledgePurchase(params) { billingResult ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    Log.d(TAG, "Acknowledged purchase: $purchaseToken")
+                    continuation.resume(true)
+                } else {
+                    Log.e(
+                        TAG,
+                        "Failed to acknowledge purchase: ${billingResult.responseCode} " +
+                            "- ${billingResult.debugMessage}",
+                    )
+                    continuation.resume(false)
+                }
+            }
+        }
+    }
+
+    private suspend fun consumePurchase(purchaseToken: String): Boolean {
+        return suspendCoroutine { continuation ->
+            val params = ConsumeParams.newBuilder()
+                .setPurchaseToken(purchaseToken)
+                .build()
+            billingClient.consumeAsync(params) { billingResult, _ ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    Log.d(TAG, "Consumed purchase: $purchaseToken")
+                    continuation.resume(true)
+                } else {
+                    Log.e(
+                        TAG,
+                        "Failed to consume purchase: ${billingResult.responseCode} " +
+                            "- ${billingResult.debugMessage}",
+                    )
+                    continuation.resume(false)
+                }
+            }
+        }
+    }
+
+    private suspend fun ensureConnected(): Boolean {
+        if (billingClient.isReady) return true
+        return suspendCoroutine { continuation ->
+            billingClient.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(billingResult: BillingResult) {
+                    continuation.resume(
+                        billingResult.responseCode == BillingClient.BillingResponseCode.OK,
+                    )
+                }
+
+                override fun onBillingServiceDisconnected() {
+                    // Will retry connection on next call
+                }
+            })
+        }
+    }
+
+    private data class PurchaseUpdateResult(
+        val billingResult: BillingResult,
+        val purchases: List<Purchase>?,
+    )
+
+    companion object {
+        private const val TAG = "ObserverModeBillingClient"
+    }
+}

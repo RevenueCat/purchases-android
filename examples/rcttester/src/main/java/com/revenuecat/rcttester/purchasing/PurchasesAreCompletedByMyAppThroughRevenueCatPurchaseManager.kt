@@ -50,7 +50,7 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
                 PurchaseLogicResult.Success
             } catch (e: PurchasesException) {
                 Log.e(TAG, "Failed to sync purchases", e)
-                PurchaseLogicResult.Error()
+                PurchaseLogicResult.Error(e.error)
             }
         }
     }
