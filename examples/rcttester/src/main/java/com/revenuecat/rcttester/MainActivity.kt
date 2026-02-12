@@ -11,6 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.revenuecat.rcttester.config.SDKConfiguration
+import com.revenuecat.rcttester.purchasing.PurchaseManager
+import com.revenuecat.rcttester.purchasing.createPurchaseManager
 import com.revenuecat.rcttester.ui.configuration.ConfigurationScreen
 import com.revenuecat.rcttester.ui.main.MainScreen
 import com.revenuecat.rcttester.ui.offerings.OfferingsScreen
@@ -51,6 +53,11 @@ fun RCTTesterApp(application: MainApplication) {
             SDKConfiguration.load(application) ?: SDKConfiguration.default(),
         )
     }
+    var purchaseManager by remember {
+        mutableStateOf(
+            if (isSDKConfigured) createPurchaseManager(application, configuration) else null,
+        )
+    }
 
     // Navigate to main screen when SDK becomes configured (observes isSDKConfiguredState)
     LaunchedEffect(isSDKConfigured) {
@@ -66,6 +73,7 @@ fun RCTTesterApp(application: MainApplication) {
                 onConfigure = { newConfig ->
                     application.configureSDK(newConfig)
                     configuration = newConfig
+                    purchaseManager = createPurchaseManager(application, newConfig)
                     currentScreen = Screen.Main
                 },
             )
@@ -86,6 +94,7 @@ fun RCTTesterApp(application: MainApplication) {
         }
         is Screen.Offerings -> {
             OfferingsScreen(
+                purchaseManager = purchaseManager,
                 onNavigateBack = {
                     currentScreen = Screen.Main
                 },

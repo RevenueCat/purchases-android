@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.revenuecat.rcttester.config.PurchaseLogicType
 import com.revenuecat.rcttester.config.PurchasesCompletedByType
 import com.revenuecat.rcttester.config.SDKConfiguration
 
@@ -43,7 +44,11 @@ fun ConfigurationScreen(
     var purchasesAreCompletedBy by remember {
         mutableStateOf(initialConfiguration.purchasesAreCompletedBy)
     }
+    var purchaseLogic by remember {
+        mutableStateOf(initialConfiguration.purchaseLogic)
+    }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var purchaseLogicDropdownExpanded by remember { mutableStateOf(false) }
 
     Scaffold(modifier = modifier) { paddingValues ->
         ConfigurationScreenContent(
@@ -51,13 +56,17 @@ fun ConfigurationScreen(
                 apiKey = apiKey,
                 appUserID = appUserID,
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
+                purchaseLogic = purchaseLogic,
                 dropdownExpanded = dropdownExpanded,
+                purchaseLogicDropdownExpanded = purchaseLogicDropdownExpanded,
             ),
             callbacks = ConfigurationScreenCallbacks(
                 onApiKeyChange = { apiKey = it },
                 onAppUserIDChange = { appUserID = it },
                 onPurchasesAreCompletedByChange = { purchasesAreCompletedBy = it },
+                onPurchaseLogicChange = { purchaseLogic = it },
                 onDropdownExpandedChange = { dropdownExpanded = it },
+                onPurchaseLogicDropdownExpandedChange = { purchaseLogicDropdownExpanded = it },
                 onConfigure = {
                     val sanitizedApiKey = apiKey.trim().replace("\n", "").replace("\r", "")
                     onConfigure(
@@ -65,6 +74,7 @@ fun ConfigurationScreen(
                             apiKey = sanitizedApiKey,
                             appUserID = appUserID.trim(),
                             purchasesAreCompletedBy = purchasesAreCompletedBy,
+                            purchaseLogic = purchaseLogic,
                         ),
                     )
                 },
@@ -78,14 +88,18 @@ private data class ConfigurationScreenState(
     val apiKey: String,
     val appUserID: String,
     val purchasesAreCompletedBy: PurchasesCompletedByType,
+    val purchaseLogic: PurchaseLogicType,
     val dropdownExpanded: Boolean,
+    val purchaseLogicDropdownExpanded: Boolean,
 )
 
 private data class ConfigurationScreenCallbacks(
     val onApiKeyChange: (String) -> Unit,
     val onAppUserIDChange: (String) -> Unit,
     val onPurchasesAreCompletedByChange: (PurchasesCompletedByType) -> Unit,
+    val onPurchaseLogicChange: (PurchaseLogicType) -> Unit,
     val onDropdownExpandedChange: (Boolean) -> Unit,
+    val onPurchaseLogicDropdownExpandedChange: (Boolean) -> Unit,
     val onConfigure: () -> Unit,
 )
 
@@ -116,6 +130,14 @@ private fun ConfigurationScreenContent(
             onPurchasesAreCompletedByChange = callbacks.onPurchasesAreCompletedByChange,
             onDropdownExpandedChange = callbacks.onDropdownExpandedChange,
         )
+        if (state.purchasesAreCompletedBy == PurchasesCompletedByType.MY_APP) {
+            PurchaseLogicSection(
+                purchaseLogic = state.purchaseLogic,
+                dropdownExpanded = state.purchaseLogicDropdownExpanded,
+                onPurchaseLogicChange = callbacks.onPurchaseLogicChange,
+                onDropdownExpandedChange = callbacks.onPurchaseLogicDropdownExpandedChange,
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         ConfigureButton(
             apiKey = state.apiKey,
@@ -247,6 +269,70 @@ private fun ConfigureButton(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text("Configure SDK")
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PurchaseLogicSection(
+    purchaseLogic: PurchaseLogicType,
+    dropdownExpanded: Boolean,
+    onPurchaseLogicChange: (PurchaseLogicType) -> Unit,
+    onDropdownExpandedChange: (Boolean) -> Unit,
+) {
+    Column {
+        Text(
+            text = "Purchase Logic",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        ExposedDropdownMenuBox(
+            expanded = dropdownExpanded,
+            onExpandedChange = onDropdownExpandedChange,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            OutlinedTextField(
+                value = purchaseLogic.displayName,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Purchase Logic") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
+                },
+                modifier = Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+            )
+            ExposedDropdownMenu(
+                expanded = dropdownExpanded,
+                onDismissRequest = { onDropdownExpandedChange(false) },
+            ) {
+                PurchaseLogicType.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.displayName) },
+                        onClick = {
+                            onPurchaseLogicChange(option)
+                            onDropdownExpandedChange(false)
+                        },
+                    )
+                }
+            }
+        }
+        Text(
+            text = purchaseLogicFooter(purchaseLogic),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+        )
+    }
+}
+
+private fun purchaseLogicFooter(option: PurchaseLogicType): String {
+    return when (option) {
+        PurchaseLogicType.THROUGH_REVENUECAT ->
+            "The app still uses the Purchases purchase methods to make purchases."
+        PurchaseLogicType.USING_BILLING_CLIENT_DIRECTLY ->
+            "The app takes care of making the purchases using BillingClient APIs directly."
     }
 }
 

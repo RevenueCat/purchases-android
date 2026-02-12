@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.revenuecat.rcttester.config.PurchasesCompletedByType
 import com.revenuecat.rcttester.config.SDKConfiguration
 
 @Composable
@@ -27,6 +28,12 @@ fun ConfigurationSummarySection(
             label = "Purchases Completed By",
             value = configuration.purchasesAreCompletedBy.displayName,
         )
+        if (configuration.purchasesAreCompletedBy == PurchasesCompletedByType.MY_APP) {
+            ConfigurationRow(
+                label = "Purchase Logic",
+                value = configuration.purchaseLogic.displayName,
+            )
+        }
     }
 }
 

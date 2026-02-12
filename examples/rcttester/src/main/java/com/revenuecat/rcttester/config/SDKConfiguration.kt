@@ -16,6 +16,7 @@ data class SDKConfiguration(
     val apiKey: String,
     val appUserID: String,
     val purchasesAreCompletedBy: PurchasesCompletedByType,
+    val purchaseLogic: PurchaseLogicType = PurchaseLogicType.THROUGH_REVENUECAT,
 ) {
     companion object {
         private const val PREFS_NAME = "rcttester_config"
@@ -44,6 +45,7 @@ data class SDKConfiguration(
                 apiKey = Constants.DEFAULT_API_KEY,
                 appUserID = "",
                 purchasesAreCompletedBy = PurchasesCompletedByType.REVENUECAT,
+                purchaseLogic = PurchaseLogicType.THROUGH_REVENUECAT,
             )
         }
     }
@@ -77,5 +79,17 @@ enum class PurchasesCompletedByType {
         get() = when (this) {
             REVENUECAT -> "REVENUECAT"
             MY_APP -> "MY_APP"
+        }
+}
+
+@Serializable
+enum class PurchaseLogicType {
+    THROUGH_REVENUECAT,
+    USING_BILLING_CLIENT_DIRECTLY, ;
+
+    val displayName: String
+        get() = when (this) {
+            THROUGH_REVENUECAT -> "Use RevenueCat's purchase methods"
+            USING_BILLING_CLIENT_DIRECTLY -> "Use BillingClient APIs directly"
         }
 }
