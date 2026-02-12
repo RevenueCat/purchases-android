@@ -18,6 +18,6 @@ internal class EventsRequest internal constructor(
      *
      * @return A list of string representations of hash codes for the events in the request.
      */
-    public val cacheKey: List<String>
+    val cacheKey: List<String>
         get() = events.map { it.hashCode().toString() }
 }

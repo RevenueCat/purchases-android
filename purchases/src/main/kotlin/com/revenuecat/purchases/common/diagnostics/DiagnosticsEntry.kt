@@ -9,12 +9,12 @@ import java.util.Date
 import java.util.UUID
 
 internal data class DiagnosticsEntry(
-    public val id: UUID = UUID.randomUUID(),
-    public val name: DiagnosticsEntryName,
-    public val properties: Map<String, Any>,
-    public val appSessionID: UUID,
-    public val dateProvider: DateProvider = DefaultDateProvider(),
-    public val dateTime: Date = dateProvider.now,
+    val id: UUID = UUID.randomUUID(),
+    val name: DiagnosticsEntryName,
+    val properties: Map<String, Any>,
+    val appSessionID: UUID,
+    val dateProvider: DateProvider = DefaultDateProvider(),
+    val dateTime: Date = dateProvider.now,
 ) : Event {
     private companion object {
         const val ID_KEY = "id"

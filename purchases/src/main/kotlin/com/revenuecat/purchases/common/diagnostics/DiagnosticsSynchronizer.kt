@@ -22,7 +22,7 @@ internal class DiagnosticsSynchronizer(
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
 ) : DiagnosticsEventTrackerListener {
-    public companion object {
+    companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
 
@@ -32,7 +32,7 @@ internal class DiagnosticsSynchronizer(
 
     val isSyncing = AtomicBoolean(false)
 
-    public fun syncDiagnosticsFileIfNeeded() {
+    fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
                 if (isSyncing.getAndSet(true)) {

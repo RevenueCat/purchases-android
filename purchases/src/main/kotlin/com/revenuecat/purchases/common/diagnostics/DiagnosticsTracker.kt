@@ -22,7 +22,7 @@ import java.util.UUID
 import kotlin.time.Duration
 
 internal fun interface DiagnosticsEventTrackerListener {
-    public fun onEventTracked()
+    fun onEventTracked()
 }
 
 /**
@@ -79,10 +79,10 @@ internal class DiagnosticsTracker(
         emptyMap()
     }
 
-    public var listener: DiagnosticsEventTrackerListener? = null
+    var listener: DiagnosticsEventTrackerListener? = null
 
     @Suppress("LongParameterList")
-    public fun trackHttpRequestPerformed(
+    fun trackHttpRequestPerformed(
         host: String,
         endpoint: Endpoint,
         responseTime: Duration,
@@ -114,7 +114,7 @@ internal class DiagnosticsTracker(
 
     // region Google
 
-    public fun trackGoogleQueryProductDetailsRequest(
+    fun trackGoogleQueryProductDetailsRequest(
         requestedProductIds: Set<String>,
         productType: String,
         billingResponseCode: Int,
@@ -133,7 +133,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGoogleQueryPurchasesRequest(
+    fun trackGoogleQueryPurchasesRequest(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -152,7 +152,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGoogleQueryPurchaseHistoryRequest(
+    fun trackGoogleQueryPurchaseHistoryRequest(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
@@ -169,14 +169,14 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGoogleBillingStartConnection() {
+    fun trackGoogleBillingStartConnection() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_START_CONNECTION,
             properties = emptyMap(),
         )
     }
 
-    public fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
             properties = mapOf(
@@ -187,14 +187,14 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGoogleBillingServiceDisconnected() {
+    fun trackGoogleBillingServiceDisconnected() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
             properties = emptyMap(),
         )
     }
 
-    public fun trackGooglePurchaseStarted(
+    fun trackGooglePurchaseStarted(
         productId: String,
         oldProductId: String?,
         hasIntroTrial: Boolean?,
@@ -211,7 +211,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGooglePurchaseUpdateReceived(
+    fun trackGooglePurchaseUpdateReceived(
         productIds: List<String>?,
         purchaseStatuses: List<String>?,
         billingResponseCode: Int,
@@ -232,7 +232,7 @@ internal class DiagnosticsTracker(
 
     // region Amazon
 
-    public fun trackAmazonQueryProductDetailsRequest(
+    fun trackAmazonQueryProductDetailsRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
         requestedProductIds: Set<String>,
@@ -247,7 +247,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackAmazonQueryPurchasesRequest(
+    fun trackAmazonQueryPurchasesRequest(
         responseTime: Duration,
         wasSuccessful: Boolean,
         foundProductIds: List<String>?,
@@ -262,7 +262,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackAmazonPurchaseAttempt(
+    fun trackAmazonPurchaseAttempt(
         productId: String,
         requestStatus: String?,
         errorCode: Int?,
@@ -283,7 +283,7 @@ internal class DiagnosticsTracker(
 
     // endregion
 
-    public fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
+    fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = commonProperties,
@@ -296,21 +296,21 @@ internal class DiagnosticsTracker(
         }
     }
 
-    public fun trackMaxDiagnosticsSyncRetriesReached() {
+    fun trackMaxDiagnosticsSyncRetriesReached() {
         trackEvent(
             eventName = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
             properties = emptyMap(),
         )
     }
 
-    public fun trackClearingDiagnosticsAfterFailedSync() {
+    fun trackClearingDiagnosticsAfterFailedSync() {
         trackEvent(
             eventName = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
             properties = emptyMap(),
         )
     }
 
-    public fun trackProductDetailsNotSupported(
+    fun trackProductDetailsNotSupported(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
@@ -325,7 +325,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackCustomerInfoVerificationResultIfNeeded(
+    fun trackCustomerInfoVerificationResultIfNeeded(
         customerInfo: CustomerInfo,
     ) {
         val verificationResult = customerInfo.entitlements.verification
@@ -342,14 +342,14 @@ internal class DiagnosticsTracker(
 
     // region Offline Entitlements
 
-    public fun trackEnteredOfflineEntitlementsMode() {
+    fun trackEnteredOfflineEntitlementsMode() {
         trackEvent(
             eventName = DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE,
             properties = mapOf(),
         )
     }
 
-    public fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
+    fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
         val reason = if (
             error.code == PurchasesErrorCode.UnsupportedError &&
             error.underlyingErrorMessage == OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
@@ -376,14 +376,14 @@ internal class DiagnosticsTracker(
 
     // region Get Offerings
 
-    public fun trackGetOfferingsStarted() {
+    fun trackGetOfferingsStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_OFFERINGS_STARTED,
             properties = emptyMap(),
         )
     }
 
-    public enum class CacheStatus {
+    enum class CacheStatus {
         NOT_CHECKED,
         NOT_FOUND,
         STALE,
@@ -391,7 +391,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    public fun trackGetOfferingsResult(
+    fun trackGetOfferingsResult(
         requestedProductIds: Set<String>?,
         notFoundProductIds: Set<String>?,
         errorMessage: String?,
@@ -418,7 +418,7 @@ internal class DiagnosticsTracker(
 
     // region Get Products
 
-    public fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+    fun trackGetProductsStarted(requestedProductIds: Set<String>) {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_PRODUCTS_STARTED,
             properties = mapOf(
@@ -427,7 +427,7 @@ internal class DiagnosticsTracker(
         )
     }
 
-    public fun trackGetProductsResult(
+    fun trackGetProductsResult(
         requestedProductIds: Set<String>,
         notFoundProductIds: Set<String>,
         errorMessage: String?,
@@ -450,14 +450,14 @@ internal class DiagnosticsTracker(
 
     // region Sync purchases
 
-    public fun trackSyncPurchasesStarted() {
+    fun trackSyncPurchasesStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.SYNC_PURCHASES_STARTED,
             properties = emptyMap(),
         )
     }
 
-    public fun trackSyncPurchasesResult(
+    fun trackSyncPurchasesResult(
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
@@ -476,14 +476,14 @@ internal class DiagnosticsTracker(
 
     // region Restore purchases
 
-    public fun trackRestorePurchasesStarted() {
+    fun trackRestorePurchasesStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.RESTORE_PURCHASES_STARTED,
             properties = emptyMap(),
         )
     }
 
-    public fun trackRestorePurchasesResult(
+    fun trackRestorePurchasesResult(
         errorCode: Int?,
         errorMessage: String?,
         responseTime: Duration,
@@ -502,7 +502,7 @@ internal class DiagnosticsTracker(
 
     // region Get Customer Info
 
-    public fun trackGetCustomerInfoStarted() {
+    fun trackGetCustomerInfoStarted() {
         trackEvent(
             eventName = DiagnosticsEntryName.GET_CUSTOMER_INFO_STARTED,
             properties = emptyMap(),
@@ -510,7 +510,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    public fun trackGetCustomerInfoResult(
+    fun trackGetCustomerInfoResult(
         cacheFetchPolicy: CacheFetchPolicy,
         verificationResult: VerificationResult?,
         hadUnsyncedPurchasesBefore: Boolean?,
@@ -535,7 +535,7 @@ internal class DiagnosticsTracker(
 
     // region Purchase
 
-    public fun trackPurchaseStarted(productId: String, productType: ProductType) {
+    fun trackPurchaseStarted(productId: String, productType: ProductType) {
         trackEvent(
             eventName = DiagnosticsEntryName.PURCHASE_STARTED,
             properties = mapOf(
@@ -546,7 +546,7 @@ internal class DiagnosticsTracker(
     }
 
     @Suppress("LongParameterList")
-    public fun trackPurchaseResult(
+    fun trackPurchaseResult(
         productId: String,
         productType: ProductType,
         errorCode: Int?,
@@ -580,7 +580,7 @@ internal class DiagnosticsTracker(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    public fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
+    fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
         }

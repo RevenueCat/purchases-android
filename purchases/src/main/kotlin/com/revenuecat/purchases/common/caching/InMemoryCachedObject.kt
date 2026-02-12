@@ -9,23 +9,23 @@ internal class InMemoryCachedObject<T>(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
-    public var cachedInstance: T? = null
+    var cachedInstance: T? = null
 
-    public fun clearCacheTimestamp() {
+    fun clearCacheTimestamp() {
         lastUpdatedAt = null
     }
 
-    public fun clearCache() {
+    fun clearCache() {
         clearCacheTimestamp()
         cachedInstance = null
     }
 
-    public fun cacheInstance(instance: T) {
+    fun cacheInstance(instance: T) {
         this.cachedInstance = instance
         this.lastUpdatedAt = dateProvider.now
     }
 
-    public fun updateCacheTimestamp(date: Date) {
+    fun updateCacheTimestamp(date: Date) {
         this.lastUpdatedAt = date
     }
 }

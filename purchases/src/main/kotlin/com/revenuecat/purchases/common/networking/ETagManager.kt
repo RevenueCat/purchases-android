@@ -14,16 +14,16 @@ import java.util.Date
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class ETagData(
-    public val eTag: String,
-    public val lastRefreshTime: Date?,
+    val eTag: String,
+    val lastRefreshTime: Date?,
 )
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class HTTPResultWithETag(
-    public val eTagData: ETagData,
-    public val httpResult: HTTPResult,
+    val eTagData: ETagData,
+    val httpResult: HTTPResult,
 ) {
-    public fun serialize(): String {
+    fun serialize(): String {
         return JSONObject().apply {
             put(SERIALIZATION_NAME_ETAG, eTagData.eTag)
             eTagData.lastRefreshTime?.let { put(SERIALIZATION_NAME_LAST_REFRESH_TIME, it.time) }
@@ -31,12 +31,12 @@ internal data class HTTPResultWithETag(
         }.toString()
     }
 
-    public companion object {
+    companion object {
         private const val SERIALIZATION_NAME_ETAG = "eTag"
         private const val SERIALIZATION_NAME_LAST_REFRESH_TIME = "lastRefreshTime"
         private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
 
-        public fun deserialize(serialized: String): HTTPResultWithETag {
+        fun deserialize(serialized: String): HTTPResultWithETag {
             val jsonObject = JSONObject(serialized)
             val eTag = jsonObject.getString(SERIALIZATION_NAME_ETAG)
             val lastRefreshTime = jsonObject.optLong(SERIALIZATION_NAME_LAST_REFRESH_TIME, -1L)
@@ -169,8 +169,8 @@ internal class ETagManager(
         }
     }
 
-    public companion object {
-        public fun initializeSharedPreferences(context: Context): SharedPreferences =
+    companion object {
+        fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",
                 Context.MODE_PRIVATE,

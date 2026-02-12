@@ -14,7 +14,7 @@ internal class HTTPTimeoutManager(
     private val appConfig: AppConfig,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
-    public companion object {
+    companion object {
         const val SUPPORTED_FALLBACK_TIMEOUT_MS = 5000L // 5 seconds for requests with fallback support
         const val REDUCED_TIMEOUT_MS = 2000L // 2 seconds for requests with fallback support after timeout
         const val DEFAULT_TIMEOUT_MS = 30000L // 30 seconds for requests without fallback support and fallback requests
@@ -22,7 +22,7 @@ internal class HTTPTimeoutManager(
         const val TEST_DIVIDER = 10L // When running tests, we reduce timeouts
     }
 
-    public enum class RequestResult {
+    enum class RequestResult {
         /**
          * Request succeeded on the main backend
          */
@@ -47,7 +47,7 @@ internal class HTTPTimeoutManager(
      * @param isFallback Whether this is a fallback request
      * @return The timeout in milliseconds
      */
-    public fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
+    fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
         // Check if reset is needed (10 minutes elapsed)
         if (shouldResetTimeout()) {
             resetTimeout()
@@ -71,7 +71,7 @@ internal class HTTPTimeoutManager(
      * Records the result of a request and updates internal state accordingly.
      * @param result The result of the request
      */
-    public fun recordRequestResult(result: RequestResult) {
+    fun recordRequestResult(result: RequestResult) {
         when (result) {
             RequestResult.SUCCESS_ON_MAIN_BACKEND -> {
                 resetTimeout()

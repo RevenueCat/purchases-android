@@ -9,27 +9,27 @@ internal class DiagnosticsHelper(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val sharedPreferences: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
 ) {
-    public companion object {
+    companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
 
-        public fun initializeSharedPreferences(context: Context): SharedPreferences =
+        fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
                 Context.MODE_PRIVATE,
             )
     }
 
-    public fun resetDiagnosticsStatus() {
+    fun resetDiagnosticsStatus() {
         clearConsecutiveNumberOfErrors()
         diagnosticsFileHelper.deleteFile()
     }
 
-    public fun clearConsecutiveNumberOfErrors() {
+    fun clearConsecutiveNumberOfErrors() {
         sharedPreferences.value.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
     }
 
-    public fun increaseConsecutiveNumberOfErrors(): Int {
+    fun increaseConsecutiveNumberOfErrors(): Int {
         var count = sharedPreferences.value.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         sharedPreferences.value.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
         return count

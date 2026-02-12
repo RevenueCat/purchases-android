@@ -11,13 +11,13 @@ internal object RCHTTPStatusCodes {
     const val NOT_FOUND = 404
     const val ERROR = 500
 
-    public fun isSuccessful(statusCode: Int) = statusCode < BAD_REQUEST
-    public fun isServerError(statusCode: Int) = statusCode >= ERROR
+    fun isSuccessful(statusCode: Int) = statusCode < BAD_REQUEST
+    fun isServerError(statusCode: Int) = statusCode >= ERROR
 
     // Note: this means that all 4xx (except 404) are considered as successfully synced.
     // The reason is because it's likely due to a client error, so continuing to retry
     // won't yield any different results and instead kill pandas.
-    public fun isSynced(
+    fun isSynced(
         statusCode: Int,
     ) = isSuccessful(statusCode) || !(isServerError(statusCode) || statusCode == NOT_FOUND)
 }
