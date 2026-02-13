@@ -44,7 +44,7 @@ public class PaywallView : CompatComposeView {
     /**
      * Constructor when creating the view programmatically with a dismiss handler.
      */
-    constructor(
+    public constructor(
         context: Context,
         offering: Offering?,
         listener: PaywallListener?,
@@ -139,7 +139,7 @@ public class PaywallView : CompatComposeView {
      * This is required when `Purchases` has been configured with
      * `purchasesAreCompletedBy` as `PurchasesAreCompletedBy.MY_APP`.
      */
-    fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
+    public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
         this.purchaseLogic = purchaseLogic
         paywallOptions = paywallOptions.copy(purchaseLogic = purchaseLogic)
     }
