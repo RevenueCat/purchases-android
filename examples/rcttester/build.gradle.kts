@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.revenuecat.rcttester"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.revenuecat.rcttester"

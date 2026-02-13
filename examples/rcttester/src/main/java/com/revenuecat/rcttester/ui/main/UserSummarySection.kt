@@ -68,20 +68,19 @@ fun UserSummarySection(
     }
     var dialogsData by remember { mutableStateOf(DialogsData()) }
 
-    LaunchedEffect(Purchases.isConfigured) {
+    LaunchedEffect(Unit) {
         if (Purchases.isConfigured) {
             userSummaryState = userSummaryState.copy(
                 currentAppUserID = Purchases.sharedInstance.appUserID,
                 isAnonymous = Purchases.sharedInstance.isAnonymous,
             )
+            loadCustomerInfo(
+                onSuccess = { userSummaryState = userSummaryState.copy(customerInfo = it) },
+                onError = {
+                    dialogsData = dialogsData.copy(showErrorDialog = true, errorMessage = it)
+                },
+            )
         }
-    }
-
-    LaunchedEffect(Unit) {
-        loadCustomerInfo(
-            onSuccess = { userSummaryState = userSummaryState.copy(customerInfo = it) },
-            onError = { dialogsData = dialogsData.copy(showErrorDialog = true, errorMessage = it) },
-        )
     }
 
     UserSummaryContent(
