@@ -36,7 +36,8 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
         ): PurchaseLogicResult {
             val result = purchase(activity, rcPackage)
             return when (result) {
-                is PurchaseOperationResult.Success -> PurchaseLogicResult.Success
+                is PurchaseOperationResult.Success,
+                is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseLogicResult.Success
                 is PurchaseOperationResult.UserCancelled -> PurchaseLogicResult.Cancellation
                 is PurchaseOperationResult.Pending -> PurchaseLogicResult.Error()
                 is PurchaseOperationResult.Failure -> PurchaseLogicResult.Error()
