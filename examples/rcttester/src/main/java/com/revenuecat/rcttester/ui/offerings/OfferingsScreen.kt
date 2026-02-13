@@ -196,7 +196,7 @@ private fun OfferingsScreenContent(
             result = result,
             onDismiss = {
                 callbacks.onDismissPurchaseResult()
-                if (result is PurchaseResult.Success) {
+                if (result is PurchaseResult.Success || result is PurchaseResult.SuccessCustomImplementation) {
                     callbacks.onNavigateBack()
                 }
             },
@@ -403,6 +403,7 @@ private suspend fun handlePurchase(
             is PurchaseOperationResult.Success -> PurchaseResult.Success(
                 customerInfo = result.customerInfo,
             )
+            is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseResult.SuccessCustomImplementation
             is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
             is PurchaseOperationResult.Pending -> PurchaseResult.Error(
                 "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
@@ -427,6 +428,8 @@ private fun Context.findActivity(): Activity {
 
 private sealed class PurchaseResult {
     data class Success(val customerInfo: CustomerInfo? = null) : PurchaseResult()
+    /** Success from custom BillingClient flow; sample can show different context. */
+    data object SuccessCustomImplementation : PurchaseResult()
     data object Cancelled : PurchaseResult()
     data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }
@@ -724,6 +727,7 @@ private fun PurchaseResultDialog(
             Text(
                 when (result) {
                     is PurchaseResult.Success -> "Purchase Successful"
+                    is PurchaseResult.SuccessCustomImplementation -> "Purchase Successful"
                     is PurchaseResult.Cancelled -> "Purchase Cancelled"
                     is PurchaseResult.Error -> "Purchase Failed"
                 },
@@ -741,6 +745,9 @@ private fun PurchaseResultDialog(
                             "Purchase completed successfully."
                         }
                     }
+                    is PurchaseResult.SuccessCustomImplementation ->
+                        "Purchase completed via your custom BillingClient implementation. " +
+                            "The CustomerInfo should be automatically updated in the background with updated entitlements."
                     is PurchaseResult.Cancelled -> "The purchase was cancelled."
                     is PurchaseResult.Error -> result.message
                 },

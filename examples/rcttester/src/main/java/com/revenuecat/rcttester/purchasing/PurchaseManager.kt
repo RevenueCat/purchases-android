@@ -17,6 +17,11 @@ import com.revenuecat.rcttester.config.SDKConfiguration
  */
 sealed class PurchaseOperationResult {
     data class Success(val customerInfo: CustomerInfo? = null) : PurchaseOperationResult()
+    /**
+     * Success from the app's custom BillingClient flow (USING_BILLING_CLIENT_DIRECTLY).
+     * The sample can show different context, e.g. that entitlements will update after sync.
+     */
+    data object SuccessCustomImplementation : PurchaseOperationResult()
     data object UserCancelled : PurchaseOperationResult()
     data object Pending : PurchaseOperationResult()
     data class Failure(val error: String) : PurchaseOperationResult()
