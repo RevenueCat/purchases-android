@@ -450,7 +450,9 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
     ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider);
     ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton);
-    ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
+    ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton, optional com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic);
+    ctor public PaywallView(android.content.Context context, optional com.revenuecat.purchases.Offering? offering, optional com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, optional com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, optional Boolean? shouldDisplayDismissButton, optional com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic, optional kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
+    ctor public PaywallView(android.content.Context context, com.revenuecat.purchases.Offering? offering, com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener, com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider, Boolean? shouldDisplayDismissButton, kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
     method @androidx.compose.runtime.Composable public void Content();
     method public androidx.lifecycle.Lifecycle getLifecycle();
     method public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
@@ -463,6 +465,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     method public void setOfferingId(String? offeringId);
     method public void setOfferingId(String? offeringId, optional com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext);
     method public void setPaywallListener(com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener);
+    method public void setPurchaseLogic(com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic? purchaseLogic);
   }
 
 }
