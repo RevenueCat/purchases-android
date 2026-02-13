@@ -426,7 +426,7 @@ private fun Context.findActivity(): Activity {
 }
 
 private sealed class PurchaseResult {
-    data class Success(val customerInfo: CustomerInfo) : PurchaseResult()
+    data class Success(val customerInfo: CustomerInfo? = null) : PurchaseResult()
     data object Cancelled : PurchaseResult()
     data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }
@@ -733,14 +733,13 @@ private fun PurchaseResultDialog(
             Text(
                 when (result) {
                     is PurchaseResult.Success -> {
-                        val activeEntitlements =
-                            result.customerInfo.entitlements.active.keys.joinToString(", ")
-                        val entitlementsText = if (activeEntitlements.isEmpty()) {
-                            "None"
+                        if (result.customerInfo != null) {
+                            val activeEntitlements =
+                                result.customerInfo.entitlements.active.keys.joinToString(", ")
+                            "Active Entitlements: ${activeEntitlements.ifEmpty { "None" }}"
                         } else {
-                            activeEntitlements
+                            "Purchase completed successfully."
                         }
-                        "Active Entitlements: $entitlementsText"
                     }
                     is PurchaseResult.Cancelled -> "The purchase was cancelled."
                     is PurchaseResult.Error -> result.message
