@@ -228,14 +228,6 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
 
 }
 
-package com.revenuecat.purchases.ui.revenuecatui.components.image {
-
-  @kotlin.jvm.JvmSynthetic public final class ImageComponentViewKt {
-    method public static android.graphics.Bitmap toBitmap(android.graphics.drawable.Drawable, @Px int width, @Px int height, @ColorInt int background);
-  }
-
-}
-
 package com.revenuecat.purchases.ui.revenuecatui.composables {
 
   public final class AutoResizedTextKt {
@@ -281,11 +273,6 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter {
 }
 
 package com.revenuecat.purchases.ui.revenuecatui.extensions {
-
-  public final class PackageExtensionsKt {
-    method public static boolean isMonthly(com.revenuecat.purchases.Package);
-    method public static boolean isSubscription(com.revenuecat.purchases.Package);
-  }
 
   public final class TypographyExtensionsKt {
     method public static androidx.compose.material3.Typography copyWithFontProvider(androidx.compose.material3.Typography, com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider fontProvider);
