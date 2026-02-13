@@ -14,7 +14,7 @@ import kotlinx.serialization.encoding.encodeStructure
  * Recurrence mode for a pricing phase
  */
 @SuppressWarnings("MagicNumber")
-enum class RecurrenceMode(@ProductDetails.RecurrenceMode val identifier: Int?) {
+public enum class RecurrenceMode(@ProductDetails.RecurrenceMode public val identifier: Int?) {
 
     // Pricing phase repeats infinitely until cancellation
     INFINITE_RECURRING(1),
@@ -27,7 +27,7 @@ enum class RecurrenceMode(@ProductDetails.RecurrenceMode val identifier: Int?) {
     UNKNOWN(null),
 }
 
-fun Int?.toRecurrenceMode(): RecurrenceMode =
+public fun Int?.toRecurrenceMode(): RecurrenceMode =
     RecurrenceMode.values().firstOrNull { it.identifier == this } ?: RecurrenceMode.UNKNOWN
 
 internal object RecurrenceModeSerializer : KSerializer<RecurrenceMode> {

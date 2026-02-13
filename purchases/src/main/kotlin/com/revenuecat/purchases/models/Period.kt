@@ -29,26 +29,26 @@ private object PeriodConstants {
  */
 @Parcelize
 @Poko
-class Period(
+public class Period(
     /**
      * The number of period units.
      */
-    val value: Int,
+    public val value: Int,
 
     /**
      * The increment of time that a subscription period is specified in.
      */
-    val unit: Unit,
+    public val unit: Unit,
 
     /**
      * Specified in ISO 8601 format. For example, P1W equates to one week,
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year
      */
-    val iso8601: String,
+    public val iso8601: String,
 ) : Parcelable {
 
-    companion object Factory {
+    public companion object Factory {
         /**
          * Creates a [Period] object from an ISO 8601 string. Supports both ISO 8601-1 and ISO 8601-2 formats.
          * You shouldn't normally need to call this method directly since `Period` objects are created by the SDK.
@@ -56,14 +56,14 @@ class Period(
          *
          * @param iso8601 The ISO 8601 string to parse
          */
-        fun create(iso8601: String): Period {
+        public fun create(iso8601: String): Period {
             val pair = iso8601.toPeriod()
             return Period(pair.first, pair.second, iso8601)
         }
     }
 
     @SuppressWarnings("MagicNumber")
-    enum class Unit {
+    public enum class Unit {
         DAY,
         WEEK,
         MONTH,
@@ -72,7 +72,7 @@ class Period(
     }
 
     @InternalRevenueCatAPI
-    val valueInDays: Double
+    public val valueInDays: Double
         get() = when (unit) {
             Unit.DAY -> value.toDouble()
             Unit.WEEK -> value * PeriodConstants.DAYS_PER_WEEK
@@ -88,7 +88,7 @@ class Period(
      * The period value in week units. This is an approximated value.
      */
     @InternalRevenueCatAPI
-    val valueInWeeks: Double
+    public val valueInWeeks: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_WEEK
             Unit.WEEK -> value.toDouble()
@@ -103,7 +103,7 @@ class Period(
     /**
      * The period value in month units. This is an approximated value.
      */
-    val valueInMonths: Double
+    public val valueInMonths: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_MONTH
             Unit.WEEK -> value / PeriodConstants.WEEKS_PER_MONTH
@@ -119,7 +119,7 @@ class Period(
      * The period value in week units. This is an approximated value.
      */
     @InternalRevenueCatAPI
-    val valueInYears: Double
+    public val valueInYears: Double
         get() = when (unit) {
             Unit.DAY -> value / PeriodConstants.DAYS_PER_YEAR
             Unit.WEEK -> value / PeriodConstants.WEEKS_PER_YEAR

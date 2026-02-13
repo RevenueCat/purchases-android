@@ -29,9 +29,8 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
  * For conditional launches (showing the paywall only when certain conditions are met),
  * use [PaywallActivityLaunchIfNeededOptions] instead.
  */
-class PaywallActivityLaunchOptions
 @Suppress("LongParameterList")
-private constructor(
+public class PaywallActivityLaunchOptions private constructor(
     internal val offering: Offering?,
     internal val fontProvider: ParcelizableFontProvider?,
     internal val shouldDisplayDismissButton: Boolean,
@@ -60,7 +59,7 @@ private constructor(
     /**
      * Builder for creating [PaywallActivityLaunchOptions].
      */
-    class Builder {
+    public class Builder {
         private var offering: Offering? = null
         private var fontProvider: ParcelizableFontProvider? = null
         private var shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON
@@ -77,7 +76,7 @@ private constructor(
          * Sets the offering to be shown in the paywall.
          * If not set, the current offering will be shown.
          */
-        fun setOffering(offering: Offering?) = apply {
+        public fun setOffering(offering: Offering?): Builder = apply {
             this.offering = offering
             // Clear internal offering fields when using public API
             this.offeringIdentifier = null
@@ -89,10 +88,10 @@ private constructor(
          * This is mutually exclusive with [setOffering].
          */
         @InternalRevenueCatAPI
-        fun setOfferingIdentifier(
+        public fun setOfferingIdentifier(
             offeringIdentifier: String,
             presentedOfferingContext: PresentedOfferingContext,
-        ) = apply {
+        ): Builder = apply {
             this.offeringIdentifier = offeringIdentifier
             this.presentedOfferingContext = presentedOfferingContext
             // Clear public offering when using internal API
@@ -103,7 +102,7 @@ private constructor(
          * Sets the font provider to be used in the paywall.
          * Only available for original template paywalls. Ignored for V2 Paywalls.
          */
-        fun setFontProvider(fontProvider: ParcelizableFontProvider?) = apply {
+        public fun setFontProvider(fontProvider: ParcelizableFontProvider?): Builder = apply {
             this.fontProvider = fontProvider
         }
 
@@ -112,7 +111,7 @@ private constructor(
          * Only available for original template paywalls. Ignored for V2 Paywalls.
          * Default is true.
          */
-        fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
+        public fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean): Builder = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
@@ -120,7 +119,7 @@ private constructor(
          * Sets whether to display the paywall in edge-to-edge mode.
          * Default is true for Android 15+, false otherwise.
          */
-        fun setEdgeToEdge(edgeToEdge: Boolean) = apply {
+        public fun setEdgeToEdge(edgeToEdge: Boolean): Builder = apply {
             this.edgeToEdge = edgeToEdge
         }
 
@@ -132,7 +131,7 @@ private constructor(
          * Invalid keys (those not starting with a letter or containing invalid characters)
          * will be filtered out and logged as warnings.
          */
-        fun setCustomVariables(customVariables: Map<String, CustomVariableValue>) = apply {
+        public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables)
         }
 
@@ -141,7 +140,7 @@ private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -150,14 +149,14 @@ private constructor(
          * restoration, and errors.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setListener(listener: PaywallListener?) = apply {
+        public fun setListener(listener: PaywallListener?): Builder = apply {
             this.listener = listener
         }
 
         /**
          * Builds the [PaywallActivityLaunchOptions] instance.
          */
-        fun build(): PaywallActivityLaunchOptions {
+        public fun build(): PaywallActivityLaunchOptions {
             return PaywallActivityLaunchOptions(
                 offering = offering,
                 fontProvider = fontProvider,
@@ -206,7 +205,7 @@ private constructor(
  * ```
  */
 @Suppress("LongParameterList")
-class PaywallActivityLaunchIfNeededOptions private constructor(
+public class PaywallActivityLaunchIfNeededOptions private constructor(
     internal val offering: Offering?,
     internal val fontProvider: ParcelizableFontProvider?,
     internal val shouldDisplayDismissButton: Boolean,
@@ -242,7 +241,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
      * before calling [build]. These are mutually exclusive - setting one will clear the other.
      */
     @Suppress("TooManyFunctions")
-    class Builder {
+    public class Builder {
         private var offering: Offering? = null
         private var fontProvider: ParcelizableFontProvider? = null
         private var shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON
@@ -262,7 +261,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Sets the offering to be shown in the paywall.
          * If not set, the current offering will be shown.
          */
-        fun setOffering(offering: Offering?) = apply {
+        public fun setOffering(offering: Offering?): Builder = apply {
             this.offering = offering
             // Clear internal offering fields when using public API
             this.offeringIdentifier = null
@@ -274,10 +273,10 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * This is mutually exclusive with [setOffering].
          */
         @InternalRevenueCatAPI
-        fun setOfferingIdentifier(
+        public fun setOfferingIdentifier(
             offeringIdentifier: String,
             presentedOfferingContext: PresentedOfferingContext,
-        ) = apply {
+        ): Builder = apply {
             this.offeringIdentifier = offeringIdentifier
             this.presentedOfferingContext = presentedOfferingContext
             // Clear public offering when using internal API
@@ -288,7 +287,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Sets the font provider to be used in the paywall.
          * Only available for original template paywalls. Ignored for V2 Paywalls.
          */
-        fun setFontProvider(fontProvider: ParcelizableFontProvider?) = apply {
+        public fun setFontProvider(fontProvider: ParcelizableFontProvider?): Builder = apply {
             this.fontProvider = fontProvider
         }
 
@@ -297,7 +296,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Only available for original template paywalls. Ignored for V2 Paywalls.
          * Default is true.
          */
-        fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
+        public fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean): Builder = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
@@ -305,7 +304,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Sets whether to display the paywall in edge-to-edge mode.
          * Default is true for Android 15+, false otherwise.
          */
-        fun setEdgeToEdge(edgeToEdge: Boolean) = apply {
+        public fun setEdgeToEdge(edgeToEdge: Boolean): Builder = apply {
             this.edgeToEdge = edgeToEdge
         }
 
@@ -317,7 +316,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * Invalid keys (those not starting with a letter or containing invalid characters)
          * will be filtered out and logged as warnings.
          */
-        fun setCustomVariables(customVariables: Map<String, CustomVariableValue>) = apply {
+        public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables)
         }
 
@@ -329,7 +328,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * This is mutually exclusive with [setShouldDisplayBlock]. Setting this will clear
          * any previously set shouldDisplayBlock.
          */
-        fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String) = apply {
+        public fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String): Builder = apply {
             this.requiredEntitlementIdentifier = requiredEntitlementIdentifier
             this.shouldDisplayBlock = null
         }
@@ -341,7 +340,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * This is mutually exclusive with [setRequiredEntitlementIdentifier]. Setting this
          * will clear any previously set requiredEntitlementIdentifier.
          */
-        fun setShouldDisplayBlock(shouldDisplayBlock: (CustomerInfo) -> Boolean) = apply {
+        public fun setShouldDisplayBlock(shouldDisplayBlock: (CustomerInfo) -> Boolean): Builder = apply {
             this.shouldDisplayBlock = shouldDisplayBlock
             this.requiredEntitlementIdentifier = null
         }
@@ -349,7 +348,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
         /**
          * Sets a callback that will be called with the result of whether the paywall was displayed.
          */
-        fun setPaywallDisplayCallback(paywallDisplayCallback: PaywallDisplayCallback?) = apply {
+        public fun setPaywallDisplayCallback(paywallDisplayCallback: PaywallDisplayCallback?): Builder = apply {
             this.paywallDisplayCallback = paywallDisplayCallback
         }
 
@@ -358,7 +357,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -367,7 +366,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * restoration, and errors.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setListener(listener: PaywallListener?) = apply {
+        public fun setListener(listener: PaywallListener?): Builder = apply {
             this.listener = listener
         }
 
@@ -377,7 +376,7 @@ class PaywallActivityLaunchIfNeededOptions private constructor(
          * @throws IllegalStateException if neither [setRequiredEntitlementIdentifier] nor
          * [setShouldDisplayBlock] has been called.
          */
-        fun build(): PaywallActivityLaunchIfNeededOptions {
+        public fun build(): PaywallActivityLaunchIfNeededOptions {
             require(requiredEntitlementIdentifier != null || shouldDisplayBlock != null) {
                 "PaywallActivityLaunchIfNeededOptions requires either requiredEntitlementIdentifier " +
                     "or shouldDisplayBlock to be set. Use PaywallActivityLaunchOptions for " +

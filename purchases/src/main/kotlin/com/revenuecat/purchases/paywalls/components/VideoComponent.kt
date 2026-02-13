@@ -23,49 +23,49 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("video")
 @Immutable
-class VideoComponent(
+public class VideoComponent(
     @get:JvmSynthetic
-    val source: ThemeVideoUrls,
+    public val source: ThemeVideoUrls,
     @SerialName("fallback_source")
     @get:JvmSynthetic
-    val fallbackSource: ThemeImageUrls?,
+    public val fallbackSource: ThemeImageUrls?,
     @get:JvmSynthetic
-    val visible: Boolean?,
+    public val visible: Boolean?,
     @SerialName("show_controls")
     @get:JvmSynthetic
-    val showControls: Boolean,
+    public val showControls: Boolean,
     @SerialName("auto_play")
     @get:JvmSynthetic
-    val autoplay: Boolean,
+    public val autoplay: Boolean,
     @get:JvmSynthetic
-    val loop: Boolean,
+    public val loop: Boolean,
     @SerialName("mute_audio")
     @get:JvmSynthetic
-    val muteAudio: Boolean,
+    public val muteAudio: Boolean,
     @get:JvmSynthetic
-    val size: Size,
+    public val size: Size,
     @SerialName("fit_mode")
     @get:JvmSynthetic
-    val fitMode: FitMode,
+    public val fitMode: FitMode,
     @SerialName("mask_shape")
     @get:JvmSynthetic
-    val maskShape: MaskShape?,
+    public val maskShape: MaskShape?,
     @SerialName("color_overlay")
     @get:JvmSynthetic
-    val colorOverlay: ColorScheme?,
+    public val colorOverlay: ColorScheme?,
     @get:JvmSynthetic
-    val padding: Padding?,
+    public val padding: Padding?,
     @get:JvmSynthetic
-    val margin: Padding?,
+    public val margin: Padding?,
     @get:JvmSynthetic
-    val border: Border?,
+    public val border: Border?,
     @get:JvmSynthetic
-    val shadow: Shadow?,
+    public val shadow: Shadow?,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialVideoComponent>>?,
+    public val overrides: List<ComponentOverride<PartialVideoComponent>>?,
     @get:JvmSynthetic
     @SerialName("override_source_lid")
-    val overrideSourceLid: LocalizationKey? = null,
+    public val overrideSourceLid: LocalizationKey? = null,
 ) : PaywallComponent
 
 @Suppress("LongParameterList")
@@ -73,45 +73,45 @@ class VideoComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialVideoComponent(
+public class PartialVideoComponent(
     @get:JvmSynthetic
-    val source: ThemeVideoUrls? = null,
+    public val source: ThemeVideoUrls? = null,
     @SerialName("fallback_source")
     @get:JvmSynthetic
-    val fallbackSource: ThemeImageUrls? = null,
+    public val fallbackSource: ThemeImageUrls? = null,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @SerialName("show_controls")
     @get:JvmSynthetic
-    val showControls: Boolean? = null,
+    public val showControls: Boolean? = null,
     @SerialName("auto_play")
     @get:JvmSynthetic
-    val autoplay: Boolean? = null,
+    public val autoplay: Boolean? = null,
     @get:JvmSynthetic
-    val loop: Boolean? = null,
+    public val loop: Boolean? = null,
     @SerialName("mute_audio")
     @get:JvmSynthetic
-    val muteAudio: Boolean? = null,
+    public val muteAudio: Boolean? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @SerialName("fit_mode")
     @get:JvmSynthetic
-    val fitMode: FitMode? = null,
+    public val fitMode: FitMode? = null,
     @SerialName("mask_shape")
     @get:JvmSynthetic
-    val maskShape: MaskShape? = null,
+    public val maskShape: MaskShape? = null,
     @SerialName("color_overlay")
     @get:JvmSynthetic
-    val colorOverlay: ColorScheme? = null,
+    public val colorOverlay: ColorScheme? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
     @SerialName("override_source_lid")
-    val overrideSourceLid: LocalizationKey? = null,
+    public val overrideSourceLid: LocalizationKey? = null,
 ) : PartialComponent

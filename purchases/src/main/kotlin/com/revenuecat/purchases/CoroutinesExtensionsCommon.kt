@@ -21,7 +21,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitOfferings(): Offerings {
+public suspend fun Purchases.awaitOfferings(): Offerings {
     return suspendCoroutine { continuation ->
         getOfferingsWith(
             onSuccess = continuation::resume,
@@ -44,7 +44,7 @@ suspend fun Purchases.awaitOfferings(): Offerings {
  * or a [Result] containing [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
+public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
     suspendCoroutine { continuation ->
         getOfferingsWith(
             onSuccess = { continuation.resume(Result.success(it)) },
@@ -70,7 +70,7 @@ suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
+public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
     return suspendCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
@@ -103,7 +103,7 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
  * [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
+public suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
     return suspendCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
@@ -133,7 +133,7 @@ suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Resul
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitGetProducts(
+public suspend fun Purchases.awaitGetProducts(
     productIds: List<String>,
     type: ProductType? = null,
 ): List<StoreProduct> {
@@ -162,7 +162,7 @@ suspend fun Purchases.awaitGetProducts(
  * Not found products will be ignored.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitGetProductsResult(
+public suspend fun Purchases.awaitGetProductsResult(
     productIds: List<String>,
     type: ProductType? = null,
 ): Result<List<StoreProduct>> {
@@ -198,7 +198,7 @@ suspend fun Purchases.awaitGetProductsResult(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitRestore(): CustomerInfo {
+public suspend fun Purchases.awaitRestore(): CustomerInfo {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { continuation.resume(it) },
@@ -224,7 +224,7 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
  * or a [Result] containing [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
+public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { customerInfo ->
@@ -245,7 +245,7 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store country code in ISO-3166-1 alpha2.
  */
-suspend fun Purchases.awaitStorefrontCountryCode(): String {
+public suspend fun Purchases.awaitStorefrontCountryCode(): String {
     return suspendCoroutine { continuation ->
         getStorefrontCountryCodeWith(
             onSuccess = continuation::resume,

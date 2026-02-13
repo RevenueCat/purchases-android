@@ -15,19 +15,19 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("purchase_button")
 @Immutable
-class PurchaseButtonComponent(
-    @get:JvmSynthetic val stack: StackComponent,
-    @get:JvmSynthetic val action: Action? = null,
-    @get:JvmSynthetic val method: Method? = null,
+public class PurchaseButtonComponent(
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val action: Action? = null,
+    @get:JvmSynthetic public val method: Method? = null,
 ) : PaywallComponent {
     @Serializable(with = ActionDeserializer::class)
-    enum class Action {
+    public enum class Action {
         IN_APP_CHECKOUT,
         WEB_CHECKOUT,
         WEB_PRODUCT_SELECTION,
         ;
 
-        fun toMethod() = when (this) {
+        public fun toMethod(): Method = when (this) {
             IN_APP_CHECKOUT -> Method.InAppCheckout
             WEB_CHECKOUT -> Method.WebCheckout()
             WEB_PRODUCT_SELECTION -> Method.WebProductSelection()
@@ -35,50 +35,50 @@ class PurchaseButtonComponent(
     }
 
     @Serializable(with = PurchaseButtonMethodDeserializer::class)
-    sealed interface Method {
+    public sealed interface Method {
         @Serializable
-        object InAppCheckout : Method
+        public object InAppCheckout : Method
 
         @Serializable
         @Immutable
-        data class WebCheckout(
+        public data class WebCheckout(
             @SerialName("auto_dismiss")
-            @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable
         @Immutable
-        data class WebProductSelection(
+        public data class WebProductSelection(
             @SerialName("auto_dismiss")
-            @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable
         @Immutable
-        data class CustomWebCheckout(
+        public data class CustomWebCheckout(
             @SerialName("custom_url")
-            @get:JvmSynthetic val customUrl: CustomUrl,
+            @get:JvmSynthetic public val customUrl: CustomUrl,
             @SerialName("auto_dismiss")
-            @get:JvmSynthetic val autoDismiss: Boolean? = null,
+            @get:JvmSynthetic public val autoDismiss: Boolean? = null,
             @SerialName("open_method")
-            @get:JvmSynthetic val openMethod: UrlMethod? = null,
+            @get:JvmSynthetic public val openMethod: UrlMethod? = null,
         ) : Method
 
         @Serializable
-        object Unknown : Method
+        public object Unknown : Method
     }
 
     @Serializable
     @Immutable
-    data class CustomUrl(
+    public data class CustomUrl(
         @SerialName("url_lid")
-        val urlLid: LocalizationKey,
+        public val urlLid: LocalizationKey,
         @SerialName("package_param")
-        val packageParam: String? = null,
+        public val packageParam: String? = null,
     )
 }
 

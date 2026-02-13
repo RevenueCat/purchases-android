@@ -27,20 +27,24 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
  * View that wraps the [Paywall] Composable to display the Paywall through XML layouts and the View system.
  */
 @Suppress("TooManyFunctions")
-class PaywallView : CompatComposeView {
+public class PaywallView : CompatComposeView {
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr,
+    ) {
         init(context, attrs)
     }
 
     /**
      * Constructor when creating the view programmatically with a dismiss handler.
      */
-    constructor(
+    public constructor(
         context: Context,
         offering: Offering?,
         listener: PaywallListener?,
@@ -54,7 +58,7 @@ class PaywallView : CompatComposeView {
      */
     @Suppress("LongParameterList")
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         offering: Offering? = null,
         listener: PaywallListener? = null,
@@ -115,7 +119,7 @@ class PaywallView : CompatComposeView {
      * @note The listener callbacks will **not** be called when the app is handling purchase and restore logic itself,
      * ie when Purchases has been configured with purchasesAreCompletedBy as PurchasesAreCompletedBy.MY_APP.
      */
-    fun setPaywallListener(listener: PaywallListener?) {
+    public fun setPaywallListener(listener: PaywallListener?) {
         this.listener = listener
     }
 
@@ -126,7 +130,7 @@ class PaywallView : CompatComposeView {
      * - If the user taps on the close button
      * - If the user calls the back button with the paywall present.
      */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
+    public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
@@ -135,7 +139,7 @@ class PaywallView : CompatComposeView {
      * This is required when `Purchases` has been configured with
      * `purchasesAreCompletedBy` as `PurchasesAreCompletedBy.MY_APP`.
      */
-    fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
+    public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
         this.purchaseLogic = purchaseLogic
         paywallOptions = paywallOptions.copy(purchaseLogic = purchaseLogic)
     }
@@ -145,7 +149,7 @@ class PaywallView : CompatComposeView {
      * If not set, the default one will be used.
      */
     @JvmOverloads
-    fun setOfferingId(offeringId: String?, presentedOfferingContext: PresentedOfferingContext? = null) {
+    public fun setOfferingId(offeringId: String?, presentedOfferingContext: PresentedOfferingContext? = null) {
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
@@ -161,7 +165,7 @@ class PaywallView : CompatComposeView {
      * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
      * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
-    fun setFontProvider(fontProvider: FontProvider?) {
+    public fun setFontProvider(fontProvider: FontProvider?) {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
     }
 
@@ -169,7 +173,7 @@ class PaywallView : CompatComposeView {
      * Sets the visibility of the dismiss button in the Paywall.
      * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
-    fun setDisplayDismissButton(shouldDisplayDismissButton: Boolean) {
+    public fun setDisplayDismissButton(shouldDisplayDismissButton: Boolean) {
         paywallOptions = paywallOptions.copy(shouldDisplayDismissButton = shouldDisplayDismissButton)
     }
 
@@ -179,7 +183,7 @@ class PaywallView : CompatComposeView {
      *
      * @param variables A map of variable names to their [CustomVariableValue] values.
      */
-    fun setCustomVariables(variables: Map<String, CustomVariableValue>) {
+    public fun setCustomVariables(variables: Map<String, CustomVariableValue>) {
         val validVariables = CustomVariableKeyValidator.validateAndFilter(variables)
         paywallOptions = paywallOptions.copy(customVariables = validVariables)
     }

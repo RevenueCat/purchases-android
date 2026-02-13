@@ -8,12 +8,12 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
  * If you only want to use a single [PaywallFontFamily] for all text styles use [CustomParcelizableFontProvider].
  * Use [FontProvider] instead if you are using Compose with [PaywallView] or [PaywallDialog].
  */
-interface ParcelizableFontProvider {
+public interface ParcelizableFontProvider {
     /**
      * Returns the [PaywallFontFamily] to be used for the given [TypographyType]. If null is returned,
      * the default font will be used.
      * @param type the [TypographyType] for which the font is being requested.
      * @return the [PaywallFontFamily] to be used for the given [TypographyType].
      */
-    fun getFont(type: TypographyType): PaywallFontFamily?
+    public fun getFont(type: TypographyType): PaywallFontFamily?
 }

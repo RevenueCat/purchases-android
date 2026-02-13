@@ -25,13 +25,13 @@ import kotlinx.parcelize.Parcelize
  * Hello {{ custom.player_name }}!
  * ```
  */
-abstract class CustomVariableValue internal constructor() : Parcelable {
+public abstract class CustomVariableValue internal constructor() : Parcelable {
 
     /**
      * A string value.
      */
     @Parcelize
-    class String(val value: kotlin.String) : CustomVariableValue(), Parcelable {
+    public class String(public val value: kotlin.String) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is String && value == other.value
 
@@ -73,7 +73,7 @@ abstract class CustomVariableValue internal constructor() : Parcelable {
     /**
      * The string representation of this value for use in paywall text replacement.
      */
-    val stringValue: kotlin.String
+    public val stringValue: kotlin.String
         get() = when (this) {
             is String -> value
             is Number -> {
