@@ -428,8 +428,10 @@ private fun Context.findActivity(): Activity {
 
 private sealed class PurchaseResult {
     data class Success(val customerInfo: CustomerInfo? = null) : PurchaseResult()
+
     /** Success from custom BillingClient flow; sample can show different context. */
     data object SuccessCustomImplementation : PurchaseResult()
+
     data object Cancelled : PurchaseResult()
     data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }
@@ -747,7 +749,8 @@ private fun PurchaseResultDialog(
                     }
                     is PurchaseResult.SuccessCustomImplementation ->
                         "Purchase completed via your custom BillingClient implementation. " +
-                            "The CustomerInfo should be automatically updated in the background with updated entitlements."
+                            "The CustomerInfo should be automatically updated " +
+                            "in the background with updated entitlements."
                     is PurchaseResult.Cancelled -> "The purchase was cancelled."
                     is PurchaseResult.Error -> result.message
                 },
