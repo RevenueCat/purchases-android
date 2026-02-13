@@ -171,23 +171,11 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
             purchaseToken = purchase.purchaseToken,
             productType = rcPackage.product.type,
         )
-        return try {
-            val customerInfo = Purchases.sharedInstance.awaitSyncPurchases()
-            PurchaseOperationResult.Success(customerInfo)
-        } catch (e: PurchasesException) {
-            Log.e(TAG, "Failed to sync purchases after purchase", e)
-            PurchaseOperationResult.Failure("Purchase succeeded but sync failed: ${e.message}")
-        }
+        return PurchaseOperationResult.Success()
     }
 
-    private suspend fun handleAlreadyOwned(): PurchaseOperationResult {
-        return try {
-            val customerInfo = Purchases.sharedInstance.awaitSyncPurchases()
-            PurchaseOperationResult.Success(customerInfo)
-        } catch (e: PurchasesException) {
-            Log.e(TAG, "Failed to sync purchases for already-owned item", e)
-            PurchaseOperationResult.Failure("Item already owned, sync failed: ${e.message}")
-        }
+    private fun handleAlreadyOwned(): PurchaseOperationResult {
+        return PurchaseOperationResult.Success()
     }
 
     private suspend fun ensureConnected(): Boolean {

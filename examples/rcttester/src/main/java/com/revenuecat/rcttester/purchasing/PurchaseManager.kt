@@ -16,7 +16,7 @@ import com.revenuecat.rcttester.config.SDKConfiguration
  * Result type for purchase operations initiated outside of paywalls.
  */
 sealed class PurchaseOperationResult {
-    data class Success(val customerInfo: CustomerInfo) : PurchaseOperationResult()
+    data class Success(val customerInfo: CustomerInfo? = null) : PurchaseOperationResult()
     data object UserCancelled : PurchaseOperationResult()
     data object Pending : PurchaseOperationResult()
     data class Failure(val error: String) : PurchaseOperationResult()
