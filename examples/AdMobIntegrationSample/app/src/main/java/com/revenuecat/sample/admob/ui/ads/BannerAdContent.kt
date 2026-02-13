@@ -15,6 +15,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.loadAndTrackAd
 import com.revenuecat.sample.admob.data.Constants
 
+@Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun BannerAdContent() {
@@ -33,6 +34,6 @@ internal fun BannerAdContent() {
                 // Load the ad with RevenueCat event tracking
                 loadAndTrackAd(adRequest = AdRequest.Builder().build(), placement = "home_banner")
             }
-        }
+        },
     )
 }

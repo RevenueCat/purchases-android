@@ -82,6 +82,7 @@ internal class TrackingFullScreenContentCallback(
 /**
  * Wires [OnPaidEventListener] for revenue tracking on a full-screen ad.
  */
+@Suppress("LongParameterList")
 internal fun setUpPaidEventTracking(
     setListener: (OnPaidEventListener) -> Unit,
     adFormat: AdFormat,
@@ -90,23 +91,25 @@ internal fun setUpPaidEventTracking(
     responseInfoProvider: () -> ResponseInfo,
     delegate: OnPaidEventListener? = null,
 ) {
-    setListener(OnPaidEventListener { adValue ->
-        val responseInfo = responseInfoProvider()
-        trackIfConfigured {
-            adTracker.trackAdRevenue(
-                AdRevenueData(
-                    networkName = responseInfo.mediationAdapterClassName,
-                    mediatorName = AdMediatorName.AD_MOB,
-                    adFormat = adFormat,
-                    placement = placement,
-                    adUnitId = adUnitId,
-                    impressionId = responseInfo.responseId.orEmpty(),
-                    revenueMicros = adValue.valueMicros,
-                    currency = adValue.currencyCode,
-                    precision = adValue.precisionType.toAdRevenuePrecision(),
-                ),
-            )
-        }
-        delegate?.onPaidEvent(adValue)
-    })
+    setListener(
+        OnPaidEventListener { adValue ->
+            val responseInfo = responseInfoProvider()
+            trackIfConfigured {
+                adTracker.trackAdRevenue(
+                    AdRevenueData(
+                        networkName = responseInfo.mediationAdapterClassName,
+                        mediatorName = AdMediatorName.AD_MOB,
+                        adFormat = adFormat,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        impressionId = responseInfo.responseId.orEmpty(),
+                        revenueMicros = adValue.valueMicros,
+                        currency = adValue.currencyCode,
+                        precision = adValue.precisionType.toAdRevenuePrecision(),
+                    ),
+                )
+            }
+            delegate?.onPaidEvent(adValue)
+        },
+    )
 }

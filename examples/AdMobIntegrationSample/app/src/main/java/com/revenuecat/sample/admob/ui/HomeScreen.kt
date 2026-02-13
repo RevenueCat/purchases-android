@@ -31,7 +31,7 @@ fun HomeScreen(
 
     when (val screen = currentScreen) {
         is Screen.Home -> AdFormatListScreen(
-            onFormatSelected = { currentScreen = Screen.AdDetail(it) },
+            onSelectFormat = { currentScreen = Screen.AdDetail(it) },
         )
         is Screen.AdDetail -> AdFormatDetailScreen(
             format = screen.adFormat,

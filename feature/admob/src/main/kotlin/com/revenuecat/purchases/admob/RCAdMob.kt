@@ -59,6 +59,7 @@ object RCAdMob {
      * @param onPaidEventListener Optional [OnPaidEventListener] to receive paid events.
      *   RevenueCat revenue tracking is called first, then forwarded to this listener.
      */
+    @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
     fun loadAndTrackInterstitialAd(
@@ -94,6 +95,7 @@ object RCAdMob {
      * @param onPaidEventListener Optional [OnPaidEventListener] to receive paid events.
      *   RevenueCat revenue tracking is called first, then forwarded to this listener.
      */
+    @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
     fun loadAndTrackAppOpenAd(
@@ -129,6 +131,7 @@ object RCAdMob {
      * @param onPaidEventListener Optional [OnPaidEventListener] to receive paid events.
      *   RevenueCat revenue tracking is called first, then forwarded to this listener.
      */
+    @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
     fun loadAndTrackRewardedAd(
@@ -164,6 +167,7 @@ object RCAdMob {
      * @param onPaidEventListener Optional [OnPaidEventListener] to receive paid events.
      *   RevenueCat revenue tracking is called first, then forwarded to this listener.
      */
+    @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
     fun loadAndTrackRewardedInterstitialAd(
@@ -209,6 +213,7 @@ object RCAdMob {
      * @param onAdLoaded Called with the loaded [NativeAd] (already tracked).
      * @return The [AdLoader] instance. Retain this if you need to load more ads.
      */
+    @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
     fun loadAndTrackNativeAd(

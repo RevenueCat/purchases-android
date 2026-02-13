@@ -19,6 +19,7 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
 
+@Suppress("LongParameterList")
 internal fun loadAndTrackNativeAdInternal(
     context: Context,
     adUnitId: String,

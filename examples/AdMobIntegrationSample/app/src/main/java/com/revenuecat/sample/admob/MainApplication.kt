@@ -40,7 +40,7 @@ class MainApplication : Application() {
         // Configure and initialize RevenueCat
         val configuration = PurchasesConfiguration.Builder(
             context = this,
-            apiKey = Constants.REVENUECAT_API_KEY
+            apiKey = Constants.REVENUECAT_API_KEY,
         ).build()
 
         Purchases.configure(configuration)
@@ -62,7 +62,7 @@ class MainApplication : Application() {
             val statusMap = initializationStatus.adapterStatusMap
             for (adapterClass in statusMap.keys) {
                 val status = statusMap[adapterClass]
-                Log.d(TAG, "AdMob adapter ${adapterClass}: ${status?.description}")
+                Log.d(TAG, "AdMob adapter $adapterClass: ${status?.description}")
             }
             Log.d(TAG, "AdMob SDK initialized successfully")
         }

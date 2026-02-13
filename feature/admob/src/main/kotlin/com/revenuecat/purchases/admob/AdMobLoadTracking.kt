@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 
+@Suppress("LongParameterList")
 internal fun loadAndTrackInterstitialAdInternal(
     context: Context,
     adUnitId: String,
@@ -83,6 +84,7 @@ internal fun loadAndTrackInterstitialAdInternal(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun loadAndTrackAppOpenAdInternal(
     context: Context,
     adUnitId: String,
@@ -146,6 +148,7 @@ internal fun loadAndTrackAppOpenAdInternal(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun loadAndTrackRewardedAdInternal(
     context: Context,
     adUnitId: String,
@@ -209,6 +212,7 @@ internal fun loadAndTrackRewardedAdInternal(
     )
 }
 
+@Suppress("LongParameterList")
 internal fun loadAndTrackRewardedInterstitialAdInternal(
     context: Context,
     adUnitId: String,

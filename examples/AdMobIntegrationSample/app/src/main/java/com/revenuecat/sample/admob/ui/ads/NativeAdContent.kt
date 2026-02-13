@@ -23,15 +23,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
-import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.RCAdMob
 import com.revenuecat.sample.admob.R
 import com.revenuecat.sample.admob.data.Constants
+import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
 
+@Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeAdContent() {
@@ -77,6 +78,7 @@ internal fun NativeAdContent() {
     }
 }
 
+@Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeVideoAdContent() {
@@ -135,7 +137,7 @@ private fun NativeAdView(nativeAd: NativeAd) {
             populateNativeAdView(nativeAd, adView)
 
             adView
-        }
+        },
     )
 }
 

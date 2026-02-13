@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.RCAdMob
 import com.revenuecat.sample.admob.data.Constants
 
+@Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun AppOpenAdContent(activity: Activity) {
