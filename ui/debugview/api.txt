@@ -1,11 +1,7 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.debugview {
 
-  public final class ContextExtensionsKt {
-    method public static android.app.Activity findActivity(android.content.Context);
-  }
-
-  public final class DebugRevenueCatBottomSheetKt {
+public final class DebugRevenueCatBottomSheetKt {
     method @androidx.compose.runtime.Composable public static void DebugRevenueCatBottomSheet(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.models.StoreTransaction,kotlin.Unit> onPurchaseCompleted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesTransactionException,kotlin.Unit> onPurchaseErrored, optional boolean isVisible, optional kotlin.jvm.functions.Function0<kotlin.Unit>? onDismissCallback);
   }
 
