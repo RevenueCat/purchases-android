@@ -539,7 +539,6 @@ private fun OfferingCardPackages(
             PackageRow(
                 packageItem = packageItem,
                 isPurchasing = purchasingPackageId == packageItem.identifier,
-                isPurchaseEnabled = purchasingPackageId == null,
                 onPurchase = { onPurchasePackage(packageItem) },
             )
         }
@@ -556,7 +555,6 @@ private fun OfferingCardPackages(
 private fun PackageRow(
     packageItem: Package,
     isPurchasing: Boolean,
-    isPurchaseEnabled: Boolean,
     onPurchase: () -> Unit,
 ) {
     Row(
@@ -579,7 +577,7 @@ private fun PackageRow(
         }
         Button(
             onClick = onPurchase,
-            enabled = isPurchaseEnabled,
+            enabled = !isPurchasing,
         ) {
             if (isPurchasing) {
                 CircularProgressIndicator(
