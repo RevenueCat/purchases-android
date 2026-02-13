@@ -36,7 +36,6 @@ package com.revenuecat.purchases.admob {
   }
 
   public final class RCAdMobBannerAd {
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static void loadAndTrackAd(com.google.android.gms.ads.AdView, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static void loadAndTrackAd(com.google.android.gms.ads.AdView, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener);
   }
 

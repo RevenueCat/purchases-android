@@ -1,8 +1,10 @@
 @file:JvmName("RCAdMobBannerAd")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob
 
+import android.annotation.SuppressLint
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
