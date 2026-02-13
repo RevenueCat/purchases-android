@@ -15,22 +15,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +51,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -54,9 +61,12 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.rcttester.purchasing.PurchaseManager
 import com.revenuecat.rcttester.purchasing.PurchaseOperationResult
 import kotlinx.coroutines.launch
@@ -66,6 +76,7 @@ import kotlinx.coroutines.launch
 fun OfferingsScreen(
     purchaseManager: PurchaseManager?,
     onNavigateBack: () -> Unit,
+    paywallActivityCallbacks: PaywallActivityCallbacks,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -77,9 +88,19 @@ fun OfferingsScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedOfferingForMetadata by remember { mutableStateOf<Offering?>(null) }
     var selectedOfferingForPaywall by remember { mutableStateOf<Offering?>(null) }
+    var selectedOfferingForPaywallView by remember { mutableStateOf<Offering?>(null) }
+    var selectedOfferingForEntitlementPicker by remember { mutableStateOf<Offering?>(null) }
     var refreshKey by remember { mutableIntStateOf(0) }
     var purchasingPackageId by remember { mutableStateOf<String?>(null) }
     var purchaseResult by remember { mutableStateOf<PurchaseResult?>(null) }
+    val paywallResult by paywallActivityCallbacks.paywallResultState
+
+    LaunchedEffect(paywallResult) {
+        paywallResult?.let {
+            purchaseResult = it.toPurchaseResult()
+            paywallActivityCallbacks.paywallResultState.value = null
+        }
+    }
 
     LaunchedEffect(refreshKey) {
         loadOfferings(
@@ -90,16 +111,6 @@ fun OfferingsScreen(
         )
     }
 
-    val onPurchasePackage: (Package) -> Unit = { packageItem ->
-        purchasingPackageId = packageItem.identifier
-        coroutineScope.launch {
-            handlePurchase(activity, packageItem, purchaseManager) { result ->
-                purchaseResult = result
-            }
-            purchasingPackageId = null
-        }
-    }
-
     OfferingsScreenContent(
         state = OfferingsScreenState(
             isLoading = isLoading,
@@ -108,20 +119,82 @@ fun OfferingsScreen(
             purchasingPackageId = purchasingPackageId,
             selectedOfferingForMetadata = selectedOfferingForMetadata,
             selectedOfferingForPaywall = selectedOfferingForPaywall,
+            selectedOfferingForPaywallView = selectedOfferingForPaywallView,
+            selectedOfferingForEntitlementPicker = selectedOfferingForEntitlementPicker,
             purchaseResult = purchaseResult,
         ),
-        callbacks = OfferingsScreenCallbacks(
+        callbacks = buildOfferingsScreenCallbacks(
             onNavigateBack = onNavigateBack,
-            onRetry = { refreshKey++ },
-            onShowMetadata = { selectedOfferingForMetadata = it },
-            onPresentPaywall = { selectedOfferingForPaywall = it },
-            onDismissMetadata = { selectedOfferingForMetadata = null },
-            onDismissPaywall = { selectedOfferingForPaywall = null },
-            onDismissPurchaseResult = { purchaseResult = null },
-            onPurchasePackage = onPurchasePackage,
+            purchaseManager = purchaseManager,
+            activity = activity,
+            coroutineScope = coroutineScope,
+            paywallActivityCallbacks = paywallActivityCallbacks,
+            onRefreshKeyIncrement = { refreshKey++ },
+            onOfferingForMetadataChange = { selectedOfferingForMetadata = it },
+            onOfferingForPaywallChange = { selectedOfferingForPaywall = it },
+            onOfferingForPaywallViewChange = { selectedOfferingForPaywallView = it },
+            onOfferingForEntitlementPickerChange = { selectedOfferingForEntitlementPicker = it },
+            onPurchaseResultChange = { purchaseResult = it },
+            onPurchasingPackageIdChange = { purchasingPackageId = it },
         ),
         purchaseLogic = purchaseManager?.purchaseLogic,
         modifier = modifier,
+    )
+}
+
+@Suppress("LongParameterList")
+private fun buildOfferingsScreenCallbacks(
+    onNavigateBack: () -> Unit,
+    purchaseManager: PurchaseManager?,
+    activity: Activity,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    paywallActivityCallbacks: PaywallActivityCallbacks,
+    onRefreshKeyIncrement: () -> Unit,
+    onOfferingForMetadataChange: (Offering?) -> Unit,
+    onOfferingForPaywallChange: (Offering?) -> Unit,
+    onOfferingForPaywallViewChange: (Offering?) -> Unit,
+    onOfferingForEntitlementPickerChange: (Offering?) -> Unit,
+    onPurchaseResultChange: (PurchaseResult?) -> Unit,
+    onPurchasingPackageIdChange: (String?) -> Unit,
+): OfferingsScreenCallbacks {
+    fun launchPurchase(
+        packageItem: Package,
+        purchaseAction: suspend (PurchaseManager) -> PurchaseOperationResult,
+    ) {
+        val manager = purchaseManager ?: run {
+            onPurchaseResultChange(PurchaseResult.Error("Purchase manager not initialized", null))
+            return
+        }
+        onPurchasingPackageIdChange(packageItem.identifier)
+        coroutineScope.launch {
+            onPurchaseResultChange(purchaseAction(manager).toPurchaseResult())
+            onPurchasingPackageIdChange(null)
+        }
+    }
+
+    return OfferingsScreenCallbacks(
+        onNavigateBack = onNavigateBack,
+        onRetry = onRefreshKeyIncrement,
+        onShowMetadata = onOfferingForMetadataChange,
+        onPresentPaywall = onOfferingForPaywallChange,
+        onDismissMetadata = { onOfferingForMetadataChange(null) },
+        onPresentPaywallView = onOfferingForPaywallViewChange,
+        onDismissPaywall = { onOfferingForPaywallChange(null) },
+        onDismissPaywallView = { onOfferingForPaywallViewChange(null) },
+        onDismissPurchaseResult = { onPurchaseResultChange(null) },
+        onPurchasePackage = { pkg ->
+            launchPurchase(pkg) { it.purchase(activity, pkg) }
+        },
+        onPurchaseProduct = { pkg ->
+            launchPurchase(pkg) { it.purchaseProduct(activity, pkg.product) }
+        },
+        onLaunchPaywallActivity = paywallActivityCallbacks.onLaunchPaywallActivity,
+        onShowEntitlementPicker = onOfferingForEntitlementPickerChange,
+        onDismissEntitlementPicker = { onOfferingForEntitlementPickerChange(null) },
+        onLaunchPaywallActivityIfNeeded = { entitlement, offering ->
+            paywallActivityCallbacks.onLaunchPaywallActivityIfNeeded(entitlement, offering)
+            onOfferingForEntitlementPickerChange(null)
+        },
     )
 }
 
@@ -132,6 +205,8 @@ private data class OfferingsScreenState(
     val purchasingPackageId: String?,
     val selectedOfferingForMetadata: Offering?,
     val selectedOfferingForPaywall: Offering?,
+    val selectedOfferingForPaywallView: Offering?,
+    val selectedOfferingForEntitlementPicker: Offering?,
     val purchaseResult: PurchaseResult?,
 )
 
@@ -140,10 +215,17 @@ private data class OfferingsScreenCallbacks(
     val onRetry: () -> Unit,
     val onShowMetadata: (Offering) -> Unit,
     val onPresentPaywall: (Offering) -> Unit,
+    val onPresentPaywallView: (Offering) -> Unit,
     val onDismissMetadata: () -> Unit,
     val onDismissPaywall: () -> Unit,
+    val onDismissPaywallView: () -> Unit,
     val onDismissPurchaseResult: () -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
+    val onLaunchPaywallActivity: (Offering) -> Unit,
+    val onShowEntitlementPicker: (Offering?) -> Unit,
+    val onDismissEntitlementPicker: () -> Unit,
+    val onLaunchPaywallActivityIfNeeded: (String, Offering) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -178,12 +260,25 @@ private fun OfferingsScreenContent(
                 onRetry = callbacks.onRetry,
                 onShowMetadata = callbacks.onShowMetadata,
                 onPresentPaywall = callbacks.onPresentPaywall,
+                onPresentPaywallView = callbacks.onPresentPaywallView,
                 onPurchasePackage = callbacks.onPurchasePackage,
+                onPurchaseProduct = callbacks.onPurchaseProduct,
+                onLaunchPaywallActivity = callbacks.onLaunchPaywallActivity,
+                onShowEntitlementPicker = callbacks.onShowEntitlementPicker,
             ),
             paddingValues = paddingValues,
         )
     }
 
+    OfferingsScreenDialogs(state = state, callbacks = callbacks, purchaseLogic = purchaseLogic)
+}
+
+@Composable
+private fun OfferingsScreenDialogs(
+    state: OfferingsScreenState,
+    callbacks: OfferingsScreenCallbacks,
+    purchaseLogic: PurchaseLogic?,
+) {
     state.selectedOfferingForMetadata?.let { offering ->
         OfferingMetadataDialog(
             offering = offering,
@@ -210,6 +305,21 @@ private fun OfferingsScreenContent(
                 .setOffering(offering)
                 .setCustomPurchaseLogic(purchaseLogic)
                 .build(),
+        )
+    }
+
+    state.selectedOfferingForPaywallView?.let { offering ->
+        PaywallViewDialog(
+            offering = offering,
+            purchaseLogic = purchaseLogic,
+            onDismiss = callbacks.onDismissPaywallView,
+        )
+    }
+
+    state.selectedOfferingForEntitlementPicker?.let { offering ->
+        EntitlementPickerDialog(
+            onSelect = { entitlement -> callbacks.onLaunchPaywallActivityIfNeeded(entitlement, offering) },
+            onDismiss = callbacks.onDismissEntitlementPicker,
         )
     }
 }
@@ -247,7 +357,11 @@ private data class OfferingsContentCallbacks(
     val onRetry: () -> Unit,
     val onShowMetadata: (Offering) -> Unit,
     val onPresentPaywall: (Offering) -> Unit,
+    val onPresentPaywallView: (Offering) -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
+    val onLaunchPaywallActivity: (Offering) -> Unit,
+    val onShowEntitlementPicker: (Offering) -> Unit,
 )
 
 @Composable
@@ -281,9 +395,7 @@ private fun OfferingsContent(
                     OfferingsList(
                         offerings = state.offerings,
                         purchasingPackageId = state.purchasingPackageId,
-                        onShowMetadata = callbacks.onShowMetadata,
-                        onPresentPaywall = callbacks.onPresentPaywall,
-                        onPurchasePackage = callbacks.onPurchasePackage,
+                        callbacks = callbacks,
                     )
                 }
             }
@@ -342,9 +454,7 @@ private fun EmptyOfferingsView(
 private fun OfferingsList(
     offerings: Offerings,
     purchasingPackageId: String?,
-    onShowMetadata: (Offering) -> Unit,
-    onPresentPaywall: (Offering) -> Unit,
-    onPurchasePackage: (Package) -> Unit,
+    callbacks: OfferingsContentCallbacks,
 ) {
     val offeringsList = offerings.all.values.toList()
     val currentOffering = offerings.current
@@ -363,9 +473,13 @@ private fun OfferingsList(
                     purchasingPackageId = purchasingPackageId,
                 ),
                 callbacks = OfferingCardCallbacks(
-                    onShowMetadata = { onShowMetadata(offering) },
-                    onPresentPaywall = { onPresentPaywall(offering) },
-                    onPurchasePackage = onPurchasePackage,
+                    onShowMetadata = { callbacks.onShowMetadata(offering) },
+                    onPresentPaywall = { callbacks.onPresentPaywall(offering) },
+                    onPresentPaywallView = { callbacks.onPresentPaywallView(offering) },
+                    onPurchasePackage = callbacks.onPurchasePackage,
+                    onPurchaseProduct = callbacks.onPurchaseProduct,
+                    onLaunchPaywallActivity = { callbacks.onLaunchPaywallActivity(offering) },
+                    onShowEntitlementPicker = { callbacks.onShowEntitlementPicker(offering) },
                 ),
             )
         }
@@ -387,34 +501,31 @@ private fun sortOfferings(
     }
 }
 
-private suspend fun handlePurchase(
-    activity: Activity,
-    packageItem: Package,
-    purchaseManager: PurchaseManager?,
-    onResult: (PurchaseResult) -> Unit,
-) {
-    if (purchaseManager == null) {
-        onResult(PurchaseResult.Error("Purchase manager not initialized", null))
-        return
+private fun PurchaseOperationResult.toPurchaseResult(): PurchaseResult {
+    return when (this) {
+        is PurchaseOperationResult.Success -> PurchaseResult.Success(
+            customerInfo = customerInfo,
+        )
+        is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseResult.SuccessCustomImplementation
+        is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
+        is PurchaseOperationResult.Pending -> PurchaseResult.Error(
+            "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
+            null,
+        )
+        is PurchaseOperationResult.Failure -> PurchaseResult.Error(
+            error,
+            null,
+        )
     }
-    val result = purchaseManager.purchase(activity, packageItem)
-    onResult(
-        when (result) {
-            is PurchaseOperationResult.Success -> PurchaseResult.Success(
-                customerInfo = result.customerInfo,
-            )
-            is PurchaseOperationResult.SuccessCustomImplementation -> PurchaseResult.SuccessCustomImplementation
-            is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
-            is PurchaseOperationResult.Pending -> PurchaseResult.Error(
-                "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
-                null,
-            )
-            is PurchaseOperationResult.Failure -> PurchaseResult.Error(
-                result.error,
-                null,
-            )
-        },
-    )
+}
+
+private fun PaywallResult.toPurchaseResult(): PurchaseResult {
+    return when (this) {
+        is PaywallResult.Purchased -> PurchaseResult.Success(customerInfo = customerInfo)
+        is PaywallResult.Restored -> PurchaseResult.Success(customerInfo = customerInfo)
+        is PaywallResult.Cancelled -> PurchaseResult.Cancelled
+        is PaywallResult.Error -> PurchaseResult.Error(error.message, error.code)
+    }
 }
 
 private fun Context.findActivity(): Activity {
@@ -445,7 +556,11 @@ private data class OfferingCardData(
 private data class OfferingCardCallbacks(
     val onShowMetadata: () -> Unit,
     val onPresentPaywall: () -> Unit,
+    val onPresentPaywallView: () -> Unit,
     val onPurchasePackage: (Package) -> Unit,
+    val onPurchaseProduct: (Package) -> Unit,
+    val onLaunchPaywallActivity: () -> Unit,
+    val onShowEntitlementPicker: () -> Unit,
 )
 
 @Composable
@@ -474,10 +589,16 @@ private fun OfferingCard(
                 packages = data.offering.availablePackages,
                 purchasingPackageId = data.purchasingPackageId,
                 onPurchasePackage = callbacks.onPurchasePackage,
+                onPurchaseProduct = callbacks.onPurchaseProduct,
             )
 
             if (data.offering.hasPaywall) {
-                PresentPaywallButton(onClick = callbacks.onPresentPaywall)
+                PresentPaywallButton(
+                    onPresentPaywallDialog = callbacks.onPresentPaywall,
+                    onPresentPaywallView = callbacks.onPresentPaywallView,
+                    onLaunchPaywallActivity = callbacks.onLaunchPaywallActivity,
+                    onShowEntitlementPicker = callbacks.onShowEntitlementPicker,
+                )
             }
         }
     }
@@ -528,6 +649,7 @@ private fun OfferingCardPackages(
     packages: List<Package>,
     purchasingPackageId: String?,
     onPurchasePackage: (Package) -> Unit,
+    onPurchaseProduct: (Package) -> Unit,
 ) {
     if (packages.isNotEmpty()) {
         Text(
@@ -539,7 +661,8 @@ private fun OfferingCardPackages(
             PackageRow(
                 packageItem = packageItem,
                 isPurchasing = purchasingPackageId == packageItem.identifier,
-                onPurchase = { onPurchasePackage(packageItem) },
+                onPurchasePackage = { onPurchasePackage(packageItem) },
+                onPurchaseProduct = { onPurchaseProduct(packageItem) },
             )
         }
     } else {
@@ -555,7 +678,8 @@ private fun OfferingCardPackages(
 private fun PackageRow(
     packageItem: Package,
     isPurchasing: Boolean,
-    onPurchase: () -> Unit,
+    onPurchasePackage: () -> Unit,
+    onPurchaseProduct: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -575,8 +699,26 @@ private fun PackageRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        PurchaseButton(
+            priceFormatted = packageItem.product.price.formatted,
+            isPurchasing = isPurchasing,
+            onPurchasePackage = onPurchasePackage,
+            onPurchaseProduct = onPurchaseProduct,
+        )
+    }
+}
+
+@Composable
+private fun PurchaseButton(
+    priceFormatted: String,
+    isPurchasing: Boolean,
+    onPurchasePackage: () -> Unit,
+    onPurchaseProduct: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
         Button(
-            onClick = onPurchase,
+            onClick = { showMenu = true },
             enabled = !isPurchasing,
         ) {
             if (isPurchasing) {
@@ -588,20 +730,147 @@ private fun PackageRow(
                     strokeWidth = 2.5.dp,
                 )
             } else {
-                Text(packageItem.product.price.formatted)
+                Text(priceFormatted)
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
             }
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Purchase Package") },
+                onClick = {
+                    showMenu = false
+                    onPurchasePackage()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Purchase Product") },
+                onClick = {
+                    showMenu = false
+                    onPurchaseProduct()
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun PresentPaywallButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text("Present Paywall")
+private fun PresentPaywallButton(
+    onPresentPaywallDialog: () -> Unit,
+    onPresentPaywallView: () -> Unit,
+    onLaunchPaywallActivity: () -> Unit,
+    onShowEntitlementPicker: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
+        Button(
+            onClick = { showMenu = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Present Paywall")
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Paywall Dialog") },
+                onClick = {
+                    showMenu = false
+                    onPresentPaywallDialog()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("PaywallView") },
+                onClick = {
+                    showMenu = false
+                    onPresentPaywallView()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Paywall Activity") },
+                onClick = {
+                    showMenu = false
+                    onLaunchPaywallActivity()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Paywall Activity If Needed") },
+                onClick = {
+                    showMenu = false
+                    onShowEntitlementPicker()
+                },
+            )
+        }
     }
+}
+
+@Composable
+private fun PaywallViewDialog(
+    offering: Offering,
+    purchaseLogic: PurchaseLogic?,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Paywall(
+            options = PaywallOptions.Builder(dismissRequest = onDismiss)
+                .setOffering(offering)
+                .setShouldDisplayDismissButton(true)
+                .setPurchaseLogic(purchaseLogic)
+                .build(),
+        )
+    }
+}
+
+@Composable
+private fun EntitlementPickerDialog(
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val entitlements = listOf("RCTTester Premium")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Entitlement") },
+        text = {
+            Column {
+                Text(
+                    "The paywall will only be presented if the user doesn't already " +
+                        "have access to the selected entitlement.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                entitlements.forEach { entitlement ->
+                    TextButton(
+                        onClick = { onSelect(entitlement) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(entitlement)
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Composable

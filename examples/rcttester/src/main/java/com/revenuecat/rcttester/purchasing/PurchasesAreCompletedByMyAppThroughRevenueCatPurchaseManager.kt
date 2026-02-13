@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 
@@ -57,8 +58,18 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
     }
 
     override suspend fun purchase(activity: Activity, rcPackage: Package): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, rcPackage).build())
+    }
+
+    override suspend fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+    ): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, storeProduct).build())
+    }
+
+    private suspend fun executePurchase(purchaseParams: PurchaseParams): PurchaseOperationResult {
         return try {
-            val purchaseParams = PurchaseParams.Builder(activity, rcPackage).build()
             val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
 
             // In MY_APP mode, the SDK does NOT acknowledge/consume purchases.
