@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -41,8 +42,21 @@ public class PaywallView : CompatComposeView {
     }
 
     /**
+     * Constructor when creating the view programmatically with a dismiss handler.
+     */
+    constructor(
+        context: Context,
+        offering: Offering?,
+        listener: PaywallListener?,
+        fontProvider: FontProvider?,
+        shouldDisplayDismissButton: Boolean?,
+        dismissHandler: (() -> Unit)?,
+    ) : this(context, offering, listener, fontProvider, shouldDisplayDismissButton, null, dismissHandler)
+
+    /**
      * Constructor when creating the view programmatically.
      */
+    @Suppress("LongParameterList")
     @JvmOverloads
     public constructor(
         context: Context,
@@ -50,10 +64,12 @@ public class PaywallView : CompatComposeView {
         listener: PaywallListener? = null,
         fontProvider: FontProvider? = null,
         shouldDisplayDismissButton: Boolean? = null,
+        purchaseLogic: PurchaseLogic? = null,
         dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
+        setPurchaseLogic(purchaseLogic)
         offering?.let {
             setOfferingId(
                 offeringId = it.identifier,
@@ -74,6 +90,7 @@ public class PaywallView : CompatComposeView {
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
+    private var purchaseLogic: PurchaseLogic? = null
     private var shouldDisplayDismissButton: Boolean? = null
     private var internalListener: PaywallListener = object : PaywallListener {
         override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
@@ -115,6 +132,16 @@ public class PaywallView : CompatComposeView {
      */
     public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
+    }
+
+    /**
+     * Sets the [PurchaseLogic] to handle purchases and restores within the Paywall.
+     * This is required when `Purchases` has been configured with
+     * `purchasesAreCompletedBy` as `PurchasesAreCompletedBy.MY_APP`.
+     */
+    fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
+        this.purchaseLogic = purchaseLogic
+        paywallOptions = paywallOptions.copy(purchaseLogic = purchaseLogic)
     }
 
     /**
@@ -172,6 +199,7 @@ public class PaywallView : CompatComposeView {
             .setFontProvider(initialFontProvider)
             .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
+            .setPurchaseLogic(purchaseLogic)
             .build()
     }
 
