@@ -51,7 +51,6 @@ fun RCTTesterApp(application: MainApplication) {
             SDKConfiguration.load(application) ?: SDKConfiguration.default(),
         )
     }
-
     // Navigate to main screen when SDK becomes configured (observes isSDKConfiguredState)
     LaunchedEffect(isSDKConfigured) {
         if (isSDKConfigured && currentScreen == Screen.Configuration) {
@@ -86,6 +85,7 @@ fun RCTTesterApp(application: MainApplication) {
         }
         is Screen.Offerings -> {
             OfferingsScreen(
+                purchaseManager = application.purchaseManager,
                 onNavigateBack = {
                     currentScreen = Screen.Main
                 },

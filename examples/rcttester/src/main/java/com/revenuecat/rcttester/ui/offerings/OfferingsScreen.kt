@@ -50,20 +50,21 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitOfferings
-import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.rcttester.purchasing.PurchaseManager
+import com.revenuecat.rcttester.purchasing.PurchaseOperationResult
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfferingsScreen(
+    purchaseManager: PurchaseManager?,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -92,7 +93,7 @@ fun OfferingsScreen(
     val onPurchasePackage: (Package) -> Unit = { packageItem ->
         purchasingPackageId = packageItem.identifier
         coroutineScope.launch {
-            handlePurchase(activity, packageItem) { result ->
+            handlePurchase(activity, packageItem, purchaseManager) { result ->
                 purchaseResult = result
             }
             purchasingPackageId = null
@@ -119,6 +120,7 @@ fun OfferingsScreen(
             onDismissPurchaseResult = { purchaseResult = null },
             onPurchasePackage = onPurchasePackage,
         ),
+        purchaseLogic = purchaseManager?.purchaseLogic,
         modifier = modifier,
     )
 }
@@ -150,6 +152,7 @@ private fun OfferingsScreenContent(
     state: OfferingsScreenState,
     callbacks: OfferingsScreenCallbacks,
     modifier: Modifier = Modifier,
+    purchaseLogic: PurchaseLogic? = null,
 ) {
     Scaffold(
         topBar = {
@@ -205,6 +208,7 @@ private fun OfferingsScreenContent(
             PaywallDialogOptions.Builder()
                 .setDismissRequest(callbacks.onDismissPaywall)
                 .setOffering(offering)
+                .setCustomPurchaseLogic(purchaseLogic)
                 .build(),
         )
     }
@@ -386,39 +390,30 @@ private fun sortOfferings(
 private suspend fun handlePurchase(
     activity: Activity,
     packageItem: Package,
+    purchaseManager: PurchaseManager?,
     onResult: (PurchaseResult) -> Unit,
 ) {
-    try {
-        val purchaseParams = PurchaseParams.Builder(
-            activity,
-            packageItem,
-        ).build()
-        val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
-        onResult(
-            PurchaseResult.Success(
-                orderId = result.storeTransaction.orderId ?: "Unknown",
-                customerInfo = result.customerInfo,
-            ),
-        )
-    } catch (e: PurchasesTransactionException) {
-        onResult(
-            if (e.userCancelled) {
-                PurchaseResult.Cancelled
-            } else {
-                PurchaseResult.Error(
-                    e.message ?: "Unknown error",
-                    e.code,
-                )
-            },
-        )
-    } catch (e: IllegalStateException) {
-        onResult(
-            PurchaseResult.Error(
-                e.message ?: "Unknown error",
-                null,
-            ),
-        )
+    if (purchaseManager == null) {
+        onResult(PurchaseResult.Error("Purchase manager not initialized", null))
+        return
     }
+    val result = purchaseManager.purchase(activity, packageItem)
+    onResult(
+        when (result) {
+            is PurchaseOperationResult.Success -> PurchaseResult.Success(
+                customerInfo = result.customerInfo,
+            )
+            is PurchaseOperationResult.UserCancelled -> PurchaseResult.Cancelled
+            is PurchaseOperationResult.Pending -> PurchaseResult.Error(
+                "The purchase is pending approval (e.g., Ask to Buy). It may complete later.",
+                null,
+            )
+            is PurchaseOperationResult.Failure -> PurchaseResult.Error(
+                result.error,
+                null,
+            )
+        },
+    )
 }
 
 private fun Context.findActivity(): Activity {
@@ -431,8 +426,8 @@ private fun Context.findActivity(): Activity {
 }
 
 private sealed class PurchaseResult {
-    data class Success(val orderId: String, val customerInfo: CustomerInfo) : PurchaseResult()
-    object Cancelled : PurchaseResult()
+    data class Success(val customerInfo: CustomerInfo) : PurchaseResult()
+    data object Cancelled : PurchaseResult()
     data class Error(val message: String, val code: PurchasesErrorCode?) : PurchaseResult()
 }
 
@@ -745,7 +740,7 @@ private fun PurchaseResultDialog(
                         } else {
                             activeEntitlements
                         }
-                        "Order ID: ${result.orderId}\n\nActive Entitlements: $entitlementsText"
+                        "Active Entitlements: $entitlementsText"
                     }
                     is PurchaseResult.Cancelled -> "The purchase was cancelled."
                     is PurchaseResult.Error -> result.message
