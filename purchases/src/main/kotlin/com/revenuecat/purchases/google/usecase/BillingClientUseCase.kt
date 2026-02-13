@@ -26,13 +26,13 @@ internal val RETRY_TIMER_MAX_TIME = 15.minutes
 internal val RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND = 4.seconds
 
 internal interface UseCaseParams {
-    public val appInBackground: Boolean
+    val appInBackground: Boolean
 }
 
 internal abstract class BillingClientUseCase<T>(
     private val useCaseParams: UseCaseParams,
     private val onError: PurchasesErrorCallback,
-    public val executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+    val executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) {
 
     abstract val errorMessage: String
@@ -43,7 +43,7 @@ internal abstract class BillingClientUseCase<T>(
     private var retryAttempt: Int = 0
     private var retryBackoff = RETRY_TIMER_START
 
-    public fun run(
+    fun run(
         delayMilliseconds: Long = 0,
     ) {
         executeRequestOnUIThread(delayMilliseconds) { connectionError ->
@@ -58,7 +58,7 @@ internal abstract class BillingClientUseCase<T>(
     abstract fun executeAsync()
     abstract fun onOk(received: T)
 
-    public fun processResult(
+    fun processResult(
         billingResult: BillingResult,
         response: T,
         onSuccess: (T) -> Unit = ::onOk,

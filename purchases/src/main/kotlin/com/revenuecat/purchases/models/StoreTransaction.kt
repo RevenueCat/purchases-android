@@ -227,19 +227,19 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
  * and to avoid complicating parcelization
  */
 private data class ComparableData(
-    public val orderId: String?,
-    public val productIds: List<String>,
-    public val type: ProductType,
-    public val purchaseTime: Long,
-    public val purchaseToken: String,
-    public val purchaseState: PurchaseState,
-    public val isAutoRenewing: Boolean?,
-    public val signature: String?,
-    public val presentedOfferingContext: PresentedOfferingContext?,
-    public val storeUserID: String?,
-    public val purchaseType: PurchaseType,
-    public val marketplace: String?,
-    public val subscriptionOptionId: String?,
+    val orderId: String?,
+    val productIds: List<String>,
+    val type: ProductType,
+    val purchaseTime: Long,
+    val purchaseToken: String,
+    val purchaseState: PurchaseState,
+    val isAutoRenewing: Boolean?,
+    val signature: String?,
+    val presentedOfferingContext: PresentedOfferingContext?,
+    val storeUserID: String?,
+    val purchaseType: PurchaseType,
+    val marketplace: String?,
+    val subscriptionOptionId: String?,
 ) {
     constructor(
         storeTransaction: StoreTransaction,

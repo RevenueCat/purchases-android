@@ -10,18 +10,18 @@ import kotlinx.serialization.json.Json
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal data class PaywallStoredEvent(
-    public val event: PaywallEvent,
-    public val userID: String,
+    val event: PaywallEvent,
+    val userID: String,
 ) : Event {
-    public companion object {
+    companion object {
         val json = Json.Default
-        public fun fromString(string: String): PaywallStoredEvent {
+        fun fromString(string: String): PaywallStoredEvent {
             return json.decodeFromString(string)
         }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    public fun toBackendEvent(): BackendEvent.Paywalls {
+    fun toBackendEvent(): BackendEvent.Paywalls {
         return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
             version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,

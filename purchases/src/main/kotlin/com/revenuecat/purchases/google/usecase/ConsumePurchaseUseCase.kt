@@ -11,16 +11,16 @@ import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 internal class ConsumePurchaseUseCaseParams(
-    public val purchaseToken: String,
-    public val initiationSource: PostReceiptInitiationSource,
+    val purchaseToken: String,
+    val initiationSource: PostReceiptInitiationSource,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
 internal class ConsumePurchaseUseCase(
     private val useCaseParams: ConsumePurchaseUseCaseParams,
-    public val onReceive: (purchaseToken: String) -> Unit,
-    public val onError: PurchasesErrorCallback,
-    public val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
+    val onReceive: (purchaseToken: String) -> Unit,
+    val onError: PurchasesErrorCallback,
+    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) : BillingClientUseCase<String>(useCaseParams, onError, executeRequestOnUIThread) {
 

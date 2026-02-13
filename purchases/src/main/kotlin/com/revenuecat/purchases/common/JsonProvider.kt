@@ -6,7 +6,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
 internal sealed class JsonProvider {
-    public companion object {
+    companion object {
         val defaultJson = Json {
             serializersModule = SerializersModule {
                 polymorphic(BackendEvent::class) {

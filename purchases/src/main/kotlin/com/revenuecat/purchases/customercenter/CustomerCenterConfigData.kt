@@ -13,7 +13,7 @@ public typealias RCColor = PaywallColor
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
-    @SerialName("customer_center") public val customerCenter: CustomerCenterConfigData,
+    @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
 )
 
 @InternalRevenueCatAPI

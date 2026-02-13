@@ -16,8 +16,8 @@ import java.util.Observable
 
 @Suppress("TooManyFunctions")
 internal class SubscriberAttributesManager(
-    public val deviceCache: SubscriberAttributesCache,
-    public val backend: SubscriberAttributesPoster,
+    val deviceCache: SubscriberAttributesCache,
+    val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
     private val automaticDeviceIdentifierCollectionEnabled: Boolean,
 ) {
@@ -25,7 +25,7 @@ internal class SubscriberAttributesManager(
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
 
     @Synchronized
-    public fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
+    fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
         val attributesAsObjects = attributesToSet.map { (key, value) ->
             key to SubscriberAttribute(key, value)
         }.toMap()
@@ -48,7 +48,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    public fun setAttribute(
+    fun setAttribute(
         key: SubscriberAttributeKey,
         value: String?,
         appUserID: String,
@@ -56,7 +56,7 @@ internal class SubscriberAttributesManager(
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
-    public fun synchronizeSubscriberAttributesForAllUsers(
+    fun synchronizeSubscriberAttributesForAllUsers(
         currentAppUserID: AppUserID,
         completion: (() -> Unit)? = null,
     ) {
@@ -112,7 +112,7 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    public fun copyUnsyncedSubscriberAttributes(originalAppUserId: AppUserID, newAppUserID: AppUserID) {
+    fun copyUnsyncedSubscriberAttributes(originalAppUserId: AppUserID, newAppUserID: AppUserID) {
         val unsyncedAttributesPreviousUser = deviceCache.getUnsyncedSubscriberAttributes(originalAppUserId)
         if (unsyncedAttributesPreviousUser.isEmpty()) {
             return
@@ -123,14 +123,14 @@ internal class SubscriberAttributesManager(
     }
 
     @Synchronized
-    public fun getUnsyncedSubscriberAttributes(appUserID: String, completion: (SubscriberAttributeMap) -> Unit) {
+    fun getUnsyncedSubscriberAttributes(appUserID: String, completion: (SubscriberAttributeMap) -> Unit) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
             completion(deviceCache.getUnsyncedSubscriberAttributes(appUserID))
         }
     }
 
     @Synchronized
-    public fun markAsSynced(
+    fun markAsSynced(
         appUserID: String,
         attributesToMarkAsSynced: Map<String, SubscriberAttribute>,
         attributeErrors: List<SubscriberAttributeError>,
@@ -163,7 +163,7 @@ internal class SubscriberAttributesManager(
      * Convenience function to set attribution data from AppsFlyer's conversion data.
      */
     @Suppress("CyclomaticComplexMethod")
-    public fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
+    fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
         if (data == null) {
             return
         }
@@ -209,7 +209,7 @@ internal class SubscriberAttributesManager(
     /**
      * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
-    public fun collectDeviceIdentifiers(
+    fun collectDeviceIdentifiers(
         appUserID: String,
         applicationContext: Application,
     ) {
@@ -222,7 +222,7 @@ internal class SubscriberAttributesManager(
      * Set the specific ID for the specified attribution network. It also collects GPS ID, ANDROID ID and sets
      * IP to true automatically.
      */
-    public fun setAttributionID(
+    fun setAttributionID(
         attributionKey: SubscriberAttributeKey.AttributionIds,
         value: String?,
         appUserID: String,
@@ -285,7 +285,7 @@ internal class SubscriberAttributesManager(
         }
 
         @Synchronized
-        public fun waitUntilIdle(completion: () -> Unit) {
+        fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) {
                 completion()
             } else {

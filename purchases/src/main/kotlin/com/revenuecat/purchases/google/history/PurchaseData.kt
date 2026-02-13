@@ -8,21 +8,21 @@ import org.json.JSONObject
  * This is used to parse the JSON strings returned by the AIDL getPurchaseHistory call.
  */
 internal data class PurchaseData(
-    public val orderId: String,
-    public val packageName: String,
-    public val productId: String,
-    public val purchaseTime: Long,
-    public val purchaseState: Int,
-    public val purchaseToken: String,
-    public val quantity: Int,
-    public val acknowledged: Boolean,
-    public val autoRenewing: Boolean,
+    val orderId: String,
+    val packageName: String,
+    val productId: String,
+    val purchaseTime: Long,
+    val purchaseState: Int,
+    val purchaseToken: String,
+    val quantity: Int,
+    val acknowledged: Boolean,
+    val autoRenewing: Boolean,
 ) {
-    public companion object {
+    companion object {
         /**
          * Parse a purchase data JSON string into a PurchaseData object.
          */
-        public fun fromJson(json: String): PurchaseData? {
+        fun fromJson(json: String): PurchaseData? {
             return try {
                 val jsonObject = JSONObject(json)
                 PurchaseData(

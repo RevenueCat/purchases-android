@@ -181,12 +181,12 @@ internal class DefaultFileRepository(
         /**
          * Used when fetching the data fails.
          */
-        public class FailedToFetchFileFromRemoteSource(message: String) : Error(message)
+        class FailedToFetchFileFromRemoteSource(message: String) : Error(message)
 
         /**
          * Used when checksum validation fails.
          */
-        public class ChecksumValidationFailed(message: String) : Error(message)
+        class ChecksumValidationFailed(message: String) : Error(message)
     }
 }
 
@@ -303,7 +303,7 @@ internal class DefaultFileCache(
         return checksum == computedChecksum
     }
 
-    public companion object {
+    companion object {
         private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }

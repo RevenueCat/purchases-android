@@ -13,7 +13,7 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 internal class SigningManager(
-    public val signatureVerificationMode: SignatureVerificationMode,
+    val signatureVerificationMode: SignatureVerificationMode,
     private val appConfig: AppConfig,
     private val apiKey: String,
 ) {
@@ -63,7 +63,7 @@ internal class SigningManager(
             return result
         }
 
-        public fun toSignatureToVerify(): ByteArray {
+        fun toSignatureToVerify(): ByteArray {
             return salt +
                 apiKey.toByteArray() +
                 (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
@@ -75,17 +75,17 @@ internal class SigningManager(
         }
     }
 
-    public fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
+    fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
         return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
-    public fun createRandomNonce(): String {
+    fun createRandomNonce(): String {
         val bytes = ByteArray(NONCE_BYTES_SIZE)
         SecureRandom().nextBytes(bytes)
         return String(Base64.encode(bytes, Base64.DEFAULT)).trim()
     }
 
-    public fun getPostParamsForSigningHeaderIfNeeded(
+    fun getPostParamsForSigningHeaderIfNeeded(
         endpoint: Endpoint,
         postFieldsToSign: List<Pair<String, String>>?,
     ): String? {
@@ -112,7 +112,7 @@ internal class SigningManager(
     }
 
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
-    public fun verifyResponse(
+    fun verifyResponse(
         urlPath: String,
         signatureString: String?,
         nonce: String?,

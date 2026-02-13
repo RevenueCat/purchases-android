@@ -110,10 +110,10 @@ public class Offerings internal constructor(
  * Contains fields to be used for equality, which ignores originalSource and loadedFromDiskCache.
  */
 private data class OfferingsComparableData(
-    public val current: Offering?,
-    public val all: Map<String, Offering>,
-    public val placements: Offerings.Placements?,
-    public val targeting: Offerings.Targeting?,
+    val current: Offering?,
+    val all: Map<String, Offering>,
+    val placements: Offerings.Placements?,
+    val targeting: Offerings.Targeting?,
 ) {
     constructor(
         offerings: Offerings,

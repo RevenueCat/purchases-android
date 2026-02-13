@@ -32,7 +32,7 @@ internal class PostPendingTransactionsHelper(
 ) {
 
     @Suppress("LongMethod")
-    public fun syncPendingPurchaseQueue(
+    fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
         callback: ((SyncPendingPurchaseResult) -> Unit)? = null,
     ) {

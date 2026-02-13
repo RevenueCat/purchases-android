@@ -29,10 +29,10 @@ internal enum class CustomerInfoOriginalSource {
     OFFLINE_ENTITLEMENTS,
     ;
 
-    public companion object {
+    companion object {
         val DEFAULT = MAIN
 
-        public fun fromString(originalSourceString: String?): CustomerInfoOriginalSource {
+        fun fromString(originalSourceString: String?): CustomerInfoOriginalSource {
             return if (originalSourceString != null) {
                 try {
                     CustomerInfoOriginalSource.valueOf(originalSourceString)
@@ -286,13 +286,13 @@ public class CustomerInfo internal constructor(
  * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
 private data class ComparableData(
-    public val entitlements: EntitlementInfos,
-    public val allExpirationDatesByProduct: Map<String, Date?>,
-    public val allPurchaseDatesByProduct: Map<String, Date?>,
-    public val schemaVersion: Int,
-    public val firstSeen: Date,
-    public val originalAppUserId: String,
-    public val originalPurchaseDate: Date?,
+    val entitlements: EntitlementInfos,
+    val allExpirationDatesByProduct: Map<String, Date?>,
+    val allPurchaseDatesByProduct: Map<String, Date?>,
+    val schemaVersion: Int,
+    val firstSeen: Date,
+    val originalAppUserId: String,
+    val originalPurchaseDate: Date?,
 ) {
     constructor(
         customerInfo: CustomerInfo,

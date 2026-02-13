@@ -12,7 +12,7 @@ internal class SubscriberAttributesPoster(
     private val backendHelper: BackendHelper,
 ) {
 
-    public fun postSubscriberAttributes(
+    fun postSubscriberAttributes(
         attributes: Map<String, Map<String, Any?>>,
         appUserID: String,
         onSuccessHandler: () -> Unit,

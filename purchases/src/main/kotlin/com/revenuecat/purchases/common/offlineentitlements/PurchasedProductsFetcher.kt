@@ -18,7 +18,7 @@ internal class PurchasedProductsFetcher(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
-    public fun queryActiveProducts(
+    fun queryActiveProducts(
         appUserID: String,
         onSuccess: (List<PurchasedProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,

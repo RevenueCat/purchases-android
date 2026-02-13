@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 
 internal fun interface IsDebugBuildProvider {
-    public operator fun invoke(): Boolean
+    operator fun invoke(): Boolean
 }
 
 internal class DefaultIsDebugBuildProvider(context: Context) : IsDebugBuildProvider {

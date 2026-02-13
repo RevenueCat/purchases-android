@@ -15,7 +15,7 @@ internal class BackendHelper(
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     @Suppress("LongParameterList")
-    public fun performRequest(
+    fun performRequest(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -54,7 +54,7 @@ internal class BackendHelper(
         )
     }
 
-    public fun enqueue(
+    fun enqueue(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
         delay: Delay = Delay.NONE,

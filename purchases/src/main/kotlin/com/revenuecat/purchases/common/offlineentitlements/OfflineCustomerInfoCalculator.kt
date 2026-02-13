@@ -39,7 +39,7 @@ internal class OfflineCustomerInfoCalculator(
      * 2) Want to avoid security concerns of returning successes on purchases of inapp items.
      * of returning successes
      */
-    public fun computeOfflineCustomerInfo(
+    fun computeOfflineCustomerInfo(
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,

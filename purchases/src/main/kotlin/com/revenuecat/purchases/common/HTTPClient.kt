@@ -50,7 +50,7 @@ import kotlin.time.Duration
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal interface RequestResponseListener {
     @Suppress("LongParameterList")
-    public fun onRequestResponse(
+    fun onRequestResponse(
         url: String,
         method: String,
         requestHeaders: Map<String, String>,
@@ -66,7 +66,7 @@ internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    public val signingManager: SigningManager,
+    val signingManager: SigningManager,
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
@@ -138,7 +138,7 @@ internal class HTTPClient(
      */
     @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "InstanceOfCheckForException")
     @Throws(JSONException::class, IOException::class)
-    public fun performRequest(
+    fun performRequest(
         baseURL: URL,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
@@ -449,7 +449,7 @@ internal class HTTPClient(
         }
     }
 
-    public fun clearCaches() {
+    fun clearCaches() {
         eTagManager.clearCaches()
     }
 

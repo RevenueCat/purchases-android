@@ -18,52 +18,52 @@ import java.util.Locale
 @SuppressWarnings("LongParameterList")
 internal data class SubscriptionInfoResponse(
     @SerialName("purchase_date") @Serializable(with = ISO8601DateSerializer::class)
-    public val purchaseDate: Date,
+    val purchaseDate: Date,
     @SerialName("original_purchase_date") @Serializable(with = ISO8601DateSerializer::class)
-    public val originalPurchaseDate: Date? = null,
+    val originalPurchaseDate: Date? = null,
     @SerialName("expires_date") @Serializable(with = ISO8601DateSerializer::class)
-    public val expiresDate: Date? = null,
+    val expiresDate: Date? = null,
     @SerialName("store")
-    public val store: Store,
+    val store: Store,
     @SerialName("is_sandbox")
-    public val isSandbox: Boolean,
+    val isSandbox: Boolean,
     @SerialName("unsubscribe_detected_at") @Serializable(with = ISO8601DateSerializer::class)
-    public val unsubscribeDetectedAt: Date? = null,
+    val unsubscribeDetectedAt: Date? = null,
     @SerialName("billing_issues_detected_at") @Serializable(with = ISO8601DateSerializer::class)
-    public val billingIssuesDetectedAt: Date? = null,
+    val billingIssuesDetectedAt: Date? = null,
     @SerialName("grace_period_expires_date") @Serializable(with = ISO8601DateSerializer::class)
-    public val gracePeriodExpiresDate: Date? = null,
+    val gracePeriodExpiresDate: Date? = null,
     @SerialName("ownership_type")
-    public val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+    val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
     @SerialName("period_type")
-    public val periodType: PeriodType,
+    val periodType: PeriodType,
     @SerialName("refunded_at") @Serializable(with = ISO8601DateSerializer::class)
-    public val refundedAt: Date? = null,
+    val refundedAt: Date? = null,
     @SerialName("store_transaction_id")
-    public val storeTransactionId: String? = null,
+    val storeTransactionId: String? = null,
     @SerialName("auto_resume_date") @Serializable(with = ISO8601DateSerializer::class)
-    public val autoResumeDate: Date? = null,
+    val autoResumeDate: Date? = null,
     @SerialName("display_name")
-    public val displayName: String? = null,
+    val displayName: String? = null,
     @SerialName("price")
-    public val price: PriceResponse? = null,
+    val price: PriceResponse? = null,
     @SerialName("product_plan_identifier")
-    public val productPlanIdentifier: String? = null,
+    val productPlanIdentifier: String? = null,
     @SerialName("management_url")
-    public val managementURL: String? = null,
+    val managementURL: String? = null,
 ) {
 
     @Serializable
     internal data class PriceResponse(
         @SerialName("amount")
-        public val amount: Double,
+        val amount: Double,
         @SerialName("currency")
-        public val currencyCode: String,
+        val currencyCode: String,
     ) {
 
         @OptIn(InternalRevenueCatAPI::class)
         @JvmSynthetic
-        public fun toPrice(locale: Locale): Price {
+        fun toPrice(locale: Locale): Price {
             val numberFormat = NumberFormat.getCurrencyInstance(locale)
             numberFormat.currency = Currency.getInstance(currencyCode)
 

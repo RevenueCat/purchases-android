@@ -26,7 +26,7 @@ internal class APIKeyValidator {
         OTHER_PLATFORM,
     }
 
-    public enum class ValidationResult {
+    enum class ValidationResult {
         VALID,
         GOOGLE_KEY_AMAZON_STORE,
         AMAZON_KEY_GOOGLE_STORE,
@@ -35,7 +35,7 @@ internal class APIKeyValidator {
         OTHER_PLATFORM,
     }
 
-    public fun validateAndLog(apiKey: String, configuredStore: Store): ValidationResult {
+    fun validateAndLog(apiKey: String, configuredStore: Store): ValidationResult {
         val validationResult = validate(apiKey, configuredStore)
         logValidationResult(validationResult)
         return validationResult
@@ -80,7 +80,7 @@ internal class APIKeyValidator {
         }
     }
 
-    public fun redactApiKey(apiKey: String): String {
+    fun redactApiKey(apiKey: String): String {
         val underscoreIndex = apiKey.indexOf('_')
         val prefix: String
         val remainder: String

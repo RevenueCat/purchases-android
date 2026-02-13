@@ -4,9 +4,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import java.util.Date
 
 internal data class PurchasedProduct(
-    public val productIdentifier: String,
-    public val basePlanId: String?,
-    public val storeTransaction: StoreTransaction,
-    public val entitlements: List<String>,
-    public val expiresDate: Date?,
+    val productIdentifier: String,
+    val basePlanId: String?,
+    val storeTransaction: StoreTransaction,
+    val entitlements: List<String>,
+    val expiresDate: Date?,
 )

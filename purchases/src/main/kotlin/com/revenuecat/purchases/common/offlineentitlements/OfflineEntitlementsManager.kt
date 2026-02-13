@@ -21,7 +21,7 @@ internal class OfflineEntitlementsManager(
     private val diagnosticsTracker: DiagnosticsTracker?,
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
-    public val offlineCustomerInfo: CustomerInfo?
+    val offlineCustomerInfo: CustomerInfo?
         get() = _offlineCustomerInfo
 
     @get:Synchronized @set:Synchronized
@@ -30,26 +30,26 @@ internal class OfflineEntitlementsManager(
     private val offlineCustomerInfoCallbackCache = mutableMapOf<String, List<OfflineCustomerInfoCallback>>()
 
     @Synchronized
-    public fun resetOfflineCustomerInfoCache() {
+    fun resetOfflineCustomerInfoCache() {
         if (_offlineCustomerInfo != null) {
             debugLog { OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE }
             _offlineCustomerInfo = null
         }
     }
 
-    public fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+    fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String,
     ) = isServerError &&
         isOfflineEntitlementsEnabled() &&
         deviceCache.getCachedCustomerInfo(appUserId) == null
 
-    public fun shouldCalculateOfflineCustomerInfoInPostReceipt(
+    fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
     @Suppress("FunctionOnlyReturningConstant")
-    public fun calculateAndCacheOfflineCustomerInfo(
+    fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -97,7 +97,7 @@ internal class OfflineEntitlementsManager(
         )
     }
 
-    public fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
+    fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
             backend.getProductEntitlementMapping(

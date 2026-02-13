@@ -6,7 +6,7 @@ import java.util.Date
 
 internal object EntitlementInfoHelper {
 
-    public fun getWillRenew(
+    fun getWillRenew(
         store: Store,
         expirationDate: Date?,
         unsubscribeDetectedAt: Date?,

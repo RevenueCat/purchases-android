@@ -114,7 +114,7 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
-    public companion object {
+    companion object {
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
         private const val NEW_APP_USER_ID = "new_app_user_id"
@@ -131,55 +131,55 @@ internal class Backend(
         }
     }
 
-    public val verificationMode: SignatureVerificationMode
+    val verificationMode: SignatureVerificationMode
         get() = httpClient.signingManager.signatureVerificationMode
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var callbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<CustomerInfoCallback>>()
+    @Volatile var callbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<CustomerInfoCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
+    @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var offeringsCallbacks =
+    @Volatile var offeringsCallbacks =
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
+    @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
+    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
+    @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var paywallEventsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PaywallEventsCallback>>()
+    @Volatile var paywallEventsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PaywallEventsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
+    @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
+    @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
+    @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+    @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var virtualCurrenciesCallbacks =
+    @Volatile var virtualCurrenciesCallbacks =
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile public var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+    @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
-    public fun close() {
+    fun close() {
         this.dispatcher.close()
     }
 
-    public fun getCustomerInfo(
+    fun getCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
@@ -247,7 +247,7 @@ internal class Backend(
     }
 
     @SuppressWarnings("LongParameterList", "ForbiddenComment")
-    public fun postReceiptData(
+    fun postReceiptData(
         purchaseToken: String,
         appUserID: String,
         isRestore: Boolean,
@@ -366,7 +366,7 @@ internal class Backend(
         }
     }
 
-    public fun getOfferings(
+    fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
@@ -426,7 +426,7 @@ internal class Backend(
         }
     }
 
-    public fun logIn(
+    fun logIn(
         appUserID: String,
         newAppUserID: String,
         onSuccessHandler: (CustomerInfo, Boolean) -> Unit,
@@ -490,7 +490,7 @@ internal class Backend(
         }
     }
 
-    public fun aliasUsers(
+    fun aliasUsers(
         oldAppUserID: String,
         newAppUserID: String,
         onSuccessHandler: () -> Unit,
@@ -541,7 +541,7 @@ internal class Backend(
         }
     }
 
-    public fun postDiagnostics(
+    fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
         onErrorHandler: (PurchasesError, Boolean) -> Unit,
@@ -595,7 +595,7 @@ internal class Backend(
         }
     }
 
-    public fun postEvents(
+    fun postEvents(
         paywallEventRequest: EventsRequest,
         baseURL: URL,
         delay: Delay,
@@ -656,7 +656,7 @@ internal class Backend(
         }
     }
 
-    public fun getProductEntitlementMapping(
+    fun getProductEntitlementMapping(
         onSuccessHandler: (ProductEntitlementMapping) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
     ) {
@@ -709,7 +709,7 @@ internal class Backend(
         }
     }
 
-    public fun getCustomerCenterConfig(
+    fun getCustomerCenterConfig(
         appUserID: String,
         onSuccessHandler: (CustomerCenterConfigData) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
@@ -768,7 +768,7 @@ internal class Backend(
         }
     }
 
-    public fun postCreateSupportTicket(
+    fun postCreateSupportTicket(
         appUserID: String,
         email: String,
         description: String,
@@ -833,7 +833,7 @@ internal class Backend(
     }
 
     @Suppress("NestedBlockDepth")
-    public fun postRedeemWebPurchase(
+    fun postRedeemWebPurchase(
         appUserID: String,
         redemptionToken: String,
         onResultHandler: (RedeemWebPurchaseListener.Result) -> Unit,
@@ -907,7 +907,7 @@ internal class Backend(
         }
     }
 
-    public fun getVirtualCurrencies(
+    fun getVirtualCurrencies(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (VirtualCurrencies) -> Unit,
@@ -973,7 +973,7 @@ internal class Backend(
         }
     }
 
-    public fun getWebBillingProducts(
+    fun getWebBillingProducts(
         appUserID: String,
         productIds: Set<String>,
         onSuccess: (WebBillingProductsResponse) -> Unit,
@@ -1033,7 +1033,7 @@ internal class Backend(
         }
     }
 
-    public fun clearCaches() {
+    fun clearCaches() {
         httpClient.clearCaches()
     }
 
@@ -1099,8 +1099,8 @@ internal class Backend(
 }
 
 internal data class BackgroundAwareCallbackCacheKey(
-    public val cacheKey: List<String>,
-    public val appInBackground: Boolean,
+    val cacheKey: List<String>,
+    val appInBackground: Boolean,
 )
 
 internal fun PricingPhase.toMap(): Map<String, Any?> {

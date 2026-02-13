@@ -18,21 +18,21 @@ internal class OfferingsCache(
     ),
     private val localeProvider: LocaleProvider,
 ) {
-    public companion object {
+    companion object {
         const val ORIGINAL_SOURCE_KEY = "rc_original_source"
     }
 
     private var cachedLanguageTags: String? = null
 
     @Synchronized
-    public fun clearCache() {
+    fun clearCache() {
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
         cachedLanguageTags = null
     }
 
     @Synchronized
-    public fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
+    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
         val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
             put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
         }
@@ -44,19 +44,19 @@ internal class OfferingsCache(
 
     // region Offerings cache
 
-    public val cachedOfferings: Offerings?
+    val cachedOfferings: Offerings?
         @Synchronized
         get() = offeringsCachedObject.cachedInstance
 
     @Synchronized
-    public fun isOfferingsCacheStale(appInBackground: Boolean): Boolean =
+    fun isOfferingsCacheStale(appInBackground: Boolean): Boolean =
         // Time-based staleness, or
         offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
             // Locale-based staleness
             cachedLanguageTags != localeProvider.currentLocalesLanguageTags
 
     @Synchronized
-    public fun forceCacheStale() {
+    fun forceCacheStale() {
         offeringsCachedObject.clearCacheTimestamp()
         cachedLanguageTags = null
     }
@@ -65,7 +65,7 @@ internal class OfferingsCache(
 
     // region Offerings response cache
 
-    public val cachedOfferingsResponse: JSONObject?
+    val cachedOfferingsResponse: JSONObject?
         @Synchronized
         get() = deviceCache.getOfferingsResponseCache()
 

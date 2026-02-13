@@ -5,13 +5,13 @@ import com.google.crypto.tink.subtle.Ed25519Verify
 import java.security.GeneralSecurityException
 
 internal interface SignatureVerifier {
-    public fun verify(signatureToVerify: ByteArray, messageToVerify: ByteArray): Boolean
+    fun verify(signatureToVerify: ByteArray, messageToVerify: ByteArray): Boolean
 }
 
 internal class DefaultSignatureVerifier(
     publicKeyBytes: ByteArray,
 ) : SignatureVerifier {
-    public companion object {
+    companion object {
         private const val DEFAULT_PUBLIC_KEY = "UC1upXWg5QVmyOSwozp755xLqquBKjjU+di6U8QhMlM="
     }
 

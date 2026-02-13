@@ -19,10 +19,10 @@ internal data class GetBillingConfigUseCaseParams(
 
 internal class GetBillingConfigUseCase(
     useCaseParams: GetBillingConfigUseCaseParams,
-    public val deviceCache: DeviceCache,
-    public val onReceive: (BillingConfig) -> Unit,
-    public val onError: PurchasesErrorCallback,
-    public val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
+    val deviceCache: DeviceCache,
+    val onReceive: (BillingConfig) -> Unit,
+    val onError: PurchasesErrorCallback,
+    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
 ) : BillingClientUseCase<BillingConfig?>(useCaseParams, onError, executeRequestOnUIThread) {
     override val errorMessage: String

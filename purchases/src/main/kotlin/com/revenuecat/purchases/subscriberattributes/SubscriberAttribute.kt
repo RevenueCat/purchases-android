@@ -18,11 +18,11 @@ internal const val BACKEND_NAME_VALUE = "value"
 internal const val BACKEND_NAME_TIMESTAMP = "updated_at_ms"
 
 internal data class SubscriberAttribute(
-    public val key: SubscriberAttributeKey,
-    public val value: String?,
-    public val dateProvider: DateProvider = DefaultDateProvider(),
-    public val setTime: Date = dateProvider.now,
-    public val isSynced: Boolean = false,
+    val key: SubscriberAttributeKey,
+    val value: String?,
+    val dateProvider: DateProvider = DefaultDateProvider(),
+    val setTime: Date = dateProvider.now,
+    val isSynced: Boolean = false,
 ) {
 
     constructor(
@@ -41,7 +41,7 @@ internal data class SubscriberAttribute(
         isSynced = jsonObject.getBoolean(JSON_NAME_IS_SYNCED),
     )
 
-    public fun toJSONObject() = JSONObject().apply {
+    fun toJSONObject() = JSONObject().apply {
         put(JSON_NAME_KEY, key.backendKey)
         value?.let { put(JSON_NAME_VALUE, value) } ?: put(
             JSON_NAME_VALUE,
@@ -51,7 +51,7 @@ internal data class SubscriberAttribute(
         put(JSON_NAME_IS_SYNCED, isSynced)
     }
 
-    public fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime.time)
+    fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime.time)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -36,7 +36,7 @@ internal class OfferingsManager(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
-    public fun getOfferings(
+    fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
@@ -103,14 +103,14 @@ internal class OfferingsManager(
         }
     }
 
-    public fun onAppForeground(appUserID: String) {
+    fun onAppForeground(appUserID: String) {
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)
         }
     }
 
-    public fun fetchAndCacheOfferings(
+    fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,

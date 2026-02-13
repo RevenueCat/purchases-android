@@ -13,20 +13,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    public val purchasesAreCompletedBy: PurchasesAreCompletedBy,
-    public val showInAppMessagesAutomatically: Boolean,
-    public val platformInfo: PlatformInfo,
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+    val showInAppMessagesAutomatically: Boolean,
+    val platformInfo: PlatformInfo,
     proxyURL: URL?,
-    public val store: Store,
-    public val isDebugBuild: Boolean,
-    public val apiKeyValidationResult: APIKeyValidator.ValidationResult,
-    public val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
+    val store: Store,
+    val isDebugBuild: Boolean,
+    val apiKeyValidationResult: APIKeyValidator.ValidationResult,
+    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
-    public val runningTests: Boolean = false,
+    val runningTests: Boolean = false,
     forceSigningErrors: Boolean = false,
     baseUrlString: String = Companion.baseUrlString,
 ) {
-    public companion object {
+    companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
         val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
         val adEventsURL = URL("https://a.revenue.cat/")
@@ -35,30 +35,30 @@ internal class AppConfig(
     }
 
     // Should only be used for tests
-    public var forceSigningErrors: Boolean = forceSigningErrors
+    var forceSigningErrors: Boolean = forceSigningErrors
         get() = runningTests && field
 
     private val _isAppBackgrounded: AtomicBoolean = AtomicBoolean(true)
-    public var isAppBackgrounded: Boolean
+    var isAppBackgrounded: Boolean
         get() = _isAppBackgrounded.get()
         set(value) {
             _isAppBackgrounded.set(value)
         }
 
     val enableOfflineEntitlements = true
-    public val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
-    public val versionName: String = context.versionName ?: ""
-    public val packageName: String = context.packageName
-    public var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
-    public val baseURL: URL = proxyURL?.also {
+    val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
+    val versionName: String = context.versionName ?: ""
+    val packageName: String = context.packageName
+    var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
+    val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO) { ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET }
     } ?: URL(baseUrlString)
-    public val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
+    val fallbackBaseURLs: List<URL> = if (proxyURL != null) {
         emptyList()
     } else {
         listOf(fallbackURL)
     }
-    public val customEntitlementComputation: Boolean
+    val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
 
     val playStoreVersionName = context.playStoreVersionName

@@ -23,11 +23,11 @@ internal abstract class BillingAbstract(
     @get:Synchronized
     @set:Synchronized
     @Volatile
-    public var stateListener: StateListener? = null
+    var stateListener: StateListener? = null
 
     @get:Synchronized
     @Volatile
-    public var purchasesUpdatedListener: PurchasesUpdatedListener? = null
+    var purchasesUpdatedListener: PurchasesUpdatedListener? = null
 
     interface StateListener {
         fun onConnected()
@@ -39,7 +39,7 @@ internal abstract class BillingAbstract(
 
     protected abstract fun endConnection()
 
-    public fun close() {
+    fun close() {
         purchasesUpdatedListener = null
         endConnection()
     }

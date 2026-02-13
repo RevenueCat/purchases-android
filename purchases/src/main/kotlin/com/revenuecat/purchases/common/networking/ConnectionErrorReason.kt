@@ -8,8 +8,8 @@ internal enum class ConnectionErrorReason {
     OTHER,
     ;
 
-    public companion object {
-        public fun fromIOException(ioException: IOException): ConnectionErrorReason {
+    companion object {
+        fun fromIOException(ioException: IOException): ConnectionErrorReason {
             return when (ioException) {
                 is java.net.SocketTimeoutException -> TIMEOUT
                 is java.net.ConnectException,

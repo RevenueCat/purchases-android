@@ -7,5 +7,5 @@ import com.revenuecat.purchases.models.StoreProduct
 internal data class SimulatedStorePurchasingData(
     override val productId: String,
     override val productType: ProductType,
-    public val storeProduct: StoreProduct,
+    val storeProduct: StoreProduct,
 ) : PurchasingData

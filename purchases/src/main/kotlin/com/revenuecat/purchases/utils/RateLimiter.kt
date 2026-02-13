@@ -8,7 +8,7 @@ internal class RateLimiter(val maxCallsInPeriod: Int, val periodSeconds: Duratio
     private var index = 0
 
     @Synchronized
-    public fun shouldProceed(): Boolean {
+    fun shouldProceed(): Boolean {
         val now = System.currentTimeMillis()
         val oldestCallIndex = (index + 1) % maxCallInclusive
         val oldestCall = callTimestamps[oldestCallIndex]

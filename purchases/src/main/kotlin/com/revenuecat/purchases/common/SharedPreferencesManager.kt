@@ -23,7 +23,7 @@ internal class SharedPreferencesManager(
     },
 ) {
 
-    public companion object {
+    companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
@@ -37,7 +37,7 @@ internal class SharedPreferencesManager(
     /**
      * Gets the appropriate shared preferences, performing migration if needed
      */
-    public fun getSharedPreferences(): SharedPreferences {
+    fun getSharedPreferences(): SharedPreferences {
         synchronized(this) { ensureMigrated() }
         return revenueCatSharedPreferences
     }

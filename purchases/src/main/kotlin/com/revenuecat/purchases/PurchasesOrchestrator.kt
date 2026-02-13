@@ -119,14 +119,14 @@ internal class PurchasesOrchestrator(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    public var appConfig: AppConfig,
+    var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    public val offlineEntitlementsManager: OfflineEntitlementsManager,
+    val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
@@ -151,12 +151,12 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
-    public val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
+    val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
-    public val fileRepository: FileRepository = DefaultFileRepository(application),
+    val fileRepository: FileRepository = DefaultFileRepository(application),
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    public val adTracker: AdTracker = AdTracker(adEventsManager),
+    val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -165,24 +165,24 @@ internal class PurchasesOrchestrator(
             purchasesStateCache.purchasesState = value
         }
 
-    public val currentConfiguration: PurchasesConfiguration
+    val currentConfiguration: PurchasesConfiguration
         get() = if (initialConfiguration.appUserID == null) {
             initialConfiguration
         } else {
             initialConfiguration.copy(appUserID = this.appUserID)
         }
 
-    public var finishTransactions: Boolean
+    var finishTransactions: Boolean
         @Synchronized get() = appConfig.finishTransactions
 
         @Synchronized set(value) {
             appConfig.finishTransactions = value
         }
 
-    public val appUserID: String
+    val appUserID: String
         @Synchronized get() = identityManager.currentAppUserID
 
-    public var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
+    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoUpdateHandler.updatedCustomerInfoListener
 
         @Synchronized set(value) {
@@ -191,23 +191,23 @@ internal class PurchasesOrchestrator(
 
     @get:Synchronized
     @set:Synchronized
-    public var customerCenterListener: CustomerCenterListener? = null
+    var customerCenterListener: CustomerCenterListener? = null
 
     @get:Synchronized
     @set:Synchronized
-    public var trackedEventListener: TrackedEventListener? = null
+    var trackedEventListener: TrackedEventListener? = null
 
-    public val isAnonymous: Boolean
+    val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
-    public val store: Store
+    val store: Store
         get() = appConfig.store
 
     private val lifecycleHandler: AppLifecycleHandler by lazy {
         AppLifecycleHandler(this)
     }
 
-    public var allowSharingPlayStoreAccount: Boolean
+    var allowSharingPlayStoreAccount: Boolean
         get() {
             val currentValue = synchronized(this) { state.allowSharingPlayStoreAccount }
             return currentValue ?: identityManager.currentUserIsAnonymous()
@@ -223,16 +223,16 @@ internal class PurchasesOrchestrator(
     @SuppressWarnings("MagicNumber")
     private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
 
-    public var storefrontCountryCode: String? = null
+    var storefrontCountryCode: String? = null
         private set
 
-    public val storefrontLocale: Locale?
+    val storefrontLocale: Locale?
         get() = storefrontCountryCode?.let { Locale.Builder().setRegion(it).build() }
 
     @Volatile
     private var _preferredUILocaleOverride: String? = initialConfiguration.preferredUILocaleOverride
 
-    public val preferredUILocaleOverride: String?
+    val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
     init {
@@ -333,7 +333,7 @@ internal class PurchasesOrchestrator(
         flushEvents(Delay.NONE)
     }
 
-    public fun redeemWebPurchase(
+    fun redeemWebPurchase(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
@@ -342,7 +342,7 @@ internal class PurchasesOrchestrator(
 
     // region Public Methods
 
-    public fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
             callback.onReceived(it)
         } ?: run {
@@ -360,7 +360,7 @@ internal class PurchasesOrchestrator(
     }
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    public fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+    fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
         getStorefrontCountryCode(
             object : GetStorefrontCallback {
                 override fun onReceived(storefrontCountryCode: String) {
@@ -376,7 +376,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun syncAttributesAndOfferingsIfNeeded(
+    fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
@@ -406,7 +406,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    public fun syncPurchases(
+    fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
         if (appConfig.apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE) {
@@ -430,7 +430,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun syncAmazonPurchase(
+    fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -490,7 +490,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
+    fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
         billing.getAmazonLWAConsentStatus(
             onSuccess = { callback.onSuccess(it) },
             onError = { callback.onError(it) },
@@ -508,7 +508,7 @@ internal class PurchasesOrchestrator(
      * importing RevenueCatUI in your project. The locale override will take effect the next time
      * a paywall or customer center is displayed.
      */
-    public fun overridePreferredUILocale(localeString: String?): Boolean {
+    fun overridePreferredUILocale(localeString: String?): Boolean {
         val previousLocale = _preferredUILocaleOverride
 
         if (previousLocale == localeString) {
@@ -531,7 +531,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    public fun getOfferings(
+    fun getOfferings(
         listener: ReceiveOfferingsCallback,
         fetchCurrent: Boolean = false,
     ) {
@@ -544,7 +544,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun getProducts(
+    fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
         callback: GetStoreProductsCallback,
@@ -597,7 +597,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun purchase(
+    fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
@@ -631,7 +631,7 @@ internal class PurchasesOrchestrator(
     }
 
     @Suppress("LongMethod")
-    public fun restorePurchases(
+    fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.RESTORING_PURCHASE }
@@ -717,7 +717,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    public fun logIn(
+    fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null,
     ) {
@@ -755,7 +755,7 @@ internal class PurchasesOrchestrator(
             )
     }
 
-    public fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
+    fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
         identityManager.logOut { error ->
             if (error != null) {
                 callback?.onError(error)
@@ -769,7 +769,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    public fun close() {
+    fun close() {
         synchronized(this@PurchasesOrchestrator) {
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
@@ -789,7 +789,7 @@ internal class PurchasesOrchestrator(
         getCustomerInfo(CacheFetchPolicy.default(), trackDiagnostics = false, callback)
     }
 
-    public fun getCustomerInfo(
+    fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
         trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
@@ -804,23 +804,23 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun removeUpdatedCustomerInfoListener() {
+    fun removeUpdatedCustomerInfoListener() {
         // Don't set on state directly since setter does more things
         this.updatedCustomerInfoListener = null
     }
 
-    public fun showInAppMessagesIfNeeded(activity: Activity, inAppMessageTypes: List<InAppMessageType>) {
+    fun showInAppMessagesIfNeeded(activity: Activity, inAppMessageTypes: List<InAppMessageType>) {
         billing.showInAppMessagesIfNeeded(activity, inAppMessageTypes) {
             syncPurchases()
         }
     }
 
-    public fun invalidateCustomerInfoCache() {
+    fun invalidateCustomerInfoCache() {
         log(LogIntent.DEBUG) { CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE }
         deviceCache.clearCustomerInfoCache(appUserID)
     }
 
-    public fun getProductsOfTypes(
+    fun getProductsOfTypes(
         productIds: Set<String>,
         types: Set<ProductType>,
         callback: GetStoreProductsCallback,
@@ -835,7 +835,7 @@ internal class PurchasesOrchestrator(
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    public fun track(event: FeatureEvent) {
+    fun track(event: FeatureEvent) {
         when (event) {
             is PaywallEvent ->
                 paywallPresentedCache.receiveEvent(event)
@@ -847,7 +847,7 @@ internal class PurchasesOrchestrator(
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    public fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
+    fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
         backend.getCustomerCenterConfig(
             identityManager.currentAppUserID,
             onSuccessHandler = { config ->
@@ -859,7 +859,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun createSupportTicket(
+    fun createSupportTicket(
         email: String,
         description: String,
         onSuccess: (Boolean) -> Unit,
@@ -877,17 +877,17 @@ internal class PurchasesOrchestrator(
     // region Subscriber Attributes
     // region Special Attributes
 
-    public fun setAttributes(attributes: Map<String, String?>) {
+    fun setAttributes(attributes: Map<String, String?>) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAttributes") }
         subscriberAttributesManager.setAttributes(attributes, appUserID)
     }
 
-    public fun setEmail(email: String?) {
+    fun setEmail(email: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setEmail") }
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.Email, email, appUserID)
     }
 
-    public fun setPhoneNumber(phoneNumber: String?) {
+    fun setPhoneNumber(phoneNumber: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPhoneNumber") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.PhoneNumber,
@@ -896,7 +896,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setDisplayName(displayName: String?) {
+    fun setDisplayName(displayName: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setDisplayName") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.DisplayName,
@@ -905,7 +905,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setPushToken(fcmToken: String?) {
+    fun setPushToken(fcmToken: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPushToken") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.FCMTokens,
@@ -917,7 +917,7 @@ internal class PurchasesOrchestrator(
     // endregion
     // region Integration IDs
 
-    public fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
+    fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMixpanelDistinctID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId,
@@ -926,7 +926,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setOnesignalID(onesignalID: String?) {
+    fun setOnesignalID(onesignalID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setOnesignalID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.OneSignal,
@@ -935,7 +935,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setOnesignalUserID(onesignalUserID: String?) {
+    fun setOnesignalUserID(onesignalUserID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setOnesignalUserID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.OneSignalUserId,
@@ -944,7 +944,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAirshipChannelID(airshipChannelID: String?) {
+    fun setAirshipChannelID(airshipChannelID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirshipChannelID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
@@ -953,7 +953,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
+    fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setFirebaseAppInstanceID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId,
@@ -962,7 +962,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
+    fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setTenjinAnalyticsInstallationID") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.TenjinAnalyticsInstallationId,
@@ -971,7 +971,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setPostHogUserId(postHogUserId: String?) {
+    fun setPostHogUserId(postHogUserId: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setPostHogUserId") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.PostHogUserId,
@@ -983,12 +983,12 @@ internal class PurchasesOrchestrator(
     // endregion
     // region Attribution IDs
 
-    public fun collectDeviceIdentifiers() {
+    fun collectDeviceIdentifiers() {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers") }
         subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
     }
 
-    public fun setAdjustID(adjustID: String?) {
+    fun setAdjustID(adjustID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAdjustID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Adjust,
@@ -998,7 +998,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAppsflyerID(appsflyerID: String?) {
+    fun setAppsflyerID(appsflyerID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsflyerID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.AppsFlyer,
@@ -1008,7 +1008,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setFBAnonymousID(fbAnonymousID: String?) {
+    fun setFBAnonymousID(fbAnonymousID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setFBAnonymousID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Facebook,
@@ -1018,7 +1018,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setMparticleID(mparticleID: String?) {
+    fun setMparticleID(mparticleID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMparticleID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Mparticle,
@@ -1028,7 +1028,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setCleverTapID(cleverTapID: String?) {
+    fun setCleverTapID(cleverTapID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCleverTapID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.CleverTap,
@@ -1038,7 +1038,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setKochavaDeviceID(kochavaDeviceID: String?) {
+    fun setKochavaDeviceID(kochavaDeviceID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setKochavaDeviceID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Kochava,
@@ -1048,7 +1048,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+    fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAirbridgeDeviceID") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Airbridge,
@@ -1058,7 +1058,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineDistinctId") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId,
@@ -1068,7 +1068,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineAccountId") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.SolarEngineAccountId,
@@ -1078,7 +1078,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineVisitorId") }
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
@@ -1088,7 +1088,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAppsFlyerConversionData(data: Map<*, *>?) {
+    fun setAppsFlyerConversionData(data: Map<*, *>?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
     }
@@ -1129,7 +1129,7 @@ internal class PurchasesOrchestrator(
 
     // region Campaign parameters
 
-    public fun setMediaSource(mediaSource: String?) {
+    fun setMediaSource(mediaSource: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setMediaSource") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.MediaSource,
@@ -1138,7 +1138,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setCampaign(campaign: String?) {
+    fun setCampaign(campaign: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCampaign") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Campaign,
@@ -1147,7 +1147,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAdGroup(adGroup: String?) {
+    fun setAdGroup(adGroup: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAdGroup") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.AdGroup,
@@ -1156,7 +1156,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setAd(ad: String?) {
+    fun setAd(ad: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAd") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Ad,
@@ -1165,7 +1165,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setKeyword(keyword: String?) {
+    fun setKeyword(keyword: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("seKeyword") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Keyword,
@@ -1174,7 +1174,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    public fun setCreative(creative: String?) {
+    fun setCreative(creative: String?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCreative") }
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Creative,
@@ -1186,23 +1186,23 @@ internal class PurchasesOrchestrator(
     //endregion
 
     // region Virtual Currencies
-    public fun getVirtualCurrencies(
+    fun getVirtualCurrencies(
         callback: GetVirtualCurrenciesCallback,
     ) {
         virtualCurrencyManager.virtualCurrencies(callback = callback)
     }
 
-    public fun invalidateVirtualCurrenciesCache() {
+    fun invalidateVirtualCurrenciesCache() {
         virtualCurrencyManager.invalidateVirtualCurrenciesCache()
     }
 
-    public val cachedVirtualCurrencies: VirtualCurrencies?
+    val cachedVirtualCurrencies: VirtualCurrencies?
         get() = virtualCurrencyManager.cachedVirtualCurrencies()
 
     //endregion
 
     // region Custom entitlements computation
-    public fun switchUser(newAppUserID: String) {
+    fun switchUser(newAppUserID: String) {
         if (identityManager.currentAppUserID == newAppUserID) {
             warnLog { IdentityStrings.SWITCHING_USER_SAME_APP_USER_ID.format(newAppUserID) }
             return
@@ -1219,7 +1219,7 @@ internal class PurchasesOrchestrator(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    public fun getCachedFontFamilyOrStartDownload(
+    fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily? {
         return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
@@ -1736,7 +1736,7 @@ internal class PurchasesOrchestrator(
             version = null,
         )
 
-        public var debugLogsEnabled
+        var debugLogsEnabled
             get() = logLevel.debugLogsEnabled
             set(value) {
                 logLevel = LogLevel.debugLogsEnabled(value)
@@ -1763,7 +1763,7 @@ internal class PurchasesOrchestrator(
 
         @Suppress("MagicNumber")
         @Synchronized
-        public fun getImageLoader(context: Context): ImageLoader {
+        fun getImageLoader(context: Context): ImageLoader {
             val currentImageLoader = cachedImageLoader
             return if (currentImageLoader == null) {
                 val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
@@ -1795,7 +1795,7 @@ internal class PurchasesOrchestrator(
          *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
-        public fun canMakePayments(
+        fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,

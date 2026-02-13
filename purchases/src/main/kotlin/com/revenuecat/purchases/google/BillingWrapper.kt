@@ -109,7 +109,7 @@ internal class BillingWrapper(
     @get:Synchronized
     @set:Synchronized
     @Volatile
-    public var billingClient: BillingClient? = null
+    var billingClient: BillingClient? = null
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val purchaseContext = mutableMapOf<String, PurchaseContext>()
@@ -124,7 +124,7 @@ internal class BillingWrapper(
     @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
-    public val appInBackground: Boolean
+    val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
 
     class ClientFactory(
@@ -362,7 +362,7 @@ internal class BillingWrapper(
         }
     }
 
-    public fun queryPurchaseHistoryAsync(
+    fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,

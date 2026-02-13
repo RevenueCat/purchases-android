@@ -35,7 +35,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
     private var connectDeferred: CompletableDeferred<Boolean>? = null
     private val queryDeferreds = mutableMapOf<String, CompletableDeferred<List<StoreTransaction>>>()
 
-    public companion object {
+    companion object {
         private const val MAX_PAGINATION_PAGES = 50
     }
 
@@ -99,7 +99,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
      *
      * @return true if connection was successful, false otherwise
      */
-    public suspend fun connect(): Boolean = getOrExecute(
+    suspend fun connect(): Boolean = getOrExecute(
         getDeferred = { connectDeferred },
         setDeferred = { connectDeferred = it },
         debugMessage = "Connection already in progress or completed, hooking into existing operation",
@@ -214,7 +214,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
      * @return List of all purchase history records
      */
     @Suppress("LoopWithTooManyJumpStatements")
-    public suspend fun queryAllPurchaseHistory(
+    suspend fun queryAllPurchaseHistory(
         type: String = BillingClient.ProductType.INAPP,
     ): List<StoreTransaction> = getOrExecute(
         getDeferred = { queryDeferreds[type] },
@@ -312,7 +312,7 @@ internal class PurchaseHistoryManager(private val context: Context) {
      * Disconnect from the billing service.
      * Clears the cached connection state so subsequent connect() calls will reconnect.
      */
-    public suspend fun disconnect() {
+    suspend fun disconnect() {
         operationsMutex.withLock {
             cleanup()
         }

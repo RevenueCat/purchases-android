@@ -13,7 +13,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import kotlin.jvm.Throws
 
 internal class PurchaseParamsValidator {
-    public companion object {
+    companion object {
         /**
          * Maximum number of add-on products allowed in a multi-line purchase.
          */
@@ -22,7 +22,7 @@ internal class PurchaseParamsValidator {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Throws(PurchasesException::class)
-    public fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
+    fun validate(purchaseParams: PurchaseParams): Result<Unit, PurchasesError> {
         if (purchaseParams.containsAddOnItems) {
             val addOnProductsValidationError = validateAddOnProducts(purchaseParams = purchaseParams)
             if (addOnProductsValidationError is Result.Error) {

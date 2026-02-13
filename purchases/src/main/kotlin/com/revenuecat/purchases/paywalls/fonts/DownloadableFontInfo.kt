@@ -8,15 +8,15 @@ import com.revenuecat.purchases.utils.Result
 @OptIn(InternalRevenueCatAPI::class)
 internal data class DownloadableFontInfo(
     @get:JvmSynthetic
-    public val url: String,
+    val url: String,
     @get:JvmSynthetic
-    public val expectedMd5: String,
+    val expectedMd5: String,
     @get:JvmSynthetic
-    public val family: String,
+    val family: String,
     @get:JvmSynthetic
-    public val weight: Int,
+    val weight: Int,
     @get:JvmSynthetic
-    public val style: FontStyle,
+    val style: FontStyle,
 )
 
 @Suppress("ReturnCount")

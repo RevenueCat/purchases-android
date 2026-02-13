@@ -27,7 +27,7 @@ import java.util.Date
 internal object CustomerInfoFactory {
 
     @Throws(JSONException::class)
-    public fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
+    fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
         val originalSource = if (httpResult.isLoadShedderResponse == true) {
             CustomerInfoOriginalSource.LOAD_SHEDDER
         } else {
@@ -43,7 +43,7 @@ internal object CustomerInfoFactory {
     }
 
     @Throws(JSONException::class)
-    public fun buildCustomerInfo(
+    fun buildCustomerInfo(
         body: JSONObject,
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,
@@ -109,7 +109,7 @@ internal object CustomerInfoFactory {
         )
     }
 
-    public fun parseSubscriptionInfos(
+    fun parseSubscriptionInfos(
         subscriberJSONObject: JSONObject,
         requestDate: Date,
     ): Map<String, SubscriptionInfo> {

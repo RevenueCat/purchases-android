@@ -12,7 +12,7 @@ internal class IntermediateSignatureHelper(
 ) {
 
     @Suppress("ReturnCount")
-    public fun createIntermediateKeyVerifierIfVerified(
+    fun createIntermediateKeyVerifierIfVerified(
         signature: Signature,
     ): Result<SignatureVerifier, PurchasesError> {
         val intermediateKeyMessageToVerify = signature.intermediateKeyExpiration + signature.intermediateKey

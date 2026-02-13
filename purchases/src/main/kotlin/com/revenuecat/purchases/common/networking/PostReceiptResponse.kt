@@ -18,11 +18,11 @@ internal fun buildPostReceiptResponse(result: HTTPResult) = PostReceiptResponse(
 )
 
 internal data class PostReceiptProductInfo(
-    public val shouldConsume: Boolean?,
+    val shouldConsume: Boolean?,
 )
 
 internal data class PostReceiptResponse(
-    public val customerInfo: CustomerInfo,
-    public val productInfoByProductId: Map<String, PostReceiptProductInfo>?,
-    public val body: JSONObject,
+    val customerInfo: CustomerInfo,
+    val productInfoByProductId: Map<String, PostReceiptProductInfo>?,
+    val body: JSONObject,
 )

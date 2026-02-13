@@ -3,7 +3,7 @@ package com.revenuecat.purchases.common
 import java.util.Date
 
 internal interface DateProvider {
-    public val now: Date
+    val now: Date
 }
 
 internal class DefaultDateProvider : DateProvider {
