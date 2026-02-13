@@ -358,7 +358,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      *
      * @param options The launch options configured via [PaywallActivityLaunchOptions.Builder]
      */
-    fun launchWithOptions(options: PaywallActivityLaunchOptions) {
+    public fun launchWithOptions(options: PaywallActivityLaunchOptions) {
         val nonSerializableArgsKey = storeNonSerializableArgsIfNeeded(
             options.purchaseLogic,
             options.listener,

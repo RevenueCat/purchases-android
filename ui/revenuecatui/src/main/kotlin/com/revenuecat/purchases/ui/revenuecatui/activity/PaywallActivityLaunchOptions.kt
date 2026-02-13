@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
  * use [PaywallActivityLaunchIfNeededOptions] instead.
  */
 @Suppress("LongParameterList")
-class PaywallActivityLaunchOptions private constructor(
+public class PaywallActivityLaunchOptions private constructor(
     internal val offering: Offering?,
     internal val fontProvider: ParcelizableFontProvider?,
     internal val shouldDisplayDismissButton: Boolean,
@@ -140,7 +140,7 @@ class PaywallActivityLaunchOptions private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -149,7 +149,7 @@ class PaywallActivityLaunchOptions private constructor(
          * restoration, and errors.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setListener(listener: PaywallListener?) = apply {
+        public fun setListener(listener: PaywallListener?): Builder = apply {
             this.listener = listener
         }
 
@@ -241,7 +241,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
      * before calling [build]. These are mutually exclusive - setting one will clear the other.
      */
     @Suppress("TooManyFunctions")
-    class Builder {
+    public class Builder {
         private var offering: Offering? = null
         private var fontProvider: ParcelizableFontProvider? = null
         private var shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON
@@ -357,7 +357,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -366,7 +366,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
          * restoration, and errors.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        fun setListener(listener: PaywallListener?) = apply {
+        public fun setListener(listener: PaywallListener?): Builder = apply {
             this.listener = listener
         }
 
