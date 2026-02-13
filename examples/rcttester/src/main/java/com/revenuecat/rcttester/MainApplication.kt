@@ -1,0 +1,104 @@
+package com.revenuecat.rcttester
+
+import android.app.Application
+import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.rcttester.config.SDKConfiguration
+import com.revenuecat.rcttester.purchasing.PurchaseManager
+import com.revenuecat.rcttester.purchasing.createPurchaseManager
+
+class MainApplication : Application() {
+    /** Observable so Compose recomposes when SDK configuration changes. */
+    val isSDKConfiguredState: MutableState<Boolean> = mutableStateOf(false)
+
+    /** The current purchase manager, created when the SDK is configured. */
+    var purchaseManager: PurchaseManager? = null
+        private set
+
+    var isSDKConfigured: Boolean
+        get() = isSDKConfiguredState.value
+        private set(value) {
+            isSDKConfiguredState.value = value
+        }
+
+    private companion object {
+        private const val MIN_API_KEY_LENGTH = 10
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Set log level to VERBOSE for debugging
+        Purchases.logLevel = LogLevel.VERBOSE
+
+        // Load saved configuration and configure SDK if available
+        // Only configure if not already configured
+        if (!Purchases.isConfigured) {
+            configureFromSavedSettings()
+        } else {
+            // SDK already configured, mark as configured
+            isSDKConfigured = true
+        }
+    }
+
+    private fun configureFromSavedSettings() {
+        val savedConfiguration = SDKConfiguration.load(this) ?: return
+        val sanitizedApiKey = sanitizeApiKey(savedConfiguration.apiKey)
+        if (!isValidApiKey(sanitizedApiKey)) {
+            clearInvalidConfiguration()
+            return
+        }
+        val sanitizedConfig = savedConfiguration.copy(apiKey = sanitizedApiKey)
+        try {
+            configureSDK(sanitizedConfig)
+        } catch (e: IllegalStateException) {
+            handleConfigurationError(e)
+        }
+    }
+
+    private fun sanitizeApiKey(apiKey: String): String {
+        return apiKey.trim()
+            .replace("\n", "")
+            .replace("\r", "")
+    }
+
+    private fun isValidApiKey(apiKey: String): Boolean {
+        return apiKey.isNotBlank() && apiKey.length > MIN_API_KEY_LENGTH
+    }
+
+    private fun clearInvalidConfiguration() {
+        Log.w("RCTTester", "Invalid API key found, clearing configuration")
+        val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        isSDKConfigured = false
+    }
+
+    private fun handleConfigurationError(e: IllegalStateException) {
+        Log.e("RCTTester", "Failed to configure SDK: ${e.message}", e)
+        val prefs = getSharedPreferences("rcttester_config", MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        isSDKConfigured = false
+    }
+
+    fun configureSDK(configuration: SDKConfiguration) {
+        // Sanitize API key before saving
+        val sanitizedApiKey = configuration.apiKey.trim().replace("\n", "").replace("\r", "")
+        val sanitizedConfig = configuration.copy(apiKey = sanitizedApiKey)
+        sanitizedConfig.save(this)
+
+        val purchasesAreCompletedBy = sanitizedConfig.toPurchasesAreCompletedBy()
+        val builder = PurchasesConfiguration.Builder(this, sanitizedApiKey)
+            .purchasesAreCompletedBy(purchasesAreCompletedBy)
+
+        // Set app user ID if provided, otherwise SDK will generate anonymous ID
+        builder.appUserID(sanitizedConfig.appUserID.takeIf { it.isNotBlank() }?.trim())
+
+        Purchases.configure(builder.build())
+        purchaseManager = createPurchaseManager(this, sanitizedConfig)
+        isSDKConfigured = true
+    }
+}
