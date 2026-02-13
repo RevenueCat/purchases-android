@@ -7,6 +7,7 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.rcttester.config.PurchaseLogicType
 import com.revenuecat.rcttester.config.PurchasesCompletedByType
@@ -50,6 +51,11 @@ interface PurchaseManager {
      * Purchases a package directly (used for purchase buttons outside of paywalls).
      */
     suspend fun purchase(activity: Activity, rcPackage: Package): PurchaseOperationResult
+
+    /**
+     * Purchases a product directly without package context.
+     */
+    suspend fun purchaseProduct(activity: Activity, storeProduct: StoreProduct): PurchaseOperationResult
 }
 
 /**
