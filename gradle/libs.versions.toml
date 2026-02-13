@@ -35,6 +35,7 @@ dokka = "1.8.10"
 emergeGradlePlugin = "4.4.0"
 emergeSnapshots = "1.5.0"
 espresso = "3.4.0"
+googleMobileAds = "23.5.0"
 fragment = "1.6.1"
 googleBlockstore = "16.4.0"
 hamcrest = "1.3"
@@ -145,6 +146,7 @@ emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref
 emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
 
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
+google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

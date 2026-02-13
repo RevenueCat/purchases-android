@@ -53,6 +53,7 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
+include(":feature:admob")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
