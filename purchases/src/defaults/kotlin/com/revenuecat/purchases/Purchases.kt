@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import uniffi.purchases_core.add
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -1221,6 +1222,10 @@ public class Purchases internal constructor(
         public fun configure(
             configuration: PurchasesConfiguration,
         ): Purchases {
+            // Call Rust add() function to verify integration
+            val rustResult = add(2uL, 3uL)
+            infoLog { "Rust add(2, 3) = $rustResult" }
+
             if (isConfigured) {
                 if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
                     infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG }

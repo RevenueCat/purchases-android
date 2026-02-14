@@ -932,6 +932,9 @@ workflows:
           build_type: "debug"
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - test:
           name: test_defaults_bc7_release
           flavor: "defaults"
@@ -939,6 +942,9 @@ workflows:
           build_type: "release"
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
@@ -948,6 +954,9 @@ workflows:
           matrix:
             parameters:
               build_type: ["debug", "release"]
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       # Special case for defaults BC8 release with kover
       - test:
           name: test_defaults_bc8_release
@@ -957,45 +966,87 @@ workflows:
           run_kover: true
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - verify-compatibility:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - lint:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - detekt:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - metalava:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - assemble-purchase-tester:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - run-backend-integration-tests:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - record-and-upload-paparazzi-revenuecatui-snapshots:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - run-revenuecatui-ui-tests:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - emerge_size_analysis_tests:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
+          # FIXME We only need read access here.
+          context:
+            - github-packages-publishing
       - integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches

@@ -49,6 +49,16 @@ dependencyResolutionManagement {
 
         // fallback for the rest of the dependencies
         mavenCentral()
+
+        // GitHub Packages for purchases-core Rust library
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/RevenueCat/purchases-core")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
+        }
     }
 }
 
