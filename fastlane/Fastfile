@@ -777,6 +777,11 @@ DESC
     trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
   end
 
+  desc "Trigger dependency update in purchases-hybrid-common"
+  lane :trigger_hybrid_common_update do
+    trigger_action_in_circle_ci(action: 'dependency-update', repo_name: 'purchases-hybrid-common')
+  end
+
   desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
   lane :record_and_push_paywall_template_screenshots do |options|
     UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.") unless options[:target_repository_path]
