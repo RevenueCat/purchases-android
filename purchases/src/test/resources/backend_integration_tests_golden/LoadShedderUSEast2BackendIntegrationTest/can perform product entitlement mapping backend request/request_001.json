@@ -15,7 +15,7 @@
     "X-Platform-Brand": "robolectric",
     "X-Platform-Device": "robolectric",
     "X-Platform-Flavor": "test-flavor",
-    "X-Platform-Version": "35",
+    "X-Platform-Version": "36",
     "X-Preferred-Locales": "en_US"
   },
   "body": null
