@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,7 @@ import org.commonmark.node.Emphasis
 import org.commonmark.node.FencedCodeBlock
 import org.commonmark.node.HardLineBreak
 import org.commonmark.node.Heading
+import org.commonmark.node.HtmlInline
 import org.commonmark.node.Link
 import org.commonmark.node.ListBlock
 import org.commonmark.node.Node
@@ -57,6 +60,19 @@ import org.commonmark.parser.Parser
 private val parser = Parser.builder()
     .extensions(listOf(StrikethroughExtension.create()))
     .build()
+
+/**
+ * Tracks state during markdown AST traversal, specifically for handling
+ * underline tags that span across multiple AST nodes.
+ */
+internal class MarkdownState {
+    var underlineDepth = 0
+}
+
+internal object MarkdownTagDefinitions {
+    const val UNDERLINE_OPEN_TAG = "<u>"
+    const val UNDERLINE_CLOSE_TAG = "</u>"
+}
 
 /**
  * @param allowLinks If true, links will be decorated and clickable.
@@ -506,15 +522,16 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     color: Color,
     allowLinks: Boolean,
     baseFontWeight: FontWeight?,
+    state: MarkdownState = MarkdownState(),
 ) {
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is Paragraph -> appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
-            is Text -> append(child.literal)
+            is Paragraph -> appendMarkdownChildren(child, color, allowLinks, baseFontWeight, state)
+            is Text -> appendTextWithUnderlines(child.literal, state)
             is Emphasis -> {
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                appendMarkdownChildren(child, color, allowLinks, baseFontWeight)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight, state)
                 pop()
             }
             is StrongEmphasis -> {
@@ -524,12 +541,12 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
                     FontWeight.Bold
                 }
                 pushStyle(SpanStyle(fontWeight = biggerWeight))
-                appendMarkdownChildren(child, color, allowLinks, biggerWeight)
+                appendMarkdownChildren(child, color, allowLinks, biggerWeight, state)
                 pop()
             }
             is Code -> {
                 pushStyle(TextStyle(fontFamily = FontFamily.Monospace).toSpanStyle())
-                append(child.literal)
+                appendTextWithUnderlines(child.literal, state)
                 pop()
             }
             is HardLineBreak, is SoftLineBreak -> {
@@ -539,19 +556,79 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
                 if (allowLinks) {
                     val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
                     withLink(LinkAnnotation.Url(child.destination, TextLinkStyles(underline))) {
-                        appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight)
+                        appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight, state)
                     }
                 } else {
-                    appendMarkdownChildren(child, color, allowLinks = false, baseFontWeight = baseFontWeight)
+                    appendMarkdownChildren(child, color, allowLinks = false, baseFontWeight = baseFontWeight, state)
                 }
             }
             is Strikethrough -> {
                 pushStyle(TextStyle(textDecoration = TextDecoration.LineThrough).toSpanStyle())
-                appendMarkdownChildren(child, color, allowLinks, baseFontWeight = baseFontWeight)
+                appendMarkdownChildren(child, color, allowLinks, baseFontWeight, state)
                 pop()
             }
+            is HtmlInline -> handleInlineHTML(child.literal, state)
         }
         child = child.next
+    }
+}
+
+internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
+    // Handle <u> and </u> tags for underline support
+    when (tag) {
+        MarkdownTagDefinitions.UNDERLINE_OPEN_TAG -> {
+            pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+            state.underlineDepth++
+        }
+        MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG -> {
+            if (state.underlineDepth > 0) {
+                pop()
+                state.underlineDepth--
+            }
+        }
+    }
+}
+
+/**
+ * Processes text content, handling `<u>...</u>` underline tags.
+ * Pushes/pops underline style when encountering opening/closing tags,
+ * allowing underlines to span across multiple AST nodes (e.g., `<u>**bold**</u>`).
+ */
+internal fun AnnotatedString.Builder.appendTextWithUnderlines(
+    text: String,
+    state: MarkdownState,
+) {
+    var remaining = text
+    while (remaining.isNotEmpty()) {
+        val openIdx = remaining.indexOf(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG)
+        val closeIdx = remaining.indexOf(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG)
+
+        when {
+            openIdx == 0 -> {
+                pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+                state.underlineDepth++
+                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG.length)
+            }
+            closeIdx == 0 -> {
+                if (state.underlineDepth > 0) {
+                    pop()
+                    state.underlineDepth--
+                }
+                remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG.length)
+            }
+            openIdx > 0 && (closeIdx < 0 || openIdx < closeIdx) -> {
+                append(remaining.substring(0, openIdx))
+                remaining = remaining.substring(openIdx)
+            }
+            closeIdx > 0 && (openIdx < 0 || closeIdx < openIdx) -> {
+                append(remaining.substring(0, closeIdx))
+                remaining = remaining.substring(closeIdx)
+            }
+            else -> {
+                append(remaining)
+                remaining = ""
+            }
+        }
     }
 }
 
@@ -581,4 +658,16 @@ private fun MarkdownText(
                 fillMaxWidth()
             },
     )
+}
+
+@Preview
+@Composable
+@Suppress("MaxLineLength")
+private fun PreviewText() {
+    Surface {
+        Markdown(
+            text = "Hello, world\n**bold**\n_italic_ \n`code`\n<u>underline</u>\n<u>**_underlined italic bold_**</u>\n[RevenueCat](https://revenuecat.com)",
+            modifier = Modifier.padding(20.dp),
+        )
+    }
 }
