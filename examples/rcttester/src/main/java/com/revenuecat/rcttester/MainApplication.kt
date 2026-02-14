@@ -1,12 +1,16 @@
 package com.revenuecat.rcttester
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.rcttester.config.SDKConfiguration
 import com.revenuecat.rcttester.purchasing.PurchaseManager
 import com.revenuecat.rcttester.purchasing.createPurchaseManager
@@ -98,6 +102,13 @@ class MainApplication : Application() {
         builder.appUserID(sanitizedConfig.appUserID.takeIf { it.isNotBlank() }?.trim())
 
         Purchases.configure(builder.build())
+        Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener { customerInfo ->
+            val entitlements = customerInfo.entitlements.active.keys.joinToString(", ")
+            val message = "CustomerInfo updated. Active entitlements: ${entitlements.ifEmpty { "None" }}"
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            }
+        }
         purchaseManager = createPurchaseManager(this, sanitizedConfig)
         isSDKConfigured = true
     }

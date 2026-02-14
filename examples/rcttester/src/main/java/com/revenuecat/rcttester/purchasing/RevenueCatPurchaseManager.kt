@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 
 /**
@@ -21,8 +22,18 @@ class RevenueCatPurchaseManager : PurchaseManager {
     override val purchaseLogic: PurchaseLogic? = null
 
     override suspend fun purchase(activity: Activity, rcPackage: Package): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, rcPackage).build())
+    }
+
+    override suspend fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+    ): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, storeProduct).build())
+    }
+
+    private suspend fun executePurchase(purchaseParams: PurchaseParams): PurchaseOperationResult {
         return try {
-            val purchaseParams = PurchaseParams.Builder(activity, rcPackage).build()
             val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
             PurchaseOperationResult.Success(result.customerInfo)
         } catch (e: PurchasesTransactionException) {

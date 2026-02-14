@@ -4,8 +4,10 @@ import android.app.Activity
 import android.content.Context
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.rcttester.config.PurchaseLogicType
 import com.revenuecat.rcttester.config.PurchasesCompletedByType
@@ -15,7 +17,14 @@ import com.revenuecat.rcttester.config.SDKConfiguration
  * Result type for purchase operations initiated outside of paywalls.
  */
 sealed class PurchaseOperationResult {
-    data class Success(val customerInfo: CustomerInfo) : PurchaseOperationResult()
+    data class Success(val customerInfo: CustomerInfo? = null) : PurchaseOperationResult()
+
+    /**
+     * Success from the app's custom BillingClient flow (USING_BILLING_CLIENT_DIRECTLY).
+     * The sample can show different context, e.g. that entitlements will update after sync.
+     */
+    data object SuccessCustomImplementation : PurchaseOperationResult()
+
     data object UserCancelled : PurchaseOperationResult()
     data object Pending : PurchaseOperationResult()
     data class Failure(val error: String) : PurchaseOperationResult()
@@ -42,6 +51,11 @@ interface PurchaseManager {
      * Purchases a package directly (used for purchase buttons outside of paywalls).
      */
     suspend fun purchase(activity: Activity, rcPackage: Package): PurchaseOperationResult
+
+    /**
+     * Purchases a product directly without package context.
+     */
+    suspend fun purchaseProduct(activity: Activity, storeProduct: StoreProduct): PurchaseOperationResult
 }
 
 /**
@@ -51,18 +65,28 @@ fun createPurchaseManager(context: Context, configuration: SDKConfiguration): Pu
     return when (configuration.purchasesAreCompletedBy) {
         PurchasesCompletedByType.REVENUECAT -> RevenueCatPurchaseManager()
         PurchasesCompletedByType.MY_APP -> {
-            val billingClient = createBillingClient(context)
             when (configuration.purchaseLogic) {
-                PurchaseLogicType.THROUGH_REVENUECAT ->
+                PurchaseLogicType.THROUGH_REVENUECAT -> {
+                    val billingClient = createBillingClient(context) { _, _ -> }
                     PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(billingClient)
-                PurchaseLogicType.USING_BILLING_CLIENT_DIRECTLY ->
-                    error("BillingClient purchase manager is not yet implemented")
+                }
+                PurchaseLogicType.USING_BILLING_CLIENT_DIRECTLY -> {
+                    lateinit var manager:
+                        PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager
+                    val billingClient = createBillingClient(context) { billingResult, purchases ->
+                        manager.onPurchasesUpdated(billingResult, purchases)
+                    }
+                    manager = PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
+                        billingClient,
+                    )
+                    manager
+                }
             }
         }
     }
 }
 
-private fun createBillingClient(context: Context): BillingClient {
+private fun createBillingClient(context: Context, listener: PurchasesUpdatedListener): BillingClient {
     return BillingClient.newBuilder(context)
         .enablePendingPurchases(
             PendingPurchasesParams.newBuilder()
@@ -70,6 +94,6 @@ private fun createBillingClient(context: Context): BillingClient {
                 .enablePrepaidPlans()
                 .build(),
         )
-        .setListener { _, _ -> }
+        .setListener(listener)
         .build()
 }

@@ -5,13 +5,13 @@ import android.util.Log
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 
@@ -37,7 +37,9 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
         ): PurchaseLogicResult {
             val result = purchase(activity, rcPackage)
             return when (result) {
-                is PurchaseOperationResult.Success -> PurchaseLogicResult.Success
+                is PurchaseOperationResult.Success,
+                is PurchaseOperationResult.SuccessCustomImplementation,
+                -> PurchaseLogicResult.Success
                 is PurchaseOperationResult.UserCancelled -> PurchaseLogicResult.Cancellation
                 is PurchaseOperationResult.Pending -> PurchaseLogicResult.Error()
                 is PurchaseOperationResult.Failure -> PurchaseLogicResult.Error()
@@ -50,19 +52,29 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
                 PurchaseLogicResult.Success
             } catch (e: PurchasesException) {
                 Log.e(TAG, "Failed to sync purchases", e)
-                PurchaseLogicResult.Error()
+                PurchaseLogicResult.Error(e.error)
             }
         }
     }
 
     override suspend fun purchase(activity: Activity, rcPackage: Package): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, rcPackage).build())
+    }
+
+    override suspend fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+    ): PurchaseOperationResult {
+        return executePurchase(PurchaseParams.Builder(activity, storeProduct).build())
+    }
+
+    private suspend fun executePurchase(purchaseParams: PurchaseParams): PurchaseOperationResult {
         return try {
-            val purchaseParams = PurchaseParams.Builder(activity, rcPackage).build()
             val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
 
             // In MY_APP mode, the SDK does NOT acknowledge/consume purchases.
             // We must do it ourselves to prevent Google from auto-refunding after 3 days.
-            finishTransaction(
+            acknowledgeHelper.finishTransaction(
                 purchaseToken = result.storeTransaction.purchaseToken,
                 productType = result.storeTransaction.type,
             )
@@ -74,20 +86,6 @@ class PurchasesAreCompletedByMyAppThroughRevenueCatPurchaseManager(
             } else {
                 PurchaseOperationResult.Failure(e.message ?: "Unknown error")
             }
-        }
-    }
-
-    private suspend fun finishTransaction(purchaseToken: String, productType: ProductType) {
-        val success = when (productType) {
-            ProductType.INAPP -> acknowledgeHelper.consumePurchase(purchaseToken)
-            ProductType.SUBS -> acknowledgeHelper.acknowledgePurchase(purchaseToken)
-            ProductType.UNKNOWN -> {
-                Log.w(TAG, "Unknown product type, attempting acknowledge")
-                acknowledgeHelper.acknowledgePurchase(purchaseToken)
-            }
-        }
-        if (!success) {
-            Log.e(TAG, "Failed to finish transaction for token: $purchaseToken")
         }
     }
 
