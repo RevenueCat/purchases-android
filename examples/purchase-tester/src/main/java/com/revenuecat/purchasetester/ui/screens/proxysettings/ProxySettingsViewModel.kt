@@ -54,21 +54,26 @@ class ProxySettingsViewModel(
         viewModelScope.launch(dispatcher) {
             try {
                 Log.w("PurchaseTester", "Performing request to proxy with url: $url")
-                val httpURLConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
-                httpURLConnection.connectTimeout = CONNECT_TIMEOUT
-                val inputStream = httpURLConnection.inputStream
+                val httpURLConnection = (url.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = CONNECT_TIMEOUT
+                    readTimeout = CONNECT_TIMEOUT
+                }
+
                 val responseCode = httpURLConnection.responseCode
                 if (responseCode != OK_CODE) {
                     error("Invalid response code while executing request to $url: $responseCode")
                 }
-                val responseBody = BufferedReader(InputStreamReader(inputStream)).readText()
-                Log.w("PurchaseTester", "Received response from proxy: $responseBody")
-                val jsonResponse = JSONObject(responseBody)
-                val mode = ProxyMode.fromString(jsonResponse.getString("mode"))
-                updateState { ProxySettingsState.CurrentMode(mode) }
+
+                httpURLConnection.inputStream.bufferedReader().use { reader ->
+                    val responseBody = reader.readText()
+                    Log.w("PurchaseTester", "Received response from proxy: $responseBody")
+                    val jsonResponse = JSONObject(responseBody)
+                    val mode = ProxyMode.fromString(jsonResponse.getString("mode"))
+                    updateState { ProxySettingsState.CurrentMode(mode) }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                updateState { ProxySettingsState.Error(("${e::class.qualifiedName} \n ${e.message}") ?: "Unknown error") }
+                updateState { ProxySettingsState.Error(("${e::class.qualifiedName} \n ${e.message}")) }
             }
         }
     }

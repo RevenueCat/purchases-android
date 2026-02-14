@@ -74,41 +74,31 @@ class LoginScreenViewModelImpl : ViewModel(), LoginScreenViewModel {
         }
 
         viewModelScope.launch {
-            runCatching {
-                Purchases.sharedInstance.logInWith(
-                    currentState.userId,
-                    { error ->
-                        emitEvent(LoginUiEvent.Error(error.message))
-                    },
-                    { _, _ ->
-                        emitEvent(LoginUiEvent.NavigateToOverview)
-                    },
-                )
-            }.onFailure { throwable ->
-                val message = throwable.message ?: "Failed to login"
-                emitEvent(LoginUiEvent.Error(message))
-            }
+            Purchases.sharedInstance.logInWith(
+                currentState.userId,
+                { error ->
+                    emitEvent(LoginUiEvent.Error(error.message))
+                },
+                { _, _ ->
+                    emitEvent(LoginUiEvent.NavigateToOverview)
+                },
+            )
         }
     }
 
     override fun loginAnonymously() {
         viewModelScope.launch {
-            runCatching {
-                if (Purchases.sharedInstance.isAnonymous) {
-                    emitEvent(LoginUiEvent.NavigateToOverview)
-                } else {
-                    Purchases.sharedInstance.logOutWith(
-                        { error ->
-                            emitEvent(LoginUiEvent.Error(error.message))
-                        },
-                        {
-                            emitEvent(LoginUiEvent.NavigateToOverview)
-                        },
-                    )
-                }
-            }.onFailure { throwable ->
-                val message = throwable.message ?: "Failed to continue as anonymous"
-                emitEvent(LoginUiEvent.Error(message))
+            if (Purchases.sharedInstance.isAnonymous) {
+                emitEvent(LoginUiEvent.NavigateToOverview)
+            } else {
+                Purchases.sharedInstance.logOutWith(
+                    { error ->
+                        emitEvent(LoginUiEvent.Error(error.message))
+                    },
+                    {
+                        emitEvent(LoginUiEvent.NavigateToOverview)
+                    },
+                )
             }
         }
     }

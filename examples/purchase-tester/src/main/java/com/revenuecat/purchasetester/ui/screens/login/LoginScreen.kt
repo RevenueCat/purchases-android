@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,9 +33,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchasetester.ui.theme.PurchaseTesterTheme
+import kotlinx.coroutines.flow.collectLatest
 
 private object LoginScreenDefaults {
     val TITLE_EMOJI_SIZE: TextUnit = 100.sp
@@ -70,14 +71,14 @@ private fun LoginScreenContent(
         factory = LoginScreenViewModelImpl.Factory
     ),
 ) {
-    val viewModelState by loginScreenViewModel.state.collectAsState()
+    val viewModelState by loginScreenViewModel.state.collectAsStateWithLifecycle()
 
     var userId by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val showErrorDialog = errorMessage != null
 
     LaunchedEffect(Unit) {
-        loginScreenViewModel.events.collect { event ->
+        loginScreenViewModel.events.collectLatest { event ->
             when (event) {
                 is LoginUiEvent.Error -> {
                     errorMessage = event.message
