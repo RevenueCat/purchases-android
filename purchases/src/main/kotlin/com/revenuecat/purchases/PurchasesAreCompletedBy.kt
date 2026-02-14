@@ -3,11 +3,11 @@ package com.revenuecat.purchases
 /**
  * Modes for completing the purchase process.
  */
-public enum class PurchasesAreCompletedBy {
+public enum class PurchasesAreCompletedBy(public val displayName: String) {
     /**
      * RevenueCat will automatically acknowledge verified purchases. No action is required by you.
      */
-    REVENUECAT,
+    REVENUECAT("RevenueCat"),
 
     /**
      * RevenueCat will **not** automatically acknowledge any purchases. You will have to do so manually.
@@ -19,7 +19,7 @@ public enum class PurchasesAreCompletedBy {
      * [revenuecat.com](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions) and
      * [developer.android.com](https://developer.android.com/google/play/billing/integrate#process).
      */
-    MY_APP,
+    MY_APP("My App")
 }
 
 /**

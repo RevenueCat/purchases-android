@@ -1,12 +1,11 @@
 plugins {
     id("revenuecat-android-application")
     alias(libs.plugins.androidx.navigation.safeargs)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
-    buildFeatures {
-        viewBinding = true
-    }
+    namespace = "com.revenuecat.purchases_sample"
 
     defaultConfig {
         applicationId = "com.revenuecat.purchases_sample"
@@ -68,7 +67,11 @@ android {
         testBuildType = "debug"
     }
 
-    namespace = "com.revenuecat.purchases_sample"
+    buildFeatures {
+        viewBinding = true
+        compose = true
+    }
+
 }
 
 dependencies {
@@ -85,4 +88,24 @@ dependencies {
     implementation(libs.google.blockstore)
 
     debugImplementation(libs.leakcanary.android)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material)
+    implementation(libs.compose.window.size)
+    implementation(libs.navigation.compose)
+    implementation(libs.compose.ui.google.fonts)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.activity.compose)
+
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.androidx.test.compose.manifest)
+
+    //test-dependencies
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.cashapp.turbine)
 }
