@@ -1,4 +1,11 @@
 package com.revenuecat.purchasetester
 
 const val JSON_FORMATTER_INDENT_SPACES = 4
-const val ANIMATION_HALF_ROTATION_DEGREES = 180f
+
+object NavigationExtras {
+    const val NAVIGATE_TO = "navigate_to"
+}
+
+object NavigationDestinations {
+    const val LOGS = "logs"
+}

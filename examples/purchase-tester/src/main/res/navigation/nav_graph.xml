@@ -3,27 +3,7 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/nav_graph.xml"
-        app:startDestination="@id/configureFragment">
-
-    <fragment
-            android:id="@+id/loginFragment"
-            android:name="com.revenuecat.purchasetester.LoginFragment"
-            android:label="LoginFragment">
-        <action
-                android:id="@+id/action_loginFragment_to_overviewFragment"
-                app:destination="@id/overviewFragment"
-                app:popUpTo="@id/nav_graph.xml" />
-        <action
-                android:id="@+id/action_loginFragment_to_configureFragment"
-                app:destination="@id/configureFragment"
-                app:popUpTo="@id/nav_graph.xml" />
-        <action
-                android:id="@+id/action_loginFragment_to_logsFragment"
-                app:destination="@id/logsFragment" />
-        <action
-                android:id="@+id/action_loginFragment_to_proxySettingsBottomSheetFragment"
-                app:destination="@id/proxySettingsBottomSheetFragment" />
-    </fragment>
+        app:startDestination="@id/overviewFragment">
 
     <fragment
             android:id="@+id/overviewFragment"
@@ -35,13 +15,6 @@
         <action
                 android:id="@+id/action_overviewFragment_to_deprecatedOfferingFragment"
                 app:destination="@id/deprecatedOfferingFragment" />
-        <action
-                android:id="@+id/action_overviewFragment_to_loginFragment"
-                app:destination="@id/loginFragment"
-                app:popUpTo="@id/nav_graph.xml" />
-        <action
-                android:id="@+id/action_overviewFragment_to_logsFragment"
-                app:destination="@id/logsFragment" />
         <action
                 android:id="@+id/action_overviewFragment_to_proxySettingsBottomSheetFragment"
                 app:destination="@id/proxySettingsBottomSheetFragment" />
@@ -63,26 +36,9 @@
                 android:name="offeringId"
                 app:argType="string" />
     </fragment>
-    <fragment
-            android:id="@+id/configureFragment"
-            android:name="com.revenuecat.purchasetester.ConfigureFragment"
-            android:label="ConfigureFragment" >
-        <action
-                android:id="@+id/action_configureFragment_to_loginFragment"
-                app:destination="@id/loginFragment"
-                app:popUpTo="@id/nav_graph.xml" />
-        <action
-                android:id="@+id/action_configureFragment_to_logsFragment"
-                app:destination="@id/logsFragment" />
-        <action
-                android:id="@+id/action_configureFragment_to_proxySettingsBottomSheetFragment"
-                app:destination="@id/proxySettingsBottomSheetFragment" />
-    </fragment>
-    <fragment
-            android:id="@+id/logsFragment"
-            android:name="com.revenuecat.purchasetester.LogsFragment"
-            android:label="fragment_logs"
-            tools:layout="@layout/fragment_logs" />
+    <action
+            android:id="@+id/action_configureFragment_to_proxySettingsBottomSheetFragment"
+            app:destination="@id/proxySettingsBottomSheetFragment" />
     <dialog
             android:id="@+id/proxySettingsBottomSheetFragment"
             android:name="com.revenuecat.purchasetester.proxysettings.ProxySettingsBottomSheetFragment"
