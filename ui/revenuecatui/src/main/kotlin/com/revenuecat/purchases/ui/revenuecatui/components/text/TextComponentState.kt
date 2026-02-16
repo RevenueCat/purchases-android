@@ -16,7 +16,9 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
@@ -45,8 +47,10 @@ internal fun rememberUpdatedTextComponentState(
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
@@ -56,6 +60,7 @@ private fun rememberUpdatedTextComponentState(
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -71,6 +76,7 @@ private fun rememberUpdatedTextComponentState(
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
         update(
@@ -80,6 +86,7 @@ private fun rememberUpdatedTextComponentState(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
@@ -88,6 +95,7 @@ internal class TextComponentState(
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -137,7 +145,10 @@ internal class TextComponentState(
             windowCondition,
             packageAwareDelegate.offerEligibility,
             componentState,
-            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
         )
     }
 
