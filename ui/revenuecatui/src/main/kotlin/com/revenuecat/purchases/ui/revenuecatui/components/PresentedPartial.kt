@@ -70,6 +70,7 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  * @param windowSize Current screen condition (compact / medium / expanded).
  * @param offerEligibility The offer eligibility, encoding both the offer type (intro/promo) and phase count.
  * @param state Current view state (selected / unselected).
+ * @param selectedPackageId The identifier of the currently selected package, or null if none is selected.
  *
  * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
  * available overrides to use.
@@ -79,51 +80,53 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
     windowSize: ScreenCondition,
     offerEligibility: OfferEligibility,
     state: ComponentViewState,
+    selectedPackageId: String? = null,
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, offerEligibility, state)) {
+        if (override.shouldApply(windowSize, offerEligibility, state, selectedPackageId)) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
     return partial
 }
 
-@Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
     offerEligibility: OfferEligibility,
     state: ComponentViewState,
-): Boolean {
-    for (condition in conditions) {
-        when (condition) {
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-            -> {
-                if (!windowSize.applicableConditions.contains(condition)) return false
-            }
-            ComponentOverride.Condition.MultiplePhaseOffers -> {
-                if (!offerEligibility.hasMultipleDiscountedPhases) return false
-            }
-            is ComponentOverride.Condition.IntroOffer -> {
-                if (!offerEligibility.isIntroOffer) return false
-            }
-            ComponentOverride.Condition.Selected -> {
-                if (state != ComponentViewState.SELECTED) return false
-            }
-            is ComponentOverride.Condition.PromoOffer -> {
-                if (!offerEligibility.isPromoOffer) return false
-            }
-            is ComponentOverride.Condition.SelectedPackage,
-            is ComponentOverride.Condition.Variable,
-            ComponentOverride.Condition.Unsupported,
-            -> {
-                return false
-            }
-        }
+    selectedPackageId: String?,
+): Boolean = conditions.all { condition ->
+    condition.evaluate(windowSize, offerEligibility, state, selectedPackageId)
+}
+
+@Suppress("ReturnCount")
+private fun ComponentOverride.Condition.evaluate(
+    windowSize: ScreenCondition,
+    offerEligibility: OfferEligibility,
+    state: ComponentViewState,
+    selectedPackageId: String?,
+): Boolean = when (this) {
+    ComponentOverride.Condition.Compact,
+    ComponentOverride.Condition.Medium,
+    ComponentOverride.Condition.Expanded,
+    -> windowSize.applicableConditions.contains(this)
+    ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
+    is ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
+    ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
+    is ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
+    is ComponentOverride.Condition.SelectedPackage -> evaluate(selectedPackageId)
+    is ComponentOverride.Condition.Variable,
+    ComponentOverride.Condition.Unsupported,
+    -> false
+}
+
+private fun ComponentOverride.Condition.SelectedPackage.evaluate(selectedPackageId: String?): Boolean {
+    if (selectedPackageId == null) return false
+    return when (operator) {
+        ComponentOverride.ArrayOperator.IN -> selectedPackageId in packages
+        ComponentOverride.ArrayOperator.NOT_IN -> selectedPackageId !in packages
     }
-    return true
 }
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
