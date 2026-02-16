@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.revenuecat.purchases.ProductType
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -91,6 +92,20 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
                     // Will retry connection on next call
                 }
             })
+        }
+    }
+
+    suspend fun finishTransaction(purchaseToken: String, productType: ProductType) {
+        val success = when (productType) {
+            ProductType.INAPP -> consumePurchase(purchaseToken)
+            ProductType.SUBS -> acknowledgePurchase(purchaseToken)
+            ProductType.UNKNOWN -> {
+                Log.w(TAG, "Unknown product type, attempting acknowledge")
+                acknowledgePurchase(purchaseToken)
+            }
+        }
+        if (!success) {
+            Log.e(TAG, "Failed to finish transaction for token: $purchaseToken")
         }
     }
 
