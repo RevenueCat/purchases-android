@@ -2,9 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
@@ -12,14 +9,12 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import java.text.DateFormat
-import java.util.Calendar
 import java.util.Currency
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -609,118 +604,10 @@ internal object VariableProcessorV2 {
         Function.CAPITALIZE -> replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
     }
 
-    private fun PricingPhase.productOfferPrice(
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        if (price.amountMicros == 0L) {
-            localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
-        } else {
-            price.formatted
-        }
-
-    private fun PricingPhase.productOfferPricePerDay(
-        locale: Locale,
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.DAY) { pricePerDay(locale) }
-
-    private fun PricingPhase.productOfferPricePerWeek(
-        locale: Locale,
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.WEEK) { pricePerWeek(locale) }
-
-    private fun PricingPhase.productOfferPricePerMonth(
-        locale: Locale,
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.MONTH) { pricePerMonth(locale) }
-
-    private fun PricingPhase.productOfferPricePerYear(
-        locale: Locale,
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.YEAR) { pricePerYear(locale) }
-
-    private fun PricingPhase.productOfferPricePerPeriod(
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-        unit: Period.Unit,
-        calculatePrice: PricingPhase.() -> Price,
-    ): String? =
-        takeIf { it.canDisplay(unit) }
-            ?.calculatePrice()
-            ?.let { offerPrice ->
-                if (offerPrice.amountMicros == 0L) {
-                    localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
-                } else {
-                    offerPrice.formatted
-                }
-            }
-
-    private fun PricingPhase.productOfferPeriod(
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? = billingPeriod.periodUnitLocalizationKey?.let { key ->
-        localizedVariableKeys.getStringOrLogError(key)
-    }
-
-    private fun PricingPhase.productOfferPeriodAbbreviated(
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? = billingPeriod.periodUnitAbbreviatedLocalizationKey?.let { key ->
-        localizedVariableKeys.getStringOrLogError(key)
-    }
-
-    private fun PricingPhase.productOfferPeriodInPeriodUnit(
-        unit: Period.Unit,
-        calculateValue: Period.() -> String,
-    ): String? =
-        takeIf { it.canDisplay(unit) }?.billingPeriod?.calculateValue()
-
-    private val PricingPhase.productOfferPeriodInDays: String?
-        get() = productOfferPeriodInPeriodUnit(Period.Unit.DAY) { roundedValueInDays }
-
-    private val PricingPhase.productOfferPeriodInWeeks: String?
-        get() = productOfferPeriodInPeriodUnit(Period.Unit.WEEK) { roundedValueInWeeks }
-
-    private val PricingPhase.productOfferPeriodInMonths: String?
-        get() = productOfferPeriodInPeriodUnit(Period.Unit.MONTH) { roundedValueInMonths }
-
-    private val PricingPhase.productOfferPeriodInYears: String?
-        get() = productOfferPeriodInPeriodUnit(Period.Unit.YEAR) { roundedValueInYears }
-
-    private fun PricingPhase.productOfferPeriodWithUnit(
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    ): String? =
-        localizedVariableKeys
-            .getStringOrLogError(billingPeriod.periodValueWithUnitLocalizationKey)
-            ?.format(billingPeriod.value)
-
-    private fun PricingPhase.productOfferEndDate(locale: Locale, date: Date): String? {
-        val futureDate = Calendar.getInstance(locale)
-            .apply { time = date }
-            .apply { add(Calendar.DAY_OF_YEAR, billingPeriod.valueInDays.roundToInt()) }
-            .time
-
-        return DateFormat.getDateInstance(DateFormat.LONG, locale)
-            .format(futureDate)
-    }
-
     private fun PackageContext.relativeDiscount(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? =
         discountRelativeToMostExpensivePerMonth
             ?.let { discount -> (discount * PERCENT_SCALE).roundToInt() }
             ?.let { discountPercentage ->
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
             }
-
-    private fun primaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcPackage: Package?): PricingPhase? {
-        val option = subscriptionOption ?: rcPackage?.product?.defaultOption
-        return option?.let { it.freePhase ?: it.introPhase }
-    }
-
-    private fun secondaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcPackage: Package?): PricingPhase? {
-        val option = subscriptionOption ?: rcPackage?.product?.defaultOption
-        return option?.let { if (it.freePhase != null) it.introPhase else null }
-    }
-
-    private fun PricingPhase.canDisplay(unit: Period.Unit): Boolean =
-        unit.ordinal <= billingPeriod.unit.ordinal
 }
