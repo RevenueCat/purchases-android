@@ -24,67 +24,67 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("carousel")
 @Immutable
-class CarouselComponent(
+public class CarouselComponent(
     @get:JvmSynthetic
-    val pages: List<StackComponent>,
+    public val pages: List<StackComponent>,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("initial_page_index")
-    val initialPageIndex: Int? = null,
+    public val initialPageIndex: Int? = null,
     @get:JvmSynthetic
     @SerialName("page_alignment")
-    val pageAlignment: VerticalAlignment,
+    public val pageAlignment: VerticalAlignment,
     @get:JvmSynthetic
-    val size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
     @get:JvmSynthetic
     @SerialName("page_peek")
-    val pagePeek: Int? = null,
+    public val pagePeek: Int? = null,
     @get:JvmSynthetic
     @SerialName("page_spacing")
-    val pageSpacing: Float? = null,
+    public val pageSpacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val padding: Padding = Padding.zero,
+    public val padding: Padding = Padding.zero,
     @get:JvmSynthetic
-    val margin: Padding = Padding.zero,
+    public val margin: Padding = Padding.zero,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
     @SerialName("page_control")
-    val pageControl: PageControl? = null,
+    public val pageControl: PageControl? = null,
     @get:JvmSynthetic
-    val loop: Boolean? = null,
+    public val loop: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("auto_advance")
-    val autoAdvance: AutoAdvancePages? = null,
+    public val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Poko
     @Serializable
-    class AutoAdvancePages(
+    public class AutoAdvancePages(
         @get:JvmSynthetic
         @SerialName("ms_time_per_page")
-        val msTimePerPage: Int,
+        public val msTimePerPage: Int,
         @get:JvmSynthetic
         @SerialName("ms_transition_time")
-        val msTransitionTime: Int,
+        public val msTransitionTime: Int,
         @get:JvmSynthetic
         @SerialName("transition_type")
-        val transitionType: TransitionType?,
+        public val transitionType: TransitionType?,
     ) {
         @Serializable(with = CarouselTransitionTypeDeserializer::class)
-        enum class TransitionType {
+        public enum class TransitionType {
             // SerialNames are handled by the CarouselTransitionTypeDeserializer.
             FADE,
             SLIDE,
@@ -94,49 +94,49 @@ class CarouselComponent(
     @Poko
     @Serializable
     @Immutable
-    class PageControl(
+    public class PageControl(
         @get:JvmSynthetic
-        val position: Position,
+        public val position: Position,
         @get:JvmSynthetic
-        val spacing: Int? = null,
+        public val spacing: Int? = null,
         @get:JvmSynthetic
-        val padding: Padding = Padding.zero,
+        public val padding: Padding = Padding.zero,
         @get:JvmSynthetic
-        val margin: Padding = Padding.zero,
+        public val margin: Padding = Padding.zero,
         @get:JvmSynthetic
         @SerialName("background_color")
-        val backgroundColor: ColorScheme? = null,
+        public val backgroundColor: ColorScheme? = null,
         @get:JvmSynthetic
-        val shape: Shape? = null,
+        public val shape: Shape? = null,
         @get:JvmSynthetic
-        val border: Border? = null,
+        public val border: Border? = null,
         @get:JvmSynthetic
-        val shadow: Shadow? = null,
+        public val shadow: Shadow? = null,
         @get:JvmSynthetic
-        val active: Indicator,
+        public val active: Indicator,
         @get:JvmSynthetic
-        val default: Indicator,
+        public val default: Indicator,
     ) {
 
         @Poko
         @Serializable
-        class Indicator(
+        public class Indicator(
             @get:JvmSynthetic
-            val width: UInt,
+            public val width: UInt,
             @get:JvmSynthetic
-            val height: UInt,
+            public val height: UInt,
             @get:JvmSynthetic
-            val color: ColorScheme,
+            public val color: ColorScheme,
             @get:JvmSynthetic
             @SerialName("stroke_color")
-            val strokeColor: ColorScheme? = null,
+            public val strokeColor: ColorScheme? = null,
             @get:JvmSynthetic
             @SerialName("stroke_width")
-            val strokeWidth: UInt? = null,
+            public val strokeWidth: UInt? = null,
         )
 
         @Serializable(with = CarouselPageControlPositionDeserializer::class)
-        enum class Position {
+        public enum class Position {
             // SerialNames are handled by the CarouselPageControlPositionDeserializer.
             TOP,
             BOTTOM,
@@ -149,46 +149,46 @@ class CarouselComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialCarouselComponent(
+public class PartialCarouselComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("initial_page_index")
-    val initialPageIndex: Int? = null,
+    public val initialPageIndex: Int? = null,
     @get:JvmSynthetic
     @SerialName("page_alignment")
-    val pageAlignment: VerticalAlignment? = null,
+    public val pageAlignment: VerticalAlignment? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
     @SerialName("page_peek")
-    val pagePeek: Int? = null,
+    public val pagePeek: Int? = null,
     @get:JvmSynthetic
     @SerialName("page_spacing")
-    val pageSpacing: Float? = null,
+    public val pageSpacing: Float? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
     @SerialName("page_control")
-    val pageControl: PageControl? = null,
+    public val pageControl: PageControl? = null,
     @get:JvmSynthetic
-    val loop: Boolean? = null,
+    public val loop: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("auto_advance")
-    val autoAdvance: CarouselComponent.AutoAdvancePages? = null,
+    public val autoAdvance: CarouselComponent.AutoAdvancePages? = null,
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)

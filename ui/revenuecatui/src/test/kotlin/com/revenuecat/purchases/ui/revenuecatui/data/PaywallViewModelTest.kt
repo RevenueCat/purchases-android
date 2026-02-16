@@ -16,8 +16,10 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -505,7 +507,7 @@ class PaywallViewModelTest {
             is PaywallState.Loading -> {}
             is PaywallState.Error,
             is PaywallState.Loaded,
-            -> fail("Invalid state")
+                -> fail("Invalid state")
         }
 
         assertThat(model.actionInProgress.value).isFalse
@@ -836,7 +838,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
         coEvery {
@@ -869,7 +871,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedPackage = TestData.Packages.quarterly
         assertThat(selectedPackage).isNotEqualTo(expectedPackage)
@@ -936,7 +938,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
 
@@ -1289,7 +1291,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering).apply {
             val state = state.value as PaywallState.Loaded.Components
-            state.update(selectedPackage = TestData.Packages.monthly)
+            state.update(TestData.Packages.monthly.identifier)
             trackPaywallImpressionIfNeeded()
         }
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
@@ -1414,7 +1416,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
@@ -1493,7 +1495,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store error")
@@ -1534,7 +1536,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
         coEvery {
@@ -1750,17 +1752,17 @@ class PaywallViewModelTest {
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
-        state.update(TestData.Packages.annual)
+        state.update(TestData.Packages.monthly.identifier)
 
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
         ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
-        // If no selected package, uses URL without package param
+        // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -1772,7 +1774,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
-        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
@@ -1794,6 +1796,255 @@ class PaywallViewModelTest {
     }
 
     // endregion invalidateCustomerInfoCache
+
+    // region product change
+
+    @Test
+    fun `purchase uses replacement mode from calculator when product change is detected`(): Unit = runBlocking {
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } returns ProductChangeInfo(
+            oldProductId = "old_product",
+            replacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+        )
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        coVerify {
+            productChangeCalculator.calculateProductChangeInfo(
+                withArg { pkg ->
+                    assertThat(pkg.identifier).isEqualTo(TestData.Packages.monthly.identifier)
+                },
+                any(),
+            )
+        }
+
+        coVerify {
+            purchases.awaitPurchase(
+                withArg { builder ->
+                    val params = builder.build()
+                    assertThat(params.oldProductId).isEqualTo("old_product")
+                    assertThat(params.googleReplacementMode).isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `purchase skips product change calculation when paywall has no product change config`(): Unit = runBlocking {
+        val offeringWithoutProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithoutProductChange)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        coVerify(exactly = 0) {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        }
+
+        coVerify {
+            purchases.awaitPurchase(
+                withArg { builder ->
+                    val params = builder.build()
+                    assertThat(params.oldProductId).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `purchase proceeds without replacement mode when no product change is needed`(): Unit = runBlocking {
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } returns null
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        coVerify {
+            purchases.awaitPurchase(
+                withArg { builder ->
+                    val params = builder.build()
+                    assertThat(params.oldProductId).isNull()
+                },
+            )
+        }
+
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
+        val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
+        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+            option = promoSubscriptionOption,
+        )
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = resolvedOffer,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button without promotional offer uses default option`(): Unit = runBlocking {
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = null,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    // endregion product change
 
     private fun create(
         offering: Offering? = null,

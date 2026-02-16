@@ -34,7 +34,7 @@ internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
 /**
  * @return list of Locales from LocaleListCompat.getDefault()
  */
-fun getDefaultLocales(): List<Locale> {
+public fun getDefaultLocales(): List<Locale> {
     return LocaleListCompat.getDefault().toList()
 }
 

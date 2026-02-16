@@ -11,7 +11,7 @@ import org.json.JSONObject
 
 internal data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
     val loadedFromCache: Boolean = false,
 ) {
     companion object {

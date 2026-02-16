@@ -73,7 +73,10 @@ internal class ButtonComponentState(
             }
 
             is ButtonComponentStyle.Action.PurchasePackage ->
-                PaywallAction.External.PurchasePackage(rcPackage = rcPackage)
+                PaywallAction.External.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                )
 
             is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.External.RestorePurchases
 

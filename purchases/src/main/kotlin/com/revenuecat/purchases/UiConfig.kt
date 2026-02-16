@@ -24,68 +24,68 @@ import kotlinx.serialization.json.jsonPrimitive
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class ColorAlias(@get:JvmSynthetic val value: String)
+public value class ColorAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class FontAlias(@get:JvmSynthetic val value: String)
+public value class FontAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class UiConfig(
+public class UiConfig(
     @get:JvmSynthetic
-    val app: AppConfig = AppConfig(),
+    public val app: AppConfig = AppConfig(),
     @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
     @get:JvmSynthetic
-    val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
+    public val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
     @SerialName("variable_config")
     @get:JvmSynthetic
-    val variableConfig: VariableConfig = VariableConfig(),
+    public val variableConfig: VariableConfig = VariableConfig(),
     @SerialName("custom_variables")
     @get:JvmSynthetic
-    val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
+    public val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
 ) {
 
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class AppConfig(
+    public class AppConfig(
         @get:JvmSynthetic
-        val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
-        val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
     ) {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
-        class FontsConfig(
+        public class FontsConfig(
             @get:JvmSynthetic
-            val android: FontInfo,
+            public val android: FontInfo,
         ) {
 
             @InternalRevenueCatAPI
             @Serializable
-            sealed interface FontInfo {
+            public sealed interface FontInfo {
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(
-                    @get:JvmSynthetic val value: String,
-                    @get:JvmSynthetic val url: String? = null,
-                    @get:JvmSynthetic val hash: String? = null,
-                    @get:JvmSynthetic val family: String? = null,
-                    @get:JvmSynthetic val weight: Int? = null,
-                    @get:JvmSynthetic val style: FontStyle? = null,
+                public class Name(
+                    @get:JvmSynthetic public val value: String,
+                    @get:JvmSynthetic public val url: String? = null,
+                    @get:JvmSynthetic public val hash: String? = null,
+                    @get:JvmSynthetic public val family: String? = null,
+                    @get:JvmSynthetic public val weight: Int? = null,
+                    @get:JvmSynthetic public val style: FontStyle? = null,
                 ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                public class GoogleFonts(@get:JvmSynthetic public val value: String) : FontInfo
             }
         }
     }
@@ -93,23 +93,23 @@ class UiConfig(
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class VariableConfig(
+    public class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
     )
 
     @InternalRevenueCatAPI
     @Poko
     @Serializable(with = CustomVariableDefinitionSerializer::class)
-    class CustomVariableDefinition(
+    public class CustomVariableDefinition(
         @get:JvmSynthetic
-        val type: String,
+        public val type: String,
         @get:JvmSynthetic
-        val defaultValue: Any,
+        public val defaultValue: Any,
     )
 }
 

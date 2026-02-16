@@ -9,25 +9,25 @@ import dev.drewhamilton.poko.Poko
 
 @Immutable
 @Poko
-class PaywallDialogOptions internal constructor(
-    val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
-    val dismissRequest: (() -> Unit)?,
-    val offering: Offering?,
-    val shouldDisplayDismissButton: Boolean,
-    val fontProvider: FontProvider?,
-    val listener: PaywallListener?,
-    val purchaseLogic: PurchaseLogic?,
+public class PaywallDialogOptions internal constructor(
+    public val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
+    public val dismissRequest: (() -> Unit)?,
+    public val offering: Offering?,
+    public val shouldDisplayDismissButton: Boolean,
+    public val fontProvider: FontProvider?,
+    public val listener: PaywallListener?,
+    public val purchaseLogic: PurchaseLogic?,
     /**
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
-    val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
 ) {
 
     internal val offeringSelection: OfferingSelection
         get() = offering?.let { OfferingSelection.OfferingType(it) } ?: OfferingSelection.None
 
-    constructor(builder: Builder) : this(
+    public constructor(builder: Builder) : this(
         shouldDisplayBlock = builder.shouldDisplayBlock,
         dismissRequest = builder.dismissRequest,
         offering = builder.offering,
@@ -38,7 +38,7 @@ class PaywallDialogOptions internal constructor(
         customVariables = builder.customVariables,
     )
 
-    class Builder {
+    public class Builder {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         internal var dismissRequest: (() -> Unit)? = null
         internal var offering: Offering? = null
@@ -51,24 +51,24 @@ class PaywallDialogOptions internal constructor(
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
          */
-        fun setShouldDisplayBlock(shouldDisplayBlock: ((CustomerInfo) -> Boolean)?) = apply {
+        public fun setShouldDisplayBlock(shouldDisplayBlock: ((CustomerInfo) -> Boolean)?): Builder = apply {
             this.shouldDisplayBlock = shouldDisplayBlock
         }
 
         /**
          * Allows to configure whether to display the paywall dialog depending on the presence of a specific entitlement
          */
-        fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String?) = apply {
+        public fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String?): Builder = apply {
             requiredEntitlementIdentifier?.let { requiredEntitlementIdentifier ->
                 this.shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
             }
         }
 
-        fun setDismissRequest(dismissRequest: () -> Unit) = apply {
+        public fun setDismissRequest(dismissRequest: () -> Unit): Builder = apply {
             this.dismissRequest = dismissRequest
         }
 
-        fun setOffering(offering: Offering?) = apply {
+        public fun setOffering(offering: Offering?): Builder = apply {
             this.offering = offering
         }
 
@@ -76,7 +76,7 @@ class PaywallDialogOptions internal constructor(
          * Sets whether to display a close button on the paywall screen. Only available for original template paywalls.
          * Ignored for v2 Paywalls. Defaults to true.
          */
-        fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
+        public fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean): Builder = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
@@ -84,15 +84,15 @@ class PaywallDialogOptions internal constructor(
          * Sets a font provider to provide the paywall with your custom fonts.
          * Only available for original template paywalls. Ignored for v2 Paywalls.
          */
-        fun setFontProvider(fontProvider: FontProvider?) = apply {
+        public fun setFontProvider(fontProvider: FontProvider?): Builder = apply {
             this.fontProvider = fontProvider
         }
 
-        fun setListener(listener: PaywallListener?) = apply {
+        public fun setListener(listener: PaywallListener?): Builder = apply {
             this.listener = listener
         }
 
-        fun setCustomPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+        public fun setCustomPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -102,11 +102,11 @@ class PaywallDialogOptions internal constructor(
          *
          * @param variables A map of variable names to their [CustomVariableValue] values.
          */
-        fun setCustomVariables(variables: Map<String, CustomVariableValue>) = apply {
+        public fun setCustomVariables(variables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = variables
         }
 
-        fun build(): PaywallDialogOptions {
+        public fun build(): PaywallDialogOptions {
             return PaywallDialogOptions(this)
         }
     }

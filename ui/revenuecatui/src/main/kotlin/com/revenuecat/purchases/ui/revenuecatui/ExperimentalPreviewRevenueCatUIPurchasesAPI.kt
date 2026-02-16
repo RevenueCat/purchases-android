@@ -18,4 +18,4 @@ package com.revenuecat.purchases.ui.revenuecatui
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
 )
-annotation class ExperimentalPreviewRevenueCatUIPurchasesAPI
+public annotation class ExperimentalPreviewRevenueCatUIPurchasesAPI

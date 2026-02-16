@@ -41,7 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
  */
 @Suppress("TooManyFunctions")
 @InternalRevenueCatAPI
-abstract class CompatComposeView @JvmOverloads internal constructor(
+public abstract class CompatComposeView @JvmOverloads internal constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
@@ -162,7 +162,7 @@ abstract class CompatComposeView @JvmOverloads internal constructor(
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
 
-    open fun onBackPressed() {
+    public open fun onBackPressed() {
         (parent as? ViewGroup)?.removeView(this)
     }
 

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-enum class LogLevel {
+public enum class LogLevel {
     VERBOSE,
     DEBUG,
     INFO,
@@ -8,5 +8,5 @@ enum class LogLevel {
     ERROR,
     ;
 
-    companion object
+    public companion object
 }
