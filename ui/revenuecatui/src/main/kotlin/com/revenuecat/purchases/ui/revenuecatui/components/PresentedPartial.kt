@@ -50,6 +50,9 @@ internal class PresentedOverride<T : PresentedPartial<T>>(
 
 /**
  * Converts component overrides to presented overrides.
+ *
+ * Returns an error if any override contains an [ComponentOverride.Condition.Unsupported] condition,
+ * which indicates the paywall uses condition types this SDK version does not understand.
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
@@ -57,6 +60,10 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
     return this.map { override ->
+        if (override.conditions.any { it is ComponentOverride.Condition.Unsupported }) {
+            return Result.Error(PaywallValidationError.UnsupportedCondition)
+        }
+
         val properties = transform(override.properties)
             .getOrElse { return Result.Error(it.head) }
 
