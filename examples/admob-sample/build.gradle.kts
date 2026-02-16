@@ -25,21 +25,10 @@ android {
             "\"${localProperties.getProperty("REVENUECAT_API_KEY", "")}\"",
         )
 
-        // Library modules have a dimension used to separate different APIs.
-        // Applications don't need this, so we default to the "defaults" flavor.
+        // Library modules have dimensions used to separate different APIs and billing client versions.
+        // Applications don't need these, so we default to the "defaults" and "bc8" flavors.
         missingDimensionStrategy("apis", "defaults")
-
-        flavorDimensions += "billingclient"
-
-        productFlavors {
-            create("bc8") {
-                dimension = "billingclient"
-                isDefault = true
-            }
-            create("bc7") {
-                dimension = "billingclient"
-            }
-        }
+        missingDimensionStrategy("billingclient", "bc8")
 
         vectorDrawables {
             useSupportLibrary = true

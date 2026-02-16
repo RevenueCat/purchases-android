@@ -5,16 +5,8 @@ plugins {
 android {
     namespace = "com.revenuecat.purchases.admob"
 
-    flavorDimensions += "billingclient"
-
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
+    defaultConfig {
+        missingDimensionStrategy("billingclient", "bc8")
     }
 
     testOptions {
