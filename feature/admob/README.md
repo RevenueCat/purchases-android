@@ -2,6 +2,10 @@
 
 Wraps AdMob ad lifecycle callbacks to automatically track ad events in RevenueCat. Drop-in replacement for standard AdMob loading calls — add one method call and RevenueCat tracks loaded, displayed, opened, revenue, and failed-to-load events for you.
 
+## Placement
+
+Every tracking method accepts an optional `placement` string that tags all events for that ad with a logical location in your app. Use it to distinguish performance across different screens or slots in your RevenueCat dashboard — e.g. `"home_banner"`, `"level_complete_interstitial"`, `"feed_native"`, `"bonus_coins_rewarded"`. The value is free-form; pick a convention that makes sense for your app and use it consistently.
+
 ## Usage
 
 ### Banner ads
@@ -40,6 +44,11 @@ RCAdMob.loadAndTrackBannerAd(
     placement = "home_banner",
 )
 ```
+
+> **Important:** Do not reassign `adView.adListener` or `adView.onPaidEventListener`
+> after calling `loadAndTrackAd` / `loadAndTrackBannerAd`. The adapter wraps them
+> with tracking listeners — reassigning replaces the wrappers and breaks event tracking.
+> Pass your listeners through the `adListener` and `onPaidEventListener` parameters instead.
 
 ### Interstitial ads
 
@@ -83,12 +92,15 @@ RCAdMob.loadAndTrackInterstitialAd(
             interstitialAd = null
         }
     },
+    // ⚠️ Pass fullScreenContentCallback here — not on the ad object later.
+    // The adapter wraps it with tracking; assigning ad.fullScreenContentCallback
+    // afterward replaces the wrapper and breaks impression/click tracking.
     fullScreenContentCallback = object : FullScreenContentCallback() {
         override fun onAdDismissedFullScreenContent() { interstitialAd = null }
     },
 )
 
-// Later, to show:
+// Later, to show (unchanged):
 interstitialAd?.show(this)
 ```
 
@@ -133,6 +145,12 @@ RCAdMob.loadAndTrackRewardedAd(
         override fun onAdFailedToLoad(adError: LoadAdError) {
             rewardedAd = null
         }
+    },
+    // ⚠️ Pass fullScreenContentCallback here — not on the ad object later.
+    // The adapter wraps it with tracking; assigning ad.fullScreenContentCallback
+    // afterward replaces the wrapper and breaks impression/click tracking.
+    fullScreenContentCallback = object : FullScreenContentCallback() {
+        override fun onAdDismissedFullScreenContent() { rewardedAd = null }
     },
 )
 
@@ -185,6 +203,12 @@ RCAdMob.loadAndTrackRewardedInterstitialAd(
             rewardedInterstitialAd = null
         }
     },
+    // ⚠️ Pass fullScreenContentCallback here — not on the ad object later.
+    // The adapter wraps it with tracking; assigning ad.fullScreenContentCallback
+    // afterward replaces the wrapper and breaks impression/click tracking.
+    fullScreenContentCallback = object : FullScreenContentCallback() {
+        override fun onAdDismissedFullScreenContent() { rewardedInterstitialAd = null }
+    },
 )
 
 // Later, to show (unchanged):
@@ -233,6 +257,12 @@ RCAdMob.loadAndTrackAppOpenAd(
             // Handle error.
         }
     },
+    // ⚠️ Pass fullScreenContentCallback here — not on the ad object later.
+    // The adapter wraps it with tracking; assigning ad.fullScreenContentCallback
+    // afterward replaces the wrapper and breaks impression/click tracking.
+    fullScreenContentCallback = object : FullScreenContentCallback() {
+        override fun onAdDismissedFullScreenContent() { appOpenAd = null }
+    },
 )
 
 // Later, to show (unchanged):
@@ -266,6 +296,10 @@ val adLoader = AdLoader.Builder(context, "AD_UNIT_ID")
     .forNativeAdWithTracking(
         adUnitId = "AD_UNIT_ID",
         placement = "feed",
+        // ⚠️ Pass adListener here — do not call .withAdListener() on the builder.
+        // forNativeAdWithTracking sets up a tracking AdListener internally;
+        // calling .withAdListener() afterward replaces it and breaks
+        // impression/click/error tracking.
         adListener = object : AdListener() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 // Handle error.
@@ -274,6 +308,7 @@ val adLoader = AdLoader.Builder(context, "AD_UNIT_ID")
     ) { nativeAd ->
         // Show the ad.
     }
+    // .withAdListener(...) — ❌ don't do this, pass adListener above instead
     .withNativeAdOptions(NativeAdOptions.Builder().build())
     .build()
 
