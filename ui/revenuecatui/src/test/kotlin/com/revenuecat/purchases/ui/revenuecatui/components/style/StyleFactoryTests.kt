@@ -276,6 +276,37 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should succeed with empty string for a completely orphaned text_lid`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val orphanKey = LocalizationKey("orphan-key")
+        val otherKey = LocalizationKey("other-key")
+        val component = TextComponent(
+            text = orphanKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+        )
+        val factory = StyleFactory(
+            localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
+                    otherKey to LocalizationData.Text("some text")
+                ),
+            ),
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering,
+        )
+
+        // Act
+        val result = factory.create(component)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val style = (result as Result.Success).value.componentStyle as TextComponentStyle
+        assertThat(style.texts[defaultLocale]).isEqualTo("")
+    }
+
+    @Test
     fun `Should successfully create a TextComponentStyle with custom fonts`() {
         // Arrange
         val fontAliasBase = FontAlias("serif")
