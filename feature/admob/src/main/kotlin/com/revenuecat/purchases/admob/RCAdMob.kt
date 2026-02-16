@@ -226,16 +226,20 @@ object RCAdMob {
         onPaidEventListener: OnPaidEventListener? = null,
         onAdLoaded: (NativeAd) -> Unit = {},
     ): AdLoader {
-        return loadAndTrackNativeAdInternal(
-            context = context,
-            adUnitId = adUnitId,
-            adRequest = adRequest,
-            placement = placement,
-            nativeAdOptions = nativeAdOptions,
-            adListener = adListener,
-            onPaidEventListener = onPaidEventListener,
-            onAdLoaded = onAdLoaded,
-        )
+        val builder = AdLoader.Builder(context, adUnitId)
+            .forNativeAdWithTracking(
+                adUnitId = adUnitId,
+                placement = placement,
+                adListener = adListener,
+                onPaidEventListener = onPaidEventListener,
+                onNativeAdLoaded = onAdLoaded,
+            )
+        if (nativeAdOptions != null) {
+            builder.withNativeAdOptions(nativeAdOptions)
+        }
+        val adLoader = builder.build()
+        adLoader.loadAd(adRequest)
+        return adLoader
     }
 
     /**

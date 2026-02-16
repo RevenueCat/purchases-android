@@ -41,7 +41,7 @@ class NativeAdFlowTest {
     }
 
     @Test
-    fun `native flow wires listeners and forwards loaded impression click paid and failure`() {
+    fun `forNativeAdWithTracking wires listeners and forwards loaded impression click paid and failure`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val adRequest = mockk<AdRequest>()
         val adLoader = mockk<AdLoader>(relaxed = true)
@@ -63,7 +63,59 @@ class NativeAdFlowTest {
         every { anyConstructed<AdLoader.Builder>().build() } returns adLoader
         every { nativeAd.setOnPaidEventListener(capture(paidSlot)) } answers {}
 
-        val returnedLoader = loadAndTrackNativeAdInternal(
+        val builder = AdLoader.Builder(context, "native-unit")
+            .forNativeAdWithTracking(
+                adUnitId = "native-unit",
+                placement = "native",
+                adListener = delegateAdListener,
+                onPaidEventListener = delegatePaid,
+            ) { loadedByLambda = it }
+
+        val returnedLoader = builder.build()
+        assertSame(adLoader, returnedLoader)
+
+        returnedLoader.loadAd(adRequest)
+        verify { adLoader.loadAd(adRequest) }
+
+        nativeLoadedSlot.captured.onNativeAdLoaded(nativeAd)
+        assertSame(nativeAd, loadedByLambda)
+
+        val adValue = mockk<AdValue>()
+        paidSlot.captured.onPaidEvent(adValue)
+        assertSame(adValue, delegatePaid.lastAdValue)
+
+        adListenerSlot.captured.onAdImpression()
+        adListenerSlot.captured.onAdClicked()
+        adListenerSlot.captured.onAdFailedToLoad(mockk<LoadAdError>())
+        assertTrue(delegateAdListener.impressionCalled)
+        assertTrue(delegateAdListener.clickedCalled)
+        assertTrue(delegateAdListener.failedCalled)
+    }
+
+    @Test
+    fun `loadAndTrackNativeAd delegates to forNativeAdWithTracking and loads`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val adRequest = mockk<AdRequest>()
+        val adLoader = mockk<AdLoader>(relaxed = true)
+        val nativeAd = mockk<NativeAd>(relaxed = true)
+        val responseInfo = mockk<ResponseInfo>()
+        every { nativeAd.responseInfo } returns responseInfo
+
+        val delegateAdListener = RecordingAdListener()
+        val delegatePaid = RecordingPaidEventListener()
+        var loadedByLambda: NativeAd? = null
+
+        val nativeLoadedSlot = slot<NativeAd.OnNativeAdLoadedListener>()
+        val adListenerSlot = slot<AdListener>()
+        val paidSlot = slot<OnPaidEventListener>()
+
+        every { anyConstructed<AdLoader.Builder>().forNativeAd(capture(nativeLoadedSlot)) } answers { self as AdLoader.Builder }
+        every { anyConstructed<AdLoader.Builder>().withAdListener(capture(adListenerSlot)) } answers { self as AdLoader.Builder }
+        every { anyConstructed<AdLoader.Builder>().withNativeAdOptions(any<NativeAdOptions>()) } answers { self as AdLoader.Builder }
+        every { anyConstructed<AdLoader.Builder>().build() } returns adLoader
+        every { nativeAd.setOnPaidEventListener(capture(paidSlot)) } answers {}
+
+        val returnedLoader = RCAdMob.loadAndTrackNativeAd(
             context = context,
             adUnitId = "native-unit",
             adRequest = adRequest,

@@ -33,6 +33,17 @@ class RCAdMobApiContractTest {
         )
     }
 
+    @Test
+    fun `native extension jvm class exposes static overloads`() {
+        val nativeExtensionsClass = Class.forName("com.revenuecat.purchases.admob.RCAdMobNativeAd")
+
+        val overloads = staticOverloads(nativeExtensionsClass, "forNativeAdWithTracking")
+        assertTrue(
+            "Expected at least one static public forNativeAdWithTracking method on ${nativeExtensionsClass.name}",
+            overloads.isNotEmpty(),
+        )
+    }
+
     private fun assertStaticOverloadCount(clazz: Class<*>, methodName: String, expected: Int) {
         val overloads = staticOverloads(clazz, methodName)
 

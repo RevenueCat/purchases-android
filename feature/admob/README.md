@@ -259,7 +259,28 @@ val adLoader = AdLoader.Builder(context, "AD_UNIT_ID")
 adLoader.loadAd(AdRequest.Builder().build())
 ```
 
-**With RevenueCat tracking:**
+**With RevenueCat tracking** — swap `forNativeAd` for `forNativeAdWithTracking`:
+
+```kotlin
+val adLoader = AdLoader.Builder(context, "AD_UNIT_ID")
+    .forNativeAdWithTracking(
+        adUnitId = "AD_UNIT_ID",
+        placement = "feed",
+        adListener = object : AdListener() {
+            override fun onAdFailedToLoad(adError: LoadAdError) {
+                // Handle error.
+            }
+        },
+    ) { nativeAd ->
+        // Show the ad.
+    }
+    .withNativeAdOptions(NativeAdOptions.Builder().build())
+    .build()
+
+adLoader.loadAd(AdRequest.Builder().build())
+```
+
+Or using the static method (also works from Java):
 
 ```kotlin
 RCAdMob.loadAndTrackNativeAd(
@@ -313,7 +334,7 @@ Optional parameters can be omitted — overloads are generated automatically.
 | Rewarded | `RCAdMob.loadAndTrackRewardedAd()` |
 | Rewarded Interstitial | `RCAdMob.loadAndTrackRewardedInterstitialAd()` |
 | App Open | `RCAdMob.loadAndTrackAppOpenAd()` |
-| Native | `RCAdMob.loadAndTrackNativeAd()` |
+| Native | `AdLoader.Builder.forNativeAdWithTracking()` / `RCAdMob.loadAndTrackNativeAd()` |
 
 ## Events tracked
 

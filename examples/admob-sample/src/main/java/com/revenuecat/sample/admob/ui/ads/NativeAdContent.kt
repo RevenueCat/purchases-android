@@ -23,11 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RCAdMob
+import com.revenuecat.purchases.admob.forNativeAdWithTracking
 import com.revenuecat.sample.admob.R
 import com.revenuecat.sample.admob.data.Constants
 import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
@@ -56,17 +57,17 @@ internal fun NativeAdContent() {
 
     Button(
         onClick = {
-            RCAdMob.loadAndTrackNativeAd(
-                context = context,
-                adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
-                adRequest = AdRequest.Builder().build(),
-                placement = "home_native",
-                onAdLoaded = { nativeAd ->
+            AdLoader.Builder(context, Constants.AdMob.NATIVE_AD_UNIT_ID)
+                .forNativeAdWithTracking(
+                    adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
+                    placement = "home_native",
+                ) { nativeAd ->
                     nativeAdState?.destroy()
                     nativeAdState = nativeAd
                     Toast.makeText(context, "Native ad loaded!", Toast.LENGTH_SHORT).show()
-                },
-            )
+                }
+                .build()
+                .loadAd(AdRequest.Builder().build())
         },
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -102,17 +103,17 @@ internal fun NativeVideoAdContent() {
 
     Button(
         onClick = {
-            RCAdMob.loadAndTrackNativeAd(
-                context = context,
-                adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
-                adRequest = AdRequest.Builder().build(),
-                placement = "home_native_video",
-                onAdLoaded = { nativeAd ->
+            AdLoader.Builder(context, Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID)
+                .forNativeAdWithTracking(
+                    adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
+                    placement = "home_native_video",
+                ) { nativeAd ->
                     nativeVideoAdState?.destroy()
                     nativeVideoAdState = nativeAd
                     Toast.makeText(context, "Native video ad loaded!", Toast.LENGTH_SHORT).show()
-                },
-            )
+                }
+                .build()
+                .loadAd(AdRequest.Builder().build())
         },
         modifier = Modifier.fillMaxWidth(),
     ) {

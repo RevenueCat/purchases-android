@@ -1,151 +1,93 @@
+@file:JvmName("RCAdMobNativeAd")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob
 
 import android.annotation.SuppressLint
-import android.content.Context
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.nativead.NativeAd
-import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.ads.events.types.AdDisplayedData
-import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
-import com.revenuecat.purchases.ads.events.types.AdOpenedData
-import com.revenuecat.purchases.ads.events.types.AdRevenueData
 
-@Suppress("LongParameterList")
-internal fun loadAndTrackNativeAdInternal(
-    context: Context,
+/**
+ * Configures RevenueCat ad-event tracking for native ads on this [AdLoader.Builder].
+ *
+ * This is a direct 1:1 replacement for AdMob's [AdLoader.Builder.forNativeAd]:
+ * swap `forNativeAd` for `forNativeAdWithTracking` and the rest of the builder
+ * chain stays unchanged.
+ *
+ * Tracks loaded, displayed, opened, revenue, and failed-to-load events automatically.
+ * The [onNativeAdLoaded] lambda delivers the [NativeAd] instance — identical to
+ * the callback in [AdLoader.Builder.forNativeAd].
+ *
+ * For Java callers, prefer [RCAdMob.loadAndTrackNativeAd] which provides
+ * the same functionality as a static method.
+ *
+ * @param adUnitId The AdMob ad unit ID, used for RevenueCat event tracking.
+ * @param placement A placement identifier for RevenueCat tracking.
+ * @param adListener Optional [AdListener] to receive ad lifecycle events.
+ *   RevenueCat tracking for impression, click, and failed-to-load is injected
+ *   transparently before each delegate call.
+ * @param onPaidEventListener Optional [OnPaidEventListener] to receive paid events.
+ *   RevenueCat revenue tracking is called first, then forwarded to this listener.
+ * @param onNativeAdLoaded Called with the loaded [NativeAd] (already tracked).
+ * @return This [AdLoader.Builder] for chaining.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+fun AdLoader.Builder.forNativeAdWithTracking(
     adUnitId: String,
-    adRequest: AdRequest,
     placement: String? = null,
-    nativeAdOptions: NativeAdOptions? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
-    onAdLoaded: (NativeAd) -> Unit = {},
-): AdLoader {
+    onNativeAdLoaded: (NativeAd) -> Unit = {},
+): AdLoader.Builder {
     var loadedNativeAd: NativeAd? = null
+    val responseInfoProvider: () -> com.google.android.gms.ads.ResponseInfo? = { loadedNativeAd?.responseInfo }
 
-    val trackingAdListener = object : AdListener() {
-        override fun onAdImpression() {
-            val nativeAd = loadedNativeAd
-            trackIfConfigured {
-                adTracker.trackAdDisplayed(
-                    AdDisplayedData(
-                        networkName = nativeAd?.responseInfo?.mediationAdapterClassName,
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.NATIVE,
-                        placement = placement,
-                        adUnitId = adUnitId,
-                        impressionId = nativeAd?.responseInfo?.responseId.orEmpty(),
-                    ),
-                )
-            }
-            adListener?.onAdImpression()
+    this.forNativeAd { nativeAd ->
+        loadedNativeAd = nativeAd
+
+        trackIfConfigured {
+            adTracker.trackAdLoaded(
+                AdLoadedData(
+                    networkName = nativeAd.responseInfo?.mediationAdapterClassName,
+                    mediatorName = AdMediatorName.AD_MOB,
+                    adFormat = AdFormat.NATIVE,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    impressionId = nativeAd.responseInfo?.responseId.orEmpty(),
+                ),
+            )
         }
 
-        override fun onAdClicked() {
-            val nativeAd = loadedNativeAd
-            trackIfConfigured {
-                adTracker.trackAdOpened(
-                    AdOpenedData(
-                        networkName = nativeAd?.responseInfo?.mediationAdapterClassName,
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.NATIVE,
-                        placement = placement,
-                        adUnitId = adUnitId,
-                        impressionId = nativeAd?.responseInfo?.responseId.orEmpty(),
-                    ),
-                )
-            }
-            adListener?.onAdClicked()
-        }
+        nativeAd.setOnPaidEventListener(
+            TrackingOnPaidEventListener(
+                delegate = onPaidEventListener,
+                adFormat = AdFormat.NATIVE,
+                placement = placement,
+                adUnitId = adUnitId,
+                responseInfoProvider = responseInfoProvider,
+            ),
+        )
 
-        override fun onAdFailedToLoad(error: LoadAdError) {
-            trackIfConfigured {
-                adTracker.trackAdFailedToLoad(
-                    AdFailedToLoadData(
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.NATIVE,
-                        placement = placement,
-                        adUnitId = adUnitId,
-                        mediatorErrorCode = error.code,
-                    ),
-                )
-            }
-            adListener?.onAdFailedToLoad(error)
-        }
-
-        override fun onAdLoaded() {
-            adListener?.onAdLoaded()
-        }
-
-        override fun onAdClosed() {
-            adListener?.onAdClosed()
-        }
-
-        override fun onAdOpened() {
-            adListener?.onAdOpened()
-        }
-
-        override fun onAdSwipeGestureClicked() {
-            adListener?.onAdSwipeGestureClicked()
-        }
+        onNativeAdLoaded(nativeAd)
     }
 
-    val builder = AdLoader.Builder(context, adUnitId)
-        .forNativeAd { nativeAd ->
-            loadedNativeAd = nativeAd
+    this.withAdListener(
+        TrackingAdListener(
+            delegate = adListener,
+            adFormat = AdFormat.NATIVE,
+            placement = placement,
+            adUnitId = adUnitId,
+            responseInfoProvider = responseInfoProvider,
+            trackAdLoaded = false,
+        ),
+    )
 
-            trackIfConfigured {
-                adTracker.trackAdLoaded(
-                    AdLoadedData(
-                        networkName = nativeAd.responseInfo?.mediationAdapterClassName,
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.NATIVE,
-                        placement = placement,
-                        adUnitId = adUnitId,
-                        impressionId = nativeAd.responseInfo?.responseId.orEmpty(),
-                    ),
-                )
-            }
-
-            nativeAd.setOnPaidEventListener { adValue ->
-                trackIfConfigured {
-                    adTracker.trackAdRevenue(
-                        AdRevenueData(
-                            networkName = nativeAd.responseInfo?.mediationAdapterClassName,
-                            mediatorName = AdMediatorName.AD_MOB,
-                            adFormat = AdFormat.NATIVE,
-                            placement = placement,
-                            adUnitId = adUnitId,
-                            impressionId = nativeAd.responseInfo?.responseId.orEmpty(),
-                            revenueMicros = adValue.valueMicros,
-                            currency = adValue.currencyCode,
-                            precision = adValue.precisionType.toAdRevenuePrecision(),
-                        ),
-                    )
-                }
-                onPaidEventListener?.onPaidEvent(adValue)
-            }
-
-            onAdLoaded(nativeAd)
-        }
-        .withAdListener(trackingAdListener)
-
-    if (nativeAdOptions != null) {
-        builder.withNativeAdOptions(nativeAdOptions)
-    }
-
-    val adLoader = builder.build()
-    adLoader.loadAd(adRequest)
-    return adLoader
+    return this
 }

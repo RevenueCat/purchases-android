@@ -32,21 +32,24 @@ internal class TrackingAdListener(
     private val placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo?,
+    private val trackAdLoaded: Boolean = true,
 ) : AdListener() {
 
     override fun onAdLoaded() {
-        val responseInfo = responseInfoProvider()
-        trackIfConfigured {
-            adTracker.trackAdLoaded(
-                AdLoadedData(
-                    networkName = responseInfo?.mediationAdapterClassName,
-                    mediatorName = AdMediatorName.AD_MOB,
-                    adFormat = adFormat,
-                    placement = placement,
-                    adUnitId = adUnitId,
-                    impressionId = responseInfo?.responseId.orEmpty(),
-                ),
-            )
+        if (trackAdLoaded) {
+            val responseInfo = responseInfoProvider()
+            trackIfConfigured {
+                adTracker.trackAdLoaded(
+                    AdLoadedData(
+                        networkName = responseInfo?.mediationAdapterClassName,
+                        mediatorName = AdMediatorName.AD_MOB,
+                        adFormat = adFormat,
+                        placement = placement,
+                        adUnitId = adUnitId,
+                        impressionId = responseInfo?.responseId.orEmpty(),
+                    ),
+                )
+            }
         }
         delegate?.onAdLoaded()
     }
