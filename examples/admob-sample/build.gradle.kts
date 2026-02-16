@@ -78,4 +78,6 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
 
+    // AdMob APIs are referenced directly in sample source files.
+    implementation(libs.google.mobile.ads)
 }
