@@ -225,6 +225,9 @@ internal class EventsManager(
                 debugLog { "Flush already in progress." }
                 return@enqueue
             }
+            debugEventListener?.onDebugEventReceived(
+                DebugEvent(name = DebugEventName.FLUSH_STARTED),
+            )
 
             flushNextBatch(batchNumber = 1, delay = delay)
 

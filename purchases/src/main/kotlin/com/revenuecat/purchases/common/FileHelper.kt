@@ -5,7 +5,6 @@ import com.revenuecat.purchases.utils.sizeInKB
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 
@@ -55,9 +54,9 @@ internal class FileHelper(
             }
             deleteFile(filePath)
             appendToFile(filePath, textToAppend.toString())
-        } catch (e: Throwable) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             onException?.invoke(e)
-            errorLog(e) { "FileHelper: file not found removing first lines from file: $filePath. Ignoring." }
+            errorLog(e) { "FileHelper: error removing first lines from file: $filePath. Ignoring." }
         }
     }
 

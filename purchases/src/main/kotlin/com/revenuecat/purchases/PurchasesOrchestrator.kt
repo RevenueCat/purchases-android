@@ -286,6 +286,9 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = true)
         }
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
+        debugEventListener?.onDebugEventReceived(
+            DebugEvent(name = DebugEventName.APP_BACKGROUNDED),
+        )
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
         flushEvents(Delay.NONE)
