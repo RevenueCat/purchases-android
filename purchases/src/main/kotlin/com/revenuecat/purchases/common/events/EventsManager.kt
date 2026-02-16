@@ -138,7 +138,6 @@ internal class EventsManager(
                 }
             }
             fileHelper.debugEventCallback = callback
-            legacyEventsFileHelper?.debugEventCallback = callback
         }
 
     private var flushInProgress = AtomicBoolean(false)
@@ -156,10 +155,7 @@ internal class EventsManager(
             warnLog { "Event store size limit reached. Clearing oldest events to free up space." }
             fileHelper.clear(EVENTS_TO_CLEAR_ON_LIMIT)
             debugEventListener?.onDebugEventReceived(
-                DebugEvent(
-                    name = DebugEventName.FILE_SIZE_LIMIT_REACHED,
-                    properties = mapOf("fileName" to fileHelper.filePath),
-                ),
+                DebugEvent(name = DebugEventName.FILE_SIZE_LIMIT_REACHED),
             )
         }
     }

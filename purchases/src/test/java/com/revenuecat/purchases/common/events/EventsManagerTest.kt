@@ -814,7 +814,6 @@ class EventsManagerTest {
 
         assertThat(receivedEvents).isNotEmpty
         assertThat(receivedEvents.all { it.name == DebugEventName.FILE_SIZE_LIMIT_REACHED }).isTrue
-        assertThat(receivedEvents.first().properties["fileName"]).isEqualTo(EventsManager.EVENTS_FILE_PATH_NEW)
     }
 
     @OptIn(InternalRevenueCatAPI::class)

@@ -203,7 +203,6 @@ internal class PurchasesOrchestrator(
         set(value) {
             field = value
             eventsManager.debugEventListener = value
-            adEventsManager.debugEventListener = value
         }
 
     val isAnonymous: Boolean

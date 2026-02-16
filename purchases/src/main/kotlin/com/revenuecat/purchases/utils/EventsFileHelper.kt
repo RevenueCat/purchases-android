@@ -16,7 +16,7 @@ import org.json.JSONObject
  */
 internal open class EventsFileHelper<T : Event> (
     private val fileHelper: FileHelper,
-    internal val filePath: String,
+    private val filePath: String,
     private val eventSerializer: ((T) -> String)? = null,
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
