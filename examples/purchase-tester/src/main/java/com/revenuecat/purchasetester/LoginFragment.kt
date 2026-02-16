@@ -1,5 +1,6 @@
 package com.revenuecat.purchasetester
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -66,8 +67,9 @@ class LoginFragment : Fragment() {
     }
 
     private fun navigateToConfigureFragment() {
-        val directions = LoginFragmentDirections.actionLoginFragmentToConfigureFragment()
-        findNavController().navigate(directions)
+        val intent = Intent(requireContext(), ConfigureActivity::class.java)
+        startActivity(intent)
+        requireActivity().finish()
     }
 
     private fun navigateToLogsFragment() {
