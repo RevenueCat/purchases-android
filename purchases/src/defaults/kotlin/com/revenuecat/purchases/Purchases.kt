@@ -158,7 +158,8 @@ public class Purchases internal constructor(
 
     /**
      * Listener for receiving debug events from the SDK's internal event storage and flushing pipeline.
-     * This is an internal debug API for monitoring low-level SDK operations.
+     * This is an internal debug API for monitoring low-level SDK operations and will likely be removed in future
+     * versions without warning.
      */
     @get:JvmSynthetic
     @set:JvmSynthetic

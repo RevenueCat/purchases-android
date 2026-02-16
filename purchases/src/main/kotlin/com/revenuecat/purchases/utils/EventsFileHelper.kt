@@ -73,16 +73,7 @@ internal open class EventsFileHelper<T : Event> (
 
     @Synchronized
     fun clear(eventsToDeleteCount: Int) {
-        try {
-            fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount) { e ->
-                debugEventCallback?.invoke(
-                    DebugEvent(
-                        name = DebugEventName.REMOVE_LINES_EXCEPTION,
-                        properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
-                    ),
-                )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount) { e ->
             debugEventCallback?.invoke(
                 DebugEvent(
                     name = DebugEventName.REMOVE_LINES_EXCEPTION,
