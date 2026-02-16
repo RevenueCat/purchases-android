@@ -387,11 +387,6 @@ This library uses `@ExperimentalPreviewRevenueCatPurchasesAPI`.
 Prefer opting in at the narrowest scope where you call the API:
 
 ```kotlin
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.loadAndTrackAd
-
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 fun loadBanner(adView: AdView) {
     adView.loadAndTrackAd(
