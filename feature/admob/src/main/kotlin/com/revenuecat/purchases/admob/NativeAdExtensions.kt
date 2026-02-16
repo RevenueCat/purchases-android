@@ -8,6 +8,7 @@ import android.annotation.SuppressLint
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.OnPaidEventListener
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -47,7 +48,7 @@ public fun AdLoader.Builder.forNativeAdWithTracking(
     onNativeAdLoaded: (NativeAd) -> Unit = {},
 ): AdLoader.Builder {
     var loadedNativeAd: NativeAd? = null
-    val responseInfoProvider: () -> com.google.android.gms.ads.ResponseInfo? = { loadedNativeAd?.responseInfo }
+    val responseInfoProvider: () -> ResponseInfo? = { loadedNativeAd?.responseInfo }
 
     this.forNativeAd { nativeAd ->
         loadedNativeAd = nativeAd
