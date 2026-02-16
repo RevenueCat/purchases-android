@@ -992,6 +992,9 @@ workflows:
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+      - assemble-admob-integration-sample-app:
+          requires:
+            - prepare-tests
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
