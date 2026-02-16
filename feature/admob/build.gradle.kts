@@ -7,6 +7,7 @@ android {
 
     defaultConfig {
         missingDimensionStrategy("billingclient", "bc8")
+        missingDimensionStrategy("apis", "defaults")
     }
 
     testOptions {
