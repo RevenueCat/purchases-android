@@ -45,12 +45,6 @@ android {
         }
     }
 
-    kotlinOptions {
-        freeCompilerArgs += listOf(
-            "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI",
-        )
-    }
-
     buildFeatures {
         compose = true
     }

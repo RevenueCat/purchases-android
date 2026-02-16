@@ -1,5 +1,3 @@
-@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.sample.admob.ui.ads
 
 import android.view.LayoutInflater
