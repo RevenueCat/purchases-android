@@ -383,11 +383,20 @@ All formats automatically report these RevenueCat ad events:
 
 ## Experimental API
 
-This library uses `@ExperimentalPreviewRevenueCatPurchasesAPI`. Opt in at the module level:
+This library uses `@ExperimentalPreviewRevenueCatPurchasesAPI`.
+Prefer opting in at the narrowest scope where you call the API:
 
 ```kotlin
-// build.gradle.kts
-kotlinOptions {
-    freeCompilerArgs += "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI"
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.loadAndTrackAd
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadBanner(adView: AdView) {
+    adView.loadAndTrackAd(
+        adRequest = AdRequest.Builder().build(),
+        placement = "home_banner",
+    )
 }
 ```
