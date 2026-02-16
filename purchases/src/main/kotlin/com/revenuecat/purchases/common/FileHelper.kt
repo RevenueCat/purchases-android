@@ -5,6 +5,7 @@ import com.revenuecat.purchases.utils.sizeInKB
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 
@@ -40,15 +41,24 @@ internal class FileHelper(
         }
     }
 
-    fun removeFirstLinesFromFile(filePath: String, numberOfLinesToRemove: Int) {
-        val textToAppend = StringBuilder()
-        readFilePerLines(filePath) { sequence ->
-            sequence.drop(numberOfLinesToRemove).forEach { line ->
-                textToAppend.append(line).append("\n")
+    fun removeFirstLinesFromFile(
+        filePath: String,
+        numberOfLinesToRemove: Int,
+        onException: ((Throwable) -> Unit)? = null,
+    ) {
+        try {
+            val textToAppend = StringBuilder()
+            readFilePerLines(filePath) { sequence ->
+                sequence.drop(numberOfLinesToRemove).forEach { line ->
+                    textToAppend.append(line).append("\n")
+                }
             }
+            deleteFile(filePath)
+            appendToFile(filePath, textToAppend.toString())
+        } catch (e: Throwable) {
+            onException?.invoke(e)
+            errorLog(e) { "FileHelper: file not found removing first lines from file: $filePath. Ignoring." }
         }
-        deleteFile(filePath)
-        appendToFile(filePath, textToAppend.toString())
     }
 
     /**

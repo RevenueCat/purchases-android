@@ -197,6 +197,15 @@ internal class PurchasesOrchestrator(
     @set:Synchronized
     var trackedEventListener: TrackedEventListener? = null
 
+    @get:Synchronized
+    @set:Synchronized
+    var debugEventListener: DebugEventListener? = null
+        set(value) {
+            field = value
+            eventsManager.debugEventListener = value
+            adEventsManager.debugEventListener = value
+        }
+
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 

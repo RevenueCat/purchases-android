@@ -1,5 +1,10 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.utils
 
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
@@ -11,16 +16,28 @@ import org.json.JSONObject
  */
 internal open class EventsFileHelper<T : Event> (
     private val fileHelper: FileHelper,
-    private val filePath: String,
+    internal val filePath: String,
     private val eventSerializer: ((T) -> String)? = null,
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
+    var debugEventCallback: ((DebugEvent) -> Unit)? = null
+
     @Synchronized
     fun appendEvent(event: T) {
-        fileHelper.appendToFile(
-            filePath,
-            (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
-        )
+        try {
+            fileHelper.appendToFile(
+                filePath,
+                (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.APPEND_EVENT_EXCEPTION,
+                    properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
+                ),
+            )
+            throw e
+        }
     }
 
     @Synchronized
@@ -56,7 +73,23 @@ internal open class EventsFileHelper<T : Event> (
 
     @Synchronized
     fun clear(eventsToDeleteCount: Int) {
-        fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount)
+        try {
+            fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount) { e ->
+                debugEventCallback?.invoke(
+                    DebugEvent(
+                        name = DebugEventName.REMOVE_LINES_EXCEPTION,
+                        properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
+                    ),
+                )
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.REMOVE_LINES_EXCEPTION,
+                    properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
+                ),
+            )
+        }
     }
 
     @Synchronized
@@ -67,13 +100,34 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     private fun mapToEvent(string: String): T? {
-        val eventDeserializer = eventDeserializer ?: return null
+        val eventDeserializer = eventDeserializer
+        if (eventDeserializer == null) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = emptyMap(),
+                ),
+            )
+            return null
+        }
         return try {
             eventDeserializer(string)
         } catch (e: SerializationException) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = mapOf("exceptionType" to "SerializationException"),
+                ),
+            )
             errorLog(e) { "Error parsing event from file: $string" }
             null
         } catch (e: IllegalArgumentException) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = mapOf("exceptionType" to "IllegalArgumentException"),
+                ),
+            )
             errorLog(e) { "Error parsing event from file: $string" }
             null
         }

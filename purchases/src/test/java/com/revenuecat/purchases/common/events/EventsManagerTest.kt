@@ -5,6 +5,10 @@ package com.revenuecat.purchases.common.events
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -793,5 +797,52 @@ class EventsManagerTest {
             // Should not throw exception
             assertThat(line).startsWith("{\"type\":")
         }
+    }
+
+    // Debug Event Listener Tests
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified when file size limit is reached`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        // Track enough events to trigger the file size limit
+        for (i in 0 until 7100) {
+            eventsManager.track(paywallEvent)
+        }
+
+        assertThat(receivedEvents).isNotEmpty
+        assertThat(receivedEvents.all { it.name == DebugEventName.FILE_SIZE_LIMIT_REACHED }).isTrue
+        assertThat(receivedEvents.first().properties["fileName"]).isEqualTo(EventsManager.EVENTS_FILE_PATH_NEW)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified on flush error`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["errorCode"]).isEqualTo(PurchasesErrorCode.UnknownError.name)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is not notified when no error occurs`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).isEmpty()
     }
 }
