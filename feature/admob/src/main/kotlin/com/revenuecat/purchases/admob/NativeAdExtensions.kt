@@ -39,7 +39,7 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * @return This [AdLoader.Builder] for chaining.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-fun AdLoader.Builder.forNativeAdWithTracking(
+public fun AdLoader.Builder.forNativeAdWithTracking(
     adUnitId: String,
     placement: String? = null,
     adListener: AdListener? = null,

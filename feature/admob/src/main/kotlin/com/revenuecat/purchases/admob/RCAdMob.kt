@@ -43,7 +43,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
  * for more idiomatic syntax.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-object RCAdMob {
+public object RCAdMob {
 
     /**
      * Loads an [InterstitialAd] and automatically tracks RevenueCat ad events.
@@ -64,7 +64,7 @@ object RCAdMob {
     @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackInterstitialAd(
+    public fun loadAndTrackInterstitialAd(
         context: Context,
         adUnitId: String,
         adRequest: AdRequest,
@@ -100,7 +100,7 @@ object RCAdMob {
     @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackAppOpenAd(
+    public fun loadAndTrackAppOpenAd(
         context: Context,
         adUnitId: String,
         adRequest: AdRequest,
@@ -136,7 +136,7 @@ object RCAdMob {
     @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackRewardedAd(
+    public fun loadAndTrackRewardedAd(
         context: Context,
         adUnitId: String,
         adRequest: AdRequest,
@@ -172,7 +172,7 @@ object RCAdMob {
     @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackRewardedInterstitialAd(
+    public fun loadAndTrackRewardedInterstitialAd(
         context: Context,
         adUnitId: String,
         adRequest: AdRequest,
@@ -218,7 +218,7 @@ object RCAdMob {
     @Suppress("LongParameterList")
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackNativeAd(
+    public fun loadAndTrackNativeAd(
         context: Context,
         adUnitId: String,
         adRequest: AdRequest,
@@ -277,7 +277,7 @@ object RCAdMob {
      */
     @JvmStatic
     @JvmOverloads
-    fun loadAndTrackBannerAd(
+    public fun loadAndTrackBannerAd(
         adView: AdView,
         adRequest: AdRequest,
         placement: String? = null,

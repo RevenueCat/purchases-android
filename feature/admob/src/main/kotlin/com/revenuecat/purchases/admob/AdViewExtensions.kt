@@ -47,7 +47,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  *   existing listener will be used as the delegate.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-fun AdView.loadAndTrackAd(
+public fun AdView.loadAndTrackAd(
     adRequest: AdRequest,
     placement: String? = null,
     adListener: AdListener? = null,
