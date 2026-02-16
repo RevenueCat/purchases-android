@@ -1,38 +1,45 @@
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    id("revenuecat-android-application")
     alias(libs.plugins.compose.compiler)
 }
 
-android {
-    val compileVersion = 36
-    compileSdk = compileVersion
-
-    val localProperties = Properties().apply {
-        val localPropsFile = rootProject.file("local.properties")
-        if (localPropsFile.exists()) {
-            localPropsFile.inputStream().use { load(it) }
-        }
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
     }
+}
 
+android {
     defaultConfig {
         applicationId = "com.revenuecat.sample.admob"
         minSdk = 26
-        targetSdk = 36
-        versionCode = rootProject.extra.get("versionCode")?.toString()?.toInt()
-        versionName = rootProject.extra.get("versionName")?.toString()
-
-        // Handle SDK product flavors
-        missingDimensionStrategy("apis", "defaults")
-        missingDimensionStrategy("billingclient", "bc8")
+        versionCode = 1
+        versionName = "1.0"
 
         buildConfigField(
             "String",
             "REVENUECAT_API_KEY",
             "\"${localProperties.getProperty("REVENUECAT_API_KEY", "")}\"",
         )
+
+        // Library modules have a dimension used to separate different APIs.
+        // Applications don't need this, so we default to the "defaults" flavor.
+        missingDimensionStrategy("apis", "defaults")
+
+        flavorDimensions += "billingclient"
+
+        productFlavors {
+            create("bc8") {
+                dimension = "billingclient"
+                isDefault = true
+            }
+            create("bc7") {
+                dimension = "billingclient"
+            }
+        }
 
         vectorDrawables {
             useSupportLibrary = true
@@ -49,13 +56,7 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
     kotlinOptions {
-        jvmTarget = "1.8"
         freeCompilerArgs += listOf(
             "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI",
         )
@@ -63,7 +64,6 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 
     packaging {
@@ -76,25 +76,25 @@ android {
 }
 
 dependencies {
+    // RevenueCat
+    implementation(project(":purchases"))
+
+    // RevenueCat AdMob Adapter
+    implementation(project(":feature:admob"))
+
     // AndroidX
     implementation(libs.androidx.core)
-    implementation(libs.androidx.lifecycle.runtime)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.activity.compose)
     implementation("androidx.cardview:cardview:1.0.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
 
-    // RevenueCat
-    implementation(libs.revenuecat)
-
     // AdMob
     implementation(libs.google.mobile.ads)
-
-    // RevenueCat AdMob Adapter
-    implementation("com.revenuecat.purchases:purchases-admob")
 }

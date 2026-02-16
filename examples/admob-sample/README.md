@@ -37,7 +37,7 @@ The adapter library automatically tracks these RevenueCat ad events for all ad f
 
 This sample uses RevenueCat's `@ExperimentalPreviewRevenueCatPurchasesAPI` for ad tracking. This API may change without warning and no compatibility guarantees are provided.
 
-To use it, opt-in at the module level in `app/build.gradle.kts`:
+To use it, opt-in at the module level in `build.gradle.kts`:
 
 ```kotlin
 kotlinOptions {
@@ -190,7 +190,7 @@ AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue trac
 
 ### Build errors about `@ExperimentalPreviewRevenueCatPurchasesAPI`
 
-Make sure you have the latest RevenueCat SDK (9.19.4 or later) and the module-level opt-in configured in `app/build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
+Make sure you have the latest RevenueCat SDK (9.19.4 or later) and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
 
 ---
 

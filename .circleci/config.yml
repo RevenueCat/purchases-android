@@ -932,9 +932,7 @@ workflows:
       - assemble-custom-entitlement-computation-sample-app:
           requires:
             - deploy-snapshot
-      - assemble-admob-integration-sample-app:
-          requires:
-            - deploy-snapshot
+      - assemble-admob-integration-sample-app
 
   build-test-deploy:
     when:

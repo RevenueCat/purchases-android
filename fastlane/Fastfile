@@ -21,7 +21,6 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
-  './examples/AdMobIntegrationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
@@ -600,11 +599,8 @@ platform :android do
 
   desc "Builds an AdMob Integration Sample APK"
   lane :build_admob_integration_sample do |options|
-    project_dir = "examples/AdMobIntegrationSample"
-    task = "assembleDebug"
     gradle(
-      project_dir: project_dir,
-      task: task,
+      task: ":examples:admob-sample:assembleDebug",
     )
   end
 
