@@ -20,13 +20,3 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# RevenueCat
--keep class com.revenuecat.purchases.** { *; }
-
-# AdMob
--keep public class com.google.android.gms.ads.** {
-   public *;
-}
--keep public class com.google.ads.** {
-   public *;
-}
