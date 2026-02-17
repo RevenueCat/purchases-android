@@ -12,6 +12,7 @@ import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -54,7 +55,7 @@ class InterstitialAdFlowTest {
             InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        val adTracker = mockk<AdTracker>(relaxed = true)
         adTracker.loadAndTrackInterstitialAd(
             context = context,
             adUnitId = "interstitial-unit",
@@ -97,7 +98,7 @@ class InterstitialAdFlowTest {
             InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        val adTracker = mockk<AdTracker>(relaxed = true)
         adTracker.loadAndTrackInterstitialAd(
             context = context,
             adUnitId = "interstitial-unit",
