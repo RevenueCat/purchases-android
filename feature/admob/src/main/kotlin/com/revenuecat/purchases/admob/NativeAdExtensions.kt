@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Configures RevenueCat ad-event tracking for native ads on this [AdLoader.Builder].
@@ -26,9 +27,6 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * The [onNativeAdLoaded] lambda delivers the [NativeAd] instance — identical to
  * the callback in [AdLoader.Builder.forNativeAd].
  *
- * For Java callers, prefer [RCAdMob.loadAndTrackNativeAd] which provides
- * the same functionality as a static method.
- *
  * @param adUnitId The AdMob ad unit ID, used for RevenueCat event tracking.
  * @param placement A placement identifier for RevenueCat tracking.
  * @param adListener Optional [AdListener] to receive ad lifecycle events.
@@ -40,6 +38,7 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * @return This [AdLoader.Builder] for chaining.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AdLoader.Builder.forNativeAdWithTracking(
     adUnitId: String,
     placement: String? = null,

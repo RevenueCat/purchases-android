@@ -11,6 +11,7 @@ import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -53,7 +54,8 @@ class AppOpenAdFlowTest {
             AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackAppOpenAdInternal(
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
             adUnitId = "app-open-unit",
             adRequest = adRequest,
@@ -95,7 +97,8 @@ class AppOpenAdFlowTest {
             AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackAppOpenAdInternal(
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
             adUnitId = "app-open-unit",
             adRequest = adRequest,

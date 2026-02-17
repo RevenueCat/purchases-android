@@ -19,7 +19,8 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RCAdMob
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.loadAndTrackRewardedAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -44,7 +45,7 @@ internal fun RewardedAdContent(activity: Activity) {
     Button(
         onClick = {
             status = "Loading..."
-            RCAdMob.loadAndTrackRewardedAd(
+            Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
                 context = context,
                 adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),

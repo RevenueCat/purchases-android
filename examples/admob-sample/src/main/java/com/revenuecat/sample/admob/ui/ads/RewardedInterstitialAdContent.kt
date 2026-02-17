@@ -19,7 +19,8 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RCAdMob
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.loadAndTrackRewardedInterstitialAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -44,7 +45,7 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
     Button(
         onClick = {
             status = "Loading..."
-            RCAdMob.loadAndTrackRewardedInterstitialAd(
+            Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
                 context = context,
                 adUnitId = Constants.AdMob.REWARDED_INTERSTITIAL_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),

@@ -11,6 +11,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.OnPaidEventListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Sets up RevenueCat ad-event tracking for this [AdView] and loads the ad.
@@ -32,8 +33,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * [AdView.onPaidEventListener] after calling this method, as doing so will
  * replace the tracking wrappers and break RevenueCat event tracking.
  *
- * For Java callers, prefer [RCAdMob.loadAndTrackBannerAd] which provides
- * the same functionality as a static method.
+ * Alternatively use [AdTracker.loadAndTrackBannerAd] for a call that takes the tracker explicitly.
  *
  * @param adRequest The [AdRequest] to use.
  * @param placement A placement identifier (e.g., "home_screen_banner").
@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  *   existing listener will be used as the delegate.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AdView.loadAndTrackAd(
     adRequest: AdRequest,
     placement: String? = null,
