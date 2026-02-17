@@ -1534,10 +1534,11 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `setting debugEventListener on Purchases propagates to orchestrator`() {
-        val listener = DebugEventListener { }
-        purchases.debugEventListener = listener
-        assertThat(purchases.purchasesOrchestrator.debugEventListener).isEqualTo(listener)
+    fun `setting debugEventListener on Purchases propagates to EventManager`() {
+        purchases.debugEventListener = DebugEventListener { }
+        verify(exactly = 1) {
+            mockEventsManager.debugEventListener = any()
+        }
     }
 
     // endregion track events

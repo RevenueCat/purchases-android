@@ -150,6 +150,9 @@ internal open class BasePurchasesTest {
             mockEventsManager.debugEventListener = any()
         } just Runs
         every {
+            mockEventsManager.debugEventListener
+        } returns null
+        every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
