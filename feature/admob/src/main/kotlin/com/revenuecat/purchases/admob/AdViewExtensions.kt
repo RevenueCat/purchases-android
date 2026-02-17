@@ -32,8 +32,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * [AdView.onPaidEventListener] after calling this method, as doing so will
  * replace the tracking wrappers and break RevenueCat event tracking.
  *
- * For Java callers, prefer [RCAdMob.loadAndTrackBannerAd] which provides
- * the same functionality as a static method.
+ * Alternatively use [AdTracker.loadAndTrackBannerAd] for a call that takes the tracker explicitly.
  *
  * @param adRequest The [AdRequest] to use.
  * @param placement A placement identifier (e.g., "home_screen_banner").

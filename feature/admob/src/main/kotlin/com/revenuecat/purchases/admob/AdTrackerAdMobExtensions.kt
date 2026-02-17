@@ -1,9 +1,14 @@
+@file:JvmName("AdTrackerAdMob")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob
 
+import android.annotation.SuppressLint
 import android.content.Context
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
@@ -15,13 +20,25 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.AdTracker
+import kotlin.jvm.JvmSynthetic
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 
+/**
+ * Loads an [InterstitialAd] and automatically tracks RevenueCat ad events.
+ *
+ * On success the ad is delivered via [loadCallback] with full-screen content
+ * tracking already wired. Revenue tracking is set up via `OnPaidEventListener`.
+ *
+ * Call via [Purchases.sharedInstance.adTracker].
+ */
 @Suppress("LongParameterList")
-internal fun loadAndTrackInterstitialAdInternal(
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackInterstitialAd(
     context: Context,
     adUnitId: String,
     adRequest: AdRequest,
@@ -84,8 +101,15 @@ internal fun loadAndTrackInterstitialAdInternal(
     )
 }
 
+/**
+ * Loads an [AppOpenAd] and automatically tracks RevenueCat ad events.
+ *
+ * Call via [Purchases.sharedInstance.adTracker].
+ */
 @Suppress("LongParameterList")
-internal fun loadAndTrackAppOpenAdInternal(
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackAppOpenAd(
     context: Context,
     adUnitId: String,
     adRequest: AdRequest,
@@ -148,8 +172,15 @@ internal fun loadAndTrackAppOpenAdInternal(
     )
 }
 
+/**
+ * Loads a [RewardedAd] and automatically tracks RevenueCat ad events.
+ *
+ * Call via [Purchases.sharedInstance.adTracker].
+ */
 @Suppress("LongParameterList")
-internal fun loadAndTrackRewardedAdInternal(
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackRewardedAd(
     context: Context,
     adUnitId: String,
     adRequest: AdRequest,
@@ -212,8 +243,15 @@ internal fun loadAndTrackRewardedAdInternal(
     )
 }
 
+/**
+ * Loads a [RewardedInterstitialAd] and automatically tracks RevenueCat ad events.
+ *
+ * Call via [Purchases.sharedInstance.adTracker].
+ */
 @Suppress("LongParameterList")
-internal fun loadAndTrackRewardedInterstitialAdInternal(
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackRewardedInterstitialAd(
     context: Context,
     adUnitId: String,
     adRequest: AdRequest,
@@ -273,5 +311,30 @@ internal fun loadAndTrackRewardedInterstitialAdInternal(
                 loadCallback?.onAdFailedToLoad(error)
             }
         },
+    )
+}
+
+/**
+ * Sets up RevenueCat ad-event tracking for the given [AdView] and loads the ad.
+ *
+ * Call via [Purchases.sharedInstance.adTracker].
+ *
+ * For an AdMob-close API without passing the tracker, use [AdView.loadAndTrackAd] instead.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackBannerAd(
+    adView: AdView,
+    adRequest: AdRequest,
+    placement: String? = null,
+    adListener: AdListener? = null,
+    onPaidEventListener: OnPaidEventListener? = null,
+) {
+    loadAndTrackBannerAdInternal(
+        adView = adView,
+        adRequest = adRequest,
+        placement = placement,
+        adListener = adListener,
+        onPaidEventListener = onPaidEventListener,
     )
 }

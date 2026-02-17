@@ -26,9 +26,6 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * The [onNativeAdLoaded] lambda delivers the [NativeAd] instance — identical to
  * the callback in [AdLoader.Builder.forNativeAd].
  *
- * For Java callers, prefer [RCAdMob.loadAndTrackNativeAd] which provides
- * the same functionality as a static method.
- *
  * @param adUnitId The AdMob ad unit ID, used for RevenueCat event tracking.
  * @param placement A placement identifier for RevenueCat tracking.
  * @param adListener Optional [AdListener] to receive ad lifecycle events.
