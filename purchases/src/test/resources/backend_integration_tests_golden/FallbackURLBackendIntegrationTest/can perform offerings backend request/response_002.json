@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "92204",
+    "Content-Length": "92227",
     "Server": "cloudflare",
     "x-revenuecat-app-id": "appc735cd95ea"
   },
@@ -2112,7 +2112,8 @@
             }
           },
           "exit_offers": {},
-          "play_store_product_change_mode": {}
+          "play_store_product_change_mode": {},
+          "published_fonts": {}
         },
         "packages": [
           {
