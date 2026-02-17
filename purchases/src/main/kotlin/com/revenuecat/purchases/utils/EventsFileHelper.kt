@@ -33,7 +33,10 @@ internal open class EventsFileHelper<T : Event> (
             debugEventCallback?.invoke(
                 DebugEvent(
                     name = DebugEventName.APPEND_EVENT_EXCEPTION,
-                    properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
+                    properties = buildMap {
+                        put("exceptionType", e::class.simpleName ?: "Unknown")
+                        e.message?.let { put("message", it.take(80)) }
+                    },
                 ),
             )
             throw e
@@ -77,7 +80,10 @@ internal open class EventsFileHelper<T : Event> (
             debugEventCallback?.invoke(
                 DebugEvent(
                     name = DebugEventName.REMOVE_LINES_EXCEPTION,
-                    properties = mapOf("exceptionType" to (e::class.simpleName ?: "Unknown")),
+                    properties = buildMap {
+                        put("exceptionType", e::class.simpleName ?: "Unknown")
+                        e.message?.let { put("message", it.take(80)) }
+                    },
                 ),
             )
         }
@@ -107,7 +113,10 @@ internal open class EventsFileHelper<T : Event> (
             debugEventCallback?.invoke(
                 DebugEvent(
                     name = DebugEventName.DESERIALIZATION_ERROR,
-                    properties = mapOf("exceptionType" to "SerializationException"),
+                    properties = buildMap {
+                        put("exceptionType", "SerializationException")
+                        e.message?.let { put("message", it.take(80)) }
+                    },
                 ),
             )
             errorLog(e) { "Error parsing event from file: $string" }
@@ -116,7 +125,10 @@ internal open class EventsFileHelper<T : Event> (
             debugEventCallback?.invoke(
                 DebugEvent(
                     name = DebugEventName.DESERIALIZATION_ERROR,
-                    properties = mapOf("exceptionType" to "IllegalArgumentException"),
+                    properties = buildMap {
+                        put("exceptionType", "IllegalArgumentException")
+                        e.message?.let { put("message", it.take(80)) }
+                    },
                 ),
             )
             errorLog(e) { "Error parsing event from file: $string" }

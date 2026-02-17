@@ -72,6 +72,7 @@ class EventsFileHelperTest {
         assertThat(receivedEvents).hasSize(1)
         assertThat(receivedEvents.first().name).isEqualTo(DebugEventName.APPEND_EVENT_EXCEPTION)
         assertThat(receivedEvents.first().properties["exceptionType"]).isEqualTo("RuntimeException")
+        assertThat(receivedEvents.first().properties["message"]).isEqualTo("Write failed")
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -119,6 +120,7 @@ class EventsFileHelperTest {
         assertThat(receivedEvents).hasSize(1)
         assertThat(receivedEvents.first().name).isEqualTo(DebugEventName.DESERIALIZATION_ERROR)
         assertThat(receivedEvents.first().properties["exceptionType"]).isEqualTo("SerializationException")
+        assertThat(receivedEvents.first().properties["message"]).isEqualTo("bad data")
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -142,6 +144,7 @@ class EventsFileHelperTest {
         assertThat(receivedEvents).hasSize(1)
         assertThat(receivedEvents.first().name).isEqualTo(DebugEventName.DESERIALIZATION_ERROR)
         assertThat(receivedEvents.first().properties["exceptionType"]).isEqualTo("IllegalArgumentException")
+        assertThat(receivedEvents.first().properties["message"]).isEqualTo("invalid arg")
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -162,5 +165,32 @@ class EventsFileHelperTest {
         assertThat(receivedEvents).hasSize(1)
         assertThat(receivedEvents.first().name).isEqualTo(DebugEventName.REMOVE_LINES_EXCEPTION)
         assertThat(receivedEvents.first().properties["exceptionType"]).isEqualTo("FileNotFoundException")
+        assertThat(receivedEvents.first().properties["message"]).isNotNull
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventCallback message is truncated to 80 characters`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        val longMessage = "A".repeat(120)
+        val badFileHelper = mockk<FileHelper>().apply {
+            every { appendToFile(any(), any()) } throws RuntimeException(longMessage)
+        }
+        eventsFileHelper = EventsFileHelper(
+            badFileHelper,
+            testFilePath,
+            { it.toString() },
+            { TestEvent(it) },
+        )
+        eventsFileHelper.debugEventCallback = { receivedEvents.add(it) }
+
+        try {
+            eventsFileHelper.appendEvent(TestEvent("test"))
+        } catch (_: RuntimeException) {
+            // expected
+        }
+
+        assertThat(receivedEvents).hasSize(1)
+        assertThat(receivedEvents.first().properties["message"]).hasSize(80)
     }
 }

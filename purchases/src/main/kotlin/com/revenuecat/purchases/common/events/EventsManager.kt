@@ -276,7 +276,12 @@ internal class EventsManager(
                 debugEventListener?.onDebugEventReceived(
                     DebugEvent(
                         name = DebugEventName.FLUSH_ERROR,
-                        properties = mapOf("errorCode" to error.code.name),
+                        properties = buildMap {
+                            put("errorCode", error.code.name)
+                            error.underlyingErrorMessage?.let {
+                                put("underlyingErrorMessage", it.take(80))
+                            }
+                        },
                     ),
                 )
                 enqueue {
