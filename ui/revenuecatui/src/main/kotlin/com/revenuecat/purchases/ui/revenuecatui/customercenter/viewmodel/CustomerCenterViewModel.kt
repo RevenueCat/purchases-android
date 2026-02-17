@@ -650,14 +650,17 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private fun computePurchasesWithActions(state: CustomerCenterState.Success): Set<PurchaseInformation> {
-        val screen = state.customerCenterConfigData.getManagementScreen() ?: return emptySet()
+    private fun computePurchasesWithActions(
+        purchases: List<PurchaseInformation>,
+        customerCenterConfigData: CustomerCenterConfigData,
+    ): Set<PurchaseInformation> {
+        val screen = customerCenterConfigData.getManagementScreen() ?: return emptySet()
 
-        return state.purchases.filter { purchase ->
+        return purchases.filter { purchase ->
             val detailPaths = computeDetailScreenPaths(
                 purchase,
                 screen,
-                state.customerCenterConfigData.localization,
+                customerCenterConfigData.localization,
             )
             detailPaths.isNotEmpty()
         }.toSet()
@@ -998,7 +1001,10 @@ internal class CustomerCenterViewModelImpl(
                 isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
-            val purchasesWithActions = computePurchasesWithActions(successState)
+            val purchasesWithActions = computePurchasesWithActions(
+                purchaseInformationList,
+                customerCenterConfigData,
+            )
 
             _state.update {
                 successState.copy(
