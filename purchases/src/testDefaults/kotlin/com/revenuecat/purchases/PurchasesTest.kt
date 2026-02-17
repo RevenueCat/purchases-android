@@ -1532,6 +1532,15 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(trackedEvents).containsExactly(event)
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `setting debugEventListener on Purchases propagates to EventManager`() {
+        purchases.debugEventListener = DebugEventListener { }
+        verify(exactly = 1) {
+            mockEventsManager.debugEventListener = any()
+        }
+    }
+
     // endregion track events
 
     @Test
