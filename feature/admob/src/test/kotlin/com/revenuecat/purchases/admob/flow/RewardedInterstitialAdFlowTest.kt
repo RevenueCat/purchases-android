@@ -57,7 +57,8 @@ class RewardedInterstitialAdFlowTest {
             RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackRewardedInterstitialAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackRewardedInterstitialAd(
             context = context,
             adUnitId = "rewarded-interstitial-unit",
             adRequest = adRequest,
@@ -98,7 +99,8 @@ class RewardedInterstitialAdFlowTest {
             RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackRewardedInterstitialAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackRewardedInterstitialAd(
             context = context,
             adUnitId = "rewarded-interstitial-unit",
             adRequest = adRequest,

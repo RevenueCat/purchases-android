@@ -3,24 +3,13 @@
 package com.revenuecat.purchases.admob
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.lang.reflect.Modifier
 
-class RCAdMobApiContractTest {
+class AdTrackerAdMobApiContractTest {
 
-    @Test
-    fun `object exposes static overloads for all loadAndTrack entry points`() {
-        val rcAdMobClass = RCAdMob::class.java
-
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackInterstitialAd", expected = 5)
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackAppOpenAd", expected = 5)
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackRewardedAd", expected = 5)
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackRewardedInterstitialAd", expected = 5)
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackNativeAd", expected = 6)
-        assertStaticOverloadCount(rcAdMobClass, "loadAndTrackBannerAd", expected = 4)
-    }
+    // AdTracker loadAndTrack* extensions are @JvmSynthetic (Kotlin-only for now). No Java contract test.
 
     @Test
     fun `banner extension jvm class exposes static overloads`() {
@@ -41,20 +30,6 @@ class RCAdMobApiContractTest {
         assertTrue(
             "Expected at least one static public forNativeAdWithTracking method on ${nativeExtensionsClass.name}",
             overloads.isNotEmpty(),
-        )
-    }
-
-    private fun assertStaticOverloadCount(clazz: Class<*>, methodName: String, expected: Int) {
-        val overloads = staticOverloads(clazz, methodName)
-
-        assertTrue(
-            "Expected at least one static public overload for $methodName on ${clazz.name}",
-            overloads.isNotEmpty(),
-        )
-        assertEquals(
-            "Unexpected static overload count for $methodName on ${clazz.name}",
-            expected,
-            overloads.size,
         )
     }
 

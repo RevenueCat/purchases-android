@@ -54,7 +54,8 @@ class InterstitialAdFlowTest {
             InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackInterstitialAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
             context = context,
             adUnitId = "interstitial-unit",
             adRequest = adRequest,
@@ -96,7 +97,8 @@ class InterstitialAdFlowTest {
             InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackInterstitialAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
             context = context,
             adUnitId = "interstitial-unit",
             adRequest = adRequest,

@@ -57,7 +57,8 @@ class RewardedAdFlowTest {
             RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackRewardedAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackRewardedAd(
             context = context,
             adUnitId = "rewarded-unit",
             adRequest = adRequest,
@@ -98,7 +99,8 @@ class RewardedAdFlowTest {
             RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackRewardedAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackRewardedAd(
             context = context,
             adUnitId = "rewarded-unit",
             adRequest = adRequest,

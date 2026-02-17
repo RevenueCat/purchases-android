@@ -53,7 +53,8 @@ class AppOpenAdFlowTest {
             AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackAppOpenAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
             adUnitId = "app-open-unit",
             adRequest = adRequest,
@@ -95,7 +96,8 @@ class AppOpenAdFlowTest {
             AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
-        loadAndTrackAppOpenAdInternal(
+        val adTracker = mockk<com.revenuecat.purchases.ads.events.AdTracker>(relaxed = true)
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
             adUnitId = "app-open-unit",
             adRequest = adRequest,
