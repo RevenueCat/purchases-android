@@ -18,7 +18,8 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RCAdMob
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.loadAndTrackAppOpenAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -43,7 +44,7 @@ internal fun AppOpenAdContent(activity: Activity) {
     Button(
         onClick = {
             status = "Loading..."
-            RCAdMob.loadAndTrackAppOpenAd(
+            Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
                 context = context,
                 adUnitId = Constants.AdMob.APP_OPEN_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),
