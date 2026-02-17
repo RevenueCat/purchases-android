@@ -34,6 +34,14 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * tracking already wired. Revenue tracking is set up via `OnPaidEventListener`.
  *
  * Call via [Purchases.sharedInstance.adTracker].
+ *
+ * @param context The context used to load the ad.
+ * @param adUnitId The AdMob ad unit ID.
+ * @param adRequest The [AdRequest] to use.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success/failure events.
+ * @param fullScreenContentCallback Optional callback for full-screen ad lifecycle events.
+ * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -105,6 +113,14 @@ public fun AdTracker.loadAndTrackInterstitialAd(
  * Loads an [AppOpenAd] and automatically tracks RevenueCat ad events.
  *
  * Call via [Purchases.sharedInstance.adTracker].
+ *
+ * @param context The context used to load the ad.
+ * @param adUnitId The AdMob ad unit ID.
+ * @param adRequest The [AdRequest] to use.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success/failure events.
+ * @param fullScreenContentCallback Optional callback for full-screen ad lifecycle events.
+ * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -176,6 +192,14 @@ public fun AdTracker.loadAndTrackAppOpenAd(
  * Loads a [RewardedAd] and automatically tracks RevenueCat ad events.
  *
  * Call via [Purchases.sharedInstance.adTracker].
+ *
+ * @param context The context used to load the ad.
+ * @param adUnitId The AdMob ad unit ID.
+ * @param adRequest The [AdRequest] to use.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success/failure events.
+ * @param fullScreenContentCallback Optional callback for full-screen ad lifecycle events.
+ * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -247,6 +271,14 @@ public fun AdTracker.loadAndTrackRewardedAd(
  * Loads a [RewardedInterstitialAd] and automatically tracks RevenueCat ad events.
  *
  * Call via [Purchases.sharedInstance.adTracker].
+ *
+ * @param context The context used to load the ad.
+ * @param adUnitId The AdMob ad unit ID.
+ * @param adRequest The [AdRequest] to use.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success/failure events.
+ * @param fullScreenContentCallback Optional callback for full-screen ad lifecycle events.
+ * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -320,6 +352,12 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
  * Call via [Purchases.sharedInstance.adTracker].
  *
  * For an AdMob-close API without passing the tracker, use [AdView.loadAndTrackAd] instead.
+ *
+ * @param adView The [AdView] to track and load.
+ * @param adRequest The [AdRequest] to use.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param adListener Optional [AdListener] delegate for ad lifecycle callbacks.
+ * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
