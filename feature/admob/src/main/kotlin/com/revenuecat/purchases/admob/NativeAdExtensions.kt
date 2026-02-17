@@ -12,6 +12,7 @@ import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import kotlin.jvm.JvmSynthetic
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 
@@ -37,6 +38,7 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * @return This [AdLoader.Builder] for chaining.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AdLoader.Builder.forNativeAdWithTracking(
     adUnitId: String,
     placement: String? = null,

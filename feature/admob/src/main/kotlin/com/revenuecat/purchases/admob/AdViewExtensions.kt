@@ -11,6 +11,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.OnPaidEventListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Sets up RevenueCat ad-event tracking for this [AdView] and loads the ad.
@@ -46,6 +47,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  *   existing listener will be used as the delegate.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AdView.loadAndTrackAd(
     adRequest: AdRequest,
     placement: String? = null,
