@@ -1,5 +1,10 @@
 [versions]
-agp = "8.11.1"
+# Android SDK versions
+android-compileSdk = "35"
+android-minSdk = "21"
+android-targetSdk = "35"
+
+agp = "8.13.2"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
@@ -13,7 +18,8 @@ annotationExperimental = "1.5.1"
 appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
-billing = "8.0.0"
+bc8 = "8.0.0"
+bc7 = "7.1.1"
 composeBom = "2024.09.00"
 composeAnnotation = "1.9.0"
 coil = "2.4.0"
@@ -26,9 +32,10 @@ dependencyGraph = "0.9"
 detekt = "1.23.8"
 detektRulesCompose = "0.4.10"
 dokka = "1.8.10"
-emergeGradlePlugin = "4.3.1"
-emergeSnapshots = "1.4.1"
+emergeGradlePlugin = "4.4.0"
+emergeSnapshots = "1.5.0"
 espresso = "3.4.0"
+googleMobileAds = "23.5.0"
 fragment = "1.6.1"
 googleBlockstore = "16.4.0"
 hamcrest = "1.3"
@@ -60,8 +67,11 @@ uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
 baselineprofile = "1.4.0"
 profileinstaller = "1.4.1"
+leakcanary = "2.14"
 
 [libraries]
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-annotation-experimental = { module = "androidx.annotation:annotation-experimental", version.ref = "annotationExperimental" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -95,7 +105,8 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
-billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
+billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
+billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -132,9 +143,10 @@ dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" 
 dokka-testApi = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "dokka" }
 
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
-emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
+emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
 
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
+google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -156,6 +168,9 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+leakcanary-android-instrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakcanary" }
+androidx-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

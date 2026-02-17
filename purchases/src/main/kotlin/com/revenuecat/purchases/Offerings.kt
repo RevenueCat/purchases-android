@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -9,34 +10,36 @@ import dev.drewhamilton.poko.Poko
  * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
 @Poko
-class Offerings internal constructor(
-    val current: Offering?,
-    val all: Map<String, Offering>,
+public class Offerings internal constructor(
+    public val current: Offering?,
+    public val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
+    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    internal val loadedFromDiskCache: Boolean = false,
 ) {
-    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
+    public constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
     /**
      * Retrieves an specific offering by its identifier.
      * @param identifier Offering identifier
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getOffering(identifier: String) = all[identifier]
+    public fun getOffering(identifier: String): Offering? = all[identifier]
 
     /**
      * Retrieves an specific offering by its identifier. It's equivalent to
      * calling [getOffering(identifier)]
      * @param identifier Offering identifier
      */
-    operator fun get(identifier: String) = getOffering(identifier)
+    public operator fun get(identifier: String): Offering? = getOffering(identifier)
 
     /**
      * Retrieves an specific offering by a placement identifier.
      * For more info see https://www.revenuecat.com/docs/tools/targeting
      * @param placementId Placement identifier
      */
-    fun getCurrentOfferingForPlacement(placementId: String): Offering? {
+    public fun getCurrentOfferingForPlacement(placementId: String): Offering? {
         val placements = this.placements ?: run {
             return null
         }
@@ -69,6 +72,57 @@ class Offerings internal constructor(
     internal data class Placements(
         val fallbackOfferingId: String?,
         val offeringIdsByPlacement: Map<String, String?>,
+    )
+
+    internal fun copy(
+        current: Offering? = this.current,
+        all: Map<String, Offering> = this.all,
+        placements: Placements? = this.placements,
+        targeting: Targeting? = this.targeting,
+        originalSource: HTTPResponseOriginalSource = this.originalSource,
+        loadedFromDiskCache: Boolean = this.loadedFromDiskCache,
+    ): Offerings {
+        return Offerings(
+            current = current,
+            all = all,
+            placements = placements,
+            targeting = targeting,
+            originalSource = originalSource,
+            loadedFromDiskCache = loadedFromDiskCache,
+        )
+    }
+
+    /**
+     * @hide
+     */
+    public override fun toString(): String =
+        "<Offerings\n " +
+            "current: $current\n" +
+            "all:  $all,\n" +
+            "placements: $placements,\n" +
+            "targeting: $targeting\n>"
+    public override fun equals(other: Any?): Boolean = other is Offerings &&
+        OfferingsComparableData(this) == OfferingsComparableData(other)
+    public override fun hashCode(): Int = OfferingsComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores originalSource and loadedFromDiskCache.
+ */
+private data class OfferingsComparableData(
+    val current: Offering?,
+    val all: Map<String, Offering>,
+    val placements: Offerings.Placements?,
+    val targeting: Offerings.Targeting?,
+) {
+    constructor(
+        offerings: Offerings,
+    ) : this(
+        current = offerings.current,
+        all = offerings.all,
+        placements = offerings.placements,
+        targeting = offerings.targeting,
+        // Note: originalSource and loadedFromDiskCache are excluded from equality comparison as they are metadata
     )
 }
 

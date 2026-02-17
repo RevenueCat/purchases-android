@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import io.mockk.every
 import io.mockk.mockk
@@ -162,6 +163,31 @@ class DispatcherTest {
         call.run()
 
         assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
+    }
+
+    @Test
+    fun `nullPointerReadingErrorStreamExceptions are correctly converted to purchase errors`() {
+        val errorHolder = AtomicReference<PurchasesError>()
+        val originalErrorMessage = "error reading stream"
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                throw NullPointerReadingErrorStreamException(
+                    "Failed to read error stream",
+                    NullPointerException(originalErrorMessage)
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                errorHolder.set(error)
+            }
+        }
+
+        call.run()
+
+        assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(errorHolder.get().underlyingErrorMessage).contains("In some devices, there seems to be an error when trying to parse the error response")
+        assertThat(errorHolder.get().underlyingErrorMessage).contains(originalErrorMessage)
     }
 
     @Test

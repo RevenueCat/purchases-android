@@ -54,7 +54,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
+@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION", "TooManyFunctions")
 private class PurchasesAPI {
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
@@ -132,6 +132,20 @@ private class PurchasesAPI {
 
         val locale: Locale? = purchases.storefrontLocale
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+    }
+
+    @Suppress("LongParameterList")
+    fun checkSyncAmazonPurchase(
+        purchases: Purchases,
+        productId: String,
+        receiptId: String,
+        amazonUserId: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long,
+    ) {
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime)
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -228,11 +242,50 @@ private class PurchasesAPI {
             setCleverTapID("")
             setKochavaDeviceID("")
             setAirbridgeDeviceID("")
+            setSolarEngineDistinctId("")
+            setSolarEngineAccountId("")
+            setSolarEngineVisitorId("")
             setAdGroup("")
             setAd("")
             setKeyword("")
             setCreative("")
         }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppsFlyerConversionData(purchases: Purchases) {
+        val mapStringAny: Map<String, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringAny)
+
+        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyAny)
+
+        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableValue)
+
+        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
+        purchases.setAppsFlyerConversionData(nullableMapNullableKeyNullableValue)
+
+        val nullableMapStringAny: Map<String, Any>? = emptyMap()
+        purchases.setAppsFlyerConversionData(nullableMapStringAny)
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringString)
+
+        val mapStringNullableString: Map<String, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableString)
+
+        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableString)
+
+        val mapStringInt: Map<String, Int> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringInt)
+
+        val mapStringNullableInt: Map<String, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableInt)
+
+        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
     }
 
     @Suppress("ForbiddenComment")

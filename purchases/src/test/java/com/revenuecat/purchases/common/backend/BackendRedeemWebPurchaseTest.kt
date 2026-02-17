@@ -196,7 +196,9 @@ class BackendRedeemWebPurchaseTest {
                 responseBody,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }

@@ -1,5 +1,7 @@
 package com.revenuecat.paywallstester
 
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+
 object Constants {
     // PaywallsTester supports switching between 2 API keys on the App Info screen. It uses "A" by default.
     const val GOOGLE_API_KEY_A = "API_KEY_A"
@@ -12,4 +14,11 @@ object Constants {
     // Optional: Set a preferred UI locale override (e.g., "en-US", "es-ES", "fr-FR")
     // Leave as empty string to use system default locale
     const val PREFERRED_UI_LOCALE_OVERRIDE: String = ""
+
+    // Custom variables to pass to paywalls. These will replace {{ custom.key }} placeholders.
+    val CUSTOM_VARIABLES: Map<String, CustomVariableValue> = mapOf(
+        "user_name" to CustomVariableValue.String("John"),
+        "app_name" to CustomVariableValue.String("Paywall Tester"),
+        "user_points" to CustomVariableValue.String("100"),
+    )
 }

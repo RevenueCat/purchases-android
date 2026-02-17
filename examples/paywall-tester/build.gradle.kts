@@ -1,11 +1,8 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("revenuecat-android-application")
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.baselineprofile)
 }
-
-apply(from = "$rootDir/base-application.gradle")
 
 android {
     namespace = "com.revenuecat.paywallstester"
@@ -17,6 +14,18 @@ android {
         versionName = project.properties["paywallTesterVersionName"] as String
 
         missingDimensionStrategy("apis", "defaults")
+
+        flavorDimensions += "billingclient"
+
+        productFlavors {
+            create("bc8") {
+                dimension = "billingclient"
+                isDefault = true
+            }
+            create("bc7") {
+                dimension = "billingclient"
+            }
+        }
 
         vectorDrawables {
             useSupportLibrary = true
@@ -110,6 +119,7 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
+    debugImplementation(libs.leakcanary.android)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

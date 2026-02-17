@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -142,6 +143,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -320,6 +322,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1155,6 +1158,7 @@ class TabsComponentViewTests {
         localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     ): PaywallComponentsData =
         PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1277,6 +1281,12 @@ class TabsComponentViewTests {
                     queue.addAll(current.tabs.map { it.stack })
                 }
 
+                is CountdownComponent -> {
+                    queue.add(current.countdownStack)
+                    current.endStack?.let { queue.add(it) }
+                    current.fallback?.let { queue.add(it) }
+                }
+
                 is TabControlToggleComponent,
                 is TabControlComponent,
                 is TimelineComponent,
@@ -1360,6 +1370,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1459,6 +1470,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1556,6 +1568,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(

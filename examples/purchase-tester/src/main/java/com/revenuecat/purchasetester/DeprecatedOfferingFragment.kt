@@ -24,6 +24,7 @@ import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 
 @SuppressWarnings("TooManyFunctions")
 class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.PackageCardAdapterListener {
@@ -59,7 +60,11 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun populateOfferings(offerings: Offerings) {
         val offering = offerings.getOffering(offeringId) ?: return
-        binding.offering = offering
+
+        binding.offeringDetailsName.text = offering.identifier
+        binding.offeringDetailsServerDescription.updateRowView("Description:", offering.serverDescription)
+        binding.offeringDetailsOpenWplButton.visibility =
+            if (offering.webCheckoutURL == null) View.GONE else View.VISIBLE
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.offeringDetailsPackagesRecycler.adapter =
@@ -137,5 +142,10 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun toggleLoadingIndicator(isLoading: Boolean) {
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+        headerView.text = header
+        value.text = detail ?: "None"
     }
 }

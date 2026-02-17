@@ -109,16 +109,10 @@ private fun determinePrice(
     transaction: TransactionDetails,
 ): PriceDetails {
     return when {
-        transaction.store == Store.PROMOTIONAL -> PriceDetails.Free
+        transaction.store == Store.PROMOTIONAL || transaction.price?.amountMicros == 0L -> PriceDetails.Free
 
         transaction.price?.amountMicros?.let { it > 0L } == true -> {
             transaction.price?.let { PriceDetails.Paid(it.formatted) } ?: PriceDetails.Unknown
-        }
-
-        // In sandbox, we don't know if the price is actually free or not (it's always 0)
-        // So we fall back to the product price.
-        transaction.price?.amountMicros == 0L && !transaction.isSandbox -> {
-            PriceDetails.Free
         }
 
         subscribedProduct != null -> {

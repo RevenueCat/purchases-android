@@ -20,12 +20,14 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
@@ -43,12 +45,14 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
@@ -73,6 +77,7 @@ internal class PurchasesFactory(
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
+        baseUrlString: String = AppConfig.baseUrlString,
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -98,6 +103,7 @@ internal class PurchasesFactory(
                 dangerousSettings,
                 runningIntegrationTests,
                 forceSigningError,
+                baseUrlString = baseUrlString,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -260,6 +266,8 @@ internal class PurchasesFactory(
 
             val paywallPresentedCache = PaywallPresentedCache()
 
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
+
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
@@ -269,6 +277,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
                 paywallPresentedCache,
+                localTransactionMetadataStore,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -283,6 +292,7 @@ internal class PurchasesFactory(
                 backendDispatcher,
                 identityManager,
                 postTransactionWithProductDetailsHelper,
+                postReceiptHelper,
             )
 
             val customerInfoHelper = CustomerInfoHelper(
@@ -332,7 +342,7 @@ internal class PurchasesFactory(
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
-                OfferingsFactory(billing, offeringParser, dispatcher),
+                OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
@@ -355,6 +365,24 @@ internal class PurchasesFactory(
 
             val purchaseParamsValidator = PurchaseParamsValidator()
 
+            val eventsManager = createEventsManager(
+                identityManager,
+                eventsDispatcher,
+                backend,
+                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(application)),
+                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(application)),
+                baseURL = AppConfig.paywallEventsURL,
+            )
+
+            val adEventsManager = createEventsManager(
+                identityManager,
+                eventsDispatcher,
+                backend,
+                legacyEventsFileHelper = null,
+                fileHelper = EventsManager.adEvents(fileHelper = FileHelper(application)),
+                baseURL = AppConfig.adEventsURL,
+            )
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -374,7 +402,8 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper = postPendingTransactionsHelper,
                 syncPurchasesHelper = syncPurchasesHelper,
                 offeringsManager = offeringsManager,
-                eventsManager = createEventsManager(application, identityManager, eventsDispatcher, backend),
+                eventsManager = eventsManager,
+                adEventsManager = adEventsManager,
                 paywallPresentedCache = paywallPresentedCache,
                 purchasesStateCache = purchasesStateProvider,
                 dispatcher = dispatcher,
@@ -389,33 +418,30 @@ internal class PurchasesFactory(
         }
     }
 
+    @Suppress("LongParameterList")
     private fun createEventsManager(
-        context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
         backend: Backend,
-    ): EventsManager? {
-        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
-        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
-        // older versions.
-        return if (isAndroidNOrNewer()) {
-            EventsManager(
-                legacyEventsFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context)),
-                fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context)),
-                identityManager = identityManager,
-                eventsDispatcher = eventsDispatcher,
-                postEvents = { request, onSuccess, onError ->
-                    backend.postEvents(
-                        paywallEventRequest = request,
-                        onSuccessHandler = onSuccess,
-                        onErrorHandler = onError,
-                    )
-                },
-            )
-        } else {
-            debugLog { "Paywall events are only supported on Android N or newer." }
-            null
-        }
+        legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
+        fileHelper: EventsFileHelper<BackendStoredEvent>,
+        baseURL: URL,
+    ): EventsManager {
+        return EventsManager(
+            legacyEventsFileHelper = legacyEventsFileHelper,
+            fileHelper = fileHelper,
+            identityManager = identityManager,
+            eventsDispatcher = eventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = baseURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+        )
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -432,14 +458,19 @@ internal class PurchasesFactory(
             if (!isDebugBuild() &&
                 apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             ) {
-                throw PurchasesException(
+                val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
+                errorLog(
                     error = PurchasesError(
                         code = PurchasesErrorCode.ConfigurationError,
+                        underlyingErrorMessage = "Test Store API key used in release build: $redactedApiKey. " +
+                            "Please configure the Play Store/Amazon app on the RevenueCat dashboard " +
+                            "and use its corresponding API key before releasing. " +
+                            "Visit https://rev.cat/sdk-test-store to learn more.",
                     ),
-                    overridenMessage = "Please configure the Play Store/Amazon store app on the " +
-                        "RevenueCat dashboard and use its corresponding API key before releasing. " +
-                        "Test Store is not supported in production builds.",
                 )
+                SimulatedStoreErrorDialogActivity.show(context, redactedApiKey)
+                // SimulatedStoreErrorDialogActivity will crash the app when the user dismisses it.
+                return apiKeyValidationResult
             }
 
             require(context.applicationContext is Application) { "Needs an application context." }
@@ -466,7 +497,7 @@ internal class PurchasesFactory(
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 r?.let {
-                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                    android.os.Process.setThreadPriority(Thread.NORM_PRIORITY)
                     r.run()
                 }
             }

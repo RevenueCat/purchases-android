@@ -21,6 +21,7 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -43,6 +45,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
@@ -51,6 +54,8 @@ import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
@@ -67,6 +72,10 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
@@ -76,7 +85,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass", "TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -84,7 +93,10 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
+    private val purchaseHistoryManager: PurchaseHistoryManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val isAIDLEnabled: Boolean = BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL,
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     private companion object {
@@ -172,6 +184,10 @@ internal class BillingWrapper(
                         log(LogIntent.GOOGLE_ERROR) {
                             BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
                         }
+                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                        sendErrorsToAllPendingRequests(error)
+                    } catch (e: SecurityException) {
+                        errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
                         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
                         sendErrorsToAllPendingRequests(error)
                     }
@@ -346,16 +362,99 @@ internal class BillingWrapper(
         }
     }
 
+    fun queryPurchaseHistoryAsync(
+        @BillingClient.ProductType productType: String,
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+        shouldUseAIDL: Boolean = isAIDLEnabled && productType == BillingClient.ProductType.INAPP,
+    ) {
+        log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType) }
+
+        if (shouldUseAIDL) {
+            queryInAppPurchaseHistoryWithAIDL(onReceivePurchaseHistory, onReceivePurchaseHistoryError)
+        } else {
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
+                    dateProvider,
+                    diagnosticsTrackerIfEnabled,
+                    productType,
+                    appInBackground,
+                ),
+                onReceivePurchaseHistory,
+                onReceivePurchaseHistoryError,
+                ::withConnectedClient,
+                ::executeRequestOnUIThread,
+            ).run()
+        }
+    }
+
+    private fun queryInAppPurchaseHistoryWithAIDL(
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
+    ) {
+        coroutineScope.launch {
+            try {
+                val connected = purchaseHistoryManager.connect()
+                if (!connected) {
+                    mainHandler.post {
+                        // Fallback to the Billing library method if there is an error connecting to the AIDL
+                        queryPurchaseHistoryAsync(
+                            BillingClient.ProductType.INAPP,
+                            onReceivePurchaseHistory,
+                            onReceivePurchaseHistoryError,
+                            shouldUseAIDL = false,
+                        )
+                    }
+                    return@launch
+                }
+
+                try {
+                    val transactions = purchaseHistoryManager.queryAllPurchaseHistory(
+                        BillingClient.ProductType.INAPP,
+                    )
+                    mainHandler.post {
+                        onReceivePurchaseHistory(transactions)
+                    }
+                } finally {
+                    purchaseHistoryManager.disconnect()
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                try {
+                    purchaseHistoryManager.disconnect()
+                } catch (@Suppress("TooGenericExceptionCaught") disconnectException: Throwable) {
+                    // Ignore disconnect errors when already handling an error
+                    errorLog(e) { "Error disconnecting from purchase history manager: $disconnectException" }
+                }
+                mainHandler.post {
+                    // Fallback to the Billing library method if there is an error querying through AIDL
+                    queryPurchaseHistoryAsync(
+                        BillingClient.ProductType.INAPP,
+                        onReceivePurchaseHistory,
+                        onReceivePurchaseHistoryError,
+                        shouldUseAIDL = false,
+                    )
+                }
+            }
+        }
+    }
+
     override fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
-        queryPurchases(
-            appUserID,
-            { purchases ->
-                val storeTransactions = purchases.values.toList()
-                onReceivePurchaseHistory(storeTransactions)
+        queryPurchaseHistoryAsync(
+            BillingClient.ProductType.SUBS,
+            { subsPurchasesList ->
+                queryPurchaseHistoryAsync(
+                    BillingClient.ProductType.INAPP,
+                    { inAppPurchasesList ->
+                        onReceivePurchaseHistory(
+                            subsPurchasesList + inAppPurchasesList,
+                        )
+                    },
+                    onReceivePurchaseHistoryError,
+                )
             },
             onReceivePurchaseHistoryError,
         )
@@ -470,7 +569,7 @@ internal class BillingWrapper(
         ).run()
     }
 
-    override fun findPurchaseInActivePurchases(
+    override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -479,19 +578,18 @@ internal class BillingWrapper(
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
         productType.toGoogleProductType()?.let { googleProductType ->
-            QueryPurchasesByTypeUseCase(
-                QueryPurchasesByTypeUseCaseParams(
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
                     dateProvider,
                     diagnosticsTrackerIfEnabled,
-                    appInBackground,
                     googleProductType,
+                    appInBackground,
                 ),
-                { purchasesByHashedToken ->
-                    val purchasesRecordWrapper = purchasesByHashedToken.values.firstOrNull {
-                        it.productIds.firstOrNull() == productId
-                    }
-                    if (purchasesRecordWrapper != null) {
-                        onCompletion(purchasesRecordWrapper)
+                { purchasesList ->
+                    val purchaseTransaction =
+                        purchasesList.firstOrNull { it.productIds.contains(productId) }
+                    if (purchaseTransaction != null) {
+                        onCompletion(purchaseTransaction)
                     } else {
                         val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
@@ -736,6 +834,14 @@ internal class BillingWrapper(
                     debugLog { "Activity is null, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
+                if (activity.isFinishing) {
+                    debugLog { "Activity is finishing, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
+                if (activity.isDestroyed) {
+                    debugLog { "Activity is destroyed, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
                 showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
                     when (val responseCode = inAppMessageResult.responseCode) {
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
@@ -884,17 +990,24 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .setObfuscatedAccountId(appUserID.sha256())
-                .apply {
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                    .setObfuscatedAccountId(appUserID.sha256())
+                    .apply {
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
+            // a BillingFlowParams in some devices because the library started using Java 8 types.
+            // This was fixed in Billing Client 8.
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -905,22 +1018,29 @@ internal class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
-        return Result.Success(
-            BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(productDetailsParamsList)
-                .apply {
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                    replaceProductInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
+        try {
+            return Result.Success(
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+                    .apply {
+                        // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                        // https://issuetracker.google.com/issues/155005449
+                        replaceProductInfo?.let {
+                            setUpgradeInfo(it)
+                        } ?: setObfuscatedAccountId(appUserID.sha256())
 
-                    isPersonalizedPrice?.let {
-                        setIsOfferPersonalized(it)
+                        isPersonalizedPrice?.let {
+                            setIsOfferPersonalized(it)
+                        }
                     }
-                }
-                .build(),
-        )
+                    .build(),
+            )
+        } catch (e: NoClassDefFoundError) {
+            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
+            // a BillingFlowParams in some devices because the library started using Java 8 types.
+            // This was fixed in Billing Client 8.
+            throw NoCoreLibraryDesugaringException(e)
+        }
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

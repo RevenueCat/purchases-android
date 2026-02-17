@@ -1,0 +1,33 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "306",
+    "Content-Type": "application\/json",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "X-Request-Id",
+    "server": "envoy"
+  },
+  "body": {
+    "virtual_currencies": {
+      "TEST": {
+        "balance": 0,
+        "code": "TEST",
+        "description": "This is a test currency",
+        "name": "Test Currency"
+      },
+      "TEST2": {
+        "balance": 0,
+        "code": "TEST2",
+        "description": "This is test currency 2",
+        "name": "Test Currency 2"
+      },
+      "TEST3": {
+        "balance": 0,
+        "code": "TEST3",
+        "description": null,
+        "name": "Test Currency 3"
+      }
+    }
+  }
+}

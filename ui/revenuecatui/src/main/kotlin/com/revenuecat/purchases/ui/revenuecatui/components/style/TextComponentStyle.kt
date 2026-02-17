@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -13,7 +14,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
+import java.util.Date
 
 @Suppress("LongParameterList")
 @Immutable
@@ -48,15 +53,36 @@ internal class TextComponentStyle(
      * available.
      */
     @get:JvmSynthetic
-    val rcPackage: Package?,
+    override val rcPackage: Package?,
+    /**
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
+     */
+    @get:JvmSynthetic
+    override val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for texts inside tab control elements. Not for all texts within a tab.
      */
     @get:JvmSynthetic
-    val tabIndex: Int?,
+    override val tabIndex: Int?,
+    /**
+     * The pre-computed offer eligibility for this component's package context.
+     * Used for applying conditional overrides based on intro/promo offer status.
+     * Null if this component is not in a package scope.
+     */
+    @get:JvmSynthetic
+    override val offerEligibility: OfferEligibility? = null,
+    /**
+     * If this is non-null, it means this text is inside a countdown component and countdown variables should be
+     * replaced with values calculated from this date.
+     */
+    @get:JvmSynthetic
+    val countdownDate: Date?,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<LocalizedTextPartial>>,
-) : ComponentStyle
+) : ComponentStyle, PackageContext

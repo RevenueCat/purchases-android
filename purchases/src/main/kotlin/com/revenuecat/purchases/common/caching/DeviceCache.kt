@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -24,6 +25,7 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
+import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import kotlinx.serialization.SerializationException
@@ -47,6 +49,7 @@ internal open class DeviceCache(
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
+        private const val CUSTOMER_INFO_ORIGINAL_SOURCE_KEY = "customer_info_original_source"
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
@@ -139,8 +142,10 @@ internal open class DeviceCache(
     // region purchaser info
     fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
+    fun customerInfoLastUpdatedCacheKey(appUserID: String) =
+        "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
+    @Suppress
     fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return preferences.getString(customerInfoCacheKey(appUserID), null)
             ?.let { json ->
@@ -155,11 +160,20 @@ internal open class DeviceCache(
                     val requestDate = cachedJSONObject.optLong(CUSTOMER_INFO_REQUEST_DATE_KEY).takeIf { it > 0 }?.let {
                         Date(it)
                     }
+                    val originalSourceString = cachedJSONObject.optNullableString(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY)
+                    val originalSource = CustomerInfoOriginalSource.fromString(originalSourceString)
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
                     return if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
-                        CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, requestDate, verificationResult)
+                        CustomerInfoFactory.buildCustomerInfo(
+                            cachedJSONObject,
+                            requestDate,
+                            verificationResult,
+                            originalSource,
+                            loadedFromCache = true,
+                        )
                     } else {
                         null
                     }
@@ -175,6 +189,7 @@ internal open class DeviceCache(
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
             it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
             it.put(CUSTOMER_INFO_REQUEST_DATE_KEY, info.requestDate.time)
+            it.put(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY, info.originalSource.name)
         }
         preferences.edit()
             .putString(
@@ -245,7 +260,8 @@ internal open class DeviceCache(
     // region virtual currencies
     fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
 
-    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) = "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+    fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) =
+        "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress("SwallowedException", "ForbiddenComment")
     @Synchronized
@@ -450,11 +466,13 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+        val json = productEntitlementMapping.toJson()
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString(),
-            ).apply()
+                json.toString(),
+            )
+            .apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
     }
@@ -476,14 +494,18 @@ internal open class DeviceCache(
         )
     }
 
+    @Suppress("NestedBlockDepth")
     @Synchronized
     fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
-                ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+                val jsonObject = JSONObject(jsonString)
+                ProductEntitlementMapping.fromJson(jsonObject, loadedFromCache = true)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
-                preferences.edit().remove(productEntitlementMappingCacheKey).apply()
+                preferences.edit()
+                    .remove(productEntitlementMappingCacheKey)
+                    .apply()
                 null
             }
         }

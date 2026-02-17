@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -73,7 +74,8 @@ internal class OfferingImagePreDownloader(
                 it is IconComponent ||
                 it is CarouselComponent ||
                 it is TabsComponent ||
-                it is ImageComponent
+                it is ImageComponent ||
+                it is CountdownComponent
         }.flatMapTo(mutableSetOf()) { component ->
             when (component) {
                 is StackComponent -> {
@@ -102,6 +104,11 @@ internal class OfferingImagePreDownloader(
                 is VideoComponent -> {
                     component.fallbackSource?.findImageUrisToDownload().orEmpty()
                 }
+                is CountdownComponent -> {
+                    component.countdownStack.findImageUrisToDownload() +
+                        (component.endStack?.findImageUrisToDownload().orEmpty()) +
+                        (component.fallback?.findImageUrisToDownload().orEmpty())
+                }
                 else -> emptySet()
             }
         }
@@ -112,6 +119,10 @@ internal class OfferingImagePreDownloader(
             is Background.Image -> setOfNotNull(
                 Uri.parse(value.light.webpLowRes.toString()),
                 value.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
+            )
+            is Background.Video -> setOfNotNull(
+                Uri.parse(fallbackImage.light.webpLowRes.toString()),
+                fallbackImage.dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
             )
             is Background.Color,
             is Background.Unknown,

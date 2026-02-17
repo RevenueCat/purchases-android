@@ -6,7 +6,11 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.text.DateFormat
@@ -16,7 +20,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -56,6 +60,15 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
+
+        COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
+        COUNT_DAYS_WITHOUT_ZERO("count_days_without_zero"),
+        COUNT_HOURS_WITH_ZERO("count_hours_with_zero"),
+        COUNT_HOURS_WITHOUT_ZERO("count_hours_without_zero"),
+        COUNT_MINUTES_WITH_ZERO("count_minutes_with_zero"),
+        COUNT_MINUTES_WITHOUT_ZERO("count_minutes_without_zero"),
+        COUNT_SECONDS_WITH_ZERO("count_seconds_with_zero"),
+        COUNT_SECONDS_WITHOUT_ZERO("count_seconds_without_zero"),
         ;
 
         companion object {
@@ -90,19 +103,28 @@ internal object VariableProcessorV2 {
 
     private val regex = "\\{\\{\\s*(.*?)\\s*\\}\\}".toRegex()
 
+    /**
+     * Prefixes that identify custom variables in paywall text.
+     * Supports both `{{ custom.key }}` and `{{ $custom.key }}` syntax.
+     */
+    private val customVariablePrefixes = listOf("custom.", "\$custom.")
+
     @Suppress("LongParameterList")
     fun processVariables(
         template: String,
-        // Dependencies:
-        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+        localizedVariableKeys: Map<VariableLocalizationKey, String> = emptyMap(),
         variableConfig: UiConfig.VariableConfig,
-        variableDataProvider: VariableDataProvider,
-        // "Context":
-        packageContext: PackageContext,
-        rcPackage: Package,
-        currencyLocale: Locale,
+        variableDataProvider: VariableDataProvider? = null,
+        packageContext: PackageContext? = null,
+        rcPackage: Package? = null,
+        subscriptionOption: SubscriptionOption? = null,
+        currencyLocale: Locale = Locale.getDefault(),
         dateLocale: Locale,
-        date: Date,
+        date: Date = Date(),
+        countdownTime: CountdownTime? = null,
+        countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -112,9 +134,14 @@ internal object VariableProcessorV2 {
             variableDataProvider = variableDataProvider,
             packageContext = packageContext,
             rcPackage = rcPackage,
+            subscriptionOption = subscriptionOption,
             currencyLocale = currencyLocale,
             dateLocale = dateLocale,
             date = date,
+            countdownTime = countdownTime,
+            countFrom = countFrom,
+            customVariables = customVariables,
+            defaultCustomVariables = defaultCustomVariables,
         )
     }
 
@@ -148,21 +175,36 @@ internal object VariableProcessorV2 {
     private fun getVariableValue(
         variableIdentifier: String,
         functionIdentifiers: List<String>,
-        // Dependencies:
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
         variableConfig: UiConfig.VariableConfig,
-        variableDataProvider: VariableDataProvider,
-        // "Context":
-        packageContext: PackageContext,
-        rcPackage: Package,
+        variableDataProvider: VariableDataProvider?,
+        packageContext: PackageContext?,
+        rcPackage: Package?,
+        subscriptionOption: SubscriptionOption?,
         currencyLocale: Locale,
         dateLocale: Locale,
         date: Date,
+        countdownTime: CountdownTime?,
+        countFrom: CountdownComponent.CountFrom,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
     ): String {
-        val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
+
+        // Check if this is a custom variable
+        val customVariableKey = extractCustomVariableKey(variableIdentifier)
+        if (customVariableKey != null) {
+            return resolveCustomVariable(
+                key = customVariableKey,
+                customVariables = customVariables,
+                defaultCustomVariables = defaultCustomVariables,
+                functions = functions,
+                currencyLocale = currencyLocale,
+            )
+        }
+
+        val variable = findVariable(variableIdentifier, variableConfig.variableCompatibilityMap)
         return if (variable == null) {
-            Logger.unknownVariable(variableIdentifier)
             ""
         } else {
             val result = variable.getValue(
@@ -170,9 +212,12 @@ internal object VariableProcessorV2 {
                 variableDataProvider = variableDataProvider,
                 packageContext = packageContext,
                 rcPackage = rcPackage,
+                subscriptionOption = subscriptionOption,
                 currencyLocale = currencyLocale,
                 dateLocale = dateLocale,
                 date = date,
+                countdownTime = countdownTime,
+                countFrom = countFrom,
             )?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, currencyLocale)
@@ -182,9 +227,88 @@ internal object VariableProcessorV2 {
             if (result != null) {
                 result
             } else {
-                Logger.failedToGetValue(variableIdentifier, rcPackage)
+                if (rcPackage != null) {
+                    Logger.failedToGetValue(variableIdentifier, rcPackage)
+                }
                 ""
             }
+        }
+    }
+
+    /**
+     * Extracts the custom variable key from a variable identifier.
+     * Returns null if the identifier is not a custom variable.
+     *
+     * Examples:
+     * - "custom.name" -> "name"
+     * - "$custom.name" -> "name"
+     * - "product.price" -> null
+     */
+    @Suppress("ReturnCount")
+    private fun extractCustomVariableKey(variableIdentifier: String): String? {
+        for (prefix in customVariablePrefixes) {
+            if (variableIdentifier.startsWith(prefix)) {
+                val key = variableIdentifier.removePrefix(prefix)
+                if (key.isEmpty()) {
+                    Logger.w(
+                        "Custom variable '$variableIdentifier' appears to be malformed. " +
+                            "Expected format: 'custom.<variable_name>' or '\$custom.<variable_name>'.",
+                    )
+                    return null
+                }
+                return key
+            }
+        }
+
+        // Check for potential malformed custom variables
+        checkForMalformedCustomVariable(variableIdentifier)
+
+        return null
+    }
+
+    /**
+     * Logs a warning if a variable identifier looks like it might be intended as a custom variable
+     * but is malformed.
+     */
+    private fun checkForMalformedCustomVariable(variableIdentifier: String) {
+        val malformedPrefixes = listOf("custom", "\$custom")
+        for (prefix in malformedPrefixes) {
+            if (variableIdentifier == prefix || variableIdentifier.startsWith("$prefix ")) {
+                Logger.w(
+                    "Variable '$variableIdentifier' looks like it might be intended as a custom variable. " +
+                        "Use 'custom.<variable_name>' or '\$custom.<variable_name>' syntax instead.",
+                )
+                return
+            }
+        }
+    }
+
+    /**
+     * Resolves a custom variable value using the following priority:
+     * 1. SDK-provided value (from customVariables)
+     * 2. Dashboard default value (from defaultCustomVariables)
+     * 3. Empty string with a warning log
+     *
+     * Values are converted to their String representation during processing.
+     */
+    private fun resolveCustomVariable(
+        key: String,
+        customVariables: Map<String, CustomVariableValue>,
+        defaultCustomVariables: Map<String, CustomVariableValue>,
+        functions: List<Function>,
+        currencyLocale: Locale,
+    ): String {
+        val value = customVariables[key]
+            ?: defaultCustomVariables[key]
+            ?: run {
+                Logger.w(
+                    "Custom variable '$key' was not provided and has no default value. Defaulting to empty string.",
+                )
+                return ""
+            }
+
+        return functions.fold(value.stringValue) { accumulator, function ->
+            accumulator.processFunction(function, currencyLocale)
         }
     }
 
@@ -227,10 +351,6 @@ internal object VariableProcessorV2 {
         }
     }
 
-    private fun Logger.unknownVariable(variableIdentifier: String): Unit = e(
-        "Unknown variable: $variableIdentifier. Defaulting to empty string.",
-    )
-
     private fun Logger.failedToGetValue(variableIdentifier: String, rcPackage: Package): Unit = w(
         "Could not process value for variable '$variableIdentifier' for " +
             "package '${rcPackage.identifier}'. Please check that the product for that package " +
@@ -258,154 +378,229 @@ internal object VariableProcessorV2 {
                 "replacement found.",
         )
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "NestedBlockDepth")
     private fun Variable.getValue(
-        // Dependencies:
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
-        variableDataProvider: VariableDataProvider,
-        // "Context":
-        packageContext: PackageContext,
-        rcPackage: Package,
+        variableDataProvider: VariableDataProvider?,
+        packageContext: PackageContext?,
+        rcPackage: Package?,
+        subscriptionOption: SubscriptionOption?,
         currencyLocale: Locale,
         dateLocale: Locale,
         date: Date,
+        countdownTime: CountdownTime?,
+        countFrom: CountdownComponent.CountFrom,
     ): String? = when (this) {
-        Variable.PRODUCT_CURRENCY_CODE -> rcPackage.product.price.currencyCode
-        Variable.PRODUCT_CURRENCY_SYMBOL ->
-            Currency
-                .getInstance(rcPackage.product.price.currencyCode)
-                .getSymbol(currencyLocale)
+        Variable.PRODUCT_CURRENCY_CODE -> rcPackage?.product?.price?.currencyCode
+        Variable.PRODUCT_CURRENCY_SYMBOL -> rcPackage?.let {
+            Currency.getInstance(it.product.price.currencyCode).getSymbol(currencyLocale)
+        }
 
-        Variable.PRODUCT_PERIODLY -> rcPackage.productPeriodly(localizedVariableKeys)
+        Variable.PRODUCT_PERIODLY -> rcPackage?.productPeriodly(localizedVariableKeys)
 
-        Variable.PRODUCT_PRICE -> variableDataProvider.localizedPrice(
-            rcPackage = rcPackage,
-            locale = currencyLocale,
-            showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-        )
+        Variable.PRODUCT_PRICE -> rcPackage?.let { pkg ->
+            variableDataProvider?.localizedPrice(
+                rcPackage = pkg,
+                locale = currencyLocale,
+                showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
+            )
+        }
 
-        Variable.PRODUCT_PRICE_PER_PERIOD -> variableDataProvider.localizedPrice(
-            rcPackage = rcPackage,
-            locale = currencyLocale,
-            showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-        ).let { price ->
-            val period = rcPackage.productPeriod(localizedVariableKeys)
-            when {
-                rcPackage.isLifetime -> price
-                period != null -> "$price/$period"
-                else -> null
+        Variable.PRODUCT_PRICE_PER_PERIOD -> rcPackage?.let { pkg ->
+            variableDataProvider?.localizedPrice(
+                rcPackage = pkg,
+                locale = currencyLocale,
+                showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
+            )?.let { price ->
+                val period = pkg.productPeriod(localizedVariableKeys)
+                when {
+                    pkg.isLifetime -> price
+                    period != null -> "$price/$period"
+                    else -> null
+                }
             }
         }
 
-        Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> variableDataProvider.localizedPrice(
-            rcPackage = rcPackage,
-            locale = currencyLocale,
-            showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-        ).let { price ->
-            val period = rcPackage.productPeriodAbbreviated(localizedVariableKeys)
-            when {
-                rcPackage.isLifetime -> price
-                period != null -> "$price/$period"
-                else -> null
+        Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> rcPackage?.let { pkg ->
+            variableDataProvider?.localizedPrice(
+                rcPackage = pkg,
+                locale = currencyLocale,
+                showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
+            )?.let { price ->
+                val period = pkg.productPeriodAbbreviated(localizedVariableKeys)
+                when {
+                    pkg.isLifetime -> price
+                    period != null -> "$price/$period"
+                    else -> null
+                }
             }
         }
 
-        Variable.PRODUCT_PRICE_PER_DAY -> when {
-            rcPackage.isLifetime -> variableDataProvider.localizedPrice(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
-
-            else -> variableDataProvider.localizedPricePerDay(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
+        Variable.PRODUCT_PRICE_PER_DAY -> rcPackage?.let { pkg ->
+            val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
+            when {
+                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                else -> variableDataProvider?.localizedPricePerDay(pkg, currencyLocale, showZeroDecimalPlacePrices)
+            }
         }
 
-        Variable.PRODUCT_PRICE_PER_WEEK -> when {
-            rcPackage.isLifetime -> variableDataProvider.localizedPrice(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
-
-            else -> variableDataProvider.localizedPricePerWeek(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
+        Variable.PRODUCT_PRICE_PER_WEEK -> rcPackage?.let { pkg ->
+            val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
+            when {
+                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                else -> variableDataProvider?.localizedPricePerWeek(pkg, currencyLocale, showZeroDecimalPlacePrices)
+            }
         }
 
-        Variable.PRODUCT_PRICE_PER_MONTH -> when {
-            rcPackage.isLifetime -> variableDataProvider.localizedPrice(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
-
-            else -> variableDataProvider.localizedPricePerMonth(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
+        Variable.PRODUCT_PRICE_PER_MONTH -> rcPackage?.let { pkg ->
+            val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
+            when {
+                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                else -> variableDataProvider?.localizedPricePerMonth(pkg, currencyLocale, showZeroDecimalPlacePrices)
+            }
         }
 
-        Variable.PRODUCT_PRICE_PER_YEAR -> when {
-            rcPackage.isLifetime -> variableDataProvider.localizedPrice(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
-
-            else -> variableDataProvider.localizedPricePerYear(
-                rcPackage = rcPackage,
-                locale = currencyLocale,
-                showZeroDecimalPlacePrices = packageContext.showZeroDecimalPlacePrices,
-            )
+        Variable.PRODUCT_PRICE_PER_YEAR -> rcPackage?.let { pkg ->
+            val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
+            when {
+                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                else -> variableDataProvider?.localizedPricePerYear(pkg, currencyLocale, showZeroDecimalPlacePrices)
+            }
         }
 
-        Variable.PRODUCT_PERIOD -> rcPackage.productPeriod(localizedVariableKeys)
-        Variable.PRODUCT_PERIOD_ABBREVIATED -> rcPackage.productPeriodAbbreviated(localizedVariableKeys)
-        Variable.PRODUCT_PERIOD_IN_DAYS -> rcPackage.product.period?.roundedValueInDays
-        Variable.PRODUCT_PERIOD_IN_WEEKS -> rcPackage.product.period?.roundedValueInWeeks
-        Variable.PRODUCT_PERIOD_IN_MONTHS -> rcPackage.product.period?.roundedValueInMonths
-        Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage.product.period?.roundedValueInYears
-        Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage.productPeriodWithUnit(localizedVariableKeys)
-        Variable.PRODUCT_OFFER_PRICE -> rcPackage.firstIntroOffer?.productOfferPrice(localizedVariableKeys)
+        Variable.PRODUCT_PERIOD -> rcPackage?.productPeriod(localizedVariableKeys)
+        Variable.PRODUCT_PERIOD_ABBREVIATED -> rcPackage?.productPeriodAbbreviated(localizedVariableKeys)
+        Variable.PRODUCT_PERIOD_IN_DAYS -> rcPackage?.product?.period?.roundedValueInDays
+        Variable.PRODUCT_PERIOD_IN_WEEKS -> rcPackage?.product?.period?.roundedValueInWeeks
+        Variable.PRODUCT_PERIOD_IN_MONTHS -> rcPackage?.product?.period?.roundedValueInMonths
+        Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage?.product?.period?.roundedValueInYears
+        Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage?.productPeriodWithUnit(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_PRICE ->
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
-            rcPackage.firstIntroOffer?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
+            primaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_WEEK ->
-            rcPackage.firstIntroOffer?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
+            primaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_MONTH ->
-            rcPackage.firstIntroOffer?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
+            primaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
 
         Variable.PRODUCT_OFFER_PRICE_PER_YEAR ->
-            rcPackage.firstIntroOffer?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
+            primaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_PERIOD -> rcPackage.firstIntroOffer?.productOfferPeriod(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_PERIOD ->
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriod(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED ->
-            rcPackage.firstIntroOffer?.productOfferPeriodAbbreviated(localizedVariableKeys)
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodAbbreviated(localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> rcPackage.firstIntroOffer?.productOfferPeriodInDays
-        Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> rcPackage.firstIntroOffer?.productOfferPeriodInWeeks
-        Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> rcPackage.firstIntroOffer?.productOfferPeriodInMonths
-        Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> rcPackage.firstIntroOffer?.productOfferPeriodInYears
+        Variable.PRODUCT_OFFER_PERIOD_IN_DAYS -> primaryDiscountPhase(
+            subscriptionOption,
+            rcPackage,
+        )?.productOfferPeriodInDays
+        Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS -> primaryDiscountPhase(
+            subscriptionOption,
+            rcPackage,
+        )?.productOfferPeriodInWeeks
+        Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS -> primaryDiscountPhase(
+            subscriptionOption,
+            rcPackage,
+        )?.productOfferPeriodInMonths
+        Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> primaryDiscountPhase(
+            subscriptionOption,
+            rcPackage,
+        )?.productOfferPeriodInYears
         Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT ->
-            rcPackage.firstIntroOffer?.productOfferPeriodWithUnit(localizedVariableKeys)
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodWithUnit(localizedVariableKeys)
 
-        Variable.PRODUCT_OFFER_END_DATE -> rcPackage.firstIntroOffer?.productOfferEndDate(dateLocale, date)
-        Variable.PRODUCT_SECONDARY_OFFER_PRICE -> rcPackage.secondIntroOffer?.productOfferPrice(localizedVariableKeys)
-        Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> rcPackage.secondIntroOffer?.productOfferPeriod(localizedVariableKeys)
+        Variable.PRODUCT_OFFER_END_DATE ->
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferEndDate(dateLocale, date)
+        Variable.PRODUCT_SECONDARY_OFFER_PRICE ->
+            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
+
+        Variable.PRODUCT_SECONDARY_OFFER_PERIOD ->
+            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriod(localizedVariableKeys)
+
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED ->
-            rcPackage.secondIntroOffer?.productOfferPeriodAbbreviated(localizedVariableKeys)
+            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodAbbreviated(localizedVariableKeys)
 
-        Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext.relativeDiscount(localizedVariableKeys)
+        Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
+        Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name
 
-        Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage.product.name
+        Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.let {
+            val days = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS -> it.days
+                CountdownComponent.CountFrom.HOURS,
+                CountdownComponent.CountFrom.MINUTES,
+                -> 0
+            }
+            String.format(dateLocale, "%02d", days)
+        } ?: ""
+
+        Variable.COUNT_DAYS_WITHOUT_ZERO -> countdownTime?.let {
+            val days = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS -> it.days
+                CountdownComponent.CountFrom.HOURS,
+                CountdownComponent.CountFrom.MINUTES,
+                -> 0
+            }
+            String.format(dateLocale, "%d", days)
+        } ?: ""
+
+        Variable.COUNT_HOURS_WITH_ZERO -> countdownTime?.let {
+            val hours = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS -> it.hours
+                CountdownComponent.CountFrom.HOURS -> it.totalHours
+                CountdownComponent.CountFrom.MINUTES -> 0
+            }
+            String.format(dateLocale, "%02d", hours)
+        } ?: ""
+
+        Variable.COUNT_HOURS_WITHOUT_ZERO -> countdownTime?.let {
+            val hours = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS -> it.hours
+                CountdownComponent.CountFrom.HOURS -> it.totalHours
+                CountdownComponent.CountFrom.MINUTES -> 0
+            }
+            String.format(dateLocale, "%d", hours)
+        } ?: ""
+
+        Variable.COUNT_MINUTES_WITH_ZERO -> countdownTime?.let {
+            val minutes = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS,
+                CountdownComponent.CountFrom.HOURS,
+                -> it.minutes
+
+                CountdownComponent.CountFrom.MINUTES -> it.totalMinutes
+            }
+            String.format(dateLocale, "%02d", minutes)
+        } ?: ""
+
+        Variable.COUNT_MINUTES_WITHOUT_ZERO -> countdownTime?.let {
+            val minutes = when (countFrom) {
+                CountdownComponent.CountFrom.DAYS,
+                CountdownComponent.CountFrom.HOURS,
+                -> it.minutes
+
+                CountdownComponent.CountFrom.MINUTES -> it.totalMinutes
+            }
+            String.format(dateLocale, "%d", minutes)
+        } ?: ""
+
+        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%02d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%d", it) } ?: ""
     }
 
     private fun String.processFunction(function: Function, locale: Locale): String = when (function) {
@@ -452,6 +647,7 @@ internal object VariableProcessorV2 {
                 localizedVariableKeys
                     .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
                     ?.format(period.value)
+
             else -> periodUnitLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
         }
     }
@@ -586,11 +782,15 @@ internal object VariableProcessorV2 {
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
             }
 
-    private val Package.firstIntroOffer: PricingPhase?
-        get() = product.defaultOption?.let { option -> option.freePhase ?: option.introPhase }
+    private fun primaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcPackage: Package?): PricingPhase? {
+        val option = subscriptionOption ?: rcPackage?.product?.defaultOption
+        return option?.let { it.freePhase ?: it.introPhase }
+    }
 
-    private val Package.secondIntroOffer: PricingPhase?
-        get() = product.defaultOption?.let { option -> if (option.freePhase != null) option.introPhase else null }
+    private fun secondaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcPackage: Package?): PricingPhase? {
+        val option = subscriptionOption ?: rcPackage?.product?.defaultOption
+        return option?.let { if (it.freePhase != null) it.introPhase else null }
+    }
 
     private val Package.isLifetime: Boolean
         get() = packageType == PackageType.LIFETIME

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.annotation.SuppressLint
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 
 internal fun Purchases.Companion.configure(
@@ -17,6 +18,11 @@ internal fun Purchases.Companion.configure(
         forceServerErrorStrategy,
         forceSigningErrors,
         runningIntegrationTests = true,
+        baseUrlString = when (Constants.backendEnvironment) {
+            Constants.BackendEnvironment.LOAD_SHEDDER_US_EAST_2 -> "https://fortress-us-east-2.revenuecat.com/"
+            Constants.BackendEnvironment.LOAD_SHEDDER_US_EAST_1 -> "https://fortress-us-east-1.revenuecat.com/"
+            else -> AppConfig.baseUrlString
+        },
     ).also {
         @SuppressLint("RestrictedApi")
         sharedInstance = it

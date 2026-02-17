@@ -6,6 +6,7 @@ import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import com.revenuecat.purchases.utils.TestUrlConnection
 import com.revenuecat.purchases.utils.TestUrlConnectionFactory
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -209,6 +210,40 @@ class FontLoaderTest {
         )
     }
 
+    @Test
+    fun `getCachedFontFileOrStartDownload handles null cacheDir gracefully`() = runTest {
+        val contextWithNullCacheDir = mockk<Context> {
+            every { cacheDir } returns null
+        }
+        urlConnectionFactory = TestUrlConnectionFactory(
+            mockedConnections = mapOf(
+                FONT_URL to TestUrlConnection(
+                    responseCode = HttpURLConnection.HTTP_OK,
+                    inputStream = ByteArrayInputStream(FONT_FILE_CONTENT.toByteArray())
+                )
+            ),
+        )
+        fontLoader = FontLoader(
+            context = contextWithNullCacheDir,
+            providedCacheDir = null,
+            ioScope = testScope,
+            urlConnectionFactory = urlConnectionFactory,
+        )
+
+        // Should not crash, just return null and not attempt download
+        val result = fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+        assertNull(result)
+
+        testScope.advanceUntilIdle()
+
+        // Should still be null since no download could happen
+        val result2 = fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+        assertNull(result2)
+
+        // No connections should have been created since cacheDir was null
+        assertEquals(0, urlConnectionFactory.createdConnections.size)
+    }
+
     private fun createFontInfo(
         value: String = "TestFont",
         url: String = FONT_URL,
@@ -263,7 +298,7 @@ class FontLoaderTest {
 
         fontLoader = FontLoader(
             context = mockContext,
-            cacheDir = mockCacheDir,
+            providedCacheDir = mockCacheDir,
             ioScope = testScope,
             urlConnectionFactory = urlConnectionFactory,
         )

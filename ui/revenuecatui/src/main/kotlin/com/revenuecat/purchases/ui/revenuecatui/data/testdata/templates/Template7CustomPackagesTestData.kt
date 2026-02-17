@@ -34,7 +34,7 @@ internal val TestData.template7CustomPackages: PaywallData
                     packageIds = listOf(
                         PackageType.LIFETIME.identifier!!,
                     ),
-                    defaultPackageId = PackageType.THREE_MONTH.identifier!!,
+                    defaultPackageId = PackageType.LIFETIME.identifier!!,
                 ),
             ),
             displayRestorePurchases = true,

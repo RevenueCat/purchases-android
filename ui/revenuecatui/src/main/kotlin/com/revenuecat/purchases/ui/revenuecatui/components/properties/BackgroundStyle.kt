@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -56,6 +57,15 @@ internal sealed interface BackgroundStyle {
         @get:JvmSynthetic val contentScale: ContentScale,
         @get:JvmSynthetic val colorOverlay: ColorStyle?,
     ) : BackgroundStyle
+
+    data class Video(
+        @get:JvmSynthetic val sources: ThemeVideoUrls,
+        @get:JvmSynthetic val fallbackImage: ThemeImageUrls,
+        @get:JvmSynthetic val loop: Boolean,
+        @get:JvmSynthetic val muteAudio: Boolean,
+        @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyles?,
+    ) : BackgroundStyle
 }
 
 /**
@@ -70,6 +80,16 @@ internal sealed interface BackgroundStyles {
     @Immutable
     data class Image(
         @get:JvmSynthetic val sources: ThemeImageUrls,
+        @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyles?,
+    ) : BackgroundStyles
+
+    @Immutable
+    data class Video(
+        @get:JvmSynthetic val sources: ThemeVideoUrls,
+        @get:JvmSynthetic val fallbackImage: ThemeImageUrls,
+        @get:JvmSynthetic val loop: Boolean,
+        @get:JvmSynthetic val muteAudio: Boolean,
         @get:JvmSynthetic val contentScale: ContentScale,
         @get:JvmSynthetic val colorOverlay: ColorStyles?,
     ) : BackgroundStyles
@@ -96,6 +116,22 @@ internal fun Background.toBackgroundStyles(
                         colorOverlay = colorOverlay,
                     )
                 }
+
+        is Background.Video ->
+            colorOverlay
+                ?.toColorStyles(aliases = aliases)
+                .orSuccessfullyNull()
+                .map { colorOverlay ->
+                    BackgroundStyles.Video(
+                        sources = value,
+                        fallbackImage = fallbackImage,
+                        loop = loop,
+                        muteAudio = muteAudio,
+                        contentScale = fitMode.toContentScale(),
+                        colorOverlay = colorOverlay,
+                    )
+                }
+
         is Background.Unknown -> Result.Error(
             nonEmptyListOf(PaywallValidationError.UnsupportedBackgroundType(background = this)),
         )
@@ -121,6 +157,18 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
                     painter = painter,
                     contentScale = background.contentScale,
                     colorOverlay = colorOverlay,
+                )
+            }
+        }
+        is BackgroundStyles.Video -> {
+            remember(background) {
+                BackgroundStyle.Video(
+                    sources = background.sources,
+                    fallbackImage = background.fallbackImage,
+                    loop = background.loop,
+                    muteAudio = background.muteAudio,
+                    contentScale = background.contentScale,
+                    colorOverlay = background.colorOverlay,
                 )
             }
         }

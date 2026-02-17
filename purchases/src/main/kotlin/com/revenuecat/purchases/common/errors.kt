@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
@@ -57,6 +58,13 @@ internal fun Exception.toPurchasesError(): PurchasesError {
         }
         is SignatureVerificationException -> {
             PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
+        }
+        is NullPointerReadingErrorStreamException -> {
+            PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "In some devices, there seems to be an error when trying to parse the error response. " +
+                    "Original error message: ${cause?.localizedMessage ?: localizedMessage}",
+            )
         }
         else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
     }

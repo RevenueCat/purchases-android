@@ -7,9 +7,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
-import io.mockk.verify
 import org.assertj.core.api.Assertions
-import kotlin.time.Duration
 
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     private val initialActiveTransaction = StoreTransactionFactory.createStoreTransaction(
@@ -46,18 +44,6 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
         Assertions.assertThat(customerInfo.activeSubscriptions).containsExactly(
             "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}",
         )
-    }
-
-    protected fun assertAcknowledgePurchaseDidNotHappen() {
-        verify(exactly = 0) {
-            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
-        }
-    }
-
-    protected fun assertAcknowledgePurchaseDidHappen(timeout: Duration = testTimeout) {
-        verify(timeout = timeout.inWholeMilliseconds) {
-            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
-        }
     }
 
     // endregion helpers

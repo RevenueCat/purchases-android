@@ -16,7 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @InternalRevenueCatAPI
 @Serializable(with = PaywallComponentSerializer::class)
-sealed interface PaywallComponent
+public sealed interface PaywallComponent
 
 @InternalRevenueCatAPI
 internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
@@ -52,6 +52,7 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "tab_control" -> jsonDecoder.json.decodeFromString<TabControlComponent>(json.toString())
             "tabs" -> jsonDecoder.json.decodeFromString<TabsComponent>(json.toString())
             "video" -> jsonDecoder.json.decodeFromString<VideoComponent>(json.toString())
+            "countdown" -> jsonDecoder.json.decodeFromString<CountdownComponent>(json.toString())
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
                 ?.toString()

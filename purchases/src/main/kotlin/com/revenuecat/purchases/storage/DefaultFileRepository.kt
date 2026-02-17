@@ -30,14 +30,14 @@ import java.security.MessageDigest
  * A file repository that handles downloading and caching files from remote URLs.
  */
 @InternalRevenueCatAPI
-interface FileRepository {
+public interface FileRepository {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of the pairs of URL to their checksum to fetch data from.
      * @param checksums Optional checksums for each URL (must match length of urls if provided)
      * @return The Job that is executing the prefetch
      */
-    fun prefetch(urls: List<Pair<URL, Checksum?>>)
+    public fun prefetch(urls: List<Pair<URL, Checksum?>>)
 
     /**
      * Create and/or get the cached file url.
@@ -45,7 +45,7 @@ interface FileRepository {
      * @param checksum Optional checksum to validate the downloaded file
      * @return The local file's URI where the data can be found after caching is complete.
      */
-    suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
+    public suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
 
     /**
      * Get the cached file url if it exists.
@@ -53,17 +53,17 @@ interface FileRepository {
      * @param checksum Optional checksum (files cached with different checksums are separate)
      * @return The local file's URI where the data can be found after caching is complete.
      * */
-    fun getFile(url: URL, checksum: Checksum? = null): URI?
+    public fun getFile(url: URL, checksum: Checksum? = null): URI?
 }
 
 /**
  * The file repository is a service capable of storing data and returning the URL where that stored data exists.
  */
 @InternalRevenueCatAPI
-interface LocalFileCache {
-    fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
-    fun cachedContentExists(uri: URI): Boolean
-    fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
+public interface LocalFileCache {
+    public fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
+    public fun cachedContentExists(uri: URI): Boolean
+    public fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
 }
 
 @InternalRevenueCatAPI
@@ -209,12 +209,12 @@ internal class DefaultFileCache(
 
     override fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum?): URI? {
         val urlHash = md5Hex(remoteURL.toString().toByteArray())
-        val fileName = File(urlHash).name
+        // Use checksum value as part of the file name (like iOS)
+        val fileName = File(urlHash).name + (checksum?.value ?: "")
         if (fileName.isEmpty()) return null
 
-        // Use checksum value as extension (like iOS), fallback to URL extension
-        val extension = checksum?.value ?: remoteURL.path.substringAfterLast('.', "")
-        val fileWithExtension = if (extension.isNotEmpty()) "$fileName.$extension" else fileName
+        val extension = remoteURL.path.substringAfterLast('.', "")
+        val fileWithExtension = "$fileName.$extension"
 
         return File(cacheDir, fileWithExtension).toURI()
     }

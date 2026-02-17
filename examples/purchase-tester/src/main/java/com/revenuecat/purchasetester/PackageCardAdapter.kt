@@ -17,6 +17,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
+import com.revenuecat.purchases_sample.databinding.RowViewBinding
 
 class PackageCardAdapter(
     private val packages: List<Package>,
@@ -80,16 +81,49 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        @Suppress("LongMethod")
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
         fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
             val product = currentPackage.product
-            binding.currentPackage = currentPackage
-            binding.isSubscription = product.type == ProductType.SUBS
-            binding.isActive = activeSubscriptions.contains(product.id)
-            binding.isPlayStore = isPlayStore
-            binding.isAddOnMode = isAddOnMode
-            binding.isSelected = isSelected
+            val isSubscription = product.type == ProductType.SUBS
+            val isActive = activeSubscriptions.contains(product.id)
 
+            binding.packageProductTitle.text = "${product.title}${if (isActive) " (active)" else ""}"
+            binding.packageProductDescription.text = product.description
+
+            binding.packageProductSku.updateRowView("Sku:", product.id)
+            binding.packageType.updateRowView(
+                "Package Type:",
+                if (currentPackage.packageType == PackageType.CUSTOM) {
+                    "custom -> ${currentPackage.packageType.identifier}"
+                } else {
+                    currentPackage.packageType.toString()
+                },
+            )
+
+            binding.packageOneTimePrice.root.visibility = if (isSubscription) View.GONE else View.VISIBLE
+            if (!isSubscription) {
+                binding.packageOneTimePrice.updateRowView("One Time Price:", product.price.formatted)
+            }
+
+            binding.packageSubscriptionOptionTitle.visibility =
+                if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
+            binding.packageSubscriptionOptionGroup.visibility =
+                if (isSubscription && isPlayStore) View.VISIBLE else View.GONE
+
+            binding.buyOptionCheckbox.visibility = if (isAddOnMode) View.VISIBLE else View.GONE
+            binding.baseProductCheckbox.visibility = if (isAddOnMode) View.VISIBLE else View.GONE
+            binding.isUpgradeCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
+            binding.isPersonalizedCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
+
+            binding.isUpgradeCheckbox.isEnabled = isPlayStore
+            binding.isPersonalizedCheckbox.isEnabled = isPlayStore
+
+            binding.packageBuyButton.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
+            binding.productBuyButton.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
+            binding.optionBuyButton.visibility = if (isPlayStore && !isAddOnMode) View.VISIBLE else View.INVISIBLE
+            binding.wplBuyButton.visibility = if (currentPackage.webCheckoutURL == null) View.GONE else View.VISIBLE
+
+            binding.buyOptionCheckbox.setOnCheckedChangeListener(null)
             binding.buyOptionCheckbox.isChecked = isSelected
             binding.buyOptionCheckbox.setOnCheckedChangeListener { _, checked ->
                 if (checked) {
@@ -156,14 +190,11 @@ class PackageCardAdapter(
                 binding.root.context.startActivity(intent)
             }
 
-            binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
-                "custom -> ${currentPackage.packageType.identifier}"
-            } else {
-                currentPackage.packageType.toString()
-            }
-
-            binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
-                ?: product.amazonProduct?.originalProductJSON.toString()
+            binding.packageDetailsJsonObject.updateRowView(
+                "Product JSON",
+                product.googleProduct?.productDetails?.toString()
+                    ?: product.amazonProduct?.originalProductJSON.toString(),
+            )
 
             bindSubscriptionOptions(currentPackage)
 
@@ -243,6 +274,11 @@ class PackageCardAdapter(
                 .setMessage(errorMessage)
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
+        }
+
+        private fun RowViewBinding.updateRowView(header: String, detail: String?) {
+            headerView.text = header
+            value.text = detail ?: "None"
         }
     }
 

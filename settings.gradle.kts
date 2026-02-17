@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         // fetch plugins from google maven (https://maven.google.com)
         google {
@@ -52,6 +53,7 @@ dependencyResolutionManagement {
 }
 
 include(":feature:amazon")
+include(":feature:admob")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
@@ -63,6 +65,8 @@ include(":examples:paywall-tester")
 include(":test-apps:testpurchasesandroidcompatibility")
 include(":test-apps:testpurchasesuiandroidcompatibility")
 include(":examples:web-purchase-redemption-sample")
+include(":examples:admob-sample")
 include(":dokka-hide-internal")
 include(":baselineprofile")
 include(":test-apps:e2etests")
+include(":examples:rcttester")

@@ -3,16 +3,18 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.PlatformInfo
 import io.mockk.clearAllMocks
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -97,35 +99,42 @@ class PurchasesFactoryTest {
     }
 
     @Test
-    fun `configuring SDK with simulated store api key in release mode throws exception`() {
+    fun `configuring SDK with simulated store api key in release mode shows error activity`() {
+        // Arrange
         purchasesFactory = PurchasesFactory(
             isDebugBuild = { false },
             apiKeyValidator = apiKeyValidatorMock,
         )
-
+        val applicationContextMock = mockk<Application>()
+        val intentSlot = slot<Intent>()
         every {
             applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_GRANTED
         every {
+            applicationMock.packageName
+        } returns "package-name"
+        every {
             applicationMock.applicationContext
-        } returns mockk()
+        } returns applicationContextMock
+        every {
+            applicationMock.startActivity(capture(intentSlot))
+        } returns Unit
         every {
             apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
         } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+        every {
+            apiKeyValidatorMock.redactApiKey(any())
+        } returns "a_redacted_api_key"
 
-        try {
-            purchasesFactory.createPurchases(
-                createConfiguration(),
-                PlatformInfo("test-flavor", "test-version"),
-                proxyURL = null,
-            )
-            fail("Expected error")
-        } catch (e: PurchasesException) {
-            assertThat(e.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-            assertThat(e.message).isEqualTo(
-                "Please configure the Play Store/Amazon store app on the RevenueCat dashboard and use its corresponding API key before releasing. Test Store is not supported in production builds."
-            )
-        }
+        // Act
+        purchasesFactory.validateConfiguration(createConfiguration())
+
+        // Assert
+        verify(exactly = 1) { applicationMock.startActivity(any()) }
+        val capturedIntent = intentSlot.captured
+        assertThat(capturedIntent.component?.className).isEqualTo(SimulatedStoreErrorDialogActivity::class.java.name)
+        assertThat(capturedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+        assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo("a_redacted_api_key")
     }
 
     private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {

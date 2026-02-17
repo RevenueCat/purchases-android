@@ -83,6 +83,7 @@ internal open class BasePurchasesTest {
     protected val mockOfferingsManager = mockk<OfferingsManager>()
     protected val mockBackupManager = mockk<BackupManager>()
     internal val mockEventsManager = mockk<EventsManager>()
+    internal val mockAdEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
@@ -140,8 +141,17 @@ internal open class BasePurchasesTest {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
         every {
-            mockEventsManager.flushEvents()
+            mockEventsManager.flushEvents(any())
         } just Runs
+        every {
+            mockAdEventsManager.flushEvents(any())
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener = any()
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener
+        } returns null
         every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
@@ -182,6 +192,7 @@ internal open class BasePurchasesTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
             mockEventsManager,
+            mockAdEventsManager,
             mockWebPurchasesRedemptionHelper,
             mockLifecycleOwner,
             mockLifecycle,
@@ -251,6 +262,7 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
+                    sdkOriginated = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -263,11 +275,9 @@ internal open class BasePurchasesTest {
             every {
                 postTokenWithoutConsuming(
                     purchaseToken = any(),
-                    storeUserID = any(),
                     receiptInfo = any(),
                     isRestore = any(),
                     appUserID = any(),
-                    marketplace = any(),
                     initiationSource = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
@@ -420,8 +430,16 @@ internal open class BasePurchasesTest {
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
+        return getMockedStoreTransaction(listOf(productId), purchaseToken, productType)
+    }
+
+    protected fun getMockedStoreTransaction(
+        productIds: List<String>,
+        purchaseToken: String,
+        productType: ProductType
+    ): StoreTransaction {
         val p: Purchase = stubGooglePurchase(
-            productIds = listOf(productId),
+            productIds = productIds,
             purchaseToken = purchaseToken
         )
 
@@ -473,6 +491,7 @@ internal open class BasePurchasesTest {
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
             eventsManager = mockEventsManager,
+            adEventsManager = mockAdEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),

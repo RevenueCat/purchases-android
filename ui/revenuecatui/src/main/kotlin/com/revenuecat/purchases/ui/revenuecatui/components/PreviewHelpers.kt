@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -84,6 +85,7 @@ private const val MILLIS_2025_01_25 = 1737763200000
 @JvmSynthetic
 internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
+        id = "preview_paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
@@ -164,6 +166,8 @@ internal fun previewStackComponentStyle(
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
     scrollOrientation: Orientation? = null,
+    countdownDate: Date? = null,
+    countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = children,
@@ -181,6 +185,8 @@ internal fun previewStackComponentStyle(
         scrollOrientation = scrollOrientation,
         rcPackage = null,
         tabIndex = null,
+        countdownDate = countdownDate,
+        countFrom = countFrom,
         overrides = emptyList(),
     )
 }
@@ -201,6 +207,8 @@ internal fun previewTextComponentStyle(
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,
+    countdownDate: Date? = null,
+    countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
     overrides: List<PresentedOverride<LocalizedTextPartial>> = emptyList(),
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
@@ -220,6 +228,8 @@ internal fun previewTextComponentStyle(
         margin = margin.toPaddingValues(),
         rcPackage = null,
         tabIndex = tabIndex,
+        countdownDate = countdownDate,
+        countFrom = countFrom,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,
     )

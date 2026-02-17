@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
+import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -19,6 +19,8 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 class SyncPurchasesHelperTest {
@@ -76,7 +78,7 @@ class SyncPurchasesHelperTest {
         assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -113,11 +115,9 @@ class SyncPurchasesHelperTest {
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = any(),
-                storeUserID = any(),
                 receiptInfo = any(),
                 isRestore = any(),
                 appUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 onSuccess = any(),
                 onError = any(),
@@ -129,12 +129,14 @@ class SyncPurchasesHelperTest {
     fun `posts all receipts without consuming`() {
         val purchase1 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-1")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"
@@ -144,11 +146,9 @@ class SyncPurchasesHelperTest {
         every {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = any(),
-                storeUserID = any(),
                 receiptInfo = any(),
                 isRestore = any(),
                 appUserID = any(),
-                marketplace = any(),
                 initiationSource = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
@@ -169,22 +169,20 @@ class SyncPurchasesHelperTest {
         verifyAll {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-1",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match { it.storeUserID == "test-store-user-id" },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = null,
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id" && it.marketplace == "test-marketplace"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = "test-marketplace",
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -196,12 +194,14 @@ class SyncPurchasesHelperTest {
     fun `tries to sync all purchases even if there are errors`() {
         val purchase1 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-1")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"
@@ -210,7 +210,7 @@ class SyncPurchasesHelperTest {
 
         every {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(),
+                any(), any(), any(), any(), any(), any(), captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
@@ -228,22 +228,22 @@ class SyncPurchasesHelperTest {
         verifyAll {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-1",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = null,
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
-                storeUserID = "test-store-user-id",
-                receiptInfo = any(),
+                receiptInfo = match {
+                    it.storeUserID == "test-store-user-id" && it.marketplace == "test-marketplace"
+                },
                 isRestore = isRestore,
                 appUserID = appUserID,
-                marketplace = "test-marketplace",
                 initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -315,7 +315,7 @@ class SyncPurchasesHelperTest {
         verify(exactly = 1) {
             diagnosticsTracker.trackSyncPurchasesResult(
                 errorCode = PurchasesErrorCode.UnknownError.code,
-                errorMessage = "Unknown error.",
+                errorMessage = "Unknown error. Check the underlying error for more details.",
                 any(),
             )
         }

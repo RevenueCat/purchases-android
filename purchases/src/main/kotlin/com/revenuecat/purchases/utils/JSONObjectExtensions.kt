@@ -34,6 +34,11 @@ internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T> {
     }.toMap()
 }
 
+internal fun JSONObject.copy(deep: Boolean = false): JSONObject {
+    val map = toMap<Any>(deep = deep)
+    return JSONObject(map)
+}
+
 internal fun <K, V> Map<K, V?>.replaceJsonNullWithKotlinNull(): Map<K, V?> {
     @Suppress("UNCHECKED_CAST")
     return this.mapValues { (_, value) ->

@@ -1,7 +1,14 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.backend_integration_tests
 
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.ads.events.AdEventType
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -12,9 +19,11 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import io.mockk.verify
+import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
+import java.net.URL
 
 internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
@@ -33,6 +42,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -42,9 +53,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             )
         }
         assertThat(error).isNull()
+        val urlString = URL(appConfig.baseURL, Endpoint.GetProductEntitlementMapping.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetProductEntitlementMapping.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -64,6 +76,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                             entitlements = listOf("pro_cat")
                         )
                     )
+                    assertThat(productEntitlementMapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                    assertThat(productEntitlementMapping.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -80,8 +94,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.length()).isPositive
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { _, _ ->
@@ -89,9 +104,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.GetOfferings("test-user-id").getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.GetOfferings("test-user-id").getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -104,8 +120,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse ->
+                onSuccess = { offeringsResponse, originalDataSource ->
                     assertThat(offeringsResponse.length()).isPositive
+                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { error, _ ->
@@ -124,6 +141,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 newAppUserID = "new-test-user-id",
                 onSuccessHandler = { customerInfo, _ ->
                     assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -131,9 +150,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.LogIn.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
@@ -149,6 +169,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 onSuccessHandler = { customerInfo, _ ->
                     assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
                     assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
+                    assertThat(customerInfo.originalSource).isEqualTo(CustomerInfoOriginalSource.MAIN)
+                    assertThat(customerInfo.loadedFromCache).isFalse
                     latch.countDown()
                 },
                 onErrorHandler = {
@@ -156,9 +178,10 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(appConfig.baseURL, Endpoint.LogIn.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.LogIn.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningPerformed()
@@ -175,6 +198,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     appUserID = "appUserID",
                     sessionID = "sessionID",
                     offeringID = "offeringID",
+                    paywallID = "paywallID",
                     paywallRevision = 5,
                     timestamp = 123456789,
                     displayMode = "footer",
@@ -187,6 +211,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         ensureBlockFinishes { latch ->
             backend.postEvents(
                 request,
+                baseURL = AppConfig.paywallEventsURL,
+                delay = Delay.NONE,
                 onSuccessHandler = {
                     latch.countDown()
                 },
@@ -195,12 +221,114 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        val urlString = URL(AppConfig.paywallEventsURL, Endpoint.PostEvents.getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(Endpoint.PostPaywallEvents.getPath(), any())
+            sharedPreferencesEditor.putString(urlString, any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can post ad events backend request`() {
+        val request = EventsRequest(listOf(
+            BackendStoredEvent.Ad(
+                BackendEvent.Ad(
+                    id = "id",
+                    version = 1,
+                    type = AdEventType.DISPLAYED.value,
+                    timestamp = 123456789,
+                    networkName = "networkName",
+                    mediatorName = "mediatorName",
+                    adFormat = "banner",
+                    placement = "placement",
+                    adUnitId = "adUnitId",
+                    impressionId = "impressionId",
+                    appUserID = "appUserID",
+                    appSessionID = "appSessionID",
+                )
+            )
+        ).map { it.toBackendEvent() })
+
+        var receivedError: PurchasesError? = null
+        ensureBlockFinishes { latch ->
+            backend.postEvents(
+                request,
+                baseURL = AppConfig.adEventsURL,
+                delay = Delay.NONE,
+                onSuccessHandler = {
+                    latch.countDown()
+                },
+                onErrorHandler = { error, _ ->
+                    receivedError = error
+                    latch.countDown()
+                }
+            )
+        }
+        if (receivedError != null) {
+            error("Expected success but got error: $receivedError")
+        }
+        val urlString = URL(AppConfig.adEventsURL, Endpoint.PostEvents.getPath()).toString()
+        verify(exactly = 1) {
+            // Verify we save the backend response in the shared preferences
+            sharedPreferencesEditor.putString(urlString, any())
+        }
+        verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can deserialize ad event without adFormat field`() {
+        // JSON without ad_format field to simulate old stored events
+        val jsonWithoutAdFormat = """
+            {
+                "id": "id",
+                "version": 1,
+                "type": "displayed",
+                "timestamp_ms": 123456789,
+                "network_name": "networkName",
+                "mediator_name": "mediatorName",
+                "placement": "placement",
+                "ad_unit_id": "adUnitId",
+                "impression_id": "impressionId",
+                "app_user_id": "appUserID",
+                "app_session_id": "appSessionID"
+            }
+        """.trimIndent()
+
+        val deserialized = Json.decodeFromString<BackendEvent.Ad>(jsonWithoutAdFormat)
+
+        assertThat(deserialized.id).isEqualTo("id")
+        assertThat(deserialized.adFormat).isNull()
+        assertThat(deserialized.networkName).isEqualTo("networkName")
+    }
+
+    @Test
+    fun `can deserialize ad event with adFormat field`() {
+        // JSON with ad_format field
+        val jsonWithAdFormat = """
+            {
+                "id": "id",
+                "version": 1,
+                "type": "displayed",
+                "timestamp_ms": 123456789,
+                "network_name": "networkName",
+                "mediator_name": "mediatorName",
+                "ad_format": "banner",
+                "placement": "placement",
+                "ad_unit_id": "adUnitId",
+                "impression_id": "impressionId",
+                "app_user_id": "appUserID",
+                "app_session_id": "appSessionID"
+            }
+        """.trimIndent()
+
+        val deserialized = Json.decodeFromString<BackendEvent.Ad>(jsonWithAdFormat)
+
+        assertThat(deserialized.id).isEqualTo("id")
+        assertThat(deserialized.adFormat).isEqualTo("banner")
+        assertThat(deserialized.networkName).isEqualTo("networkName")
     }
 
     @Test

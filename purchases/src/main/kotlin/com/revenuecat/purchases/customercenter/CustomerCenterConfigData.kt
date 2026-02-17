@@ -8,7 +8,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
-typealias RCColor = PaywallColor
+public typealias RCColor = PaywallColor
 
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
@@ -18,21 +18,21 @@ internal class CustomerCenterRoot(
 
 @InternalRevenueCatAPI
 @Serializable
-data class CustomerCenterConfigData(
-    @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
-    val appearance: Appearance,
-    val localization: Localization,
-    val support: Support,
+public data class CustomerCenterConfigData(
+    @Serializable(with = ScreenMapSerializer::class) public val screens: Map<Screen.ScreenType, Screen>,
+    public val appearance: Appearance,
+    public val localization: Localization,
+    public val support: Support,
     @SerialName("last_published_app_version")
     @Serializable(with = EmptyStringToNullSerializer::class)
-    val lastPublishedAppVersion: String? = null,
+    public val lastPublishedAppVersion: String? = null,
 ) {
     @Serializable
-    data class Localization(
-        val locale: String,
-        @SerialName("localized_strings") val localizedStrings: Map<String, String>,
+    public data class Localization(
+        public val locale: String,
+        @SerialName("localized_strings") public val localizedStrings: Map<String, String>,
     ) {
-        enum class VariableName(val identifier: String) {
+        public enum class VariableName(public val identifier: String) {
             PRICE("price"),
             SUB_OFFER_DURATION("sub_offer_duration"),
             SUB_OFFER_DURATION_2("sub_offer_duration_2"),
@@ -42,19 +42,19 @@ data class CustomerCenterConfigData(
             DISCOUNTED_RECURRING_PAYMENT_CYCLES("discounted_recurring_payment_cycles"),
             ;
 
-            companion object {
+            public companion object {
                 private val valueMap by lazy {
                     values().associateBy { it.identifier }
                 }
 
-                fun valueOfIdentifier(identifier: String): VariableName? {
+                public fun valueOfIdentifier(identifier: String): VariableName? {
                     return valueMap[identifier]
                 }
             }
         }
 
         @Serializable
-        enum class CommonLocalizedString {
+        public enum class CommonLocalizedString {
             @SerialName("no_thanks")
             NO_THANKS,
 
@@ -285,9 +285,36 @@ data class CustomerCenterConfigData(
 
             @SerialName("no_virtual_currency_balances_found")
             NO_VIRTUAL_CURRENCY_BALANCES_FOUND,
+
+            @SerialName("support_ticket_create")
+            SUPPORT_TICKET_CREATE,
+
+            @SerialName("email")
+            EMAIL,
+
+            @SerialName("enter_email")
+            ENTER_EMAIL,
+
+            @SerialName("description")
+            DESCRIPTION,
+
+            @SerialName("sent")
+            SENT,
+
+            @SerialName("support_ticket_failed")
+            SUPPORT_TICKET_FAILED,
+
+            @SerialName("submit_ticket")
+            SUBMIT_TICKET,
+
+            @SerialName("invalid_email_error")
+            INVALID_EMAIL_ERROR,
+
+            @SerialName("characters_remaining")
+            CHARACTERS_REMAINING,
             ;
 
-            val defaultValue: String
+            public val defaultValue: String
                 get() = when (this) {
                     NO_THANKS -> "No, thanks"
                     NO_SUBSCRIPTIONS_FOUND -> "No Subscriptions found"
@@ -389,35 +416,45 @@ data class CustomerCenterConfigData(
                     SEE_ALL_VIRTUAL_CURRENCIES -> "See all in-app currencies"
                     VIRTUAL_CURRENCY_BALANCES_SCREEN_HEADER -> "In-App Currencies"
                     NO_VIRTUAL_CURRENCY_BALANCES_FOUND -> "It doesn't look like you've purchased any in-app currencies."
+                    SUPPORT_TICKET_CREATE -> "Create a support ticket"
+                    EMAIL -> "Email"
+                    ENTER_EMAIL -> "Enter your email"
+                    DESCRIPTION -> "Description"
+                    SENT -> "Message sent"
+                    SUPPORT_TICKET_FAILED -> "Failed to send, please try again."
+                    SUBMIT_TICKET -> "Submit ticket"
+                    INVALID_EMAIL_ERROR -> "Please enter a valid email address"
+                    CHARACTERS_REMAINING -> "{{ count }} characters"
                 }
         }
 
-        fun commonLocalizedString(key: CommonLocalizedString): String {
+        public fun commonLocalizedString(key: CommonLocalizedString): String {
             return localizedStrings[key.name.lowercase()] ?: key.defaultValue
         }
     }
 
     @Serializable
-    data class HelpPath(
-        val id: String,
-        val title: String,
-        val type: PathType,
-        @SerialName("promotional_offer") val promotionalOffer: PathDetail.PromotionalOffer? = null,
-        @SerialName("feedback_survey") val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
-        val url: String? = null,
-        @SerialName("open_method") val openMethod: OpenMethod? = null,
-        @SerialName("action_identifier") val actionIdentifier: String? = null,
+    public data class HelpPath(
+        public val id: String,
+        public val title: String,
+        public val type: PathType,
+        @SerialName("promotional_offer") public val promotionalOffer: PathDetail.PromotionalOffer? = null,
+        @SerialName("feedback_survey") public val feedbackSurvey: PathDetail.FeedbackSurvey? = null,
+        public val url: String? = null,
+        @SerialName("open_method") public val openMethod: OpenMethod? = null,
+        @SerialName("action_identifier") public val actionIdentifier: String? = null,
     ) {
         @Serializable
-        sealed class PathDetail {
+        public sealed class PathDetail {
             @Serializable
-            data class PromotionalOffer(
-                @SerialName("android_offer_id") val androidOfferId: String,
-                val eligible: Boolean,
-                val title: String,
-                val subtitle: String,
-                @SerialName("product_mapping") val productMapping: Map<String, String>,
-                @SerialName("cross_product_promotions") val crossProductPromotions: Map<String, CrossProductPromotion> =
+            public data class PromotionalOffer(
+                @SerialName("android_offer_id") public val androidOfferId: String,
+                public val eligible: Boolean,
+                public val title: String,
+                public val subtitle: String,
+                @SerialName("product_mapping") public val productMapping: Map<String, String>,
+                @SerialName("cross_product_promotions") public val crossProductPromotions:
+                Map<String, CrossProductPromotion> =
                     emptyMap(),
             ) : PathDetail() {
                 @Deprecated(
@@ -426,7 +463,7 @@ data class CustomerCenterConfigData(
                         "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
                     ),
                 )
-                constructor(
+                public constructor(
                     androidOfferId: String,
                     eligible: Boolean,
                     title: String,
@@ -440,38 +477,38 @@ data class CustomerCenterConfigData(
                         "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
                     ),
                 )
-                fun copy(
+                public fun copy(
                     androidOfferId: String = this.androidOfferId,
                     eligible: Boolean = this.eligible,
                     title: String = this.title,
                     subtitle: String = this.subtitle,
                     productMapping: Map<String, String> = this.productMapping,
-                ) = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
+                ): PromotionalOffer = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
 
                 @Serializable
                 @Poko
-                class CrossProductPromotion(
-                    @SerialName("store_offer_identifier") val storeOfferIdentifier: String,
-                    @SerialName("target_product_id") val targetProductId: String,
+                public class CrossProductPromotion(
+                    @SerialName("store_offer_identifier") public val storeOfferIdentifier: String,
+                    @SerialName("target_product_id") public val targetProductId: String,
                 )
             }
 
             @Serializable
-            data class FeedbackSurvey(
-                val title: String,
-                val options: List<Option>,
+            public data class FeedbackSurvey(
+                public val title: String,
+                public val options: List<Option>,
             ) : PathDetail() {
                 @Serializable
-                data class Option(
-                    val id: String,
-                    val title: String,
-                    @SerialName("promotional_offer") val promotionalOffer: PromotionalOffer? = null,
+                public data class Option(
+                    public val id: String,
+                    public val title: String,
+                    @SerialName("promotional_offer") public val promotionalOffer: PromotionalOffer? = null,
                 )
             }
         }
 
         @Serializable
-        enum class PathType {
+        public enum class PathType {
             MISSING_PURCHASE,
             REFUND_REQUEST,
             CHANGE_PLANS,
@@ -482,40 +519,40 @@ data class CustomerCenterConfigData(
         }
 
         @Serializable
-        enum class OpenMethod {
+        public enum class OpenMethod {
             IN_APP,
             EXTERNAL,
         }
     }
 
     @Serializable
-    data class Appearance(
-        val light: ColorInformation? = null,
-        val dark: ColorInformation? = null,
+    public data class Appearance(
+        public val light: ColorInformation? = null,
+        public val dark: ColorInformation? = null,
     ) {
         @Serializable
-        data class ColorInformation(
+        public data class ColorInformation(
             @SerialName("accent_color") @Serializable(with = PaywallColor.Serializer::class)
-            val accentColor: RCColor? = null,
+            public val accentColor: RCColor? = null,
             @SerialName("text_color") @Serializable(with = PaywallColor.Serializer::class)
-            val textColor: RCColor? = null,
+            public val textColor: RCColor? = null,
             @SerialName("background_color") @Serializable(with = PaywallColor.Serializer::class)
-            val backgroundColor: RCColor? = null,
+            public val backgroundColor: RCColor? = null,
             @SerialName("button_text_color") @Serializable(with = PaywallColor.Serializer::class)
-            val buttonTextColor: RCColor? = null,
+            public val buttonTextColor: RCColor? = null,
             @SerialName("button_background_color") @Serializable(with = PaywallColor.Serializer::class)
-            val buttonBackgroundColor: RCColor? = null,
+            public val buttonBackgroundColor: RCColor? = null,
         )
     }
 
     @Serializable
-    data class ScreenOffering(
-        val type: ScreenOfferingType,
-        @SerialName("offering_id") val offeringId: String? = null,
-        @SerialName("button_text") val buttonText: String? = null,
+    public data class ScreenOffering(
+        public val type: ScreenOfferingType,
+        @SerialName("offering_id") public val offeringId: String? = null,
+        @SerialName("button_text") public val buttonText: String? = null,
     ) {
         @Serializable
-        enum class ScreenOfferingType(val value: String) {
+        public enum class ScreenOfferingType(public val value: String) {
             @SerialName("CURRENT")
             CURRENT("CURRENT"),
 
@@ -525,15 +562,15 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
-    data class Screen(
-        val type: ScreenType,
-        val title: String,
-        @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
-        @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
-        val offering: ScreenOffering? = null,
+    public data class Screen(
+        public val type: ScreenType,
+        public val title: String,
+        @Serializable(with = EmptyStringToNullSerializer::class) public val subtitle: String? = null,
+        @Serializable(with = HelpPathsSerializer::class) public val paths: List<HelpPath>,
+        public val offering: ScreenOffering? = null,
     ) {
         @Serializable
-        enum class ScreenType {
+        public enum class ScreenType {
             MANAGEMENT,
             NO_ACTIVE,
             UNKNOWN,
@@ -541,20 +578,84 @@ data class CustomerCenterConfigData(
     }
 
     @Serializable
-    data class Support(
+    public data class Support(
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val email: String? = null,
+        public val email: String? = null,
         @SerialName("should_warn_customer_to_update")
-        val shouldWarnCustomerToUpdate: Boolean? = null,
+        public val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
-        val displayVirtualCurrencies: Boolean? = null,
-    )
+        public val displayVirtualCurrencies: Boolean? = null,
+        @SerialName("support_tickets")
+        public val supportTickets: SupportTickets = SupportTickets(),
+    ) {
+        @Serializable
+        public data class SupportTickets(
+            @SerialName("allow_creation")
+            public val allowCreation: Boolean = false,
+            @SerialName("customer_details")
+            public val customerDetails: CustomerDetails = CustomerDetails(),
+            @SerialName("customer_type")
+            public val customerType: CustomerType = CustomerType.NOT_ACTIVE,
+        ) {
+            @Serializable
+            public enum class CustomerType {
+                @SerialName("not_active")
+                NOT_ACTIVE,
 
-    fun getManagementScreen(): CustomerCenterConfigData.Screen? {
+                @SerialName("none")
+                NONE,
+
+                @SerialName("all")
+                ALL,
+
+                @SerialName("active")
+                ACTIVE,
+            }
+
+            @Serializable
+            public data class CustomerDetails(
+                @SerialName("active_entitlements")
+                public val activeEntitlements: Boolean = false,
+                @SerialName("app_user_id")
+                public val appUserId: Boolean = false,
+                @SerialName("att_consent")
+                public val attConsent: Boolean = false,
+                public val country: Boolean = false,
+                @SerialName("device_version")
+                public val deviceVersion: Boolean = false,
+                public val email: Boolean = false,
+                @SerialName("facebook_anon_id")
+                public val facebookAnonId: Boolean = false,
+                public val idfa: Boolean = false,
+                public val idfv: Boolean = false,
+                public val ip: Boolean = false,
+                @SerialName("last_opened")
+                public val lastOpened: Boolean = false,
+                @SerialName("last_seen_app_version")
+                public val lastSeenAppVersion: Boolean = false,
+                @SerialName("total_spent")
+                public val totalSpent: Boolean = false,
+                @SerialName("user_since")
+                public val userSince: Boolean = false,
+            )
+
+            public fun allowsActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE
+            }
+
+            public fun allowsNonActiveCustomers(): Boolean {
+                return customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.ALL ||
+                    customerType == CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE
+            }
+        }
+    }
+
+    public fun getManagementScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]
     }
 
-    fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
+    public fun getNoActiveScreen(): CustomerCenterConfigData.Screen? {
         return screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]
     }
 }

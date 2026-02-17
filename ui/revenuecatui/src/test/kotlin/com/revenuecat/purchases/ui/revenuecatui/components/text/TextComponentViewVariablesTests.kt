@@ -341,7 +341,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.01"
+                    "\$0.00"
                 )
 
                 Variable.PRODUCT_PRICE_PER_WEEK -> arrayOf(
@@ -352,7 +352,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.04"
+                    "\$0.03"
                 )
 
                 Variable.PRODUCT_PRICE_PER_MONTH -> arrayOf(
@@ -363,7 +363,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.17"
+                    "\$0.16"
                 )
 
                 Variable.PRODUCT_PRICE_PER_YEAR -> arrayOf(
@@ -651,6 +651,25 @@ internal class TextComponentViewVariablesTests(
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
                     "Annual"
+                )
+
+                Variable.COUNT_DAYS_WITH_ZERO,
+                Variable.COUNT_DAYS_WITHOUT_ZERO,
+                Variable.COUNT_HOURS_WITH_ZERO,
+                Variable.COUNT_HOURS_WITHOUT_ZERO,
+                Variable.COUNT_MINUTES_WITH_ZERO,
+                Variable.COUNT_MINUTES_WITHOUT_ZERO,
+                Variable.COUNT_SECONDS_WITH_ZERO,
+                Variable.COUNT_SECONDS_WITHOUT_ZERO,
+                -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    ""
                 )
             }
         } + listOf(
@@ -1025,7 +1044,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "￥55"
+                "￥54"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
@@ -1035,7 +1054,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "￥384"
+                "￥383"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
@@ -1045,7 +1064,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "￥1,667"
+                "￥1,666"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
@@ -1107,7 +1126,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "SE",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "1 666,67 kr"
+                "1 666,66 kr"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
@@ -1431,6 +1450,7 @@ internal class TextComponentViewVariablesTests(
             )
         }
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1477,7 +1497,7 @@ internal class TextComponentViewVariablesTests(
 
         // Assert
         // Select the first package to make sure the variables reflect its values.
-        state.update(selectedPackage = packages.first())
+        state.update(packages.first().identifier)
 
         onNodeWithTag("text")
             .onChild()

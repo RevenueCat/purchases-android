@@ -1,0 +1,70 @@
+{
+  "url": "https:\/\/api-paywalls.revenuecat.com\/v1\/events",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application\/json",
+    "X-Billing-Client-Sdk-Version": "8.0.0",
+    "X-Client-Bundle-ID": "com.revenuecat.purchases.backend_tests",
+    "X-Client-Locale": "en-US",
+    "X-Client-Version": "test-version-name",
+    "X-Is-Backgrounded": "false",
+    "X-Is-Debug-Build": "true",
+    "X-Kotlin-Version": "2.0.21",
+    "X-Observer-Mode-Enabled": "false",
+    "X-Platform": "android",
+    "X-Platform-Brand": "robolectric",
+    "X-Platform-Device": "robolectric",
+    "X-Platform-Flavor": "test-flavor",
+    "X-Platform-Version": "35",
+    "X-Preferred-Locales": "en_US"
+  },
+  "body": {
+    "events": [
+      {
+        "discriminator": "paywalls",
+        "id": "TEST_STATIC_VALUE",
+        "version": 1,
+        "type": "paywall_cancel",
+        "app_user_id": "TEST_STATIC_VALUE",
+        "session_id": "TEST_STATIC_VALUE",
+        "offering_id": "TEST_STATIC_VALUE",
+        "paywall_id": "paywall_id",
+        "paywall_revision": 1,
+        "timestamp": "TEST_STATIC_VALUE",
+        "display_mode": "FULL_SCREEN",
+        "dark_mode": true,
+        "locale": "en_US"
+      },
+      {
+        "discriminator": "customer_center",
+        "id": "TEST_STATIC_VALUE",
+        "revision_id": 1,
+        "type": "customer_center_impression",
+        "app_user_id": "TEST_STATIC_VALUE",
+        "app_session_id": "TEST_STATIC_VALUE",
+        "timestamp": "TEST_STATIC_VALUE",
+        "dark_mode": true,
+        "locale": "en_US",
+        "display_mode": "full_screen",
+        "path": null,
+        "url": null,
+        "survey_option_id": null
+      },
+      {
+        "discriminator": "customer_center",
+        "id": "TEST_STATIC_VALUE",
+        "revision_id": 1,
+        "type": "customer_center_survey_option_chosen",
+        "app_user_id": "TEST_STATIC_VALUE",
+        "app_session_id": "TEST_STATIC_VALUE",
+        "timestamp": "TEST_STATIC_VALUE",
+        "dark_mode": true,
+        "locale": "en_US",
+        "display_mode": "full_screen",
+        "path": "CANCEL",
+        "url": null,
+        "survey_option_id": "surveyOptionID"
+      }
+    ]
+  }
+}

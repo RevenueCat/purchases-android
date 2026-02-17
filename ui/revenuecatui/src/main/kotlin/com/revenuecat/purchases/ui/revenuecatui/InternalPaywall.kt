@@ -259,13 +259,18 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
-                        viewModel.handlePackagePurchase(activity, pkg = action.rcPackage)
+                        viewModel.handlePackagePurchase(
+                            activity,
+                            pkg = action.rcPackage,
+                            resolvedOffer = action.resolvedOffer,
+                        )
                     }
                 is PaywallAction.External.LaunchWebCheckout -> {
                     val url = viewModel.getWebCheckoutUrl(action)
                     if (url == null) {
                         Logger.e("Web checkout URL cannot be found, not launching web checkout.")
                     } else {
+                        viewModel.invalidateCustomerInfoCache()
                         context.handleUrlDestination(url, action.openMethod)
                         if (action.autoDismiss) {
                             Logger.d("Auto-dismissing paywall after launching web checkout.")

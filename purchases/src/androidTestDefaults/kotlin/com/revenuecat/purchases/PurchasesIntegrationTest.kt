@@ -62,6 +62,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetched() {
+        confirmProductionBackendEnvironment()
+
         val lock = CountDownLatch(1)
 
         onActivityReady {
@@ -77,6 +79,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun customerInfoCanBeFetchedFromBackendAndThenGottenFromCache() {
+        confirmProductionBackendEnvironment()
+
         val lock = CountDownLatch(1)
 
         activityScenarioRule.scenario.onActivity {
@@ -86,6 +90,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     fail("fetching from backend should be success. Error: ${it.message}")
                 },
                 onSuccess = { fetchedCustomerInfo ->
+                    assertThat(fetchedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(fetchedCustomerInfo.loadedFromCache).isFalse
                     Purchases.sharedInstance.getCustomerInfoWith(
                         CacheFetchPolicy.CACHE_ONLY,
                         onError = {
@@ -93,6 +99,8 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         },
                         onSuccess = { cachedCustomerInfo ->
                             assertThat(cachedCustomerInfo).isEqualTo(fetchedCustomerInfo)
+                            assertThat(cachedCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                            assertThat(cachedCustomerInfo.loadedFromCache).isTrue
                             lock.countDown()
                         },
                     )
@@ -120,6 +128,9 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
                     assertThat(offerings.current?.metadata).isNotNull
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
+
+                    assertThat(offerings.current?.paywall).isNull()
+                    assertThat(offerings.current?.paywallComponents).isNotNull
 
                     lock.countDown()
                 },
@@ -165,47 +176,23 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun canPurchaseSubsProduct() {
-        val lock = CountDownLatch(1)
+        performPurchase()
+    }
 
-        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
-        val storeTransaction = StoreTransactionFactory.createStoreTransaction()
-        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+    @Test
+    fun canPurchaseSubsProductAndThenFetchCustomerInfo() {
+        performPurchase()
 
-        onActivityReady { activity ->
-            Purchases.sharedInstance.purchaseWith(
-                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
-                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
-                onSuccess = { transaction, customerInfo ->
-                    assertThat(transaction).isEqualTo(storeTransaction)
-                    assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
-                    val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
-                    val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
-                    assertThat(productId).isEqualTo(expectedProductId)
-                    assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
-                    entitlementsToVerify.onEach { entitlementId ->
-                        assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
-                    }
-                    lock.countDown()
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getCustomerInfoWith(
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                onError = { fail("Expected success. Got error: $it") },
+                onSuccess = { customerInfo ->
+                    verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
+                    latch.countDown()
                 },
-            )
-            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
-        }
-        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
-        assertThat(lock.count).isZero
-
-        verify(exactly = 1) {
-            mockBillingAbstract.makePurchaseAsync(
-                any(),
-                testUserId,
-                match {
-                    it is GooglePurchasingData.Subscription &&
-                        storeProduct is GoogleStoreProduct &&
-                        it.productId == storeProduct.productId &&
-                        it.optionId == storeProduct.basePlanId
-                },
-                replaceProductInfo = null,
-                presentedOfferingContext = null,
-                isPersonalizedPrice = null,
             )
         }
     }
@@ -214,9 +201,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
         val lock = CountDownLatch(1)
@@ -247,9 +232,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
@@ -280,9 +263,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
         val lock = CountDownLatch(1)
@@ -313,9 +294,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun testCachedVirtualCurrencies() {
         // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
         // VC tests in the load shedder integration tests
-        if (isRunningLoadShedderIntegrationTests()) {
-            return
-        }
+        confirmProductionBackendEnvironment()
 
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
         val lock = CountDownLatch(1)
@@ -348,6 +327,58 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
+    }
+
+    private fun performPurchase() {
+        val lock = CountDownLatch(1)
+
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        val storeTransaction = StoreTransactionFactory.createStoreTransaction()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+
+        onActivityReady { activity ->
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
+                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
+                onSuccess = { transaction, customerInfo ->
+                    assertThat(transaction).isEqualTo(storeTransaction)
+                    verifyCustomerInfoHasPurchase(customerInfo)
+                    assertThat(customerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                    assertThat(customerInfo.loadedFromCache).isFalse
+                    lock.countDown()
+                },
+            )
+            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
+        }
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isZero
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                testUserId,
+                match {
+                    it is GooglePurchasingData.Subscription &&
+                        storeProduct is GoogleStoreProduct &&
+                        it.productId == storeProduct.productId &&
+                        it.optionId == storeProduct.basePlanId
+                },
+                replaceProductInfo = null,
+                presentedOfferingContext = null,
+                isPersonalizedPrice = null,
+            )
+        }
+    }
+
+    private fun verifyCustomerInfoHasPurchase(customerInfo: CustomerInfo) {
+        assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
+        val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
+        val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+        assertThat(productId).isEqualTo(expectedProductId)
+        assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
+        entitlementsToVerify.onEach { entitlementId ->
+            assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
+        }
     }
 
     private fun validateAllZeroBalances(virtualCurrencies: VirtualCurrencies?) {

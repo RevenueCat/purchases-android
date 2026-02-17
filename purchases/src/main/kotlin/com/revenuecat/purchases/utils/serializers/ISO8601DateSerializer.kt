@@ -12,7 +12,7 @@ import java.util.Date
 internal object ISO8601DateSerializer : KSerializer<Date> {
 
     override val descriptor: SerialDescriptor
-        get() = PrimitiveSerialDescriptor("Date", PrimitiveKind.STRING)
+        get() = PrimitiveSerialDescriptor("ISO8601Date", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): Date {
         val isoDateString = decoder.decodeString()

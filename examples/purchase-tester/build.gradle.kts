@@ -1,14 +1,11 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    id("revenuecat-android-application")
     alias(libs.plugins.androidx.navigation.safeargs)
 }
 
-apply(from = "$rootDir/base-application.gradle")
-
 android {
     buildFeatures {
-        dataBinding = true
+        viewBinding = true
     }
 
     defaultConfig {
@@ -21,6 +18,18 @@ android {
         // Library modules have a dimension used to separate different APIs.
         // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
+
+        flavorDimensions += "billingclient"
+
+        productFlavors {
+            create("bc8") {
+                dimension = "billingclient"
+                isDefault = true
+            }
+            create("bc7") {
+                dimension = "billingclient"
+            }
+        }
 
         buildConfigField(
             "String",
@@ -74,4 +83,6 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.google.blockstore)
+
+    debugImplementation(libs.leakcanary.android)
 }

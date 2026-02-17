@@ -36,9 +36,9 @@ internal class PurchasedProductsFetcher(
         billing.queryPurchases(
             appUserID,
             onSuccess = { activePurchasesByHashedToken ->
-                val activePurchases = activePurchasesByHashedToken.values.toList()
-                val purchasedProducts = activePurchases.map {
-                    createPurchasedProduct(it, productEntitlementMapping)
+                val activePurchases = activePurchasesByHashedToken.values
+                val purchasedProducts = activePurchases.flatMap {
+                    createPurchasedProducts(it, productEntitlementMapping)
                 }
                 onSuccess(purchasedProducts)
             },
@@ -46,20 +46,23 @@ internal class PurchasedProductsFetcher(
         )
     }
 
-    private fun createPurchasedProduct(
+    private fun createPurchasedProducts(
         transaction: StoreTransaction,
         productEntitlementMapping: ProductEntitlementMapping,
-    ): PurchasedProduct {
+    ): List<PurchasedProduct> {
         val expirationDate = getExpirationDate(transaction)
-        val productIdentifier = transaction.productIds.first()
-        val mapping = productEntitlementMapping.mappings[productIdentifier]
-        return PurchasedProduct(
-            productIdentifier,
-            mapping?.basePlanId,
-            transaction,
-            mapping?.entitlements ?: emptyList(),
-            expirationDate,
-        )
+
+        return transaction.productIds
+            .map { productIdentifier ->
+                val mapping = productEntitlementMapping.mappings[productIdentifier]
+                PurchasedProduct(
+                    productIdentifier,
+                    mapping?.basePlanId,
+                    transaction,
+                    mapping?.entitlements ?: emptyList(),
+                    expirationDate,
+                )
+            }
     }
 
     private fun getExpirationDate(

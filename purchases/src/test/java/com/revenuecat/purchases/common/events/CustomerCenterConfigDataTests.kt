@@ -46,7 +46,10 @@ class CustomerCenterConfigDataTest {
                     )
                 )
             ),
-            support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+            support = CustomerCenterConfigData.Support(
+                email = "test@revenuecat.com",
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+            ),
             localization = CustomerCenterConfigData.Localization(
                 locale = "en",
                 localizedStrings = mapOf(
@@ -144,7 +147,10 @@ class CustomerCenterConfigDataTest {
 
     @Test
     fun `Support email is correctly set`() {
-        val support = CustomerCenterConfigData.Support(email = "support@example.com")
+        val support = CustomerCenterConfigData.Support(
+            email = "support@example.com",
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
         assertThat(support.email).isEqualTo("support@example.com")
     }
 

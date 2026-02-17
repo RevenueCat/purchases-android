@@ -10,33 +10,36 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentOverride<T : PartialComponent>(
-    @get:JvmSynthetic val conditions: List<Condition>,
-    @get:JvmSynthetic val properties: T,
+public class ComponentOverride<T : PartialComponent>(
+    @get:JvmSynthetic public val conditions: List<Condition>,
+    @get:JvmSynthetic public val properties: T,
 ) {
 
     @Serializable(with = ConditionSerializer::class)
-    sealed interface Condition {
+    public sealed interface Condition {
         @Serializable
-        object Compact : Condition
+        public object Compact : Condition
 
         @Serializable
-        object Medium : Condition
+        public object Medium : Condition
 
         @Serializable
-        object Expanded : Condition
+        public object Expanded : Condition
 
         @Serializable
-        object IntroOffer : Condition
+        public object IntroOffer : Condition
 
         @Serializable
-        object MultipleIntroOffers : Condition
+        public object MultiplePhaseOffers : Condition
 
         @Serializable
-        object Selected : Condition
+        public object Selected : Condition
 
         @Serializable
-        object Unsupported : Condition
+        public object PromoOffer : Condition
+
+        @Serializable
+        public object Unsupported : Condition
     }
 }
 
@@ -48,8 +51,9 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "medium" to { Condition.Medium.serializer() },
         "expanded" to { Condition.Expanded.serializer() },
         "intro_offer" to { Condition.IntroOffer.serializer() },
-        "multiple_intro_offers" to { Condition.MultipleIntroOffers.serializer() },
+        "multiple_intro_offers" to { Condition.MultiplePhaseOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
+        "promo_offer" to { Condition.PromoOffer.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

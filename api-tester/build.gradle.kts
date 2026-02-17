@@ -1,27 +1,12 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    id("revenuecat-api-tester-application")
     alias(libs.plugins.compose.compiler)
 }
 
-apply(from = "$rootDir/base-application.gradle")
-
 android {
-    flavorDimensions += "apis"
-
-    productFlavors {
-        create("defaults") {
-            dimension = "apis"
-            isDefault = true
-        }
-        create("customEntitlementComputation") {
-            dimension = "apis"
-            missingDimensionStrategy("apis", "defaults")
-        }
-    }
-
     defaultConfig {
         minSdk = 24 // RevenueCat UI requires 24
+        missingDimensionStrategy("billingclient", "bc8")
     }
 
     compileOptions {
@@ -54,6 +39,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    defaultsImplementation(project(":feature:admob"))
+    defaultsImplementation(libs.google.mobile.ads)
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
 

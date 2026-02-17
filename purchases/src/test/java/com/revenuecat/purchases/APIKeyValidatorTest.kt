@@ -65,4 +65,32 @@ class APIKeyValidatorTest {
         val validationResult = validator.validateAndLog(apiKey, store)
         assertThat(validationResult).isEqualTo(expected)
     }
+
+    @Test
+    fun `Redact API key`() {
+        val validator = APIKeyValidator()
+        assertThat(validator.redactApiKey("test_CtDegh822fag83yggTUVkajsJ")).isEqualTo("test_Ct********ajsJ")
+
+        // Exactly 6 characters after underscore (minimal redactable remainder)
+        assertThat(validator.redactApiKey("test_123456")).isEqualTo("test_12********3456")
+        assertThat(validator.redactApiKey("api_abcdef")).isEqualTo("api_ab********cdef")
+        assertThat(validator.redactApiKey("_abcdef")).isEqualTo("_ab********cdef")
+        assertThat(validator.redactApiKey("a_123456")).isEqualTo("a_12********3456")
+
+        // Short remainder: <6 chars → should NOT redact
+        assertThat(validator.redactApiKey("test_12345")).isEqualTo("test_12345")
+        assertThat(validator.redactApiKey("_abc")).isEqualTo("_abc")
+        assertThat(validator.redactApiKey("test_")).isEqualTo("test_")
+
+        // Multiple underscores: only the first underscore counts
+        assertThat(validator.redactApiKey("test_abcd_efghijkl")).isEqualTo("test_ab********ijkl")
+
+        // Empty string and single underscore → should NOT crash and should NOT redact
+        assertThat(validator.redactApiKey("")).isEqualTo("")
+        assertThat(validator.redactApiKey("_")).isEqualTo("_")
+
+        // Legacy API keys without a prefix
+        assertThat(validator.redactApiKey("g9h2g7q36fg")).isEqualTo("g9********36fg")
+        assertThat(validator.redactApiKey("ab34e")).isEqualTo("ab34e")
+    }
 }

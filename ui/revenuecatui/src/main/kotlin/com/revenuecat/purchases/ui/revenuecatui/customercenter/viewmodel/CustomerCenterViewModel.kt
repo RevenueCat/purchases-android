@@ -46,6 +46,7 @@ import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
@@ -103,6 +104,14 @@ internal interface CustomerCenterViewModel {
 
     @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
+
+    /**
+     * Refreshes the Customer Center data while keeping the current Success state visible.
+     * Shows a subtle loading indicator instead of the full loading screen.
+     * Used when returning from external screens (e.g., manage subscriptions).
+     */
+    suspend fun refreshCustomerCenter()
+
     fun openURL(
         context: Context,
         url: String,
@@ -123,6 +132,21 @@ internal interface CustomerCenterViewModel {
     fun showPaywall(context: Context)
 
     fun showVirtualCurrencyBalances()
+
+    fun showCreateSupportTicket()
+
+    fun dismissSupportTicketSuccessSnackbar()
+
+    /**
+     * Called when the activity is stopped. Used to track if the user backgrounded the app.
+     * @param isChangingConfigurations true if the stop is due to a configuration change (e.g., rotation)
+     */
+    fun onActivityStopped(isChangingConfigurations: Boolean)
+
+    /**
+     * Called when the activity is started. Triggers a refresh if the user is returning from background.
+     */
+    fun onActivityStarted()
 }
 
 @Stable
@@ -170,6 +194,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
+    private var wasBackgrounded = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -314,6 +339,92 @@ internal class CustomerCenterViewModelImpl(
                 )
             } else {
                 currentState
+            }
+        }
+    }
+
+    override fun showCreateSupportTicket() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val createSupportTicketDestination = CustomerCenterDestination.CreateSupportTicket(
+                    data = CreateSupportTicketData(
+                        onSubmit = { email, description, onSuccess, onError ->
+                            handleSupportTicketSubmit(email, description, onSuccess, onError)
+                        },
+                        onCancel = {
+                            goBackToMain()
+                        },
+                        onClose = {
+                            goBackToMain()
+                        },
+                    ),
+                    title = state.customerCenterConfigData.localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_CREATE,
+                    ),
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(createSupportTicketDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun dismissSupportTicketSuccessSnackbar() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(showSupportTicketSuccessSnackbar = false)
+            } else {
+                currentState
+            }
+        }
+    }
+
+    private fun handleSupportTicketSubmit(
+        email: String,
+        description: String,
+        onSuccess: () -> Unit,
+        onError: () -> Unit,
+    ) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        viewModelScope.launch {
+            try {
+                Logger.d("Creating support ticket - email: $email, Description: $description")
+                val result = purchases.awaitCreateSupportTicket(email, description)
+
+                if (result.success) {
+                    Logger.d("Support ticket created successfully")
+                    // Navigate back and show success snackbar
+                    _state.update { currentState ->
+                        if (currentState is CustomerCenterState.Success) {
+                            currentState.copy(
+                                navigationState = currentState.navigationState.pop(),
+                                navigationButtonType = if (currentState.navigationState.pop().canNavigateBack) {
+                                    CustomerCenterState.NavigationButtonType.BACK
+                                } else {
+                                    CustomerCenterState.NavigationButtonType.CLOSE
+                                },
+                                showSupportTicketSuccessSnackbar = true,
+                            )
+                        } else {
+                            currentState
+                        }
+                    }
+                    onSuccess()
+                } else {
+                    Logger.e("Support ticket creation returned false")
+                    onError()
+                }
+            } catch (e: PurchasesException) {
+                Logger.e("Error creating support ticket", e)
+                onError()
             }
         }
     }
@@ -732,10 +843,6 @@ internal class CustomerCenterViewModelImpl(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
-                currentState.copy(
-                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
             } else {
                 currentState
             }
@@ -842,8 +949,20 @@ internal class CustomerCenterViewModelImpl(
 
     @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
+        loadCustomerCenter(isRefresh = false)
+    }
+
+    override suspend fun refreshCustomerCenter() {
+        loadCustomerCenter(isRefresh = true)
+    }
+
+    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
-            if (state !is CustomerCenterState.Loading) {
+            if (isRefresh && state is CustomerCenterState.Success) {
+                // For refresh, keep Success state but set isRefreshing flag
+                state.copy(isRefreshing = true)
+            } else if (state !is CustomerCenterState.Loading) {
+                // For initial load, show full loading screen
                 CustomerCenterState.Loading
             } else {
                 state
@@ -876,6 +995,7 @@ internal class CustomerCenterViewModelImpl(
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
                 purchasesWithActions = emptySet(), // Will be computed below
+                isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
             val purchasesWithActions = computePurchasesWithActions(successState)
@@ -887,8 +1007,32 @@ internal class CustomerCenterViewModelImpl(
                 )
             }
         } catch (e: PurchasesException) {
-            _state.update {
-                CustomerCenterState.Error(e.error)
+            _state.update { currentState ->
+                if (isRefresh && currentState is CustomerCenterState.Success) {
+                    // On error during refresh, keep the existing state but clear isRefreshing
+                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
+                    currentState.copy(isRefreshing = false)
+                } else {
+                    CustomerCenterState.Error(e.error)
+                }
+            }
+        }
+    }
+
+    override fun onActivityStopped(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) {
+            wasBackgrounded = true
+        }
+    }
+
+    override fun onActivityStarted() {
+        if (wasBackgrounded) {
+            wasBackgrounded = false
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+                viewModelScope.launch {
+                    refreshCustomerCenter()
+                }
             }
         }
     }

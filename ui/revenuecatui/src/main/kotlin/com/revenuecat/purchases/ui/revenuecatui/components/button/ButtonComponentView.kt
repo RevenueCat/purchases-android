@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -46,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdatedStackComponentState
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -71,6 +73,14 @@ internal fun ButtonComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val stackState = rememberUpdatedStackComponentState(
+        style = style.stackComponentStyle,
+        paywallState = state,
+    )
+    if (!stackState.visible) {
+        return
+    }
+
     TransitionView(transition = style.transition) {
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(
@@ -208,6 +218,7 @@ private fun progressColorFor(backgroundStyles: BackgroundStyles?): Color {
     return when (backgroundStyles) {
         is BackgroundStyles.Color -> progressColorFor(backgroundStyles.color.forCurrentTheme)
         is BackgroundStyles.Image -> Color.White
+        is BackgroundStyles.Video -> Color.White
     }
 }
 
@@ -281,6 +292,8 @@ private fun previewButtonComponentStyle(
         scrollOrientation = null,
         rcPackage = null,
         tabIndex = null,
+        countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     ),
     action: ButtonComponentStyle.Action = ButtonComponentStyle.Action.RestorePurchases,

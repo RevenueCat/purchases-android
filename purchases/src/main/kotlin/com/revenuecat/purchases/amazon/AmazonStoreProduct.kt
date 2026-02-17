@@ -11,7 +11,7 @@ import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 
 @Poko
-class AmazonStoreProduct @JvmOverloads constructor(
+public class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The productId
@@ -66,17 +66,17 @@ class AmazonStoreProduct @JvmOverloads constructor(
     /**
      * The icon URL of the product.
      */
-    val iconUrl: String,
+    public val iconUrl: String,
 
     /**
      * The [Period] of a subscription's free trial. Null for INAPP.
      */
-    val freeTrialPeriod: Period?,
+    public val freeTrialPeriod: Period?,
 
     /**
      * JSONObject representing the original [Product] class from Amazon.
      */
-    val originalProductJSON: JSONObject,
+    public val originalProductJSON: JSONObject,
 
     /**
      * The context from which this product was obtained.
@@ -94,7 +94,7 @@ class AmazonStoreProduct @JvmOverloads constructor(
                 "presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         title: String,
@@ -131,7 +131,7 @@ class AmazonStoreProduct @JvmOverloads constructor(
                 "PresentedOfferingContext(presentedOfferingIdentifier))",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         name: String,
@@ -201,7 +201,9 @@ class AmazonStoreProduct @JvmOverloads constructor(
         return copyWithPresentedOfferingContext(newPresentedOfferingContext)
     }
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+    public override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,
@@ -219,9 +221,9 @@ class AmazonStoreProduct @JvmOverloads constructor(
         )
     }
 
-    override fun equals(other: Any?) = other is AmazonStoreProduct &&
+    public override fun equals(other: Any?): Boolean = other is AmazonStoreProduct &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**
@@ -230,7 +232,7 @@ class AmazonStoreProduct @JvmOverloads constructor(
  * `freeTrialPeriod`
  * `iconUrl`
  */
-val StoreProduct.amazonProduct: AmazonStoreProduct?
+public val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
 
 /**

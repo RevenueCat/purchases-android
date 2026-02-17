@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -698,6 +699,63 @@ class OfferingsTest {
         assertThat(offering.hasPaywall).isFalse()
     }
 
+    // region equality
+
+    @Test
+    fun `Offerings with same data but different metadata are equal`() {
+        val offerings =
+            offeringsParser.createOfferings(
+                JSONObject("{'offerings': [], 'current_offering_id': 'offering_with_broken_product'}"),
+                emptyMap()
+            )
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.loadedFromDiskCache).isFalse
+
+        val offeringsWithDifferentMetadata = offerings.copy(
+            originalSource = HTTPResponseOriginalSource.LOAD_SHEDDER,
+            loadedFromDiskCache = true,
+        )
+        assertThat(offerings).isEqualTo(offeringsWithDifferentMetadata)
+    }
+
+    @Test
+    fun `Offerings with different data are not equal`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly))
+
+        val offeringJSON = getOfferingJSON(
+            offeringIdentifier = "offering_a",
+            listOf(getPackageJSON(packageIdentifier = monthlyPackageID)),
+            metadata = null,
+            paywall = getPaywallDataJson()
+        )
+
+        // Act
+        val offerings = offeringsParser.createOfferings(
+            JSONObject(
+                """
+                {
+                  'offerings': [
+                    $offeringJSON
+                  ],
+                  'current_offering_id': 'offering_a'
+               }""".trimIndent()
+            ),
+            products
+        )
+
+        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.loadedFromDiskCache).isFalse
+
+        val offeringsWithDifferentData = offerings.copy(
+            current = null,
+        )
+        assertThat(offerings).isNotEqualTo(offeringsWithDifferentData)
+    }
+
+    // endregion equality
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -936,6 +994,7 @@ class OfferingsTest {
         // language=json
         """
         {
+          "id": "paywall_id",
           "template_name": "components",
           "asset_base_url": "https://assets.pawwalls.com",
           "components_config": {

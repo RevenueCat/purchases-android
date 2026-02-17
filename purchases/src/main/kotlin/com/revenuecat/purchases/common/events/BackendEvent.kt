@@ -69,6 +69,12 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Paywall.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property localeIdentifier The locale identifier of the device.
+     * @property exitOfferType The type of exit offer shown. Only for exit offer events.
+     * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
+     * @property packageID The package ID of the purchase attempted. Only for purchase attempt events.
+     * @property productID The product ID of the purchase attempted. Only for purchase attempt events.
+     * @property errorCode The error code if an error occurred. Only for purchase attempt error events.
+     * @property errorMessage The error message if an error occurred. Only for purchase attempt error events.
      */
     @Serializable
     @SerialName("paywalls")
@@ -82,6 +88,8 @@ internal sealed class BackendEvent : Event {
         val sessionID: String,
         @SerialName("offering_id")
         val offeringID: String,
+        @SerialName("paywall_id")
+        val paywallID: String?,
         @SerialName("paywall_revision")
         val paywallRevision: Int,
         val timestamp: Long,
@@ -91,6 +99,53 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("exit_offer_type")
+        val exitOfferType: String? = null,
+        @SerialName("exit_offering_id")
+        val exitOfferingID: String? = null,
+        @SerialName("package_id")
+        val packageID: String? = null,
+        @SerialName("product_id")
+        val productID: String? = null,
+        @SerialName("error_code")
+        val errorCode: Int? = null,
+        @SerialName("error_message")
+        val errorMessage: String? = null,
+    ) : BackendEvent()
+
+    @Serializable
+    @SerialName("ad")
+    data class Ad(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("timestamp_ms")
+        val timestamp: Long,
+        @SerialName("network_name")
+        val networkName: String? = null,
+        @SerialName("mediator_name")
+        val mediatorName: String,
+        @SerialName("ad_format")
+        val adFormat: String? = null,
+        val placement: String?,
+        @SerialName("ad_unit_id")
+        val adUnitId: String,
+        @SerialName("impression_id")
+        val impressionId: String?,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+
+        // Revenue event only fields
+        @SerialName("revenue_micros")
+        val revenueMicros: Long? = null,
+        val currency: String? = null,
+        val precision: String? = null,
+
+        // Failed to load event only fields
+        @SerialName("mediator_error_code")
+        val mediatorErrorCode: Int? = null,
     ) : BackendEvent()
 
     /**
@@ -106,5 +161,10 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the customer center event schema.
          */
         const val CUSTOMER_CENTER_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the ad event schema.
+         */
+        const val AD_EVENT_SCHEMA_VERSION = 1
     }
 }

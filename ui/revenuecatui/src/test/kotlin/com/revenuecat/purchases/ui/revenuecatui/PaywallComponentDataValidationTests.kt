@@ -72,6 +72,7 @@ class PaywallComponentDataValidationTests {
         const val EXPECTED_TEXT_EN = "Hello, world!"
 
         val paywallComponents = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -117,6 +118,7 @@ class PaywallComponentDataValidationTests {
             put(LocaleId("es_ES"), mapOf(LocalizationKey("key") to LocalizationData.Text("valor")))
         }
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -150,6 +152,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -220,6 +223,7 @@ class PaywallComponentDataValidationTests {
                 LocaleId(args.variableLocalizationsLocale) to variableLocalizationKeysForEnUs()
             )
             val data = PaywallComponentsData(
+                id = "paywall_id",
                 templateName = "template",
                 assetBaseURL = URL("https://assets.pawwalls.com"),
                 componentsConfig = ComponentsConfig(
@@ -260,6 +264,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -323,6 +328,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -450,6 +456,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -555,6 +562,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -629,6 +637,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -696,6 +705,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -763,6 +773,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -827,6 +838,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -880,6 +892,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -949,6 +962,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1002,6 +1016,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1043,6 +1058,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

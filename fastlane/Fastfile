@@ -13,9 +13,7 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
-gradle_file_path = "library.gradle"
 files_with_version_number = {
-  gradle_file_path => ['versionName "{x}"'],
   './purchases/src/main/kotlin/com/revenuecat/purchases/common/Config.kt' => ['frameworkVersion = "{x}"'],
   './.circleci/config.yml' => ['aws s3 sync ~/project/docs/{x} s3://purchases-docs/android/{x} --delete'],
   './gradle.properties' => ['VERSION_NAME={x}'],
@@ -23,6 +21,7 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
@@ -33,6 +32,16 @@ changelog_latest_path = './CHANGELOG.latest.md'
 changelog_path = './CHANGELOG.md'
 
 default_platform(:android)
+
+# Hack to work around a Fastlane quirk where plugin actions are run from the parent of the current working directory.
+# We switch to the first subdirectory, then run the action. The action will run from the parent of the subdirectory, which is
+# our actual current working directory. The obvious limitation is that this doesn't work if the current working directory
+# does not have any subdirectories.
+# This is only needed when our current working directory is not the ./fastlane directory.
+# https://docs.fastlane.tools/advanced/fastlane/#directory-behavior
+def run_plugin_action_in_current_directory(&block)
+  Dir.chdir(Dir["*/"].first.chomp("/"), &block)
+end
 
 platform :android do
   desc "Runs all the tests"
@@ -56,6 +65,20 @@ platform :android do
   desc "Emerge snapshot tests"
   lane :emerge_purchases_ui_snapshot_tests do
     gradle(task: ":test-apps:testpurchasesuiandroidcompatibility:emergeUploadSnapshotBundleDebug")
+  end
+
+  desc "Emerge size tests"
+  lane :emerge_sdk_size_tests do
+     gradle_properties = {
+       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+       "RELEASE_SIGNING_ENABLED" => true
+     }
+     gradle(task: "publishToMavenLocal", properties: gradle_properties)
+     Dir.chdir("../test-apps/sdksizetesting/app") do
+         gradle(task: "emergeUploadReleaseApk")
+     end
   end
 
   desc "Replaces version numbers, updates changelog and creates PR"
@@ -124,9 +147,33 @@ platform :android do
       properties: gradle_properties
     )
 
+    UI.verbose("Deploying purchases Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-bc7",
+      "purchases",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying purchases-ui Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-ui-bc7",
+      "ui:revenuecatui",
+      gradle_properties
+    )
+
+    UI.verbose("Deploying amazon Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-store-amazon-bc7",
+      "feature:amazon",
+      gradle_properties
+    )
+
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
-      "customEntitlementComputationRelease",
+      "customEntitlementComputationBc8Release",
       "purchases-custom-entitlement-computation",
       "purchases",
       gradle_properties
@@ -134,7 +181,7 @@ platform :android do
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
-      "defaultsDebug",
+      "defaultsBc8Debug",
       "purchases-debug-view",
       "ui:debugview",
       gradle_properties
@@ -211,7 +258,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundle',
+      build_task: 'examples:purchase-tester:bundleBc8',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -223,7 +270,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundle',
+      build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester'
     )
@@ -255,7 +302,7 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     gradle(
-      task: ':purchases:testDefaultsDebugUnitTest',
+      task: ':purchases:testDefaultsBc8DebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true,
         "minSdkVersion" => 21,
@@ -263,27 +310,152 @@ platform :android do
     )
   end
 
-  desc "Build and run purchases module load shedder integration tests"
-  desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_load_shedder_purchases_integration_tests do |options|
-    app_name = 'loadShedderIntegrationTest'
-    begin
-      build_purchases_integration_tests(
-        app_name: app_name,
-        api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-        google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
-        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
-        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-        is_load_shedder_integration_tests: true
-      )
+  desc "Run backend integration tests and create PR if golden files change"
+  lane :update_golden_requests_backend_integration_tests do |options|
+    run_backend_integration_tests
 
-      run_firebase_integration_tests(app_name)
-    rescue => exception
-      send_slack_load_shedder_integration_test(success: false)
-      raise
-    else
-      send_slack_load_shedder_integration_test(success: true)
+    golden_files_path = "purchases/src/test/resources/backend_integration_tests_golden/"
+    
+    # Ensure we're in the project root for git operations
+    project_root = File.basename(Dir.pwd) == "fastlane" ? ".." : "."
+    
+    Dir.chdir(project_root) do
+      # Check if there are changes to golden test files (modified tracked files or new untracked files)
+      has_modified_files = false
+      has_untracked_files = false
+      
+      # Check for modified tracked files
+      begin
+        sh("git", "diff", "--quiet", golden_files_path)
+      rescue
+        has_modified_files = true
+      end
+      
+      # Check for untracked files in the golden files directory
+      untracked_files = sh("git", "ls-files", "--others", "--exclude-standard", golden_files_path).strip
+      has_untracked_files = !untracked_files.empty?
+      
+      has_changes = has_modified_files || has_untracked_files
+
+      if has_changes
+        UI.message("Golden test files have been modified. Creating PR...")
+
+        # Get the current branch name (the branch that triggered the workflow)
+        current_branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip
+        UI.message("Current branch: #{current_branch}")
+
+        # Create a unique branch name for the PR
+        timestamp = Time.now.strftime("%Y%m%d-%H%M%S")
+        pr_branch_name = "update-golden-requests-#{current_branch}-#{timestamp}"
+
+        UI.message("Creating branch: #{pr_branch_name}")
+
+        # Create or checkout the branch
+        run_plugin_action_in_current_directory do
+          create_or_checkout_branch(branch_name: pr_branch_name)
+        end
+
+        # Stage only the golden files
+        sh("git", "add", golden_files_path)
+
+        commit_message = "[Automated] Update golden test files for backend integration tests"
+        title = "[AUTOMATIC] Update golden test files for backend integration tests"
+        body = "This PR automatically updates the golden test files in `#{golden_files_path}` based on the latest backend integration test results.\n\n" \
+               "Generated from branch: `#{current_branch}`\n\n" \
+               "Please review the changes to ensure they are expected."
+
+        # Commit only the staged golden files
+        sh("git", "commit", "-m", commit_message)
+
+        # Push the branch
+        sh("git", "push", "-u", "origin", pr_branch_name)
+
+        # Create PR against the current branch (not main)
+        run_plugin_action_in_current_directory do
+          create_pr_if_necessary(
+            github_pr_token: ENV["GITHUB_TOKEN"],
+            repo_name: repo_name,
+            base_branch: current_branch,
+            head_branch: pr_branch_name,
+            title: title,
+            body: body,
+            labels: ["pr:other"],
+            team_reviewers: ["coresdk"]
+          )
+        end
+
+        UI.success("PR created successfully!")
+      else
+        UI.success("Golden test files verification passed - no changes detected")
+      end
+    end
+  end
+
+  desc "Build and run purchases module integration tests"
+  desc "This requires the google cloud cli to be installed and initialized."
+  desc "Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'"
+  lane :run_purchases_integration_tests do |options|
+    backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'load_shedder_us_east_1', or 'load_shedder_us_east_2'")
+
+    unless ['production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'].include?(backend_environment)
+      UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
+    end
+
+    if backend_environment == 'production'
+      app_name = 'integrationTest'
+      api_key = ENV['REVENUECAT_API_KEY']
+      google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    else # loadshedder
+      app_name = 'loadShedderIntegrationTest'
+      api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+      google_purchase_token = ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN']
+      product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+      base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
+      active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
+    end
+
+    build_purchases_integration_tests(
+      app_name: app_name,
+      api_key: api_key,
+      google_purchase_token: google_purchase_token,
+      product_id_to_purchase: product_id_to_purchase,
+      base_plan_id_to_purchase: base_plan_id_to_purchase,
+      active_entitlements_to_verify: active_entitlements_to_verify,
+      backend_environment: backend_environment
+    )
+
+    max_retries = 3
+    success = false
+    last_exception = nil
+
+    (1..max_retries).each do |attempt|
+      begin
+        UI.message("Attempt #{attempt} of #{max_retries}")
+
+        run_firebase_integration_tests(app_name)
+
+        success = true
+        last_exception = nil
+        break
+      rescue => exception
+        last_exception = exception
+        UI.error("Attempt #{attempt} failed: #{exception.message}")
+
+        if attempt < max_retries
+          UI.message("Retrying...")
+        else
+          UI.error("All #{max_retries} attempts failed")
+        end
+      end
+    end
+
+    slack_backend_integration_test_results(environment: backend_environment, success: success)
+    ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
+    if last_exception
+      raise last_exception
     end
   end
 
@@ -300,7 +472,7 @@ platform :android do
       # We default to empty active entitlements since we are using an expired token for these integration tests.
       # So no active entitlements will be returned by our servers.
       active_entitlements_to_verify: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-      flavor: 'customEntitlementComputation'
+      flavor: 'customEntitlementComputationBc8'
     )
 
     run_firebase_integration_tests(app_name)
@@ -313,7 +485,7 @@ platform :android do
     sh "gcloud firebase test android run --type instrumentation \
           --app ../purchases/test_artifacts/#{app_name}-app.apk \
           --test ../purchases/test_artifacts/#{app_name}-test.apk \
-          --timeout 2m \
+          --timeout 10m \
           --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
           --results-bucket cloud-test-#{google_project_id}"
 
@@ -325,8 +497,8 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults', 
-                                        is_load_shedder_integration_tests: false)
+                                        proxy_url: nil, build_type: 'release', flavor: 'defaultsBc8',
+                                        backend_environment: 'production')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -354,19 +526,11 @@ platform :android do
       allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
-    if is_load_shedder_integration_tests
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "true",
-        paths_of_files_to_update: [constants_path]
-      )
-    else
-      replace_text_in_files(
-        previous_text: "IS_RUNNING_LOAD_SHEDDER_INTEGRATION_TESTS",
-        new_text: "false",
-        paths_of_files_to_update: [constants_path]
-      )
-    end
+    replace_text_in_files(
+      previous_text: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS",
+      new_text: backend_environment,
+      paths_of_files_to_update: [constants_path]
+    )
     unless proxy_url.nil?
       replace_text_in_files(
         previous_text: "NO_PROXY_URL",
@@ -430,6 +594,13 @@ platform :android do
     gradle(
       project_dir: project_dir,
       task: task,
+    )
+  end
+
+  desc "Builds an AdMob Integration Sample APK"
+  lane :build_admob_integration_sample do |options|
+    gradle(
+      task: ":examples:admob-sample:assembleDebug",
     )
   end
 
@@ -581,22 +752,6 @@ DESC
     end
   end
 
-  lane :send_slack_load_shedder_integration_test do |options|
-    success = options[:success] || false
-    message =
-        if success
-            "Android load shedder integration tests V6 finished successfully"
-        else
-            "Android load shedder integration tests V6 failed"
-        end
-    slack(
-      message: message,
-      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-      success: success,
-      default_payloads: [:git_branch]
-    )
-  end
-
   desc "Updates paywall-preview-resources submodule and creates/updates PR"
   lane :update_paywall_preview_resources_submodule do |options|
     branch_name = "pw2-update-paywall-preview-resources-submodule"
@@ -648,7 +803,9 @@ DESC
       sh("git", "fetch")
       sh("git", "checkout", "main")
       sh("git", "pull")
-      create_or_checkout_branch(branch_name: target_repository_branch)
+      run_plugin_action_in_current_directory do
+        create_or_checkout_branch(branch_name: target_repository_branch)
+      end
       target_repository_name = sh("basename -s .git \"$(git config --get remote.origin.url)\"").strip
     end
     UI.user_error!("Failed to determine target repository name") if target_repository_name.nil? || target_repository_name.empty?
@@ -661,7 +818,7 @@ DESC
       record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
       # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
       sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
-        if file_path =~ /\>\>(.*?)\<\</
+        if file_path =~ /\_\_\_(.*?)\_\_\_/
           offering_id = $1
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
           sh("mkdir -p \"#{target_dir}\"")
@@ -694,7 +851,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziDebug",
+      task: "#{gradle_module}:recordPaparazziBc8Debug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
@@ -704,25 +861,6 @@ DESC
     # Copy the output to the output_dir
     if options[:output_dir] && options[:output_dir].length > 0
       sh("cp -r #{paparazzi_output_dir}/ #{options[:output_dir]}")
-    end
-  end
-
-  private_lane :create_or_checkout_branch do |options|
-    branch_name = options[:branch_name] || UI.user_error!("No branch name provided")
-
-    # Check if branch exists locally or remotely
-    branch_exists_locally = sh("git", "branch", "--list", branch_name).length > 0
-    branch_exists_remotely = sh("git", "ls-remote", "--heads", "origin", branch_name).length > 0
-
-    if branch_exists_locally || branch_exists_remotely
-      UI.message("Branch #{branch_name} already exists, checking it out")
-      sh("git", "checkout", branch_name)
-      if branch_exists_remotely
-        sh("git", "pull", "origin", branch_name)
-      end
-    else
-      UI.message("Creating new branch #{branch_name}")
-      sh("git", "checkout", "-b", branch_name)
     end
   end
 
@@ -749,41 +887,6 @@ DESC
     end
   end
 
-  private_lane :create_pr_if_necessary do |options|
-    branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
-    title = options[:title] || UI.user_error!("No title provided")
-    body = options[:body] || UI.user_error!("No body provided")
-    repo = options[:repo] || repo_name
-    repo_with_owner = "RevenueCat/#{repo}"
-    base = options[:base] || "main"
-    labels = options[:labels] || []
-    team_reviewers = options[:team_reviewers] || []
-
-    existing_pr = github_api(
-      api_token: ENV["GITHUB_TOKEN"],
-      path: "/repos/#{repo_with_owner}/pulls?head=RevenueCat:#{branch_name}&state=open"
-    )
-
-    if existing_pr[:json].length == 0
-      pr_url = create_pull_request(
-        repo: repo_with_owner,
-        title: title,
-        body: body,
-        base: base,
-        head: branch_name,
-        api_token: ENV["GITHUB_TOKEN"],
-        labels: labels,
-        team_reviewers: team_reviewers
-      )
-      
-      if pr_url.nil?
-        UI.user_error!("Failed to create pull request.")
-      end
-    else
-      UI.message("PR already exists.")
-    end
-  end
-
 
   private_lane :commit_push_and_create_pr_if_necessary do |options|
     branch_name = options[:branch_name] || UI.user_error!("No branch_name provided")
@@ -801,14 +904,18 @@ DESC
         commit_message: commit_message
       )
 
-      create_pr_if_necessary(
-        repo: repo,
-        branch_name: branch_name,
-        title: title,
-        body: body,
-        labels: labels,
-        team_reviewers: team_reviewers
-      )
+      run_plugin_action_in_current_directory do
+        create_pr_if_necessary(
+          github_pr_token: ENV["GITHUB_TOKEN"],
+          repo_name: repo,
+          base_branch: "main",
+          head_branch: branch_name,
+          title: title,
+          body: body,
+          labels: labels,
+          team_reviewers: team_reviewers
+        )
+      end
     else
       UI.message("No changes detected. Skipping commit, push, and PR creation.")
     end
@@ -832,7 +939,10 @@ def check_no_git_tag_exists(version_number)
 end
 
 def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
-  task_to_run = flavor == 'defaults' ? 'assembleDefaultsAndroidTest' : 'assembleCustomEntitlementComputationAndroidTest'
+  task_to_run = flavor == 'defaultsBc8' ? 'assembleDefaultsBc8AndroidTest' : 'assembleCustomEntitlementComputationBc8AndroidTest'
+  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-*-androidTest.apk"
+  # Delete any preexisting apks to avoid possible interferences
+  sh "rm -f #{apk_path}"
   gradle(
     task: ":purchases:#{task_to_run}",
     properties: {
@@ -841,7 +951,6 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-#{flavor}-#{build_type}-androidTest.apk"
   new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(

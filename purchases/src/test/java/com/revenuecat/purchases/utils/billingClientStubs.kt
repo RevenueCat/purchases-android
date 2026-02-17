@@ -45,18 +45,6 @@ fun mockProductDetails(
     every { zza() } returns "mock-package-name" // This seems to return the packageName property from the response json
 }
 
-@SuppressWarnings("MagicNumber")
-fun mockOneTimePurchaseOfferDetails(
-    price: Double = 4.99,
-    priceCurrencyCodeValue: String = "USD",
-    offerTokenValue: String? = "mock-offer-token",
-): OneTimePurchaseOfferDetails = mockk<OneTimePurchaseOfferDetails>().apply {
-    every { formattedPrice } returns "${'$'}$price"
-    every { priceAmountMicros } returns price.times(1_000_000).toLong()
-    every { priceCurrencyCode } returns priceCurrencyCodeValue
-    every { offerToken } returns offerTokenValue
-}
-
 fun mockSubscriptionOfferDetails(
     tags: List<String> = emptyList(),
     token: String = "mock-subscription-offer-token",

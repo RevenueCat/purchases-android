@@ -55,11 +55,11 @@ internal class ETagManager(
 ) {
 
     internal fun getETagHeaders(
-        path: String,
+        urlString: String,
         verificationRequested: Boolean,
         refreshETag: Boolean = false,
     ): Map<String, String?> {
-        val storedResult = if (refreshETag) null else getStoredResultSavedInSharedPreferences(path)
+        val storedResult = if (refreshETag) null else getStoredResultSavedInSharedPreferences(urlString)
         val eTagData = storedResult?.eTagData?.takeIf { shouldUseETag(storedResult, verificationRequested) }
         return mapOf(
             HTTPRequest.ETAG_HEADER_NAME to eTagData?.eTag.orEmpty(),
@@ -72,10 +72,12 @@ internal class ETagManager(
         responseCode: Int,
         payload: String,
         eTagHeader: String?,
-        urlPath: String,
+        urlString: String,
         refreshETag: Boolean,
         requestDate: Date?,
         verificationResult: VerificationResult,
+        isLoadShedderResponse: Boolean,
+        isFallbackURL: Boolean,
     ): HTTPResult? {
         val resultFromBackend = HTTPResult(
             responseCode,
@@ -83,10 +85,12 @@ internal class ETagManager(
             HTTPResult.Origin.BACKEND,
             requestDate,
             verificationResult,
+            isLoadShedderResponse,
+            isFallbackURL,
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
-                val storedResult = getStoredResult(urlPath)?.let { storedResult ->
+                val storedResult = getStoredResult(urlString)?.let { storedResult ->
                     storedResult.copy(
                         // This assumes we won't store verification failures in the cache and we will clear the cache
                         // when enabling verification.
@@ -103,25 +107,25 @@ internal class ETagManager(
                     }
             }
 
-            storeBackendResultIfNoError(urlPath, resultFromBackend, eTagInResponse)
+            storeBackendResultIfNoError(urlString, resultFromBackend, eTagInResponse)
         }
         return resultFromBackend
     }
 
     internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RCHTTPStatusCodes.NOT_MODIFIED
 
-    internal fun getStoredResult(path: String): HTTPResult? {
-        val storedResult = getStoredResultSavedInSharedPreferences(path)
+    internal fun getStoredResult(urlString: String): HTTPResult? {
+        val storedResult = getStoredResultSavedInSharedPreferences(urlString)
         return storedResult?.httpResult
     }
 
     internal fun storeBackendResultIfNoError(
-        path: String,
+        urlString: String,
         resultFromBackend: HTTPResult,
         eTagInResponse: String,
     ) {
         if (shouldStoreBackendResult(resultFromBackend)) {
-            storeResult(path, resultFromBackend, eTagInResponse)
+            storeResult(urlString, resultFromBackend, eTagInResponse)
         }
     }
 
@@ -132,18 +136,18 @@ internal class ETagManager(
 
     @Synchronized
     private fun storeResult(
-        path: String,
+        urlString: String,
         result: HTTPResult,
         eTag: String,
     ) {
         val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
         val eTagData = ETagData(eTag, dateProvider.now)
         val httpResultWithETag = HTTPResultWithETag(eTagData, cacheResult)
-        prefs.value.edit().putString(path, httpResultWithETag.serialize()).apply()
+        prefs.value.edit().putString(urlString, httpResultWithETag.serialize()).apply()
     }
 
-    private fun getStoredResultSavedInSharedPreferences(path: String): HTTPResultWithETag? {
-        val serializedHTTPResultWithETag = prefs.value.getString(path, null)
+    private fun getStoredResultSavedInSharedPreferences(urlString: String): HTTPResultWithETag? {
+        val serializedHTTPResultWithETag = prefs.value.getString(urlString, null)
         return serializedHTTPResultWithETag?.let {
             HTTPResultWithETag.deserialize(it)
         }

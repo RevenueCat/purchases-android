@@ -5,11 +5,14 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PaywallListenerAPI {
     fun check() {
         val listener = object : PaywallListener {
+            override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {}
+
             override fun onPurchaseStarted(rcPackage: Package) {}
 
             override fun onPurchaseError(error: PurchasesError) {}

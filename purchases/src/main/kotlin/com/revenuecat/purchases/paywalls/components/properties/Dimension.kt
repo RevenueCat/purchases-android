@@ -9,28 +9,28 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Stable
 @Serializable
-sealed interface Dimension {
+public sealed interface Dimension {
 
     @Immutable
     @Serializable
     @SerialName("vertical")
-    data class Vertical(
-        @get:JvmSynthetic val alignment: HorizontalAlignment,
-        @get:JvmSynthetic val distribution: FlexDistribution,
+    public data class Vertical(
+        @get:JvmSynthetic public val alignment: HorizontalAlignment,
+        @get:JvmSynthetic public val distribution: FlexDistribution,
     ) : Dimension
 
     @Immutable
     @Serializable
     @SerialName("horizontal")
-    data class Horizontal(
-        @get:JvmSynthetic val alignment: VerticalAlignment,
-        @get:JvmSynthetic val distribution: FlexDistribution,
+    public data class Horizontal(
+        @get:JvmSynthetic public val alignment: VerticalAlignment,
+        @get:JvmSynthetic public val distribution: FlexDistribution,
     ) : Dimension
 
     @Immutable
     @Serializable
     @SerialName("zlayer")
-    data class ZLayer(
-        @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
+    public data class ZLayer(
+        @get:JvmSynthetic public val alignment: TwoDimensionalAlignment,
     ) : Dimension
 }

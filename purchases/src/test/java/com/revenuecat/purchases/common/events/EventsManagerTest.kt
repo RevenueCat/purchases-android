@@ -1,11 +1,22 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.common.events
 
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -43,7 +54,8 @@ class EventsManagerTest {
             date = Date(1699270688884)
         ),
         data = PaywallEvent.Data(
-            offeringIdentifier = "offeringID",
+            paywallIdentifier = "paywallID",
+            presentedOfferingContext = PresentedOfferingContext("offeringID"),
             paywallRevision = 5,
             sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
             displayMode = "footer",
@@ -63,6 +75,16 @@ class EventsManagerTest {
             locale = "es_ES"
         )
     )
+    private val adEvent = AdEvent.Displayed(
+        id = "ad-event-id",
+        timestamp = 1699270688884,
+        networkName = "Google AdMob",
+        mediatorName = AdMediatorName.AD_MOB,
+        adFormat = AdFormat.BANNER,
+        placement = "banner_home",
+        adUnitId = "ca-app-pub-123456",
+        impressionId = "impression-id"
+    )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
     private var postedRequest: EventsRequest? = null
 
@@ -71,6 +93,7 @@ class EventsManagerTest {
     private var appSessionID = UUID.randomUUID()
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
     private lateinit var fileHelper: EventsFileHelper<BackendStoredEvent>
+    private lateinit var adFileHelper: EventsFileHelper<BackendStoredEvent.Ad>
 
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
@@ -103,10 +126,12 @@ class EventsManagerTest {
             fileHelper,
             identityManager,
             paywallEventsDispatcher,
-            postEvents = { request, onSuccess, onError ->
+            postEvents = { request, delay, onSuccess, onError ->
                 postedRequest = request
                 backend.postEvents(
                     paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
                     onSuccessHandler = onSuccess,
                     onErrorHandler = onError,
                 )
@@ -125,16 +150,36 @@ class EventsManagerTest {
         eventsManager.track(paywallEvent)
 
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
         )
 
         eventsManager.track(paywallEvent.copy(type = PaywallEventType.CANCEL))
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
         )
+    }
+
+    /**
+     * We should remove this test once we support the purchase initiated event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase initiated event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_INITIATED))
+
+        checkFileExists(shouldExist = false)
+    }
+
+    /**
+     * We should remove this test once we support the purchase error event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase error event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_ERROR))
+
+        checkFileExists(shouldExist = false)
     }
 
     @Test
@@ -144,7 +189,7 @@ class EventsManagerTest {
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
         )
     }
@@ -207,6 +252,8 @@ class EventsManagerTest {
                 expectedRequest,
                 any(),
                 any(),
+                any(),
+                any(),
             )
         }
     }
@@ -215,19 +262,24 @@ class EventsManagerTest {
     fun `flushEvents without events, does not call backend`() {
         eventsManager.flushEvents()
         verify(exactly = 0) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
     @Test
-    fun `if more than maximum events flushEvents only posts maximum events`() {
+    fun `if more than maximum events flushEvents, posts maximum events per batch`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
             eventsManager.track(paywallEvent)
         }
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(50)
+        // With multi-batch flushing, all 100 events will be flushed (2 batches of 50)
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -255,7 +307,7 @@ class EventsManagerTest {
     @Test
     fun `flushEvents multiple times only executes once`() {
         every {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -263,7 +315,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
     }
 
@@ -271,7 +323,7 @@ class EventsManagerTest {
     fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
         val successSlot = slot<() -> Unit>()
         every {
-            backend.postEvents(any(), capture(successSlot), any())
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
         } just Runs
         eventsManager.track(paywallEvent)
         eventsManager.track(paywallEvent)
@@ -279,7 +331,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 1) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -289,7 +341,7 @@ class EventsManagerTest {
         eventsManager.flushEvents()
         eventsManager.flushEvents()
         verify(exactly = 2) {
-            backend.postEvents(any(), any(), any())
+            backend.postEvents(any(), any(), any(), any(), any())
         }
         successSlot.captured()
         checkFileContents("")
@@ -322,8 +374,12 @@ class EventsManagerTest {
         appendToFile("invalid event 3\n")
         checkFileNumberOfEvents(78)
         eventsManager.flushEvents()
-        checkFileNumberOfEvents(28)
-        expectNumberOfEventsSynced(48)
+        // With multi-batch flushing, all events will be flushed across 2 batches
+        checkFileNumberOfEvents(0)
+        // Verify backend was called twice (once for each batch of 50 lines)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
     }
 
     @SuppressLint("CheckResult")
@@ -348,16 +404,28 @@ class EventsManagerTest {
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 
-    private fun mockBackendResponse(success: Boolean, shouldMarkAsSyncedOnError: Boolean = false) {
+    private fun checkFileExists(shouldExist: Boolean) {
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        assertThat(file.exists()).isEqualTo(shouldExist)
+    }
+
+    private fun mockBackendResponse(
+        success: Boolean,
+        shouldMarkAsSyncedOnError: Boolean = false,
+        underlyingErrorMessage: String? = null,
+    ) {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
-            backend.postEvents(any(), capture(successSlot), capture(errorSlot))
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
         } answers {
             if (success) {
                 successSlot.captured.invoke()
             } else {
-                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), shouldMarkAsSyncedOnError)
+                errorSlot.captured.invoke(
+                    PurchasesError(PurchasesErrorCode.UnknownError, underlyingErrorMessage),
+                    shouldMarkAsSyncedOnError,
+                )
             }
         }
     }
@@ -371,6 +439,8 @@ class EventsManagerTest {
                 expectedRequest,
                 any(),
                 any(),
+                any(),
+                any(),
             )
         }
     }
@@ -378,5 +448,447 @@ class EventsManagerTest {
     private fun appendToFile(contents: String) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         file.appendText(contents)
+    }
+
+    // Ad Events Tests
+
+    @Test
+    fun `tracking ad displayed events adds them to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad displayed event with null placement adds to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = null,
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad opened events adds them to file`() {
+        val adEvent = AdEvent.Open(
+            id = "ad-event-id-456",
+            timestamp = 1699270688885,
+            networkName = "AppLovin",
+            mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.NATIVE,
+            placement = "interstitial",
+            adUnitId = "ad-unit-789",
+            impressionId = "impression-456"
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","ad_format":"native","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad revenue events adds them to file`() {
+        val adEvent = AdEvent.Revenue(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            revenueMicros = 1500000,
+            currency = "USD",
+            precision = AdRevenuePrecision.EXACT
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad loaded events adds them to file`() {
+        val adEvent = AdEvent.Loaded(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad failed to load events adds them to file`() {
+        val adEvent = AdEvent.FailedToLoad(
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            mediatorErrorCode = 123,
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+        )
+    }
+
+
+    @Test
+    fun `tracking mixed events with ad events adds them to file`() {
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(paywallEvent)
+        eventsManager.track(adEvent)
+        eventsManager.track(customerCenterImpressionEvent)
+
+        checkFileContents(
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + "\n"
+                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
+                + "\n"
+                + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
+                + "\n"
+        )
+    }
+
+    @Test
+    fun `flushEvents sends ad events to backend`() {
+        mockBackendResponse(success = true)
+        val adEvent = AdEvent.Displayed(
+            id = "ad-event-id-123",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
+            placement = "banner_home",
+            adUnitId = "ca-app-pub-123456",
+            impressionId = "impression-123"
+        )
+
+        eventsManager.track(adEvent)
+        eventsManager.flushEvents()
+
+        checkFileContents("")
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `tracking multiple ad event types adds them to file`() {
+        val displayedEvent = AdEvent.Displayed(
+            id = "ad-event-id-1",
+            timestamp = 1699270688884,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
+            placement = "banner",
+            adUnitId = "ad-unit-1",
+            impressionId = "impression-1"
+        )
+
+        val openedEvent = AdEvent.Open(
+            id = "ad-event-id-2",
+            timestamp = 1699270688885,
+            networkName = "AppLovin",
+            mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = "interstitial",
+            adUnitId = "ad-unit-2",
+            impressionId = "impression-2"
+        )
+
+        val revenueEvent = AdEvent.Revenue(
+            id = "ad-event-id-3",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded",
+            adUnitId = "ad-unit-3",
+            impressionId = "impression-3",
+            revenueMicros = 2000000,
+            currency = "EUR",
+            precision = AdRevenuePrecision.ESTIMATED
+        )
+
+        eventsManager.track(displayedEvent)
+        eventsManager.track(openedEvent)
+        eventsManager.track(revenueEvent)
+
+        checkFileNumberOfEvents(3)
+    }
+
+    @Test
+    fun `flushEvents stops after maximum batch limit`() {
+        mockBackendResponse(success = true)
+        // Add 550 events (more than 10 batches of 50)
+        for (i in 0..549) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(550)
+        eventsManager.flushEvents()
+        // Should flush 10 batches (500 events), leaving 50
+        checkFileNumberOfEvents(50)
+        // Verify backend was called exactly 10 times (the maximum)
+        verify(exactly = 10) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `flushEvents stops on first batch failure`() {
+        // Mock backend to fail on first call
+        var callCount = 0
+        val successSlot = slot<() -> Unit>()
+        val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
+        every {
+            backend.postEvents(any(), any(), any(), capture(successSlot), capture(errorSlot))
+        } answers {
+            callCount++
+            if (callCount == 1) {
+                // First batch fails
+                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), false)
+            } else {
+                // Subsequent batches succeed (but shouldn't be called)
+                successSlot.captured.invoke()
+            }
+        }
+
+        // Add 150 events (3 potential batches)
+        for (i in 0..149) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(150)
+        eventsManager.flushEvents()
+        // Events should not be deleted since first batch failed
+        checkFileNumberOfEvents(150)
+        // Verify backend was called only once (stopped after first failure)
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+    }
+
+    // File Size Limit Tests
+
+    @Test
+    fun `file size limit is not reached with small number of events`() {
+        // Track a small number of events that won't reach the 2048KB limit
+        for (i in 0..9) {
+            eventsManager.track(paywallEvent)
+        }
+        checkFileNumberOfEvents(10)
+    }
+
+    @Test
+    fun `file size limit clears oldest events when limit is reached`() {
+        // Each event is approximately 300 bytes when serialized
+        // To reach 2048KB (2097152 bytes), we need about 7000 events
+        // Let's track 7100 events to exceed the limit
+        val eventsToTrack = 7100
+
+        for (i in 0 until eventsToTrack) {
+            eventsManager.track(paywallEvent)
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val finalEventCount = file.readLines().size
+
+        // The file should have fewer events than we tracked because
+        // the oldest 50 events were cleared each time the limit was reached
+        assertThat(finalEventCount).isLessThan(eventsToTrack)
+        assertThat(finalEventCount).isGreaterThan(5000) // Should still have a significant number of events
+
+        // Verify file size is under the limit (2048KB)
+        val fileSizeKB = file.length() / 1024.0
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `file size limit works with mixed event types`() {
+        // Track a mix of events to exceed the limit
+        val eventsToTrack = 2500
+
+        for (i in 0 until eventsToTrack) {
+            when (i % 3) {
+                0 -> eventsManager.track(paywallEvent)
+                1 -> eventsManager.track(customerCenterImpressionEvent)
+                2 -> eventsManager.track(adEvent)
+            }
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+    }
+
+    @Test
+    fun `oldest events are cleared when limit is reached maintaining file integrity`() {
+        // Track enough events to trigger the size check multiple times
+        // With ~1.3KB per event, we need about 1600 events to reach the limit
+        for (i in 0 until 1700) {
+            eventsManager.track(paywallEvent.copy(
+                data = paywallEvent.data.copy(
+                    presentedOfferingContext = PresentedOfferingContext("offeringID_${i}_" + "x".repeat(1000)),
+                )
+            ))
+        }
+
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        val fileSizeKB = file.length() / 1024.0
+
+        // Verify file size is under the limit
+        assertThat(fileSizeKB).isLessThan(EventsManager.FILE_SIZE_LIMIT_KB)
+
+        val lines = file.readLines()
+        val firstLine = lines.first()
+        // Assert that the first line has a more recent offeringIdentifier, indicating older events were cleared
+        val firstOfferingID = firstLine.substringAfter("offeringID_").substringBefore("_").toInt()
+        assertThat(firstOfferingID).isGreaterThan(50) // At least one clearing should have occurred
+
+        // Verify all remaining events are left as expected
+        lines.forEach { line ->
+            // Should not throw exception
+            assertThat(line).startsWith("{\"type\":")
+        }
+    }
+
+    // Debug Event Listener Tests
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified when file size limit is reached`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        // Track enough events to trigger the file size limit
+        for (i in 0 until 7100) {
+            eventsManager.track(paywallEvent)
+        }
+
+        assertThat(receivedEvents).isNotEmpty
+        assertThat(receivedEvents.all { it.name == DebugEventName.FILE_SIZE_LIMIT_REACHED }).isTrue
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified on flush error`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = "Server returned 500",
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["errorCode"]).isEqualTo(PurchasesErrorCode.UnknownError.name)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).isEqualTo("Server returned 500")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error truncates underlyingErrorMessage to 80 chars`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        val longMessage = "A".repeat(120)
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = longMessage,
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).hasSize(80)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error omits underlyingErrorMessage when null`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties).doesNotContainKey("underlyingErrorMessage")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is not notified when no error occurs`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).isEmpty()
     }
 }

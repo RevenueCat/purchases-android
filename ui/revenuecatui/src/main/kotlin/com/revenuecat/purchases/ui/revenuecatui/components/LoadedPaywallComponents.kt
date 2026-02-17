@@ -62,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
+@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -75,29 +76,30 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
-
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
-        Column {
-            ComponentView(
-                style = style,
-                state = state,
-                onClick = onClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-            )
-            footerComponentStyle?.let {
+        WithOptionalBackgroundOverlay(state, background = background) {
+            Column {
                 ComponentView(
-                    style = it,
+                    style = style,
                     state = state,
                     onClick = onClick,
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
                 )
+                footerComponentStyle?.let {
+                    ComponentView(
+                        style = it,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -113,7 +115,13 @@ private suspend fun handleClick(
         is PaywallAction.Internal -> when (action) {
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
                 is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
-                    state.sheet.show(action.destination.sheet, state) { handleClick(it, state, externalClickHandler) }
+                    state.sheet.show(action.destination.sheet, state) {
+                        handleClick(
+                            it,
+                            state,
+                            externalClickHandler,
+                        )
+                    }
             }
         }
     }
@@ -129,21 +137,25 @@ private fun SimpleSheetState.show(
 ) {
     show(
         backgroundBlur = sheet.backgroundBlur,
-    ) {
-        ComponentView(
-            style = sheet.stack,
-            state = state,
-            onClick = { action ->
-                when (action) {
-                    is PaywallAction.External.NavigateBack -> hide()
-                    else -> onClick(action)
-                }
-            },
-            modifier = Modifier
-                .applyIfNotNull(sheet.size) { size(it) }
-                .conditional(sheet.size == null) { fillMaxWidth() },
-        )
-    }
+        content = {
+            ComponentView(
+                style = sheet.stack,
+                state = state,
+                onClick = { action ->
+                    when (action) {
+                        is PaywallAction.External.NavigateBack -> hide()
+                        else -> onClick(action)
+                    }
+                },
+                modifier = Modifier
+                    .applyIfNotNull(sheet.size) { size(it) }
+                    .conditional(sheet.size == null) { fillMaxWidth() },
+            )
+        },
+        onDismiss = {
+            state.resetToDefaultPackage()
+        },
+    )
 }
 
 @Suppress("LongMethod")
@@ -211,6 +223,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
         dark = ColorInfo.Hex(Color.Black.toArgb()),
     )
     val data = PaywallComponentsData(
+        id = "preview_paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
@@ -382,6 +395,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
 @Composable
 private fun previewHelloWorldPaywallState(): PaywallState.Loaded.Components {
     val data = PaywallComponentsData(
+        id = "preview_paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(

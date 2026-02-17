@@ -186,7 +186,8 @@ class BackendGetCustomerCenterConfigTest {
         ),
         support = CustomerCenterConfigData.Support(
             email = "support@revenuecat.com",
-            shouldWarnCustomerToUpdate = true
+            shouldWarnCustomerToUpdate = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
         ),
         lastPublishedAppVersion = null
     )
@@ -304,7 +305,9 @@ class BackendGetCustomerCenterConfigTest {
                 loadJSON(MOCK_RESPONSE_FILENAME),
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }

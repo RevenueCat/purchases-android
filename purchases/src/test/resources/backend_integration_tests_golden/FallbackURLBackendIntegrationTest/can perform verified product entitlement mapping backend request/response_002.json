@@ -1,0 +1,27 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "266",
+    "Server": "cloudflare",
+    "x-revenuecat-app-id": "appc735cd95ea"
+  },
+  "body": {
+    "product_entitlement_mapping": {
+      "cheapest_subs:annual": {
+        "entitlements": [
+          "pro_cat"
+        ],
+        "product_identifier": "cheapest_subs",
+        "base_plan_id": "annual"
+      },
+      "cheapest_subs": {
+        "entitlements": [
+          "pro_cat"
+        ],
+        "product_identifier": "cheapest_subs",
+        "base_plan_id": "annual"
+      }
+    }
+  }
+}

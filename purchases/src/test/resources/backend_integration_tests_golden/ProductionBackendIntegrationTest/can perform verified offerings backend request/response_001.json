@@ -1,0 +1,2175 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "23399",
+    "Content-Type": "application\/json",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "X-Request-Id",
+    "server": "envoy"
+  },
+  "body": {
+    "current_offering_id": "default",
+    "offerings": [
+      {
+        "description": "Default set of packages",
+        "identifier": "default",
+        "metadata": {
+          "dontdeletethis": "useforintegrationtesting"
+        },
+        "packages": [
+          {
+            "identifier": "$rc_annual",
+            "platform_product_identifier": "cheapest_subs",
+            "platform_product_plan_identifier": "annual"
+          }
+        ],
+        "paywall_components": {
+          "asset_base_url": "https:\/\/assets.pawwalls.com",
+          "components_config": {
+            "base": {
+              "background": {
+                "type": "color",
+                "value": {
+                  "light": {
+                    "type": "hex",
+                    "value": "#ffffffff"
+                  }
+                }
+              },
+              "stack": {
+                "background": null,
+                "background_color": null,
+                "badge": null,
+                "border": null,
+                "components": [
+                  {
+                    "background": null,
+                    "background_color": null,
+                    "badge": null,
+                    "border": null,
+                    "components": [
+                      {
+                        "action": {
+                          "type": "navigate_back"
+                        },
+                        "id": "vefI13H5uP",
+                        "name": "",
+                        "stack": {
+                          "components": [
+                            {
+                              "base_url": "https:\/\/icons.pawwalls.com\/icons",
+                              "color": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#8e8e93ff"
+                                }
+                              },
+                              "formats": {
+                                "heic": "x.heic",
+                                "png": "x.png",
+                                "svg": "x.svg",
+                                "webp": "x.webp"
+                              },
+                              "icon_background": {
+                                "color": {
+                                  "light": {
+                                    "type": "hex",
+                                    "value": "#e5e5eaff"
+                                  }
+                                },
+                                "shape": {
+                                  "type": "circle"
+                                }
+                              },
+                              "icon_name": "x",
+                              "id": "PBcCWPIKbT",
+                              "margin": {
+                                "bottom": 0,
+                                "leading": 0,
+                                "top": 0,
+                                "trailing": 0
+                              },
+                              "name": "",
+                              "padding": {
+                                "bottom": 4,
+                                "leading": 4,
+                                "top": 4,
+                                "trailing": 4
+                              },
+                              "size": {
+                                "height": {
+                                  "type": "fixed",
+                                  "value": 28
+                                },
+                                "width": {
+                                  "type": "fixed",
+                                  "value": 28
+                                }
+                              },
+                              "type": "icon"
+                            }
+                          ],
+                          "dimension": {
+                            "alignment": "leading",
+                            "distribution": "start",
+                            "type": "vertical"
+                          },
+                          "id": "QzeWnPNFWw",
+                          "margin": {
+                            "bottom": 0,
+                            "leading": 0,
+                            "top": 0,
+                            "trailing": 0
+                          },
+                          "name": "",
+                          "padding": {
+                            "bottom": 0,
+                            "leading": 0,
+                            "top": 0,
+                            "trailing": 0
+                          },
+                          "shape": {
+                            "corners": {
+                              "bottom_leading": 0,
+                              "bottom_trailing": 0,
+                              "top_leading": 0,
+                              "top_trailing": 0
+                            },
+                            "type": "rectangle"
+                          },
+                          "size": {
+                            "height": {
+                              "type": "fit"
+                            },
+                            "width": {
+                              "type": "fit"
+                            }
+                          },
+                          "spacing": 0,
+                          "type": "stack"
+                        },
+                        "type": "button"
+                      }
+                    ],
+                    "dimension": {
+                      "alignment": "trailing",
+                      "distribution": "start",
+                      "type": "vertical"
+                    },
+                    "id": "r8FmOgx0U0",
+                    "margin": {
+                      "bottom": 0,
+                      "leading": 0,
+                      "top": 16,
+                      "trailing": 0
+                    },
+                    "name": "Header row",
+                    "padding": {
+                      "bottom": 0,
+                      "leading": 16,
+                      "top": 0,
+                      "trailing": 16
+                    },
+                    "shadow": null,
+                    "shape": {
+                      "corners": {
+                        "bottom_leading": 0,
+                        "bottom_trailing": 0,
+                        "top_leading": 0,
+                        "top_trailing": 0
+                      },
+                      "type": "rectangle"
+                    },
+                    "size": {
+                      "height": {
+                        "type": "fit",
+                        "value": null
+                      },
+                      "width": {
+                        "type": "fill",
+                        "value": null
+                      }
+                    },
+                    "spacing": 0,
+                    "type": "stack"
+                  },
+                  {
+                    "background": null,
+                    "background_color": null,
+                    "badge": null,
+                    "border": null,
+                    "components": [
+                      {
+                        "background_color": null,
+                        "color": {
+                          "light": {
+                            "type": "hex",
+                            "value": "#000000"
+                          }
+                        },
+                        "font_name": null,
+                        "font_size": 34,
+                        "font_weight": "bold",
+                        "horizontal_alignment": "leading",
+                        "id": "it0KCz_SPx",
+                        "margin": {
+                          "bottom": 0,
+                          "leading": 0,
+                          "top": 0,
+                          "trailing": 0
+                        },
+                        "name": "",
+                        "padding": {
+                          "bottom": 0,
+                          "leading": 0,
+                          "top": 0,
+                          "trailing": 0
+                        },
+                        "size": {
+                          "height": {
+                            "type": "fit",
+                            "value": null
+                          },
+                          "width": {
+                            "type": "fit",
+                            "value": null
+                          }
+                        },
+                        "text_lid": "iuFGR2yPjh",
+                        "type": "text"
+                      }
+                    ],
+                    "dimension": {
+                      "alignment": "center",
+                      "distribution": "start",
+                      "type": "vertical"
+                    },
+                    "id": "vZf2F_qPC_",
+                    "margin": {
+                      "bottom": 0,
+                      "leading": 0,
+                      "top": 0,
+                      "trailing": 0
+                    },
+                    "name": "Title content",
+                    "padding": {
+                      "bottom": 0,
+                      "leading": 32,
+                      "top": 0,
+                      "trailing": 32
+                    },
+                    "shadow": null,
+                    "shape": {
+                      "corners": {
+                        "bottom_leading": 0,
+                        "bottom_trailing": 0,
+                        "top_leading": 0,
+                        "top_trailing": 0
+                      },
+                      "type": "rectangle"
+                    },
+                    "size": {
+                      "height": {
+                        "type": "fit",
+                        "value": null
+                      },
+                      "width": {
+                        "type": "fill",
+                        "value": null
+                      }
+                    },
+                    "spacing": 2,
+                    "type": "stack"
+                  },
+                  {
+                    "background": null,
+                    "background_color": null,
+                    "badge": null,
+                    "border": null,
+                    "components": [],
+                    "dimension": {
+                      "alignment": "leading",
+                      "distribution": "start",
+                      "type": "vertical"
+                    },
+                    "id": "JbKcx2isPY",
+                    "margin": {
+                      "bottom": 0,
+                      "leading": 0,
+                      "top": 0,
+                      "trailing": 0
+                    },
+                    "name": "Testimonials",
+                    "padding": {
+                      "bottom": 0,
+                      "leading": 0,
+                      "top": 0,
+                      "trailing": 0
+                    },
+                    "shadow": null,
+                    "shape": {
+                      "corners": {
+                        "bottom_leading": 0,
+                        "bottom_trailing": 0,
+                        "top_leading": 0,
+                        "top_trailing": 0
+                      },
+                      "type": "rectangle"
+                    },
+                    "size": {
+                      "height": {
+                        "type": "fit",
+                        "value": null
+                      },
+                      "width": {
+                        "type": "fill",
+                        "value": null
+                      }
+                    },
+                    "spacing": 0,
+                    "type": "stack"
+                  }
+                ],
+                "dimension": {
+                  "alignment": "leading",
+                  "distribution": "start",
+                  "type": "vertical"
+                },
+                "id": "hmK_f_SYFa",
+                "margin": {
+                  "bottom": 0,
+                  "leading": 0,
+                  "top": 0,
+                  "trailing": 0
+                },
+                "name": "Content",
+                "padding": {
+                  "bottom": 0,
+                  "leading": 0,
+                  "top": 0,
+                  "trailing": 0
+                },
+                "shadow": null,
+                "shape": {
+                  "corners": {
+                    "bottom_leading": 0,
+                    "bottom_trailing": 0,
+                    "top_leading": 0,
+                    "top_trailing": 0
+                  },
+                  "type": "rectangle"
+                },
+                "size": {
+                  "height": {
+                    "type": "fit",
+                    "value": null
+                  },
+                  "width": {
+                    "type": "fill",
+                    "value": null
+                  }
+                },
+                "spacing": 4,
+                "type": "stack"
+              },
+              "sticky_footer": {
+                "id": "GvkXn6VmY5",
+                "name": "",
+                "stack": {
+                  "background": {
+                    "type": "color",
+                    "value": {
+                      "light": {
+                        "type": "hex",
+                        "value": "#ffffffff"
+                      }
+                    }
+                  },
+                  "background_color": null,
+                  "badge": null,
+                  "border": null,
+                  "components": [
+                    {
+                      "background": null,
+                      "background_color": null,
+                      "badge": null,
+                      "border": null,
+                      "components": [
+                        {
+                          "id": "_jyORYsjDo",
+                          "is_selected_by_default": false,
+                          "name": "",
+                          "package_id": "$rc_monthly",
+                          "stack": {
+                            "background": {
+                              "type": "color",
+                              "value": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#f2f2f7ff"
+                                }
+                              }
+                            },
+                            "background_color": null,
+                            "badge": null,
+                            "border": {
+                              "color": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#e8e8e8FF"
+                                }
+                              },
+                              "width": 2
+                            },
+                            "components": [
+                              {
+                                "background": null,
+                                "background_color": null,
+                                "badge": null,
+                                "border": null,
+                                "components": [
+                                  {
+                                    "background": null,
+                                    "background_color": null,
+                                    "badge": null,
+                                    "border": null,
+                                    "components": [
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 28,
+                                        "font_weight": "bold",
+                                        "horizontal_alignment": "center",
+                                        "id": "lldZmOCiX3",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffFF"
+                                                }
+                                              },
+                                              "text_lid": "rW4YDQIa-j"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 40
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "tWuZkHyp1p",
+                                        "type": "text"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "a_TPesYr9X",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "LWqOTrq-iX"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "lv5Aim2mnP",
+                                        "type": "text"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "FbgFvZ9__a",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 16,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "_N6XmMk-2M"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "k5VV49gTpU",
+                                        "type": "text"
+                                      }
+                                    ],
+                                    "dimension": {
+                                      "alignment": "center",
+                                      "distribution": "start",
+                                      "type": "vertical"
+                                    },
+                                    "id": "VTrJaAM6cS",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "name": "",
+                                    "padding": {
+                                      "bottom": 8,
+                                      "leading": 12,
+                                      "top": 8,
+                                      "trailing": 12
+                                    },
+                                    "shadow": null,
+                                    "shape": {
+                                      "corners": {
+                                        "bottom_leading": 0,
+                                        "bottom_trailing": 0,
+                                        "top_leading": 0,
+                                        "top_trailing": 0
+                                      },
+                                      "type": "rectangle"
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fit",
+                                        "value": null
+                                      },
+                                      "width": {
+                                        "type": "fill",
+                                        "value": null
+                                      }
+                                    },
+                                    "spacing": 0,
+                                    "type": "stack"
+                                  },
+                                  {
+                                    "base_url": "https:\/\/icons.pawwalls.com\/icons",
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#00000000"
+                                      }
+                                    },
+                                    "formats": {
+                                      "heic": "filled-circle-check.heic",
+                                      "png": "filled-circle-check.png",
+                                      "svg": "filled-circle-check.svg",
+                                      "webp": "filled-circle-check.webp"
+                                    },
+                                    "icon_background": {
+                                      "color": {
+                                        "light": {
+                                          "type": "hex",
+                                          "value": "#ffffff00"
+                                        }
+                                      },
+                                      "shape": {
+                                        "corners": null,
+                                        "type": "circle"
+                                      }
+                                    },
+                                    "icon_name": "filled-circle-check",
+                                    "id": "Kaf337uqcA",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 4,
+                                      "trailing": 4
+                                    },
+                                    "name": "",
+                                    "overrides": [
+                                      {
+                                        "conditions": [
+                                          {
+                                            "type": "selected"
+                                          }
+                                        ],
+                                        "properties": {
+                                          "color": {
+                                            "light": {
+                                              "type": "hex",
+                                              "value": "#7c80f4ff"
+                                            }
+                                          },
+                                          "icon_background": {
+                                            "color": {
+                                              "light": {
+                                                "type": "hex",
+                                                "value": "#FFFFFFff"
+                                              }
+                                            },
+                                            "shadow": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#00000040"
+                                                }
+                                              },
+                                              "radius": 8,
+                                              "x": 0,
+                                              "y": 0
+                                            },
+                                            "shape": {
+                                              "corners": null,
+                                              "type": "circle"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "padding": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      },
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      }
+                                    },
+                                    "type": "icon"
+                                  }
+                                ],
+                                "dimension": {
+                                  "alignment": "top_trailing",
+                                  "distribution": "start",
+                                  "type": "zlayer"
+                                },
+                                "id": "BaU-dfN9YV",
+                                "margin": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "name": "ZStack",
+                                "overrides": [
+                                  {
+                                    "conditions": [
+                                      {
+                                        "type": "selected"
+                                      }
+                                    ],
+                                    "properties": {
+                                      "dimension": {
+                                        "alignment": "top_trailing",
+                                        "distribution": "start",
+                                        "type": "zlayer"
+                                      }
+                                    }
+                                  }
+                                ],
+                                "padding": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "shadow": null,
+                                "shape": {
+                                  "corners": {
+                                    "bottom_leading": 0,
+                                    "bottom_trailing": 0,
+                                    "top_leading": 0,
+                                    "top_trailing": 0
+                                  },
+                                  "type": "rectangle"
+                                },
+                                "size": {
+                                  "height": {
+                                    "type": "fit",
+                                    "value": null
+                                  },
+                                  "width": {
+                                    "type": "fill",
+                                    "value": null
+                                  }
+                                },
+                                "spacing": 0,
+                                "type": "stack"
+                              }
+                            ],
+                            "dimension": {
+                              "alignment": "leading",
+                              "distribution": "start",
+                              "type": "vertical"
+                            },
+                            "id": "uGQ3O6I56T",
+                            "margin": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "name": "",
+                            "overrides": [
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "selected"
+                                  }
+                                ],
+                                "properties": {
+                                  "background": {
+                                    "type": "color",
+                                    "value": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#444af5ff"
+                                      }
+                                    }
+                                  },
+                                  "border": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#7c80f4ff"
+                                      }
+                                    },
+                                    "width": 2
+                                  },
+                                  "shadow": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#BD4BE526"
+                                      }
+                                    },
+                                    "radius": 16,
+                                    "x": 0,
+                                    "y": 8
+                                  }
+                                }
+                              }
+                            ],
+                            "padding": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "shadow": null,
+                            "shape": {
+                              "corners": {
+                                "bottom_leading": 16,
+                                "bottom_trailing": 16,
+                                "top_leading": 16,
+                                "top_trailing": 16
+                              },
+                              "type": "rectangle"
+                            },
+                            "size": {
+                              "height": {
+                                "type": "fit",
+                                "value": null
+                              },
+                              "width": {
+                                "type": "fill",
+                                "value": null
+                              }
+                            },
+                            "spacing": 0,
+                            "type": "stack"
+                          },
+                          "type": "package"
+                        },
+                        {
+                          "id": "XtqXsw6oAb",
+                          "is_selected_by_default": true,
+                          "name": "",
+                          "package_id": "$rc_annual",
+                          "stack": {
+                            "background": {
+                              "type": "color",
+                              "value": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#f2f2f7ff"
+                                }
+                              }
+                            },
+                            "background_color": null,
+                            "badge": null,
+                            "border": {
+                              "color": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#e8e8e8ff"
+                                }
+                              },
+                              "width": 2
+                            },
+                            "components": [
+                              {
+                                "background": null,
+                                "background_color": null,
+                                "badge": null,
+                                "border": null,
+                                "components": [
+                                  {
+                                    "background": null,
+                                    "background_color": null,
+                                    "badge": null,
+                                    "border": null,
+                                    "components": [
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 28,
+                                        "font_weight": "bold",
+                                        "horizontal_alignment": "center",
+                                        "id": "DfPnIr6SWE",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffFF"
+                                                }
+                                              },
+                                              "text_lid": "15YPaaFndM"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 40
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "X9tpZe7iez",
+                                        "type": "text"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "xF4O8y1HY-",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "opcMlPRpzh"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "GF8nSwwMGd",
+                                        "type": "text"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "2FiI14LgbL",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 16,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "q1ZraAn6tT"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "EYAGuQaVvE",
+                                        "type": "text"
+                                      }
+                                    ],
+                                    "dimension": {
+                                      "alignment": "center",
+                                      "distribution": "start",
+                                      "type": "vertical"
+                                    },
+                                    "id": "Wq0cI82Jbz",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "name": "",
+                                    "padding": {
+                                      "bottom": 8,
+                                      "leading": 12,
+                                      "top": 8,
+                                      "trailing": 12
+                                    },
+                                    "shadow": null,
+                                    "shape": {
+                                      "corners": {
+                                        "bottom_leading": 0,
+                                        "bottom_trailing": 0,
+                                        "top_leading": 0,
+                                        "top_trailing": 0
+                                      },
+                                      "type": "rectangle"
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fit",
+                                        "value": null
+                                      },
+                                      "width": {
+                                        "type": "fill",
+                                        "value": null
+                                      }
+                                    },
+                                    "spacing": 0,
+                                    "type": "stack"
+                                  },
+                                  {
+                                    "base_url": "https:\/\/icons.pawwalls.com\/icons",
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#00000000"
+                                      }
+                                    },
+                                    "formats": {
+                                      "heic": "filled-circle-check.heic",
+                                      "png": "filled-circle-check.png",
+                                      "svg": "filled-circle-check.svg",
+                                      "webp": "filled-circle-check.webp"
+                                    },
+                                    "icon_background": {
+                                      "color": {
+                                        "light": {
+                                          "type": "hex",
+                                          "value": "#ffffff00"
+                                        }
+                                      },
+                                      "shape": {
+                                        "corners": null,
+                                        "type": "circle"
+                                      }
+                                    },
+                                    "icon_name": "filled-circle-check",
+                                    "id": "WHz9H1K98w",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 4,
+                                      "trailing": 4
+                                    },
+                                    "name": "",
+                                    "overrides": [
+                                      {
+                                        "conditions": [
+                                          {
+                                            "type": "selected"
+                                          }
+                                        ],
+                                        "properties": {
+                                          "color": {
+                                            "light": {
+                                              "type": "hex",
+                                              "value": "#7c80f4ff"
+                                            }
+                                          },
+                                          "icon_background": {
+                                            "color": {
+                                              "light": {
+                                                "type": "hex",
+                                                "value": "#FFFFFFff"
+                                              }
+                                            },
+                                            "shadow": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#00000040"
+                                                }
+                                              },
+                                              "radius": 8,
+                                              "x": 0,
+                                              "y": 0
+                                            },
+                                            "shape": {
+                                              "corners": null,
+                                              "type": "circle"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "padding": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      },
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      }
+                                    },
+                                    "type": "icon"
+                                  }
+                                ],
+                                "dimension": {
+                                  "alignment": "top_trailing",
+                                  "distribution": "start",
+                                  "type": "zlayer"
+                                },
+                                "id": "k53QC2unoZ",
+                                "margin": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "name": "ZStack",
+                                "overrides": [
+                                  {
+                                    "conditions": [
+                                      {
+                                        "type": "selected"
+                                      }
+                                    ],
+                                    "properties": {
+                                      "dimension": {
+                                        "alignment": "top_trailing",
+                                        "distribution": "start",
+                                        "type": "zlayer"
+                                      }
+                                    }
+                                  }
+                                ],
+                                "padding": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "shadow": null,
+                                "shape": {
+                                  "corners": {
+                                    "bottom_leading": 0,
+                                    "bottom_trailing": 0,
+                                    "top_leading": 0,
+                                    "top_trailing": 0
+                                  },
+                                  "type": "rectangle"
+                                },
+                                "size": {
+                                  "height": {
+                                    "type": "fit",
+                                    "value": null
+                                  },
+                                  "width": {
+                                    "type": "fill",
+                                    "value": null
+                                  }
+                                },
+                                "spacing": 0,
+                                "type": "stack"
+                              }
+                            ],
+                            "dimension": {
+                              "alignment": "leading",
+                              "distribution": "start",
+                              "type": "vertical"
+                            },
+                            "id": "u8zUNeoZM5",
+                            "margin": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "name": "",
+                            "overrides": [
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "selected"
+                                  }
+                                ],
+                                "properties": {
+                                  "background": {
+                                    "type": "color",
+                                    "value": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#444af5ff"
+                                      }
+                                    }
+                                  },
+                                  "border": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#7c80f4FF"
+                                      }
+                                    },
+                                    "width": 2
+                                  },
+                                  "shadow": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#BD4BE526"
+                                      }
+                                    },
+                                    "radius": 16,
+                                    "x": 0,
+                                    "y": 8
+                                  }
+                                }
+                              }
+                            ],
+                            "padding": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "shadow": null,
+                            "shape": {
+                              "corners": {
+                                "bottom_leading": 16,
+                                "bottom_trailing": 16,
+                                "top_leading": 16,
+                                "top_trailing": 16
+                              },
+                              "type": "rectangle"
+                            },
+                            "size": {
+                              "height": {
+                                "type": "fit",
+                                "value": null
+                              },
+                              "width": {
+                                "type": "fill",
+                                "value": null
+                              }
+                            },
+                            "spacing": 0,
+                            "type": "stack"
+                          },
+                          "type": "package"
+                        },
+                        {
+                          "id": "4_v7z2pD6O",
+                          "is_selected_by_default": false,
+                          "name": "",
+                          "package_id": "$rc_lifetime",
+                          "stack": {
+                            "background": {
+                              "type": "color",
+                              "value": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#f2f2f7ff"
+                                }
+                              }
+                            },
+                            "background_color": null,
+                            "badge": null,
+                            "border": {
+                              "color": {
+                                "light": {
+                                  "type": "hex",
+                                  "value": "#e8e8e8ff"
+                                }
+                              },
+                              "width": 2
+                            },
+                            "components": [
+                              {
+                                "background": null,
+                                "background_color": null,
+                                "badge": null,
+                                "border": null,
+                                "components": [
+                                  {
+                                    "background": null,
+                                    "background_color": null,
+                                    "badge": null,
+                                    "border": null,
+                                    "components": [
+                                      {
+                                        "base_url": "https:\/\/icons.pawwalls.com\/icons",
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "formats": {
+                                          "heic": "infinity.heic",
+                                          "png": "infinity.png",
+                                          "svg": "infinity.svg",
+                                          "webp": "infinity.webp"
+                                        },
+                                        "icon_background": null,
+                                        "icon_name": "infinity",
+                                        "id": "jRtj5IXp9d",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffFF"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fixed",
+                                            "value": 40
+                                          },
+                                          "width": {
+                                            "type": "fixed",
+                                            "value": 40
+                                          }
+                                        },
+                                        "type": "icon"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "wT7qXPvX56",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "WDVSYgoYpq"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "kCEPZg4ydy",
+                                        "type": "text"
+                                      },
+                                      {
+                                        "background_color": null,
+                                        "color": {
+                                          "light": {
+                                            "type": "hex",
+                                            "value": "#000000"
+                                          }
+                                        },
+                                        "font_name": null,
+                                        "font_size": 15,
+                                        "font_weight": "medium",
+                                        "horizontal_alignment": "center",
+                                        "id": "Us28S6vUo8",
+                                        "margin": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 16,
+                                          "trailing": 0
+                                        },
+                                        "name": "",
+                                        "overrides": [
+                                          {
+                                            "conditions": [
+                                              {
+                                                "type": "selected"
+                                              }
+                                            ],
+                                            "properties": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#ffffffff"
+                                                }
+                                              },
+                                              "text_lid": "RmROTKBUo3"
+                                            }
+                                          }
+                                        ],
+                                        "padding": {
+                                          "bottom": 0,
+                                          "leading": 0,
+                                          "top": 0,
+                                          "trailing": 0
+                                        },
+                                        "size": {
+                                          "height": {
+                                            "type": "fit",
+                                            "value": null
+                                          },
+                                          "width": {
+                                            "type": "fit",
+                                            "value": null
+                                          }
+                                        },
+                                        "text_lid": "QrXq4nuUiI",
+                                        "type": "text"
+                                      }
+                                    ],
+                                    "dimension": {
+                                      "alignment": "center",
+                                      "distribution": "start",
+                                      "type": "vertical"
+                                    },
+                                    "id": "OsMb95N8DY",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "name": "",
+                                    "padding": {
+                                      "bottom": 8,
+                                      "leading": 12,
+                                      "top": 8,
+                                      "trailing": 12
+                                    },
+                                    "shadow": null,
+                                    "shape": {
+                                      "corners": {
+                                        "bottom_leading": 0,
+                                        "bottom_trailing": 0,
+                                        "top_leading": 0,
+                                        "top_trailing": 0
+                                      },
+                                      "type": "rectangle"
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fit",
+                                        "value": null
+                                      },
+                                      "width": {
+                                        "type": "fill",
+                                        "value": null
+                                      }
+                                    },
+                                    "spacing": 0,
+                                    "type": "stack"
+                                  },
+                                  {
+                                    "base_url": "https:\/\/icons.pawwalls.com\/icons",
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#00000000"
+                                      }
+                                    },
+                                    "formats": {
+                                      "heic": "filled-circle-check.heic",
+                                      "png": "filled-circle-check.png",
+                                      "svg": "filled-circle-check.svg",
+                                      "webp": "filled-circle-check.webp"
+                                    },
+                                    "icon_background": {
+                                      "color": {
+                                        "light": {
+                                          "type": "hex",
+                                          "value": "#ffffff00"
+                                        }
+                                      },
+                                      "shape": {
+                                        "corners": null,
+                                        "type": "circle"
+                                      }
+                                    },
+                                    "icon_name": "filled-circle-check",
+                                    "id": "oUgutcnuVL",
+                                    "margin": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 4,
+                                      "trailing": 4
+                                    },
+                                    "name": "",
+                                    "overrides": [
+                                      {
+                                        "conditions": [
+                                          {
+                                            "type": "selected"
+                                          }
+                                        ],
+                                        "properties": {
+                                          "color": {
+                                            "light": {
+                                              "type": "hex",
+                                              "value": "#7c80f4ff"
+                                            }
+                                          },
+                                          "icon_background": {
+                                            "color": {
+                                              "light": {
+                                                "type": "hex",
+                                                "value": "#FFFFFFff"
+                                              }
+                                            },
+                                            "shadow": {
+                                              "color": {
+                                                "light": {
+                                                  "type": "hex",
+                                                  "value": "#00000040"
+                                                }
+                                              },
+                                              "radius": 8,
+                                              "x": 0,
+                                              "y": 0
+                                            },
+                                            "shape": {
+                                              "corners": null,
+                                              "type": "circle"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ],
+                                    "padding": {
+                                      "bottom": 0,
+                                      "leading": 0,
+                                      "top": 0,
+                                      "trailing": 0
+                                    },
+                                    "size": {
+                                      "height": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      },
+                                      "width": {
+                                        "type": "fixed",
+                                        "value": 24
+                                      }
+                                    },
+                                    "type": "icon"
+                                  }
+                                ],
+                                "dimension": {
+                                  "alignment": "top_trailing",
+                                  "distribution": "start",
+                                  "type": "zlayer"
+                                },
+                                "id": "Pci8gR4PfN",
+                                "margin": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "name": "ZStack",
+                                "overrides": [
+                                  {
+                                    "conditions": [
+                                      {
+                                        "type": "selected"
+                                      }
+                                    ],
+                                    "properties": {
+                                      "dimension": {
+                                        "alignment": "top_trailing",
+                                        "distribution": "start",
+                                        "type": "zlayer"
+                                      }
+                                    }
+                                  }
+                                ],
+                                "padding": {
+                                  "bottom": 0,
+                                  "leading": 0,
+                                  "top": 0,
+                                  "trailing": 0
+                                },
+                                "shadow": null,
+                                "shape": {
+                                  "corners": {
+                                    "bottom_leading": 0,
+                                    "bottom_trailing": 0,
+                                    "top_leading": 0,
+                                    "top_trailing": 0
+                                  },
+                                  "type": "rectangle"
+                                },
+                                "size": {
+                                  "height": {
+                                    "type": "fit",
+                                    "value": null
+                                  },
+                                  "width": {
+                                    "type": "fill",
+                                    "value": null
+                                  }
+                                },
+                                "spacing": 0,
+                                "type": "stack"
+                              }
+                            ],
+                            "dimension": {
+                              "alignment": "leading",
+                              "distribution": "start",
+                              "type": "vertical"
+                            },
+                            "id": "2akcLpluvI",
+                            "margin": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "name": "",
+                            "overrides": [
+                              {
+                                "conditions": [
+                                  {
+                                    "type": "selected"
+                                  }
+                                ],
+                                "properties": {
+                                  "background": {
+                                    "type": "color",
+                                    "value": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#444af5ff"
+                                      }
+                                    }
+                                  },
+                                  "border": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#7c80f4ff"
+                                      }
+                                    },
+                                    "width": 2
+                                  },
+                                  "shadow": {
+                                    "color": {
+                                      "light": {
+                                        "type": "hex",
+                                        "value": "#BD4BE526"
+                                      }
+                                    },
+                                    "radius": 16,
+                                    "x": 0,
+                                    "y": 8
+                                  }
+                                }
+                              }
+                            ],
+                            "padding": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "shadow": null,
+                            "shape": {
+                              "corners": {
+                                "bottom_leading": 16,
+                                "bottom_trailing": 16,
+                                "top_leading": 16,
+                                "top_trailing": 16
+                              },
+                              "type": "rectangle"
+                            },
+                            "size": {
+                              "height": {
+                                "type": "fit",
+                                "value": null
+                              },
+                              "width": {
+                                "type": "fill",
+                                "value": null
+                              }
+                            },
+                            "spacing": 0,
+                            "type": "stack"
+                          },
+                          "type": "package"
+                        }
+                      ],
+                      "dimension": {
+                        "alignment": "top",
+                        "distribution": "space_between",
+                        "type": "horizontal"
+                      },
+                      "id": "3ioUvW06EN",
+                      "margin": {
+                        "bottom": 8,
+                        "leading": 0,
+                        "top": 8,
+                        "trailing": 0
+                      },
+                      "name": "",
+                      "padding": {
+                        "bottom": 0,
+                        "leading": 0,
+                        "top": 0,
+                        "trailing": 0
+                      },
+                      "shadow": null,
+                      "shape": {
+                        "corners": {
+                          "bottom_leading": 0,
+                          "bottom_trailing": 0,
+                          "top_leading": 0,
+                          "top_trailing": 0
+                        },
+                        "type": "rectangle"
+                      },
+                      "size": {
+                        "height": {
+                          "type": "fit",
+                          "value": null
+                        },
+                        "width": {
+                          "type": "fill",
+                          "value": null
+                        }
+                      },
+                      "spacing": 8,
+                      "type": "stack"
+                    },
+                    {
+                      "id": "al_FU6LXnf",
+                      "name": "",
+                      "stack": {
+                        "background": {
+                          "type": "color",
+                          "value": {
+                            "light": {
+                              "type": "hex",
+                              "value": "#f2f2f7ff"
+                            }
+                          }
+                        },
+                        "components": [
+                          {
+                            "color": {
+                              "light": {
+                                "type": "hex",
+                                "value": "#000000ff"
+                              }
+                            },
+                            "font_size": 17,
+                            "font_weight": "semibold",
+                            "horizontal_alignment": "center",
+                            "id": "zpaxStMS_x",
+                            "margin": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "name": "",
+                            "padding": {
+                              "bottom": 0,
+                              "leading": 0,
+                              "top": 0,
+                              "trailing": 0
+                            },
+                            "size": {
+                              "height": {
+                                "type": "fit"
+                              },
+                              "width": {
+                                "type": "fit"
+                              }
+                            },
+                            "text_lid": "FB8Ij4dWgS",
+                            "type": "text"
+                          }
+                        ],
+                        "dimension": {
+                          "alignment": "center",
+                          "distribution": "start",
+                          "type": "vertical"
+                        },
+                        "id": "DgfBzU0x8s",
+                        "margin": {
+                          "bottom": 2,
+                          "leading": 0,
+                          "top": 2,
+                          "trailing": 0
+                        },
+                        "name": "",
+                        "padding": {
+                          "bottom": 12,
+                          "leading": 20,
+                          "top": 12,
+                          "trailing": 20
+                        },
+                        "shape": {
+                          "corners": {
+                            "bottom_leading": 16,
+                            "bottom_trailing": 16,
+                            "top_leading": 16,
+                            "top_trailing": 16
+                          },
+                          "type": "rectangle"
+                        },
+                        "size": {
+                          "height": {
+                            "type": "fit"
+                          },
+                          "width": {
+                            "type": "fill"
+                          }
+                        },
+                        "spacing": 0,
+                        "type": "stack"
+                      },
+                      "type": "purchase_button"
+                    }
+                  ],
+                  "dimension": {
+                    "alignment": "leading",
+                    "distribution": "start",
+                    "type": "vertical"
+                  },
+                  "id": "I_Bt90w62Y",
+                  "margin": {
+                    "bottom": 0,
+                    "leading": 0,
+                    "top": 0,
+                    "trailing": 0
+                  },
+                  "name": "Footer",
+                  "padding": {
+                    "bottom": 0,
+                    "leading": 24,
+                    "top": 12,
+                    "trailing": 24
+                  },
+                  "shadow": {
+                    "color": {
+                      "light": {
+                        "type": "hex",
+                        "value": "#00000033"
+                      }
+                    },
+                    "radius": 0,
+                    "x": 0,
+                    "y": -1
+                  },
+                  "shape": {
+                    "corners": {
+                      "bottom_leading": 0,
+                      "bottom_trailing": 0,
+                      "top_leading": 0,
+                      "top_trailing": 0
+                    },
+                    "type": "rectangle"
+                  },
+                  "size": {
+                    "height": {
+                      "type": "fit",
+                      "value": null
+                    },
+                    "width": {
+                      "type": "fill",
+                      "value": null
+                    }
+                  },
+                  "spacing": 4,
+                  "type": "stack"
+                },
+                "type": "footer"
+              }
+            }
+          },
+          "components_localizations": {
+            "en_US": {
+              "15YPaaFndM": "12",
+              "EYAGuQaVvE": "{{ product.price }}",
+              "FB8Ij4dWgS": "Subscribe now",
+              "GF8nSwwMGd": "MONTHS",
+              "LWqOTrq-iX": "DAYS",
+              "QrXq4nuUiI": "{{ product.price }}",
+              "RmROTKBUo3": "{{ product.price }}",
+              "WDVSYgoYpq": "LIFETIME",
+              "X9tpZe7iez": "12",
+              "_N6XmMk-2M": "{{ product.price }}",
+              "iuFGR2yPjh": "Get CatPrrro",
+              "k5VV49gTpU": "{{ product.price }}",
+              "kCEPZg4ydy": "LIFETIME",
+              "lv5Aim2mnP": "DAYS",
+              "opcMlPRpzh": "MONTHS",
+              "q1ZraAn6tT": "{{ product.price }}",
+              "rW4YDQIa-j": "30",
+              "tWuZkHyp1p": "30"
+            }
+          },
+          "default_locale": "en_US",
+          "exit_offers": {},
+          "id": "pw13dea1ae2d694a7c",
+          "play_store_product_change_mode": {},
+          "published_fonts": {},
+          "revision": 2,
+          "template_name": "components",
+          "zero_decimal_place_countries": {
+            "apple": [
+              "TWN",
+              "KAZ",
+              "MEX",
+              "PHL",
+              "THA",
+              "IND"
+            ],
+            "google": [
+              "TW",
+              "KZ",
+              "MX",
+              "PH",
+              "TH"
+            ]
+          }
+        }
+      }
+    ],
+    "placements": {
+      "fallback_offering_id": "default"
+    },
+    "ui_config": {
+      "app": {
+        "colors": {},
+        "fonts": {}
+      },
+      "custom_variables": {},
+      "localizations": {
+        "en_US": {
+          "annual": "annual",
+          "annual_short": "yr",
+          "annually": "annually",
+          "daily": "daily",
+          "day": "day",
+          "day_short": "day",
+          "free_price": "free",
+          "month": "month",
+          "month_short": "mo",
+          "monthly": "monthly",
+          "num_day_few": "%d days",
+          "num_day_many": "%d days",
+          "num_day_one": "%d day",
+          "num_day_other": "%d days",
+          "num_day_two": "%d days",
+          "num_day_zero": "%d day",
+          "num_days_short": "%dd",
+          "num_month_few": "%d months",
+          "num_month_many": "%d months",
+          "num_month_one": "%d month",
+          "num_month_other": "%d months",
+          "num_month_two": "%d months",
+          "num_month_zero": "%d month",
+          "num_months_short": "%dmo",
+          "num_week_few": "%d weeks",
+          "num_week_many": "%d weeks",
+          "num_week_one": "%d week",
+          "num_week_other": "%d weeks",
+          "num_week_two": "%d weeks",
+          "num_week_zero": "%d week",
+          "num_weeks_short": "%dwk",
+          "num_year_few": "%d years",
+          "num_year_many": "%d years",
+          "num_year_one": "%d year",
+          "num_year_other": "%d years",
+          "num_year_two": "%d years",
+          "num_year_zero": "%d year",
+          "num_years_short": "%dyr",
+          "percent": "%d%%",
+          "week": "week",
+          "week_short": "wk",
+          "weekly": "weekly",
+          "year": "year",
+          "year_short": "yr",
+          "yearly": "yearly"
+        }
+      },
+      "variable_config": {
+        "function_compatibility_map": {},
+        "variable_compatibility_map": {}
+      }
+    }
+  }
+}

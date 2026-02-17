@@ -7,8 +7,8 @@ import androidx.compose.runtime.Immutable
  * @param fontFamily the [PaywallFontFamily] to be used for all text styles.
  */
 @Immutable
-class CustomParcelizableFontProvider(
+public class CustomParcelizableFontProvider(
     private val fontFamily: PaywallFontFamily,
 ) : ParcelizableFontProvider {
-    override fun getFont(type: TypographyType) = fontFamily
+    override fun getFont(type: TypographyType): PaywallFontFamily = fontFamily
 }

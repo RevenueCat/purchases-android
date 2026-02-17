@@ -5,12 +5,16 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -18,22 +22,30 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.PurchasesError
@@ -51,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CreateSupportTicketView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
@@ -98,6 +111,32 @@ internal fun InternalCustomerCenter(
 
     LaunchedEffect(Unit) {
         viewModel.trackImpressionIfNeeded()
+    }
+
+    // Refresh Customer Center data when activity resumes after being backgrounded.
+    // This matches iOS behavior where we refresh when the manage subscriptions sheet is dismissed.
+    // When the user opens the manage subscriptions screen (Google Play Store), the activity stops.
+    // When they return, the activity starts again, and we refresh to show updated subscription status.
+    // Using ON_STOP/ON_START with isChangingConfigurations check to properly handle configuration changes
+    // (e.g., rotation) without triggering false refreshes.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val activity = context.getActivity()
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    viewModel.onActivityStopped(activity?.isChangingConfigurations == true)
+                }
+                Lifecycle.Event.ON_START -> {
+                    viewModel.onActivityStarted()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     BackHandler {
@@ -152,6 +191,10 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
                 is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
                 is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
+                is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
+                is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
+                    viewModel.dismissSupportTicketSuccessSnackbar()
+                }
             }
         },
     )
@@ -363,11 +406,56 @@ private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    CustomerCenterNavHost(
-        currentDestination = state.currentDestination,
-        customerCenterState = state,
-        onAction = onAction,
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val latestOnAction by rememberUpdatedState(newValue = onAction)
+    val latestMessage by rememberUpdatedState(
+        newValue = state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SENT,
+        ),
     )
+
+    LaunchedEffect(state.showSupportTicketSuccessSnackbar) {
+        if (state.showSupportTicketSuccessSnackbar) {
+            snackbarHostState.showSnackbar(latestMessage)
+            latestOnAction(CustomerCenterAction.DismissSupportTicketSuccessSnackbar)
+        }
+    }
+
+    // Animate opacity when refreshing (similar to iOS)
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (state.isRefreshing) 0.5f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "refreshAlpha",
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = contentAlpha },
+        ) {
+            CustomerCenterNavHost(
+                currentDestination = state.currentDestination,
+                customerCenterState = state,
+                onAction = onAction,
+            )
+        }
+
+        // Show loading indicator when refreshing (similar to iOS)
+        if (state.isRefreshing) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+        )
+    }
 }
 
 @Suppress("LongMethod")
@@ -432,6 +520,13 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
+
+            is CustomerCenterDestination.CreateSupportTicket -> {
+                CreateSupportTicketView(
+                    data = destination.data,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                )
+            }
         }
     }
 
@@ -465,6 +560,7 @@ private fun MainScreenContent(
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases and the purchase has actions
                     if (state.purchases.size > 1 && purchase in state.purchasesWithActions) {
@@ -486,6 +582,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
+                supportTickets = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
                 onAction = onAction,
@@ -552,7 +649,10 @@ private val previewConfigData = CustomerCenterConfigData(
             "subscription" to "Subscription",
         ),
     ),
-    support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+    support = CustomerCenterConfigData.Support(
+        email = "test@revenuecat.com",
+        supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+    ),
 )
 
 @Preview

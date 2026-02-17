@@ -29,14 +29,17 @@ internal class OfferingFontPreDownloader(
     fun preDownloadOfferingFontsIfNeeded(offerings: Offerings) {
         // Getting the first offering's paywall components to check for fonts.
         // All offerings are expected to have the same fonts.
-        val fontInfosToDownload = offerings.all.values.firstOrNull()?.paywallComponents?.uiConfig?.app?.fonts?.values
-            ?.map { it.android }
-            ?.filterIsInstance<FontInfo.Name>()
-            ?.filter {
+        val fontsToCheck = offerings.all.values
+            .firstNotNullOfOrNull { it.paywallComponents?.uiConfig?.app?.fonts?.values }
+            ?: emptyList()
+        val fontInfosToDownload = fontsToCheck
+            .map { it.android }
+            .filterIsInstance<FontInfo.Name>()
+            .filter {
                 it.toDownloadableFontInfo() is Result.Success &&
                     !isBundled(it)
             }
-            ?.filter {
+            .filter {
                 try {
                     URL(it.url)
                     true
@@ -44,7 +47,7 @@ internal class OfferingFontPreDownloader(
                     errorLog(e) { "Malformed URL for font: ${it.value}. Skipping download." }
                     false
                 }
-            } ?: emptyList()
+            }
 
         for (fontToDownload in fontInfosToDownload) {
             fontLoader.getCachedFontFamilyOrStartDownload(fontToDownload)

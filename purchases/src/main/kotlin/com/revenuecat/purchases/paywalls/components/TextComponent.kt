@@ -34,84 +34,85 @@ import kotlinx.serialization.json.int
 @Serializable
 @SerialName("text")
 @Immutable
-class TextComponent
+public class TextComponent
 @Suppress("LongParameterList")
 constructor(
     @get:JvmSynthetic
     @SerialName("text_lid")
-    val text: LocalizationKey,
+    public val text: LocalizationKey,
     @get:JvmSynthetic
-    val color: ColorScheme,
+    public val color: ColorScheme,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("font_name")
-    val fontName: FontAlias? = null,
+    public val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
-    val fontWeight: FontWeight = REGULAR,
+    public val fontWeight: FontWeight = REGULAR,
     @get:JvmSynthetic
     @SerialName("font_weight_int")
-    val fontWeightInt: Int? = null,
+    public val fontWeightInt: Int? = null,
     @get:JvmSynthetic
     @SerialName("font_size")
     @Serializable(with = FontSizeSerializer::class)
-    val fontSize: Int = 15,
+    public val fontSize: Int = 15,
     @get:JvmSynthetic
     @SerialName("horizontal_alignment")
-    val horizontalAlignment: HorizontalAlignment = CENTER,
+    public val horizontalAlignment: HorizontalAlignment = CENTER,
     @get:JvmSynthetic
-    val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
-    val padding: Padding = zero,
+    public val padding: Padding = zero,
     @get:JvmSynthetic
-    val margin: Padding = zero,
+    public val margin: Padding = zero,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
 @Immutable
-class PartialTextComponent
+public class PartialTextComponent
 @Suppress("LongParameterList")
 constructor(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    public val visible: Boolean? = true,
     @get:JvmSynthetic
     @SerialName("text_lid")
-    val text: LocalizationKey? = null,
+    public val text: LocalizationKey? = null,
     @get:JvmSynthetic
-    val color: ColorScheme? = null,
+    public val color: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
     @SerialName("font_name")
-    val fontName: FontAlias? = null,
+    public val fontName: FontAlias? = null,
     @get:JvmSynthetic
     @SerialName("font_weight")
-    val fontWeight: FontWeight? = null, // Kept for backwards compatibility, but should use fontWeightInt instead.
+    // Kept for backwards compatibility, but should use fontWeightInt instead.
+    public val fontWeight: FontWeight? = null,
     @get:JvmSynthetic
     @SerialName("font_weight_int")
-    val fontWeightInt: Int? = null,
+    public val fontWeightInt: Int? = null,
     @get:JvmSynthetic
     @SerialName("font_size")
     @Serializable(with = FontSizeSerializer::class)
-    val fontSize: Int? = null,
+    public val fontSize: Int? = null,
     @get:JvmSynthetic
     @SerialName("horizontal_alignment")
-    val horizontalAlignment: HorizontalAlignment? = null,
+    public val horizontalAlignment: HorizontalAlignment? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
 ) : PartialComponent
 
 /**

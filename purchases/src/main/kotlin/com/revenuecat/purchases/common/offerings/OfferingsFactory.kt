@@ -3,8 +3,10 @@ package com.revenuecat.purchases.common.offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.log
@@ -19,11 +21,14 @@ internal class OfferingsFactory(
     private val billing: BillingAbstract,
     private val offeringParser: OfferingParser,
     private val dispatcher: Dispatcher,
+    private val appConfig: AppConfig,
 ) {
 
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
+        originalDataSource: HTTPResponseOriginalSource,
+        loadedFromDiskCache: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (OfferingsResultData) -> Unit,
     ) {
@@ -33,7 +38,10 @@ internal class OfferingsFactory(
                 onError(
                     PurchasesError(
                         PurchasesErrorCode.ConfigurationError,
-                        OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS,
+                        OfferingStrings.getConfigurationErrorNoProductsForOfferings(
+                            appConfig.apiKeyValidationResult,
+                            appConfig.store,
+                        ),
                     ),
                 )
             } else {
@@ -53,7 +61,12 @@ internal class OfferingsFactory(
                                     }
                                 }
 
-                            val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
+                            val offerings = offeringParser.createOfferings(
+                                offeringsJSON,
+                                productsById,
+                                originalDataSource,
+                                loadedFromDiskCache,
+                            )
                             if (offerings.all.isEmpty()) {
                                 onError(
                                     PurchasesError(

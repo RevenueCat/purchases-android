@@ -21,21 +21,21 @@ import java.net.URL
  */
 @Suppress("UnsafeOptInUsageError")
 @Poko
-class Offering
+public class Offering
 @OptIn(InternalRevenueCatAPI::class)
 constructor(
-    val identifier: String,
-    val serverDescription: String,
-    val metadata: Map<String, Any>,
-    val availablePackages: List<Package>,
+    public val identifier: String,
+    public val serverDescription: String,
+    public val metadata: Map<String, Any>,
+    public val availablePackages: List<Package>,
     @InternalRevenueCatAPI
-    val paywall: PaywallData? = null,
+    public val paywall: PaywallData? = null,
     @InternalRevenueCatAPI
-    val paywallComponents: PaywallComponents? = null,
-    val webCheckoutURL: URL? = null,
+    public val paywallComponents: PaywallComponents? = null,
+    public val webCheckoutURL: URL? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
-    constructor(
+    public constructor(
         identifier: String,
         serverDescription: String,
         metadata: Map<String, Any>,
@@ -52,9 +52,9 @@ constructor(
 
     @InternalRevenueCatAPI
     @Poko
-    class PaywallComponents(
-        val uiConfig: UiConfig,
-        val data: PaywallComponentsData,
+    public class PaywallComponents(
+        public val uiConfig: UiConfig,
+        public val data: PaywallComponentsData,
     )
 
     /**
@@ -62,43 +62,43 @@ constructor(
      */
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
-    val hasPaywall: Boolean
+    public val hasPaywall: Boolean
         get() = paywall != null || paywallComponents != null
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
      */
-    val lifetime by lazy { findPackage(PackageType.LIFETIME) }
+    public val lifetime: Package? by lazy { findPackage(PackageType.LIFETIME) }
 
     /**
      * Annual package type configured in the RevenueCat dashboard, if available.
      */
-    val annual by lazy { findPackage(PackageType.ANNUAL) }
+    public val annual: Package? by lazy { findPackage(PackageType.ANNUAL) }
 
     /**
      * Six month package type configured in the RevenueCat dashboard, if available.
      */
-    val sixMonth by lazy { findPackage(PackageType.SIX_MONTH) }
+    public val sixMonth: Package? by lazy { findPackage(PackageType.SIX_MONTH) }
 
     /**
      * Three month package type configured in the RevenueCat dashboard, if available.
      */
-    val threeMonth by lazy { findPackage(PackageType.THREE_MONTH) }
+    public val threeMonth: Package? by lazy { findPackage(PackageType.THREE_MONTH) }
 
     /**
      * Two month package type configured in the RevenueCat dashboard, if available.
      */
-    val twoMonth by lazy { findPackage(PackageType.TWO_MONTH) }
+    public val twoMonth: Package? by lazy { findPackage(PackageType.TWO_MONTH) }
 
     /**
      * Monthly package type configured in the RevenueCat dashboard, if available.
      */
-    val monthly by lazy { findPackage(PackageType.MONTHLY) }
+    public val monthly: Package? by lazy { findPackage(PackageType.MONTHLY) }
 
     /**
      * Weekly package type configured in the RevenueCat dashboard, if available.
      */
-    val weekly by lazy { findPackage(PackageType.WEEKLY) }
+    public val weekly: Package? by lazy { findPackage(PackageType.WEEKLY) }
 
     private fun findPackage(packageType: PackageType) =
         availablePackages.firstOrNull { it.identifier == packageType.identifier }
@@ -107,7 +107,7 @@ constructor(
      * Retrieves a specific package by identifier, use this to access custom package types configured
      * in the RevenueCat dashboard. Equivalent to calling `getPackage`.
      */
-    operator fun get(s: String) = getPackage(s)
+    public operator fun get(s: String): Package = getPackage(s)
 
     /**
      * Retrieves a specific package by identifier, use this to access custom package types configured
@@ -116,19 +116,19 @@ constructor(
      */
     @Throws(NoSuchElementException::class)
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getPackage(identifier: String) =
+    public fun getPackage(identifier: String): Package =
         availablePackages.first { it.identifier == identifier }
 
     /**
      * Returns the `metadata` value associated to `key` for the expected `String` type
      * or `default` if not found, or it's not the expected `String` type.
      */
-    fun getMetadataString(key: String, default: String): String {
+    public fun getMetadataString(key: String, default: String): String {
         return this.metadata[key] as? String ?: default
     }
 
     @InternalRevenueCatAPI
-    fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
+    public fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
         return Offering(
             identifier = this.identifier,
             serverDescription = this.serverDescription,

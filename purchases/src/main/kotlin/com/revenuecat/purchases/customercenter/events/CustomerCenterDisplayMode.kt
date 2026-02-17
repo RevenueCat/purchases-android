@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @InternalRevenueCatAPI
-enum class CustomerCenterDisplayMode {
+public enum class CustomerCenterDisplayMode {
 
     @SerialName("full_screen")
     FULL_SCREEN,

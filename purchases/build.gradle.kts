@@ -3,39 +3,47 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.mavenPublish)
-    alias(libs.plugins.dokka)
+    id("revenuecat-public-library")
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
-    alias(libs.plugins.metalava)
-    alias(libs.plugins.baselineprofile)
 }
 
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
-apply(from = "${rootProject.projectDir}/library.gradle")
-
 android {
     namespace = "com.revenuecat.purchases.api"
 
     buildFeatures {
         buildConfig = true
+        aidl = true
     }
 
-    flavorDimensions += "apis"
+    // billingclient dimension is added for bc7/bc8 support
+    flavorDimensions += "billingclient"
 
     productFlavors {
-        create("defaults") {
-            dimension = "apis"
-            isDefault = true
-        }
         create("customEntitlementComputation") {
             dimension = "apis"
+        }
+        create("bc8") {
+            dimension = "billingclient"
+            isDefault = true
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc8.get()}\"",
+            )
+        }
+        create("bc7") {
+            dimension = "billingclient"
+            buildConfigField(
+                type = "String",
+                name = "BILLING_CLIENT_VERSION",
+                value = "\"${libs.versions.bc7.get()}\"",
+            )
         }
     }
 
@@ -45,8 +53,13 @@ android {
 
         buildConfigField(
             type = "boolean",
-            name = "ENABLE_VIDEO_COMPONENT",
-            value = (localProperties["ENABLE_VIDEO_COMPONENT"] as? String ?: "false"),
+            name = "ENABLE_EXTRA_REQUEST_LOGGING",
+            value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
+        )
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_QUERY_PURCHASE_HISTORY_AIDL",
+            value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
         )
 
         packagingOptions.resources.excludes.addAll(
@@ -91,7 +104,13 @@ metalava {
 
     val name = if (variantName.lowercase().contains("defaults")) {
         excludeSourceSets.add("src/customEntitlementComputation/kotlin")
-        "api-defauts.txt"
+        if (variantName.lowercase().contains("bc8")) {
+            "api-defauts.txt"
+        } else if (variantName.lowercase().contains("bc7")) {
+            "api-defaults-bc7.txt"
+        } else {
+            "api-defaults-unknown.txt"
+        }
     } else if (variantName.lowercase().contains("entitlement")) {
         excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"
@@ -113,6 +132,7 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     if (name.contains("UnitTest") || name.contains("AndroidTest")) {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
+            freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI")
         }
     }
 }
@@ -149,7 +169,8 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    api(libs.billing)
+    "bc8Api"(libs.billing.bc8)
+    "bc7Api"(libs.billing.bc7)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
@@ -161,7 +182,8 @@ dependencies {
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    testImplementation(libs.billing)
+    "testBc8Implementation"(libs.billing.bc8)
+    "testBc7Implementation"(libs.billing.bc7)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
@@ -170,13 +192,16 @@ dependencies {
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)
+    androidTestImplementation(libs.androidx.core.testing)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+    androidTestImplementation(libs.leakcanary.android.instrumentation)
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))
@@ -184,10 +209,16 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        named("customEntitlementComputationBc8") {
             suppress.set(true)
         }
-        named("defaults") {
+        named("customEntitlementComputationBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc7") {
+            suppress.set(true)
+        }
+        named("defaultsBc8") {
             dependsOn("main")
             reportUndocumented.set(true)
             includeNonPublic.set(false)

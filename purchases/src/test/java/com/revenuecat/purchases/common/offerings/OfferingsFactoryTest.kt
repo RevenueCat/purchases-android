@@ -1,15 +1,21 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE
@@ -230,6 +236,7 @@ class OfferingsFactoryTest {
 
     private val productId = STUB_PRODUCT_IDENTIFIER
 
+    private lateinit var appConfig: AppConfig
     private lateinit var billing: BillingAbstract
     private lateinit var offeringParser: OfferingParser
     private lateinit var dispatcher: Dispatcher
@@ -237,29 +244,149 @@ class OfferingsFactoryTest {
 
     @Before
     fun setUp() {
+        appConfig = mockk<AppConfig>().apply {
+            every { store } returns Store.PLAY_STORE
+            every { apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID
+        }
         billing = mockk()
         offeringParser = GoogleOfferingParser()
         dispatcher = SyncDispatcher()
         offeringsFactory = OfferingsFactory(
             billing,
             offeringParser,
-            dispatcher
+            dispatcher,
+            appConfig,
         )
     }
 
     @Test
-    fun `configuration error if no products configured`() {
+    fun `configuration error if no products configured in Play Store`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID
+        every { appConfig.store } returns Store.PLAY_STORE
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
         assertThat(purchasesError).isNotNull
         assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(purchasesError!!.underlyingErrorMessage).contains(
-            OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("Play Store")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("a Play Store API key")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/how-to-configure-offerings")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/why-are-offerings-empty")
+    }
+
+    @Test
+    fun `configuration error if no products configured with legacy API key`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.LEGACY
+        every { appConfig.store } returns Store.PLAY_STORE
+        offeringsFactory = OfferingsFactory(
+            billing,
+            offeringParser,
+            dispatcher,
+            appConfig,
         )
+
+        var purchasesError: PurchasesError? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
+        )
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("Play Store")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("a Play Store API key")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/how-to-configure-offerings")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/why-are-offerings-empty")
+    }
+
+    @Test
+    fun `configuration error if no products configured with Amazon store`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID
+        every { appConfig.store } returns Store.AMAZON
+        offeringsFactory = OfferingsFactory(
+            billing,
+            offeringParser,
+            dispatcher,
+            appConfig,
+        )
+
+        var purchasesError: PurchasesError? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
+        )
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("Amazon Appstore")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("an Amazon Appstore API key")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/how-to-configure-offerings")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/why-are-offerings-empty")
+    }
+
+    @Test
+    fun `configuration error if no products configured with simulated store`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+        every { appConfig.store } returns Store.TEST_STORE
+        offeringsFactory = OfferingsFactory(
+            billing,
+            offeringParser,
+            dispatcher,
+            appConfig,
+        )
+
+        var purchasesError: PurchasesError? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
+        )
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("Test Store")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("a Test Store API key")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/how-to-configure-offerings")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/why-are-offerings-empty")
+    }
+
+    @Test
+    fun `configuration error if no products configured with other platform`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.OTHER_PLATFORM
+        every { appConfig.store } returns Store.APP_STORE
+        offeringsFactory = OfferingsFactory(
+            billing,
+            offeringParser,
+            dispatcher,
+            appConfig,
+        )
+
+        var purchasesError: PurchasesError? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithNoProductsResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
+        )
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("an API key from a store that has no products")
+        assertThat(purchasesError!!.underlyingErrorMessage).doesNotContain("Play Store")
+        assertThat(purchasesError!!.underlyingErrorMessage).doesNotContain("Amazon Appstore")
+        assertThat(purchasesError!!.underlyingErrorMessage).doesNotContain("Test Store")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/how-to-configure-offerings")
+        assertThat(purchasesError!!.underlyingErrorMessage).contains("https://rev.cat/why-are-offerings-empty")
     }
 
     @Test
@@ -267,6 +394,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -283,6 +412,8 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -302,6 +433,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -320,6 +453,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -338,6 +473,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -356,6 +493,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -374,6 +513,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacement,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -397,6 +538,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPlacementWithNullFallback,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -420,6 +563,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithTargeting,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -452,6 +597,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -473,6 +620,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -501,6 +650,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = invalidUrlWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it.offerings }
         )
@@ -521,6 +672,8 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it.offerings }
         )
