@@ -39,5 +39,9 @@ package com.revenuecat.purchases.admob {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static void loadAndTrackAd(com.google.android.gms.ads.AdView, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener);
   }
 
+  public final class RCAdMobNativeAd {
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static com.google.android.gms.ads.AdLoader.Builder forNativeAdWithTracking(com.google.android.gms.ads.AdLoader.Builder, String adUnitId, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener, optional kotlin.jvm.functions.Function1<? super com.google.android.gms.ads.nativead.NativeAd,kotlin.Unit> onNativeAdLoaded);
+  }
+
 }
 
