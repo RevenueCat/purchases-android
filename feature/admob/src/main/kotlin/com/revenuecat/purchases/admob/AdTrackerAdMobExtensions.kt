@@ -21,11 +21,11 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.AdTracker
-import kotlin.jvm.JvmSynthetic
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Loads an [InterstitialAd] and automatically tracks RevenueCat ad events.

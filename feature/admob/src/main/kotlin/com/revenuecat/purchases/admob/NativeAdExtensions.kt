@@ -12,9 +12,9 @@ import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
-import kotlin.jvm.JvmSynthetic
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Configures RevenueCat ad-event tracking for native ads on this [AdLoader.Builder].
