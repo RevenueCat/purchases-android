@@ -2,7 +2,8 @@
 
 Wraps AdMob ad lifecycle callbacks to automatically track ad events in RevenueCat. Drop-in replacement for standard AdMob loading calls — add one method call and RevenueCat tracks loaded, displayed, opened, revenue, and failed-to-load events for you.
 
-**Kotlin only.** The load-and-track APIs are not currently available from Java. If you need Java support, please [open an issue](https://github.com/RevenueCat/purchases-android/issues) or contact support to request it.
+**Kotlin only.** The load-and-track helper APIs are not currently available from Java. You can still use the core [AdTracker](https://revenuecat.github.io/purchases-android/docs/core/com.revenuecat.purchases.ads.events/-ad-tracker/index.html) APIs (e.g. `trackAdDisplayed`, `trackAdRevenue`) directly from Java — these helpers are syntactic sugar on top. If you need the load-and-track helpers from Java, please [open an issue](https://github.com/RevenueCat/purchases-android/issues) or contact support to request it.
+
 
 ## Placement
 
