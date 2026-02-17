@@ -10,7 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.ads.AdRequest
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RCAdMob
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.loadAndTrackInterstitialAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -26,7 +27,7 @@ internal fun ErrorTestingContent() {
 
     Button(
         onClick = {
-            RCAdMob.loadAndTrackInterstitialAd(
+            Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
                 context = context,
                 adUnitId = Constants.AdMob.INVALID_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),

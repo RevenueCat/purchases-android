@@ -26,7 +26,7 @@ The adapter library automatically tracks these RevenueCat ad events for all ad f
 
 ### Key Files
 
-- `HomeScreen.kt` - Compose UI with list + detail navigation per ad format; calls `RCAdMob` directly
+- `HomeScreen.kt` - Compose UI with list + detail navigation per ad format; calls `Purchases.sharedInstance.adTracker` for load-and-track
 - `BannerAdView.kt` - Composable wrapper for banner ads using `adView.loadAndTrackAd(...)`
 - `MainApplication.kt` - RevenueCat and AdMob SDK initialization
 - `Constants.kt` - Ad unit IDs and configuration
@@ -130,7 +130,7 @@ The `purchases-android-admob` adapter library sits between AdMob and RevenueCat,
 └────────────────────────┘
 ```
 
-The sample calls `RCAdMob.loadAndTrack*()` methods directly from Compose — no wrapper needed. The adapter handles all event mapping internally.
+The sample calls `Purchases.sharedInstance.adTracker.loadAndTrack*()` from Compose — no wrapper needed. The adapter handles all event mapping internally.
 
 ---
 
