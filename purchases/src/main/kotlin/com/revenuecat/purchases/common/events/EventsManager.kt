@@ -279,7 +279,7 @@ internal class EventsManager(
                         properties = buildMap {
                             put("errorCode", error.code.name)
                             error.underlyingErrorMessage?.let {
-                                put("underlyingErrorMessage", it.take(80))
+                                put("underlyingErrorMessage", it.take(EventsFileHelper.MAX_EVENT_PROPERTY_SIZE))
                             }
                         },
                     ),

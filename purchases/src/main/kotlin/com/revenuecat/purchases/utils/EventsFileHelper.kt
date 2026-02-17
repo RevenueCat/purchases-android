@@ -20,6 +20,10 @@ internal open class EventsFileHelper<T : Event> (
     private val eventSerializer: ((T) -> String)? = null,
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
+    companion object {
+        const val MAX_EVENT_PROPERTY_SIZE = 80
+    }
+
     var debugEventCallback: ((DebugEvent) -> Unit)? = null
 
     @Synchronized
@@ -35,7 +39,7 @@ internal open class EventsFileHelper<T : Event> (
                     name = DebugEventName.APPEND_EVENT_EXCEPTION,
                     properties = buildMap {
                         put("exceptionType", e::class.simpleName ?: "Unknown")
-                        e.message?.let { put("message", it.take(80)) }
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
                     },
                 ),
             )
@@ -82,7 +86,7 @@ internal open class EventsFileHelper<T : Event> (
                     name = DebugEventName.REMOVE_LINES_EXCEPTION,
                     properties = buildMap {
                         put("exceptionType", e::class.simpleName ?: "Unknown")
-                        e.message?.let { put("message", it.take(80)) }
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
                     },
                 ),
             )
@@ -115,7 +119,7 @@ internal open class EventsFileHelper<T : Event> (
                     name = DebugEventName.DESERIALIZATION_ERROR,
                     properties = buildMap {
                         put("exceptionType", "SerializationException")
-                        e.message?.let { put("message", it.take(80)) }
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
                     },
                 ),
             )
@@ -127,7 +131,7 @@ internal open class EventsFileHelper<T : Event> (
                     name = DebugEventName.DESERIALIZATION_ERROR,
                     properties = buildMap {
                         put("exceptionType", "IllegalArgumentException")
-                        e.message?.let { put("message", it.take(80)) }
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
                     },
                 ),
             )
