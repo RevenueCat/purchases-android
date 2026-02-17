@@ -2,6 +2,10 @@ plugins {
     id("revenuecat-public-library")
 }
 
+metalava {
+    filename.set("api.txt")
+}
+
 android {
     namespace = "com.revenuecat.purchases.admob"
 

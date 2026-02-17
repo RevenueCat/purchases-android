@@ -27,11 +27,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/**
- * Native ads use the builder API only: [AdLoader.Builder.forNativeAdWithTracking].
- * The former [AdTracker.loadAndTrackNativeAd] convenience was removed so native stays
- * consistent with AdMob's builder pattern; the test that asserted its delegation was removed with it.
- */
 @RunWith(RobolectricTestRunner::class)
 class NativeAdFlowTest {
 
