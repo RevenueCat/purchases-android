@@ -1,5 +1,4 @@
 // Signature format: 4.0
-// AdTracker loadAndTrack* extensions are @JvmSynthetic (Kotlin-only); not in public API.
 package com.revenuecat.purchases.admob {
 
   public final class RCAdMobBannerAd {
