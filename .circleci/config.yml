@@ -224,6 +224,22 @@ jobs:
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
       - android/save_build_cache
 
+  assemble-admob-integration-sample-app:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept_licenses
+      - android-dependencies
+      - android/restore_build_cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_admob_integration_sample
+      - android/save_build_cache
+
   prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -354,7 +370,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.22.0-SNAPSHOT s3://purchases-docs/android/9.22.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.23.0-SNAPSHOT s3://purchases-docs/android/9.23.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -916,6 +932,7 @@ workflows:
       - assemble-custom-entitlement-computation-sample-app:
           requires:
             - deploy-snapshot
+      - assemble-admob-integration-sample-app
 
   build-test-deploy:
     when:
@@ -973,6 +990,9 @@ workflows:
           requires:
             - prepare-tests
       - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:

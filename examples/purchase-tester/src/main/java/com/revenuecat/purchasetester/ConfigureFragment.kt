@@ -12,7 +12,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.DebugEventListener
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -117,6 +119,7 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
@@ -152,6 +155,9 @@ class ConfigureFragment : Fragment() {
             .pendingTransactionsForPrepaidPlansEnabled(true)
             .build()
         Purchases.configure(configuration)
+        Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
+            android.util.Log.d("PurchaseTester", "DebugEvent: ${event.name} ${event.properties}")
+        }
 
         if (purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP) {
             NotFinishingTransactionsBillingClient.start(application, application.logHandler)

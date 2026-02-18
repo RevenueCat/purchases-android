@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "90074",
+    "Content-Length": "90097",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "server": "envoy",
@@ -1710,7 +1710,8 @@
             }
           },
           "exit_offers": {},
-          "play_store_product_change_mode": {}
+          "play_store_product_change_mode": {},
+          "published_fonts": {}
         },
         "packages": [
           {
