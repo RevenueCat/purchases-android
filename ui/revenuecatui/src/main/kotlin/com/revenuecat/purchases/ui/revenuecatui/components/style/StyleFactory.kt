@@ -765,11 +765,14 @@ internal class StyleFactory(
         // Get our texts from the localization dictionary.
         first = localizations.stringForAllLocales(component.text)
             .flatMapError { errors ->
-                val keyExistsInAnyLocale = localizations.any { (_, dict) -> dict.containsKey(component.text) }
-                if (keyExistsInAnyLocale) {
+                val lidExistsInAnyLocale = localizations.any { (_, dict) -> dict.containsKey(component.text) }
+                // If the lid exists in some locales but not all, it's a real localization/translation
+                // issue, so we propagate the error. If it exists in NO locales, it's an orphan text_lid
+                // from a frontend bug (e.g. a badge added only in an override state).
+                if (lidExistsInAnyLocale) {
                     Result.Error(errors)
                 } else {
-                    Logger.w("Missing localization for text_lid '${component.text.value}', using empty string.")
+                    Logger.w("Missing text for text_lid '${component.text.value}', using empty string.")
                     Result.Success(localizations.mapValues { "" })
                 }
             },

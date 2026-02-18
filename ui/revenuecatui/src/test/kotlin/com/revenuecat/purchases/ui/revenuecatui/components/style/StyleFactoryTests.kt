@@ -307,6 +307,49 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should only use empty string for orphaned text_lid, not for available ones`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val availableKey = LocalizationKey("available-key")
+        val orphanKey = LocalizationKey("orphan-key")
+        val expectedText = "available text"
+        val availableTextComponent = TextComponent(
+            text = availableKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+        )
+        val orphanTextComponent = TextComponent(
+            text = orphanKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(availableTextComponent, orphanTextComponent),
+        )
+        val factory = StyleFactory(
+            localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
+                    availableKey to LocalizationData.Text(expectedText),
+                ),
+            ),
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering,
+        )
+
+        // Act
+        val result = factory.create(stackComponent)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(2)
+        val availableStyle = style.children[0] as TextComponentStyle
+        assertThat(availableStyle.texts[defaultLocale]).isEqualTo(expectedText)
+        val orphanStyle = style.children[1] as TextComponentStyle
+        assertThat(orphanStyle.texts[defaultLocale]).isEqualTo("")
+    }
+
+    @Test
     fun `Should successfully create a TextComponentStyle with custom fonts`() {
         // Arrange
         val fontAliasBase = FontAlias("serif")
