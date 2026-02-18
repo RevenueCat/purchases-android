@@ -13,8 +13,8 @@ android {
         applicationId = "com.revenuecat.rcttester"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0"
+        versionCode = (project.properties["rcTesterVersionCode"] as String).toInt()
+        versionName = project.properties["rcTesterVersionName"] as String
 
         // Library modules have a dimension used to separate different APIs.
         // Applications don't need this, so we default to the "defaults" flavor.
@@ -33,10 +33,20 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore")
+            storePassword = project.properties["releaseKeystorePassword"] as String?
+            keyAlias = project.properties["releaseKeyAlias"] as String?
+            keyPassword = project.properties["releaseKeyPassword"] as String?
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
