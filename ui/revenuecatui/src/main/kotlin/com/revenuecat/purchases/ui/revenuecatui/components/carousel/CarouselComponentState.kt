@@ -81,7 +81,12 @@ internal class CarouselComponentState(
         val componentState =
             if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+        )
     }
 
     @get:JvmSynthetic
