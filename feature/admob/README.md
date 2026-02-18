@@ -2,6 +2,9 @@
 
 Wraps AdMob ad lifecycle callbacks to automatically track ad events in RevenueCat. Drop-in replacement for standard AdMob loading calls — add one method call and RevenueCat tracks loaded, displayed, opened, revenue, and failed-to-load events for you.
 
+**Kotlin only.** The load-and-track helper APIs are not currently available from Java. You can still use the core [AdTracker](https://revenuecat.github.io/purchases-android/docs/core/com.revenuecat.purchases.ads.events/-ad-tracker/index.html) APIs (e.g. `trackAdDisplayed`, `trackAdRevenue`) directly from Java — these helpers are syntactic sugar on top.
+
+
 ## Placement
 
 Every tracking method accepts an optional `placement` string that tags all events for that ad with a logical location in your app. Use it to distinguish performance across different screens or slots in your RevenueCat dashboard — e.g. `"home_banner"`, `"level_complete_interstitial"`, `"feed_native"`, `"bonus_coins_rewarded"`. The value is free-form; pick a convention that makes sense for your app and use it consistently.
@@ -35,10 +38,10 @@ adView.loadAndTrackAd(
 )
 ```
 
-Or using the static method (also works from Java):
+Or using the adTracker extension:
 
 ```kotlin
-RCAdMob.loadAndTrackBannerAd(
+Purchases.sharedInstance.adTracker.loadAndTrackBannerAd(
     adView = adView,
     adRequest = AdRequest.Builder().build(),
     placement = "home_banner",
@@ -79,7 +82,7 @@ interstitialAd?.show(this)
 **With RevenueCat tracking:**
 
 ```kotlin
-RCAdMob.loadAndTrackInterstitialAd(
+Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
     context = this,
     adUnitId = "AD_UNIT_ID",
     adRequest = AdRequest.Builder().build(),
@@ -133,7 +136,7 @@ rewardedAd?.show(this) { rewardItem ->
 **With RevenueCat tracking:**
 
 ```kotlin
-RCAdMob.loadAndTrackRewardedAd(
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
     context = this,
     adUnitId = "AD_UNIT_ID",
     adRequest = AdRequest.Builder().build(),
@@ -190,7 +193,7 @@ rewardedInterstitialAd?.show(this) { rewardItem ->
 **With RevenueCat tracking:**
 
 ```kotlin
-RCAdMob.loadAndTrackRewardedInterstitialAd(
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
     context = this,
     adUnitId = "AD_UNIT_ID",
     adRequest = AdRequest.Builder().build(),
@@ -244,7 +247,7 @@ appOpenAd?.show(activity)
 **With RevenueCat tracking:**
 
 ```kotlin
-RCAdMob.loadAndTrackAppOpenAd(
+Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
     context = context,
     adUnitId = "AD_UNIT_ID",
     adRequest = AdRequest.Builder().build(),
@@ -315,61 +318,16 @@ val adLoader = AdLoader.Builder(context, "AD_UNIT_ID")
 adLoader.loadAd(AdRequest.Builder().build())
 ```
 
-Or using the static method (also works from Java):
-
-```kotlin
-RCAdMob.loadAndTrackNativeAd(
-    context = context,
-    adUnitId = "AD_UNIT_ID",
-    adRequest = AdRequest.Builder().build(),
-    placement = "feed",
-    nativeAdOptions = NativeAdOptions.Builder().build(),
-    adListener = object : AdListener() {
-        override fun onAdFailedToLoad(adError: LoadAdError) {
-            // Handle error.
-        }
-    },
-    onAdLoaded = { nativeAd ->
-        // Show the ad.
-    },
-)
-```
-
-## Java
-
-All methods are `@JvmStatic` with `@JvmOverloads`, so they work the same way from Java:
-
-```java
-RCAdMob.loadAndTrackInterstitialAd(
-    context,
-    "AD_UNIT_ID",
-    new AdRequest.Builder().build(),
-    "level_complete",
-    new InterstitialAdLoadCallback() {
-        @Override
-        public void onAdLoaded(@NonNull InterstitialAd ad) {
-            interstitialAd = ad;
-        }
-        @Override
-        public void onAdFailedToLoad(@NonNull LoadAdError adError) {
-            interstitialAd = null;
-        }
-    }
-);
-```
-
-Optional parameters can be omitted — overloads are generated automatically.
-
 ## Supported ad formats
 
 | Format | Method |
 |--------|--------|
-| Banner | `AdView.loadAndTrackAd()` / `RCAdMob.loadAndTrackBannerAd()` |
-| Interstitial | `RCAdMob.loadAndTrackInterstitialAd()` |
-| Rewarded | `RCAdMob.loadAndTrackRewardedAd()` |
-| Rewarded Interstitial | `RCAdMob.loadAndTrackRewardedInterstitialAd()` |
-| App Open | `RCAdMob.loadAndTrackAppOpenAd()` |
-| Native | `AdLoader.Builder.forNativeAdWithTracking()` / `RCAdMob.loadAndTrackNativeAd()` |
+| Banner | `AdView.loadAndTrackAd()` / `adTracker.loadAndTrackBannerAd()` |
+| Interstitial | `adTracker.loadAndTrackInterstitialAd()` |
+| Rewarded | `adTracker.loadAndTrackRewardedAd()` |
+| Rewarded Interstitial | `adTracker.loadAndTrackRewardedInterstitialAd()` |
+| App Open | `adTracker.loadAndTrackAppOpenAd()` |
+| Native | `AdLoader.Builder.forNativeAdWithTracking()` |
 
 ## Events tracked
 

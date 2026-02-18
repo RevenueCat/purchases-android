@@ -261,6 +261,9 @@ class SubscriberAttributesPurchasesTests {
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
+        every {
+            eventsManagerMock.debugEventListener
+        } returns null
         underTest.purchasesOrchestrator.onAppBackgrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
