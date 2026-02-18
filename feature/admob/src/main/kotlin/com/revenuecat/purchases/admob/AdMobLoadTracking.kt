@@ -36,15 +36,16 @@ internal fun loadAndTrackInterstitialAdInternal(
         adRequest,
         object : InterstitialAdLoadCallback() {
             override fun onAdLoaded(ad: InterstitialAd) {
+                val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
                     adTracker.trackAdLoaded(
                         AdLoadedData(
-                            networkName = ad.responseInfo.mediationAdapterClassName,
+                            networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.INTERSTITIAL,
                             placement = placement,
                             adUnitId = adUnitId,
-                            impressionId = ad.responseInfo.responseId.orEmpty(),
+                            impressionId = loadedResponseInfo.responseId.orEmpty(),
                         ),
                     )
                 }
@@ -53,14 +54,14 @@ internal fun loadAndTrackInterstitialAdInternal(
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                 )
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
                 )
                 loadCallback?.onAdLoaded(ad)
@@ -100,15 +101,16 @@ internal fun loadAndTrackAppOpenAdInternal(
         adRequest,
         object : AppOpenAd.AppOpenAdLoadCallback() {
             override fun onAdLoaded(ad: AppOpenAd) {
+                val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
                     adTracker.trackAdLoaded(
                         AdLoadedData(
-                            networkName = ad.responseInfo.mediationAdapterClassName,
+                            networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.APP_OPEN,
                             placement = placement,
                             adUnitId = adUnitId,
-                            impressionId = ad.responseInfo.responseId.orEmpty(),
+                            impressionId = loadedResponseInfo.responseId.orEmpty(),
                         ),
                     )
                 }
@@ -117,14 +119,14 @@ internal fun loadAndTrackAppOpenAdInternal(
                     adFormat = AdFormat.APP_OPEN,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                 )
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.APP_OPEN,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
                 )
                 loadCallback?.onAdLoaded(ad)
@@ -164,15 +166,16 @@ internal fun loadAndTrackRewardedAdInternal(
         adRequest,
         object : RewardedAdLoadCallback() {
             override fun onAdLoaded(ad: RewardedAd) {
+                val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
                     adTracker.trackAdLoaded(
                         AdLoadedData(
-                            networkName = ad.responseInfo.mediationAdapterClassName,
+                            networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.REWARDED,
                             placement = placement,
                             adUnitId = adUnitId,
-                            impressionId = ad.responseInfo.responseId.orEmpty(),
+                            impressionId = loadedResponseInfo.responseId.orEmpty(),
                         ),
                     )
                 }
@@ -181,14 +184,14 @@ internal fun loadAndTrackRewardedAdInternal(
                     adFormat = AdFormat.REWARDED,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                 )
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.REWARDED,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
                 )
                 loadCallback?.onAdLoaded(ad)
@@ -228,15 +231,16 @@ internal fun loadAndTrackRewardedInterstitialAdInternal(
         adRequest,
         object : RewardedInterstitialAdLoadCallback() {
             override fun onAdLoaded(ad: RewardedInterstitialAd) {
+                val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
                     adTracker.trackAdLoaded(
                         AdLoadedData(
-                            networkName = ad.responseInfo.mediationAdapterClassName,
+                            networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.REWARDED_INTERSTITIAL,
                             placement = placement,
                             adUnitId = adUnitId,
-                            impressionId = ad.responseInfo.responseId.orEmpty(),
+                            impressionId = loadedResponseInfo.responseId.orEmpty(),
                         ),
                     )
                 }
@@ -245,14 +249,14 @@ internal fun loadAndTrackRewardedInterstitialAdInternal(
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                 )
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = { ad.responseInfo },
+                    responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
                 )
                 loadCallback?.onAdLoaded(ad)
