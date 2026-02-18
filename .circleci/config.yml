@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -152,6 +152,24 @@ commands:
             bundle exec fastlane android build_paywall_tester_bundle
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save_gradle_cache
+      - android/save_build_cache
+
+  build-rct-tester:
+    steps:
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/rcttester
+          command: echo $RCT_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_rct_tester_bundle
+      - store_artifacts:
+          path: examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
 
@@ -508,6 +526,22 @@ jobs:
           name: Publish aab
           command: |
             bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
+
+  publish-rct-tester-release:
+    <<: *android-executor
+    parameters:
+      track:
+        type: string
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+      - run:
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -900,232 +934,239 @@ jobs:
 
 workflows:
   version: 2
-  danger:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
-      - revenuecat/danger
+  # TEMPORARILY COMMENTED OUT — only running rct-tester-dev for CI lane validation
+  # danger:
+  #   when:
+  #     and:
+  #       - not:
+  #           equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "default", << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - revenuecat/danger
+  #
+  # snapshot-deploy-manual:
+  #   when:
+  #     equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - deploy-snapshot:
+  #         context: maven-central-publishing
+  #
+  # snapshot-deploy-sample-app-tests:
+  #   when:
+  #     and:
+  #       - not:
+  #           equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "main", << pipeline.git.branch >> ]
+  #       - equal: [ "default", << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - deploy-snapshot:
+  #         context: maven-central-publishing
+  #     - assemble-magic-weather-compose-sample-app:
+  #         requires:
+  #           - deploy-snapshot
+  #     - assemble-custom-entitlement-computation-sample-app:
+  #         requires:
+  #           - deploy-snapshot
+  #     - assemble-admob-integration-sample-app
+  #
+  # build-test-deploy:
+  #   when:
+  #     and:
+  #       - not:
+  #           equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "default", << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - prepare-tests
+  #     - test:
+  #         name: test_defaults_bc8_debug
+  #         flavor: "defaults"
+  #         bc_version: "bc8"
+  #         build_type: "debug"
+  #         requires:
+  #           - prepare-tests
+  #     - test:
+  #         name: test_defaults_bc7_release
+  #         flavor: "defaults"
+  #         bc_version: "bc7"
+  #         build_type: "release"
+  #         requires:
+  #           - prepare-tests
+  #     - test:
+  #         name: test_cec_<< matrix.build_type >>
+  #         flavor: "customEntitlementComputation"
+  #         bc_version: "bc8"
+  #         requires:
+  #           - prepare-tests
+  #         matrix:
+  #           parameters:
+  #             build_type: ["debug", "release"]
+  #     # Special case for defaults BC8 release with kover
+  #     - test:
+  #         name: test_defaults_bc8_release
+  #         flavor: "defaults"
+  #         bc_version: "bc8"
+  #         build_type: "release"
+  #         run_kover: true
+  #         requires:
+  #           - prepare-tests
+  #     - verify-compatibility:
+  #         requires:
+  #           - prepare-tests
+  #     - lint:
+  #         requires:
+  #           - prepare-tests
+  #     - detekt:
+  #         requires:
+  #           - prepare-tests
+  #     - metalava:
+  #         requires:
+  #           - prepare-tests
+  #     - assemble-purchase-tester:
+  #         requires:
+  #           - prepare-tests
+  #     - assemble-paywall-tester-release:
+  #         requires:
+  #           - prepare-tests
+  #     - assemble-admob-integration-sample-app:
+  #         requires:
+  #           - prepare-tests
+  #     - test_dokka_hide_internal:
+  #         requires:
+  #           - prepare-tests
+  #     - run-backend-integration-tests:
+  #         requires:
+  #           - prepare-tests
+  #     - record-and-upload-paparazzi-revenuecatui-snapshots:
+  #         requires:
+  #           - prepare-tests
+  #     - run-revenuecatui-ui-tests:
+  #         requires:
+  #           - prepare-tests
+  #     - emerge_purchases_ui_snapshot_tests:
+  #         requires:
+  #           - prepare-tests
+  #     - emerge_size_analysis_tests:
+  #         requires:
+  #           - prepare-tests
+  #     - run-maestro-e2e-tests:
+  #         requires:
+  #           - prepare-tests
+  #     - integration-tests-build: *release-branches
+  #     - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
+  #         <<: *release-branches
+  #     - run-firebase-tests-purchases-integration-tests:
+  #         <<: *release-branches
+  #         context:
+  #           - slack-secrets
+  #         matrix:
+  #           parameters:
+  #             backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+  #     - run-firebase-tests:
+  #         requires:
+  #           - integration-tests-build
+  #     - hold:
+  #         type: approval
+  #         requires:
+  #           - test_defaults_bc8_debug
+  #           - test_defaults_bc8_release
+  #           - test_defaults_bc7_release
+  #           - test_cec_debug
+  #           - test_cec_release
+  #           - assemble-purchase-tester
+  #           - assemble-paywall-tester-release
+  #           - run-backend-integration-tests
+  #           - run-maestro-e2e-tests
+  #           - run-revenuecatui-ui-tests
+  #           - run-firebase-tests
+  #           - run-firebase-tests-purchases-integration-tests
+  #           - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+  #           - verify-compatibility
+  #         <<: *release-branches
+  #     - revenuecat/tag-current-branch:
+  #         requires:
+  #           - hold
+  #         <<: *release-branches
+  #     - deploy:
+  #         <<: *release-tags
+  #         context: maven-central-publishing
+  #     - docs-deploy: *release-tags
+  #     - publish-purchase-tester-release:
+  #         requires:
+  #           - deploy
+  #           - docs-deploy
+  #         <<: *release-tags
+  #     - publish-paywall-tester-release:
+  #         track: "alpha"
+  #         requires:
+  #             - deploy
+  #             - docs-deploy
+  #         <<: *release-tags
+  #
+  # on-main-branch:
+  #   when:
+  #     and:
+  #       - not:
+  #           equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "main", << pipeline.git.branch >> ]
+  #       - equal: [ "default", << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - prepare-next-version
+  #     - publish-paywall-tester-release:
+  #         track: "internal"
+  #     - record-and-push-paywall-template-screenshots:
+  #         context:
+  #           - paywall-rendering-validation-pr-rw
+  #
+  # daily-load-shedder-integration-tests:
+  #   when:
+  #     and:
+  #       - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+  #   jobs:
+  #     - run-firebase-tests-purchases-integration-tests:
+  #         backend_environment: "load_shedder_us_east_1"
+  #         context:
+  #           - slack-secrets
+  #     - run-firebase-tests-purchases-integration-tests:
+  #         backend_environment: "load_shedder_us_east_2"
+  #         context:
+  #           - slack-secrets
+  #
+  # weekly-run-workflow:
+  #   when:
+  #     and:
+  #       - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+  #       - equal: [ "release-train", << pipeline.schedule.name >> ]
+  #   jobs:
+  #     - revenuecat/automatic-bump
+  #
+  # manual-trigger-bump:
+  #   when:
+  #     equal: [ bump, << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - revenuecat/automatic-bump
+  #
+  # manual-paywall-tester-release:
+  #   when:
+  #     equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
+  #   jobs:
+  #       - publish-paywall-tester-release:
+  #           track: "alpha"
 
-  snapshot-deploy-manual:
-    when:
-      equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
+  # Temporary workflow — remove once CI lane is validated
+  rct-tester-dev:
     jobs:
-      - deploy-snapshot:
-          context: maven-central-publishing
-
-  snapshot-deploy-sample-app-tests:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
-      - deploy-snapshot:
-          context: maven-central-publishing
-      - assemble-magic-weather-compose-sample-app:
-          requires:
-            - deploy-snapshot
-      - assemble-custom-entitlement-computation-sample-app:
-          requires:
-            - deploy-snapshot
-      - assemble-admob-integration-sample-app
-
-  build-test-deploy:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
-      - prepare-tests
-      - test:
-          name: test_defaults_bc8_debug
-          flavor: "defaults"
-          bc_version: "bc8"
-          build_type: "debug"
-          requires:
-            - prepare-tests
-      - test:
-          name: test_defaults_bc7_release
-          flavor: "defaults"
-          bc_version: "bc7"
-          build_type: "release"
-          requires:
-            - prepare-tests
-      - test:
-          name: test_cec_<< matrix.build_type >>
-          flavor: "customEntitlementComputation"
-          bc_version: "bc8"
-          requires:
-            - prepare-tests
-          matrix:
-            parameters:
-              build_type: ["debug", "release"]
-      # Special case for defaults BC8 release with kover
-      - test:
-          name: test_defaults_bc8_release
-          flavor: "defaults"
-          bc_version: "bc8"
-          build_type: "release"
-          run_kover: true
-          requires:
-            - prepare-tests
-      - verify-compatibility:
-          requires:
-            - prepare-tests
-      - lint:
-          requires:
-            - prepare-tests
-      - detekt:
-          requires:
-            - prepare-tests
-      - metalava:
-          requires:
-            - prepare-tests
-      - assemble-purchase-tester:
-          requires:
-            - prepare-tests
-      - assemble-paywall-tester-release:
-          requires:
-            - prepare-tests
-      - assemble-admob-integration-sample-app:
-          requires:
-            - prepare-tests
-      - test_dokka_hide_internal:
-          requires:
-            - prepare-tests
-      - run-backend-integration-tests:
-          requires:
-            - prepare-tests
-      - record-and-upload-paparazzi-revenuecatui-snapshots:
-          requires:
-            - prepare-tests
-      - run-revenuecatui-ui-tests:
-          requires:
-            - prepare-tests
-      - emerge_purchases_ui_snapshot_tests:
-          requires:
-            - prepare-tests
-      - emerge_size_analysis_tests:
-          requires:
-            - prepare-tests
-      - run-maestro-e2e-tests:
-          requires:
-            - prepare-tests
-      - integration-tests-build: *release-branches
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          <<: *release-branches
-      - run-firebase-tests-purchases-integration-tests:
-          <<: *release-branches
-          context:
-            - slack-secrets
-          matrix:
-            parameters:
-              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
-      - hold:
-          type: approval
-          requires:
-            - test_defaults_bc8_debug
-            - test_defaults_bc8_release
-            - test_defaults_bc7_release
-            - test_cec_debug
-            - test_cec_release
-            - assemble-purchase-tester
-            - assemble-paywall-tester-release
-            - run-backend-integration-tests
-            - run-maestro-e2e-tests
-            - run-revenuecatui-ui-tests
-            - run-firebase-tests
-            - run-firebase-tests-purchases-integration-tests
-            - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
-            - verify-compatibility
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
-          requires:
-            - hold
-          <<: *release-branches
-      - deploy:
-          <<: *release-tags
-          context: maven-central-publishing
-      - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
-          requires:
-            - deploy
-            - docs-deploy
-          <<: *release-tags
-      - publish-paywall-tester-release:
-          track: "alpha"
-          requires:
-              - deploy
-              - docs-deploy
-          <<: *release-tags
-
-  on-main-branch:
-    when:
-      and:
-        - not:
-            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
-        - equal: [ "default", << pipeline.parameters.action >> ]
-    jobs:
-      - prepare-next-version
-      - publish-paywall-tester-release:
+      - publish-rct-tester-release:
           track: "internal"
-      - record-and-push-paywall-template-screenshots:
-          context:
-            - paywall-rendering-validation-pr-rw
 
-  daily-load-shedder-integration-tests:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
-    jobs:
-      - run-firebase-tests-purchases-integration-tests:
-          backend_environment: "load_shedder_us_east_1"
-          context:
-            - slack-secrets
-      - run-firebase-tests-purchases-integration-tests:
-          backend_environment: "load_shedder_us_east_2"
-          context:
-            - slack-secrets
-
-  weekly-run-workflow:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "release-train", << pipeline.schedule.name >> ]
-    jobs:
-      - revenuecat/automatic-bump
-
-  manual-trigger-bump:
-    when:
-      equal: [ bump, << pipeline.parameters.action >> ]
-    jobs:
-      - revenuecat/automatic-bump
-
-  manual-paywall-tester-release:
-    when:
-      equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
-    jobs:
-        - publish-paywall-tester-release:
-            track: "alpha"
-
-  update-paywall-templates:
-    when:
-      equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
-    jobs:
-      - update-paywall-preview-resources-submodule
-
-  manual-update-golden-requests-backend-integration-tests:
-    when:
-      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
-    jobs:
-      - update-golden-requests-backend-integration-tests
+  # update-paywall-templates:
+  #   when:
+  #     equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - update-paywall-preview-resources-submodule
+  #
+  # manual-update-golden-requests-backend-integration-tests:
+  #   when:
+  #     equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
+  #   jobs:
+  #     - update-golden-requests-backend-integration-tests
