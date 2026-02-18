@@ -292,9 +292,9 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         ),
                         ComponentOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.Package(
-                                    operator = ComponentOverride.EqualityOperator.EQUALS,
-                                    packageId = "monthly",
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = false,
                                 ),
                             ),
                             properties = PartialTextComponent(fontName = multipleIntroOffers),
@@ -366,9 +366,9 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             ),
                             PresentedOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.Package(
-                                        operator = ComponentOverride.EqualityOperator.EQUALS,
-                                        packageId = "monthly",
+                                    ComponentOverride.Condition.PromoOffer(
+                                        operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                        value = false,
                                     ),
                                 ),
                                 properties = LocalizedTextPartial(
