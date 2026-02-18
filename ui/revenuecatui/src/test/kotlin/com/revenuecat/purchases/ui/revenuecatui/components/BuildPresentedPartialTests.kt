@@ -165,13 +165,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             }
             introOffer?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                     properties = it,
                 ))
             }
             promoOffer?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.PromoOffer),
+                    conditions = listOf(ComponentOverride.Condition.PromoOffer()),
                     properties = it,
                 ))
             }
