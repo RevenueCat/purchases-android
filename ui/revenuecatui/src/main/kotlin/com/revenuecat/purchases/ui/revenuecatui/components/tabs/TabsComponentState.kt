@@ -11,7 +11,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -30,6 +32,7 @@ internal fun rememberUpdatedTabsComponentState(
 ): TabsComponentState = rememberUpdatedTabsComponentState(
     style = style,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
 @Stable
@@ -38,6 +41,7 @@ internal fun rememberUpdatedTabsComponentState(
 private fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -46,6 +50,7 @@ private fun rememberUpdatedTabsComponentState(
             initialWindowSize = windowSize,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
         update(windowSize = windowSize)
@@ -57,6 +62,7 @@ internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TabsComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -74,7 +80,10 @@ internal class TabsComponentState(
             windowCondition,
             offerEligibility,
             componentState,
-            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
         )
     }
 

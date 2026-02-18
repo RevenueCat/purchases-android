@@ -14,7 +14,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
@@ -36,6 +38,7 @@ internal fun rememberUpdatedIconComponentState(
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
 @Stable
@@ -46,6 +49,7 @@ private fun rememberUpdatedIconComponentState(
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -58,12 +62,14 @@ private fun rememberUpdatedIconComponentState(
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
         update(windowSize = windowSize)
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
@@ -72,6 +78,7 @@ internal class IconComponentState(
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -92,7 +99,10 @@ internal class IconComponentState(
             windowCondition,
             packageAwareDelegate.offerEligibility,
             componentState,
-            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
         )
     }
     private val baseUrl: String by derivedStateOf {

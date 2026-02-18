@@ -116,6 +116,13 @@ internal sealed interface PaywallState {
             private val purchases: PurchasesType,
         ) : Loaded {
 
+            /**
+             * Custom variables merged from dashboard defaults and developer-provided overrides.
+             * Developer-provided values take precedence.
+             */
+            val mergedCustomVariables: Map<String, CustomVariableValue> =
+                defaultCustomVariables + customVariables
+
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
                 val packagesByTab: Map<Int, List<Info>>,
