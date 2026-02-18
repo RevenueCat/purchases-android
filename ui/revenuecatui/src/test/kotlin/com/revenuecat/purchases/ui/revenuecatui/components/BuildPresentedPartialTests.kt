@@ -45,6 +45,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val offerEligibility: OfferEligibility,
         val state: ComponentViewState,
         val expected: LocalizedTextPartial?,
+        val selectedPackageId: String? = null,
     )
 
     @Suppress("LargeClass")
@@ -819,6 +820,113 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = selectedPartial,
                 ),
             ),
+
+            // SelectedPackage condition tests
+            arrayOf(
+                "selected_package in: should apply when selected package is in the list",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.IN,
+                                    packages = listOf("monthly", "annual"),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    selectedPackageId = "monthly",
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "selected_package in: should not apply when selected package is not in the list",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.IN,
+                                    packages = listOf("monthly", "annual"),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    selectedPackageId = "weekly",
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "selected_package not_in: should apply when selected package is not in the list",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.NOT_IN,
+                                    packages = listOf("trial"),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    selectedPackageId = "monthly",
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "selected_package not_in: should not apply when selected package is in the list",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.NOT_IN,
+                                    packages = listOf("trial"),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    selectedPackageId = "trial",
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "selected_package: should not apply when no package is selected",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.IN,
+                                    packages = listOf("monthly"),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    selectedPackageId = null,
+                    expected = null,
+                ),
+            ),
         )
     }
 
@@ -829,6 +937,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             windowSize = args.windowSize,
             offerEligibility = args.offerEligibility,
             state = args.state,
+            selectedPackageId = args.selectedPackageId,
         )
 
         // Assert

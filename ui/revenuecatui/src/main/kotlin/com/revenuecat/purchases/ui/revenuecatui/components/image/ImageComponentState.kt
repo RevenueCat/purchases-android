@@ -122,7 +122,12 @@ internal class ImageComponentState(
         val componentState =
             if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+        )
     }
     private val themeImageUrls: ThemeImageUrls by derivedStateOf {
         val localeId = localeProvider().toLocaleId()

@@ -70,7 +70,12 @@ internal class TabsComponentState(
         val windowCondition = ScreenCondition.from(windowSize)
         val componentState = ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            offerEligibility,
+            componentState,
+            selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+        )
     }
 
     @get:JvmSynthetic
