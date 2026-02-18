@@ -106,16 +106,19 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
             ComponentOverride.Condition.MultiplePhaseOffers -> {
                 if (!offerEligibility.hasMultipleDiscountedPhases) return false
             }
-            ComponentOverride.Condition.IntroOffer -> {
+            is ComponentOverride.Condition.IntroOffer -> {
                 if (!offerEligibility.isIntroOffer) return false
             }
             ComponentOverride.Condition.Selected -> {
                 if (state != ComponentViewState.SELECTED) return false
             }
-            ComponentOverride.Condition.PromoOffer -> {
+            is ComponentOverride.Condition.PromoOffer -> {
                 if (!offerEligibility.isPromoOffer) return false
             }
-            ComponentOverride.Condition.Unsupported -> {
+            is ComponentOverride.Condition.SelectedPackage,
+            is ComponentOverride.Condition.Variable,
+            ComponentOverride.Condition.Unsupported,
+            -> {
                 return false
             }
         }
