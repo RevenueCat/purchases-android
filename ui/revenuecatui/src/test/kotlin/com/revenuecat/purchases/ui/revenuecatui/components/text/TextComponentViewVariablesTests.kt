@@ -1450,6 +1450,7 @@ internal class TextComponentViewVariablesTests(
             )
         }
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1496,7 +1497,7 @@ internal class TextComponentViewVariablesTests(
 
         // Assert
         // Select the first package to make sure the variables reflect its values.
-        state.update(selectedPackage = packages.first())
+        state.update(packages.first().identifier)
 
         onNodeWithTag("text")
             .onChild()

@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -58,6 +59,7 @@ class SubscriberAttributesPurchasesTests {
     private val customerInfoUpdateHandlerMock = mockk<CustomerInfoUpdateHandler>()
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
+    private val localTransactionMetadataStore = mockk<LocalTransactionMetadataStore>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
     private val fontLoaderMock = mockk<FontLoader>()
     private val virtualCurrencyManagerMock = mockk<VirtualCurrencyManager>()
@@ -95,6 +97,7 @@ class SubscriberAttributesPurchasesTests {
             SyncDispatcher(),
             identityManager,
             postTransactionHelper,
+            postReceiptHelperMock,
         )
 
         val context = mockk<Application>(relaxed = true).also { applicationMock = it }
@@ -135,7 +138,14 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock, customerInfoUpdateHandlerMock, offeringsManagerMock, fontLoaderMock)
+        clearMocks(
+            customerInfoHelperMock,
+            customerInfoUpdateHandlerMock,
+            offeringsManagerMock,
+            fontLoaderMock,
+            localTransactionMetadataStore,
+            postReceiptHelperMock,
+        )
     }
 
     @Test
@@ -251,6 +261,9 @@ class SubscriberAttributesPurchasesTests {
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
+        every {
+            eventsManagerMock.debugEventListener
+        } returns null
         underTest.purchasesOrchestrator.onAppBackgrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
@@ -318,6 +331,27 @@ class SubscriberAttributesPurchasesTests {
     fun `setAirbridgeDeviceID`() {
         attributionIDTest(SubscriberAttributeKey.AttributionIds.Airbridge) { parameter ->
             underTest.setAirbridgeDeviceID(parameter)
+        }
+    }
+
+    @Test
+    fun `setSolarEngineDistinctId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId) { parameter ->
+            underTest.setSolarEngineDistinctId(parameter)
+        }
+    }
+
+    @Test
+    fun `setSolarEngineAccountId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineAccountId) { parameter ->
+            underTest.setSolarEngineAccountId(parameter)
+        }
+    }
+
+    @Test
+    fun `setSolarEngineVisitorId`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId) { parameter ->
+            underTest.setSolarEngineVisitorId(parameter)
         }
     }
 

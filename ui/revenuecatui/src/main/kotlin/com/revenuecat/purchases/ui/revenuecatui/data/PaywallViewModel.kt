@@ -12,13 +12,19 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -29,8 +35,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
@@ -59,11 +67,14 @@ internal interface PaywallViewModel {
     val resourceProvider: ResourceProvider
     val actionInProgress: State<Boolean>
     val actionError: State<PurchasesError?>
+    val purchaseCompleted: State<Boolean>
+    val preloadedExitOffering: State<Offering?>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
+    fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
     fun closePaywall()
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
@@ -74,15 +85,16 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
-    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?)
+    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer? = null)
 
     fun restorePurchases()
     suspend fun handleRestorePurchases()
 
     fun clearActionError()
+    fun preloadExitOffering()
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
@@ -91,6 +103,7 @@ internal class PaywallViewModelImpl(
     private var isDarkMode: Boolean,
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
+    private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -100,10 +113,16 @@ internal class PaywallViewModelImpl(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val purchaseCompleted: State<Boolean>
+        get() = _purchaseCompleted
+    override val preloadedExitOffering: State<Offering?>
+        get() = _preloadedExitOffering
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+    private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
+    private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -174,7 +193,52 @@ internal class PaywallViewModelImpl(
     override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
-        options.dismissRequest()
+        val exitOffering = if (!_purchaseCompleted.value) {
+            _preloadedExitOffering.value
+        } else {
+            null
+        }
+        if (exitOffering != null) {
+            trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
+        }
+        paywallPresentationData = null
+        val dismissWithExitOffering = options.dismissRequestWithExitOffering
+        if (dismissWithExitOffering != null) {
+            dismissWithExitOffering(exitOffering)
+        } else {
+            options.dismissRequest()
+        }
+    }
+
+    override fun preloadExitOffering() {
+        viewModelScope.launch {
+            try {
+                val currentState = _state.value
+                val currentOffering = when (currentState) {
+                    is PaywallState.Loaded.Legacy -> currentState.offering
+                    is PaywallState.Loaded.Components -> currentState.offering
+                    else -> null
+                }
+
+                val exitOfferingId = currentOffering?.paywallComponents
+                    ?.data?.exitOffers?.dismiss?.offeringId
+                _preloadedExitOffering.value = if (exitOfferingId != null) {
+                    val offerings = purchases.awaitOfferings()
+                    offerings[exitOfferingId].also { exitOffering ->
+                        if (exitOffering == null) {
+                            Logger.e(
+                                "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
+                                    "Exit offer will not be displayed.",
+                            )
+                        }
+                    }
+                } else {
+                    null
+                }
+            } catch (e: PurchasesException) {
+                Logger.e("Failed to preload exit offering", e)
+            }
+        }
     }
 
     @Suppress("ReturnCount")
@@ -240,6 +304,24 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking exit offer event")
+            return
+        }
+        val exitOfferEventData = eventData.copy(
+            exitOfferType = exitOfferType,
+            exitOfferingIdentifier = exitOfferingIdentifier,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = exitOfferEventData,
+            type = PaywallEventType.EXIT_OFFER,
+        )
+        purchases.track(event)
+    }
+
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     override suspend fun handleRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) {
@@ -262,6 +344,7 @@ internal class PaywallViewModelImpl(
 
                             shouldDisplayBlock?.let {
                                 if (!it(customerInfo)) {
+                                    _purchaseCompleted.value = true
                                     Logger.d(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
@@ -294,6 +377,7 @@ internal class PaywallViewModelImpl(
 
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
+                            _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             options.dismissRequest()
                         }
@@ -313,23 +397,30 @@ internal class PaywallViewModelImpl(
         finishAction()
     }
 
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
-                performPurchase(activity, selectedPackage.rcPackage)
+                performPurchase(
+                    activity = activity,
+                    packageToPurchase = selectedPackage.rcPackage,
+                    subscriptionOption = null,
+                )
             }
             is PaywallState.Loaded.Components -> {
-                // Purchase the provided package if not null, otherwise purchase the selected package.
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
+                        resolvedOffer = resolvedOffer,
+                        uniqueId = it.identifier,
+                        offerEligibility = calculateOfferEligibility(resolvedOffer, it),
                     )
                 } ?: currentState.selectedPackageInfo
-                performPurchaseIfNecessary(activity, selectedPackageInfo)
+                val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
+                performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
             }
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -341,16 +432,27 @@ internal class PaywallViewModelImpl(
     private suspend fun performPurchaseIfNecessary(
         activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
+        productChangeConfig: ProductChangeConfig?,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
         } else {
-            performPurchase(activity, packageInfo.rcPackage)
+            performPurchase(
+                activity = activity,
+                packageToPurchase = packageInfo.rcPackage,
+                productChangeConfig = productChangeConfig,
+                subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
+            )
         }
     }
 
-    @Suppress("LongMethod", "NestedBlockDepth")
-    private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+    @Suppress("LongMethod", "NestedBlockDepth", "CyclomaticComplexMethod")
+    private suspend fun performPurchase(
+        activity: Activity,
+        packageToPurchase: Package,
+        productChangeConfig: ProductChangeConfig? = null,
+        subscriptionOption: SubscriptionOption?,
+    ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCoroutine { continuation ->
@@ -367,6 +469,12 @@ internal class PaywallViewModelImpl(
         try {
             val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
+            trackPaywallPurchaseInitiated(packageToPurchase)
+
+            val productChangeInfo = productChangeConfig?.let {
+                productChangeCalculator.calculateProductChangeInfo(packageToPurchase, it)
+            }
+
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
                     checkNotNull(customPurchaseHandler) {
@@ -376,6 +484,7 @@ internal class PaywallViewModelImpl(
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
+                            _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after purchase")
                             options.dismissRequest()
                         }
@@ -383,7 +492,10 @@ internal class PaywallViewModelImpl(
                             trackPaywallCancel()
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let {
+                                trackPaywallPurchaseError(packageToPurchase, it)
+                                _actionError.value = it
+                            }
                         }
                     }
                 }
@@ -396,9 +508,27 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+
+                    // Use subscription option from resolved offer if available, otherwise use package
+                    val purchaseParamsBuilder = if (subscriptionOption != null) {
+                        PurchaseParams.Builder(activity, subscriptionOption)
+                            .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
+                    } else {
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    }
+
+                    if (productChangeInfo != null) {
+                        Logger.d(
+                            "Performing product change from ${productChangeInfo.oldProductId} " +
+                                "with mode ${productChangeInfo.replacementMode}",
+                        )
+                        purchaseParamsBuilder
+                            .oldProductId(productChangeInfo.oldProductId)
+                            .googleReplacementMode(productChangeInfo.replacementMode)
+                    }
+
+                    val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
+                    _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()
@@ -412,6 +542,7 @@ internal class PaywallViewModelImpl(
                 trackPaywallCancel()
                 listener?.onPurchaseCancelled()
             } else {
+                trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
                 _actionError.value = e.error
             }
@@ -526,6 +657,8 @@ internal class PaywallViewModelImpl(
                 storefrontCountryCode = storefrontCountryCode,
                 dateProvider = { Date() },
                 purchases = purchases,
+                customVariables = options.customVariables,
+                defaultCustomVariables = extractDefaultCustomVariables(offering),
             )
         }
     }
@@ -550,8 +683,57 @@ internal class PaywallViewModelImpl(
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
-            paywallPresentationData = null
         }
+    }
+
+    private fun trackPaywallPurchaseInitiated(rcPackage: Package) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase initiated event")
+            return
+        }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
+        val purchaseInitiatedEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = productId,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseInitiatedEventData,
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+        purchases.track(event)
+    }
+
+    private fun trackPaywallPurchaseError(rcPackage: Package, error: PurchasesError) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking purchase error event")
+            return
+        }
+        val product = rcPackage.product
+        val productId = if (product is GoogleStoreProduct) {
+            product.productId
+        } else {
+            product.id
+        }
+        val purchaseErrorEventData = eventData.copy(
+            packageIdentifier = rcPackage.identifier,
+            productIdentifier = productId,
+            errorCode = error.code.code,
+            errorMessage = error.message,
+        )
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = purchaseErrorEventData,
+            type = PaywallEventType.PURCHASE_ERROR,
+        )
+        purchases.track(event)
     }
 
     private fun trackPaywallCancel() {
@@ -594,9 +776,11 @@ internal class PaywallViewModelImpl(
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
+        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.data?.id
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
-            offeringIdentifier = offering.identifier,
+            paywallIdentifier = paywallId,
+            presentedOfferingContext = offering.presentedOfferingContext,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -612,7 +796,8 @@ internal class PaywallViewModelImpl(
             return null
         }
         return PaywallEvent.Data(
-            offeringIdentifier = offering.identifier,
+            paywallIdentifier = paywallData.data.id,
+            presentedOfferingContext = offering.presentedOfferingContext,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -620,4 +805,15 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
         )
     }
+
+    /**
+     * Extracts default custom variable values from the offering's UiConfig.
+     */
+    private fun extractDefaultCustomVariables(offering: Offering): Map<String, CustomVariableValue> =
+        offering.paywallComponents?.uiConfig?.customVariables
+            ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
+            ?: emptyMap()
+
+    private val Offering.presentedOfferingContext: PresentedOfferingContext
+        get() = availablePackages.firstOrNull()?.presentedOfferingContext ?: PresentedOfferingContext(identifier)
 }

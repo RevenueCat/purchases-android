@@ -5,7 +5,9 @@ import android.util.AttributeSet
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
 
@@ -25,7 +27,7 @@ private class PaywallViewAPI {
         listener: PaywallListener,
         fontProvider: FontProvider,
         shouldDisplayDismissButton: Boolean?,
-        dismissHandler: () -> Unit,
+        purchaseLogic: PurchaseLogic,
     ) {
         PaywallView(context)
         PaywallView(context, attrs)
@@ -34,14 +36,30 @@ private class PaywallViewAPI {
         PaywallView(context, offering, listener)
         PaywallView(context, offering, listener, fontProvider)
         PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton)
-        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler)
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, dismissHandler = {})
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, purchaseLogic)
+        PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, purchaseLogic) {
+            // dismiss
+        }
+        PaywallView(
+            context,
+            offering,
+            listener,
+            fontProvider,
+            shouldDisplayDismissButton,
+            purchaseLogic,
+            dismissHandler = {},
+        )
     }
 
+    @Suppress("LongParameterList")
     fun checkMethods(
         paywallView: PaywallView,
         paywallListener: PaywallListener,
         dismissHandler: () -> Unit,
         presentedOfferingContext: PresentedOfferingContext?,
+        customVariables: Map<String, CustomVariableValue>,
+        purchaseLogic: PurchaseLogic,
     ) {
         paywallView.setPaywallListener(null)
         paywallView.setPaywallListener(paywallListener)
@@ -51,5 +69,8 @@ private class PaywallViewAPI {
         paywallView.setOfferingId("offering_id")
         paywallView.setOfferingId(null, presentedOfferingContext)
         paywallView.setOfferingId("offering_id", presentedOfferingContext)
+        paywallView.setCustomVariables(customVariables)
+        paywallView.setPurchaseLogic(null)
+        paywallView.setPurchaseLogic(purchaseLogic)
     }
 }

@@ -61,7 +61,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalVideoBackground
+import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -621,7 +621,7 @@ private fun MainStackComponent(
     if (nestedBadge == null && overlay == null) {
         if (backgroundStyle is BackgroundStyle.Video) {
             // Video backgrounds require a Box wrapper with explicit sizing
-            WithOptionalVideoBackground(
+            WithOptionalBackgroundOverlay(
                 state = state,
                 background = backgroundStyle,
                 shape = composeShape,
@@ -656,7 +656,7 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            WithOptionalVideoBackground(state, background = backgroundStyle) {
+            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
                 stack(Modifier.then(innerShapeModifier))
             }
 
@@ -674,7 +674,7 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            WithOptionalVideoBackground(state, background = backgroundStyle) {
+            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
                 stack(borderModifier.then(innerShapeModifier))
             }
             overlay()

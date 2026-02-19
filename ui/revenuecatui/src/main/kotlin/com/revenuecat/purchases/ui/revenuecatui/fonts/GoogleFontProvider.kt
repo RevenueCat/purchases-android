@@ -13,16 +13,16 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Poko
 @Immutable
-class GoogleFontProvider(
+public class GoogleFontProvider(
     /**
      * The resource ID of the font provider's certificate(s).
      */
-    @ArrayRes val certificates: Int,
-    val providerAuthority: String = "com.google.android.gms.fonts",
-    val providerPackage: String = "com.google.android.gms",
+    @ArrayRes public val certificates: Int,
+    public val providerAuthority: String = "com.google.android.gms.fonts",
+    public val providerPackage: String = "com.google.android.gms",
 ) : Parcelable {
 
-    fun toGoogleProvider(): GoogleFont.Provider {
+    public fun toGoogleProvider(): GoogleFont.Provider {
         return GoogleFont.Provider(
             providerAuthority,
             providerPackage,

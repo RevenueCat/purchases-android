@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
@@ -57,7 +58,6 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.delay
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -266,6 +266,8 @@ internal class PurchasesFactory(
 
             val paywallPresentedCache = PaywallPresentedCache()
 
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
+
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
@@ -275,6 +277,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
                 paywallPresentedCache,
+                localTransactionMetadataStore,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -289,6 +292,7 @@ internal class PurchasesFactory(
                 backendDispatcher,
                 identityManager,
                 postTransactionWithProductDetailsHelper,
+                postReceiptHelper,
             )
 
             val customerInfoHelper = CustomerInfoHelper(
@@ -493,7 +497,7 @@ internal class PurchasesFactory(
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 r?.let {
-                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+                    android.os.Process.setThreadPriority(Thread.NORM_PRIORITY)
                     r.run()
                 }
             }

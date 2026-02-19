@@ -20,7 +20,7 @@ import androidx.activity.result.contract.ActivityResultContract
  * }
  * ```
  */
-class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
+public class ShowCustomerCenter : ActivityResultContract<Unit, Unit>() {
     override fun createIntent(context: Context, input: Unit): Intent {
         return CustomerCenterActivity.createIntent(context)
     }

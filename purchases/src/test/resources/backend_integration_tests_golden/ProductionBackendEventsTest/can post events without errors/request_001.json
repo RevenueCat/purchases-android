@@ -28,6 +28,7 @@
         "app_user_id": "TEST_STATIC_VALUE",
         "session_id": "TEST_STATIC_VALUE",
         "offering_id": "TEST_STATIC_VALUE",
+        "paywall_id": "paywall_id",
         "paywall_revision": 1,
         "timestamp": "TEST_STATIC_VALUE",
         "display_mode": "FULL_SCREEN",

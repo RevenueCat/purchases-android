@@ -21,6 +21,7 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
@@ -64,6 +65,20 @@ platform :android do
   desc "Emerge snapshot tests"
   lane :emerge_purchases_ui_snapshot_tests do
     gradle(task: ":test-apps:testpurchasesuiandroidcompatibility:emergeUploadSnapshotBundleDebug")
+  end
+
+  desc "Emerge size tests"
+  lane :emerge_sdk_size_tests do
+     gradle_properties = {
+       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+       "RELEASE_SIGNING_ENABLED" => true
+     }
+     gradle(task: "publishToMavenLocal", properties: gradle_properties)
+     Dir.chdir("../test-apps/sdksizetesting/app") do
+         gradle(task: "emergeUploadReleaseApk")
+     end
   end
 
   desc "Replaces version numbers, updates changelog and creates PR"
@@ -261,6 +276,21 @@ platform :android do
     )
   end
 
+  desc "Build RCT tester app bundle"
+  lane :build_rct_tester_bundle do
+    build_bundle(
+      build_task: 'examples:rcttester:bundleBc8',
+      env_prefix: 'RCT_TESTER',
+      gradle_properties_prefix: 'rcTester'
+    )
+  end
+
+  desc "Publish RCT tester to the specified track on Google Play"
+  lane :publish_rct_tester do |options|
+    options[:package_name] = 'com.revenuecat.rcttester'
+    publish_to_track(options)
+  end
+
   desc "Build purchases module integration tests pointing to production"
   lane :build_default_purchases_integration_tests do |options|
     build_purchases_integration_tests(
@@ -381,7 +411,7 @@ platform :android do
   desc "Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'"
   lane :run_purchases_integration_tests do |options|
     backend_environment = options[:backend_environment] || UI.user_error!("Missing backend_environment parameter. Provide 'production', 'load_shedder_us_east_1', or 'load_shedder_us_east_2'")
-    
+
     unless ['production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'].include?(backend_environment)
       UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
     end
@@ -402,25 +432,45 @@ platform :android do
       active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
     end
 
-    begin
-      build_purchases_integration_tests(
-        app_name: app_name,
-        api_key: api_key,
-        google_purchase_token: google_purchase_token,
-        product_id_to_purchase: product_id_to_purchase,
-        base_plan_id_to_purchase: base_plan_id_to_purchase,
-        active_entitlements_to_verify: active_entitlements_to_verify,
-        backend_environment: backend_environment
-      )
+    build_purchases_integration_tests(
+      app_name: app_name,
+      api_key: api_key,
+      google_purchase_token: google_purchase_token,
+      product_id_to_purchase: product_id_to_purchase,
+      base_plan_id_to_purchase: base_plan_id_to_purchase,
+      active_entitlements_to_verify: active_entitlements_to_verify,
+      backend_environment: backend_environment
+    )
 
-      run_firebase_integration_tests(app_name)
-    rescue => exception
-      slack_backend_integration_test_results(environment: backend_environment, success: false)
-      raise
-    else
-      slack_backend_integration_test_results(environment: backend_environment, success: true)
-    ensure
-      ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
+    max_retries = 3
+    success = false
+    last_exception = nil
+
+    (1..max_retries).each do |attempt|
+      begin
+        UI.message("Attempt #{attempt} of #{max_retries}")
+
+        run_firebase_integration_tests(app_name)
+
+        success = true
+        last_exception = nil
+        break
+      rescue => exception
+        last_exception = exception
+        UI.error("Attempt #{attempt} failed: #{exception.message}")
+
+        if attempt < max_retries
+          UI.message("Retrying...")
+        else
+          UI.error("All #{max_retries} attempts failed")
+        end
+      end
+    end
+
+    slack_backend_integration_test_results(environment: backend_environment, success: success)
+    ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
+    if last_exception
+      raise last_exception
     end
   end
 
@@ -450,7 +500,7 @@ platform :android do
     sh "gcloud firebase test android run --type instrumentation \
           --app ../purchases/test_artifacts/#{app_name}-app.apk \
           --test ../purchases/test_artifacts/#{app_name}-test.apk \
-          --timeout 2m \
+          --timeout 10m \
           --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
           --results-bucket cloud-test-#{google_project_id}"
 
@@ -559,6 +609,13 @@ platform :android do
     gradle(
       project_dir: project_dir,
       task: task,
+    )
+  end
+
+  desc "Builds an AdMob Integration Sample APK"
+  lane :build_admob_integration_sample do |options|
+    gradle(
+      task: ":examples:admob-sample:assembleDebug",
     )
   end
 

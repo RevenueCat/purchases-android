@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "9147",
+    "Content-Length": "9421",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
     "server": "envoy"
@@ -81,6 +79,10 @@
           "inactive": "Inactive",
           "introductory_price": "Introductory Price",
           "invalid_email_error": "Please enter a valid email address",
+          "ios_promo_offer_button_free_trial": "{{ duration }} for free",
+          "ios_promo_offer_button_recurring_discount": "{{ price }} during {{ duration }}",
+          "ios_promo_offer_button_regular_price": "then {{ price }}",
+          "ios_promo_offer_button_upfront_payment": "{{ duration }} for {{ price }}",
           "last_charge_was": "Last charge: {{ price }}",
           "mac_app_store": "Mac App Store",
           "manage_subscription": "Manage your subscription",

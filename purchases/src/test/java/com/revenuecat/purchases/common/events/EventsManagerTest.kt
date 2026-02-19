@@ -1,11 +1,19 @@
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.purchases.common.events
 
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.common.AppConfig
@@ -46,7 +54,8 @@ class EventsManagerTest {
             date = Date(1699270688884)
         ),
         data = PaywallEvent.Data(
-            offeringIdentifier = "offeringID",
+            paywallIdentifier = "paywallID",
+            presentedOfferingContext = PresentedOfferingContext("offeringID"),
             paywallRevision = 5,
             sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
             displayMode = "footer",
@@ -71,6 +80,7 @@ class EventsManagerTest {
         timestamp = 1699270688884,
         networkName = "Google AdMob",
         mediatorName = AdMediatorName.AD_MOB,
+        adFormat = AdFormat.BANNER,
         placement = "banner_home",
         adUnitId = "ca-app-pub-123456",
         impressionId = "impression-id"
@@ -140,16 +150,36 @@ class EventsManagerTest {
         eventsManager.track(paywallEvent)
 
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent() + "\n"
         )
 
         eventsManager.track(paywallEvent.copy(type = PaywallEventType.CANCEL))
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
         )
+    }
+
+    /**
+     * We should remove this test once we support the purchase initiated event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase initiated event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_INITIATED))
+
+        checkFileExists(shouldExist = false)
+    }
+
+    /**
+     * We should remove this test once we support the purchase error event in the backend.
+     */
+    @Test
+    fun `tracking paywall purchase error event does not add it to file`() {
+        eventsManager.track(paywallEvent.copy(type = PaywallEventType.PURCHASE_ERROR))
+
+        checkFileExists(shouldExist = false)
     }
 
     @Test
@@ -159,7 +189,7 @@ class EventsManagerTest {
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
         )
     }
@@ -374,7 +404,16 @@ class EventsManagerTest {
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 
-    private fun mockBackendResponse(success: Boolean, shouldMarkAsSyncedOnError: Boolean = false) {
+    private fun checkFileExists(shouldExist: Boolean) {
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        assertThat(file.exists()).isEqualTo(shouldExist)
+    }
+
+    private fun mockBackendResponse(
+        success: Boolean,
+        shouldMarkAsSyncedOnError: Boolean = false,
+        underlyingErrorMessage: String? = null,
+    ) {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
@@ -383,7 +422,10 @@ class EventsManagerTest {
             if (success) {
                 successSlot.captured.invoke()
             } else {
-                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), shouldMarkAsSyncedOnError)
+                errorSlot.captured.invoke(
+                    PurchasesError(PurchasesErrorCode.UnknownError, underlyingErrorMessage),
+                    shouldMarkAsSyncedOnError,
+                )
             }
         }
     }
@@ -417,6 +459,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -425,7 +468,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -436,6 +479,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = null,
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -444,7 +488,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -455,6 +499,7 @@ class EventsManagerTest {
             timestamp = 1699270688885,
             networkName = "AppLovin",
             mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.NATIVE,
             placement = "interstitial",
             adUnitId = "ad-unit-789",
             impressionId = "impression-456"
@@ -463,7 +508,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","ad_format":"native","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -474,6 +519,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
@@ -485,7 +531,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
         )
     }
 
@@ -496,6 +542,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
@@ -504,7 +551,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
         )
     }
 
@@ -513,8 +560,8 @@ class EventsManagerTest {
         val adEvent = AdEvent.FailedToLoad(
             id = "ad-event-id-789",
             timestamp = 1699270688886,
-            networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             mediatorErrorCode = 123,
@@ -523,7 +570,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
         )
     }
 
@@ -535,6 +582,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -545,9 +593,9 @@ class EventsManagerTest {
         eventsManager.track(customerCenterImpressionEvent)
 
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES"}}""".trimIndent()
                 + "\n"
-                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
+                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
                 + "\n"
                 + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
@@ -562,6 +610,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123"
@@ -583,6 +632,7 @@ class EventsManagerTest {
             timestamp = 1699270688884,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.BANNER,
             placement = "banner",
             adUnitId = "ad-unit-1",
             impressionId = "impression-1"
@@ -593,6 +643,7 @@ class EventsManagerTest {
             timestamp = 1699270688885,
             networkName = "AppLovin",
             mediatorName = AdMediatorName.APP_LOVIN,
+            adFormat = AdFormat.INTERSTITIAL,
             placement = "interstitial",
             adUnitId = "ad-unit-2",
             impressionId = "impression-2"
@@ -603,6 +654,7 @@ class EventsManagerTest {
             timestamp = 1699270688886,
             networkName = "Google AdMob",
             mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
             placement = "rewarded",
             adUnitId = "ad-unit-3",
             impressionId = "impression-3",
@@ -730,7 +782,7 @@ class EventsManagerTest {
         for (i in 0 until 1700) {
             eventsManager.track(paywallEvent.copy(
                 data = paywallEvent.data.copy(
-                    offeringIdentifier = "offeringID_${i}_" + "x".repeat(1000),
+                    presentedOfferingContext = PresentedOfferingContext("offeringID_${i}_" + "x".repeat(1000)),
                 )
             ))
         }
@@ -752,5 +804,91 @@ class EventsManagerTest {
             // Should not throw exception
             assertThat(line).startsWith("{\"type\":")
         }
+    }
+
+    // Debug Event Listener Tests
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified when file size limit is reached`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        // Track enough events to trigger the file size limit
+        for (i in 0 until 7100) {
+            eventsManager.track(paywallEvent)
+        }
+
+        assertThat(receivedEvents).isNotEmpty
+        assertThat(receivedEvents.all { it.name == DebugEventName.FILE_SIZE_LIMIT_REACHED }).isTrue
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified on flush error`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = "Server returned 500",
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["errorCode"]).isEqualTo(PurchasesErrorCode.UnknownError.name)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).isEqualTo("Server returned 500")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error truncates underlyingErrorMessage to 80 chars`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        val longMessage = "A".repeat(120)
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = longMessage,
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).hasSize(80)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error omits underlyingErrorMessage when null`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties).doesNotContainKey("underlyingErrorMessage")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is not notified when no error occurs`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).isEmpty()
     }
 }

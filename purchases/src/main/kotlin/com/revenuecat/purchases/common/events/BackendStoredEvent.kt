@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.common.events
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -68,7 +70,11 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
 @JvmSynthetic
 internal fun PaywallEvent.toBackendStoredEvent(
     appUserID: String,
-): BackendStoredEvent {
+): BackendStoredEvent? {
+    if (type == PaywallEventType.PURCHASE_INITIATED || type == PaywallEventType.PURCHASE_ERROR) {
+        // WIP: We should implement support for these events in the backend.
+        return null
+    }
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -76,12 +82,19 @@ internal fun PaywallEvent.toBackendStoredEvent(
             type = type.value,
             appUserID = appUserID,
             sessionID = data.sessionIdentifier.toString(),
-            offeringID = data.offeringIdentifier,
+            offeringID = data.presentedOfferingContext.offeringIdentifier,
+            paywallID = data.paywallIdentifier,
             paywallRevision = data.paywallRevision,
             timestamp = creationData.date.time,
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            exitOfferType = data.exitOfferType?.value,
+            exitOfferingID = data.exitOfferingIdentifier,
+            packageID = data.packageIdentifier,
+            productID = data.productIdentifier,
+            errorCode = data.errorCode,
+            errorMessage = data.errorMessage,
         ),
     )
 }
@@ -148,7 +161,7 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
@@ -162,6 +175,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
             timestamp = timestamp,
             networkName = networkName,
             mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -171,7 +185,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Displayed.toBackendStoredEvent(
     appUserID: String,
@@ -185,6 +199,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
             timestamp = timestamp,
             networkName = networkName,
             mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -194,7 +209,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Revenue.toBackendStoredEvent(
     appUserID: String,
@@ -208,6 +223,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
             timestamp = timestamp,
             networkName = networkName,
             mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -220,7 +236,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Loaded.toBackendStoredEvent(
     appUserID: String,
@@ -234,6 +250,7 @@ internal fun AdEvent.Loaded.toBackendStoredEvent(
             timestamp = timestamp,
             networkName = networkName,
             mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,
@@ -243,7 +260,7 @@ internal fun AdEvent.Loaded.toBackendStoredEvent(
     )
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
     appUserID: String,
@@ -255,8 +272,8 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             version = eventVersion,
             type = type.value,
             timestamp = timestamp,
-            networkName = networkName,
             mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
             placement = placement,
             adUnitId = adUnitId,
             impressionId = impressionId,

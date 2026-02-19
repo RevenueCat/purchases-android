@@ -132,6 +132,7 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     if (name.contains("UnitTest") || name.contains("AndroidTest")) {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
+            freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI")
         }
     }
 }
@@ -200,6 +201,7 @@ dependencies {
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
+    androidTestImplementation(libs.leakcanary.android.instrumentation)
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))

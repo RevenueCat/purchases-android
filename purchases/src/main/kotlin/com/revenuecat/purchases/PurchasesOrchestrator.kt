@@ -155,6 +155,7 @@ internal class PurchasesOrchestrator(
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -191,6 +192,14 @@ internal class PurchasesOrchestrator(
     @get:Synchronized
     @set:Synchronized
     var customerCenterListener: CustomerCenterListener? = null
+
+    @get:Synchronized
+    @set:Synchronized
+    var trackedEventListener: TrackedEventListener? = null
+
+    @get:Synchronized
+    @set:Synchronized
+    var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -273,9 +282,12 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = true)
         }
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
+        debugEventListener?.onDebugEventReceived(
+            DebugEvent(name = DebugEventName.APP_BACKGROUNDED),
+        )
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
-        flushPaywallEvents(Delay.NONE)
+        flushEvents(Delay.NONE)
     }
 
     /** @suppress */
@@ -311,7 +323,7 @@ internal class PurchasesOrchestrator(
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             synchronizeSubscriberAttributesIfNeeded()
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushPaywallEvents(Delay.DEFAULT)
+            flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
@@ -322,6 +334,10 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        flushEvents(Delay.NONE)
     }
 
     fun redeemWebPurchase(
@@ -427,6 +443,7 @@ internal class PurchasesOrchestrator(
         amazonUserID: String,
         isoCurrencyCode: String?,
         price: Double?,
+        purchaseTime: Long?,
     ) {
         log(LogIntent.DEBUG) { PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID) }
 
@@ -444,16 +461,17 @@ internal class PurchasesOrchestrator(
 
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
+                    purchaseTime = purchaseTime,
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() },
+                    marketplace = null,
+                    storeUserID = amazonUserID,
                 )
                 postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
-                    amazonUserID,
                     receiptInfo,
                     this.allowSharingPlayStoreAccount,
                     appUserID,
-                    marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
                     {
                         log(LogIntent.PURCHASE) {
@@ -679,6 +697,7 @@ internal class PurchasesOrchestrator(
                                     isRestore = true,
                                     appUserID = appUserID,
                                     initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    sdkOriginated = false,
                                     onSuccess = { _, info ->
                                         log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
                                         if (sortedByTime.last() == purchase) {
@@ -830,6 +849,8 @@ internal class PurchasesOrchestrator(
         }
 
         eventsManager.track(event)
+
+        trackedEventListener?.onEventTracked(event)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -1039,6 +1060,36 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Airbridge,
             airbridgeDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineDistinctId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineDistinctId,
+            solarEngineDistinctId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineAccountId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineAccountId,
+            solarEngineAccountId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSolarEngineVisitorId") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
+            solarEngineVisitorId,
             appUserID,
             application,
         )
@@ -1282,8 +1333,14 @@ internal class PurchasesOrchestrator(
                 val isDeprecatedProductChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val deprecatedProductChangeListener: ProductChangeCallback?
+                val sdkOriginated: Boolean
 
                 synchronized(this@PurchasesOrchestrator) {
+                    sdkOriginated = purchases.all { purchase ->
+                        purchase.productIds.any {
+                            state.purchaseCallbacksByProductId.containsKey(it)
+                        }
+                    }
                     isDeprecatedProductChangeInProgress = state.deprecatedProductChangeCallback != null
                     if (isDeprecatedProductChangeInProgress) {
                         deprecatedProductChangeListener = getAndClearProductChangeCallback()
@@ -1299,12 +1356,13 @@ internal class PurchasesOrchestrator(
                     allowSharingPlayStoreAccount,
                     appUserID,
                     PostReceiptInitiationSource.PURCHASE,
+                    sdkOriginated = sdkOriginated,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )
 
                 // Synchronize paywall events after a new purchase
-                flushPaywallEvents(Delay.NONE)
+                flushEvents(Delay.NONE)
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
@@ -1589,7 +1647,7 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
-    private fun flushPaywallEvents(delay: Delay) {
+    private fun flushEvents(delay: Delay) {
         eventsManager.flushEvents(delay)
         adEventsManager.flushEvents(delay)
     }

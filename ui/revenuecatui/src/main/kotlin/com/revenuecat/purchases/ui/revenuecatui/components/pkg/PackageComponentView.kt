@@ -28,8 +28,8 @@ internal fun PackageComponentView(
         },
         modifier = modifier.conditional(style.isSelectable) {
             clickable(
-                enabled = state.selectedPackageInfo?.rcPackage != style.rcPackage,
-            ) { state.update(selectedPackage = style.rcPackage) }
+                enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
+            ) { state.update(selectedPackageUniqueId = style.uniqueId) }
         },
     )
 }

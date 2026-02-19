@@ -75,14 +75,14 @@ internal fun receiveCustomerInfoCallback(
  * @param [onError] Will be called after an error fetching offerings.
  */
 @Suppress("unused")
-fun Purchases.getOfferingsWith(
+public fun Purchases.getOfferingsWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (offerings: Offerings) -> Unit,
 ) {
     getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
-fun Purchases.purchaseWith(
+public fun Purchases.purchaseWith(
     purchaseParams: PurchaseParams,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
@@ -97,7 +97,7 @@ fun Purchases.purchaseWith(
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
  */
 @Suppress("unused")
-fun Purchases.getProductsWith(
+public fun Purchases.getProductsWith(
     productIds: List<String>,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit,
@@ -114,7 +114,7 @@ fun Purchases.getProductsWith(
  * have been able to be successfully fetched from the store. Not found products will be ignored.
  */
 @Suppress("unused")
-fun Purchases.getProductsWith(
+public fun Purchases.getProductsWith(
     productIds: List<String>,
     type: ProductType?,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
@@ -136,7 +136,7 @@ fun Purchases.getProductsWith(
  * @param [onSuccess] Will be called after the call has completed.
  * @param [onError] Will be called after the call has completed with an error.
  */
-fun Purchases.restorePurchasesWith(
+public fun Purchases.restorePurchasesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
@@ -150,7 +150,7 @@ fun Purchases.restorePurchasesWith(
  * @param [onError] Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-fun Purchases.getStorefrontCountryCodeWith(
+public fun Purchases.getStorefrontCountryCodeWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (storefrontCountryCode: String) -> Unit,
 ) {

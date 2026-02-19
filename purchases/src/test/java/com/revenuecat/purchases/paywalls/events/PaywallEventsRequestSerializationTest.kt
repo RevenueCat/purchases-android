@@ -24,6 +24,7 @@ class PaywallEventsRequestSerializationTest {
                 appUserID = "appUserID",
                 sessionID = "sessionID",
                 offeringID = "offeringID",
+                paywallID = "paywallID",
                 paywallRevision = 5,
                 timestamp = 123456789,
                 displayMode = "footer",
@@ -47,6 +48,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"app_user_id\":\"appUserID\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
                         "\"paywall_revision\":5," +
                         "\"timestamp\":123456789," +
                         "\"display_mode\":\"footer\"," +

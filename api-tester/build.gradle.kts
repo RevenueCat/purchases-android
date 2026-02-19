@@ -39,6 +39,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    defaultsImplementation(project(":feature:admob"))
+    defaultsImplementation(libs.google.mobile.ads)
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
 

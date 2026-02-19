@@ -39,7 +39,9 @@ internal sealed class Endpoint(
     object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    data class PostAttributes(val userId: String) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
+    data class PostAttributes(
+        val userId: String,
+    ) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
     data class GetAmazonReceipt(

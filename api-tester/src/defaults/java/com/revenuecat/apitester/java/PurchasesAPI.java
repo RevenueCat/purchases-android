@@ -132,6 +132,17 @@ final class PurchasesAPI {
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
     }
 
+    static void checkSyncAmazonPurchase(final Purchases purchases,
+                                        final String productId,
+                                        final String receiptId,
+                                        final String amazonUserId,
+                                        final String isoCurrencyCode,
+                                        final Double price,
+                                        final Long purchaseTime) {
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime);
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price);
+    }
+
     static void check(final Purchases purchases, final Map<String, String> attributes) {
         purchases.setAttributes(attributes);
         purchases.setEmail("");
@@ -151,6 +162,9 @@ final class PurchasesAPI {
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
         purchases.setAirbridgeDeviceID("");
+        purchases.setSolarEngineDistinctId("");
+        purchases.setSolarEngineAccountId("");
+        purchases.setSolarEngineVisitorId("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");

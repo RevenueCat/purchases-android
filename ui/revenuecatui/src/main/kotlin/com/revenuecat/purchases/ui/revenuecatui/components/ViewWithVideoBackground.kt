@@ -63,25 +63,3 @@ internal fun ViewWithVideoBackground(
         content()
     }
 }
-
-@Composable
-internal fun WithOptionalVideoBackground(
-    state: PaywallState.Loaded.Components,
-    background: BackgroundStyle?,
-    modifier: Modifier = Modifier,
-    shape: Shape = RectangleShape,
-    content: @Composable () -> Unit,
-) {
-    if (background is BackgroundStyle.Video) {
-        ViewWithVideoBackground(
-            state = state,
-            background = background,
-            shape = shape,
-            modifier = modifier,
-        ) {
-            content()
-        }
-    } else {
-        content()
-    }
-}
