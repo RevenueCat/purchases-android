@@ -63,7 +63,10 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
     return this.map { override ->
         if (override.conditions.any { it is ComponentOverride.Condition.Unsupported }) {
             val conditionTypes = override.conditions.joinToString(", ") { it.javaClass.simpleName }
-            Logger.w("Unsupported paywall condition encountered: [$conditionTypes]. Falling back to default paywall.")
+            Logger.w(
+                "Unsupported paywall condition encountered: " +
+                    "[$conditionTypes]. Falling back to default paywall.",
+            )
             return Result.Error(PaywallValidationError.UnsupportedCondition)
         }
 

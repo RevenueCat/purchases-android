@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.UnsupportedCondition
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -19,7 +20,12 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import org.junit.Assert.assertEquals
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -35,6 +41,17 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
         val transform: (PartialTextComponent) -> Result<LocalizedTextPartial, NonEmptyList<PaywallValidationError>>,
         val expected: Result<List<PresentedOverride<LocalizedTextPartial>>, PaywallValidationError>,
     )
+
+    @Before
+    fun setUp() {
+        mockkObject(Logger)
+        every { Logger.w(any()) } answers { }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(Logger)
+    }
 
     companion object {
         private val localeId = LocaleId("en_US")
