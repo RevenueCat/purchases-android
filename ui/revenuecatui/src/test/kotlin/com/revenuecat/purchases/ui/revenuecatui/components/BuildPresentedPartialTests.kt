@@ -1086,6 +1086,28 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "variable double: should apply when double variable matches",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Variable(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    variable = "score",
+                                    value = ComponentOverride.ConditionValue.DoubleValue(9.5),
+                                ),
+                            ),
+                            properties = selectedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    customVariables = mapOf("score" to CustomVariableValue.Number(9.5)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
                 "variable: type mismatch should not match",
                 Args(
                     availableOverrides = listOf(
