@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -152,6 +152,24 @@ commands:
             bundle exec fastlane android build_paywall_tester_bundle
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save_gradle_cache
+      - android/save_build_cache
+
+  build-rct-tester:
+    steps:
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/rcttester
+          command: echo $RCT_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_rct_tester_bundle
+      - store_artifacts:
+          path: examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
 
@@ -508,6 +526,31 @@ jobs:
           name: Publish aab
           command: |
             bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
+
+  assemble-rct-tester-release:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+
+  publish-rct-tester-release:
+    <<: *android-executor
+    parameters:
+      track:
+        type: string
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+      - run:
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -992,6 +1035,9 @@ workflows:
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+      - assemble-rct-tester-release:
+          requires:
+            - prepare-tests
       - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
@@ -1066,6 +1112,12 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - publish-rct-tester-release:
+          track: "alpha"
+          requires:
+              - deploy
+              - docs-deploy
+          <<: *release-tags
 
   on-main-branch:
     when:
@@ -1077,6 +1129,8 @@ workflows:
     jobs:
       - prepare-next-version
       - publish-paywall-tester-release:
+          track: "internal"
+      - publish-rct-tester-release:
           track: "internal"
       - record-and-push-paywall-template-screenshots:
           context:
@@ -1116,6 +1170,13 @@ workflows:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
         - publish-paywall-tester-release:
+            track: "alpha"
+
+  manual-rct-tester-release:
+    when:
+      equal: [ rct_tester_release, << pipeline.parameters.action >> ]
+    jobs:
+        - publish-rct-tester-release:
             track: "alpha"
 
   update-paywall-templates:
