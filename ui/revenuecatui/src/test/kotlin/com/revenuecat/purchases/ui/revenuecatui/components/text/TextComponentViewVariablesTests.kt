@@ -610,7 +610,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 1.00"
+                    "\$1.00"
                 )
 
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> arrayOf(
