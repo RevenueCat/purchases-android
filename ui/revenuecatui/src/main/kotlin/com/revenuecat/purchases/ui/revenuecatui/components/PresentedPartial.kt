@@ -7,6 +7,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
@@ -61,6 +62,8 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
     return this.map { override ->
         if (override.conditions.any { it is ComponentOverride.Condition.Unsupported }) {
+            val conditionTypes = override.conditions.joinToString(", ") { it.javaClass.simpleName }
+            Logger.w("Unsupported paywall condition encountered: [$conditionTypes]. Falling back to default paywall.")
             return Result.Error(PaywallValidationError.UnsupportedCondition)
         }
 
