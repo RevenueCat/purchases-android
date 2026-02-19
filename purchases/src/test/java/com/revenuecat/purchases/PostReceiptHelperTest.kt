@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
@@ -48,6 +49,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.UUID
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -82,6 +86,7 @@ class PostReceiptHelperTest {
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
+        purchaseTime = Date().time,
         presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "test-offering-identifier"),
         price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
         currency = mockStoreProduct.price.currencyCode,
@@ -100,16 +105,19 @@ class PostReceiptHelperTest {
     )
     private val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes()
     private val event = PaywallEvent(
-        creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+        creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
         data = PaywallEvent.Data(
-            "offering_id",
+            paywallIdentifier = "paywall_id",
+            PresentedOfferingContext("offering_id"),
             10,
             UUID.randomUUID(),
             "footer",
             "es_ES",
             false,
+            packageIdentifier = "test-package-id",
+            productIdentifier = mockGooglePurchase.products.first(),
         ),
-        type = PaywallEventType.CLOSE,
+        type = PaywallEventType.PURCHASE_INITIATED,
     )
 
     private lateinit var postedReceiptInfoSlot: CapturingSlot<ReceiptInfo>
@@ -183,6 +191,7 @@ class PostReceiptHelperTest {
 
         val expectedReceiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
+            purchaseTime = mockStoreTransaction.purchaseTime,
             presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
             price = mockStoreProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
             formattedPrice = mockStoreProduct.price.formatted,
@@ -194,6 +203,7 @@ class PostReceiptHelperTest {
                 mapOf("product_id" to "lifetime_product"),
                 mapOf("product_id" to "dos"),
             ),
+            sdkOriginated = false,
         )
 
         verify(exactly = 1) {
@@ -1425,7 +1435,7 @@ class PostReceiptHelperTest {
 
         mockPostReceiptSuccess()
 
-        paywallPresentedCache.cachePresentedPaywall(event)
+        paywallPresentedCache.receiveEvent(event)
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
@@ -1451,25 +1461,110 @@ class PostReceiptHelperTest {
                 onError = any()
             )
         }
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
     }
 
     @Test
-    fun `postReceipt keeps paywall data in cache if request fails`() {
-        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+    fun `postReceipt does not post paywall data if purchase product does not match paywall event`() {
+        mockPostReceiptSuccess()
 
-        paywallPresentedCache.cachePresentedPaywall(event)
+        paywallPresentedCache.receiveEvent(event)
+
+        val mockGooglePurchase2 = stubGooglePurchase(productIds = listOf("other_product"))
+        val mockStoreTransaction2 = mockGooglePurchase2.toStoreTransaction(
+            ProductType.SUBS,
+            null,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        every { billing.consumeAndSave(
+            finishTransactions = any(),
+            purchase = mockStoreTransaction2,
+            shouldConsume = any(),
+            initiationSource = initiationSource,
+        )
+        } just Runs
+
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
+            purchase = mockStoreTransaction2,
             storeProduct = mockStoreProduct,
             subscriptionOptionForProductIDs = null,
             isRestore = false,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            onSuccess = { _, _ -> fail("Should error") },
-            onError = { _, _ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
         )
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+    }
+
+    @Test
+    fun `postReceipt does not post paywall data if purchase timestamp before purchase initiated event`() {
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.receiveEvent(event)
+
+        val mockGooglePurchase2 = stubGooglePurchase(
+            productIds = listOf("lifetime_product", "dos"),
+            purchaseTime = 1.days.ago().time,
+        )
+        val mockStoreTransaction2 = mockGooglePurchase2.toStoreTransaction(
+            ProductType.SUBS,
+            null,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        every { billing.consumeAndSave(
+            finishTransactions = any(),
+            purchase = mockStoreTransaction2,
+            shouldConsume = any(),
+            initiationSource = initiationSource,
+        )
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction2,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
     }
 
     // endregion paywall data
@@ -1635,12 +1730,18 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded caches transaction metadata before posting`() {
         val expectedPaywallData = event.toPaywallPostReceiptData()
+        val transaction = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            PresentedOfferingContext("offering_id"),
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
 
-        paywallPresentedCache.cachePresentedPaywall(event)
-        mockPostReceiptSuccess()
+        paywallPresentedCache.receiveEvent(event)
+        mockPostReceiptSuccess(storeTransaction = transaction)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
+            purchase = transaction,
             storeProduct = mockStoreProduct,
             subscriptionOptionForProductIDs = null,
             isRestore = true,
@@ -1650,8 +1751,8 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
-            token = mockStoreTransaction.purchaseToken,
-            receiptInfo = ReceiptInfo.from(mockStoreTransaction, mockStoreProduct, emptyMap()),
+            token = transaction.purchaseToken,
+            receiptInfo = ReceiptInfo.from(transaction, mockStoreProduct, emptyMap(), sdkOriginated = false),
             paywallPostReceiptData = expectedPaywallData,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
@@ -1680,7 +1781,7 @@ class PostReceiptHelperTest {
         )
         val expectedTransactionMetadata = LocalTransactionMetadata(
             token = mockPendingStoreTransaction.purchaseToken,
-            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap()),
+            receiptInfo = ReceiptInfo.from(mockPendingStoreTransaction, mockStoreProduct, emptyMap(), sdkOriginated = false),
             paywallPostReceiptData = null,
             purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         )
@@ -1876,18 +1977,21 @@ class PostReceiptHelperTest {
         every { localTransactionMetadataStore.getLocalTransactionMetadata(mockStoreTransaction.purchaseToken) } returns cachedMetadata
 
         val presentedEvent = PaywallEvent(
-            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.minutes.ago()),
             data = PaywallEvent.Data(
-                "different_offering",
+                paywallIdentifier = "presented_paywall_id",
+                PresentedOfferingContext("different_offering") ,
                 20,
                 UUID.randomUUID(),
                 "header",
                 "en_US",
                 true,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockStoreTransaction.productIds.first(),
             ),
-            type = PaywallEventType.IMPRESSION,
+            type = PaywallEventType.PURCHASE_INITIATED,
         )
-        paywallPresentedCache.cachePresentedPaywall(presentedEvent)
+        paywallPresentedCache.receiveEvent(presentedEvent)
 
         mockPostReceiptSuccess()
 
@@ -1903,7 +2007,7 @@ class PostReceiptHelperTest {
         )
 
         // Verify we have not removed presented cache event when using cached value
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNotNull
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
 
         verify(exactly = 1) {
             backend.postReceiptData(
@@ -2055,6 +2159,151 @@ class PostReceiptHelperTest {
     }
 
     @Test
+    fun `postTransactionAndConsumeIfNeeded uses paywall presentedOfferingContext when receiptInfo context is null`() {
+        // Create a transaction without presentedOfferingContext
+        val transactionWithoutContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            null, // No presentedOfferingContext
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Create a paywall event with presentedOfferingContext
+        val paywallOfferingContext = PresentedOfferingContext("paywall_offering_id")
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywall_id",
+                paywallOfferingContext,
+                10,
+                UUID.randomUUID(),
+                "footer",
+                "es_ES",
+                false,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockGooglePurchase.products.first(),
+            ),
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+
+        paywallPresentedCache.receiveEvent(paywallEvent)
+        mockPostReceiptSuccess(storeTransaction = transactionWithoutContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithoutContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata uses the paywall's presentedOfferingContext
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithoutContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext)
+            .isEqualTo(paywallOfferingContext)
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded keeps receiptInfo as-is when both contexts are null`() {
+        // Create a transaction without presentedOfferingContext
+        val transactionWithoutContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            null, // No presentedOfferingContext
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Don't add any paywall event to the cache (no paywall context available)
+        mockPostReceiptSuccess(storeTransaction = transactionWithoutContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithoutContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata has null presentedOfferingContext
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithoutContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded preserves receiptInfo context when it already exists`() {
+        // Create a transaction with presentedOfferingContext
+        val transactionContext = PresentedOfferingContext("transaction_offering_id")
+        val transactionWithContext = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            transactionContext,
+            subscriptionOptionId,
+            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+        )
+
+        // Create a paywall event with a different presentedOfferingContext
+        val paywallOfferingContext = PresentedOfferingContext("paywall_offering_id")
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), 1.hours.ago()),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywall_id",
+                paywallOfferingContext,
+                10,
+                UUID.randomUUID(),
+                "footer",
+                "es_ES",
+                false,
+                packageIdentifier = "test-package-id",
+                productIdentifier = mockGooglePurchase.products.first(),
+            ),
+            type = PaywallEventType.PURCHASE_INITIATED,
+        )
+
+        paywallPresentedCache.receiveEvent(paywallEvent)
+        mockPostReceiptSuccess(storeTransaction = transactionWithContext)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = transactionWithContext,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        // Verify that the cached transaction metadata preserves the transaction's presentedOfferingContext
+        // (not overwritten by paywall's context)
+        val capturedMetadata = slot<LocalTransactionMetadata>()
+        verify(exactly = 1) {
+            localTransactionMetadataStore.cacheLocalTransactionMetadata(
+                transactionWithContext.purchaseToken,
+                capture(capturedMetadata),
+            )
+        }
+        assertThat(capturedMetadata.captured.receiptInfo.presentedOfferingContext)
+            .isEqualTo(transactionContext)
+    }
+
+    @Test
     fun `postTransactionAndConsumeIfNeeded passes current PurchasesAreCompletedBy when no cached metadata`() {
         mockPostReceiptSuccess()
 
@@ -2160,6 +2409,7 @@ class PostReceiptHelperTest {
         jsonBody: JSONObject = JSONObject(Responses.createFullCustomerResponse(productsInfo = purchasedProductsInfo)),
         postType: PostType = PostType.TRANSACTION_AND_CONSUME,
         postReceiptInitiationSource: PostReceiptInitiationSource = initiationSource,
+        storeTransaction: StoreTransaction = mockStoreTransaction,
     ) {
         every {
             backend.postReceiptData(
@@ -2190,7 +2440,7 @@ class PostReceiptHelperTest {
         if (postType == PostType.TRANSACTION_AND_CONSUME) {
             every { billing.consumeAndSave(
                 finishTransactions = any(),
-                purchase = mockStoreTransaction,
+                purchase = storeTransaction,
                 shouldConsume = any(),
                 initiationSource = postReceiptInitiationSource
             )
@@ -2298,6 +2548,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = {
                 onNoTransactionsToSyncCalled = true
             },
@@ -2349,6 +2600,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
             onSuccess = { customerInfo ->
@@ -2403,6 +2655,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
             onSuccess = { customerInfo ->
@@ -2456,6 +2709,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
             onSuccess = { }
@@ -2504,6 +2758,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { receivedError ->
                 assertThat(receivedError).isEqualTo(error)
@@ -2565,6 +2820,7 @@ class PostReceiptHelperTest {
         postReceiptHelper.postRemainingCachedTransactionMetadata(
             appUserID = appUserID,
             allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
             onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
             onError = { fail("Should not call onError") },
             onSuccess = {
@@ -2578,6 +2834,202 @@ class PostReceiptHelperTest {
         }
         verify(exactly = 1) {
             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token-2"))
+        }
+    }
+
+    @Test
+    fun `postRemainingCachedTransactionMetadata filters out pending transaction tokens`() {
+        val pendingToken = "pending-token"
+        val metadata = LocalTransactionMetadata(
+            token = pendingToken,
+            receiptInfo = testReceiptInfo,
+            paywallPostReceiptData = null,
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
+        )
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
+
+        var onNoTransactionsToSyncCalled = false
+        postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
+            allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = setOf(pendingToken),
+            onNoTransactionsToSync = {
+                onNoTransactionsToSyncCalled = true
+            },
+            onError = { fail("Should not call onError") },
+            onSuccess = { fail("Should not call onSuccess") }
+        )
+
+        assertThat(onNoTransactionsToSyncCalled).isTrue
+        verify(exactly = 0) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postRemainingCachedTransactionMetadata handles multiple pending and non-pending transactions`() {
+        val pendingToken1 = "pending-token-1"
+        val pendingToken2 = "pending-token-2"
+        val nonPendingToken1 = "non-pending-token-1"
+        val nonPendingToken2 = "non-pending-token-2"
+
+        val metadata = listOf(
+            LocalTransactionMetadata(
+                token = pendingToken1,
+                receiptInfo = testReceiptInfo,
+                paywallPostReceiptData = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
+            ),
+            LocalTransactionMetadata(
+                token = nonPendingToken1,
+                receiptInfo = testReceiptInfo,
+                paywallPostReceiptData = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
+            ),
+            LocalTransactionMetadata(
+                token = pendingToken2,
+                receiptInfo = testReceiptInfo,
+                paywallPostReceiptData = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
+            ),
+            LocalTransactionMetadata(
+                token = nonPendingToken2,
+                receiptInfo = testReceiptInfo,
+                paywallPostReceiptData = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
+            )
+        )
+
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns metadata
+        mockUnsyncedSubscriberAttributes()
+        every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
+        every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { deviceCache.addSuccessfullyPostedToken(any()) } just Runs
+        every { localTransactionMetadataStore.clearLocalTransactionMetadata(any()) } just Runs
+
+        every {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = appUserID,
+                isRestore = true,
+                finishTransactions = defaultFinishTransactions,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = testReceiptInfo,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                paywallPostReceiptData = null,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                PostReceiptResponse(defaultCustomerInfo, emptyMap(), JSONObject())
+            )
+        }
+
+        var successCalled = false
+        postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
+            allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = setOf(pendingToken1, pendingToken2),
+            onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
+            onError = { fail("Should not call onError") },
+            onSuccess = {
+                successCalled = true
+            }
+        )
+
+        assertThat(successCalled).isTrue
+
+        // Verify only non-pending tokens were posted
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = nonPendingToken1,
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = nonPendingToken2,
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        // Verify pending tokens were not posted
+        verify(exactly = 0) {
+            backend.postReceiptData(
+                purchaseToken = pendingToken1,
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        verify(exactly = 0) {
+            backend.postReceiptData(
+                purchaseToken = pendingToken2,
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                purchasesAreCompletedBy = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        // Verify only non-pending tokens were cleared
+        verify(exactly = 1) {
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(nonPendingToken1))
+        }
+        verify(exactly = 1) {
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(nonPendingToken2))
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(pendingToken1))
+        }
+        verify(exactly = 0) {
+            localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(pendingToken2))
         }
     }
 

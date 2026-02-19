@@ -7,7 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
 
 @InternalRevenueCatAPI
-fun CustomerCenterConfigData.Screen.resolveOffering(
+public fun CustomerCenterConfigData.Screen.resolveOffering(
     purchases: Purchases,
     onError: (error: PurchasesError) -> Unit = {},
     onSuccess: (offering: Offering?) -> Unit,

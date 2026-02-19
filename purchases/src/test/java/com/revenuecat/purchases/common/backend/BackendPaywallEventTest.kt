@@ -50,6 +50,7 @@ class BackendPaywallEventTest {
                 appUserID = "appUserID",
                 sessionID = "sessionID",
                 offeringID = "offeringID",
+                paywallID = "paywallID",
                 paywallRevision = 5,
                 timestamp = 123456789,
                 displayMode = "footer",
@@ -68,6 +69,7 @@ class BackendPaywallEventTest {
                 appUserID = "appUserID",
                 sessionID = "sessionID",
                 offeringID = "offeringID",
+                paywallID = "paywallID",
                 paywallRevision = 3,
                 timestamp = 123456789,
                 displayMode = "fullscreen",
@@ -136,6 +138,7 @@ class BackendPaywallEventTest {
                         "\"app_user_id\":\"appUserID\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
                         "\"paywall_revision\":5," +
                         "\"timestamp\":123456789," +
                         "\"display_mode\":\"footer\"," +
@@ -168,6 +171,7 @@ class BackendPaywallEventTest {
                         "\"app_user_id\":\"appUserID\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
                         "\"paywall_revision\":3," +
                         "\"timestamp\":123456789," +
                         "\"display_mode\":\"fullscreen\"," +

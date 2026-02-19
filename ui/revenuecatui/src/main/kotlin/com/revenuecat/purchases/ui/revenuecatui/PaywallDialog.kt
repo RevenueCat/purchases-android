@@ -42,7 +42,7 @@ private object UIDialogConstants {
  * @param paywallDialogOptions The options to configure the PaywallDialog and what to do on dismissal.
  */
 @Composable
-fun PaywallDialog(
+public fun PaywallDialog(
     paywallDialogOptions: PaywallDialogOptions,
 ) {
     val shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock
@@ -206,6 +206,7 @@ private fun buildPaywallOptions(
         .setFontProvider(paywallDialogOptions.fontProvider)
         .setListener(paywallDialogOptions.listener)
         .setPurchaseLogic(paywallDialogOptions.purchaseLogic)
+        .setCustomVariables(paywallDialogOptions.customVariables)
         .build()
 }
 

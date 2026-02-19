@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "90036",
+    "Content-Length": "90074",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "server": "envoy",
     "strict-transport-security": "max-age= 63072000; includeSubdomains; preload",
@@ -1711,7 +1709,8 @@
               "zGa_rSME8E": "{{ product.price_per_period_abbreviated }}"
             }
           },
-          "exit_offers": {}
+          "exit_offers": {},
+          "play_store_product_change_mode": {}
         },
         "packages": [
           {

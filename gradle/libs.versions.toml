@@ -35,6 +35,7 @@ dokka = "1.8.10"
 emergeGradlePlugin = "4.4.0"
 emergeSnapshots = "1.5.0"
 espresso = "3.4.0"
+googleMobileAds = "23.5.0"
 fragment = "1.6.1"
 googleBlockstore = "16.4.0"
 hamcrest = "1.3"
@@ -66,6 +67,7 @@ uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
 baselineprofile = "1.4.0"
 profileinstaller = "1.4.1"
+leakcanary = "2.14"
 
 [libraries]
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -144,6 +146,7 @@ emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref
 emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
 
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
+google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -165,6 +168,9 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+leakcanary-android-instrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakcanary" }
+androidx-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

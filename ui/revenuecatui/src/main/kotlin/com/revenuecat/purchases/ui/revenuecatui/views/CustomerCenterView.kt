@@ -20,18 +20,22 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
  */
 public class CustomerCenterView : CompatComposeView {
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init()
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr,
+    ) {
         init()
     }
 
     /**
      * Constructor for programmatic use.
      */
-    constructor(
+    public constructor(
         context: Context,
         dismissHandler: (() -> Unit)? = null,
     ) : this(
@@ -41,7 +45,7 @@ public class CustomerCenterView : CompatComposeView {
     )
 
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         customerCenterListener: CustomerCenterListener? = null,
         dismissHandler: (() -> Unit)? = null,
@@ -89,7 +93,7 @@ public class CustomerCenterView : CompatComposeView {
     /**
      * Sets a dismiss handler for when the customer center is closed.
      */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
+    public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
@@ -97,16 +101,21 @@ public class CustomerCenterView : CompatComposeView {
      * Sets a [CustomerCenterListener] that will receive callbacks for this instance of the Customer Center.
      * If not provided, callbacks fall back to the listener configured on [com.revenuecat.purchases.Purchases].
      */
-    fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
+    public fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
         this.customerCenterListener = customerCenterListener
     }
 
     override fun onBackPressed() {
-        dismissHandler?.run { invoke() } ?: super.onBackPressed()
+        dismissHandler?.run { dismiss() } ?: super.onBackPressed()
     }
 
     private fun init() {
         Logger.d("Initialized CustomerCenterView")
+    }
+
+    private fun dismiss() {
+        dismissHandler?.invoke()
+        destroy()
     }
 
     @Composable
@@ -116,7 +125,7 @@ public class CustomerCenterView : CompatComposeView {
 
         MaterialTheme(colorScheme = colorScheme) {
             CustomerCenter(options = customerCenterOptions) {
-                onBackPressed()
+                dismiss()
             }
         }
     }

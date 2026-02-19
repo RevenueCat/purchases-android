@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @InternalRevenueCatAPI
 @Serializable
-enum class PromoOfferRejectionSource(val value: String) {
+public enum class PromoOfferRejectionSource(public val value: String) {
     /**
      * User tapped the X button (close/back button in navigation bar).
      */

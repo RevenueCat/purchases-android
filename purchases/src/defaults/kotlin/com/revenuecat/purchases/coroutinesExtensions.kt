@@ -22,7 +22,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitCustomerInfo(
+public suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
     return suspendCoroutine { continuation ->
@@ -46,7 +46,7 @@ suspend fun Purchases.awaitCustomerInfo(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
+public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
     return suspendCoroutine { continuation ->
         logInWith(
             appUserID,
@@ -69,7 +69,7 @@ suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogOut(): CustomerInfo {
+public suspend fun Purchases.awaitLogOut(): CustomerInfo {
     return suspendCoroutine { continuation ->
         logOutWith(
             onSuccess = { continuation.resume(it) },
@@ -90,7 +90,7 @@ suspend fun Purchases.awaitLogOut(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
+public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
     return suspendCoroutine { continuation ->
         syncPurchasesWith(
             onSuccess = continuation::resume,
@@ -117,7 +117,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
+public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
@@ -143,7 +143,7 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
+public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
@@ -162,7 +162,7 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
+public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
     return suspendCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
@@ -188,7 +188,7 @@ suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData 
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
+public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
     return suspendCoroutine { continuation ->
         getVirtualCurrenciesWith(
             onSuccess = { continuation.resume(it) },
@@ -207,7 +207,7 @@ suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitStorefrontLocale(): Locale {
+public suspend fun Purchases.awaitStorefrontLocale(): Locale {
     return suspendCoroutine { continuation ->
         getStorefrontLocaleWith(
             onSuccess = continuation::resume,
@@ -222,8 +222,8 @@ suspend fun Purchases.awaitStorefrontLocale(): Locale {
  * @property success Boolean indicating whether the ticket was successfully sent.
  */
 @InternalRevenueCatAPI
-data class CreateSupportTicketResult(
-    val success: Boolean,
+public data class CreateSupportTicketResult(
+    public val success: Boolean,
 )
 
 /**
@@ -238,7 +238,7 @@ data class CreateSupportTicketResult(
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+public suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
     return suspendCoroutine { continuation ->
         createSupportTicket(
             email = email,

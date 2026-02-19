@@ -24,6 +24,7 @@ import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -38,15 +39,17 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
  * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
  * It receives the [PaywallActivityArgs] as an extra and returns the [PaywallResult] as a result.
  */
 @Suppress("TooManyFunctions")
-internal class PaywallActivity : ComponentActivity(), PaywallListener {
+internal class PaywallActivity : ComponentActivity() {
     companion object {
         const val ARGS_EXTRA = "paywall_args"
         const val RESULT_EXTRA = "paywall_result"
@@ -94,6 +97,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         }
     }
 
+    @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
@@ -102,11 +106,81 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         val args = getArgs()
         val wasLaunchedThroughSDK = args?.wasLaunchedThroughSDK ?: false
         if (!wasLaunchedThroughSDK && !Purchases.isConfigured) {
-            throw IllegalStateException(
-                "PaywallActivity was not launched through the SDK. " +
-                    "Please use the SDK methods to open the Paywall. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to users.",
+            Logger.e(
+                "PaywallActivity was launched incorrectly. " +
+                    "Please use PaywallActivityLauncher, or Paywall/PaywallDialog/PaywallFooter " +
+                    "composables to display the Paywall.",
             )
+            finish()
+            return
+        }
+
+        val nonSerializableArgs = args?.nonSerializableArgsKey?.let {
+            PaywallActivityNonSerializableArgsStore.get(it)
+        }
+        if (args?.nonSerializableArgsKey != null && nonSerializableArgs == null) {
+            Logger.w(
+                "PaywallActivity was recreated after process death causing " +
+                    "PurchaseLogic and/or PaywallListener to be lost. Finishing activity.",
+            )
+            setResult(RESULT_OK, createResultIntent(PaywallResult.Cancelled))
+            finish()
+            return
+        }
+
+        val userListener = nonSerializableArgs?.listener
+        val purchaseLogic = nonSerializableArgs?.purchaseLogic
+
+        val compositeListener = object : PaywallListener {
+            override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
+                if (userListener != null) {
+                    userListener.onPurchasePackageInitiated(rcPackage, resume)
+                } else {
+                    resume()
+                }
+            }
+
+            override fun onPurchaseStarted(rcPackage: Package) {
+                userListener?.onPurchaseStarted(rcPackage)
+            }
+
+            override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+                userListener?.onPurchaseCompleted(customerInfo, storeTransaction)
+                setResult(RESULT_OK, createResultIntent(PaywallResult.Purchased(customerInfo)))
+                finish()
+            }
+
+            override fun onPurchaseError(error: PurchasesError) {
+                userListener?.onPurchaseError(error)
+                val result = if (error.code == PurchasesErrorCode.PurchaseCancelledError) {
+                    PaywallResult.Cancelled
+                } else {
+                    PaywallResult.Error(error)
+                }
+                setResult(RESULT_OK, createResultIntent(result))
+            }
+
+            override fun onPurchaseCancelled() {
+                userListener?.onPurchaseCancelled()
+            }
+
+            override fun onRestoreStarted() {
+                userListener?.onRestoreStarted()
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                userListener?.onRestoreCompleted(customerInfo)
+                setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
+                val requiredEntitlementIdentifier = args?.requiredEntitlementIdentifier ?: return
+                if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
+                    finish()
+                }
+            }
+
+            override fun onRestoreError(error: PurchasesError) {
+                userListener?.onRestoreError(error)
+                setResult(RESULT_OK, createResultIntent(PaywallResult.Error(error)))
+            }
         }
 
         val edgeToEdge = args?.edgeToEdge == true
@@ -135,8 +209,10 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                             .setShouldDisplayDismissButton(
                                 args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
                             )
-                            .setListener(this@PaywallActivity)
+                            .setListener(compositeListener)
+                            .setPurchaseLogic(purchaseLogic)
                             .setDismissRequestWithExitOffering(::onDismissRequest)
+                            .setCustomVariables(args?.customVariables ?: emptyMap())
                             .build()
                         val viewModel = getPaywallViewModel(paywallOptions)
 
@@ -178,32 +254,6 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     override fun onSaveInstanceState(outState: Bundle) {
         saveSdkConfiguration(outState)
         super.onSaveInstanceState(outState)
-    }
-
-    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-        setResult(RESULT_OK, createResultIntent(PaywallResult.Purchased(customerInfo)))
-        finish()
-    }
-
-    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-        setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
-        val requiredEntitlementIdentifier = getArgs()?.requiredEntitlementIdentifier ?: return
-        if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
-            finish()
-        }
-    }
-
-    override fun onPurchaseError(error: PurchasesError) {
-        val result = if (error.code == PurchasesErrorCode.PurchaseCancelledError) {
-            PaywallResult.Cancelled
-        } else {
-            PaywallResult.Error(error)
-        }
-        setResult(RESULT_OK, createResultIntent(result))
-    }
-
-    override fun onRestoreError(error: PurchasesError) {
-        setResult(RESULT_OK, createResultIntent(PaywallResult.Error(error)))
     }
 
     private fun createResultIntent(result: PaywallResult): Intent {

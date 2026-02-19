@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "23342",
+    "Content-Length": "23399",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
     "server": "envoy"
@@ -2086,6 +2084,8 @@
           "default_locale": "en_US",
           "exit_offers": {},
           "id": "pw13dea1ae2d694a7c",
+          "play_store_product_change_mode": {},
+          "published_fonts": {},
           "revision": 2,
           "template_name": "components",
           "zero_decimal_place_countries": {

@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
 
 commands:
@@ -155,6 +155,24 @@ commands:
       - android/save_gradle_cache
       - android/save_build_cache
 
+  build-rct-tester:
+    steps:
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/rcttester
+          command: echo $RCT_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_rct_tester_bundle
+      - store_artifacts:
+          path: examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab
+      - android/save_gradle_cache
+      - android/save_build_cache
+
   install-ruby:
     description: "Installs the provided version of Ruby using RVM."
     parameters:
@@ -222,6 +240,22 @@ jobs:
       - run:
           name: Build sample app
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
+      - android/save_build_cache
+
+  assemble-admob-integration-sample-app:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept_licenses
+      - android-dependencies
+      - android/restore_build_cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_admob_integration_sample
       - android/save_build_cache
 
   prepare-tests:
@@ -354,7 +388,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.20.0-SNAPSHOT s3://purchases-docs/android/9.20.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.23.0-SNAPSHOT s3://purchases-docs/android/9.23.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -492,6 +526,31 @@ jobs:
           name: Publish aab
           command: |
             bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
+
+  assemble-rct-tester-release:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+
+  publish-rct-tester-release:
+    <<: *android-executor
+    parameters:
+      track:
+        type: string
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+      - run:
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab' track:'<< parameters.track >>'
 
   integration-tests-build:
     <<: *android-executor
@@ -916,6 +975,7 @@ workflows:
       - assemble-custom-entitlement-computation-sample-app:
           requires:
             - deploy-snapshot
+      - assemble-admob-integration-sample-app
 
   build-test-deploy:
     when:
@@ -973,6 +1033,12 @@ workflows:
           requires:
             - prepare-tests
       - assemble-paywall-tester-release:
+          requires:
+            - prepare-tests
+      - assemble-rct-tester-release:
+          requires:
+            - prepare-tests
+      - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
@@ -1046,6 +1112,12 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - publish-rct-tester-release:
+          track: "alpha"
+          requires:
+              - deploy
+              - docs-deploy
+          <<: *release-tags
 
   on-main-branch:
     when:
@@ -1057,6 +1129,8 @@ workflows:
     jobs:
       - prepare-next-version
       - publish-paywall-tester-release:
+          track: "internal"
+      - publish-rct-tester-release:
           track: "internal"
       - record-and-push-paywall-template-screenshots:
           context:
@@ -1096,6 +1170,13 @@ workflows:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
         - publish-paywall-tester-release:
+            track: "alpha"
+
+  manual-rct-tester-release:
+    when:
+      equal: [ rct_tester_release, << pipeline.parameters.action >> ]
+    jobs:
+        - publish-rct-tester-release:
             track: "alpha"
 
   update-paywall-templates:

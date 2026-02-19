@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
     "Content-Length": "369",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
     "server": "envoy"

@@ -147,6 +147,12 @@ internal open class BasePurchasesTest {
             mockAdEventsManager.flushEvents(any())
         } just Runs
         every {
+            mockEventsManager.debugEventListener = any()
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener
+        } returns null
+        every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
 
@@ -256,6 +262,7 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
+                    sdkOriginated = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -423,8 +430,16 @@ internal open class BasePurchasesTest {
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
+        return getMockedStoreTransaction(listOf(productId), purchaseToken, productType)
+    }
+
+    protected fun getMockedStoreTransaction(
+        productIds: List<String>,
+        purchaseToken: String,
+        productType: ProductType
+    ): StoreTransaction {
         val p: Purchase = stubGooglePurchase(
-            productIds = listOf(productId),
+            productIds = productIds,
             purchaseToken = purchaseToken
         )
 

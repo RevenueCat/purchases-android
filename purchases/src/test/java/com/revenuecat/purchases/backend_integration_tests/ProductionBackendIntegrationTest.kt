@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import io.mockk.verify
+import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Test
@@ -197,6 +198,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     appUserID = "appUserID",
                     sessionID = "sessionID",
                     offeringID = "offeringID",
+                    paywallID = "paywallID",
                     paywallRevision = 5,
                     timestamp = 123456789,
                     displayMode = "footer",
@@ -239,6 +241,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                     timestamp = 123456789,
                     networkName = "networkName",
                     mediatorName = "mediatorName",
+                    adFormat = "banner",
                     placement = "placement",
                     adUnitId = "adUnitId",
                     impressionId = "impressionId",
@@ -273,6 +276,59 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can deserialize ad event without adFormat field`() {
+        // JSON without ad_format field to simulate old stored events
+        val jsonWithoutAdFormat = """
+            {
+                "id": "id",
+                "version": 1,
+                "type": "displayed",
+                "timestamp_ms": 123456789,
+                "network_name": "networkName",
+                "mediator_name": "mediatorName",
+                "placement": "placement",
+                "ad_unit_id": "adUnitId",
+                "impression_id": "impressionId",
+                "app_user_id": "appUserID",
+                "app_session_id": "appSessionID"
+            }
+        """.trimIndent()
+
+        val deserialized = Json.decodeFromString<BackendEvent.Ad>(jsonWithoutAdFormat)
+
+        assertThat(deserialized.id).isEqualTo("id")
+        assertThat(deserialized.adFormat).isNull()
+        assertThat(deserialized.networkName).isEqualTo("networkName")
+    }
+
+    @Test
+    fun `can deserialize ad event with adFormat field`() {
+        // JSON with ad_format field
+        val jsonWithAdFormat = """
+            {
+                "id": "id",
+                "version": 1,
+                "type": "displayed",
+                "timestamp_ms": 123456789,
+                "network_name": "networkName",
+                "mediator_name": "mediatorName",
+                "ad_format": "banner",
+                "placement": "placement",
+                "ad_unit_id": "adUnitId",
+                "impression_id": "impressionId",
+                "app_user_id": "appUserID",
+                "app_session_id": "appSessionID"
+            }
+        """.trimIndent()
+
+        val deserialized = Json.decodeFromString<BackendEvent.Ad>(jsonWithAdFormat)
+
+        assertThat(deserialized.id).isEqualTo("id")
+        assertThat(deserialized.adFormat).isEqualTo("banner")
+        assertThat(deserialized.networkName).isEqualTo("networkName")
     }
 
     @Test

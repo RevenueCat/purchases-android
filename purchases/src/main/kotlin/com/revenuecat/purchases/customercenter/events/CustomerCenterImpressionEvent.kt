@@ -11,26 +11,27 @@ import java.util.UUID
  */
 @InternalRevenueCatAPI
 @Poko
-class CustomerCenterImpressionEvent(
-    val creationData: CreationData = CreationData(),
-    val data: Data,
+public class CustomerCenterImpressionEvent(
+    public val creationData: CreationData = CreationData(),
+    public val data: Data,
 ) : FeatureEvent {
     @Poko
-    class CreationData(
-        val id: UUID = UUID.randomUUID(),
-        val date: Date = Date(),
+    public class CreationData(
+        public val id: UUID = UUID.randomUUID(),
+        public val date: Date = Date(),
     )
 
     @Poko
-    class Data(
-        val timestamp: Date,
-        val darkMode: Boolean,
-        val locale: String,
-        val version: Int = 1,
-        val revisionID: Int = 1,
-        val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
+    @SuppressWarnings("LongParameterList")
+    public class Data(
+        public val timestamp: Date,
+        public val darkMode: Boolean,
+        public val locale: String,
+        public val version: Int = 1,
+        public val revisionID: Int = 1,
+        public val displayMode: CustomerCenterDisplayMode = CustomerCenterDisplayMode.FULL_SCREEN,
         // isSandbox not available in Android
     ) {
-        val type: CustomerCenterEventType = CustomerCenterEventType.IMPRESSION
+        public val type: CustomerCenterEventType = CustomerCenterEventType.IMPRESSION
     }
 }

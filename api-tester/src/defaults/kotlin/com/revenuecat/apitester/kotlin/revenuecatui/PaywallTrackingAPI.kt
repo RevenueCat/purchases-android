@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -22,7 +23,8 @@ private class PaywallTrackingAPI {
                 Date(),
             ),
             PaywallEvent.Data(
-                "offeringId",
+                paywallIdentifier = "paywallId",
+                PresentedOfferingContext("offeringId"),
                 paywallRevision,
                 UUID.randomUUID(),
                 "footer",
@@ -35,7 +37,7 @@ private class PaywallTrackingAPI {
         val eventUUID: UUID = creationData.id
         val eventDate: Date = creationData.date
         val data: PaywallEvent.Data = paywallEvent.data
-        val offeringId: String = data.offeringIdentifier
+        val presentedOfferingContext: PresentedOfferingContext = data.presentedOfferingContext
         val paywallRevision: Int = data.paywallRevision
         val sessionUUID: UUID = data.sessionIdentifier
         val displayMode: String = data.displayMode
@@ -49,6 +51,8 @@ private class PaywallTrackingAPI {
             PaywallEventType.CANCEL,
             PaywallEventType.CLOSE,
             PaywallEventType.EXIT_OFFER,
+            PaywallEventType.PURCHASE_INITIATED,
+            PaywallEventType.PURCHASE_ERROR,
             -> {}
         }
     }

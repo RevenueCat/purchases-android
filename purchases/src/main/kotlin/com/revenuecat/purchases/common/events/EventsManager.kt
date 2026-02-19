@@ -1,6 +1,11 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.events
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
@@ -122,6 +127,20 @@ internal class EventsManager(
         }
     }
 
+    @get:Synchronized
+    @set:Synchronized
+    var debugEventListener: DebugEventListener? = null
+        set(value) {
+            field = value
+            val callback: ((DebugEvent) -> Unit)? = value?.let { listener ->
+                {
+                        event: DebugEvent ->
+                    listener.onDebugEventReceived(event)
+                }
+            }
+            fileHelper.debugEventCallback = callback
+        }
+
     private var flushInProgress = AtomicBoolean(false)
 
     @get:Synchronized
@@ -136,6 +155,9 @@ internal class EventsManager(
         if (currentFileSizeKB >= FILE_SIZE_LIMIT_KB) {
             warnLog { "Event store size limit reached. Clearing oldest events to free up space." }
             fileHelper.clear(EVENTS_TO_CLEAR_ON_LIMIT)
+            debugEventListener?.onDebugEventReceived(
+                DebugEvent(name = DebugEventName.FILE_SIZE_LIMIT_REACHED),
+            )
         }
     }
 
@@ -144,7 +166,7 @@ internal class EventsManager(
      *
      * @param event The event to be tracked.
      */
-    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
@@ -208,6 +230,9 @@ internal class EventsManager(
                 debugLog { "Flush already in progress." }
                 return@enqueue
             }
+            debugEventListener?.onDebugEventReceived(
+                DebugEvent(name = DebugEventName.FLUSH_STARTED),
+            )
 
             flushNextBatch(batchNumber = 1, delay = delay)
 
@@ -253,6 +278,17 @@ internal class EventsManager(
             },
             { error, shouldMarkAsSynced ->
                 errorLog { "New event flush (batch $batchNumber) error: $error." }
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(
+                        name = DebugEventName.FLUSH_ERROR,
+                        properties = buildMap {
+                            put("errorCode", error.code.name)
+                            error.underlyingErrorMessage?.let {
+                                put("underlyingErrorMessage", it.take(EventsFileHelper.MAX_EVENT_PROPERTY_SIZE))
+                            }
+                        },
+                    ),
+                )
                 enqueue {
                     if (shouldMarkAsSynced) {
                         fileHelper.clear(storedEventsWithNullValues.size)

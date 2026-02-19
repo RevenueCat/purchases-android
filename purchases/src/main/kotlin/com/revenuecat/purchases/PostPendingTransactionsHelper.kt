@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -53,6 +54,10 @@ internal class PostPendingTransactionsHelper(
                     }
                     deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                     val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
+                    val pendingTransactionsTokens = purchasesByHashedToken.values
+                        .filter { it.purchaseState == PurchaseState.PENDING }
+                        .map { it.purchaseToken }
+                        .toSet()
                     postTransactionsWithCompletion(
                         transactionsToSync,
                         allowSharingPlayStoreAccount,
@@ -61,6 +66,7 @@ internal class PostPendingTransactionsHelper(
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
                                 appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
                                     callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
                                 },
@@ -76,6 +82,7 @@ internal class PostPendingTransactionsHelper(
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
                                 appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
                                     callback?.invoke(SyncPendingPurchaseResult.Error(error))
@@ -92,6 +99,7 @@ internal class PostPendingTransactionsHelper(
                             postReceiptHelper.postRemainingCachedTransactionMetadata(
                                 appUserID = appUserID,
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
                                     callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
@@ -133,6 +141,7 @@ internal class PostPendingTransactionsHelper(
                 allowSharingPlayStoreAccount,
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                sdkOriginated = false,
                 transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)

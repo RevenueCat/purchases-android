@@ -12,30 +12,35 @@ import java.net.URL
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PaywallComponentsData(
+public class PaywallComponentsData(
+    @get:JvmSynthetic
+    public val id: String? = null,
     @get:JvmSynthetic
     @SerialName("template_name")
-    val templateName: String,
+    public val templateName: String,
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
     @SerialName("asset_base_url")
-    val assetBaseURL: URL,
+    public val assetBaseURL: URL,
     @get:JvmSynthetic
     @SerialName("components_config")
-    val componentsConfig: ComponentsConfig,
+    public val componentsConfig: ComponentsConfig,
     @get:JvmSynthetic
     @SerialName("components_localizations")
-    val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
+    public val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     @get:JvmSynthetic
     @SerialName("default_locale")
-    val defaultLocaleIdentifier: LocaleId,
+    public val defaultLocaleIdentifier: LocaleId,
     @get:JvmSynthetic
-    val revision: Int = 0,
+    public val revision: Int = 0,
     @get:JvmSynthetic
     @Serializable(with = GoogleListSerializer::class)
     @SerialName("zero_decimal_place_countries")
-    val zeroDecimalPlaceCountries: List<String> = emptyList(),
+    public val zeroDecimalPlaceCountries: List<String> = emptyList(),
     @get:JvmSynthetic
     @SerialName("exit_offers")
-    val exitOffers: ExitOffers? = null,
+    public val exitOffers: ExitOffers? = null,
+    @get:JvmSynthetic
+    @SerialName("play_store_product_change_mode")
+    public val productChangeConfig: ProductChangeConfig? = null,
 )

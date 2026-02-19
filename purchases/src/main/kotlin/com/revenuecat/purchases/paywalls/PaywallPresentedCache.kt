@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -9,30 +10,44 @@ import com.revenuecat.purchases.paywalls.events.PaywallEventType
 internal class PaywallPresentedCache {
     @get:Synchronized
     @set:Synchronized
-    private var lastPaywallImpressionEvent: PaywallEvent? = null
+    private var lastPurchaseInitiatedEvent: PaywallEvent? = null
 
-    @Synchronized
-    fun getAndRemovePresentedEvent(): PaywallEvent? {
-        val event = lastPaywallImpressionEvent
-        lastPaywallImpressionEvent = null
-        return event
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun hasCachedPurchaseInitiatedData(): Boolean {
+        return lastPurchaseInitiatedEvent != null
     }
 
     @Synchronized
-    fun cachePresentedPaywall(paywallEvent: PaywallEvent) {
-        lastPaywallImpressionEvent = paywallEvent
+    fun getAndRemovePurchaseInitiatedEventIfNeeded(
+        purchasedProductIDs: List<String>,
+        purchaseTimestamp: Long?,
+    ): PaywallEvent? {
+        val shouldAttributePaywallToPurchase: Boolean = lastPurchaseInitiatedEvent?.let { event ->
+            val wasPurchasePerformedAfterPurchaseInitiated = purchaseTimestamp?.let { timestamp ->
+                event.creationData.date.time <= timestamp
+            } ?: false
+            event.type == PaywallEventType.PURCHASE_INITIATED &&
+                event.data.productIdentifier in purchasedProductIDs &&
+                wasPurchasePerformedAfterPurchaseInitiated
+        } ?: false
+        if (!shouldAttributePaywallToPurchase) {
+            return null
+        }
+        val event = lastPurchaseInitiatedEvent
+        lastPurchaseInitiatedEvent = null
+        return event
     }
 
     @Synchronized
     fun receiveEvent(event: PaywallEvent) {
         when (event.type) {
-            PaywallEventType.IMPRESSION -> {
-                verboseLog { "Caching paywall impression event." }
-                lastPaywallImpressionEvent = event
+            PaywallEventType.PURCHASE_INITIATED -> {
+                verboseLog { "Caching paywall purchase initiated event." }
+                lastPurchaseInitiatedEvent = event
             }
-            PaywallEventType.CLOSE -> {
-                verboseLog { "Clearing cached paywall impression event." }
-                lastPaywallImpressionEvent = null
+            PaywallEventType.CANCEL, PaywallEventType.PURCHASE_ERROR -> {
+                verboseLog { "Clearing cached paywall purchase initiated event." }
+                lastPurchaseInitiatedEvent = null
             }
             else -> {
             }

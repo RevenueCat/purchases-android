@@ -95,6 +95,7 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        sdkOriginated: Boolean = false,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -102,6 +103,7 @@ internal class PostReceiptHelper(
             storeTransaction = purchase,
             storeProduct = storeProduct,
             subscriptionOptionsForProductIDs = subscriptionOptionForProductIDs,
+            sdkOriginated = sdkOriginated,
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,
@@ -144,12 +146,14 @@ internal class PostReceiptHelper(
     fun postRemainingCachedTransactionMetadata(
         appUserID: String,
         allowSharingPlayStoreAccount: Boolean,
+        pendingTransactionsTokens: Set<String>,
         onNoTransactionsToSync: () -> Unit,
         onError: ((PurchasesError) -> Unit),
         onSuccess: ((CustomerInfo) -> Unit),
     ) {
         val results: ConcurrentLinkedQueue<Result<CustomerInfo, PurchasesError>> = ConcurrentLinkedQueue()
         val transactionMetadataToSync = localTransactionMetadataStore.getAllLocalTransactionMetadata()
+            .filterNot { pendingTransactionsTokens.contains(it.token) }
         if (transactionMetadataToSync.isEmpty()) {
             onNoTransactionsToSync()
             return
@@ -165,7 +169,6 @@ internal class PostReceiptHelper(
                 paywallData = transactionMetadata.paywallPostReceiptData,
                 purchasesAreCompletedBy = transactionMetadata.purchasesAreCompletedBy,
                 hasCachedTransactionMetadata = true,
-                paywallEvent = null,
                 onSuccess = {
                     results.add(Result.Success(it.customerInfo))
                     callTransactionMetadataCompletionFromResults(
@@ -253,7 +256,6 @@ internal class PostReceiptHelper(
             paywallData = effectivePaywallData,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
             hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
-            paywallEvent = presentedPaywall,
             onSuccess = onSuccess,
             onError = onError,
         )
@@ -282,15 +284,31 @@ internal class PostReceiptHelper(
             initiationSource == PostReceiptInitiationSource.PURCHASE
 
         val presentedPaywall = if (cachedTransactionMetadata == null) {
-            paywallPresentedCache.getAndRemovePresentedEvent()
+            paywallPresentedCache.getAndRemovePurchaseInitiatedEventIfNeeded(
+                receiptInfo.productIDs,
+                receiptInfo.purchaseTime,
+            )
         } else {
             null
         }
 
         if (shouldCacheTransactionMetadata) {
+            val paywallPresentedOfferingContext = presentedPaywall?.data?.presentedOfferingContext
+            // This will make sure we add presented offering context info for purchases when
+            // PurchasesAreCompletedBy.MY_APP is used together with paywalls
+            val effectiveReceiptInfo = if (
+                receiptInfo.presentedOfferingContext == null &&
+                paywallPresentedOfferingContext != null
+            ) {
+                receiptInfo.copy(
+                    presentedOfferingContext = paywallPresentedOfferingContext,
+                )
+            } else {
+                receiptInfo
+            }
             val dataToCache = LocalTransactionMetadata(
                 token = purchaseToken,
-                receiptInfo = receiptInfo,
+                receiptInfo = effectiveReceiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
             )
@@ -314,7 +332,6 @@ internal class PostReceiptHelper(
         paywallData: PaywallPostReceiptData?,
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         hasCachedTransactionMetadata: Boolean,
-        paywallEvent: PaywallEvent?,
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -344,7 +361,6 @@ internal class PostReceiptHelper(
                     onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
-                    paywallEvent?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         if (hasCachedTransactionMetadata) {
                             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf(purchaseToken))

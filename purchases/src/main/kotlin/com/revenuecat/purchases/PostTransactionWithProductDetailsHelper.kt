@@ -23,6 +23,7 @@ internal class PostTransactionWithProductDetailsHelper(
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        sdkOriginated: Boolean,
         transactionPostSuccess: (SuccessfulPurchaseCallback)? = null,
         transactionPostError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -81,6 +82,7 @@ internal class PostTransactionWithProductDetailsHelper(
                         isRestore = allowSharingPlayStoreAccount,
                         appUserID = appUserID,
                         initiationSource = initiationSource,
+                        sdkOriginated = sdkOriginated,
                         onSuccess = transactionPostSuccess,
                         onError = transactionPostError,
                     )
@@ -93,6 +95,7 @@ internal class PostTransactionWithProductDetailsHelper(
                         isRestore = allowSharingPlayStoreAccount,
                         appUserID = appUserID,
                         initiationSource = initiationSource,
+                        sdkOriginated = sdkOriginated,
                         onSuccess = transactionPostSuccess,
                         onError = transactionPostError,
                     )

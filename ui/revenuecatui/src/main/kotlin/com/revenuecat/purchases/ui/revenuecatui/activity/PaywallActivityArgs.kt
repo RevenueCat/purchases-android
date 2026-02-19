@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import android.os.Build
 import android.os.Parcelable
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily
@@ -19,6 +20,8 @@ internal data class PaywallActivityArgs(
     val shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     val edgeToEdge: Boolean = defaultEdgeToEdge,
     val wasLaunchedThroughSDK: Boolean = true,
+    val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    val nonSerializableArgsKey: Int? = null,
 ) : Parcelable {
     constructor(
         requiredEntitlementIdentifier: String? = null,
@@ -27,6 +30,8 @@ internal data class PaywallActivityArgs(
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         edgeToEdge: Boolean = defaultEdgeToEdge,
         wasLaunchedThroughSDK: Boolean = true,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        nonSerializableArgsKey: Int? = null,
     ) : this(
         requiredEntitlementIdentifier,
         offeringIdAndPresentedOfferingContext,
@@ -34,5 +39,7 @@ internal data class PaywallActivityArgs(
         shouldDisplayDismissButton,
         edgeToEdge,
         wasLaunchedThroughSDK,
+        customVariables,
+        nonSerializableArgsKey,
     )
 }

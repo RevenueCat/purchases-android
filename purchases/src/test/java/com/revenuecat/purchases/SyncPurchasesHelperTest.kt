@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -18,6 +19,8 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 class SyncPurchasesHelperTest {
@@ -126,12 +129,14 @@ class SyncPurchasesHelperTest {
     fun `posts all receipts without consuming`() {
         val purchase1 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-1")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"
@@ -189,12 +194,14 @@ class SyncPurchasesHelperTest {
     fun `tries to sync all purchases even if there are errors`() {
         val purchase1 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-1")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
+            every { purchaseTime } returns 1.hours.ago().time
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"

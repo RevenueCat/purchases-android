@@ -110,6 +110,14 @@ internal interface CustomerCenterViewModel {
 
     @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
+
+    /**
+     * Refreshes the Customer Center data while keeping the current Success state visible.
+     * Shows a subtle loading indicator instead of the full loading screen.
+     * Used when returning from external screens (e.g., manage subscriptions).
+     */
+    suspend fun refreshCustomerCenter()
+
     fun openURL(
         context: Context,
         url: String,
@@ -134,6 +142,17 @@ internal interface CustomerCenterViewModel {
     fun showCreateSupportTicket()
 
     fun dismissSupportTicketSuccessSnackbar()
+
+    /**
+     * Called when the activity is stopped. Used to track if the user backgrounded the app.
+     * @param isChangingConfigurations true if the stop is due to a configuration change (e.g., rotation)
+     */
+    fun onActivityStopped(isChangingConfigurations: Boolean)
+
+    /**
+     * Called when the activity is started. Triggers a refresh if the user is returning from background.
+     */
+    fun onActivityStarted()
 }
 
 @Stable
@@ -181,6 +200,7 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
+    private var wasBackgrounded = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -994,8 +1014,20 @@ internal class CustomerCenterViewModelImpl(
 
     @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
+        loadCustomerCenter(isRefresh = false)
+    }
+
+    override suspend fun refreshCustomerCenter() {
+        loadCustomerCenter(isRefresh = true)
+    }
+
+    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
-            if (state !is CustomerCenterState.Loading) {
+            if (isRefresh && state is CustomerCenterState.Success) {
+                // For refresh, keep Success state but set isRefreshing flag
+                state.copy(isRefreshing = true)
+            } else if (state !is CustomerCenterState.Loading) {
+                // For initial load, show full loading screen
                 CustomerCenterState.Loading
             } else {
                 state
@@ -1027,6 +1059,7 @@ internal class CustomerCenterViewModelImpl(
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
+                isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -1034,8 +1067,32 @@ internal class CustomerCenterViewModelImpl(
                 successState.copy(mainScreenPaths = mainScreenPaths)
             }
         } catch (e: PurchasesException) {
-            _state.update {
-                CustomerCenterState.Error(e.error)
+            _state.update { currentState ->
+                if (isRefresh && currentState is CustomerCenterState.Success) {
+                    // On error during refresh, keep the existing state but clear isRefreshing
+                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
+                    currentState.copy(isRefreshing = false)
+                } else {
+                    CustomerCenterState.Error(e.error)
+                }
+            }
+        }
+    }
+
+    override fun onActivityStopped(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) {
+            wasBackgrounded = true
+        }
+    }
+
+    override fun onActivityStarted() {
+        if (wasBackgrounded) {
+            wasBackgrounded = false
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+                viewModelScope.launch {
+                    refreshCustomerCenter()
+                }
             }
         }
     }
@@ -1441,12 +1498,17 @@ private fun extractPromoOfferTrackingData(
     subscriptionOption: SubscriptionOption?,
     purchaseInfo: PurchaseInformation?,
 ): PromoOfferTrackingData? {
-    val googleOption = subscriptionOption as? GoogleSubscriptionOption ?: return null
-    val storeOfferId = googleOption.offerId ?: return null
-    val originProductId = purchaseInfo?.product?.id ?: return null
-    return PromoOfferTrackingData(
-        storeOfferId = storeOfferId,
-        originProductId = originProductId,
-        targetProductId = googleOption.fullProductIdWithBasePlan,
-    )
+    val googleOption = subscriptionOption as? GoogleSubscriptionOption
+    val storeOfferId = googleOption?.offerId
+    val originProductId = purchaseInfo?.product?.id
+
+    return if (googleOption != null && storeOfferId != null && originProductId != null) {
+        PromoOfferTrackingData(
+            storeOfferId = storeOfferId,
+            originProductId = originProductId,
+            targetProductId = googleOption.fullProductIdWithBasePlan,
+        )
+    } else {
+        null
+    }
 }

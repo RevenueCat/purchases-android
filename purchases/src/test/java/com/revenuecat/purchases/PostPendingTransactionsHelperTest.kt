@@ -57,6 +57,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = any(),
+                pendingTransactionsTokens = any(),
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
                 onSuccess = any()
@@ -98,6 +99,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -153,6 +155,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -279,6 +282,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -329,6 +333,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = capture(successSlot),
                 transactionPostError = capture(errorSlot)
             )
@@ -353,6 +358,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -429,6 +435,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = any(),
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
                 onSuccess = any()
@@ -448,6 +455,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -462,6 +470,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -485,6 +494,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),
                 onSuccess = any()
@@ -516,6 +526,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -532,6 +543,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -541,6 +553,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -563,6 +576,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )
@@ -575,6 +589,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -589,6 +604,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -611,6 +627,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )
@@ -623,6 +640,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),
                 onSuccess = any()
@@ -632,6 +650,74 @@ class PostPendingTransactionsHelperTest {
         }
 
         syncAndAssertResult(SyncPendingPurchaseResult.Error(regularTransactionError))
+    }
+
+    @Test
+    fun `pending transaction tokens are correctly passed to postRemainingCachedTransactionMetadata`() {
+        val purchasedPurchase = stubGooglePurchase(
+            purchaseToken = "purchasedToken",
+            productIds = listOf("product1"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val activePurchasedPurchase = purchasedPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val pendingPurchase1 = stubGooglePurchase(
+            purchaseToken = "pendingToken1",
+            productIds = listOf("product2"),
+            purchaseState = Purchase.PurchaseState.PENDING,
+        )
+        val activePendingPurchase1 = pendingPurchase1.toStoreTransaction(ProductType.SUBS)
+
+        val pendingPurchase2 = stubGooglePurchase(
+            purchaseToken = "pendingToken2",
+            productIds = listOf("product3"),
+            purchaseState = Purchase.PurchaseState.PENDING,
+        )
+        val activePendingPurchase2 = pendingPurchase2.toStoreTransaction(ProductType.SUBS)
+
+        val allPurchases = listOf(activePurchasedPurchase, activePendingPurchase1, activePendingPurchase2)
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(
+                purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
+                pendingPurchase1.purchaseToken.sha1() to activePendingPurchase1,
+                pendingPurchase2.purchaseToken.sha1() to activePendingPurchase2,
+            ),
+            notInCache = allPurchases
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, allPurchases)
+
+        val pendingTokensSlot = slot<Set<String>>()
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = capture(pendingTokensSlot),
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = captureLambda(),
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfoMock)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = setOf("pendingToken1", "pendingToken2"),
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = any(),
+            )
+        }
+
+        // Verify that only the pending transaction tokens are passed
+        assertThat(pendingTokensSlot.captured).containsExactlyInAnyOrder("pendingToken1", "pendingToken2")
+        assertThat(pendingTokensSlot.captured).doesNotContain("purchasedToken")
     }
 
     // endregion

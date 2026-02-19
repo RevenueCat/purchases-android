@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ReceiptInfo(
     val productIDs: List<String>,
+    val purchaseTime: Long? = null,
     @Serializable(with = PresentedOfferingContextSerializer::class)
     val presentedOfferingContext: PresentedOfferingContext? = null,
     val price: Double? = null,
@@ -33,6 +34,7 @@ internal data class ReceiptInfo(
     @Serializable(with = ReplacementModeSerializer::class)
     val replacementMode: ReplacementMode? = null,
     val platformProductIds: List<Map<String, String?>> = emptyList(),
+    val sdkOriginated: Boolean = false,
     // Amazon-only fields
     val storeUserID: String? = null,
     val marketplace: String? = null,
@@ -43,6 +45,7 @@ internal data class ReceiptInfo(
             storeTransaction: StoreTransaction,
             storeProduct: StoreProduct?,
             subscriptionOptionsForProductIDs: Map<String, SubscriptionOption>?,
+            sdkOriginated: Boolean = false,
         ): ReceiptInfo {
             val subscriptionOption = storeProduct?.subscriptionOptions
                 ?.firstOrNull { it.id == storeTransaction.subscriptionOptionId }
@@ -71,6 +74,7 @@ internal data class ReceiptInfo(
 
             return ReceiptInfo(
                 productIDs = storeTransaction.productIds,
+                purchaseTime = storeTransaction.purchaseTime,
                 presentedOfferingContext = storeTransaction.presentedOfferingContext,
                 price = storeProduct?.price?.amountMicros?.div(SharedConstants.MICRO_MULTIPLIER),
                 formattedPrice = storeProduct?.price?.formatted,
@@ -79,6 +83,7 @@ internal data class ReceiptInfo(
                 pricingPhases = subscriptionOption?.pricingPhases,
                 replacementMode = storeTransaction.replacementMode,
                 platformProductIds = platformProductIds,
+                sdkOriginated = sdkOriginated,
                 storeUserID = storeTransaction.storeUserID,
                 marketplace = storeTransaction.marketplace,
             )

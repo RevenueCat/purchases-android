@@ -9,19 +9,19 @@ import kotlinx.parcelize.Parcelize
 /**
  * Result of the paywall activity.
  */
-sealed class PaywallResult : Parcelable {
+public sealed class PaywallResult : Parcelable {
     /**
      * The user cancelled the paywall without purchasing.
      */
     @Parcelize
-    object Cancelled : PaywallResult(), Parcelable
+    public object Cancelled : PaywallResult(), Parcelable
 
     /**
      * The user purchased a product and the paywall was closed.
      */
     @Parcelize
     @Poko
-    class Purchased(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
+    public class Purchased(public val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
 
     /**
      * The user tried to purchase a product or restore purchases but an error occurred. If they tried multiple times,
@@ -29,12 +29,12 @@ sealed class PaywallResult : Parcelable {
      */
     @Parcelize
     @Poko
-    class Error(val error: PurchasesError) : PaywallResult(), Parcelable
+    public class Error(public val error: PurchasesError) : PaywallResult(), Parcelable
 
     /**
      * The last action the user performed in the paywall activity was a restore.
      */
     @Parcelize
     @Poko
-    class Restored(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
+    public class Restored(public val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
 }
