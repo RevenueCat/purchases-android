@@ -8,7 +8,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +28,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.net.URI
 
 @Suppress("CyclomaticComplexMethod", "LongMethod", "ModifierNotUsedAtRoot", "ModifierReused")
@@ -111,48 +112,44 @@ private fun rememberVideoContentState(
         }
     }
 
-    var videoUrl by rememberSaveable(videoUrls.url) {
-        mutableStateOf(repository.getFile(videoUrls.url, videoUrls.checksum))
+    // Check high-res cache synchronously
+    val cachedHighRes = remember(videoUrls.url) {
+        repository.getFile(videoUrls.url, videoUrls.checksum)
     }
 
-    suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
-        try {
-            if (setLowResVideoURLFirst) {
-                videoUrl = videoUrls.urlLowRes?.toString()?.let(::URI)
-            }
+    var videoUrl by remember(videoUrls.url) { mutableStateOf(cachedHighRes) }
 
-            val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-            videoUrl = url
-            // If we have a cached video, no need to display a fallback image
-            fallbackImageViewStyle = null
-        } catch (_: Exception) {
-            videoUrl = videoUrls.url.toString().let(::URI)
-        }
-    }
-
-    if (videoUrl == null) {
-        videoUrls.urlLowRes
-            ?.takeIf { it != videoUrls.url }
-            ?.run {
-                videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
-
-                if (videoUrl != null) {
-                    // If we have a cached video, no need to display a fallback image
-                    fallbackImageViewStyle = null
-                }
-
-                LaunchedEffect(Unit) {
-                    fetchVideoUrl(setLowResVideoURLFirst = videoUrl == null)
-                }
-            }
-    } else {
-        // If we have a cached video, no need to display a fallback image
+    if (cachedHighRes != null) {
+        // Cached high-res available — no need for fallback image
         fallbackImageViewStyle = null
-    }
+    } else {
+        // Not cached — concurrently fetch both resolutions
+        LaunchedEffect(videoUrls.url) {
+            val resolved = coroutineScope {
+                val highResDeferred = async {
+                    runCatching {
+                        repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
+                    }.getOrNull()
+                }
+                val lowResDeferred = videoUrls.urlLowRes
+                    ?.takeIf { it != videoUrls.url }
+                    ?.let {
+                        async {
+                            runCatching {
+                                repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
+                            }.getOrNull()
+                        }
+                    }
 
-    if (videoUrl == null) {
-        LaunchedEffect(Unit) {
-            fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
+                val highResResult = highResDeferred.await()
+
+                highResResult ?: lowResDeferred?.await()
+            }
+
+            if (resolved != null) {
+                videoUrl = resolved
+                fallbackImageViewStyle = null
+            }
         }
     }
 
