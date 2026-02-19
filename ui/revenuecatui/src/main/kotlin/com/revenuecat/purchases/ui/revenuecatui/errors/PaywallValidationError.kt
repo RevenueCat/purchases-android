@@ -47,6 +47,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is TabControlNotInTab -> message
             is UnsupportedBackgroundType -> message
             is RootComponentUnsupportedProperties -> message
+            is UnsupportedCondition -> message
         }
     }
 
@@ -136,5 +137,8 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.ROOT_COMPONENT_UNSUPPORTED_PROPERTIES
             .format(component::class.java.simpleName)
+    }
+    object UnsupportedCondition : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.UNSUPPORTED_CONDITION
     }
 }
