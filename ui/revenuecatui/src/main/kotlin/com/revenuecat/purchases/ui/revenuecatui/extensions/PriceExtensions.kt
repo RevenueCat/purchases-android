@@ -10,7 +10,6 @@ import java.util.Locale
 
 @JvmSynthetic
 internal fun Price.localized(locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-    // always round if rounding on
     return if (showZeroDecimalPlacePrices && this.endsIn00Cents()) {
         this.getTruncatedFormatted(locale)
     } else {

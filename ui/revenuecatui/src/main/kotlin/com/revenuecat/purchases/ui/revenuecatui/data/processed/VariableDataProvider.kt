@@ -113,7 +113,6 @@ internal class VariableDataProvider(
         locale: Locale,
         showZeroDecimalPlacePrices: Boolean,
     ): String? {
-        // always round if rounding on
         val secondIntroPrice = getSecondIntroOfferToApply(rcPackage)?.price ?: return null
 
         return if (showZeroDecimalPlacePrices && secondIntroPrice.endsIn00Cents()) {
@@ -288,6 +287,22 @@ internal fun Price.getTruncatedFormatted(locale: Locale = Locale.getDefault()): 
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         currency = Currency.getInstance(currencyCode)
         maximumFractionDigits = 0
+    }
+    val amount = amountMicros / MICRO_MULTIPLIER
+    return numberFormat.format(amount)
+}
+
+/**
+ * Returns the price formatted for the given locale, preserving the appropriate decimal places
+ * for the currency.
+ */
+internal fun Price.getFormatted(locale: Locale): String {
+    val currency = Currency.getInstance(currencyCode)
+    val digits = currency.defaultFractionDigits.coerceAtLeast(0)
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
+        this.currency = currency
+        maximumFractionDigits = digits
+        minimumFractionDigits = digits
     }
     val amount = amountMicros / MICRO_MULTIPLIER
     return numberFormat.format(amount)
