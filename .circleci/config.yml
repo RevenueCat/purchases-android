@@ -527,6 +527,15 @@ jobs:
           command: |
             bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
 
+  assemble-rct-tester-release:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+
   publish-rct-tester-release:
     <<: *android-executor
     parameters:
@@ -1026,6 +1035,9 @@ workflows:
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+      - assemble-rct-tester-release:
+          requires:
+            - prepare-tests
       - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
@@ -1117,6 +1129,8 @@ workflows:
     jobs:
       - prepare-next-version
       - publish-paywall-tester-release:
+          track: "internal"
+      - publish-rct-tester-release:
           track: "internal"
       - record-and-push-paywall-template-screenshots:
           context:
