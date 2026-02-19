@@ -83,7 +83,7 @@ internal fun VideoComponentView(
 
         // Get video URL - only when visible to avoid initializing all videos at once
         val videoUrl = if (isVisible) {
-            rememberVideoContentState(style, videoState.videoUrls, repository).first
+            rememberVideoContentState(videoState.videoUrls, repository)
         } else {
             null
         }
@@ -133,32 +133,9 @@ internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): 
 
 @Composable
 private fun rememberVideoContentState(
-    style: VideoComponentStyle,
     videoUrls: VideoUrls,
     repository: FileRepository,
-): Pair<URI?, ImageComponentStyle?> {
-    val fallbackImageViewStyle: ImageComponentStyle? = remember(style.fallbackSources) {
-        style.fallbackSources?.let { sources ->
-            ImageComponentStyle(
-                sources = sources,
-                visible = style.visible,
-                size = style.size,
-                // parent Box already handles padding, border, etc
-                padding = PaddingValues(0.dp),
-                margin = PaddingValues(0.dp),
-                shape = null,
-                border = null,
-                shadow = null,
-                overlay = style.overlay,
-                contentScale = style.contentScale,
-                rcPackage = style.rcPackage,
-                tabIndex = style.tabIndex,
-                overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
-                ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-            )
-        }
-    }
-
+): URI? {
     // Check high-res cache synchronously
     val cachedHighRes = remember(videoUrls.url) {
         repository.getFile(videoUrls.url, videoUrls.checksum)
@@ -196,5 +173,5 @@ private fun rememberVideoContentState(
         }
     }
 
-    return videoUrl to fallbackImageViewStyle
+    return videoUrl
 }
