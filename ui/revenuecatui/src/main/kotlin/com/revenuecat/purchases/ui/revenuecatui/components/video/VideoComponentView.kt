@@ -129,6 +129,7 @@ internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): 
     return right > 0 && bottom > 0 && left < viewportWidth && top < viewportHeight
 }
 
+@Suppress("ReturnCount")
 @Composable
 private fun rememberVideoContentState(
     videoUrls: VideoUrls,
