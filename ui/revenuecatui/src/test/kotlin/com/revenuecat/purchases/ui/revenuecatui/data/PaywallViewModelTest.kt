@@ -2046,21 +2046,172 @@ class PaywallViewModelTest {
 
     // endregion product change
 
+    // region dismissRequestWithExitOffering
+
+    @Test
+    fun `closePaywall calls dismissRequestWithExitOffering when set`() {
+        var dismissWithExitOfferingInvoked = false
+        var receivedExitOffering: Offering? = mockk()
+
+        val model = create(
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                receivedExitOffering = exitOffering
+            },
+        )
+
+        assertThat(dismissWithExitOfferingInvoked).isFalse()
+        model.closePaywall()
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(receivedExitOffering).isNull()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom callback purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        var dismissWithExitOfferingInvoked = false
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                assertThat(exitOffering).isNull()
+            },
+        )
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom suspend purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        var dismissWithExitOfferingInvoked = false
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                assertThat(exitOffering).isNull()
+            },
+        )
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom callback restore logic success calls dismissRequestWithExitOffering when shouldDisplayBlock false`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+            val customRestoreCalled = MutableStateFlow(false)
+            var dismissWithExitOfferingInvoked = false
+
+            val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                null,
+                customRestoreCalled,
+                null,
+                PurchaseLogicResult.Success,
+            )
+
+            val model = create(
+                customPurchaseLogic = myAppPurchaseLogic,
+                dismissRequestWithExitOffering = { exitOffering ->
+                    dismissWithExitOfferingInvoked = true
+                    assertThat(exitOffering).isNull()
+                },
+                shouldDisplayBlock = { false },
+            )
+
+            model.restorePurchases()
+            customRestoreCalled.first { it }
+
+            coVerify(exactly = 1) { purchases.syncPurchases() }
+            assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(dismissInvoked).isFalse()
+        }
+
+    @Test
+    fun `Custom suspend restore logic success calls dismissRequestWithExitOffering when shouldDisplayBlock false`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+            val customRestoreCalled = MutableStateFlow(false)
+            var dismissWithExitOfferingInvoked = false
+
+            val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+                null,
+                customRestoreCalled,
+                null,
+                PurchaseLogicResult.Success,
+            )
+
+            val model = create(
+                customPurchaseLogic = myAppPurchaseLogic,
+                dismissRequestWithExitOffering = { exitOffering ->
+                    dismissWithExitOfferingInvoked = true
+                    assertThat(exitOffering).isNull()
+                },
+                shouldDisplayBlock = { false },
+            )
+
+            model.restorePurchases()
+            customRestoreCalled.first { it }
+
+            coVerify(exactly = 1) { purchases.syncPurchases() }
+            assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(dismissInvoked).isFalse()
+        }
+
+    // endregion dismissRequestWithExitOffering
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
+        dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
+        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setOffering(offering)
+            .setPurchaseLogic(customPurchaseLogic)
+            .setMode(mode)
+        dismissRequestWithExitOffering?.let {
+            builder.setDismissRequestWithExitOffering(it)
+        }
         return PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offering)
-                .setPurchaseLogic(customPurchaseLogic)
-                .setMode(mode)
-                .build(),
+            builder.build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = shouldDisplayBlock,
