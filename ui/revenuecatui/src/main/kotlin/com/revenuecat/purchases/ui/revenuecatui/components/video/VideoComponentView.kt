@@ -9,7 +9,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,7 +81,7 @@ internal fun VideoComponentView(
 
         // Get video URL - only when visible to avoid initializing all videos at once
         val videoUrl = if (isVisible) {
-            rememberVideoContentState(style, videoState.videoUrls, repository).first
+            rememberVideoContentState(videoState.videoUrls, repository)
         } else {
             null
         }
@@ -130,68 +129,45 @@ internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): 
     return right > 0 && bottom > 0 && left < viewportWidth && top < viewportHeight
 }
 
+@Suppress("ReturnCount")
 @Composable
 private fun rememberVideoContentState(
-    style: VideoComponentStyle,
     videoUrls: VideoUrls,
     repository: FileRepository,
-): Pair<URI?, ImageComponentStyle?> {
-    val fallbackImageViewStyle: ImageComponentStyle? = remember(style.fallbackSources) {
-        style.fallbackSources?.let { sources ->
-            ImageComponentStyle(
-                sources = sources,
-                visible = style.visible,
-                size = style.size,
-                // parent Box already handles padding, border, etc
-                padding = PaddingValues(0.dp),
-                margin = PaddingValues(0.dp),
-                shape = null,
-                border = null,
-                shadow = null,
-                overlay = style.overlay,
-                contentScale = style.contentScale,
-                rcPackage = style.rcPackage,
-                tabIndex = style.tabIndex,
-                overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
-                ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-            )
-        }
+): URI? {
+    // 1. High-res cached → use immediately
+    val cachedHighRes = remember(videoUrls.url) {
+        repository.getFile(videoUrls.url, videoUrls.checksum)
+    }
+    if (cachedHighRes != null) {
+        return cachedHighRes
     }
 
-    var videoUrl by rememberSaveable(videoUrls.url) {
-        mutableStateOf(repository.getFile(videoUrls.url, videoUrls.checksum))
-    }
-
-    suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
-        try {
-            if (setLowResVideoURLFirst) {
-                videoUrl = videoUrls.urlLowRes?.toString()?.let(::URI)
-            }
-
-            val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-            videoUrl = url
-        } catch (_: Exception) {
-            videoUrl = videoUrls.url.toString().let(::URI)
-        }
-    }
-
-    if (videoUrl == null) {
+    // 2. Low-res cached → use immediately, cache high-res in background
+    val cachedLowRes = remember(videoUrls.url) {
         videoUrls.urlLowRes
             ?.takeIf { it != videoUrls.url }
-            ?.run {
-                videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
-
-                LaunchedEffect(Unit) {
-                    fetchVideoUrl(setLowResVideoURLFirst = videoUrl == null)
-                }
+            ?.let { repository.getFile(it, videoUrls.checksumLowRes) }
+    }
+    if (cachedLowRes != null) {
+        LaunchedEffect(videoUrls.url) {
+            runCatching {
+                repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
             }
+        }
+        return cachedLowRes
     }
 
-    if (videoUrl == null) {
-        LaunchedEffect(Unit) {
-            fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
+    // 3. Nothing cached → stream remote URL, cache both in background
+    LaunchedEffect(videoUrls.url) {
+        runCatching {
+            repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
+        }
+        videoUrls.urlLowRes?.takeIf { it != videoUrls.url }?.let {
+            runCatching {
+                repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
+            }
         }
     }
-
-    return videoUrl to fallbackImageViewStyle
+    return videoUrls.url.toURI()
 }
