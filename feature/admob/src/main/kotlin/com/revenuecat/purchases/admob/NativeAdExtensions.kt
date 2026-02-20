@@ -46,21 +46,21 @@ public fun AdLoader.Builder.forNativeAdWithTracking(
     onPaidEventListener: OnPaidEventListener? = null,
     onNativeAdLoaded: (NativeAd) -> Unit = {},
 ): AdLoader.Builder {
-    var loadedNativeAd: NativeAd? = null
-    val responseInfoProvider: () -> ResponseInfo? = { loadedNativeAd?.responseInfo }
+    var latestResponseInfo: ResponseInfo? = null
+    val responseInfoProvider: () -> ResponseInfo? = { latestResponseInfo }
 
     this.forNativeAd { nativeAd ->
-        loadedNativeAd = nativeAd
+        latestResponseInfo = nativeAd.responseInfo
 
         trackIfConfigured {
             adTracker.trackAdLoaded(
                 AdLoadedData(
-                    networkName = nativeAd.responseInfo?.mediationAdapterClassName,
+                    networkName = latestResponseInfo?.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,
                     adFormat = AdFormat.NATIVE,
                     placement = placement,
                     adUnitId = adUnitId,
-                    impressionId = nativeAd.responseInfo?.responseId.orEmpty(),
+                    impressionId = latestResponseInfo?.responseId.orEmpty(),
                 ),
             )
         }
