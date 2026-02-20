@@ -349,7 +349,7 @@ internal class PaywallViewModelImpl(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
                                     )
-                                    options.dismissRequest()
+                                    closePaywall()
                                 }
                             }
                         }
@@ -486,7 +486,7 @@ internal class PaywallViewModelImpl(
                             purchases.syncPurchases()
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after purchase")
-                            options.dismissRequest()
+                            closePaywall()
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
