@@ -195,3 +195,8 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **Version Management**: Centralized in `.version` file
 - **Publishing**: Maven Central through Sonatype
 - **Documentation**: Dokka for API docs
+
+## Guardrails
+
+- **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files
+- **Never commit API keys or secrets** — do not stage or commit API keys, tokens, credentials, or any sensitive data
