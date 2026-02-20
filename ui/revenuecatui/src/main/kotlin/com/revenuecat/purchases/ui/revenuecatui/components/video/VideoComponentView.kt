@@ -34,8 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import java.net.URI
 
 @Suppress("CyclomaticComplexMethod", "LongMethod", "ModifierNotUsedAtRoot", "ModifierReused")
@@ -136,46 +134,39 @@ private fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
 ): URI? {
-    // Check high-res cache synchronously
+    // 1. High-res cached → use immediately
     val cachedHighRes = remember(videoUrls.url) {
         repository.getFile(videoUrls.url, videoUrls.checksum)
     }
-
-    var videoUrl by remember(videoUrls.url) { mutableStateOf(cachedHighRes) }
-
-    if (cachedHighRes == null) {
-        // Not cached — concurrently fetch both resolutions
-        LaunchedEffect(videoUrls.url) {
-            val resolved = resolveVideoUrl(videoUrls, repository)
-
-            if (resolved != null) {
-                videoUrl = resolved
-            }
-        }
+    if (cachedHighRes != null) {
+        return cachedHighRes
     }
 
-    return videoUrl
-}
-internal suspend fun resolveVideoUrl(
-    videoUrls: VideoUrls,
-    repository: FileRepository,
-): URI? = coroutineScope {
-    val highResDeferred = async {
+    // 2. Low-res cached → use immediately, cache high-res in background
+    val cachedLowRes = remember(videoUrls.url) {
+        videoUrls.urlLowRes
+            ?.takeIf { it != videoUrls.url }
+            ?.let { repository.getFile(it, videoUrls.checksumLowRes) }
+    }
+    if (cachedLowRes != null) {
+        LaunchedEffect(videoUrls.url) {
+            runCatching {
+                repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
+            }
+        }
+        return cachedLowRes
+    }
+
+    // 3. Nothing cached → stream remote URL, cache both in background
+    LaunchedEffect(videoUrls.url) {
         runCatching {
             repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-        }.getOrNull()
-    }
-    val lowResDeferred = videoUrls.urlLowRes
-        ?.takeIf { it != videoUrls.url }
-        ?.let {
-            async {
-                runCatching {
-                    repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
-                }.getOrNull()
+        }
+        videoUrls.urlLowRes?.takeIf { it != videoUrls.url }?.let {
+            runCatching {
+                repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
             }
         }
-
-    val highResResult = highResDeferred.await()
-
-    highResResult ?: lowResDeferred?.await()
+    }
+    return videoUrls.url.toURI()
 }
