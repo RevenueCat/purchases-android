@@ -146,26 +146,7 @@ private fun rememberVideoContentState(
     if (cachedHighRes == null) {
         // Not cached — concurrently fetch both resolutions
         LaunchedEffect(videoUrls.url) {
-            val resolved = coroutineScope {
-                val highResDeferred = async {
-                    runCatching {
-                        repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-                    }.getOrNull()
-                }
-                val lowResDeferred = videoUrls.urlLowRes
-                    ?.takeIf { it != videoUrls.url }
-                    ?.let {
-                        async {
-                            runCatching {
-                                repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
-                            }.getOrNull()
-                        }
-                    }
-
-                val highResResult = highResDeferred.await()
-
-                highResResult ?: lowResDeferred?.await()
-            }
+            val resolved = resolveVideoUrl(videoUrls, repository)
 
             if (resolved != null) {
                 videoUrl = resolved
@@ -174,4 +155,27 @@ private fun rememberVideoContentState(
     }
 
     return videoUrl
+}
+internal suspend fun resolveVideoUrl(
+    videoUrls: VideoUrls,
+    repository: FileRepository,
+): URI? = coroutineScope {
+    val highResDeferred = async {
+        runCatching {
+            repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
+        }.getOrNull()
+    }
+    val lowResDeferred = videoUrls.urlLowRes
+        ?.takeIf { it != videoUrls.url }
+        ?.let {
+            async {
+                runCatching {
+                    repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
+                }.getOrNull()
+            }
+        }
+
+    val highResResult = highResDeferred.await()
+
+    highResResult ?: lowResDeferred?.await()
 }
