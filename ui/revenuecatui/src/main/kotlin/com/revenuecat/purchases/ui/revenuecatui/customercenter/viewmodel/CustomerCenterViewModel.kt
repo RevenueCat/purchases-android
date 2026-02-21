@@ -269,22 +269,24 @@ internal class CustomerCenterViewModelImpl(
             if (currentState is CustomerCenterState.Success) {
                 val screen = currentState.customerCenterConfigData.getManagementScreen()
                 if (screen != null) {
-                    val baseSupportedPaths = supportedPaths(
+                    val detailSupportedPaths = computeDetailScreenPaths(
                         purchase,
                         screen,
                         currentState.customerCenterConfigData.localization,
                     )
 
-                    // For detail screen: only show subscription-specific actions
-                    val detailSupportedPaths = PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
-
-                    currentState.copy(
-                        navigationState = currentState.navigationState.push(
-                            CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
-                        ),
-                        navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
-                        detailScreenPaths = detailSupportedPaths,
-                    )
+                    // Only navigate if there are actions available in the detail view
+                    if (detailSupportedPaths.isNotEmpty()) {
+                        currentState.copy(
+                            navigationState = currentState.navigationState.push(
+                                CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
+                            ),
+                            navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                            detailScreenPaths = detailSupportedPaths,
+                        )
+                    } else {
+                        currentState
+                    }
                 } else {
                     Logger.e("No management screen available in the customer center config data")
                     CustomerCenterState.Error(
@@ -298,6 +300,20 @@ internal class CustomerCenterViewModelImpl(
                 currentState
             }
         }
+    }
+
+    private fun computeDetailScreenPaths(
+        purchase: PurchaseInformation,
+        screen: CustomerCenterConfigData.Screen,
+        localization: CustomerCenterConfigData.Localization,
+    ): List<HelpPath> {
+        val baseSupportedPaths = supportedPaths(
+            purchase,
+            screen,
+            localization,
+        )
+        // For detail screen: only show subscription-specific actions
+        return PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
     }
 
     override fun onCustomActionSelected(customActionData: CustomActionData) {
@@ -634,6 +650,22 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    private fun computePurchasesWithActions(
+        purchases: List<PurchaseInformation>,
+        customerCenterConfigData: CustomerCenterConfigData,
+    ): Set<PurchaseInformation> {
+        val screen = customerCenterConfigData.getManagementScreen() ?: return emptySet()
+
+        return purchases.filter { purchase ->
+            val detailPaths = computeDetailScreenPaths(
+                purchase,
+                screen,
+                customerCenterConfigData.localization,
+            )
+            detailPaths.isNotEmpty()
+        }.toSet()
+    }
+
     private suspend fun loadPurchases(
         dateFormatter: DateFormatter,
         locale: Locale,
@@ -814,10 +846,6 @@ internal class CustomerCenterViewModelImpl(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
                 )
-                currentState.copy(
-                    navigationState = currentState.navigationState.push(promotionalOfferDestination),
-                    navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                )
             } else {
                 currentState
             }
@@ -969,12 +997,20 @@ internal class CustomerCenterViewModelImpl(
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
+                purchasesWithActions = emptySet(), // Will be computed below
                 isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
+            val purchasesWithActions = computePurchasesWithActions(
+                purchaseInformationList,
+                customerCenterConfigData,
+            )
 
             _state.update {
-                successState.copy(mainScreenPaths = mainScreenPaths)
+                successState.copy(
+                    mainScreenPaths = mainScreenPaths,
+                    purchasesWithActions = purchasesWithActions,
+                )
             }
         } catch (e: PurchasesException) {
             _state.update { currentState ->
