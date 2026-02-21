@@ -243,7 +243,7 @@ class StyleFactoryTests {
             text = baseLocalizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                 properties = PartialTextComponent(text = overrideLocalizationKey)
             ))
         )
@@ -287,7 +287,7 @@ class StyleFactoryTests {
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             fontName = fontAliasBase,
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                 properties = PartialTextComponent(fontName = fontAliasOverride)
             ))
         )
@@ -352,7 +352,7 @@ class StyleFactoryTests {
             text = LOCALIZATION_KEY_TEXT_1,
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
             overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                 properties = PartialTextComponent(fontName = missingFontAlias)
             ))
         )
@@ -445,7 +445,7 @@ class StyleFactoryTests {
             source = expectedBaseSource,
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                     properties = PartialImageComponent(source = expectedIntroSource),
                 ),
                 ComponentOverride(

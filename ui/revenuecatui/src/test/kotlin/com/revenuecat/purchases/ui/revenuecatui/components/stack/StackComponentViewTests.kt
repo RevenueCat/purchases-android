@@ -441,7 +441,7 @@ class StackComponentViewTests {
             ),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())
@@ -598,7 +598,7 @@ class StackComponentViewTests {
             ),
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                     properties = PartialStackComponent(
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(expectedSingleEligibleBackgroundColor.toArgb())

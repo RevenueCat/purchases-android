@@ -37,4 +37,7 @@ internal object PaywallValidationErrorStrings {
     const val UNSUPPORTED_BACKGROUND_TYPE = "This SDK version does not support this background type: %s"
     const val ROOT_COMPONENT_UNSUPPORTED_PROPERTIES =
         "This paywall's root component is hidden because it contains unsupported properties: %s"
+    const val UNSUPPORTED_CONDITION =
+        "This paywall contains component overrides with conditions that are not supported by this SDK version. " +
+            "Falling back to default paywall."
 }
