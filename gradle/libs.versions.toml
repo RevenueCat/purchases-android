@@ -4,7 +4,7 @@ android-compileSdk = "35"
 android-minSdk = "21"
 android-targetSdk = "35"
 
-agp = "8.13.2"
+agp = "9.0.1"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
