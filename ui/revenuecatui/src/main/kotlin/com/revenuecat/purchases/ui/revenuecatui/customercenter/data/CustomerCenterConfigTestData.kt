@@ -249,9 +249,23 @@ internal object CustomerCenterConfigTestData {
     )
 
     val purchaseInformationPromotional = PurchaseInformation(
-        title = "rc_promo_Test1_lifetime",
+        title = "Entitlement",
         pricePaid = PriceDetails.Free,
-        expirationOrRenewal = ExpirationOrRenewal.Expiration("April 24th, 2225"),
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("October 25th, 2025"),
+        store = Store.PROMOTIONAL,
+        managementURL = null,
+        product = null,
+        isSubscription = false,
+        isExpired = false,
+        isTrial = false,
+        isCancelled = true,
+        isLifetime = true,
+    )
+
+    val purchaseInformationPromotionalLifetime = PurchaseInformation(
+        title = "Entitlement",
+        pricePaid = PriceDetails.Free,
+        expirationOrRenewal = ExpirationOrRenewal.Expiration("September 6th, 2225"),
         store = Store.PROMOTIONAL,
         managementURL = null,
         product = null,

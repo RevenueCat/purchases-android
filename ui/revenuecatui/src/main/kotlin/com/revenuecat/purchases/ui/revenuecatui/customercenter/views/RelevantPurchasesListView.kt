@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -46,7 +47,9 @@ internal fun RelevantPurchasesListView(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.Start,
     ) {
-        val subscriptions = purchases.filter { it.isSubscription }.toSet()
+        val subscriptions = purchases.filter {
+            it.isSubscription || (it.store == Store.PROMOTIONAL && !it.isLifetime)
+        }.toSet()
         val nonSubscriptions = (purchases - subscriptions).toSet()
 
         PurchaseListSection(
