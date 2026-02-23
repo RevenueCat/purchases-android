@@ -37,6 +37,9 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.ProductChange
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
@@ -2044,6 +2047,281 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue
     }
 
+    @Test
+    fun `MY_APP suspend purchase receives product change info when detected`(): Unit = runBlocking {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } returns ProductChangeInfo(
+            oldProductId = "old_product",
+            replacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        customPurchaseCalled.first { it }
+
+        val receivedContext = myAppPurchaseLogic.receivedContext
+        assertThat(receivedContext).isNotNull
+        assertThat(receivedContext!!.productChange).isNotNull
+        assertThat(receivedContext.productChange!!.oldProductId).isEqualTo("old_product")
+        assertThat(receivedContext.productChange!!.replacementMode)
+            .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `MY_APP callback purchase receives product change info when detected`(): Unit = runBlocking {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } returns ProductChangeInfo(
+            oldProductId = "old_product",
+            replacementMode = GoogleReplacementMode.DEFERRED,
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        customPurchaseCalled.first { it }
+
+        val receivedContext = myAppPurchaseLogic.receivedContext
+        assertThat(receivedContext).isNotNull
+        assertThat(receivedContext!!.productChange).isNotNull
+        assertThat(receivedContext.productChange!!.oldProductId).isEqualTo("old_product")
+        assertThat(receivedContext.productChange!!.replacementMode)
+            .isEqualTo(GoogleReplacementMode.DEFERRED)
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `MY_APP suspend purchase receives null product change when no active subscription`(): Unit = runBlocking {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } returns null
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        customPurchaseCalled.first { it }
+
+        assertThat(myAppPurchaseLogic.receivedContext).isNotNull
+        assertThat(myAppPurchaseLogic.receivedContext!!.productChange).isNull()
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `MY_APP suspend purchase receives subscription option from resolved offer`(): Unit = runBlocking {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
+        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+            option = promoSubscriptionOption,
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = resolvedOffer,
+        )
+
+        customPurchaseCalled.first { it }
+
+        assertThat(myAppPurchaseLogic.receivedContext).isNotNull
+        assertThat(myAppPurchaseLogic.receivedContext!!.subscriptionOption).isEqualTo(promoSubscriptionOption)
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissInvoked).isTrue
+    }
+
     // endregion product change
 
     // region dismissRequestWithExitOffering
@@ -2322,6 +2600,91 @@ class PaywallViewModelTest {
             val result = purchaseResult
                 ?: throw IllegalArgumentException("purchaseResult cannot be null")
 
+            purchaseFlow.value = true
+            return result
+        }
+
+        override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
+            val restoreFlow = customRestoreCalled
+                ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
+            val result = restoreResult
+                ?: throw IllegalArgumentException("restoreResult cannot be null")
+
+            restoreFlow.value = true
+            return result
+        }
+    }
+
+    private class TestAppPurchaseLogicWithContextCallbacks(
+        private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
+        private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null,
+    ) : PurchaseLogicWithCallback() {
+        var receivedContext: PaywallPurchaseContext? = null
+            private set
+
+        override fun performPurchaseWithCompletion(
+            activity: Activity,
+            rcPackage: Package,
+            completion: (PurchaseLogicResult) -> Unit,
+        ) {
+            fail("Expected the context-aware overload to be called instead")
+        }
+
+        override fun performPurchaseWithCompletion(
+            activity: Activity,
+            context: PaywallPurchaseContext,
+            completion: (PurchaseLogicResult) -> Unit,
+        ) {
+            val purchaseFlow = customPurchaseCalled
+                ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
+            val result = purchaseResult
+                ?: throw IllegalArgumentException("purchaseResult cannot be null")
+
+            receivedContext = context
+            purchaseFlow.value = true
+            completion(result)
+        }
+
+        override fun performRestoreWithCompletion(
+            customerInfo: CustomerInfo,
+            completion: (PurchaseLogicResult) -> Unit,
+        ) {
+            val restoreFlow = customRestoreCalled
+                ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
+            val result = restoreResult
+                ?: throw IllegalArgumentException("restoreResult cannot be null")
+
+            restoreFlow.value = true
+            completion(result)
+        }
+    }
+
+    private class TestAppPurchaseLogicWithContextSuspend(
+        private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
+        private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null,
+    ) : PurchaseLogic {
+        var receivedContext: PaywallPurchaseContext? = null
+            private set
+
+        override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
+            fail("Expected the context-aware overload to be called instead")
+            throw IllegalStateException()
+        }
+
+        override suspend fun performPurchase(
+            activity: Activity,
+            context: PaywallPurchaseContext,
+        ): PurchaseLogicResult {
+            val purchaseFlow = customPurchaseCalled
+                ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
+            val result = purchaseResult
+                ?: throw IllegalArgumentException("purchaseResult cannot be null")
+
+            receivedContext = context
             purchaseFlow.value = true
             return result
         }
