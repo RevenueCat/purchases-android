@@ -5,6 +5,10 @@ package com.revenuecat.purchases.common.events
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -405,7 +409,11 @@ class EventsManagerTest {
         assertThat(file.exists()).isEqualTo(shouldExist)
     }
 
-    private fun mockBackendResponse(success: Boolean, shouldMarkAsSyncedOnError: Boolean = false) {
+    private fun mockBackendResponse(
+        success: Boolean,
+        shouldMarkAsSyncedOnError: Boolean = false,
+        underlyingErrorMessage: String? = null,
+    ) {
         val successSlot = slot<() -> Unit>()
         val errorSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every {
@@ -414,7 +422,10 @@ class EventsManagerTest {
             if (success) {
                 successSlot.captured.invoke()
             } else {
-                errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), shouldMarkAsSyncedOnError)
+                errorSlot.captured.invoke(
+                    PurchasesError(PurchasesErrorCode.UnknownError, underlyingErrorMessage),
+                    shouldMarkAsSyncedOnError,
+                )
             }
         }
     }
@@ -793,5 +804,91 @@ class EventsManagerTest {
             // Should not throw exception
             assertThat(line).startsWith("{\"type\":")
         }
+    }
+
+    // Debug Event Listener Tests
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified when file size limit is reached`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        // Track enough events to trigger the file size limit
+        for (i in 0 until 7100) {
+            eventsManager.track(paywallEvent)
+        }
+
+        assertThat(receivedEvents).isNotEmpty
+        assertThat(receivedEvents.all { it.name == DebugEventName.FILE_SIZE_LIMIT_REACHED }).isTrue
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified on flush error`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = "Server returned 500",
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["errorCode"]).isEqualTo(PurchasesErrorCode.UnknownError.name)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).isEqualTo("Server returned 500")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error truncates underlyingErrorMessage to 80 chars`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        val longMessage = "A".repeat(120)
+        mockBackendResponse(
+            success = false,
+            shouldMarkAsSyncedOnError = false,
+            underlyingErrorMessage = longMessage,
+        )
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties["underlyingErrorMessage"]).hasSize(80)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener flush error omits underlyingErrorMessage when null`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = false, shouldMarkAsSyncedOnError = false)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).hasSize(1)
+        assertThat(flushErrors.first().properties).doesNotContainKey("underlyingErrorMessage")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is not notified when no error occurs`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
+        assertThat(flushErrors).isEmpty()
     }
 }

@@ -276,6 +276,21 @@ platform :android do
     )
   end
 
+  desc "Build RCT tester app bundle"
+  lane :build_rct_tester_bundle do
+    build_bundle(
+      build_task: 'examples:rcttester:bundleBc8',
+      env_prefix: 'RCT_TESTER',
+      gradle_properties_prefix: 'rcTester'
+    )
+  end
+
+  desc "Publish RCT tester to the specified track on Google Play"
+  lane :publish_rct_tester do |options|
+    options[:package_name] = 'com.revenuecat.rcttester'
+    publish_to_track(options)
+  end
+
   desc "Build purchases module integration tests pointing to production"
   lane :build_default_purchases_integration_tests do |options|
     build_purchases_integration_tests(
@@ -594,6 +609,13 @@ platform :android do
     gradle(
       project_dir: project_dir,
       task: task,
+    )
+  end
+
+  desc "Builds an AdMob Integration Sample APK"
+  lane :build_admob_integration_sample do |options|
+    gradle(
+      task: ":examples:admob-sample:assembleDebug",
     )
   end
 

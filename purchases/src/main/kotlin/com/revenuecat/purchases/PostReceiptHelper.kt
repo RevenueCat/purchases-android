@@ -120,7 +120,7 @@ internal class PostReceiptHelper(
                     ?.values
                     ?.firstOrNull()
                     ?.shouldConsume
-                    ?: true
+                    ?: false
                 billing.consumeAndSave(finishTransactions, purchase, shouldConsume, initiationSource)
                 onSuccess?.let { it(purchase, postReceiptResponse.customerInfo) }
             },

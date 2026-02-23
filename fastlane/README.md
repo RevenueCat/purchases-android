@@ -213,6 +213,14 @@ Builds a Magic Weather Compose APK
 
 Builds a Magic Weather Compose APK
 
+### android build_admob_integration_sample
+
+```sh
+[bundle exec] fastlane android build_admob_integration_sample
+```
+
+Builds an AdMob Integration Sample APK
+
 ### android build_magic_weather
 
 ```sh
