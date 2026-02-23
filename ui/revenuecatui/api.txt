@@ -102,9 +102,40 @@ package com.revenuecat.purchases.ui.revenuecatui {
   public static final class PaywallOptions.Companion {
   }
 
-  public interface PurchaseLogic {
-    method public suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
-    method public suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+  @dev.drewhamilton.poko.Poko public final class PaywallPurchaseContext {
+    ctor public PaywallPurchaseContext(com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.ui.revenuecatui.ProductChange? productChange, com.revenuecat.purchases.models.SubscriptionOption? subscriptionOption);
+    method public com.revenuecat.purchases.ui.revenuecatui.ProductChange? getProductChange();
+    method public com.revenuecat.purchases.Package getRcPackage();
+    method public com.revenuecat.purchases.models.SubscriptionOption? getSubscriptionOption();
+    property public final com.revenuecat.purchases.ui.revenuecatui.ProductChange? productChange;
+    property public final com.revenuecat.purchases.Package rcPackage;
+    property public final com.revenuecat.purchases.models.SubscriptionOption? subscriptionOption;
+  }
+
+  public interface PaywallPurchaseLogic extends com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
+    method public default suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method public suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext context, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+  }
+
+  public abstract class PaywallPurchaseLogicWithCallback implements com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic {
+    ctor public PaywallPurchaseLogicWithCallback();
+    method public final suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext context, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method public abstract void performPurchaseWithCompletion(android.app.Activity activity, com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext context, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
+    method public final suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
+  }
+
+  @dev.drewhamilton.poko.Poko public final class ProductChange {
+    ctor public ProductChange(String oldProductId, com.revenuecat.purchases.ReplacementMode? replacementMode);
+    method public String getOldProductId();
+    method public com.revenuecat.purchases.ReplacementMode? getReplacementMode();
+    property public final String oldProductId;
+    property public final com.revenuecat.purchases.ReplacementMode? replacementMode;
+  }
+
+  @Deprecated public interface PurchaseLogic {
+    method @Deprecated public suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method @Deprecated public suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
   }
 
   public sealed interface PurchaseLogicResult {
@@ -124,12 +155,12 @@ package com.revenuecat.purchases.ui.revenuecatui {
     field public static final com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult.Success INSTANCE;
   }
 
-  public abstract class PurchaseLogicWithCallback implements com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
-    ctor public PurchaseLogicWithCallback();
-    method public final suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
-    method public abstract void performPurchaseWithCompletion(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
-    method public final suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
-    method public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
+  @Deprecated public abstract class PurchaseLogicWithCallback implements com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
+    ctor @Deprecated public PurchaseLogicWithCallback();
+    method @Deprecated public final suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method @Deprecated public abstract void performPurchaseWithCompletion(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
+    method @Deprecated public final suspend Object? performRestore(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
+    method @Deprecated public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
   }
 
 }
