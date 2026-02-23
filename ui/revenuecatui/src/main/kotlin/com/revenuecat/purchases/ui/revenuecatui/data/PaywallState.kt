@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -61,6 +62,7 @@ internal sealed interface PaywallState {
             val templateConfiguration: TemplateConfiguration,
             val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
             val shouldDisplayDismissButton: Boolean,
+            val validationWarning: PaywallWarning? = null,
         ) : Loaded {
 
             constructor(
@@ -68,12 +70,14 @@ internal sealed interface PaywallState {
                 templateConfiguration: TemplateConfiguration,
                 selectedPackage: TemplateConfiguration.PackageInfo,
                 shouldDisplayDismissButton: Boolean,
+                validationWarning: PaywallWarning? = null,
             ) :
                 this(
                     offering,
                     templateConfiguration,
                     mutableStateOf(selectedPackage),
                     shouldDisplayDismissButton,
+                    validationWarning,
                 )
 
             fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {

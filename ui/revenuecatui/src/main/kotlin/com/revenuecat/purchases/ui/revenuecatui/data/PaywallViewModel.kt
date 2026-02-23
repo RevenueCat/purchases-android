@@ -651,6 +651,7 @@ internal class PaywallViewModelImpl(
                 template = validationResult.template,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 storefrontCountryCode = storefrontCountryCode,
+                validationWarning = validationResult.warning,
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,
