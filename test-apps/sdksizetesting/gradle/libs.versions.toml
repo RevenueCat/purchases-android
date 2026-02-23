@@ -8,7 +8,7 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.2"
 composeBom = "2024.09.00"
-purchases = "9.22.1"
+purchases = "9.23.0-SNAPSHOT"
 emergeGradlePlugin = "4.4.0"
 
 [libraries]
