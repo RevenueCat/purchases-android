@@ -171,6 +171,10 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
         completion: (PurchaseLogicResult) -> Unit,
     )
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
+     * custom purchase logic is performed.
+     */
     final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
@@ -178,6 +182,10 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
             }
         }
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
+     * custom restore logic is performed.
+     */
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
@@ -230,6 +238,10 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
         completion: (PurchaseLogicResult) -> Unit,
     )
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
+     * custom purchase logic is performed.
+     */
     final override suspend fun performPurchase(
         activity: Activity,
         context: PaywallPurchaseContext,
@@ -240,6 +252,10 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
             }
         }
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
+     * custom restore logic is performed.
+     */
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
