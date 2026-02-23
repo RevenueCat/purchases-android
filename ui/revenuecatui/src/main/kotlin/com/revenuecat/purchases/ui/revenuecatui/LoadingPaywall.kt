@@ -183,6 +183,7 @@ private class LoadingViewModel(
 
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
+    override val actionErrorMessage: State<String?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 

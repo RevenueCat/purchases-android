@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -67,6 +68,7 @@ internal interface PaywallViewModel {
     val resourceProvider: ResourceProvider
     val actionInProgress: State<Boolean>
     val actionError: State<PurchasesError?>
+    val actionErrorMessage: State<String?>
     val purchaseCompleted: State<Boolean>
     val preloadedExitOffering: State<Offering?>
 
@@ -113,6 +115,8 @@ internal class PaywallViewModelImpl(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
+    override val actionErrorMessage: State<String?>
+        get() = _actionErrorMessage
     override val purchaseCompleted: State<Boolean>
         get() = _purchaseCompleted
     override val preloadedExitOffering: State<Offering?>
@@ -121,6 +125,7 @@ internal class PaywallViewModelImpl(
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+    private val _actionErrorMessage: MutableState<String?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
@@ -295,6 +300,7 @@ internal class PaywallViewModelImpl(
 
     override fun clearActionError() {
         _actionError.value = null
+        _actionErrorMessage.value = null
     }
 
     override fun trackPaywallImpressionIfNeeded() {
@@ -358,6 +364,7 @@ internal class PaywallViewModelImpl(
                         }
                         is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let { _actionError.value = it }
+                            _actionErrorMessage.value = resourceProvider.getString(R.string.external_restore_error)
                         }
                     }
                 }
@@ -392,6 +399,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Error restoring purchases: $e")
             listener?.onRestoreError(e.error)
             _actionError.value = e.error
+            _actionErrorMessage.value = e.error.message
         }
 
         finishAction()
@@ -496,6 +504,8 @@ internal class PaywallViewModelImpl(
                                 trackPaywallPurchaseError(packageToPurchase, it)
                                 _actionError.value = it
                             }
+                            _actionErrorMessage.value =
+                                resourceProvider.getString(R.string.external_purchase_error)
                         }
                     }
                 }
@@ -545,6 +555,7 @@ internal class PaywallViewModelImpl(
                 trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
                 _actionError.value = e.error
+                _actionErrorMessage.value = e.error.message
             }
         }
 

@@ -20,4 +20,6 @@
     <string name="lifetime">Lifetime</string>
     <string name="no_browser_cannot_open_link">No browser installed. Link could not be opened.</string>
     <string name="cannot_open_link">Link invalid. Could not be opened.</string>
+    <string name="external_purchase_error">An error occurred during the purchase. Please try again.</string>
+    <string name="external_restore_error">An error occurred while restoring purchases. Please try again.</string>
 </resources>
