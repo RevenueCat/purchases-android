@@ -77,6 +77,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatten
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
@@ -762,7 +763,19 @@ internal class StyleFactory(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
-        first = localizations.stringForAllLocales(component.text),
+        first = localizations.stringForAllLocales(component.text)
+            .flatMapError { errors ->
+                val lidExistsInAnyLocale = localizations.any { (_, dict) -> dict.containsKey(component.text) }
+                // If the lid exists in some locales but not all, it's a real localization/translation
+                // issue, so we propagate the error. If it exists in NO locales, it's an orphan text_lid
+                // from a frontend bug (e.g. a badge added only in an override state).
+                if (lidExistsInAnyLocale) {
+                    Result.Error(errors)
+                } else {
+                    Logger.w("Missing text for text_lid '${component.text.value}', using empty string.")
+                    Result.Success(localizations.mapValues { "" })
+                }
+            },
         second = component.overrides
             // Map all overrides to PresentedOverrides.
             .toPresentedOverrides {
