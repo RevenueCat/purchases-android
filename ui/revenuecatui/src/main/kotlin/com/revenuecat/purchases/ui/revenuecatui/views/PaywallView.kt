@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context

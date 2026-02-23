@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -38,8 +40,10 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
@@ -2620,17 +2624,9 @@ class PaywallViewModelTest {
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : PurchaseLogicWithCallback() {
+    ) : PaywallPurchaseLogicWithCallback() {
         var receivedContext: PaywallPurchaseContext? = null
             private set
-
-        override fun performPurchaseWithCompletion(
-            activity: Activity,
-            rcPackage: Package,
-            completion: (PurchaseLogicResult) -> Unit,
-        ) {
-            fail("Expected the context-aware overload to be called instead")
-        }
 
         override fun performPurchaseWithCompletion(
             activity: Activity,
@@ -2666,14 +2662,9 @@ class PaywallViewModelTest {
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : PurchaseLogic {
+    ) : PaywallPurchaseLogic {
         var receivedContext: PaywallPurchaseContext? = null
             private set
-
-        override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
-            fail("Expected the context-aware overload to be called instead")
-            throw IllegalStateException()
-        }
 
         override suspend fun performPurchase(
             activity: Activity,

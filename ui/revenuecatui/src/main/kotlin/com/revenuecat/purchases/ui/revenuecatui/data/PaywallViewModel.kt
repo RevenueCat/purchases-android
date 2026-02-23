@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -481,20 +484,21 @@ internal class PaywallViewModelImpl(
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
-                    val purchaseContext = PaywallPurchaseContext(
-                        rcPackage = packageToPurchase,
-                        productChange = productChangeInfo?.let {
-                            ProductChange(
-                                oldProductId = it.oldProductId,
-                                replacementMode = it.replacementMode,
-                            )
-                        },
-                        subscriptionOption = subscriptionOption,
-                    )
-                    val result = myAppPurchaseLogic.performPurchase(
-                        activity,
-                        purchaseContext,
-                    )
+                    val result = if (myAppPurchaseLogic is PaywallPurchaseLogic) {
+                        val purchaseContext = PaywallPurchaseContext(
+                            rcPackage = packageToPurchase,
+                            productChange = productChangeInfo?.let {
+                                ProductChange(
+                                    oldProductId = it.oldProductId,
+                                    replacementMode = it.replacementMode,
+                                )
+                            },
+                            subscriptionOption = subscriptionOption,
+                        )
+                        myAppPurchaseLogic.performPurchase(activity, purchaseContext)
+                    } else {
+                        myAppPurchaseLogic.performPurchase(activity, packageToPurchase)
+                    }
                     when (result) {
                         is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()

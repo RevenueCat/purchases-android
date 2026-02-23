@@ -17,7 +17,14 @@ import kotlin.coroutines.suspendCoroutine
  *
  * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
  * `PurchaseLogicWithCallback`.
+ *
+ * @deprecated Use [PaywallPurchaseLogic] instead, which provides a [PaywallPurchaseContext] with support for
+ * product changes (upgrades/downgrades) and subscription offers.
  */
+@Deprecated(
+    message = "Use PaywallPurchaseLogic instead for product change and offer support.",
+    replaceWith = ReplaceWith("PaywallPurchaseLogic"),
+)
 public interface PurchaseLogic {
     /**
      * Performs an in-app purchase for the specified package.
@@ -32,10 +39,33 @@ public interface PurchaseLogic {
     public suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
 
     /**
-     * Performs an in-app purchase with additional purchase context.
+     * Restores previously completed purchases for the given customer.
      *
-     * Override this method instead of [performPurchase] when you need to handle subscription
-     * upgrades/downgrades (product changes) or specific promotional offers configured in the paywall.
+     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
+     * @param customerInfo An object containing information about the customer.
+     * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
+     */
+    public suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
+}
+
+/**
+ * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
+ * These suspend methods are called by a RevenueCat Paywall in order to execute your app's custom purchase/restore
+ * code. These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
+ *
+ * This interface provides a [PaywallPurchaseContext] containing the package to purchase along with additional
+ * context such as product change information (for upgrades/downgrades) and the specific subscription option
+ * (offer) configured in the paywall. The context object is designed to be extensible for future additions.
+ *
+ * If you prefer to implement custom purchase and restore logic with completion handlers, please use
+ * [PaywallPurchaseLogicWithCallback].
+ */
+@Suppress("DEPRECATION")
+public interface PaywallPurchaseLogic : PurchaseLogic {
+    /**
+     * Performs an in-app purchase with the given purchase context.
      *
      * The [PaywallPurchaseContext] contains the package to purchase along with product change information
      * and the specific subscription option (offer) configured in the paywall.
@@ -50,22 +80,14 @@ public interface PurchaseLogic {
     public suspend fun performPurchase(
         activity: Activity,
         context: PaywallPurchaseContext,
-    ): PurchaseLogicResult = performPurchase(activity, context.rcPackage)
+    ): PurchaseLogicResult
 
-    /**
-     * Restores previously completed purchases for the given customer.
-     *
-     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
-     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
-     *
-     * @param customerInfo An object containing information about the customer.
-     * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
-     */
-    public suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
+    override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
+        performPurchase(activity, PaywallPurchaseContext(rcPackage, productChange = null, subscriptionOption = null))
 }
 
 /**
- * Additional context provided to [PurchaseLogic] when a paywall initiates a purchase.
+ * Additional context provided to [PaywallPurchaseLogic] when a paywall initiates a purchase.
  *
  * Contains the package to purchase along with information about product changes (upgrades/downgrades)
  * and the specific subscription option (offer) to use, as configured in the paywall.
@@ -101,12 +123,20 @@ public class ProductChange(
 )
 
 /**
- * Abstract class extending `PurchaseLogic`, providing methods for handling in-app purchases and restorations
+ * Abstract class extending [PurchaseLogic], providing methods for handling in-app purchases and restorations
  * with completion callbacks rather than co-routines.
  *
  * If you prefer to implement custom purchase and restore logic with coroutines, please implement
- * `PurchaseLogic` directly.
+ * [PurchaseLogic] directly.
+ *
+ * @deprecated Use [PaywallPurchaseLogicWithCallback] instead, which provides a [PaywallPurchaseContext] with
+ * support for product changes (upgrades/downgrades) and subscription offers.
  */
+@Suppress("DEPRECATION")
+@Deprecated(
+    message = "Use PaywallPurchaseLogicWithCallback instead for product change and offer support.",
+    replaceWith = ReplaceWith("PaywallPurchaseLogicWithCallback"),
+)
 public abstract class PurchaseLogicWithCallback : PurchaseLogic {
 
     /**
@@ -127,10 +157,46 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
     )
 
     /**
-     * Performs an in-app purchase with additional purchase context, using a completion callback.
+     * Restores previously completed purchases for the given customer with a completion callback.
      *
-     * Override this method instead of [performPurchaseWithCompletion] when you need to handle subscription
-     * upgrades/downgrades (product changes) or specific promotional offers configured in the paywall.
+     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
+     * @param customerInfo An object containing information about the customer.
+     * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
+     * of the restoration process.
+     */
+    public abstract fun performRestoreWithCompletion(
+        customerInfo: CustomerInfo,
+        completion: (PurchaseLogicResult) -> Unit,
+    )
+
+    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
+        suspendCoroutine { continuation ->
+            performPurchaseWithCompletion(activity, rcPackage) { result ->
+                continuation.resume(result)
+            }
+        }
+
+    final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
+        suspendCoroutine { continuation ->
+            performRestoreWithCompletion(customerInfo) { result ->
+                continuation.resume(result)
+            }
+        }
+}
+
+/**
+ * Abstract class extending [PaywallPurchaseLogic], providing methods for handling in-app purchases and
+ * restorations with completion callbacks rather than co-routines.
+ *
+ * If you prefer to implement custom purchase and restore logic with coroutines, please implement
+ * [PaywallPurchaseLogic] directly.
+ */
+public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
+
+    /**
+     * Performs an in-app purchase with additional purchase context, using a completion callback.
      *
      * The [PaywallPurchaseContext] contains the package to purchase along with product change information
      * and the specific subscription option (offer) configured in the paywall.
@@ -143,13 +209,11 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the purchase operation.
      */
-    public open fun performPurchaseWithCompletion(
+    public abstract fun performPurchaseWithCompletion(
         activity: Activity,
         context: PaywallPurchaseContext,
         completion: (PurchaseLogicResult) -> Unit,
-    ) {
-        performPurchaseWithCompletion(activity, context.rcPackage, completion)
-    }
+    )
 
     /**
      * Restores previously completed purchases for the given customer with a completion callback.
@@ -166,21 +230,6 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
         completion: (PurchaseLogicResult) -> Unit,
     )
 
-    /**
-     * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
-     * custom purchase logic is performed.
-     */
-    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
-        suspendCoroutine { continuation ->
-            performPurchaseWithCompletion(activity, rcPackage) { result ->
-                continuation.resume(result)
-            }
-        }
-
-    /**
-     * This method is called by RevenueCat, which in turn calls the context-aware
-     * `performPurchaseWithCompletion` where your app's custom purchase logic is performed.
-     */
     final override suspend fun performPurchase(
         activity: Activity,
         context: PaywallPurchaseContext,
@@ -191,10 +240,6 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
             }
         }
 
-    /**
-     * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
-     * custom purchase logic is performed.
-     */
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
