@@ -16,10 +16,10 @@ import dev.drewhamilton.poko.Poko
 @Poko
 public class PurchaseParams(public val builder: Builder) {
 
-    internal val isPersonalizedPrice: Boolean?
-    internal val oldProductId: String?
-    internal val googleReplacementMode: GoogleReplacementMode
-    internal val galaxyReplacementMode: GalaxyReplacementMode
+    public val isPersonalizedPrice: Boolean?
+    public val oldProductId: String?
+    public val googleReplacementMode: GoogleReplacementMode
+    public val galaxyReplacementMode: GalaxyReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
