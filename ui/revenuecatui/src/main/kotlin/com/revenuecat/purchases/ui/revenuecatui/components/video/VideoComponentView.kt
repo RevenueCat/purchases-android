@@ -9,6 +9,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,6 +20,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
@@ -34,7 +36,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.coroutines.launch
 import java.net.URI
+import java.net.URL
 
 @Suppress("CyclomaticComplexMethod", "LongMethod", "ModifierNotUsedAtRoot", "ModifierReused")
 @JvmSynthetic
@@ -129,45 +134,54 @@ internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): 
     return right > 0 && bottom > 0 && left < viewportWidth && top < viewportHeight
 }
 
-@Suppress("ReturnCount")
 @Composable
 private fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
-): URI? {
-    // 1. High-res cached → use immediately
-    val cachedHighRes = remember(videoUrls.url) {
-        repository.getFile(videoUrls.url, videoUrls.checksum)
-    }
-    if (cachedHighRes != null) {
-        return cachedHighRes
+): URI {
+    val videoUrl = rememberSaveable(videoUrls.url) {
+        resolveVideoUrl(videoUrls, repository)
     }
 
-    // 2. Low-res cached → use immediately, cache high-res in background
-    val cachedLowRes = remember(videoUrls.url) {
-        videoUrls.urlLowRes
-            ?.takeIf { it != videoUrls.url }
-            ?.let { repository.getFile(it, videoUrls.checksumLowRes) }
-    }
-    if (cachedLowRes != null) {
-        LaunchedEffect(videoUrls.url) {
-            runCatching {
-                repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-            }
-        }
-        return cachedLowRes
-    }
-
-    // 3. Nothing cached → stream remote URL, cache both in background
+    // Cache both resolutions in parallel in the background
     LaunchedEffect(videoUrls.url) {
-        runCatching {
-            repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-        }
+        launch { cacheVideo(videoUrls.url, videoUrls.checksum, repository) }
         videoUrls.urlLowRes?.takeIf { it != videoUrls.url }?.let {
-            runCatching {
-                repository.generateOrGetCachedFileURL(it, videoUrls.checksumLowRes)
-            }
+            launch { cacheVideo(it, videoUrls.checksumLowRes, repository) }
         }
     }
+
+    return videoUrl
+}
+
+@Suppress("ReturnCount")
+@JvmSynthetic
+internal fun resolveVideoUrl(
+    videoUrls: VideoUrls,
+    repository: FileRepository,
+): URI {
+    // 1. High-res cached → use immediately
+    repository.getFile(videoUrls.url, videoUrls.checksum)?.let { return it }
+
+    // 2. Low-res cached → use as fallback
+    videoUrls.urlLowRes
+        ?.takeIf { it != videoUrls.url }
+        ?.let { repository.getFile(it, videoUrls.checksumLowRes) }
+        ?.let { return it }
+
+    // 3. Nothing cached → stream remote URL
     return videoUrls.url.toURI()
+}
+
+@JvmSynthetic
+internal suspend fun cacheVideo(
+    url: URL,
+    checksum: Checksum?,
+    repository: FileRepository,
+) {
+    try {
+        repository.generateOrGetCachedFileURL(url, checksum)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        Logger.e("Failed to cache video: $url", e)
+    }
 }
