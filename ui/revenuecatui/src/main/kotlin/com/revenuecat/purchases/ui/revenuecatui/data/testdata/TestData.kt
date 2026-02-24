@@ -523,8 +523,6 @@ internal class MockViewModel(
         get() = _actionInProgress
     override val actionError: State<PurchasesError?>
         get() = _actionError
-    override val actionErrorMessage: State<String?>
-        get() = _actionErrorMessage
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
 
@@ -553,7 +551,6 @@ internal class MockViewModel(
 
     private val _actionInProgress = mutableStateOf(false)
     private val _actionError = mutableStateOf<PurchasesError?>(null)
-    private val _actionErrorMessage = mutableStateOf<String?>(null)
 
     var trackPaywallImpressionIfNeededCallCount = 0
         private set

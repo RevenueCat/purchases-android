@@ -138,11 +138,11 @@ internal fun InternalPaywall(
         }
 
         is PaywallState.Loaded -> {
-            viewModel.actionErrorMessage.value?.let { errorMessage ->
+            viewModel.actionError.value?.let { error ->
                 val errorDialog = @Composable {
                     ErrorDialog(
                         dismissRequest = viewModel::clearActionError,
-                        error = errorMessage,
+                        error = error.underlyingErrorMessage ?: error.message,
                     )
                 }
                 when (state) {
