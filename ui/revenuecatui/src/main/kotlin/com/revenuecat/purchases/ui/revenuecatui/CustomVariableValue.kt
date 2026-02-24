@@ -25,13 +25,13 @@ import kotlinx.parcelize.Parcelize
  * Hello {{ custom.player_name }}!
  * ```
  */
-abstract class CustomVariableValue internal constructor() : Parcelable {
+public abstract class CustomVariableValue internal constructor() : Parcelable {
 
     /**
      * A string value.
      */
     @Parcelize
-    class String(val value: kotlin.String) : CustomVariableValue(), Parcelable {
+    public class String(public val value: kotlin.String) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is String && value == other.value
 
@@ -73,7 +73,7 @@ abstract class CustomVariableValue internal constructor() : Parcelable {
     /**
      * The string representation of this value for use in paywall text replacement.
      */
-    val stringValue: kotlin.String
+    public val stringValue: kotlin.String
         get() = when (this) {
             is String -> value
             is Number -> {
@@ -115,17 +115,22 @@ abstract class CustomVariableValue internal constructor() : Parcelable {
 internal object CustomVariableKeyValidator {
 
     /**
-     * Validates all keys in a custom variables map and logs warnings for invalid keys.
+     * Validates all keys in a custom variables map, logs warnings for invalid keys,
+     * and returns a new map containing only valid entries.
      */
-    fun validate(variables: Map<String, CustomVariableValue>) {
-        for (key in variables.keys) {
-            if (!isValidKey(key)) {
+    fun validateAndFilter(variables: Map<String, CustomVariableValue>): Map<String, CustomVariableValue> {
+        val validEntries = mutableMapOf<String, CustomVariableValue>()
+        for ((key, value) in variables) {
+            if (isValidKey(key)) {
+                validEntries[key] = value
+            } else {
                 Logger.w(
-                    "Custom variable key '$key' is invalid. " +
+                    "Custom variable key '$key' is invalid and will be ignored. " +
                         "Keys must start with a letter and contain only letters, numbers, and underscores.",
                 )
             }
         }
+        return validEntries
     }
 
     private fun isValidKey(key: String): Boolean =

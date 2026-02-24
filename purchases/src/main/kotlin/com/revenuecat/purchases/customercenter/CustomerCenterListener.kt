@@ -6,12 +6,12 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Listener interface for receiving callbacks for Customer Center events.
  */
-interface CustomerCenterListener {
+public interface CustomerCenterListener {
 
     /**
      * Called when a restore purchases operation is initiated by the user in the Customer Center.
      */
-    fun onRestoreStarted() {
+    public fun onRestoreStarted() {
         // Default empty implementation
     }
 
@@ -20,7 +20,7 @@ interface CustomerCenterListener {
      *
      * @param error The error that occurred during the restore operation.
      */
-    fun onRestoreFailed(error: PurchasesError) {
+    public fun onRestoreFailed(error: PurchasesError) {
         // Default empty implementation
     }
 
@@ -29,7 +29,7 @@ interface CustomerCenterListener {
      *
      * @param customerInfo The updated customer information after the restore.
      */
-    fun onRestoreCompleted(customerInfo: CustomerInfo) {
+    public fun onRestoreCompleted(customerInfo: CustomerInfo) {
         // Default empty implementation
     }
 
@@ -38,7 +38,7 @@ interface CustomerCenterListener {
      * This happens when the user taps on the cancel subscription button, which takes them
      * to the Google Play subscription management screen.
      */
-    fun onShowingManageSubscriptions() {
+    public fun onShowingManageSubscriptions() {
         // Default empty implementation
     }
 
@@ -47,7 +47,7 @@ interface CustomerCenterListener {
      *
      * @param feedbackSurveyOptionId The ID of the selected feedback option.
      */
-    fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
+    public fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
         // Default empty implementation
     }
 
@@ -56,7 +56,7 @@ interface CustomerCenterListener {
      *
      * @param action The selected management action
      */
-    fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
+    public fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
         // Default empty implementation
     }
 
@@ -66,7 +66,7 @@ interface CustomerCenterListener {
      * @param actionIdentifier The unique identifier for the custom action
      * @param purchaseIdentifier The product identifier of the purchase being viewed, if any
      */
-    fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+    public fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
         // Default empty implementation
     }
 }

@@ -6,7 +6,7 @@ import dev.drewhamilton.poko.Poko
  * Type containing information of Google Play installment subscriptions
  */
 @Poko
-class GoogleInstallmentsInfo(
+public class GoogleInstallmentsInfo(
     /**
      * Number of payments the customer commits to in order to purchase the subscription.
      */

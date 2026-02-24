@@ -380,6 +380,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.customercenter.CustomerCenterListener? getCustomerCenterListener();
     method public void getCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method public void getCustomerInfo(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
+    method @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.DebugEventListener? getDebugEventListener();
     method @Deprecated public static boolean getDebugLogsEnabled();
     method @Deprecated @kotlin.jvm.Synchronized public boolean getFinishTransactions();
     method public static String getFrameworkVersion();
@@ -435,6 +436,7 @@ package com.revenuecat.purchases {
     method public void setCleverTapID(String? cleverTapID);
     method public void setCreative(String? creative);
     method public void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener?);
+    method @kotlin.jvm.JvmSynthetic public void setDebugEventListener(com.revenuecat.purchases.DebugEventListener?);
     method @Deprecated public static void setDebugLogsEnabled(boolean);
     method public void setDisplayName(String? displayName);
     method public void setEmail(String? email);
@@ -475,6 +477,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? cachedVirtualCurrencies;
     property public final com.revenuecat.purchases.PurchasesConfiguration currentConfiguration;
     property public final com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener;
+    property @kotlin.jvm.JvmSynthetic public final com.revenuecat.purchases.DebugEventListener? debugEventListener;
     property @Deprecated public static final boolean debugLogsEnabled;
     property @Deprecated @kotlin.jvm.Synchronized public final boolean finishTransactions;
     property public static final String frameworkVersion;

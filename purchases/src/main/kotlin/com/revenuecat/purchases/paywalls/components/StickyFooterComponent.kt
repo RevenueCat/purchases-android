@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("sticky_footer")
 @Immutable
-class StickyFooterComponent(
+public class StickyFooterComponent(
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
 ) : PaywallComponent

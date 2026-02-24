@@ -1,3 +1,54 @@
+## 9.22.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix PaywallActivity not dismissing after purchase/restore with MY_APP (#3124) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency com.google.android.gms:play-services-ads to v23.6.0 (#3125) via RevenueCat Git Bot (@RCGitBot)
+
+### 🔄 Other Changes
+* Avoids consuming purchases by default (#3003) via JayShortway (@JayShortway)
+* Bump nokogiri from 1.19.0 to 1.19.1 (#3121) via dependabot[bot] (@dependabot[bot])
+* Add CI lane to publish RCT Tester to internal Google Play testing track (#3116) via Rick (@rickvdl)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3118) via RevenueCat Git Bot (@RCGitBot)
+* Capture AdMob responseInfo at load time in ad callbacks (#3115) via Pol Miro (@polmiro)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3114) via RevenueCat Git Bot (@RCGitBot)
+* Fix deployment of bc7 library flavors (#3107) via Toni Rico (@tonidero)
+* Adjust tracker entrypoints (#3105) via Pol Miro (@polmiro)
+* Enable Renovate for google-mobile-ads (play-services-ads) (#3103) via Pol Miro (@polmiro)
+
+## 9.22.0
+## RevenueCat SDK
+### ✨ New Features
+* Add PurchaseLogic support to PaywallView (#3099) via Rick (@rickvdl)
+
+### 🔄 Other Changes
+* Add debugEventListener to track internal SDK debug events (#3100) via Toni Rico (@tonidero)
+* Add AdMob adapter library with example app (#3097) via Pol Miro (@polmiro)
+* RCT Tester app: Implement purchase logic for communicating with billing client directly (#3094) via Rick (@rickvdl)
+* Add explicit public visibility modifiers to API declarations (#3088) via Jaewoong Eum (@skydoves)
+* Bump fastlane-plugin-revenuecat_internal from `e6454e3` to `afc9219` (#3098) via dependabot[bot] (@dependabot[bot])
+* RCT Tester app: Properly handle purchasesAreCompletedBy myApp by acknowledging purchases through billing client (#3093) via Rick (@rickvdl)
+* RCT Tester app: Add initial app (#3083) via Rick (@rickvdl)
+* [EXPERIMENTAL] Support `PaywallListener` and `PurchaseLogic` when using PaywallActivity (#3084) via Toni Rico (@tonidero)
+* Bump faraday from 1.10.4 to 1.10.5 (#3095) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.232.0 to 2.232.1 (#3089) via dependabot[bot] (@dependabot[bot])
+* Add CLAUDE.md and AGENTS.md (#3082) via Cesar de la Vega (@vegaro)
+
+## 9.21.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Send `PresentedOfferingContext` info when `PurchasesAreCompletedBy.MY_APP` and using paywalls (#3078) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add customVariables support to all PaywallActivityLauncher methods and PaywallView (#3075) via Facundo Menzella (@facumenzella)
+* Add support for promotional offers in paywalls (#3063) via Cesar de la Vega (@vegaro)
+* Add support for product changes in paywalls (#3062) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump fastlane from 2.231.1 to 2.232.0 (#3080) via dependabot[bot] (@dependabot[bot])
+
 ## 9.20.2
 ## RevenueCatUI SDK
 ### Customer Center

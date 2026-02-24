@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal
-  revision: e6454e3d321d7f28e39a037b8e20fc41d8e8f8b6
+  revision: afc92198e949d698da8ad968d73a10b67f183df1
   branch: main
   specs:
     fastlane-plugin-revenuecat_internal (0.1.0)
@@ -88,7 +88,7 @@ GEM
     drb (2.2.3)
     emoji_regex (3.2.3)
     excon (0.112.0)
-    faraday (1.10.4)
+    faraday (1.10.5)
       faraday-em_http (~> 1.0)
       faraday-em_synchrony (~> 1.0)
       faraday-excon (~> 1.1)
@@ -119,7 +119,7 @@ GEM
     faraday_middleware (1.2.1)
       faraday (~> 1.0)
     fastimage (2.4.0)
-    fastlane (2.232.0)
+    fastlane (2.232.1)
       CFPropertyList (>= 2.3, < 4.0.0)
       abbrev (~> 0.1.2)
       addressable (>= 2.8, < 3.0.0)
@@ -236,7 +236,7 @@ GEM
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2025.0924)
+    mime-types-data (3.2026.0203)
     mini_magick (4.13.2)
     mini_mime (1.1.5)
     mini_portile2 (2.8.9)
@@ -249,12 +249,12 @@ GEM
     naturally (2.3.0)
     netrc (0.11.0)
     nkf (0.2.0)
-    nokogiri (1.18.10)
+    nokogiri (1.19.1)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.18.10-arm64-darwin)
+    nokogiri (1.19.1-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.18.10-x86_64-darwin)
+    nokogiri (1.19.1-x86_64-darwin)
       racc (~> 1.4)
     octokit (10.0.0)
       faraday (>= 1, < 3)

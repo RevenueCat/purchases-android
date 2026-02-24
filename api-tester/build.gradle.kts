@@ -47,7 +47,8 @@ dependencies {
     if (hasSamsungIapAar) {
         implementation(project(":feature:galaxy"))
     }
-
+    defaultsImplementation(project(":feature:admob"))
+    defaultsImplementation(libs.google.mobile.ads)
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
 

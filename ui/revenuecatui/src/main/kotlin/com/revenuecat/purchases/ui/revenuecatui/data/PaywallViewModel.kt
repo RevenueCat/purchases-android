@@ -19,6 +19,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -34,8 +35,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
@@ -82,7 +85,7 @@ internal interface PaywallViewModel {
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
-    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?)
+    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer? = null)
 
     fun restorePurchases()
     suspend fun handleRestorePurchases()
@@ -346,7 +349,7 @@ internal class PaywallViewModelImpl(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
                                     )
-                                    options.dismissRequest()
+                                    closePaywall()
                                 }
                             }
                         }
@@ -394,7 +397,7 @@ internal class PaywallViewModelImpl(
         finishAction()
     }
 
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
@@ -404,13 +407,16 @@ internal class PaywallViewModelImpl(
                 performPurchase(
                     activity = activity,
                     packageToPurchase = selectedPackage.rcPackage,
+                    subscriptionOption = null,
                 )
             }
             is PaywallState.Loaded.Components -> {
-                // Purchase the provided package if not null, otherwise purchase the selected package.
                 val selectedPackageInfo = pkg?.let {
                     PaywallState.Loaded.Components.SelectedPackageInfo(
                         rcPackage = it,
+                        resolvedOffer = resolvedOffer,
+                        uniqueId = it.identifier,
+                        offerEligibility = calculateOfferEligibility(resolvedOffer, it),
                     )
                 } ?: currentState.selectedPackageInfo
                 val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
@@ -435,6 +441,7 @@ internal class PaywallViewModelImpl(
                 activity = activity,
                 packageToPurchase = packageInfo.rcPackage,
                 productChangeConfig = productChangeConfig,
+                subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
             )
         }
     }
@@ -444,6 +451,7 @@ internal class PaywallViewModelImpl(
         activity: Activity,
         packageToPurchase: Package,
         productChangeConfig: ProductChangeConfig? = null,
+        subscriptionOption: SubscriptionOption?,
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
@@ -478,7 +486,7 @@ internal class PaywallViewModelImpl(
                             purchases.syncPurchases()
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after purchase")
-                            options.dismissRequest()
+                            closePaywall()
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
@@ -500,7 +508,14 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseParamsBuilder = PurchaseParams.Builder(activity, packageToPurchase)
+
+                    // Use subscription option from resolved offer if available, otherwise use package
+                    val purchaseParamsBuilder = if (subscriptionOption != null) {
+                        PurchaseParams.Builder(activity, subscriptionOption)
+                            .presentedOfferingContext(packageToPurchase.presentedOfferingContext)
+                    } else {
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    }
 
                     if (productChangeInfo != null) {
                         Logger.d(

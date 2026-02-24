@@ -6,10 +6,19 @@ import androidx.activity.result.ActivityResultCaller;
 import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic;
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions;
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class PaywallActivityLauncherAPI {
@@ -51,6 +60,60 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(null, null, true, customerInfo -> null);
+        launcher.launchIfNeeded(null, null, true, true, customerInfo -> null);
+    }
+
+    @ExperimentalPreviewRevenueCatUIPurchasesAPI
+    static void checkBuilderPattern(
+            PaywallActivityLauncher launcher,
+            Offering offering,
+            ParcelizableFontProvider fontProvider,
+            PaywallDisplayCallback paywallDisplayCallback,
+            PurchaseLogic purchaseLogic,
+            PaywallListener listener
+    ) {
+        Map<String, CustomVariableValue> customVariables = new HashMap<>();
+        customVariables.put("key", new CustomVariableValue.String("value"));
+
+        // Basic launch with builder
+        PaywallActivityLaunchOptions options = new PaywallActivityLaunchOptions.Builder()
+                .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
+                .setCustomVariables(customVariables)
+                .setPurchaseLogic(purchaseLogic)
+                .setListener(listener)
+                .build();
+        launcher.launchWithOptions(options);
+
+        // LaunchIfNeeded with requiredEntitlementIdentifier (all builder methods)
+        PaywallActivityLaunchIfNeededOptions optionsWithEntitlement = new PaywallActivityLaunchIfNeededOptions.Builder()
+                .setRequiredEntitlementIdentifier("premium")
+                .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
+                .setCustomVariables(customVariables)
+                .setPaywallDisplayCallback(paywallDisplayCallback)
+                .setPurchaseLogic(purchaseLogic)
+                .setListener(listener)
+                .build();
+        launcher.launchIfNeededWithOptions(optionsWithEntitlement);
+
+        // LaunchIfNeeded with shouldDisplayBlock (all builder methods)
+        PaywallActivityLaunchIfNeededOptions optionsWithBlock = new PaywallActivityLaunchIfNeededOptions.Builder()
+                .setShouldDisplayBlock(customerInfo -> customerInfo.getEntitlements().getActive().isEmpty())
+                .setOffering(offering)
+                .setFontProvider(fontProvider)
+                .setShouldDisplayDismissButton(true)
+                .setEdgeToEdge(true)
+                .setCustomVariables(customVariables)
+                .setPaywallDisplayCallback(paywallDisplayCallback)
+                .setPurchaseLogic(null)
+                .setListener(null)
+                .build();
+        launcher.launchIfNeededWithOptions(optionsWithBlock);
     }
 
     static void checkPaywallDisplayCallback() {

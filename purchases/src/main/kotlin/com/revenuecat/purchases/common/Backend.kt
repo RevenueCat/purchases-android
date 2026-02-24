@@ -143,7 +143,8 @@ internal class Backend(
     @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var offeringsCallbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
+    @Volatile var offeringsCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()

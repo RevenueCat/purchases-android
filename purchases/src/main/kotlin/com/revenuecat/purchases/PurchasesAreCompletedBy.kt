@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 /**
  * Modes for completing the purchase process.
  */
-enum class PurchasesAreCompletedBy {
+public enum class PurchasesAreCompletedBy {
     /**
      * RevenueCat will automatically acknowledge verified purchases. No action is required by you.
      */

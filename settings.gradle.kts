@@ -104,6 +104,7 @@ gradle.beforeProject {
 if (samsungIAPAARPresent) {
     include(":feature:galaxy")
 }
+include(":feature:admob")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
@@ -115,6 +116,8 @@ include(":examples:paywall-tester")
 include(":test-apps:testpurchasesandroidcompatibility")
 include(":test-apps:testpurchasesuiandroidcompatibility")
 include(":examples:web-purchase-redemption-sample")
+include(":examples:admob-sample")
 include(":dokka-hide-internal")
 include(":baselineprofile")
 include(":test-apps:e2etests")
+include(":examples:rcttester")

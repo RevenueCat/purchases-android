@@ -198,6 +198,10 @@ internal class PurchasesOrchestrator(
     @set:Synchronized
     var trackedEventListener: TrackedEventListener? = null
 
+    @get:Synchronized
+    @set:Synchronized
+    var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
+
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
@@ -279,6 +283,9 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = true)
         }
         log(LogIntent.DEBUG) { ConfigureStrings.APP_BACKGROUNDED }
+        debugEventListener?.onDebugEventReceived(
+            DebugEvent(name = DebugEventName.APP_BACKGROUNDED),
+        )
         appConfig.isAppBackgrounded = true
         synchronizeSubscriberAttributesIfNeeded()
         flushEvents(Delay.NONE)

@@ -18,21 +18,21 @@ import kotlinx.serialization.encoding.encodeStructure
  */
 @Parcelize
 @Poko
-class PresentedOfferingContext @JvmOverloads constructor(
+public class PresentedOfferingContext @JvmOverloads constructor(
     /**
      * The identifier of the offering used to obtain this object.
      */
-    val offeringIdentifier: String,
+    public val offeringIdentifier: String,
     /**
      * The identifier of the placement used to obtain this object.
      */
-    val placementIdentifier: String?,
+    public val placementIdentifier: String?,
     /**
      * The targeting context used to obtain this object.
      */
-    val targetingContext: TargetingContext?,
+    public val targetingContext: TargetingContext?,
 ) : Parcelable {
-    constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
+    public constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
 
     @JvmSynthetic
     @InternalRevenueCatAPI
@@ -48,16 +48,16 @@ class PresentedOfferingContext @JvmOverloads constructor(
 
     @Parcelize
     @Poko
-    class TargetingContext(
+    public class TargetingContext(
         /**
          * The revision of the targeting used to obtain this object.
          */
-        val revision: Int,
+        public val revision: Int,
 
         /**
          * The rule id from the targeting used to obtain this object.
          */
-        val ruleId: String,
+        public val ruleId: String,
     ) : Parcelable
 }
 

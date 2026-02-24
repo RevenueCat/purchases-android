@@ -838,7 +838,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
         coEvery {
@@ -871,7 +871,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedPackage = TestData.Packages.quarterly
         assertThat(selectedPackage).isNotEqualTo(expectedPackage)
@@ -938,7 +938,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
 
@@ -1291,7 +1291,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering).apply {
             val state = state.value as PaywallState.Loaded.Components
-            state.update(selectedPackage = TestData.Packages.monthly)
+            state.update(TestData.Packages.monthly.identifier)
             trackPaywallImpressionIfNeeded()
         }
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
@@ -1416,7 +1416,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val transaction = mockk<StoreTransaction>()
@@ -1495,7 +1495,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val selectedPackage = state.selectedPackageInfo?.rcPackage ?: error("selectedPackage is null")
         val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store error")
@@ -1536,7 +1536,7 @@ class PaywallViewModelTest {
         )
         val model = create(offering = offering)
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
         model.trackPaywallImpressionIfNeeded()
         val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
         coEvery {
@@ -1752,17 +1752,17 @@ class PaywallViewModelTest {
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
-        state.update(TestData.Packages.annual)
+        state.update(TestData.Packages.monthly.identifier)
 
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
         ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
-        // If no selected package, uses URL without package param
+        // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -1774,7 +1774,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
-        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_annual")
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
@@ -1855,7 +1855,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1910,7 +1910,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1981,7 +1981,7 @@ class PaywallViewModelTest {
         )
 
         val state = model.state.value as PaywallState.Loaded.Components
-        state.update(selectedPackage = TestData.Packages.monthly)
+        state.update(TestData.Packages.monthly.identifier)
 
         model.handlePackagePurchase(activity, pkg = null)
 
@@ -1997,23 +1997,221 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue
     }
 
+    @Test
+    fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
+        val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
+        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+            option = promoSubscriptionOption,
+        )
+
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = resolvedOffer,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `purchase from package button without promotional offer uses default option`(): Unit = runBlocking {
+        val transaction = mockk<StoreTransaction>()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(transaction, customerInfo)
+
+        val model = create()
+
+        model.handlePackagePurchase(
+            activity,
+            pkg = TestData.Packages.monthly,
+            resolvedOffer = null,
+        )
+
+        coVerify(exactly = 1) {
+            purchases.awaitPurchase(any())
+        }
+        assertThat(dismissInvoked).isTrue
+    }
+
     // endregion product change
+
+    // region dismissRequestWithExitOffering
+
+    @Test
+    fun `closePaywall calls dismissRequestWithExitOffering when set`() {
+        var dismissWithExitOfferingInvoked = false
+        var receivedExitOffering: Offering? = mockk()
+
+        val model = create(
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                receivedExitOffering = exitOffering
+            },
+        )
+
+        assertThat(dismissWithExitOfferingInvoked).isFalse()
+        model.closePaywall()
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(receivedExitOffering).isNull()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom callback purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        var dismissWithExitOfferingInvoked = false
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                assertThat(exitOffering).isNull()
+            },
+        )
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom suspend purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+        var dismissWithExitOfferingInvoked = false
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            dismissRequestWithExitOffering = { exitOffering ->
+                dismissWithExitOfferingInvoked = true
+                assertThat(exitOffering).isNull()
+            },
+        )
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `Custom callback restore logic success calls dismissRequestWithExitOffering when shouldDisplayBlock false`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+            val customRestoreCalled = MutableStateFlow(false)
+            var dismissWithExitOfferingInvoked = false
+
+            val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                null,
+                customRestoreCalled,
+                null,
+                PurchaseLogicResult.Success,
+            )
+
+            val model = create(
+                customPurchaseLogic = myAppPurchaseLogic,
+                dismissRequestWithExitOffering = { exitOffering ->
+                    dismissWithExitOfferingInvoked = true
+                    assertThat(exitOffering).isNull()
+                },
+                shouldDisplayBlock = { false },
+            )
+
+            model.restorePurchases()
+            customRestoreCalled.first { it }
+
+            coVerify(exactly = 1) { purchases.syncPurchases() }
+            assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(dismissInvoked).isFalse()
+        }
+
+    @Test
+    fun `Custom suspend restore logic success calls dismissRequestWithExitOffering when shouldDisplayBlock false`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+            val customRestoreCalled = MutableStateFlow(false)
+            var dismissWithExitOfferingInvoked = false
+
+            val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+                null,
+                customRestoreCalled,
+                null,
+                PurchaseLogicResult.Success,
+            )
+
+            val model = create(
+                customPurchaseLogic = myAppPurchaseLogic,
+                dismissRequestWithExitOffering = { exitOffering ->
+                    dismissWithExitOfferingInvoked = true
+                    assertThat(exitOffering).isNull()
+                },
+                shouldDisplayBlock = { false },
+            )
+
+            model.restorePurchases()
+            customRestoreCalled.first { it }
+
+            coVerify(exactly = 1) { purchases.syncPurchases() }
+            assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(dismissInvoked).isFalse()
+        }
+
+    // endregion dismissRequestWithExitOffering
 
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
+        dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
+        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .setOffering(offering)
+            .setPurchaseLogic(customPurchaseLogic)
+            .setMode(mode)
+        dismissRequestWithExitOffering?.let {
+            builder.setDismissRequestWithExitOffering(it)
+        }
         return PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offering)
-                .setPurchaseLogic(customPurchaseLogic)
-                .setMode(mode)
-                .build(),
+            builder.build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = shouldDisplayBlock,

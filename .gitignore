@@ -142,3 +142,6 @@ purchases-android-snapshots
 
 # Store specific SDKs
 libs/samsung-iap-*.aar
+
+# Claude Code
+.claude/
