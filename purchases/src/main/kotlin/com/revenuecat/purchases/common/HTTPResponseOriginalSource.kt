@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
  * Indicates where the data originally came from (before caching).
  */
 @InternalRevenueCatAPI
-enum class HTTPResponseOriginalSource {
+public enum class HTTPResponseOriginalSource {
     /**
      * Original data came from normal network fetch.
      */

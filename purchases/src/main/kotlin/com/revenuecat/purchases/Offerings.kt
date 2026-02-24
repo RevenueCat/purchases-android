@@ -13,8 +13,8 @@ import dev.drewhamilton.poko.Poko
 public class Offerings
 @OptIn(InternalRevenueCatAPI::class)
 internal constructor(
-    val current: Offering?,
-    val all: Map<String, Offering>,
+    public val current: Offering?,
+    public val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
     internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
