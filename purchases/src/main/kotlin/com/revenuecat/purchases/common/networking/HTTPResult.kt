@@ -27,7 +27,7 @@ public data class HTTPResult(
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
-    public companion object {
+    internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         internal const val SIGNATURE_HEADER_NAME = "X-Signature"
         internal const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
