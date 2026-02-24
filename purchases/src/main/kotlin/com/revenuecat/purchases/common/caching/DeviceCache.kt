@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -55,11 +56,15 @@ public open class DeviceCache(
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
-    private val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
-    private val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
+    @VisibleForTesting
+    internal val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
+    @VisibleForTesting
+    internal val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
-    private val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
-    private val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
+    @VisibleForTesting
+    internal val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    @VisibleForTesting
+    internal val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -142,9 +147,11 @@ public open class DeviceCache(
     // endregion
 
     // region purchaser info
-    private fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+    @VisibleForTesting
+    internal fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    private fun customerInfoLastUpdatedCacheKey(appUserID: String) =
+    @VisibleForTesting
+    internal fun customerInfoLastUpdatedCacheKey(appUserID: String) =
         "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress
@@ -233,7 +240,8 @@ public open class DeviceCache(
     }
 
     @Synchronized
-    private fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
+    @VisibleForTesting
+    internal fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
     }
 
@@ -260,9 +268,11 @@ public open class DeviceCache(
     // endregion
 
     // region virtual currencies
-    private fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+    @VisibleForTesting
+    internal fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
 
-    private fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) =
+    @VisibleForTesting
+    internal fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) =
         "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
 
     @Suppress("SwallowedException", "ForbiddenComment")
@@ -480,7 +490,8 @@ public open class DeviceCache(
     }
 
     @Synchronized
-    private fun setProductEntitlementMappingCacheTimestampToNow() {
+    @VisibleForTesting
+    internal fun setProductEntitlementMappingCacheTimestampToNow() {
         setProductEntitlementMappingCacheTimestamp(dateProvider.now)
     }
 
