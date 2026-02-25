@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
@@ -20,7 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -66,7 +64,7 @@ public class PaywallView : CompatComposeView {
         listener: PaywallListener? = null,
         fontProvider: FontProvider? = null,
         shouldDisplayDismissButton: Boolean? = null,
-        purchaseLogic: PurchaseLogic? = null,
+        purchaseLogic: PaywallPurchaseLogic? = null,
         dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
         setPaywallListener(listener)
@@ -92,7 +90,7 @@ public class PaywallView : CompatComposeView {
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
-    private var purchaseLogic: PurchaseLogic? = null
+    private var purchaseLogic: PaywallPurchaseLogic? = null
     private var shouldDisplayDismissButton: Boolean? = null
     private var internalListener: PaywallListener = object : PaywallListener {
         override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
@@ -137,11 +135,11 @@ public class PaywallView : CompatComposeView {
     }
 
     /**
-     * Sets the [PurchaseLogic] to handle purchases and restores within the Paywall.
+     * Sets the [PaywallPurchaseLogic] to handle purchases and restores within the Paywall.
      * This is required when `Purchases` has been configured with
      * `purchasesAreCompletedBy` as `PurchasesAreCompletedBy.MY_APP`.
      */
-    public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?) {
+    public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?) {
         this.purchaseLogic = purchaseLogic
         paywallOptions = paywallOptions.copy(purchaseLogic = purchaseLogic)
     }

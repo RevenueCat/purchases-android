@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import com.revenuecat.purchases.CustomerInfo
@@ -11,7 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
 /**
@@ -38,7 +36,7 @@ public class PaywallActivityLaunchOptions private constructor(
     internal val shouldDisplayDismissButton: Boolean,
     internal val edgeToEdge: Boolean,
     internal val customVariables: Map<String, CustomVariableValue>,
-    internal val purchaseLogic: PurchaseLogic?,
+    internal val purchaseLogic: PaywallPurchaseLogic?,
     internal val listener: PaywallListener?,
     // Internal properties for hybrid SDK support
     internal val offeringIdentifier: String?,
@@ -67,7 +65,7 @@ public class PaywallActivityLaunchOptions private constructor(
         private var shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON
         private var edgeToEdge: Boolean = defaultEdgeToEdge
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
-        private var purchaseLogic: PurchaseLogic? = null
+        private var purchaseLogic: PaywallPurchaseLogic? = null
         private var listener: PaywallListener? = null
 
         // Internal properties for hybrid SDK support
@@ -142,7 +140,7 @@ public class PaywallActivityLaunchOptions private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
+        public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -219,7 +217,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
     // Internal properties for hybrid SDK support
     internal val offeringIdentifier: String?,
     internal val presentedOfferingContext: PresentedOfferingContext?,
-    internal val purchaseLogic: PurchaseLogic?,
+    internal val purchaseLogic: PaywallPurchaseLogic?,
     internal val listener: PaywallListener?,
 ) {
     internal fun toOfferingSelection(): OfferingSelection.IdAndPresentedOfferingContext? {
@@ -252,7 +250,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
         private var requiredEntitlementIdentifier: String? = null
         private var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         private var paywallDisplayCallback: PaywallDisplayCallback? = null
-        private var purchaseLogic: PurchaseLogic? = null
+        private var purchaseLogic: PaywallPurchaseLogic? = null
         private var listener: PaywallListener? = null
 
         // Internal properties for hybrid SDK support
@@ -359,7 +357,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
          * rather than by RevenueCat.
          */
         @ExperimentalPreviewRevenueCatUIPurchasesAPI
-        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
+        public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 

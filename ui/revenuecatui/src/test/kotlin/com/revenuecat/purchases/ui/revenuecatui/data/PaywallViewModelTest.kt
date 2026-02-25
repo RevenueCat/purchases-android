@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -43,9 +41,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -2474,7 +2470,7 @@ class PaywallViewModelTest {
 
     private fun create(
         offering: Offering? = null,
-        customPurchaseLogic: PurchaseLogic? = null,
+        customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
@@ -2552,12 +2548,13 @@ class PaywallViewModelTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private class TestAppPurchaseLogicWithCallbacks(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : PurchaseLogicWithCallback() {
+    ) : com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback() {
 
         override fun performPurchaseWithCompletion(
             activity: Activity,
@@ -2588,12 +2585,13 @@ class PaywallViewModelTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private class TestAppPurchaseLogicWithSuspend(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : PurchaseLogic {
+    ) : com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
 
         override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
             val purchaseFlow = customPurchaseCalled

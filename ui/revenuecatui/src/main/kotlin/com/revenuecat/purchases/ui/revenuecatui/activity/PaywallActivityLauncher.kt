@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import android.app.Activity
@@ -15,7 +13,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
@@ -447,7 +445,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
     }
 
     private fun storeNonSerializableArgsIfNeeded(
-        purchaseLogic: PurchaseLogic?,
+        purchaseLogic: PaywallPurchaseLogic?,
         listener: PaywallListener?,
     ): Int? {
         if (purchaseLogic == null && listener == null) return null

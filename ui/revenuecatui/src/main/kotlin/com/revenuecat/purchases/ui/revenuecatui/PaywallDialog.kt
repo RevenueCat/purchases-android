@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Build

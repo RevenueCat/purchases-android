@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.runtime.Immutable
@@ -18,7 +16,7 @@ public class PaywallDialogOptions internal constructor(
     public val shouldDisplayDismissButton: Boolean,
     public val fontProvider: FontProvider?,
     public val listener: PaywallListener?,
-    public val purchaseLogic: PurchaseLogic?,
+    public val purchaseLogic: PaywallPurchaseLogic?,
     /**
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
@@ -47,7 +45,7 @@ public class PaywallDialogOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = true
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
-        internal var purchaseLogic: PurchaseLogic? = null
+        internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
         /**
@@ -94,7 +92,7 @@ public class PaywallDialogOptions internal constructor(
             this.listener = listener
         }
 
-        public fun setCustomPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
+        public fun setCustomPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 

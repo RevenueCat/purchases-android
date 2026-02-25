@@ -21,35 +21,6 @@ import kotlin.coroutines.suspendCoroutine
  * @deprecated Use [PaywallPurchaseLogic] instead, which provides a [PaywallPurchaseLogicParams] with support for
  * product changes (upgrades/downgrades) and subscription offers.
  */
-@Deprecated(
-    message = "Use PaywallPurchaseLogic instead for product change and offer support.",
-    replaceWith = ReplaceWith("PaywallPurchaseLogic"),
-)
-public interface PurchaseLogic {
-    /**
-     * Performs an in-app purchase for the specified package.
-     *
-     * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
-     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
-     *
-     * @param activity The current Android `Activity` triggering the purchase.
-     * @param rcPackage The package representing the in-app product that the user intends to purchase.
-     * @return A `PurchaseLogicResult` object containing the outcome of the purchase operation.
-     */
-    public suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
-
-    /**
-     * Restores previously completed purchases for the given customer.
-     *
-     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
-     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
-     *
-     * @param customerInfo An object containing information about the customer.
-     * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
-     */
-    public suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
-}
-
 /**
  * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
  * These suspend methods are called by a RevenueCat Paywall in order to execute your app's custom purchase/restore
@@ -62,8 +33,7 @@ public interface PurchaseLogic {
  * If you prefer to implement custom purchase and restore logic with completion handlers, please use
  * [PaywallPurchaseLogicWithCallback].
  */
-@Suppress("DEPRECATION")
-public interface PaywallPurchaseLogic : PurchaseLogic {
+public interface PaywallPurchaseLogic {
     /**
      * Performs an in-app purchase with the given purchase params.
      *
@@ -82,11 +52,38 @@ public interface PaywallPurchaseLogic : PurchaseLogic {
         params: PaywallPurchaseLogicParams,
     ): PurchaseLogicResult
 
-    override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
-        performPurchase(
-            activity,
-            PaywallPurchaseLogicParams(rcPackage, productChange = null, subscriptionOption = null),
-        )
+    /**
+     * Restores previously completed purchases for the given customer.
+     *
+     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
+     * @param customerInfo An object containing information about the customer.
+     * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
+     */
+    public suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
+}
+
+@Suppress("DEPRECATION")
+@Deprecated(
+    message = "Use PaywallPurchaseLogic instead for product change and offer support.",
+    replaceWith = ReplaceWith("PaywallPurchaseLogic"),
+)
+public interface PurchaseLogic : PaywallPurchaseLogic {
+    /**
+     * Performs an in-app purchase for the specified package.
+     *
+     * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
+     * @param activity The current Android `Activity` triggering the purchase.
+     * @param rcPackage The package representing the in-app product that the user intends to purchase.
+     * @return A `PurchaseLogicResult` object containing the outcome of the purchase operation.
+     */
+    public suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
+
+    override suspend fun performPurchase(activity: Activity, params: PaywallPurchaseLogicParams): PurchaseLogicResult =
+        performPurchase(activity, params.rcPackage)
 }
 
 /**

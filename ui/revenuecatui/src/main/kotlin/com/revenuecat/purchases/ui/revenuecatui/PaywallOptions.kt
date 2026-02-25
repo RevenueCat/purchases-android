@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Parcelable
@@ -49,7 +47,7 @@ public class PaywallOptions internal constructor(
     internal val shouldDisplayDismissButton: Boolean,
     public val fontProvider: FontProvider?,
     public val listener: PaywallListener?,
-    public val purchaseLogic: PurchaseLogic?,
+    public val purchaseLogic: PaywallPurchaseLogic?,
     internal val mode: PaywallMode,
     public val dismissRequest: () -> Unit,
     internal val dismissRequestWithExitOffering: ((exitOffering: Offering?) -> Unit)? = null,
@@ -107,7 +105,7 @@ public class PaywallOptions internal constructor(
         shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
         fontProvider: FontProvider? = this.fontProvider,
         listener: PaywallListener? = this.listener,
-        purchaseLogic: PurchaseLogic? = this.purchaseLogic,
+        purchaseLogic: PaywallPurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?) -> Unit)? = this.dismissRequestWithExitOffering,
@@ -132,7 +130,7 @@ public class PaywallOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = false
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
-        internal var purchaseLogic: PurchaseLogic? = null
+        internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
@@ -173,7 +171,7 @@ public class PaywallOptions internal constructor(
             this.listener = listener
         }
 
-        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
+        public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 

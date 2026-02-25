@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import android.app.Activity
@@ -83,7 +81,7 @@ private class PaywallPurchaseLogicCallbackAPI : PaywallPurchaseLogicWithCallback
     }
 }
 
-@Suppress("unused")
+@Suppress("unused", "DEPRECATION")
 private class DeprecatedPurchaseLogicSuspendAPI : PurchaseLogic {
 
     override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
@@ -95,7 +93,7 @@ private class DeprecatedPurchaseLogicSuspendAPI : PurchaseLogic {
     }
 }
 
-@Suppress("unused")
+@Suppress("unused", "DEPRECATION")
 private class DeprecatedPurchaseLogicCallbackAPI : PurchaseLogicWithCallback() {
 
     override fun performPurchaseWithCompletion(
