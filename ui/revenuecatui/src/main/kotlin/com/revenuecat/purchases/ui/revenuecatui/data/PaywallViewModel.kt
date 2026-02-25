@@ -341,8 +341,7 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
-                            purchases.syncPurchases()
-                            val updatedCustomerInfo = purchases.awaitCustomerInfo()
+                            val updatedCustomerInfo = purchases.awaitSyncPurchases()
 
                             shouldDisplayBlock?.let {
                                 if (!it(updatedCustomerInfo)) {
@@ -485,9 +484,8 @@ internal class PaywallViewModelImpl(
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is PurchaseLogicResult.Success -> {
-                            purchases.syncPurchases()
+                            val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
-                            val customerInfo = purchases.awaitCustomerInfo()
                             Logger.d("Dismissing paywall after purchase")
                             closePaywall(PaywallResult.Purchased(customerInfo))
                         }

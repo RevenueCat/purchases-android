@@ -206,7 +206,7 @@ class PaywallViewModelTest {
 
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
-        every { purchases.syncPurchases() } just Runs
+        coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
@@ -226,7 +226,7 @@ class PaywallViewModelTest {
     // Completion Handler Callback Tests
 
     @Test
-    fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
+    fun `Custom completion handler restore purchases logic success triggers awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customRestoreCalled = MutableStateFlow(false)
@@ -246,13 +246,13 @@ class PaywallViewModelTest {
 
         customRestoreCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onRestoreStarted() }
         coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
     }
 
     @Test
-    fun `Custom completion handler restore purchases logic error does not trigger syncPurchases`() = runTest {
+    fun `Custom completion handler restore purchases logic error does not trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customRestoreCalled = MutableStateFlow(false)
@@ -272,13 +272,13 @@ class PaywallViewModelTest {
 
         customRestoreCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onRestoreStarted() }
         coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
     }
 
     @Test
-    fun `Custom completion handler purchase logic success triggers syncPurchases`() = runTest {
+    fun `Custom completion handler purchase logic success triggers awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -298,7 +298,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
@@ -307,7 +307,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Custom completion handler purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
+    fun `Custom completion handler purchase logic cancelled doesn't trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -327,13 +327,13 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCancelled() }
     }
 
     @Test
-    fun `Custom completion handler purchase logic error doesn't trigger syncPurchases`() = runTest {
+    fun `Custom completion handler purchase logic error doesn't trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -353,7 +353,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseError(any()) }
     }
@@ -361,7 +361,7 @@ class PaywallViewModelTest {
     // Suspend (co-routine) Tests
 
     @Test
-    fun `Custom suspend restore purchases logic success triggers syncPurchases`() = runTest {
+    fun `Custom suspend restore purchases logic success triggers awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customRestoreCalled = MutableStateFlow(false)
@@ -381,13 +381,13 @@ class PaywallViewModelTest {
 
         customRestoreCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onRestoreStarted() }
         coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
     }
 
     @Test
-    fun `Custom suspend restore purchases logic error does not trigger syncPurchases`() = runTest {
+    fun `Custom suspend restore purchases logic error does not trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
         val customRestoreCalled = MutableStateFlow(false)
 
@@ -406,7 +406,7 @@ class PaywallViewModelTest {
 
         customRestoreCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onRestoreStarted() }
         coVerify(exactly = 0) { listener.onRestoreError(any()) }
 
@@ -414,7 +414,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Custom suspend purchase logic success triggers syncPurchases`() = runTest {
+    fun `Custom suspend purchase logic success triggers awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -434,7 +434,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
@@ -443,7 +443,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Custom suspend purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
+    fun `Custom suspend purchase logic cancelled doesn't trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -463,7 +463,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCancelled() }
 
@@ -471,7 +471,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Custom suspend purchase logic error doesn't trigger syncPurchases`() = runTest {
+    fun `Custom suspend purchase logic error doesn't trigger awaitSyncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val customPurchaseCalled = MutableStateFlow(false)
@@ -491,7 +491,7 @@ class PaywallViewModelTest {
 
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseError(any()) }
 
@@ -2098,7 +2098,7 @@ class PaywallViewModelTest {
         model.purchaseSelectedPackage(activity)
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedResult).isInstanceOf(PaywallResult.Purchased::class.java)
         assertThat(dismissInvoked).isFalse()
@@ -2131,7 +2131,7 @@ class PaywallViewModelTest {
         model.purchaseSelectedPackage(activity)
         customPurchaseCalled.first { it }
 
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedResult).isInstanceOf(PaywallResult.Purchased::class.java)
         assertThat(dismissInvoked).isFalse()
@@ -2166,7 +2166,7 @@ class PaywallViewModelTest {
             model.restorePurchases()
             customRestoreCalled.first { it }
 
-            coVerify(exactly = 1) { purchases.syncPurchases() }
+            coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
             assertThat(dismissWithExitOfferingInvoked).isTrue()
             assertThat(receivedResult).isInstanceOf(PaywallResult.Restored::class.java)
             assertThat(dismissInvoked).isFalse()
@@ -2201,7 +2201,7 @@ class PaywallViewModelTest {
             model.restorePurchases()
             customRestoreCalled.first { it }
 
-            coVerify(exactly = 1) { purchases.syncPurchases() }
+            coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
             assertThat(dismissWithExitOfferingInvoked).isTrue()
             assertThat(receivedResult).isInstanceOf(PaywallResult.Restored::class.java)
             assertThat(dismissInvoked).isFalse()
