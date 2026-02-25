@@ -13,7 +13,6 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
@@ -34,31 +33,15 @@ private class PaywallPurchaseLogicAPI {
         val result: PurchaseLogicResult = logic.performRestore(customerInfo)
     }
 
-    fun checkProductChange() {
-        val productChange = ProductChange(
-            oldProductId = "old_product_id",
-            replacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-        )
-        val productChangeNoReplacementMode = ProductChange(
-            oldProductId = "old_product_id",
-            replacementMode = null,
-        )
-        val oldProductId: String = productChange.oldProductId
-        val replacementMode: ReplacementMode? = productChange.replacementMode
-    }
-
     fun checkPaywallPurchaseLogicParams(rcPackage: Package, subscriptionOption: SubscriptionOption) {
         val params = PaywallPurchaseLogicParams.Builder(rcPackage)
-            .productChange(
-                ProductChange(
-                    oldProductId = "old_product_id",
-                    replacementMode = GoogleReplacementMode.DEFERRED,
-                ),
-            )
+            .oldProductId("old_product_id")
+            .replacementMode(GoogleReplacementMode.DEFERRED)
             .subscriptionOption(subscriptionOption)
             .build()
         val pkg: Package = params.rcPackage
-        val productChange: ProductChange? = params.productChange
+        val oldProductId: String? = params.oldProductId
+        val replacementMode: ReplacementMode? = params.replacementMode
         val option: SubscriptionOption? = params.subscriptionOption
     }
 }

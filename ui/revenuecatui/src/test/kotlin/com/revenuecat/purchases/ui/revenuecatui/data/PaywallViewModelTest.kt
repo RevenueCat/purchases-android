@@ -43,7 +43,6 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
@@ -2122,9 +2121,8 @@ class PaywallViewModelTest {
 
         val receivedContext = myAppPurchaseLogic.receivedContext
         assertThat(receivedContext).isNotNull
-        assertThat(receivedContext!!.productChange).isNotNull
-        assertThat(receivedContext.productChange!!.oldProductId).isEqualTo("old_product")
-        assertThat(receivedContext.productChange!!.replacementMode)
+        assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
+        assertThat(receivedContext.replacementMode)
             .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
         coVerify(exactly = 1) { purchases.syncPurchases() }
         assertThat(dismissInvoked).isTrue
@@ -2201,9 +2199,8 @@ class PaywallViewModelTest {
 
         val receivedContext = myAppPurchaseLogic.receivedContext
         assertThat(receivedContext).isNotNull
-        assertThat(receivedContext!!.productChange).isNotNull
-        assertThat(receivedContext.productChange!!.oldProductId).isEqualTo("old_product")
-        assertThat(receivedContext.productChange!!.replacementMode)
+        assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
+        assertThat(receivedContext.replacementMode)
             .isEqualTo(GoogleReplacementMode.DEFERRED)
         coVerify(exactly = 1) { purchases.syncPurchases() }
         assertThat(dismissInvoked).isTrue
@@ -2276,7 +2273,7 @@ class PaywallViewModelTest {
         customPurchaseCalled.first { it }
 
         assertThat(myAppPurchaseLogic.receivedContext).isNotNull
-        assertThat(myAppPurchaseLogic.receivedContext!!.productChange).isNull()
+        assertThat(myAppPurchaseLogic.receivedContext!!.oldProductId).isNull()
         coVerify(exactly = 1) { purchases.syncPurchases() }
         assertThat(dismissInvoked).isTrue
     }

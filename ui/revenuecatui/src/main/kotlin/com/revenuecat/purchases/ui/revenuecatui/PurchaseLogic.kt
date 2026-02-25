@@ -98,37 +98,63 @@ public interface PaywallPurchaseLogic : PurchaseLogic {
  * Use [Builder] to create an instance:
  * ```kotlin
  * val params = PaywallPurchaseLogicParams.Builder(rcPackage)
- *     .productChange(productChange)
+ *     .oldProductId("com.example.old_product")
+ *     .replacementMode(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
  *     .subscriptionOption(subscriptionOption)
  *     .build()
  * ```
  *
  * @property rcPackage The package representing the in-app product that the user intends to purchase.
- * @property productChange Product change information when the user is upgrading or downgrading an existing
- * subscription. Null if this is a new purchase rather than a product change.
+ * @property oldProductId The product ID of the currently active subscription being replaced when the user is
+ * upgrading or downgrading. Null if this is a new purchase rather than a product change.
+ * @property replacementMode The replacement mode to use for this product change, as configured in the paywall.
+ * Null if this is a new purchase or the store does not support replacement modes.
  * @property subscriptionOption The specific subscription option (offer) to use for this purchase, as configured
  * in the paywall. Null if no specific offer is configured or the product is not a subscription.
  */
 @Poko
 public class PaywallPurchaseLogicParams internal constructor(
     public val rcPackage: Package,
-    public val productChange: ProductChange?,
+    internal val productChange: ProductChange?,
     public val subscriptionOption: SubscriptionOption?,
 ) {
+    /**
+     * The product ID of the currently active subscription being replaced, when the user is upgrading
+     * or downgrading an existing subscription. Null if this is a new purchase.
+     */
+    public val oldProductId: String? get() = productChange?.oldProductId
+
+    /**
+     * The replacement mode to use for this product change, as configured in the paywall.
+     * For Google Play, this will be a [com.revenuecat.purchases.models.GoogleReplacementMode].
+     * Null if this is a new purchase or the store does not support replacement modes.
+     */
+    public val replacementMode: ReplacementMode? get() = productChange?.replacementMode
+
     /**
      * Builder for creating [PaywallPurchaseLogicParams].
      *
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
      */
     public class Builder(private val rcPackage: Package) {
-        private var productChange: ProductChange? = null
+        private var oldProductId: String? = null
+        private var replacementMode: ReplacementMode? = null
         private var subscriptionOption: SubscriptionOption? = null
 
         /**
-         * Sets the product change information for upgrades/downgrades.
+         * Sets the product ID of the currently active subscription being replaced
+         * (for upgrades/downgrades).
          */
-        public fun productChange(productChange: ProductChange?): Builder = apply {
-            this.productChange = productChange
+        public fun oldProductId(oldProductId: String): Builder = apply {
+            this.oldProductId = oldProductId
+        }
+
+        /**
+         * Sets the replacement mode for this product change.
+         * For Google Play, use [com.revenuecat.purchases.models.GoogleReplacementMode].
+         */
+        public fun replacementMode(replacementMode: ReplacementMode?): Builder = apply {
+            this.replacementMode = replacementMode
         }
 
         /**
@@ -143,27 +169,16 @@ public class PaywallPurchaseLogicParams internal constructor(
          */
         public fun build(): PaywallPurchaseLogicParams = PaywallPurchaseLogicParams(
             rcPackage = rcPackage,
-            productChange = productChange,
+            productChange = oldProductId?.let { ProductChange(it, replacementMode) },
             subscriptionOption = subscriptionOption,
         )
     }
 }
 
-/**
- * Contains information about a subscription product change (upgrade or downgrade).
- *
- * When a user with an active subscription purchases a different subscription product through a paywall,
- * this object provides the details needed to set up the subscription change.
- *
- * @property oldProductId The product ID of the currently active subscription being replaced.
- * @property replacementMode The replacement mode to use for this product change, as configured in the paywall.
- * For Google Play, this will be a [com.revenuecat.purchases.models.GoogleReplacementMode].
- * Null for stores that do not support replacement modes (e.g., Amazon).
- */
 @Poko
-public class ProductChange(
-    public val oldProductId: String,
-    public val replacementMode: ReplacementMode?,
+internal class ProductChange(
+    val oldProductId: String,
+    val replacementMode: ReplacementMode?,
 )
 
 /**
