@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
@@ -253,3 +255,29 @@ public suspend fun Purchases.awaitStorefrontCountryCode(): String {
         )
     }
 }
+
+/**
+ * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+ * Calling from an Amazon-configured app will return true.
+ *
+ * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
+ * and optionally, whether all features in the list of specified feature types are supported. This method is
+ * asynchronous since it requires a connected BillingClient.
+ * @param context A context object that will be used to connect to the billing client
+ * @param features A list of feature types to check for support. Feature types must be one of [BillingFeature]
+ *                 By default, is an empty list and no specific feature support will be checked.
+ * @return the result of the check
+ */
+public suspend fun Purchases.Companion.awaitCanMakePayments(
+    context: Context,
+    features: List<BillingFeature> = listOf()
+): Boolean {
+    return suspendCoroutine { continuation ->
+        canMakePayments(
+            context = context,
+            features = features,
+            callback = { continuation.resume(it) }
+        )
+    }
+}
+
