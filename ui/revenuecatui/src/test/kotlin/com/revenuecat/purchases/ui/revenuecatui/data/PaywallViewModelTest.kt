@@ -40,7 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
@@ -2625,12 +2625,12 @@ class PaywallViewModelTest {
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
     ) : PaywallPurchaseLogicWithCallback() {
-        var receivedContext: PaywallPurchaseContext? = null
+        var receivedContext: PaywallPurchaseLogicParams? = null
             private set
 
         override fun performPurchaseWithCompletion(
             activity: Activity,
-            context: PaywallPurchaseContext,
+            params: PaywallPurchaseLogicParams,
             completion: (PurchaseLogicResult) -> Unit,
         ) {
             val purchaseFlow = customPurchaseCalled
@@ -2638,7 +2638,7 @@ class PaywallViewModelTest {
             val result = purchaseResult
                 ?: throw IllegalArgumentException("purchaseResult cannot be null")
 
-            receivedContext = context
+            receivedContext = params
             purchaseFlow.value = true
             completion(result)
         }
@@ -2663,19 +2663,19 @@ class PaywallViewModelTest {
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
     ) : PaywallPurchaseLogic {
-        var receivedContext: PaywallPurchaseContext? = null
+        var receivedContext: PaywallPurchaseLogicParams? = null
             private set
 
         override suspend fun performPurchase(
             activity: Activity,
-            context: PaywallPurchaseContext,
+            params: PaywallPurchaseLogicParams,
         ): PurchaseLogicResult {
             val purchaseFlow = customPurchaseCalled
                 ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
             val result = purchaseResult
                 ?: throw IllegalArgumentException("purchaseResult cannot be null")
 
-            receivedContext = context
+            receivedContext = params
             purchaseFlow.value = true
             return result
         }

@@ -10,7 +10,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
@@ -26,7 +26,7 @@ private class PaywallPurchaseLogicAPI {
         activity: Activity,
         rcPackage: Package,
     ) {
-        val context = PaywallPurchaseContext(rcPackage = rcPackage, productChange = null, subscriptionOption = null)
+        val context = PaywallPurchaseLogicParams(rcPackage = rcPackage, productChange = null, subscriptionOption = null)
         val result: PurchaseLogicResult = logic.performPurchase(activity, context)
     }
 
@@ -47,8 +47,8 @@ private class PaywallPurchaseLogicAPI {
         val replacementMode: ReplacementMode? = productChange.replacementMode
     }
 
-    fun checkPaywallPurchaseContext(rcPackage: Package, subscriptionOption: SubscriptionOption) {
-        val context = PaywallPurchaseContext(
+    fun checkPaywallPurchaseLogicParams(rcPackage: Package, subscriptionOption: SubscriptionOption) {
+        val context = PaywallPurchaseLogicParams(
             rcPackage = rcPackage,
             productChange = ProductChange(
                 oldProductId = "old_product_id",
@@ -67,7 +67,7 @@ private class PaywallPurchaseLogicSuspendAPI : PaywallPurchaseLogic {
 
     override suspend fun performPurchase(
         activity: Activity,
-        context: PaywallPurchaseContext,
+        context: PaywallPurchaseLogicParams,
     ): PurchaseLogicResult {
         return PurchaseLogicResult.Success
     }
@@ -82,7 +82,7 @@ private class PaywallPurchaseLogicCallbackAPI : PaywallPurchaseLogicWithCallback
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
-        context: PaywallPurchaseContext,
+        context: PaywallPurchaseLogicParams,
         completion: (PurchaseLogicResult) -> Unit,
     ) {
         val success = PurchaseLogicResult.Success
