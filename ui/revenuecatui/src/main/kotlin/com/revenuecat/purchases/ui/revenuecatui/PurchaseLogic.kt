@@ -12,17 +12,6 @@ import kotlin.coroutines.suspendCoroutine
 
 /**
  * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
- * These suspend methods are called by a RevenueCat Paywall in order to execute you app's custom purchase/restore code.
- * These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
- *
- * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
- * `PurchaseLogicWithCallback`.
- *
- * @deprecated Use [PaywallPurchaseLogic] instead, which provides a [PaywallPurchaseLogicParams] with support for
- * product changes (upgrades/downgrades) and subscription offers.
- */
-/**
- * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
  * These suspend methods are called by a RevenueCat Paywall in order to execute your app's custom purchase/restore
  * code. These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
  *
