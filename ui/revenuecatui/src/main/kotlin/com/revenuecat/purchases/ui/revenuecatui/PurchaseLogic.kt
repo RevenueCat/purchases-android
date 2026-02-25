@@ -18,7 +18,7 @@ import kotlin.coroutines.suspendCoroutine
  * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
  * `PurchaseLogicWithCallback`.
  *
- * @deprecated Use [PaywallPurchaseLogic] instead, which provides a [PaywallPurchaseContext] with support for
+ * @deprecated Use [PaywallPurchaseLogic] instead, which provides a [PaywallPurchaseLogicParams] with support for
  * product changes (upgrades/downgrades) and subscription offers.
  */
 @Deprecated(
@@ -55,9 +55,9 @@ public interface PurchaseLogic {
  * These suspend methods are called by a RevenueCat Paywall in order to execute your app's custom purchase/restore
  * code. These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
  *
- * This interface provides a [PaywallPurchaseContext] containing the package to purchase along with additional
- * context such as product change information (for upgrades/downgrades) and the specific subscription option
- * (offer) configured in the paywall. The context object is designed to be extensible for future additions.
+ * This interface provides [PaywallPurchaseLogicParams] containing the package to purchase along with additional
+ * information such as product change details (for upgrades/downgrades) and the specific subscription option
+ * (offer) configured in the paywall. The params object is designed to be extensible for future additions.
  *
  * If you prefer to implement custom purchase and restore logic with completion handlers, please use
  * [PaywallPurchaseLogicWithCallback].
@@ -65,32 +65,43 @@ public interface PurchaseLogic {
 @Suppress("DEPRECATION")
 public interface PaywallPurchaseLogic : PurchaseLogic {
     /**
-     * Performs an in-app purchase with the given purchase context.
+     * Performs an in-app purchase with the given purchase params.
      *
-     * The [PaywallPurchaseContext] contains the package to purchase along with product change information
+     * The [PaywallPurchaseLogicParams] contains the package to purchase along with product change information
      * and the specific subscription option (offer) configured in the paywall.
      *
      * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param activity The current Android `Activity` triggering the purchase.
-     * @param context The purchase context containing the package, product change information, and offer details.
+     * @param params The purchase params containing the package, product change information, and offer details.
      * @return A `PurchaseLogicResult` object containing the outcome of the purchase operation.
      */
     public suspend fun performPurchase(
         activity: Activity,
-        context: PaywallPurchaseContext,
+        params: PaywallPurchaseLogicParams,
     ): PurchaseLogicResult
 
     override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
-        performPurchase(activity, PaywallPurchaseContext(rcPackage, productChange = null, subscriptionOption = null))
+        performPurchase(
+            activity,
+            PaywallPurchaseLogicParams(rcPackage, productChange = null, subscriptionOption = null),
+        )
 }
 
 /**
- * Additional context provided to [PaywallPurchaseLogic] when a paywall initiates a purchase.
+ * Parameters provided to [PaywallPurchaseLogic] when a paywall initiates a purchase.
  *
  * Contains the package to purchase along with information about product changes (upgrades/downgrades)
  * and the specific subscription option (offer) to use, as configured in the paywall.
+ *
+ * Use [Builder] to create an instance:
+ * ```kotlin
+ * val params = PaywallPurchaseLogicParams.Builder(rcPackage)
+ *     .productChange(productChange)
+ *     .subscriptionOption(subscriptionOption)
+ *     .build()
+ * ```
  *
  * @property rcPackage The package representing the in-app product that the user intends to purchase.
  * @property productChange Product change information when the user is upgrading or downgrading an existing
@@ -99,11 +110,44 @@ public interface PaywallPurchaseLogic : PurchaseLogic {
  * in the paywall. Null if no specific offer is configured or the product is not a subscription.
  */
 @Poko
-public class PaywallPurchaseContext(
+public class PaywallPurchaseLogicParams internal constructor(
     public val rcPackage: Package,
     public val productChange: ProductChange?,
     public val subscriptionOption: SubscriptionOption?,
-)
+) {
+    /**
+     * Builder for creating [PaywallPurchaseLogicParams].
+     *
+     * @param rcPackage The package representing the in-app product that the user intends to purchase.
+     */
+    public class Builder(private val rcPackage: Package) {
+        private var productChange: ProductChange? = null
+        private var subscriptionOption: SubscriptionOption? = null
+
+        /**
+         * Sets the product change information for upgrades/downgrades.
+         */
+        public fun productChange(productChange: ProductChange?): Builder = apply {
+            this.productChange = productChange
+        }
+
+        /**
+         * Sets the specific subscription option (offer) to use for this purchase.
+         */
+        public fun subscriptionOption(subscriptionOption: SubscriptionOption?): Builder = apply {
+            this.subscriptionOption = subscriptionOption
+        }
+
+        /**
+         * Builds the [PaywallPurchaseLogicParams] instance.
+         */
+        public fun build(): PaywallPurchaseLogicParams = PaywallPurchaseLogicParams(
+            rcPackage = rcPackage,
+            productChange = productChange,
+            subscriptionOption = subscriptionOption,
+        )
+    }
+}
 
 /**
  * Contains information about a subscription product change (upgrade or downgrade).
@@ -129,7 +173,7 @@ public class ProductChange(
  * If you prefer to implement custom purchase and restore logic with coroutines, please implement
  * [PurchaseLogic] directly.
  *
- * @deprecated Use [PaywallPurchaseLogicWithCallback] instead, which provides a [PaywallPurchaseContext] with
+ * @deprecated Use [PaywallPurchaseLogicWithCallback] instead, which provides a [PaywallPurchaseLogicParams] with
  * support for product changes (upgrades/downgrades) and subscription offers.
  */
 @Suppress("DEPRECATION")
@@ -204,22 +248,22 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
 public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
 
     /**
-     * Performs an in-app purchase with additional purchase context, using a completion callback.
+     * Performs an in-app purchase with additional purchase params, using a completion callback.
      *
-     * The [PaywallPurchaseContext] contains the package to purchase along with product change information
+     * The [PaywallPurchaseLogicParams] contains the package to purchase along with product change information
      * and the specific subscription option (offer) configured in the paywall.
      *
      * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param activity The current Android `Activity` triggering the purchase.
-     * @param context The purchase context containing the package, product change information, and offer details.
+     * @param params The purchase params containing the package, product change information, and offer details.
      * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the purchase operation.
      */
     public abstract fun performPurchaseWithCompletion(
         activity: Activity,
-        context: PaywallPurchaseContext,
+        params: PaywallPurchaseLogicParams,
         completion: (PurchaseLogicResult) -> Unit,
     )
 
@@ -244,10 +288,10 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
      */
     final override suspend fun performPurchase(
         activity: Activity,
-        context: PaywallPurchaseContext,
+        params: PaywallPurchaseLogicParams,
     ): PurchaseLogicResult =
         suspendCoroutine { continuation ->
-            performPurchaseWithCompletion(activity, context) { result ->
+            performPurchaseWithCompletion(activity, params) { result ->
                 continuation.resume(result)
             }
         }

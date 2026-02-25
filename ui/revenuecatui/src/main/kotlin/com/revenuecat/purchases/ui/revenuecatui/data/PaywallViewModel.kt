@@ -31,8 +31,8 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseContext
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -485,7 +485,7 @@ internal class PaywallViewModelImpl(
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
                     val result = if (myAppPurchaseLogic is PaywallPurchaseLogic) {
-                        val purchaseContext = PaywallPurchaseContext(
+                        val purchaseContext = PaywallPurchaseLogicParams(
                             rcPackage = packageToPurchase,
                             productChange = productChangeInfo?.let {
                                 ProductChange(

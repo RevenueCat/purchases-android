@@ -10,8 +10,8 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
@@ -26,8 +26,8 @@ private class PaywallPurchaseLogicAPI {
         activity: Activity,
         rcPackage: Package,
     ) {
-        val context = PaywallPurchaseLogicParams(rcPackage = rcPackage, productChange = null, subscriptionOption = null)
-        val result: PurchaseLogicResult = logic.performPurchase(activity, context)
+        val params = PaywallPurchaseLogicParams.Builder(rcPackage).build()
+        val result: PurchaseLogicResult = logic.performPurchase(activity, params)
     }
 
     suspend fun checkRestore(logic: PaywallPurchaseLogic, customerInfo: CustomerInfo) {
@@ -48,17 +48,18 @@ private class PaywallPurchaseLogicAPI {
     }
 
     fun checkPaywallPurchaseLogicParams(rcPackage: Package, subscriptionOption: SubscriptionOption) {
-        val context = PaywallPurchaseLogicParams(
-            rcPackage = rcPackage,
-            productChange = ProductChange(
-                oldProductId = "old_product_id",
-                replacementMode = GoogleReplacementMode.DEFERRED,
-            ),
-            subscriptionOption = subscriptionOption,
-        )
-        val pkg: Package = context.rcPackage
-        val productChange: ProductChange? = context.productChange
-        val option: SubscriptionOption? = context.subscriptionOption
+        val params = PaywallPurchaseLogicParams.Builder(rcPackage)
+            .productChange(
+                ProductChange(
+                    oldProductId = "old_product_id",
+                    replacementMode = GoogleReplacementMode.DEFERRED,
+                ),
+            )
+            .subscriptionOption(subscriptionOption)
+            .build()
+        val pkg: Package = params.rcPackage
+        val productChange: ProductChange? = params.productChange
+        val option: SubscriptionOption? = params.subscriptionOption
     }
 }
 
@@ -67,7 +68,7 @@ private class PaywallPurchaseLogicSuspendAPI : PaywallPurchaseLogic {
 
     override suspend fun performPurchase(
         activity: Activity,
-        context: PaywallPurchaseLogicParams,
+        params: PaywallPurchaseLogicParams,
     ): PurchaseLogicResult {
         return PurchaseLogicResult.Success
     }
@@ -82,7 +83,7 @@ private class PaywallPurchaseLogicCallbackAPI : PaywallPurchaseLogicWithCallback
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
-        context: PaywallPurchaseLogicParams,
+        params: PaywallPurchaseLogicParams,
         completion: (PurchaseLogicResult) -> Unit,
     ) {
         val success = PurchaseLogicResult.Success
