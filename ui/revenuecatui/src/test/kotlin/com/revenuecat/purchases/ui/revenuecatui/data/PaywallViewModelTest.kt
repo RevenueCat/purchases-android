@@ -40,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -2052,11 +2053,13 @@ class PaywallViewModelTest {
     fun `closePaywall calls dismissRequestWithExitOffering when set`() {
         var dismissWithExitOfferingInvoked = false
         var receivedExitOffering: Offering? = mockk()
+        var receivedResult: PaywallResult? = PaywallResult.Cancelled
 
         val model = create(
-            dismissRequestWithExitOffering = { exitOffering ->
+            dismissRequestWithExitOffering = { exitOffering, result ->
                 dismissWithExitOfferingInvoked = true
                 receivedExitOffering = exitOffering
+                receivedResult = result
             },
         )
 
@@ -2064,6 +2067,7 @@ class PaywallViewModelTest {
         model.closePaywall()
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedExitOffering).isNull()
+        assertThat(receivedResult).isNull()
         assertThat(dismissInvoked).isFalse()
     }
 
@@ -2073,6 +2077,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
         var dismissWithExitOfferingInvoked = false
+        var receivedResult: PaywallResult? = null
 
         val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
             customPurchaseCalled,
@@ -2083,8 +2088,9 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering ->
+            dismissRequestWithExitOffering = { exitOffering, result ->
                 dismissWithExitOfferingInvoked = true
+                receivedResult = result
                 assertThat(exitOffering).isNull()
             },
         )
@@ -2094,6 +2100,7 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { purchases.syncPurchases() }
         assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(receivedResult).isInstanceOf(PaywallResult.Purchased::class.java)
         assertThat(dismissInvoked).isFalse()
     }
 
@@ -2103,6 +2110,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
         var dismissWithExitOfferingInvoked = false
+        var receivedResult: PaywallResult? = null
 
         val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
@@ -2113,8 +2121,9 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering ->
+            dismissRequestWithExitOffering = { exitOffering, result ->
                 dismissWithExitOfferingInvoked = true
+                receivedResult = result
                 assertThat(exitOffering).isNull()
             },
         )
@@ -2124,6 +2133,7 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { purchases.syncPurchases() }
         assertThat(dismissWithExitOfferingInvoked).isTrue()
+        assertThat(receivedResult).isInstanceOf(PaywallResult.Purchased::class.java)
         assertThat(dismissInvoked).isFalse()
     }
 
@@ -2134,6 +2144,7 @@ class PaywallViewModelTest {
 
             val customRestoreCalled = MutableStateFlow(false)
             var dismissWithExitOfferingInvoked = false
+            var receivedResult: PaywallResult? = null
 
             val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
                 null,
@@ -2144,8 +2155,9 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering ->
+                dismissRequestWithExitOffering = { exitOffering, result ->
                     dismissWithExitOfferingInvoked = true
+                    receivedResult = result
                     assertThat(exitOffering).isNull()
                 },
                 shouldDisplayBlock = { false },
@@ -2156,6 +2168,7 @@ class PaywallViewModelTest {
 
             coVerify(exactly = 1) { purchases.syncPurchases() }
             assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(receivedResult).isInstanceOf(PaywallResult.Restored::class.java)
             assertThat(dismissInvoked).isFalse()
         }
 
@@ -2166,6 +2179,7 @@ class PaywallViewModelTest {
 
             val customRestoreCalled = MutableStateFlow(false)
             var dismissWithExitOfferingInvoked = false
+            var receivedResult: PaywallResult? = null
 
             val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
                 null,
@@ -2176,8 +2190,9 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering ->
+                dismissRequestWithExitOffering = { exitOffering, result ->
                     dismissWithExitOfferingInvoked = true
+                    receivedResult = result
                     assertThat(exitOffering).isNull()
                 },
                 shouldDisplayBlock = { false },
@@ -2188,6 +2203,7 @@ class PaywallViewModelTest {
 
             coVerify(exactly = 1) { purchases.syncPurchases() }
             assertThat(dismissWithExitOfferingInvoked).isTrue()
+            assertThat(receivedResult).isInstanceOf(PaywallResult.Restored::class.java)
             assertThat(dismissInvoked).isFalse()
         }
 
@@ -2197,7 +2213,7 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         customPurchaseLogic: PurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
-        dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
