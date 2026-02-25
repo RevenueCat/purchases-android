@@ -357,6 +357,29 @@ jobs:
           command: |
             ./gradlew getSamsungIapSdk --no-daemon
       - run:
+          name: Diagnose Samsung IAP AAR
+          command: |
+            set +e
+            SAMSUNG_IAP_VERSION=$(grep -E '^samsungIap\s*=\s*"' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/' | head -n 1)
+            SAMSUNG_IAP_AAR="libs/samsung-iap-${SAMSUNG_IAP_VERSION}.aar"
+            echo "SAMSUNG_IAP_VERSION=${SAMSUNG_IAP_VERSION}"
+            if [ -n "${SAMSUNG_IAP_SDK_URL}" ]; then
+              URL_HOST=$(echo "${SAMSUNG_IAP_SDK_URL}" | sed -E 's#^[^:]+://([^/]+).*#\1#')
+              URL_HAS_ZIP=$(echo "${SAMSUNG_IAP_SDK_URL}" | grep -E '\.zip([?#].*)?$' >/dev/null && echo "yes" || echo "no")
+              echo "SAMSUNG_IAP_SDK_URL host=${URL_HOST} zipSuffix=${URL_HAS_ZIP}"
+            else
+              echo "SAMSUNG_IAP_SDK_URL is empty"
+            fi
+            ls -lah libs || true
+            file "${SAMSUNG_IAP_AAR}" || true
+            shasum -a 256 "${SAMSUNG_IAP_AAR}" || true
+            echo "unzip -t result:"
+            unzip -t "${SAMSUNG_IAP_AAR}" | sed -n '1,20p' || true
+            echo "zip entry listing:"
+            unzip -l "${SAMSUNG_IAP_AAR}" | sed -n '1,25p' || true
+            echo "first bytes:"
+            xxd -l 32 "${SAMSUNG_IAP_AAR}" || true
+      - run:
           name: Compile API Tester with Galaxy Files
           command: |
             ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon

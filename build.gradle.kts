@@ -70,6 +70,7 @@ tasks.register("getSamsungIapSdk") {
         logger.lifecycle("Downloaded Samsung IAP SDK archive: %.2f MB".format(downloadedSizeMb))
 
         if (downloadUrl.lowercase().endsWith(".zip")) {
+            logger.lifecycle("Samsung IAP SDK download detected as ZIP. Extracting $samsungIapFileName from archive.")
             project.copy {
                 from(
                     zipTree(downloadFile)
@@ -79,6 +80,7 @@ tasks.register("getSamsungIapSdk") {
                 into(samsungIapDestFile.parentFile)
             }
         } else {
+            logger.lifecycle("Samsung IAP SDK download detected as non-ZIP. Copying file directly as AAR.")
             downloadFile.copyTo(samsungIapDestFile, overwrite = true)
         }
     }
