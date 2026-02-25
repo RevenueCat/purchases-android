@@ -196,6 +196,21 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **Publishing**: Maven Central through Sonatype
 - **Documentation**: Dokka for API docs
 
+### Pull Request Labels
+
+When creating a pull request, **always add one of these labels** to categorize the change. These labels determine automatic version bumps and changelog generation:
+
+| Label      | When to Use                                                                         |
+|------------|-------------------------------------------------------------------------------------|
+| `pr:feat`  | New user-facing features or enhancements                                            |
+| `pr:fix`   | Bug fixes                                                                           |
+| `pr:other` | Internal changes, refactors, CI, docs, or anything that shouldn't trigger a release |
+
+**Additional scope labels** (add alongside the primary label above):
+- `pr:RevenueCatUI` — Changes specific to the RevenueCatUI module (paywalls, customer center)
+- `feat:Paywalls_V2` — Changes related to Paywalls V2 (requires `pr:RevenueCatUI` as well)
+- `feat:Customer Center` — Changes related to Customer Center (requires `pr:RevenueCatUI` as well)
+
 ## Guardrails
 
 - **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files
