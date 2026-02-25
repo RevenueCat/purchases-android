@@ -6,8 +6,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 public object RestoreStrings {
     public const val PURCHASE_HISTORY_EMPTY: String = "Purchase history is empty."
     public const val PURCHASE_HISTORY_RETRIEVED: String = "Purchase history retrieved %s"
-    public const val EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE: String = "BillingClient queryPurchaseHistory has returned " +
-        "more than once, with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts"
+    public const val EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE: String =
+        "BillingClient queryPurchaseHistory has returned " +
+            "more than once, with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts"
     public const val PURCHASE_RESTORED: String = "Purchase %s restored"
     public const val QUERYING_PURCHASE: String = "Querying purchases"
     public const val QUERYING_PURCHASE_WITH_HASH: String = "Purchase of type %s with hash %s"

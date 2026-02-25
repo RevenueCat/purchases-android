@@ -21,8 +21,6 @@ internal fun Context.getLocale(): Locale? =
         resources.configuration.locale
     }
 
-
-
 @InternalRevenueCatAPI
 public fun String.sha1(): String =
     MessageDigest.getInstance("SHA-1")

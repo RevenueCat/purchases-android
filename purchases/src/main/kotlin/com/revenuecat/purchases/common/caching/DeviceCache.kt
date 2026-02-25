@@ -56,13 +56,17 @@ public open class DeviceCache(
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
+
     @VisibleForTesting
     internal val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
+
     @VisibleForTesting
     internal val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
+
     @VisibleForTesting
     internal val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+
     @VisibleForTesting
     internal val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
@@ -536,7 +540,7 @@ public open class DeviceCache(
 
     // region utils
 
-    internal  open fun getJSONObjectOrNull(key: String): JSONObject? {
+    internal open fun getJSONObjectOrNull(key: String): JSONObject? {
         return preferences.getString(key, null)?.let { json ->
             try {
                 JSONObject(json)
