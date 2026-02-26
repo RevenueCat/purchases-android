@@ -182,6 +182,7 @@ private class PurchasesCommonAPI {
         val storefrontCountryCode: String = purchases.awaitStorefrontCountryCode()
         val offerings: Offerings = purchases.awaitOfferings()
         val canMakePayments: Boolean = Purchases.awaitCanMakePayments(activity)
+        val canMakePayments2: Boolean = Purchases.awaitCanMakePayments(activity, listOf(BillingFeature.SUBSCRIPTIONS))
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
