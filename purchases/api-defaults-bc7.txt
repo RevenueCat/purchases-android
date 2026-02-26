@@ -19,6 +19,7 @@ package com.revenuecat.purchases {
   }
 
   public final class CoroutinesExtensionsCommonKt {
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitCanMakePayments(com.revenuecat.purchases.Purchases.Companion, android.content.Context context, optional java.util.List<? extends com.revenuecat.purchases.models.BillingFeature> features, kotlin.coroutines.Continuation<? super java.lang.Boolean>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitGetProducts(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>);
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitGetProductsResult(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super kotlin.Result<? extends java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitOfferings(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
