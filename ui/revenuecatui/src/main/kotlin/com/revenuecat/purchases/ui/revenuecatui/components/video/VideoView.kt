@@ -237,15 +237,18 @@ private class TextureVideoView @JvmOverloads constructor(
 
     fun release() {
         if (released) return
-        controller?.hide()
-        safely(execute = {
-            player.stop()
-        })
-        safely(execute = {
-            player.reset()
-        })
-        player.release()
         released = true
+        controller?.hide()
+        controller = null
+        // Detach surface and release directly. reset()/stop() can block for network streams.
+        safely(execute = {
+            player.setSurface(null)
+        })
+        safely(execute = {
+            player.release()
+        }, failureMessage = { e ->
+            "Could not release media player: ${e.message}"
+        })
         if (viewTreeObserverListening) {
             viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
             viewTreeObserverListening = false
