@@ -271,14 +271,13 @@ public suspend fun Purchases.awaitStorefrontCountryCode(): String {
 @JvmSynthetic
 public suspend fun Purchases.Companion.awaitCanMakePayments(
     context: Context,
-    features: List<BillingFeature> = listOf()
+    features: List<BillingFeature> = listOf(),
 ): Boolean {
     return suspendCoroutine { continuation ->
         canMakePayments(
             context = context,
             features = features,
-            callback = { continuation.resume(it) }
+            callback = { continuation.resume(it) },
         )
     }
 }
-
