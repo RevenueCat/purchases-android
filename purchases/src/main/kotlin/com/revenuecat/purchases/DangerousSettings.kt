@@ -18,6 +18,23 @@ public class DangerousSettings internal constructor(
     public val autoSyncPurchases: Boolean = true,
 
     internal val customEntitlementComputation: Boolean = false,
+
+    internal val uiPreviewMode: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
+    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false)
+
+    public companion object {
+        /**
+         * Creates a [DangerousSettings] configured for UI preview mode. When enabled, the SDK
+         * bypasses billing, identity creation, and other subsystems to function purely as a
+         * paywall rendering engine. Auto sync of purchases is forced off in this mode.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun forPreviewMode(): DangerousSettings = DangerousSettings(
+            autoSyncPurchases = false,
+            customEntitlementComputation = false,
+            uiPreviewMode = true,
+        )
+    }
 }
