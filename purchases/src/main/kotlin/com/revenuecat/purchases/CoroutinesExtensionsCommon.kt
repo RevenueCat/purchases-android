@@ -268,6 +268,7 @@ public suspend fun Purchases.awaitStorefrontCountryCode(): String {
  *                 By default, is an empty list and no specific feature support will be checked.
  * @return the result of the check
  */
+@JvmSynthetic
 public suspend fun Purchases.Companion.awaitCanMakePayments(
     context: Context,
     features: List<BillingFeature> = listOf()
