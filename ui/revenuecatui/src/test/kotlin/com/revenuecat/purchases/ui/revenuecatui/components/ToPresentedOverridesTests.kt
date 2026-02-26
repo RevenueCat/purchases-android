@@ -4,6 +4,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
@@ -302,7 +303,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = PartialTextComponent(fontName = expanded),
@@ -371,7 +372,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                     ComponentOverride.Condition.Variable(
                                         operator = ComponentOverride.EqualityOperator.EQUALS,
                                         variable = "plan",
-                                        value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                        value = JsonPrimitive("premium"),
                                     ),
                                 ),
                                 properties = LocalizedTextPartial(

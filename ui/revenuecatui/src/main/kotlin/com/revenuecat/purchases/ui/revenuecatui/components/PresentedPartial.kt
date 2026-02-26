@@ -12,6 +12,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 
 /**
  * Partial components transformed and ready for presentation.
@@ -182,18 +184,14 @@ private fun ComponentOverride.Condition.Variable.evaluate(
 
 private fun ComponentOverride.Condition.Variable.matchesValue(
     variableValue: CustomVariableValue,
-): Boolean {
-    val conditionValue = value
-    return when (conditionValue) {
-        is ComponentOverride.ConditionValue.StringValue ->
-            variableValue is CustomVariableValue.String && variableValue.value == conditionValue.value
-        is ComponentOverride.ConditionValue.BoolValue ->
-            variableValue is CustomVariableValue.Boolean && variableValue.value == conditionValue.value
-        is ComponentOverride.ConditionValue.IntValue ->
-            variableValue is CustomVariableValue.Number && variableValue.value == conditionValue.value.toDouble()
-        is ComponentOverride.ConditionValue.DoubleValue ->
-            variableValue is CustomVariableValue.Number && variableValue.value == conditionValue.value
-    }
+): Boolean = when {
+    value.isString ->
+        variableValue is CustomVariableValue.String && variableValue.value == value.content
+    value.booleanOrNull != null ->
+        variableValue is CustomVariableValue.Boolean && variableValue.value == value.booleanOrNull
+    value.doubleOrNull != null ->
+        variableValue is CustomVariableValue.Number && variableValue.value == value.doubleOrNull
+    else -> false
 }
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
