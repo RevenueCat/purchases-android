@@ -23,6 +23,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
@@ -48,6 +49,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
@@ -944,7 +946,8 @@ class CustomerCenterViewModelTests {
         every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
 
         // Create a mock product that will be returned from awaitGetProduct
-        val mockProduct = mockk<StoreProduct>(relaxed = true)
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "test_product_id"
         every { mockProduct.id } returns "test_product_id"
         coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
 
@@ -968,7 +971,9 @@ class CustomerCenterViewModelTests {
         val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
 
         // First, select a purchase to navigate to the detail view
-        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
+            product = mockProduct,
+        )
         model.selectPurchase(purchaseInformation)
 
         // Wait for the navigation to complete
@@ -2385,6 +2390,69 @@ class CustomerCenterViewModelTests {
         
         verify { directListener.onCustomActionSelected("general_action", null) }
         verify { purchasesListener.onCustomActionSelected("general_action", null) }
+    }
+
+    @Test
+    fun `cancel path strips base plan from product ID in Play Store URL`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.paywall_tester"
+
+        val intentSlot = slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "paywall_tester.subs"
+        every { mockProduct.id } returns "paywall_tester.subs:monthly"
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
+
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.PLAY_STORE,
+            managementURL = null,
+            product = mockProduct,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo("https://play.google.com/store/account/subscriptions?sku=paywall_tester.subs&package=com.revenuecat.paywall_tester")
     }
 
     private fun createMockPurchaseInformation(productId: String): PurchaseInformation {
