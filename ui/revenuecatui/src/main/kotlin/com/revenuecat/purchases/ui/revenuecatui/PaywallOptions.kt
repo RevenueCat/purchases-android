@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
@@ -47,10 +48,10 @@ public class PaywallOptions internal constructor(
     internal val shouldDisplayDismissButton: Boolean,
     public val fontProvider: FontProvider?,
     public val listener: PaywallListener?,
-    public val purchaseLogic: PurchaseLogic?,
+    public val purchaseLogic: PaywallPurchaseLogic?,
     internal val mode: PaywallMode,
     public val dismissRequest: () -> Unit,
-    internal val dismissRequestWithExitOffering: ((exitOffering: Offering?) -> Unit)? = null,
+    internal val dismissRequestWithExitOffering: ((exitOffering: Offering?, result: PaywallResult?) -> Unit)? = null,
     /**
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
@@ -105,10 +106,10 @@ public class PaywallOptions internal constructor(
         shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
         fontProvider: FontProvider? = this.fontProvider,
         listener: PaywallListener? = this.listener,
-        purchaseLogic: PurchaseLogic? = this.purchaseLogic,
+        purchaseLogic: PaywallPurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
-        dismissRequestWithExitOffering: ((Offering?) -> Unit)? = this.dismissRequestWithExitOffering,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
@@ -130,9 +131,9 @@ public class PaywallOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = false
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
-        internal var purchaseLogic: PurchaseLogic? = null
+        internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
-        internal var dismissRequestWithExitOffering: ((Offering?) -> Unit)? = null
+        internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
 
         public fun setOffering(offering: Offering?): Builder = apply {
@@ -171,7 +172,7 @@ public class PaywallOptions internal constructor(
             this.listener = listener
         }
 
-        public fun setPurchaseLogic(purchaseLogic: PurchaseLogic?): Builder = apply {
+        public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
             this.purchaseLogic = purchaseLogic
         }
 
@@ -179,7 +180,9 @@ public class PaywallOptions internal constructor(
             this.mode = mode
         }
 
-        internal fun setDismissRequestWithExitOffering(dismissRequestWithExitOffering: ((Offering?) -> Unit)?) = apply {
+        internal fun setDismissRequestWithExitOffering(
+            dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)?,
+        ) = apply {
             this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
         }
 

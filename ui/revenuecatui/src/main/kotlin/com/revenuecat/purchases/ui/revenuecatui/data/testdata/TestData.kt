@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -589,7 +590,7 @@ internal class MockViewModel(
 
     var closePaywallCallCount = 0
         private set
-    override fun closePaywall() {
+    override fun closePaywall(result: PaywallResult?) {
         closePaywallCallCount++
     }
 
