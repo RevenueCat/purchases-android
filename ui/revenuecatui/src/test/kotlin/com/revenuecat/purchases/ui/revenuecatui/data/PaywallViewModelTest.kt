@@ -2122,7 +2122,7 @@ class PaywallViewModelTest {
         assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
         assertThat(receivedContext.replacementMode)
             .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }
 
@@ -2200,7 +2200,7 @@ class PaywallViewModelTest {
         assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
         assertThat(receivedContext.replacementMode)
             .isEqualTo(GoogleReplacementMode.DEFERRED)
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }
 
@@ -2272,7 +2272,7 @@ class PaywallViewModelTest {
 
         assertThat(myAppPurchaseLogic.receivedContext).isNotNull
         assertThat(myAppPurchaseLogic.receivedContext!!.oldProductId).isNull()
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }
 
@@ -2317,7 +2317,7 @@ class PaywallViewModelTest {
 
         assertThat(myAppPurchaseLogic.receivedContext).isNotNull
         assertThat(myAppPurchaseLogic.receivedContext!!.subscriptionOption).isEqualTo(promoSubscriptionOption)
-        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }
 
