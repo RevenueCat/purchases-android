@@ -72,84 +72,86 @@ internal object AppStyleExtractor {
 
         if (totalPixels == 0) return emptyList()
 
-        // Dictionary to count occurrences of each quantized color
         val colorCounts = mutableMapOf<Int, Int>()
-
-        // Calculate step size to sample approximately maxPixelSamples pixels
         val sampleStep = maxOf(1, totalPixels / ColorExtractionConstants.MAX_PIXEL_SAMPLES)
-
         val pixels = IntArray(totalPixels)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
-        @Suppress("MagicNumber")
-        for (pixel in pixels.indices step sampleStep) {
-            // Bit shifting and applying the max color component value to each channel
-            val color = pixels[pixel]
-            val alpha = (color shr 24) and 0xFF
-            val red = (color shr 16) and 0xFF
-            val green = (color shr 8) and 0xFF
-            val blue = color and 0xFF
-
-            // Skip pixels that are mostly transparent
-            if (alpha < ColorExtractionConstants.MINIMUM_ALPHA_THRESHOLD) continue
-
-            // Quantize colors by reducing precision
-            val divisor = ColorExtractionConstants.COLOR_QUANTIZATION_DIVISOR
-            val quantizedR = (red / divisor) * divisor
-            val quantizedG = (green / divisor) * divisor
-            val quantizedB = (blue / divisor) * divisor
-
-            // Calculate simple brightness as sum of RGB components
-            val brightness = quantizedR + quantizedG + quantizedB
-
-            // Skip very dark and very bright colors
-            if (brightness < ColorExtractionConstants.MINIMUM_BRIGHTNESS_THRESHOLD ||
-                brightness > ColorExtractionConstants.MAXIMUM_BRIGHTNESS_THRESHOLD
-            ) {
-                continue
+        for (pixelIndex in pixels.indices step sampleStep) {
+            val key = quantizedColorKeyOrNull(pixels[pixelIndex])
+            if (key != null) {
+                colorCounts[key] = colorCounts.getOrDefault(key, 0) + 1
             }
-
-            // Pack RGB into a single Int for use as map key
-            val key = (quantizedR shl 16) or (quantizedG shl 8) or quantizedB
-            colorCounts[key] = colorCounts.getOrDefault(key, 0) + 1
         }
-
-        // Sort colors by frequency (most common first)
-        val sortedColors = colorCounts.entries.sortedByDescending { it.value }
 
         val prominentColors = mutableListOf<Color>()
         val black = Triple(0.0, 0.0, 0.0)
         val white = Triple(1.0, 1.0, 1.0)
 
-        for ((colorKey, _) in sortedColors) {
-            // bit shifting and converting to double
-            val red = ((colorKey shr 16) and 0xFF) / 255.0
-            val green = ((colorKey shr 8) and 0xFF) / 255.0
-            val blue = (colorKey and 0xFF) / 255.0
+        for ((colorKey, _) in colorCounts.entries.sortedByDescending { it.value }) {
+            val colorTuple = colorKeyToTuple(colorKey)
+            val isFarFromBlackAndWhite =
+                colorDistance(colorTuple, black) >= ColorExtractionConstants.MINIMUM_DISTANCE_FROM_BLACK_WHITE &&
+                    colorDistance(colorTuple, white) >= ColorExtractionConstants.MINIMUM_DISTANCE_FROM_BLACK_WHITE
 
-            val colorTuple = Triple(red, green, blue)
-
-            // Skip colors too close to black or white
-            if (colorDistance(colorTuple, black) < ColorExtractionConstants.MINIMUM_DISTANCE_FROM_BLACK_WHITE ||
-                colorDistance(colorTuple, white) < ColorExtractionConstants.MINIMUM_DISTANCE_FROM_BLACK_WHITE
-            ) {
-                continue
-            }
-
-            val newColor = Color(red.toFloat(), green.toFloat(), blue.toFloat())
-
-            // Check if this color is too similar to any already-selected color
             val isTooSimilar = prominentColors.any { existingColor ->
                 colorDistance(colorTuple, existingColor.toTriple()) < ColorExtractionConstants.MINIMUM_COLOR_DISTANCE
             }
 
-            if (!isTooSimilar) {
-                prominentColors.add(newColor)
+            if (isFarFromBlackAndWhite && !isTooSimilar) {
+                prominentColors.add(colorTuple.toColor())
                 if (prominentColors.size >= count) break
             }
         }
 
         return prominentColors
+    }
+
+    private fun quantizedColorKeyOrNull(color: Int): Int? {
+        val alpha = (color shr ColorExtractionConstants.ALPHA_CHANNEL_SHIFT) and
+            ColorExtractionConstants.COLOR_COMPONENT_MASK
+        var quantizedKey: Int? = null
+
+        if (alpha >= ColorExtractionConstants.MINIMUM_ALPHA_THRESHOLD) {
+            val red = (color shr ColorExtractionConstants.RED_CHANNEL_SHIFT) and
+                ColorExtractionConstants.COLOR_COMPONENT_MASK
+            val green = (color shr ColorExtractionConstants.GREEN_CHANNEL_SHIFT) and
+                ColorExtractionConstants.COLOR_COMPONENT_MASK
+            val blue = color and ColorExtractionConstants.COLOR_COMPONENT_MASK
+
+            val divisor = ColorExtractionConstants.COLOR_QUANTIZATION_DIVISOR
+            val quantizedR = (red / divisor) * divisor
+            val quantizedG = (green / divisor) * divisor
+            val quantizedB = (blue / divisor) * divisor
+            val brightness = quantizedR + quantizedG + quantizedB
+            val isWithinBrightnessRange =
+                brightness >= ColorExtractionConstants.MINIMUM_BRIGHTNESS_THRESHOLD &&
+                    brightness <= ColorExtractionConstants.MAXIMUM_BRIGHTNESS_THRESHOLD
+
+            if (isWithinBrightnessRange) {
+                quantizedKey = (quantizedR shl ColorExtractionConstants.RED_CHANNEL_SHIFT) or
+                    (quantizedG shl ColorExtractionConstants.GREEN_CHANNEL_SHIFT) or quantizedB
+            }
+        }
+
+        return quantizedKey
+    }
+
+    private fun colorKeyToTuple(colorKey: Int): Triple<Double, Double, Double> {
+        val red = normalizedColorComponent(colorKey, ColorExtractionConstants.RED_CHANNEL_SHIFT)
+        val green = normalizedColorComponent(colorKey, ColorExtractionConstants.GREEN_CHANNEL_SHIFT)
+        val blue = (colorKey and ColorExtractionConstants.COLOR_COMPONENT_MASK) /
+            ColorExtractionConstants.RGB_NORMALIZATION_DIVISOR
+        return Triple(red, green, blue)
+    }
+
+    private fun normalizedColorComponent(colorKey: Int, shift: Int): Double {
+        val component = (colorKey shr shift) and ColorExtractionConstants.COLOR_COMPONENT_MASK
+        return component / ColorExtractionConstants.RGB_NORMALIZATION_DIVISOR
+    }
+
+    private fun Triple<Double, Double, Double>.toColor(): Color {
+        return Color(first.toFloat(), second.toFloat(), third.toFloat())
     }
 
     private fun Color.toTriple(): Triple<Double, Double, Double> {
