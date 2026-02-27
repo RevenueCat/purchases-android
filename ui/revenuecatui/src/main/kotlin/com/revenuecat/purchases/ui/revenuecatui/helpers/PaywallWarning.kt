@@ -17,6 +17,7 @@ internal sealed class PaywallWarning {
     data class InvalidTemplate(val templateName: String) : PaywallWarning()
     data class InvalidVariables(val variables: Set<String>) : PaywallWarning()
     data class InvalidIcons(val icons: Set<String>) : PaywallWarning()
+    data class Other(val message: String) : PaywallWarning()
 
     val title: String
         get() = when (this) {
@@ -30,6 +31,7 @@ internal sealed class PaywallWarning {
             is InvalidTemplate -> "Unknown Template"
             is InvalidVariables -> "Unrecognized variables"
             is InvalidIcons -> "Invalid icon names"
+            is Other -> "Paywall Misconfigured"
         }
 
     val bodyText: String
@@ -77,6 +79,8 @@ internal sealed class PaywallWarning {
                 "The following icon names are not valid: $icons. " +
                     "Please check `PaywallIcon` for the list of valid icon names."
             }
+
+            is Other -> "Paywall validation failed with message: $message"
         }
 
     val helpUrl: String?
@@ -107,7 +111,14 @@ internal sealed class PaywallWarning {
                 error.tierIds.firstOrNull() ?: "unknown",
             )
 
-            else -> MissingLocalization
+            is PaywallValidationError.MissingStringLocalization,
+            is PaywallValidationError.MissingVideoLocalization,
+            is PaywallValidationError.AllVariableLocalizationsMissing,
+            is PaywallValidationError.AllLocalizationsMissing,
+            is PaywallValidationError.MissingImageLocalization,
+            -> MissingLocalization
+
+            else -> Other(error.message ?: "Unknown error")
         }
     }
 }
