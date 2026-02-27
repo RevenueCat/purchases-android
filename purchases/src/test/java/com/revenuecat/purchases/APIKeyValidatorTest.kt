@@ -27,6 +27,42 @@ class APIKeyValidatorTest {
     }
 
     @Test
+    fun `Validation result is amazon key but galaxy store if API key is from amazon but store is galaxy`() {
+        assertValidation(
+            APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
+            "amzn_1a2b3c4d5e6f7h",
+            Store.GALAXY
+        )
+    }
+
+    @Test
+    fun `Validation result is google key but galaxy store if API key is from google but store is galaxy`() {
+        assertValidation(
+            APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+            "goog_1a2b3c4d5e6f7h",
+            Store.GALAXY
+        )
+    }
+
+    @Test
+    fun `Validation result is galaxy key but google store if API key is from galaxy but store is google`() {
+        assertValidation(
+            APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+            "galx_1a2b3c4d5e6f7h",
+            Store.PLAY_STORE
+        )
+    }
+
+    @Test
+    fun `Validation result is galaxy key but amazon store if API key is from galaxy but store is amazon`() {
+        assertValidation(
+            APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+            "galx_1a2b3c4d5e6f7h",
+            Store.AMAZON
+        )
+    }
+
+    @Test
     fun `Validation result is simulated store`() {
         assertValidation(
             APIKeyValidator.ValidationResult.SIMULATED_STORE,
@@ -53,6 +89,11 @@ class APIKeyValidatorTest {
     @Test
     fun `Validation result is valid if amazon key and amazon store`() {
         assertValidation(APIKeyValidator.ValidationResult.VALID, "amzn_1a2b3c4d5e6f7h", Store.AMAZON)
+    }
+
+    @Test
+    fun `Validation result is valid if galaxy key and galaxy store`() {
+        assertValidation(APIKeyValidator.ValidationResult.VALID, "galx_1a2b3c4d5e6f7h", Store.GALAXY)
     }
 
     @Test

@@ -317,6 +317,7 @@ public class Purchases internal constructor(
          *
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         public fun configureInCustomEntitlementsComputationMode(
             configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,

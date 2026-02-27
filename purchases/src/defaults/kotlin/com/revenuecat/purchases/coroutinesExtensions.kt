@@ -202,6 +202,8 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
  * If there is any error, it will return null and log said error.
  * Coroutine friendly version of [Purchases.getStorefrontLocale].
  *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always throw an error.
+ *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store locale. **Note:** this locale only has a region set.
  */

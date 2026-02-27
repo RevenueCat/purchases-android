@@ -3,14 +3,13 @@ package com.revenuecat.purchases.common.offlineentitlements
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -25,6 +24,7 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
 import java.util.Date
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val appConfig: AppConfig,
@@ -106,8 +106,7 @@ internal class OfflineCustomerInfoCalculator(
         )
     }
 
-    private fun determineManagementURL() =
-        if (appConfig.store == Store.PLAY_STORE) Constants.GOOGLE_PLAY_MANAGEMENT_URL else JSONObject.NULL
+    private fun determineManagementURL(): Any = appConfig.store.managementUrl ?: JSONObject.NULL
 
     private fun calculateOriginalPurchaseDate(purchasedProducts: List<PurchasedProduct>): String? {
         val minPurchaseDate = purchasedProducts.minOfOrNull { it.storeTransaction.purchaseTime }

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 import io.mockk.mockk
 import org.junit.Test
@@ -32,6 +33,7 @@ class BillingFactoryTest {
             mockDiagnosticsTracker,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
             backend = mockBackend,
         )
     }
@@ -53,6 +55,7 @@ class BillingFactoryTest {
             mockDiagnosticsTracker,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
             backend = mockBackend,
         )
         assertIs<SimulatedStoreBillingWrapper>(simulatedBilling)
@@ -74,6 +77,7 @@ class BillingFactoryTest {
             diagnosticsTrackerIfEnabled = null,
             PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
             backend = mockBackend,
         )
     }

@@ -1,8 +1,8 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService
 
 /**
@@ -27,16 +27,17 @@ public open class PurchasesConfiguration(builder: Builder) {
             PurchasesAreCompletedBy.REVENUECAT -> false
             PurchasesAreCompletedBy.MY_APP -> true
         }
-    public val purchasesAreCompletedBy: PurchasesAreCompletedBy
-    public val showInAppMessagesAutomatically: Boolean
-    public val service: ExecutorService?
-    public val store: Store
-    public val diagnosticsEnabled: Boolean
-    public val dangerousSettings: DangerousSettings
-    public val verificationMode: EntitlementVerificationMode
-    public val pendingTransactionsForPrepaidPlansEnabled: Boolean
-    public val automaticDeviceIdentifierCollectionEnabled: Boolean
-    public val preferredUILocaleOverride: String?
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy
+    val showInAppMessagesAutomatically: Boolean
+    val service: ExecutorService?
+    val store: Store
+    val diagnosticsEnabled: Boolean
+    val dangerousSettings: DangerousSettings
+    val verificationMode: EntitlementVerificationMode
+    val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    val automaticDeviceIdentifierCollectionEnabled: Boolean
+    val preferredUILocaleOverride: String?
+    val galaxyBillingMode: GalaxyBillingMode
 
     init {
         this.context =
@@ -58,6 +59,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+        this.galaxyBillingMode = builder.galaxyBillingMode
     }
 
     internal fun copy(
@@ -77,6 +79,7 @@ public open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
+            .galaxyBillingMode(galaxyBillingMode)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -121,6 +124,9 @@ public open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
 
         /**
          * A unique id for identifying the user
@@ -305,6 +311,14 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
+         * @see GalaxyBillingMode
+         */
+        fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
+            this.galaxyBillingMode = galaxyBillingMode
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         public open fun build(): PurchasesConfiguration {
@@ -312,6 +326,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     public override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -329,6 +344,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+        if (galaxyBillingMode != other.galaxyBillingMode) return false
 
         return true
     }
@@ -345,6 +361,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+        result = 31 * result + (galaxyBillingMode.hashCode())
         return result
     }
 }

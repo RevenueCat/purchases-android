@@ -5,11 +5,13 @@
 
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import java.util.concurrent.atomic.AtomicLong
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class HTTPTimeoutManager(
     private val appConfig: AppConfig,
     private val dateProvider: DateProvider = DefaultDateProvider(),

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.util.Log
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.strings.Emojis
 
@@ -32,6 +33,7 @@ private class DefaultLogHandler : LogHandler {
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> String) {
     val fullMessageBuilder = { "${intent.emojiList.joinToString("")} ${messageBuilder()}" }
 
@@ -48,12 +50,15 @@ internal inline fun log(intent: LogIntent, crossinline messageBuilder: () -> Str
         LogIntent.WARNING -> warnLog(fullMessageBuilder)
         LogIntent.AMAZON_WARNING -> warnLog(fullMessageBuilder)
         LogIntent.AMAZON_ERROR -> errorLog { fullMessageBuilder() }
+        LogIntent.GALAXY_WARNING -> warnLog(fullMessageBuilder)
+        LogIntent.GALAXY_ERROR -> errorLog { fullMessageBuilder() }
     }
 }
 
 /**
  * Enum of emojis for log messages according to intent.
  */
+@OptIn(InternalRevenueCatAPI::class)
 internal enum class LogIntent(val emojiList: List<String>) {
     DEBUG(listOf(Emojis.INFO)),
     GOOGLE_ERROR(listOf(Emojis.ROBOT, Emojis.DOUBLE_EXCLAMATION)),
@@ -67,4 +72,6 @@ internal enum class LogIntent(val emojiList: List<String>) {
     WARNING(listOf(Emojis.WARNING)),
     AMAZON_WARNING(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION)),
     AMAZON_ERROR(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION)),
+    GALAXY_WARNING(listOf(Emojis.STARS, Emojis.DOUBLE_EXCLAMATION)),
+    GALAXY_ERROR(listOf(Emojis.STARS, Emojis.DOUBLE_EXCLAMATION)),
 }

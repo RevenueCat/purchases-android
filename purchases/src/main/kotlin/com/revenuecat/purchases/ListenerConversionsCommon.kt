@@ -146,6 +146,8 @@ public fun Purchases.restorePurchasesWith(
 /**
  * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
  * If there is any error, it will return null and log said error.
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
  * @param [onSuccess] Will be called after the call has completed.
  * @param [onError] Will be called after the call has completed with an error.
  */

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -38,6 +39,7 @@ internal inline fun errorLog(throwable: Throwable? = null, messageBuilder: () ->
     currentLogHandler.e("$PURCHASES_LOG_TAG - ${LogLevel.ERROR.name}", messageBuilder(), throwable)
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 private inline fun logIfEnabled(
     level: LogLevel,
     logger: (tag: String, message: String) -> Unit,

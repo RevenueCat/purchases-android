@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.api.BuildConfig
 
-internal object Config {
+@InternalRevenueCatAPI
+object Config {
     var logLevel = LogLevel.debugLogsEnabled(BuildConfig.DEBUG)
 
     const val frameworkVersion = "9.23.0-SNAPSHOT"

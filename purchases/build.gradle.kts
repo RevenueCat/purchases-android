@@ -62,6 +62,12 @@ android {
             value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
         )
 
+        buildConfigField(
+            type = "String",
+            name = "SAMSUNG_IAP_SDK_VERSION",
+            value = "\"${libs.versions.samsungIap.get()}\"",
+        )
+
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )

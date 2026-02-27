@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -105,6 +106,32 @@ class PurchaseParamsTest {
 
         val expectedPurchasingData = basePlanSubscriptionOption.purchasingData
         assertThat(purchasePackageParams.purchasingData).isEqualTo(expectedPurchasingData)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `initializing defaults galaxyReplacementMode to default`() {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        ).build()
+
+        assertThat(purchaseParams.galaxyReplacementMode).isEqualTo(GalaxyReplacementMode.default)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `galaxyReplacementMode set on builder is reflected in PurchaseParams`() {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        )
+            .galaxyReplacementMode(GalaxyReplacementMode.INSTANT_PRORATED_DATE)
+            .build()
+
+        assertThat(purchaseParams.galaxyReplacementMode).isEqualTo(GalaxyReplacementMode.INSTANT_PRORATED_DATE)
     }
 
     // region Add-Ons

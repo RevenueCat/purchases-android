@@ -74,6 +74,18 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+    if (hasSamsungIapAar) {
+        implementation(project(":feature:galaxy"))
+    }
+
+    val samsungIapVersion = libs.versions.samsungIap.get()
+    val samsungIapAar = file("libs/samsung-iap-$samsungIapVersion.aar")
+    val samsungIapAarRoot = rootProject.file("libs/samsung-iap-$samsungIapVersion.aar")
+    when {
+        samsungIapAar.exists() -> implementation(files(samsungIapAar))
+        samsungIapAarRoot.exists() -> implementation(files(samsungIapAarRoot))
+    }
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)

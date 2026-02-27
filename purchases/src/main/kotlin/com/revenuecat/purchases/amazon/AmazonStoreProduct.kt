@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -191,6 +192,7 @@ public class AmazonStoreProduct @JvmOverloads constructor(
      *
      * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     @Deprecated(
         "Replaced with copyWithPresentedOfferingContext",
         ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),

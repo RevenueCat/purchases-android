@@ -62,7 +62,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
-     * the developer. Always null for Amazon.
+     * the developer. Always null for Amazon and Galaxy.
      */
     public val signature: String?,
 
@@ -77,7 +77,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
     public val presentedOfferingContext: PresentedOfferingContext?,
 
     /**
-     * Amazon's store user id. Null for Google
+     * Amazon's store user id. Null for Google and Galaxy
      */
     public val storeUserID: String?,
 
@@ -87,7 +87,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
     public val purchaseType: PurchaseType,
 
     /**
-     * Amazon's marketplace. Null for Google
+     * Amazon's marketplace. Null for Google and Galaxy
      */
     public val marketplace: String?,
 
@@ -103,7 +103,7 @@ public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constru
      *
      * In Google, this will be calculated from the basePlanId and offerId
      * Null in Google for restored transactions and purchases initiated outside of the app.
-     * Null for Amazon purchases.
+     * Null for Amazon and Galaxy purchases.
      */
     // We've marked this with @get:JvmSynthetic because its synthesized
     // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
@@ -264,4 +264,5 @@ public enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,
+    GALAXY_PURCHASE,
 }

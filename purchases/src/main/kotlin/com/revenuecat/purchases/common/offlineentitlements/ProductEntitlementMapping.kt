@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -9,7 +10,9 @@ import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class ProductEntitlementMapping(
+@Suppress("ForbiddenPublicDataClass")
+@InternalRevenueCatAPI
+data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
     val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
     val loadedFromCache: Boolean = false,
@@ -56,6 +59,7 @@ internal data class ProductEntitlementMapping(
         }
     }
 
+    @Suppress("ForbiddenPublicDataClass")
     data class Mapping(
         val productIdentifier: String,
         val basePlanId: String?,

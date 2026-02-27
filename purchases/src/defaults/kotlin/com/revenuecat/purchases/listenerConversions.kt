@@ -293,6 +293,9 @@ public fun Purchases.getVirtualCurrenciesWith(
 /**
  * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
  * If there is any error, it will return null and log said error.
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
+ *
  * @param [onSuccess] Will be called after the call has completed.
  * @param [onError] Will be called after the call has completed with an error.
  */

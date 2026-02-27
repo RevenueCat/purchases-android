@@ -130,7 +130,7 @@ class VirtualCurrencyManagerTest {
             )
             mockCallback.onReceived(this@VirtualCurrencyManagerTest.virtualCurrencies)
         }
-        
+
         verify(exactly = 0) {
             mockDeviceCache.getCachedVirtualCurrencies(any())
             mockCallback.onError(any())
