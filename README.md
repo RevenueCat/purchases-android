@@ -68,6 +68,7 @@ Or view / build our Android sample app:
 - Java 8+
 - Kotlin 1.8.0+
 - Minimum target: Android 5.0+ (API level 21+)
+    - Paywalls and Customer Center minimum target: Android 7.0+ (API level 24+)
 
 ## SDK Reference
 Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).
