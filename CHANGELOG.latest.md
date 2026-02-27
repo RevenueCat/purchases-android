@@ -1,9 +1,8 @@
+## RevenueCat SDK
+### ✨ New Features
+* [EXTERNAL] feat: introduce awaitCanMakePayments (#3136) contributed by @TheRogue76 (#3141) via Toni Rico (@tonidero)
+
 ## RevenueCatUI SDK
 ### Paywallv2
 #### 🐞 Bugfixes
-* Gracefully handle orphan `text_lid` instead of falling back to legacy paywall (#3101) via Cesar de la Vega (@vegaro)
-
-### 🔄 Other Changes
-* Add PR labels to AGENTS.md (#3139) via Toni Rico (@tonidero)
-* Pass custom PurchaseLogic to PaywallActivityLauncher in RCTTester (#3137) via Toni Rico (@tonidero)
-* Add .claude/ to .gitignore and guardrails to AGENTS.md (#3123) via Facundo Menzella (@facumenzella)
+* Fix PaywallResult.Cancelled for successful MY_APP purchases (#3138) via Toni Rico (@tonidero)
