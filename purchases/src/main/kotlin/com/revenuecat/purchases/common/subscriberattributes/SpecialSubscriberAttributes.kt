@@ -24,6 +24,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
      */
     ADJUST_ID("\$adjustId"),
     APPSFLYER_ID("\$appsflyerId"),
+    APPSTACK_ID("\$appstackId"),
     FB_ANON_ID("\$fbAnonId"),
     MPARTICLE_ID("\$mparticleId"),
     ONESIGNAL_ID("\$onesignalId"),
@@ -75,6 +76,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
     ) {
         object Adjust : AttributionIds(ReservedSubscriberAttribute.ADJUST_ID)
         object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
+        object Appstack : AttributionIds(ReservedSubscriberAttribute.APPSTACK_ID)
         object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)

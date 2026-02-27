@@ -186,6 +186,16 @@ final class PurchasesAPI {
         purchases.setAppsFlyerConversionData(mapStringInt);
     }
 
+    static void checkSetAppstackAttributionParams(final Purchases purchases) {
+        Map<String, Object> mapStringAny = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringAny);
+
+        purchases.setAppstackAttributionParams(null);
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringString);
+    }
+
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService,
                                    final PurchasesConfiguration purchasesConfiguration) {
