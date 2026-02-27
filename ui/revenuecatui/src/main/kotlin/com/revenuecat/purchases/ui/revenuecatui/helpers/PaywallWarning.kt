@@ -34,24 +34,41 @@ internal sealed class PaywallWarning {
 
     val bodyText: String
         get() = when (this) {
-            is NoPaywall -> "Your `$offeringId` offering has no configured paywalls. " +
-                "Set one up in the RevenueCat Dashboard to begin."
-            is NoOffering -> "We could not detect any offerings. " +
-                "Set one up in the RevenueCat Dashboard to begin."
-            is NoProducts -> "We could not fetch any products: " +
-                "${error.localizedMessage ?: error.message ?: "Unknown error"}"
-            is MissingLocalization -> "Your paywall is missing a localization. " +
-                "Add a localization in the RevenueCat Dashboard to begin."
-            is MissingTiers -> "Your paywall is missing any tiers. " +
-                "Add some tiers in the RevenueCat Dashboard to begin."
-            is MissingTier -> "The tier with ID: $tierId is missing a localization. " +
-                "Add a localization in the RevenueCat Dashboard to begin."
-            is MissingTierName -> "The tier: $tierId is missing a name. " +
-                "Add a name in the RevenueCat Dashboard to continue."
-            is InvalidTemplate -> "The template with ID: `$templateName` does not exist for this version of the SDK. " +
-                "Please make sure to update your SDK to the latest version and try again."
+            is NoPaywall ->
+                "Your `$offeringId` offering has no configured paywalls. " +
+                    "Set one up in the RevenueCat Dashboard to begin."
+
+            is NoOffering ->
+                "We could not detect any offerings. " +
+                    "Set one up in the RevenueCat Dashboard to begin."
+
+            is NoProducts ->
+                "We could not fetch any products: " +
+                    "${error.localizedMessage ?: error.message ?: "Unknown error"}"
+
+            is MissingLocalization ->
+                "Your paywall is missing a localization. " +
+                    "Add a localization in the RevenueCat Dashboard to begin."
+
+            is MissingTiers ->
+                "Your paywall is missing any tiers. " +
+                    "Add some tiers in the RevenueCat Dashboard to begin."
+
+            is MissingTier ->
+                "The tier with ID: $tierId is missing a localization. " +
+                    "Add a localization in the RevenueCat Dashboard to begin."
+
+            is MissingTierName ->
+                "The tier: $tierId is missing a name. " +
+                    "Add a name in the RevenueCat Dashboard to continue."
+
+            is InvalidTemplate ->
+                "The template with ID: `$templateName` does not exist for this version of the SDK. " +
+                    "Please make sure to update your SDK to the latest version and try again."
+
             is InvalidVariables -> "The following variables are not recognized: ${variables.joinToString(", ")}. " +
                 "Please check the docs for a list of valid variables."
+
             is InvalidIcons -> "The following icon names are not valid: ${icons.joinToString(", ")}. " +
                 "Please check `PaywallIcon` for the list of valid icon names."
         }
@@ -60,12 +77,16 @@ internal sealed class PaywallWarning {
         get() = when (this) {
             is NoPaywall, is MissingTierName, is MissingTier, is MissingTiers ->
                 "https://www.revenuecat.com/docs/tools/paywalls"
+
             is NoOffering ->
                 "https://www.revenuecat.com/docs/offerings/overview"
+
             is NoProducts ->
                 "https://www.revenuecat.com/docs/offerings/products-overview"
+
             is InvalidVariables ->
                 "https://www.revenuecat.com/docs/tools/paywalls/creating-paywalls/variables"
+
             else -> null
         }
 
@@ -79,6 +100,7 @@ internal sealed class PaywallWarning {
             is PaywallValidationError.MissingTierConfigurations -> MissingTier(
                 error.tierIds.firstOrNull() ?: "unknown",
             )
+
             else -> MissingLocalization
         }
     }
