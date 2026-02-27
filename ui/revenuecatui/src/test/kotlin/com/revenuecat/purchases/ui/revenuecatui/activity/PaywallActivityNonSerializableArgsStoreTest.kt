@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -17,7 +17,7 @@ class PaywallActivityNonSerializableArgsStoreTest {
     @Test
     fun `store returns key and get retrieves by that key`() {
         val args = PaywallActivityNonSerializableArgs(
-            purchaseLogic = mockk<PurchaseLogic>(),
+            purchaseLogic = mockk<PaywallPurchaseLogic>(),
             listener = mockk<PaywallListener>(),
         )
         val key = PaywallActivityNonSerializableArgsStore.store(args)
@@ -60,13 +60,13 @@ class PaywallActivityNonSerializableArgsStoreTest {
     @Test
     fun `multiple entries can be stored and retrieved independently`() {
         val args1 = PaywallActivityNonSerializableArgs(
-            purchaseLogic = mockk<PurchaseLogic>(),
+            purchaseLogic = mockk<PaywallPurchaseLogic>(),
         )
         val args2 = PaywallActivityNonSerializableArgs(
             listener = mockk<PaywallListener>(),
         )
         val args3 = PaywallActivityNonSerializableArgs(
-            purchaseLogic = mockk<PurchaseLogic>(),
+            purchaseLogic = mockk<PaywallPurchaseLogic>(),
             listener = mockk<PaywallListener>(),
         )
 
@@ -106,7 +106,7 @@ class PaywallActivityNonSerializableArgsStoreTest {
 
     @Test
     fun `store with only purchaseLogic works`() {
-        val purchaseLogic = mockk<PurchaseLogic>()
+        val purchaseLogic = mockk<PaywallPurchaseLogic>()
         val args = PaywallActivityNonSerializableArgs(purchaseLogic = purchaseLogic)
         val key = PaywallActivityNonSerializableArgsStore.store(args)
 
