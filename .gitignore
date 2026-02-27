@@ -139,3 +139,6 @@ purchases-android-snapshots
 
 # Kotlin Gradle plugin
 .kotlin
+
+# Claude Code
+.claude/

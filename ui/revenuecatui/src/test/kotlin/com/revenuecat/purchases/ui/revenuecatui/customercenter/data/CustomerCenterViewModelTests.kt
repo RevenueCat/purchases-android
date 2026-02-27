@@ -2078,7 +2078,7 @@ class CustomerCenterViewModelTests {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
-        every { purchases.syncPurchases() } just Runs
+        coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
         coEvery { purchases.awaitGetVirtualCurrencies() } returns mockk()
         every { purchases.invalidateVirtualCurrenciesCache() } just Runs

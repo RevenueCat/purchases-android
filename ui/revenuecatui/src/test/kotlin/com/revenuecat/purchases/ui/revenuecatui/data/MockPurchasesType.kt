@@ -49,8 +49,8 @@ internal class MockPurchasesType(
     override fun track(event: FeatureEvent) {
         // No-op for mock
     }
-    override fun syncPurchases() {
-        // No-op for mock
+    override suspend fun awaitSyncPurchases(): CustomerInfo {
+        throw NotImplementedError("Mock implementation")
     }
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         // No-op for mock - return success to simulate success
