@@ -124,6 +124,8 @@ dependencies {
     implementation(libs.commonmark)
     implementation(libs.commonmark.strikethrough)
 
+    implementation(libs.kotlinx.serialization.json)
+
     compileOnly(libs.emerge.snapshots.runtime)
 
     debugImplementation(libs.compose.ui.tooling)
@@ -132,7 +134,6 @@ dependencies {
     testImplementation(libs.bundles.test)
     testImplementation(libs.coil.test)
     testImplementation(libs.coroutines.test)
-    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.androidx.test.compose)
     testImplementation(libs.androidx.test.compose.manifest)
     testImplementation(libs.hamcrest.core)

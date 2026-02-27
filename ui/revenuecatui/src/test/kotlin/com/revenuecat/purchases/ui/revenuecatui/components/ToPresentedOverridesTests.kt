@@ -4,11 +4,14 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.UnsupportedCondition
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -18,7 +21,12 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import org.junit.Assert.assertEquals
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -32,8 +40,19 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
     class Args(
         val availableOverrides: List<ComponentOverride<PartialTextComponent>>,
         val transform: (PartialTextComponent) -> Result<LocalizedTextPartial, NonEmptyList<PaywallValidationError>>,
-        val expected: Result<List<PresentedOverride<LocalizedTextPartial>>, InvalidTemplate>,
+        val expected: Result<List<PresentedOverride<LocalizedTextPartial>>, PaywallValidationError>,
     )
+
+    @Before
+    fun setUp() {
+        mockkObject(Logger)
+        every { Logger.w(any()) } answers { }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(Logger)
+    }
 
     companion object {
         private val localeId = LocaleId("en_US")
@@ -71,7 +90,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 properties = PartialTextComponent(fontName = compact),
             ),
             ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                 properties = PartialTextComponent(fontName = introOffer),
             ),
             ComponentOverride(
@@ -194,6 +213,194 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 )
             ),
             arrayOf(
+                "Should fail if override contains Unsupported condition",
+                Args(
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Error(UnsupportedCondition)
+                )
+            ),
+            arrayOf(
+                "Should fail if Unsupported condition is among other conditions",
+                Args(
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Compact,
+                                ComponentOverride.Condition.Unsupported,
+                            ),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Error(UnsupportedCondition)
+                )
+            ),
+            arrayOf(
+                "Should fail if any override has Unsupported condition even if others are valid",
+                Args(
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = PartialTextComponent(fontName = medium),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Error(UnsupportedCondition)
+                )
+            ),
+            arrayOf(
+                "Should succeed with all recognized condition types",
+                Args(
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                            properties = PartialTextComponent(fontName = introOffer),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Selected),
+                            properties = PartialTextComponent(fontName = selected),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.IN,
+                                    packages = listOf("monthly"),
+                                ),
+                            ),
+                            properties = PartialTextComponent(fontName = medium),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Variable(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    variable = "plan",
+                                    value = JsonPrimitive("premium"),
+                                ),
+                            ),
+                            properties = PartialTextComponent(fontName = expanded),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = false,
+                                ),
+                            ),
+                            properties = PartialTextComponent(fontName = multipleIntroOffers),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Success(
+                        listOf(
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = compact),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = introOffer),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = selected),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.SelectedPackage(
+                                        operator = ComponentOverride.ArrayOperator.IN,
+                                        packages = listOf("monthly"),
+                                    ),
+                                ),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = medium),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.Variable(
+                                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                                        variable = "plan",
+                                        value = JsonPrimitive("premium"),
+                                    ),
+                                ),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = expanded),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.PromoOffer(
+                                        operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                        value = false,
+                                    ),
+                                ),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = multipleIntroOffers),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                        )
+                    )
+                )
+            ),
+            arrayOf(
                 "Should succeed if all transformations succeed",
                 Args(
                     availableOverrides = defaultAvailableOverrides,
@@ -233,7 +440,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                                 ).getOrThrow(),
                             ),
                             PresentedOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
                                 properties = LocalizedTextPartial(
                                     from = PartialTextComponent(fontName = introOffer),
                                     using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
@@ -273,10 +480,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
 
         // Assert
         assertEquals(args.expected.isError, actual.isError)
-        assertEquals(
-            args.expected.errorOrNull()?.templateName,
-            (actual.errorOrNull() as? InvalidTemplate)?.templateName
-        )
+        assertEquals(args.expected.errorOrNull(), actual.errorOrNull())
         assertEquals(args.expected.isSuccess, actual.isSuccess)
         assertEquals(args.expected.getOrNull(), actual.getOrNull())
     }

@@ -6,6 +6,21 @@ package com.revenuecat.purchases.ui.revenuecatui {
     property public final String stringValue;
   }
 
+  @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.Boolean extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {
+    ctor public CustomVariableValue.Boolean(boolean value);
+    method public boolean getValue();
+    property public final boolean value;
+  }
+
+  @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.Number extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {
+    ctor public CustomVariableValue.Number(double value);
+    ctor public CustomVariableValue.Number(float value);
+    ctor public CustomVariableValue.Number(int value);
+    ctor public CustomVariableValue.Number(long value);
+    method public double getValue();
+    property public final double value;
+  }
+
   @kotlinx.parcelize.Parcelize public static final class CustomVariableValue.String extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue implements android.os.Parcelable {
     ctor public CustomVariableValue.String(String value);
     method public String getValue();
