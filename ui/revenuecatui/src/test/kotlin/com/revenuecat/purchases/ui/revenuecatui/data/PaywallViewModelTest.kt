@@ -37,10 +37,10 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -499,6 +500,60 @@ class PaywallViewModelTest {
         coVerify(exactly = 0) { listener.onPurchaseError(any()) }
 
         assertThat(model.actionInProgress.value).isFalse
+    }
+
+    // Deprecated PurchaseLogic backward compatibility tests
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `Deprecated callback PurchaseLogic still works via backward compatibility`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacksDeprecated(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `Deprecated suspend PurchaseLogic still works via backward compatibility`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspendDeprecated(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
+        assertThat(dismissInvoked).isTrue
     }
 
     @Test
@@ -2004,7 +2059,7 @@ class PaywallViewModelTest {
     @Test
     fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
         val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
-        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(
             option = promoSubscriptionOption,
         )
 
@@ -2054,7 +2109,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
 
-        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Success,
@@ -2132,7 +2187,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
 
-        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextCallbacks(
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Success,
@@ -2210,7 +2265,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
 
-        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Success,
@@ -2282,7 +2337,7 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
 
-        val myAppPurchaseLogic = TestAppPurchaseLogicWithContextSuspend(
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
             PurchaseLogicResult.Success,
@@ -2290,7 +2345,7 @@ class PaywallViewModelTest {
         )
 
         val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
-        val resolvedOffer = com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer.ConfiguredOffer(
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(
             option = promoSubscriptionOption,
         )
 
@@ -2566,12 +2621,12 @@ class PaywallViewModelTest {
     }
 
     @Suppress("DEPRECATION")
-    private class TestAppPurchaseLogicWithCallbacks(
+    private class TestAppPurchaseLogicWithCallbacksDeprecated(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback() {
+    ) : PurchaseLogicWithCallback() {
 
         override fun performPurchaseWithCompletion(
             activity: Activity,
@@ -2603,12 +2658,12 @@ class PaywallViewModelTest {
     }
 
     @Suppress("DEPRECATION")
-    private class TestAppPurchaseLogicWithSuspend(
+    private class TestAppPurchaseLogicWithSuspendDeprecated(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
         private val restoreResult: PurchaseLogicResult? = null,
-    ) : com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic {
+    ) : PurchaseLogic {
 
         override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
             val purchaseFlow = customPurchaseCalled
@@ -2631,7 +2686,7 @@ class PaywallViewModelTest {
         }
     }
 
-    private class TestAppPurchaseLogicWithContextCallbacks(
+    private class TestAppPurchaseLogicWithCallbacks(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
@@ -2669,7 +2724,7 @@ class PaywallViewModelTest {
         }
     }
 
-    private class TestAppPurchaseLogicWithContextSuspend(
+    private class TestAppPurchaseLogicWithSuspend(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: PurchaseLogicResult? = null,
