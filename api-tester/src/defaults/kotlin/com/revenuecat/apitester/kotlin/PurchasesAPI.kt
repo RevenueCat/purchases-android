@@ -288,6 +288,42 @@ private class PurchasesAPI {
         purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
     }
 
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppstackAttributionParams(purchases: Purchases) {
+        val mapStringAny: Map<String, Any> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringAny)
+
+        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
+        purchases.setAppstackAttributionParams(mapNullableKeyAny)
+
+        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
+        purchases.setAppstackAttributionParams(mapNullableKeyNullableValue)
+
+        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
+        purchases.setAppstackAttributionParams(nullableMapNullableKeyNullableValue)
+
+        val nullableMapStringAny: Map<String, Any>? = emptyMap()
+        purchases.setAppstackAttributionParams(nullableMapStringAny)
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringString)
+
+        val mapStringNullableString: Map<String, String?> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringNullableString)
+
+        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
+        purchases.setAppstackAttributionParams(mapNullableKeyNullableString)
+
+        val mapStringInt: Map<String, Int> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringInt)
+
+        val mapStringNullableInt: Map<String, Int?> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringNullableInt)
+
+        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
+        purchases.setAppstackAttributionParams(mapNullableKeyNullableInt)
+    }
+
     @Suppress("ForbiddenComment")
     fun checkConfiguration(
         purchasesConfiguration: PurchasesConfiguration,

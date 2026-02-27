@@ -1084,6 +1084,321 @@ class SubscriberAttributesManagerTests {
 
     // endregion
 
+    // region Appstack Attribution Data
+
+    @Test
+    fun `setAppstackAttributionParams sets all campaign and raw attributes`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf(
+                "appstack_adnetwork" to "facebook",
+                "appstack_campaign" to "summer_sale",
+                "appstack_adset" to "test_adset",
+                "appstack_ad" to "test_ad",
+                "appstack_keywords" to "test_keywords",
+                "fbclid" to "fb_click_123",
+                "gclid" to "g_click_456",
+                "wbraid" to "wb_braid_789",
+                "gbraid" to "gb_braid_012",
+                "ttclid" to "tt_click_345",
+            ),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(15)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("facebook")
+        assertThat(captured["appstack_adnetwork"]?.value).isEqualTo("facebook")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("summer_sale")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("summer_sale")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("test_adset")
+        assertThat(captured["appstack_adset"]?.value).isEqualTo("test_adset")
+        assertThat(captured["\$ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["appstack_ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["appstack_keywords"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["fbclid"]?.value).isEqualTo("fb_click_123")
+        assertThat(captured["gclid"]?.value).isEqualTo("g_click_456")
+        assertThat(captured["wbraid"]?.value).isEqualTo("wb_braid_789")
+        assertThat(captured["gbraid"]?.value).isEqualTo("gb_braid_012")
+        assertThat(captured["ttclid"]?.value).isEqualTo("tt_click_345")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with null map does nothing`() {
+        underTest.setAppstackAttributionParams(appUserID, null, mockk(relaxed = true))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with empty map does nothing`() {
+        underTest.setAppstackAttributionParams(appUserID, emptyMap<String, String>(), mockk(relaxed = true))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams does not call setAttributionID when appstack_id is not present`() {
+        mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_campaign" to "summer_sale"),
+            mockk(relaxed = true),
+        )
+
+        verify(exactly = 0) {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams calls setAttributionID when appstack_id is present`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = "gps_ad_123")
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_id" to "appstack_device_123"),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("appstack_device_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]?.value)
+            .isEqualTo("gps_ad_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]?.value)
+            .isEqualTo("true")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams stores campaign attributes as both reserved and custom`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "google"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("google")
+        assertThat(captured["appstack_adnetwork"]?.value).isEqualTo("google")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles null values in map`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to null, "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+        assertThat(captured["appstack_adnetwork"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles null keys in map`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf(null to "value", "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles blank string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "", "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+        assertThat(captured["appstack_adnetwork"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles whitespace-only string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "   ", "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+        assertThat(captured["appstack_adnetwork"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles Integer values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf<String?, Any?>("fbclid" to 12345),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["fbclid"]?.value).isEqualTo("12345")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles Long values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf<String?, Any?>("gclid" to 123456789012345L),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["gclid"]?.value).isEqualTo("123456789012345")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles Boolean values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf<String?, Any?>("appstack_campaign" to true),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("true")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("true")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams ignores fields with only unrecognized keys`() {
+        underTest.setAppstackAttributionParams(appUserID, mapOf("unknown_field" to "value"), mockk(relaxed = true))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with only appstack_id`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = null)
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_id" to "my_appstack_id"),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("my_appstack_id")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with typical data`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = "gps_ad_abc")
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf<String?, Any?>(
+                "appstack_id" to "device_123",
+                "appstack_adnetwork" to "google",
+                "appstack_campaign" to "promo_2024",
+                "appstack_adset" to "ad_set_1",
+                "appstack_ad" to "ad_1",
+                "appstack_keywords" to "fitness",
+                "fbclid" to "fb_click_abc",
+                "gclid" to "g_click_def",
+                "wbraid" to "wb_123",
+                "gbraid" to "gb_456",
+                "ttclid" to "tt_789",
+                "ignored_field" to "value",
+            ),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        // Last setAttributes call is from setAttributionID (appstack_id + device identifiers)
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("device_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]?.value)
+            .isEqualTo("gps_ad_abc")
+        // Also verify first setAttributes call had all 15 campaign/raw attrs
+        verify {
+            mockDeviceCache.setAttributes(
+                appUserID,
+                match { attrs ->
+                    attrs.size == 15 &&
+                        attrs["\$mediaSource"]?.value == "google" &&
+                        attrs["appstack_adnetwork"]?.value == "google" &&
+                        attrs["\$campaign"]?.value == "promo_2024" &&
+                        attrs["appstack_campaign"]?.value == "promo_2024" &&
+                        attrs["fbclid"]?.value == "fb_click_abc" &&
+                        attrs["ttclid"]?.value == "tt_789"
+                },
+            )
+        }
+    }
+
+    // endregion
+
     // region copyUnsyncedSubscriberAttributes
 
     @Test

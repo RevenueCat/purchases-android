@@ -433,6 +433,7 @@ package com.revenuecat.purchases {
     method @Deprecated @kotlin.jvm.Synchronized public void setAllowSharingPlayStoreAccount(boolean);
     method public void setAppsFlyerConversionData(java.util.Map<? extends java.lang.Object?,? extends java.lang.Object?>? data);
     method public void setAppsflyerID(String? appsflyerID);
+    method public void setAppstackAttributionParams(java.util.Map<? extends java.lang.Object?,? extends java.lang.Object?>? data);
     method public void setAttributes(java.util.Map<java.lang.String,java.lang.String?> attributes);
     method public void setCampaign(String? campaign);
     method public void setCleverTapID(String? cleverTapID);

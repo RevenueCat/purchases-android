@@ -207,6 +207,48 @@ internal class SubscriberAttributesManager(
     }
 
     /**
+     * Convenience function to set attribution data from Appstack's attribution params.
+     */
+    fun setAppstackAttributionParams(appUserID: String, data: Map<*, *>?, applicationContext: Application) {
+        if (data == null) return
+
+        val attributes = mutableMapOf<String, String?>()
+
+        data.getStringValueForPrimitive("appstack_adnetwork")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = it
+            attributes["appstack_adnetwork"] = it
+        }
+        data.getStringValueForPrimitive("appstack_campaign")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
+            attributes["appstack_campaign"] = it
+        }
+        data.getStringValueForPrimitive("appstack_adset")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
+            attributes["appstack_adset"] = it
+        }
+        data.getStringValueForPrimitive("appstack_ad")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
+            attributes["appstack_ad"] = it
+        }
+        data.getStringValueForPrimitive("appstack_keywords")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
+            attributes["appstack_keywords"] = it
+        }
+
+        listOf("fbclid", "gclid", "wbraid", "gbraid", "ttclid").forEach { key ->
+            data.getStringValueForPrimitive(key)?.also { attributes[key] = it }
+        }
+
+        if (attributes.isNotEmpty()) {
+            setAttributes(attributes, appUserID)
+        }
+
+        data.getStringValueForPrimitive("appstack_id")?.let { appstackId ->
+            setAttributionID(SubscriberAttributeKey.AttributionIds.Appstack, appstackId, appUserID, applicationContext)
+        }
+    }
+
+    /**
      * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
     fun collectDeviceIdentifiers(
