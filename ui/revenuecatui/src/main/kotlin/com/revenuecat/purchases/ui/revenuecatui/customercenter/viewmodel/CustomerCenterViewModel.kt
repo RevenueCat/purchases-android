@@ -147,6 +147,11 @@ internal interface CustomerCenterViewModel {
      * Called when the activity is started. Triggers a refresh if the user is returning from background.
      */
     fun onActivityStarted()
+
+    /**
+     * Called when the activity resumes. Used to refresh after returning from external subscription management.
+     */
+    fun onActivityResumed()
 }
 
 @Stable
@@ -195,6 +200,7 @@ internal class CustomerCenterViewModelImpl(
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private var wasBackgrounded = false
+    private var shouldRefreshOnResume = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -436,11 +442,13 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun startGoogleProductCancellation(context: Context, productId: String) {
+        shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, productId)
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         openURL(
             context,
@@ -998,12 +1006,26 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityStarted() {
         if (wasBackgrounded) {
             wasBackgrounded = false
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
-                viewModelScope.launch {
-                    refreshCustomerCenter()
-                }
+            refreshIfPossible()
+        }
+    }
+
+    override fun onActivityResumed() {
+        if (shouldRefreshOnResume) {
+            shouldRefreshOnResume = false
+            refreshIfPossible()
+        }
+    }
+
+    private fun refreshIfPossible() {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+            viewModelScope.launch {
+                refreshCustomerCenter()
             }
+        } else if (currentState is CustomerCenterState.Success) {
+            // If we're already refreshing, keep retry flag for next resume.
+            shouldRefreshOnResume = true
         }
     }
 

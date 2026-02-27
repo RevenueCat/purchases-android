@@ -2518,4 +2518,46 @@ class CustomerCenterViewModelTests {
         assertThat(currentState).isEqualTo(errorState)
         assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
     }
+
+    @Test
+    fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var customerCenterConfigCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            customerCenterConfigCalls++
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialCalls = customerCenterConfigCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<StoreProduct> {
+            every { id } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && customerCenterConfigCalls <= initialCalls) {
+            Thread.sleep(25)
+        }
+        assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+    }
 }
