@@ -1242,6 +1242,86 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = null,
                 ),
             ),
+            arrayOf(
+                "intro_offer with operator=not_equals value=true: should not apply when eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferSingle,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "intro_offer with operator=not_equals value=false: should apply when eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = false,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferSingle,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "intro_offer with operator=not_equals value=false: should not apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = false,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "intro_offer with operator=equals value=true: should not apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
 
             // Extended PromoOffer condition tests
             arrayOf(
@@ -1302,6 +1382,106 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     offerEligibility = PromoOfferSingle,
                     state = DEFAULT,
                     expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=equals value=false: should not apply when eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = false,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=not_equals value=true: should not apply when eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=not_equals value=true: should apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=not_equals value=false: should not apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                                    value = false,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=equals value=true: should not apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
                 ),
             ),
 
