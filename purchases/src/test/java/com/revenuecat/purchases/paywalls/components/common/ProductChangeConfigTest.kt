@@ -25,9 +25,9 @@ class ProductChangeConfigTest(
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
             arrayOf(
-                "default values when empty",
+                "default values when only upgrade mode provided",
                 Args(
-                    json = """{}""",
+                    json = """{"upgrade_replacement_mode": "charge_prorated_price"}""",
                     expected = ProductChangeConfig(
                         upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
                         downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
@@ -88,4 +88,38 @@ class ProductChangeConfigTest(
 
         assert(actual == args.expected)
     }
+
+    @Test
+    fun `Empty object deserializes to null via ProductChangeConfigSerializer`() {
+        val json = """{"play_store_product_change_mode": {}}"""
+        val wrapper = JsonTools.json.decodeFromString<Wrapper>(json)
+        assert(wrapper.productChangeConfig == null)
+    }
+
+    @Test
+    fun `Non-empty object deserializes via ProductChangeConfigSerializer`() {
+        val json = """{"play_store_product_change_mode": {"upgrade_replacement_mode": "charge_full_price"}}"""
+        val wrapper = JsonTools.json.decodeFromString<Wrapper>(json)
+        assert(wrapper.productChangeConfig != null)
+        assert(wrapper.productChangeConfig!!.upgradeReplacementMode == GoogleReplacementMode.CHARGE_FULL_PRICE)
+        assert(wrapper.productChangeConfig!!.downgradeReplacementMode == GoogleReplacementMode.DEFERRED)
+    }
+
+    @Test
+    fun `Missing field deserializes to null via ProductChangeConfigSerializer`() {
+        val json = """{}"""
+        val wrapper = JsonTools.json.decodeFromString<Wrapper>(json)
+        assert(wrapper.productChangeConfig == null)
+    }
+
+    private object TestSerializer : com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer<ProductChangeConfig>(
+        ProductChangeConfig.serializer(),
+    )
+
+    @kotlinx.serialization.Serializable
+    private data class Wrapper(
+        @kotlinx.serialization.Serializable(with = TestSerializer::class)
+        @kotlinx.serialization.SerialName("play_store_product_change_mode")
+        val productChangeConfig: ProductChangeConfig? = null,
+    )
 }
