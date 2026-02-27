@@ -60,6 +60,8 @@ internal class AppConfig(
     }
     val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
+    val uiPreviewMode: Boolean
+        get() = dangerousSettings.uiPreviewMode
 
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
