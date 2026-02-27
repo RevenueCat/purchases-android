@@ -1025,25 +1025,25 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityStarted() {
         if (wasBackgrounded) {
             wasBackgrounded = false
-            refreshIfPossible()
+            refreshIfPossible(setRetryOnRefreshing = true)
         }
     }
 
     override fun onActivityResumed() {
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
-            refreshIfPossible()
+            refreshIfPossible(setRetryOnRefreshing = false)
             runFollowUpRefreshAfterResumeIfNeeded()
         }
     }
 
-    private fun refreshIfPossible() {
+    private fun refreshIfPossible(setRetryOnRefreshing: Boolean) {
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
             viewModelScope.launch {
                 refreshCustomerCenter()
             }
-        } else if (currentState is CustomerCenterState.Success) {
+        } else if (setRetryOnRefreshing && currentState is CustomerCenterState.Success) {
             // If we're already refreshing, keep retry flag for next resume.
             shouldRefreshOnResume = true
         }
