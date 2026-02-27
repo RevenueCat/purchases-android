@@ -929,6 +929,33 @@ public class Purchases internal constructor(
         purchasesOrchestrator.setAppsFlyerConversionData(data)
     }
 
+    /**
+     * Sets attribution data from Appstack's attribution params.
+     *
+     * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
+     * this method will never unset any attributes, even if passed `null`. To unset an attribute, call the
+     * individual setter with a `null` value.
+     *
+     * The following RevenueCat attributes will be set based on the Appstack data:
+     * - `$appstackId`: From `appstack_id` (also triggers device identifier collection)
+     * - `$mediaSource` and custom `appstack_adnetwork`: From `appstack_adnetwork`
+     * - `$campaign` and custom `appstack_campaign`: From `appstack_campaign`
+     * - `$adGroup` and custom `appstack_adset`: From `appstack_adset`
+     * - `$ad` and custom `appstack_ad`: From `appstack_ad`
+     * - `$keyword` and custom `appstack_keywords`: From `appstack_keywords`
+     * - Custom attribute `fbclid`: From `fbclid`
+     * - Custom attribute `gclid`: From `gclid`
+     * - Custom attribute `wbraid`: From `wbraid`
+     * - Custom attribute `gbraid`: From `gbraid`
+     * - Custom attribute `ttclid`: From `ttclid`
+     *
+     * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     */
+    public fun setAppstackAttributionParams(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppstackAttributionParams(data)
+    }
+
     // endregion
     // region Campaign parameters
 

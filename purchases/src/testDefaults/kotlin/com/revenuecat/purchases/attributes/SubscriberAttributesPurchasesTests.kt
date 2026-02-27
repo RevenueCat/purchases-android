@@ -456,6 +456,22 @@ class SubscriberAttributesPurchasesTests {
 
     // endregion
 
+    // region Appstack Attribution Data
+
+    @Test
+    fun `setAppstackAttributionParams`() {
+        val data = mapOf("appstack_id" to "test_id")
+        every {
+            subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any())
+        } just Runs
+
+        underTest.setAppstackAttributionParams(data)
+
+        verify { subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any()) }
+    }
+
+    // endregion
+
     private fun attributionIDTest(
         network: SubscriberAttributeKey.AttributionIds,
         functionToTest: (String) -> Unit,
