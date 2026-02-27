@@ -44,7 +44,7 @@ internal sealed class PaywallWarning {
 
             is NoProducts ->
                 "We could not fetch any products: " +
-                    "${error.localizedMessage ?: error.message ?: "Unknown error"}"
+                    (error.localizedMessage ?: error.message ?: "Unknown error")
 
             is MissingLocalization ->
                 "Your paywall is missing a localization. " +
@@ -66,11 +66,17 @@ internal sealed class PaywallWarning {
                 "The template with ID: `$templateName` does not exist for this version of the SDK. " +
                     "Please make sure to update your SDK to the latest version and try again."
 
-            is InvalidVariables -> "The following variables are not recognized: ${variables.joinToString(", ")}. " +
-                "Please check the docs for a list of valid variables."
+            is InvalidVariables -> {
+                val variables = variables.sorted().joinToString(", ")
+                "The following variables are not recognized: $variables. " +
+                    "Please check the docs for a list of valid variables."
+            }
 
-            is InvalidIcons -> "The following icon names are not valid: ${icons.joinToString(", ")}. " +
-                "Please check `PaywallIcon` for the list of valid icon names."
+            is InvalidIcons -> {
+                val icons = icons.sorted().joinToString(", ")
+                "The following icon names are not valid: $icons. " +
+                    "Please check `PaywallIcon` for the list of valid icon names."
+            }
         }
 
     val helpUrl: String?
