@@ -19,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -1182,7 +1183,7 @@ class PaywallComponentDataValidationTests {
                                             ComponentOverride.Condition.Variable(
                                                 operator = ComponentOverride.EqualityOperator.EQUALS,
                                                 variable = "plan",
-                                                value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                                value = JsonPrimitive("premium"),
                                             ),
                                         ),
                                         properties = PartialTextComponent(visible = true),

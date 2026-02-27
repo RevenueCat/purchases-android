@@ -8,8 +8,8 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Deserializer for sealed classes with a default value.
@@ -32,17 +32,19 @@ internal abstract class SealedDeserializerWithDefault<T : Any>(
         element(typeDiscriminator, String.serializer().descriptor)
     }
 
+    @Suppress("ReturnCount")
     override fun deserialize(decoder: Decoder): T {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Can only deserialize $serialName from JSON, got: ${decoder::class}")
+        val jsonObject = jsonDecoder.decodeJsonElement() as? JsonObject
+            ?: return defaultValue("null")
+        val type = (jsonObject[typeDiscriminator] as? JsonPrimitive)?.content
+        val serializer = type?.let { serializerByType[it] }
+            ?: return defaultValue(type ?: "null")
         return try {
-            val jsonObject = jsonDecoder.decodeJsonElement().jsonObject
-            val type = jsonObject[typeDiscriminator]?.jsonPrimitive?.content
-            serializerByType[type]?.let { serializer ->
-                jsonDecoder.json.decodeFromJsonElement(serializer(), jsonObject)
-            } ?: defaultValue(type ?: "null")
+            jsonDecoder.json.decodeFromJsonElement(serializer(), jsonObject)
         } catch (_: Exception) {
-            defaultValue("null")
+            defaultValue(type)
         }
     }
 

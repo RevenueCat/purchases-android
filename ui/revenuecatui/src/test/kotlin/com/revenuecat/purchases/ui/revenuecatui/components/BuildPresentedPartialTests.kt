@@ -6,6 +6,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -940,7 +941,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -962,7 +963,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -984,7 +985,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1006,7 +1007,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1028,7 +1029,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     variable = "plan",
-                                    value = ComponentOverride.ConditionValue.StringValue("premium"),
+                                    value = JsonPrimitive("premium"),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1050,7 +1051,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "is_vip",
-                                    value = ComponentOverride.ConditionValue.BoolValue(true),
+                                    value = JsonPrimitive(true),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1072,7 +1073,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "level",
-                                    value = ComponentOverride.ConditionValue.IntValue(5),
+                                    value = JsonPrimitive(5),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1094,7 +1095,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "score",
-                                    value = ComponentOverride.ConditionValue.DoubleValue(9.5),
+                                    value = JsonPrimitive(9.5),
                                 ),
                             ),
                             properties = selectedPartial,
@@ -1116,7 +1117,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 ComponentOverride.Condition.Variable(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     variable = "level",
-                                    value = ComponentOverride.ConditionValue.IntValue(5),
+                                    value = JsonPrimitive(5),
                                 ),
                             ),
                             properties = selectedPartial,

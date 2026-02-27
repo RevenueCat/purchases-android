@@ -4,6 +4,8 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -183,7 +185,7 @@ internal class ComponentOverridesTests {
                                     ComponentOverride.Condition.Variable(
                                         operator = ComponentOverride.EqualityOperator.EQUALS,
                                         variable = "theme",
-                                        value = ComponentOverride.ConditionValue.StringValue("dark"),
+                                        value = JsonPrimitive("dark"),
                                     ),
                                 ),
                                 properties = PartialTextComponent(fontName = FontAlias("variable font")),
@@ -198,6 +200,27 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(
                                     fontName = FontAlias("intro offer with operator font"),
                                 ),
+                            ),
+                        )
+                    )
+                ),
+                arrayOf(
+                    "override with extra unknown fields on the wrapper",
+                    Args(
+                        json = """
+                            [
+                              {
+                                "conditions": [ { "type": "selected" } ],
+                                "properties": { "font_name": "selected font" },
+                                "some_future_field": 42,
+                                "another_field": "hello"
+                              }
+                            ]
+                        """.trimIndent(),
+                        expected = listOf(
+                            ComponentOverride(
+                                conditions = listOf(ComponentOverride.Condition.Selected),
+                                properties = PartialTextComponent(fontName = FontAlias("selected font")),
                             ),
                         )
                     )
@@ -393,7 +416,7 @@ internal class ComponentOverridesTests {
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "plan_type",
-                        value = ComponentOverride.ConditionValue.StringValue("premium"),
+                        value = JsonPrimitive("premium"),
                     ),
                 ),
                 // Variable with int value
@@ -402,7 +425,7 @@ internal class ComponentOverridesTests {
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                         variable = "level",
-                        value = ComponentOverride.ConditionValue.IntValue(5),
+                        value = JsonPrimitive(5),
                     ),
                 ),
                 // Variable with double value
@@ -411,7 +434,7 @@ internal class ComponentOverridesTests {
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "score",
-                        value = ComponentOverride.ConditionValue.DoubleValue(9.5),
+                        value = JsonPrimitive(9.5),
                     ),
                 ),
                 // Variable with boolean value
@@ -420,7 +443,25 @@ internal class ComponentOverridesTests {
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "is_vip",
-                        value = ComponentOverride.ConditionValue.BoolValue(true),
+                        value = JsonPrimitive(true),
+                    ),
+                ),
+
+                // Variable with extra unknown fields deserializes successfully
+                arrayOf(
+                    """{ "type": "variable", "operator": "=", "variable": "plan", "value": "premium", "some_new_field": 42 }""",
+                    ComponentOverride.Condition.Variable(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        variable = "plan",
+                        value = JsonPrimitive("premium"),
+                    ),
+                ),
+                // SelectedPackage with extra unknown fields deserializes successfully
+                arrayOf(
+                    """{ "type": "selected_package", "operator": "in", "packages": ["a"], "future_field": true }""",
+                    ComponentOverride.Condition.SelectedPackage(
+                        operator = ComponentOverride.ArrayOperator.IN,
+                        packages = listOf("a"),
                     ),
                 ),
 
@@ -432,6 +473,24 @@ internal class ComponentOverridesTests {
                 arrayOf(
                     """{ "type": "variable", "operator": ">", "variable": "x", "value": 1 }""",
                     ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "intro_offer", "operator": ">=", "value": true }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "promo_offer", "operator": ">=", "value": true }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+
+                // Variable with null value deserializes (JsonNull is a JsonPrimitive); won't match any variable type
+                arrayOf(
+                    """{ "type": "variable", "operator": "=", "variable": "x", "value": null }""",
+                    ComponentOverride.Condition.Variable(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        variable = "x",
+                        value = JsonNull,
+                    ),
                 ),
                 // Known type with missing required fields falls back to Unsupported
                 arrayOf(
