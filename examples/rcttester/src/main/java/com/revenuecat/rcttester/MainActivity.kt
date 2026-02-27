@@ -10,6 +10,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
@@ -48,16 +52,28 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         paywallResultState.value = result
     }
 
-    fun buildPaywallActivityCallbacks(): PaywallActivityCallbacks = PaywallActivityCallbacks(
-        onLaunchPaywallActivity = { offering -> paywallActivityLauncher.launch(offering = offering) },
-        onLaunchPaywallActivityIfNeeded = { entitlement, offering ->
-            paywallActivityLauncher.launchIfNeeded(
-                requiredEntitlementIdentifier = entitlement,
-                offering = offering,
-            )
-        },
-        paywallResultState = paywallResultState,
-    )
+    @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+    fun buildPaywallActivityCallbacks(purchaseLogic: PurchaseLogic?): PaywallActivityCallbacks =
+        PaywallActivityCallbacks(
+            onLaunchPaywallActivity = { offering ->
+                paywallActivityLauncher.launchWithOptions(
+                    PaywallActivityLaunchOptions.Builder()
+                        .setOffering(offering)
+                        .setPurchaseLogic(purchaseLogic)
+                        .build(),
+                )
+            },
+            onLaunchPaywallActivityIfNeeded = { entitlement, offering ->
+                paywallActivityLauncher.launchIfNeededWithOptions(
+                    PaywallActivityLaunchIfNeededOptions.Builder()
+                        .setRequiredEntitlementIdentifier(entitlement)
+                        .setOffering(offering)
+                        .setPurchaseLogic(purchaseLogic)
+                        .build(),
+                )
+            },
+            paywallResultState = paywallResultState,
+        )
 }
 
 @Composable
@@ -99,7 +115,9 @@ fun RCTTesterApp(application: MainApplication, activity: MainActivity) {
         is Screen.Offerings -> OfferingsScreen(
             purchaseManager = application.purchaseManager,
             onNavigateBack = { currentScreen = Screen.Main },
-            paywallActivityCallbacks = activity.buildPaywallActivityCallbacks(),
+            paywallActivityCallbacks = activity.buildPaywallActivityCallbacks(
+                purchaseLogic = application.purchaseManager?.purchaseLogic,
+            ),
         )
     }
 }

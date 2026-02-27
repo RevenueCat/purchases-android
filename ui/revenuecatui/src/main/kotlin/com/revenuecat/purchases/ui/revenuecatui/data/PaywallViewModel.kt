@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -77,7 +78,7 @@ internal interface PaywallViewModel {
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
     fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
-    fun closePaywall()
+    fun closePaywall(result: PaywallResult? = null)
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
     fun invalidateCustomerInfoCache()
@@ -192,7 +193,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun closePaywall() {
+    override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value) {
@@ -206,7 +207,7 @@ internal class PaywallViewModelImpl(
         paywallPresentationData = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            dismissWithExitOffering(exitOffering)
+            dismissWithExitOffering(exitOffering, result)
         } else {
             options.dismissRequest()
         }
@@ -342,16 +343,16 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
-                            purchases.syncPurchases()
+                            val updatedCustomerInfo = purchases.awaitSyncPurchases()
 
                             shouldDisplayBlock?.let {
-                                if (!it(customerInfo)) {
+                                if (!it(updatedCustomerInfo)) {
                                     _purchaseCompleted.value = true
                                     Logger.d(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
                                     )
-                                    closePaywall()
+                                    closePaywall(PaywallResult.Restored(updatedCustomerInfo))
                                 }
                             }
                         }
@@ -494,10 +495,10 @@ internal class PaywallViewModelImpl(
                     val result = myAppPurchaseLogic.performPurchase(activity, purchaseParams)
                     when (result) {
                         is PurchaseLogicResult.Success -> {
-                            purchases.syncPurchases()
+                            val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after purchase")
-                            closePaywall()
+                            closePaywall(PaywallResult.Purchased(customerInfo))
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
