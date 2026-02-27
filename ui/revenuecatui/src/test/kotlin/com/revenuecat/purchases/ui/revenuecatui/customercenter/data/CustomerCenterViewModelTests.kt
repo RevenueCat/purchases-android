@@ -2518,4 +2518,114 @@ class CustomerCenterViewModelTests {
         assertThat(currentState).isEqualTo(errorState)
         assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
     }
+
+    @Test
+    fun `refreshCustomerCenter forces syncPurchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        clearMocks(purchases, answers = false, recordedCalls = true)
+
+        model.refreshCustomerCenter()
+
+        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitCustomerInfo(any()) }
+    }
+
+    @Test
+    fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var customerCenterConfigCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            customerCenterConfigCalls++
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialCalls = customerCenterConfigCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<StoreProduct> {
+            every { id } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && customerCenterConfigCalls <= initialCalls) {
+            Thread.sleep(25)
+        }
+        assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
+    }
+
+    @Test
+    fun `onActivityResumed does not keep refresh retry flag sticky while refresh is running`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var syncCalls = 0
+        val firstSyncGate = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitSyncPurchases() } coAnswers {
+            syncCalls++
+            if (syncCalls == 1) {
+                firstSyncGate.await()
+            }
+            customerInfo
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<StoreProduct> {
+            every { id } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityStopped(isChangingConfigurations = false)
+        model.onActivityStarted()
+        model.onActivityResumed()
+        model.onActivityResumed()
+
+        val shouldRefreshOnResume = CustomerCenterViewModelImpl::class.java
+            .getDeclaredField("shouldRefreshOnResume")
+            .also { it.isAccessible = true }
+            .getBoolean(model)
+
+        assertThat(shouldRefreshOnResume).isFalse()
+        assertThat(syncCalls).isEqualTo(1)
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
+
+        firstSyncGate.complete(Unit)
+    }
 }

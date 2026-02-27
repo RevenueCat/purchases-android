@@ -63,10 +63,10 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -147,6 +147,11 @@ internal interface CustomerCenterViewModel {
      * Called when the activity is started. Triggers a refresh if the user is returning from background.
      */
     fun onActivityStarted()
+
+    /**
+     * Called when the activity resumes. Used to refresh after returning from external subscription management.
+     */
+    fun onActivityResumed()
 }
 
 @Stable
@@ -191,26 +196,31 @@ internal class CustomerCenterViewModelImpl(
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
+        private const val FOLLOW_UP_REFRESH_DELAY_MS = 3_000L
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private var wasBackgrounded = false
+    private var shouldRefreshOnResume = false
+    private var shouldRunFollowUpRefreshAfterResume = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
-    override val state = _state
-        .onStart {
-            loadCustomerCenter()
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
-            initialValue = CustomerCenterState.Loading,
-        )
+    override val state = _state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
+        initialValue = CustomerCenterState.Loading,
+    )
 
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+
+    init {
+        viewModelScope.launch {
+            loadCustomerCenter()
+        }
+    }
 
     override fun pathButtonPressed(
         context: Context,
@@ -436,11 +446,15 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun startGoogleProductCancellation(context: Context, productId: String) {
+        shouldRefreshOnResume = true
+        shouldRunFollowUpRefreshAfterResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, productId)
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
+        shouldRunFollowUpRefreshAfterResume = true
         notifyListenersForManageSubscription()
         openURL(
             context,
@@ -638,17 +652,23 @@ internal class CustomerCenterViewModelImpl(
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
+        forceSync: Boolean = false,
     ): List<PurchaseInformation> {
-        val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+        val customerInfo = if (forceSync) {
+            purchases.awaitSyncPurchases()
+        } else {
+            purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+        }
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
+        var purchaseInformationList: List<PurchaseInformation> = emptyList()
         if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
             val activeTransactions = findActiveTransactions(customerInfo)
 
             if (activeTransactions.isNotEmpty()) {
-                return activeTransactions.map { transaction ->
+                purchaseInformationList = activeTransactions.map { transaction ->
                     val entitlement = customerInfo.entitlements.all.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
@@ -665,24 +685,26 @@ internal class CustomerCenterViewModelImpl(
             }
         }
 
-        // If no active purchases found, try to find the latest expired subscription
-        val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
-        return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
-                .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+        if (purchaseInformationList.isEmpty()) {
+            // If no active purchases found, try to find the latest expired subscription
+            val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
+            if (latestExpiredTransaction != null) {
+                val entitlement = customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
-            listOf(
-                createPurchaseInformation(
-                    latestExpiredTransaction,
-                    entitlement,
-                    dateFormatter,
-                    locale,
-                    localization,
-                ),
-            )
-        } else {
-            emptyList()
+                purchaseInformationList = listOf(
+                    createPurchaseInformation(
+                        latestExpiredTransaction,
+                        entitlement,
+                        dateFormatter,
+                        locale,
+                        localization,
+                    ),
+                )
+            }
         }
+
+        return purchaseInformationList
     }
 
     private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
@@ -945,7 +967,12 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val purchaseInformationList = loadPurchases(
+                dateFormatter = dateFormatter,
+                locale = locale,
+                localization = customerCenterConfigData.localization,
+                forceSync = isRefresh,
+            )
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
                 purchases.awaitGetVirtualCurrencies()
@@ -998,11 +1025,39 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityStarted() {
         if (wasBackgrounded) {
             wasBackgrounded = false
-            val currentState = _state.value
-            if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
-                viewModelScope.launch {
-                    refreshCustomerCenter()
-                }
+            refreshIfPossible(setRetryOnRefreshing = true)
+        }
+    }
+
+    override fun onActivityResumed() {
+        if (shouldRefreshOnResume) {
+            shouldRefreshOnResume = false
+            refreshIfPossible(setRetryOnRefreshing = false)
+            runFollowUpRefreshAfterResumeIfNeeded()
+        }
+    }
+
+    private fun refreshIfPossible(setRetryOnRefreshing: Boolean) {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+            viewModelScope.launch {
+                refreshCustomerCenter()
+            }
+        } else if (setRetryOnRefreshing && currentState is CustomerCenterState.Success) {
+            // If we're already refreshing, keep retry flag for next resume.
+            shouldRefreshOnResume = true
+        }
+    }
+
+    private fun runFollowUpRefreshAfterResumeIfNeeded() {
+        if (!shouldRunFollowUpRefreshAfterResume) return
+        shouldRunFollowUpRefreshAfterResume = false
+
+        viewModelScope.launch {
+            delay(FOLLOW_UP_REFRESH_DELAY_MS)
+            val state = _state.value
+            if (state is CustomerCenterState.Success && !state.isRefreshing) {
+                refreshCustomerCenter()
             }
         }
     }
