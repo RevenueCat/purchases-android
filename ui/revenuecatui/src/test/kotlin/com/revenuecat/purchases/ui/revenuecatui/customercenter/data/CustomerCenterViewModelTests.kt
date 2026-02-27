@@ -2520,6 +2520,20 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `refreshCustomerCenter forces syncPurchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        clearMocks(purchases, answers = false, recordedCalls = true)
+
+        model.refreshCustomerCenter()
+
+        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
+        coVerify(exactly = 0) { purchases.awaitCustomerInfo(any()) }
+    }
+
+    @Test
     fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
         setupPurchasesMock()
 
@@ -2559,5 +2573,6 @@ class CustomerCenterViewModelTests {
             Thread.sleep(25)
         }
         assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
     }
 }
