@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class GalaxySubscriptionOption(
+public class GalaxySubscriptionOption(
     /**
      * The product ID of the Galaxy Store product represented by this option.
      */

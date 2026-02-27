@@ -14,7 +14,7 @@ import kotlinx.parcelize.Parcelize
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Parcelize
-enum class GalaxyReplacementMode : ReplacementMode {
+public enum class GalaxyReplacementMode : ReplacementMode {
     /**
      * The current subscription is instantly changed and the customer can start using the new subscription
      * immediately. The remaining payment of the original subscription is prorated to the cost of the new
@@ -54,11 +54,11 @@ enum class GalaxyReplacementMode : ReplacementMode {
     DEFERRED,
     ;
 
-    companion object {
+    public companion object {
         /**
          * The default replacement mode for Galaxy Store subscription changes.
          */
         @InternalRevenueCatAPI
-        val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
+        public val default: GalaxyReplacementMode = INSTANT_NO_PRORATION
     }
 }

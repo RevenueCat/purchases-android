@@ -16,10 +16,10 @@ import dev.drewhamilton.poko.Poko
 @Poko
 public class PurchaseParams(public val builder: Builder) {
 
-    val isPersonalizedPrice: Boolean?
-    val oldProductId: String?
-    val googleReplacementMode: GoogleReplacementMode
-    val galaxyReplacementMode: GalaxyReplacementMode
+    public val isPersonalizedPrice: Boolean?
+    public val oldProductId: String?
+    public val googleReplacementMode: GoogleReplacementMode
+    public val galaxyReplacementMode: GalaxyReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -153,7 +153,7 @@ public class PurchaseParams(public val builder: Builder) {
          * Only applied for Galaxy Store product changes. Ignored for Google Play and Amazon Appstore purchases.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun galaxyReplacementMode(galaxyReplacementMode: GalaxyReplacementMode) = apply {
+        public fun galaxyReplacementMode(galaxyReplacementMode: GalaxyReplacementMode): Builder = apply {
             this.galaxyReplacementMode = galaxyReplacementMode
         }
 

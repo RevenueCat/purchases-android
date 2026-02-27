@@ -66,6 +66,8 @@ tasks.register("getSamsungIapSdk") {
                 input.copyTo(output)
             }
         }
+        val downloadedSizeMb = downloadFile.length().toDouble() / (1024 * 1024)
+        logger.lifecycle("Downloaded Samsung IAP SDK archive: %.2f MB".format(downloadedSizeMb))
 
         if (downloadUrl.lowercase().endsWith(".zip")) {
             project.copy {

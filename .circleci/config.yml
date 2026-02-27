@@ -355,7 +355,13 @@ jobs:
       - run:
           name: Download Samsung IAP SDK AAR
           command: |
-            ./gradlew getSamsungIapSdk --no-daemon
+            mkdir -p libs
+            cd libs
+            curl -fL -u "$READ_GH_PACKAGES_USER:$READ_GH_PACKAGES_PAT" \
+              -o samsung-iap-6.5.0.aar \
+              $SAMSUNG_IAP_SDK_URL
+            FILE_MB=$(du -m samsung-iap-6.5.0.aar | cut -f1)
+            echo "Downloaded samsung-iap-6.5.0.aar size: ${FILE_MB} MB"
       - run:
           name: Compile API Tester with Galaxy Files
           command: |

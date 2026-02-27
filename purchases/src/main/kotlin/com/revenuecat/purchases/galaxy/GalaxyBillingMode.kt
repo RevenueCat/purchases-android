@@ -13,7 +13,7 @@ package com.revenuecat.purchases.galaxy
  * Refer to https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html
  * for more information.
  */
-enum class GalaxyBillingMode {
+public enum class GalaxyBillingMode {
     /**
      * Process purchases with the production environment. Financial transactions occur for successful requests.
      * Use this mode when submitting your app for beta or production distribution.
