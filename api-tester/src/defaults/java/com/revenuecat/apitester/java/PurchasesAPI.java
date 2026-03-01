@@ -187,13 +187,21 @@ final class PurchasesAPI {
     }
 
     static void checkSetAppstackAttributionParams(final Purchases purchases) {
-        Map<String, Object> mapStringAny = new HashMap<>();
-        purchases.setAppstackAttributionParams(mapStringAny);
+        final SyncAttributesAndOfferingsCallback callback = new SyncAttributesAndOfferingsCallback() {
+            @Override
+            public void onSuccess(@NonNull Offerings offerings) {}
 
-        purchases.setAppstackAttributionParams(null);
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        Map<String, Object> mapStringAny = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringAny, callback);
+
+        purchases.setAppstackAttributionParams(null, callback);
 
         Map<String, String> mapStringString = new HashMap<>();
-        purchases.setAppstackAttributionParams(mapStringString);
+        purchases.setAppstackAttributionParams(mapStringString, callback);
     }
 
     static void checkConfiguration(final Context context,

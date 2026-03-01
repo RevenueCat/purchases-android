@@ -930,7 +930,9 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Sets attribution data from Appstack's attribution params.
+     * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+     * fresh offerings (unless rate-limited as those would be cached) so that Appstack-based targeting
+     * is applied before the callback returns.
      *
      * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
      * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
@@ -951,9 +953,13 @@ public class Purchases internal constructor(
      * - Custom attribute `ttclid`: From `ttclid`
      *
      * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
      */
-    public fun setAppstackAttributionParams(data: Map<*, *>?) {
-        purchasesOrchestrator.setAppstackAttributionParams(data)
+    public fun setAppstackAttributionParams(
+        data: Map<*, *>?,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.setAppstackAttributionParams(data, callback)
     }
 
     // endregion

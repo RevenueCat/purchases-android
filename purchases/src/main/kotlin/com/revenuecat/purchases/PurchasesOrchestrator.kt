@@ -1104,9 +1104,13 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
     }
 
-    fun setAppstackAttributionParams(data: Map<*, *>?) {
+    fun setAppstackAttributionParams(
+        data: Map<*, *>?,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppstackAttributionParams") }
         subscriberAttributesManager.setAppstackAttributionParams(appUserID, data, application)
+        syncAttributesAndOfferingsIfNeeded(callback)
     }
 
     // endregion

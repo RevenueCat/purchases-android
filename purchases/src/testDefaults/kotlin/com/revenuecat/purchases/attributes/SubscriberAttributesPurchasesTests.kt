@@ -32,6 +32,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
@@ -459,15 +460,19 @@ class SubscriberAttributesPurchasesTests {
     // region Appstack Attribution Data
 
     @Test
-    fun `setAppstackAttributionParams`() {
+    fun `setAppstackAttributionParams sets attributes and triggers sync`() {
         val data = mapOf("appstack_id" to "test_id")
         every {
             subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any())
         } just Runs
+        every {
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any())
+        } just Runs
 
-        underTest.setAppstackAttributionParams(data)
+        underTest.setAppstackAttributionParams(data, mockk(relaxed = true))
 
         verify { subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any()) }
+        verify { subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any()) }
     }
 
     // endregion
