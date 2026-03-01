@@ -2507,15 +2507,219 @@ class CustomerCenterViewModelTests {
         coEvery { purchases.awaitCustomerCenterConfigData() } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Test error")
         )
-        
+
         val model = setupViewModel()
-        
+
         val errorState = model.state.filterIsInstance<CustomerCenterState.Error>().first()
-        
+
         model.showVirtualCurrencyBalances()
-        
+
         val currentState = model.state.value
         assertThat(currentState).isEqualTo(errorState)
         assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
+    }
+
+    @Test
+    fun `purchasesWithActions includes only purchases with subscription-specific actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val subscription = SubscriptionInfo(
+            productIdentifier = "monthly_product_id",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000), // 30 days from now
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("monthly_product_id" to subscription)
+        every { customerInfo.activeSubscriptions } returns setOf("monthly_product_id")
+
+        val mockProduct = createGoogleStoreProduct(
+            productId = "monthly_product_id",
+            basePlanId = "monthly",
+            name = "Basic"
+        )
+        coEvery { purchases.awaitGetProduct("monthly_product_id", null) } returns mockProduct
+
+        // Screen with only subscription specific paths (CANCEL, REFUND_REQUEST)
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(
+                HelpPath(
+                    id = "cancel",
+                    title = "Cancel",
+                    type = HelpPath.PathType.CANCEL,
+                ),
+                HelpPath(
+                    id = "refund",
+                    title = "Refund",
+                    type = HelpPath.PathType.REFUND_REQUEST,
+                ),
+            )
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.purchasesWithActions).hasSize(1)
+        assertThat(state.purchasesWithActions.first().isSubscription).isTrue()
+        assertThat(state.purchasesWithActions).isEqualTo(state.purchases.toSet())
+    }
+
+    @Test
+    fun `purchasesWithActions excludes purchases when no subscription-specific actions available`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        // Screen with only general paths (no subscription specific actions)
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(
+                HelpPath(
+                    id = "missing",
+                    title = "Missing Purchase",
+                    type = HelpPath.PathType.MISSING_PURCHASE,
+                ),
+                HelpPath(
+                    id = "custom",
+                    title = "Custom",
+                    type = HelpPath.PathType.CUSTOM_URL,
+                    url = "https://example.com",
+                ),
+            )
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.purchasesWithActions).isEmpty()
+    }
+
+    @Test
+    fun `onSelectPurchase does not navigate when purchase has no actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        // Screen with only general paths (no subscription specific actions)
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(
+                HelpPath(
+                    id = "missing",
+                    title = "Missing Purchase",
+                    type = HelpPath.PathType.MISSING_PURCHASE,
+                ),
+            )
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        val model = setupViewModel()
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialDestination = initialState.currentDestination
+
+        model.selectPurchase(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing)
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+
+        assertThat(updatedState.currentDestination).isEqualTo(initialDestination)
+        assertThat(updatedState.currentDestination).isNotInstanceOf(CustomerCenterDestination.SelectedPurchaseDetail::class.java)
+    }
+
+    @Test
+    fun `onSelectPurchase navigates to detail screen when purchase has actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val subscription = SubscriptionInfo(
+            productIdentifier = "monthly_product_id",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000), // 30 days from now
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("monthly_product_id" to subscription)
+        every { customerInfo.activeSubscriptions } returns setOf("monthly_product_id")
+
+        val mockProduct = createGoogleStoreProduct(
+            productId = "monthly_product_id",
+            basePlanId = "monthly",
+            name = "Basic"
+        )
+        coEvery { purchases.awaitGetProduct("monthly_product_id", null) } returns mockProduct
+
+        // Screen with only subscription specific paths (CANCEL, REFUND_REQUEST)
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(
+                HelpPath(
+                    id = "cancel",
+                    title = "Cancel",
+                    type = HelpPath.PathType.CANCEL,
+                ),
+                HelpPath(
+                    id = "refund",
+                    title = "Refund",
+                    type = HelpPath.PathType.REFUND_REQUEST,
+                ),
+            )
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+
+        val model = setupViewModel()
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val purchase = initialState.purchases.first()
+
+        // Select a subscription purchase
+        model.selectPurchase(purchase)
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+
+        assertThat(updatedState.currentDestination).isInstanceOf(CustomerCenterDestination.SelectedPurchaseDetail::class.java)
+        val detailDestination = updatedState.currentDestination as CustomerCenterDestination.SelectedPurchaseDetail
+        assertThat(detailDestination.purchaseInformation).isEqualTo(purchase)
+
+        assertThat(updatedState.detailScreenPaths).isNotEmpty()
+        assertThat(updatedState.detailScreenPaths).hasSizeGreaterThanOrEqualTo(1)
     }
 }
