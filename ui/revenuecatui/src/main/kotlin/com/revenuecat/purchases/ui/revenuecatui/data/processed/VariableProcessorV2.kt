@@ -476,7 +476,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage?.product?.period?.roundedValueInYears
         Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage?.productPeriodWithUnit(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
+            primaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPrice(
+                currencyLocale,
+                localizedVariableKeys,
+            )
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
             primaryDiscountPhase(
                 subscriptionOption,
@@ -528,7 +534,13 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_OFFER_END_DATE ->
             primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferEndDate(dateLocale, date)
         Variable.PRODUCT_SECONDARY_OFFER_PRICE ->
-            secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
+            secondaryDiscountPhase(
+                subscriptionOption,
+                rcPackage,
+            )?.productOfferPrice(
+                currencyLocale,
+                localizedVariableKeys,
+            )
 
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD ->
             secondaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriod(localizedVariableKeys)
@@ -681,12 +693,13 @@ internal object VariableProcessorV2 {
         }
 
     private fun PricingPhase.productOfferPrice(
+        locale: Locale,
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
     ): String? =
         if (price.amountMicros == 0L) {
             localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
         } else {
-            price.formatted
+            price.getFormatted(locale)
         }
 
     private fun PricingPhase.productOfferPricePerDay(
