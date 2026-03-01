@@ -58,6 +58,7 @@ internal data class PromotionalOfferData(
     @get:JvmSynthetic val subscriptionOption: SubscriptionOption,
     @get:JvmSynthetic val originalPath: CustomerCenterConfigData.HelpPath,
     @get:JvmSynthetic val localizedPricingPhasesDescription: String,
+    @get:JvmSynthetic val surveyOptionID: String? = null,
 )
 
 internal data class CreateSupportTicketData(

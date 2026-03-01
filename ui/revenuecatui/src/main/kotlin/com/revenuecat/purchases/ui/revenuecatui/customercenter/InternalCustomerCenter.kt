@@ -52,6 +52,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.customercenter.events.PromoOfferRejectionSource
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
@@ -177,7 +178,11 @@ internal fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterAction.DismissPromotionalOffer ->
-                    viewModel.dismissPromotionalOffer(context, action.originalPath)
+                    viewModel.dismissPromotionalOffer(
+                        context,
+                        action.originalPath,
+                        source = PromoOfferRejectionSource.CANCEL,
+                    )
 
                 is CustomerCenterAction.PurchasePromotionalOffer -> {
                     val activity = context.getActivity()

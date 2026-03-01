@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
+import com.revenuecat.purchases.customercenter.events.CustomerCenterPromoOfferEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -126,6 +127,12 @@ internal fun CustomerCenterImpressionEvent.toBackendStoredEvent(
             path = null,
             url = null,
             surveyOptionID = null,
+            source = null,
+            storeOfferID = null,
+            productID = null,
+            targetProductID = null,
+            error = null,
+            transactionID = null,
         ),
     )
 }
@@ -157,6 +164,50 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
             path = data.path,
             url = data.url,
             surveyOptionID = data.surveyOptionID,
+            source = null,
+            storeOfferID = null,
+            productID = null,
+            targetProductID = null,
+            error = null,
+            transactionID = null,
+        ),
+    )
+}
+
+/**
+ * Converts a `CustomerCenterPromoOfferEvent` into a `BackendStoredEvent.CustomerCenter` instance.
+ *
+ * @receiver The `CustomerCenterPromoOfferEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @param appSessionID The session ID associated with the event.
+ * @return A `BackendStoredEvent.CustomerCenter` containing a `BackendEvent.CustomerCenter`.
+ */
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun CustomerCenterPromoOfferEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.CustomerCenter(
+        BackendEvent.CustomerCenter(
+            id = creationData.id.toString(),
+            revisionID = data.revisionID,
+            type = data.type,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            timestamp = data.timestamp.time,
+            darkMode = data.darkMode,
+            locale = data.locale,
+            displayMode = data.displayMode,
+            path = data.path,
+            url = data.url,
+            surveyOptionID = data.surveyOptionID,
+            source = data.source?.value,
+            storeOfferID = data.storeOfferID,
+            productID = data.productID,
+            targetProductID = data.targetProductID,
+            error = data.error,
+            transactionID = data.transactionID,
         ),
     )
 }
