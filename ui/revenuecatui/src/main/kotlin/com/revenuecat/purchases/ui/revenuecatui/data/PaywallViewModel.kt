@@ -29,7 +29,9 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
+import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -133,7 +135,7 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallMode
         get() = options.mode
 
-    private val purchaseLogic: PurchaseLogic?
+    private val purchaseLogic: PaywallPurchaseLogic?
         get() = options.purchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
@@ -468,8 +470,6 @@ internal class PaywallViewModelImpl(
         }
 
         try {
-            val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
-
             trackPaywallPurchaseInitiated(packageToPurchase)
 
             val productChangeInfo = productChangeConfig?.let {
@@ -478,11 +478,22 @@ internal class PaywallViewModelImpl(
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    checkNotNull(customPurchaseHandler) {
+                    val myAppPurchaseLogic = checkNotNull(purchaseLogic) {
                         "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
-                    when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
+                    val purchaseParams = PaywallPurchaseLogicParams(
+                        rcPackage = packageToPurchase,
+                        productChange = productChangeInfo?.let {
+                            ProductChange(
+                                oldProductId = it.oldProductId,
+                                replacementMode = it.replacementMode,
+                            )
+                        },
+                        subscriptionOption = subscriptionOption,
+                    )
+                    val result = myAppPurchaseLogic.performPurchase(activity, purchaseParams)
+                    when (result) {
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
@@ -502,7 +513,7 @@ internal class PaywallViewModelImpl(
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     listener?.onPurchaseStarted(packageToPurchase)
-                    if (customPurchaseHandler != null) {
+                    if (purchaseLogic != null) {
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +

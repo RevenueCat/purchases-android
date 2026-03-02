@@ -77,6 +77,10 @@ package com.revenuecat.purchases {
     ctor public DangerousSettings(optional boolean autoSyncPurchases);
     method public boolean getAutoSyncPurchases();
     property public final boolean autoSyncPurchases;
+    field public static final com.revenuecat.purchases.DangerousSettings.Companion Companion;
+  }
+
+  public static final class DangerousSettings.Companion {
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class EntitlementInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
