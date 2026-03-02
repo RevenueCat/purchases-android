@@ -196,6 +196,14 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 1) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
     }
 
+    @Test
+    fun `onActivityPaused skips event flushing in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        purchases.purchasesOrchestrator.onActivityPaused(mockk())
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
+    }
+
     // endregion activity lifecycle
 
     // region Private

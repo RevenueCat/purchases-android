@@ -1653,6 +1653,7 @@ internal class PurchasesOrchestrator(
     }
 
     private fun flushEvents(delay: Delay) {
+        if (appConfig.uiPreviewMode) return
         eventsManager.flushEvents(delay)
         adEventsManager.flushEvents(delay)
     }
