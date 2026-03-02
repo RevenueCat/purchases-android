@@ -641,6 +641,76 @@ class IdentityManagerTests {
     }
     // endregion
 
+    // region preview mode
+
+    @Test
+    fun `configure in preview mode uses fixed user ID`() {
+        mockCleanCaches()
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        identityManager.configure(null)
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
+        assertThat(cachedAppUserIDSlot.captured).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
+    @Test
+    fun `configure in preview mode ignores provided user ID`() {
+        mockCleanCaches()
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        identityManager.configure("real-user")
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
+        assertThat(cachedAppUserIDSlot.captured).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
+    @Test
+    fun `logIn blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        var receivedError: PurchasesError? = null
+        identityManager.logIn(
+            "new-user",
+            onSuccess = { _, _ -> fail("Should not succeed") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `logIn blocked when target user ID is preview mode user`() {
+        mockIdentifiedUser("normal-user")
+
+        var receivedError: PurchasesError? = null
+        identityManager.logIn(
+            IdentityManager.UI_PREVIEW_MODE_APP_USER_ID,
+            onSuccess = { _, _ -> fail("Should not succeed") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `logOut blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        var receivedError: PurchasesError? = null
+        identityManager.logOut { receivedError = it }
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `preview mode user is not considered anonymous`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse
+    }
+
+    // endregion
+
     // region aliasCurrentUserIdTo
 
     @Test
@@ -805,7 +875,8 @@ class IdentityManagerTests {
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
         offeringsCache: OfferingsCache = mockOfferingsCache,
         backend: Backend = mockBackend,
-        offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager
+        offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager,
+        uiPreviewMode: Boolean = false,
     ): IdentityManager {
         return IdentityManager(
             deviceCache,
@@ -814,7 +885,8 @@ class IdentityManagerTests {
             offeringsCache,
             backend,
             offlineEntitlementsManager,
-            SyncDispatcher()
+            SyncDispatcher(),
+            uiPreviewMode = uiPreviewMode,
         )
     }
 
