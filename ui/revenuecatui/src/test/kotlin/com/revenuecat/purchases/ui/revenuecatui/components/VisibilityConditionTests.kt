@@ -1613,6 +1613,137 @@ class VisibilityConditionTests {
 
     // endregion
 
+    // region Cross-area: footer tabs + body
+
+    /**
+     * Package component inside a tab inside the sticky footer — selecting it
+     * hides a conditioned text in the main body via selected_package condition.
+     * Exercises state flow across footer → tabs → body boundaries.
+     */
+    @Test
+    fun `Package inside tab in footer affects body text visibility`(): Unit = with(composeTestRule) {
+        val crossBodyTextKey = LocalizationKey("cross_body_text")
+        val crossBodyTextValue = "Body content"
+        val crossMonthlyLabelKey = LocalizationKey("cross_monthly_label")
+        val crossAnnualLabelKey = LocalizationKey("cross_annual_label")
+
+        val crossLocalizations = nonEmptyMapOf(
+            localeId to nonEmptyMapOf(
+                crossBodyTextKey to LocalizationData.Text(crossBodyTextValue),
+                crossMonthlyLabelKey to LocalizationData.Text("Monthly"),
+                crossAnnualLabelKey to LocalizationData.Text("Annual"),
+                LocalizationKey("tab_btn_0") to LocalizationData.Text("Tab 0"),
+                LocalizationKey("tab_btn_1") to LocalizationData.Text("Tab 1"),
+            )
+        )
+
+        // Body text hidden when monthly is selected
+        val bodyText = TextComponent(
+            text = crossBodyTextKey,
+            color = textColor,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.SelectedPackage(
+                            operator = ComponentOverride.ArrayOperator.IN,
+                            packages = listOf(TestData.Packages.monthly.identifier),
+                        ),
+                    ),
+                    properties = PartialTextComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Package components inside tabs
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = crossMonthlyLabelKey, color = textColor)),
+            ),
+        )
+        val annualPkg = PackageComponent(
+            packageId = TestData.Packages.annual.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = crossAnnualLabelKey, color = textColor)),
+            ),
+        )
+
+        val tabControlButtons = listOf(0, 1).map { index ->
+            val key = LocalizationKey("tab_btn_$index")
+            TabControlButtonComponent(
+                tabIndex = index,
+                tabId = "$index",
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = key, color = textColor)),
+                ),
+            )
+        }
+
+        val tabsComponent = TabsComponent(
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(components = listOf(TabControlComponent, monthlyPkg)),
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(components = listOf(TabControlComponent, annualPkg)),
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(components = tabControlButtons),
+            ),
+        )
+
+        val stickyFooter = StickyFooterComponent(
+            stack = StackComponent(components = listOf(tabsComponent)),
+        )
+
+        val data = PaywallComponentsData(
+            id = "footer_tab_pkg_paywall",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(bodyText)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = stickyFooter,
+                ),
+            ),
+            componentsLocalizations = crossLocalizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "footer-tab-pkg",
+            serverDescription = "Footer tab package test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+
+        setContent {
+            LoadedPaywallComponents(state = state, clickHandler = { })
+        }
+
+        // Select annual — body text visible (annual is not in the hide list)
+        state.update(TestData.Packages.annual.identifier)
+        onNodeWithText(crossBodyTextValue).assertIsDisplayed()
+
+        // Select monthly (package inside tab inside footer) → body text hidden
+        state.update(TestData.Packages.monthly.identifier)
+        onNodeWithText(crossBodyTextValue).assertDoesNotExist()
+
+        // Select annual again → body text visible again
+        state.update(TestData.Packages.annual.identifier)
+        onNodeWithText(crossBodyTextValue).assertIsDisplayed()
+    }
+
+    // endregion
+
     // region Tabs conditions
 
     /**

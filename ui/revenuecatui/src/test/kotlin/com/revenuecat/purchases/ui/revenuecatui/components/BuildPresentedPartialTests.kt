@@ -117,16 +117,6 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             aliases = emptyMap(),
             fontAliases = emptyMap(),
         ).getOrThrow()
-        private val introOfferAndSelectedPartial = LocalizedTextPartial(
-            from = PartialTextComponent(),
-            using = nonEmptyMapOf(
-                localeId to nonEmptyMapOf(
-                    LocalizationKey("key") to LocalizationData.Text("Hello intro and selected"),
-                )
-            ),
-            aliases = emptyMap(),
-            fontAliases = emptyMap(),
-        ).getOrThrow()
         private val promoOfferPartial = LocalizedTextPartial(
             from = PartialTextComponent(),
             using = nonEmptyMapOf(
@@ -419,7 +409,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "overrides with multiple conditions that are all applicable should override previous overrides",
+                "all matching separate overrides combine, last wins",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -429,23 +419,16 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         PresentedOverride(
                             conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = selectedPartial,
-                        ),
-                        PresentedOverride(
-                            conditions = listOf(
-                                ComponentOverride.Condition.Medium,
-                                ComponentOverride.Condition.Selected,
-                            ),
-                            properties = introOfferAndSelectedPartial,
                         ),
                     ),
                     windowSize = EXPANDED,
                     offerEligibility = IntroOfferSingle,
                     state = SELECTED,
-                    expected = introOfferAndSelectedPartial,
+                    expected = selectedPartial,
                 )
             ),
             arrayOf(
-                "overrides with multiple conditions that are not all applicable should not override previous overrides",
+                "non-matching separate override is skipped",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -456,18 +439,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             conditions = listOf(ComponentOverride.Condition.Selected),
                             properties = selectedPartial,
                         ),
-                        PresentedOverride(
-                            conditions = listOf(
-                                ComponentOverride.Condition.Medium,
-                                ComponentOverride.Condition.Selected,
-                            ),
-                            properties = introOfferAndSelectedPartial,
-                        ),
                     ),
-                    windowSize = COMPACT,
+                    windowSize = EXPANDED,
                     offerEligibility = IntroOfferSingle,
-                    state = SELECTED,
-                    expected = selectedPartial,
+                    state = DEFAULT,
+                    expected = mediumPartial,
                 )
             ),
             arrayOf(
@@ -1485,6 +1461,153 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
+            // IntroOffer + PromoOffer overrides on same component
+            arrayOf(
+                "combined intro+promo overrides: intro applies when IntroOfferSingle",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferSingle,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "combined intro+promo overrides: promo applies when PromoOfferSingle",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "combined intro+promo overrides: neither applies when Ineligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "combined intro+promo overrides: intro applies when IntroOfferMultiple",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferMultiple,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "combined intro+promo overrides: promo applies when PromoOfferMultiple",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+
             // Boolean true vs string "true" type mismatch
             arrayOf(
                 "variable: boolean true should not match string 'true'",
@@ -1680,9 +1803,9 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
-            // Multiple conditions on single override: variable + selected_package
+            // Separate variable and selected_package overrides
             arrayOf(
-                "multi-condition override: variable and selected_package must both match",
+                "separate variable and selected_package overrides: both apply when both match",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -1692,6 +1815,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     variable = "plan",
                                     value = JsonPrimitive("premium"),
                                 ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
                                 ComponentOverride.Condition.SelectedPackage(
                                     operator = ComponentOverride.ArrayOperator.IN,
                                     packages = listOf("annual"),
@@ -1709,7 +1837,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "multi-condition override: should not apply when only variable matches",
+                "separate variable and selected_package overrides: only variable applies when package doesn't match",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -1719,6 +1847,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     variable = "plan",
                                     value = JsonPrimitive("premium"),
                                 ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                        PresentedOverride(
+                            conditions = listOf(
                                 ComponentOverride.Condition.SelectedPackage(
                                     operator = ComponentOverride.ArrayOperator.IN,
                                     packages = listOf("annual"),
@@ -1732,7 +1865,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     state = DEFAULT,
                     customVariables = mapOf("plan" to CustomVariableValue.String("premium")),
                     selectedPackageId = "monthly",
-                    expected = null,
+                    expected = compactPartial,
                 ),
             ),
         )
