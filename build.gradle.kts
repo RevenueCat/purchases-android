@@ -1,6 +1,3 @@
-import java.io.File
-import java.net.URL
-
 buildscript {
     extra["compileVersion"] = 35
     extra["minVersion"] = 21
