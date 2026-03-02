@@ -8,15 +8,15 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.OfferingParser
-import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
@@ -28,6 +28,7 @@ import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -247,6 +248,7 @@ class OfferingsFactoryTest {
         appConfig = mockk<AppConfig>().apply {
             every { store } returns Store.PLAY_STORE
             every { apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID
+            every { uiPreviewMode } returns false
         }
         billing = mockk()
         offeringParser = GoogleOfferingParser()
@@ -702,6 +704,168 @@ class OfferingsFactoryTest {
                 it.product.presentedOfferingContext == newPresentedOfferingContext
         }
     }
+
+    // region UI Preview Mode
+
+    @Test
+    fun `createOfferings bypasses billing in preview mode`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        verify(exactly = 0) { billing.queryProductDetailsAsync(any(), any(), any(), any()) }
+        assertThat(resultData).isNotNull
+        assertThat(resultData!!.offerings.all).isNotEmpty
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product).isInstanceOf(TestStoreProduct::class.java)
+    }
+
+    @Test
+    fun `preview products have correct pricing for monthly package`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product.price.amountMicros).isEqualTo(5_990_000)
+        assertThat(product.price.currencyCode).isEqualTo("USD")
+        assertThat(product.period).isEqualTo(Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"))
+    }
+
+    @Test
+    fun `preview products have correct pricing for annual package`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val annualOfferingResponse = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "This is the base offering",
+                        "packages": [
+                            {
+                                "identifier": "${'$'}rc_annual",
+                                "platform_product_identifier": "com.test.annual"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = annualOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product.price.amountMicros).isEqualTo(59_990_000)
+        assertThat(product.period).isEqualTo(Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"))
+        assertThat(product.subscriptionOptions).isNotNull
+        assertThat(product.subscriptionOptions!!.freeTrial).isNotNull
+    }
+
+    @Test
+    fun `preview products fall back to default for unknown package types`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val customOfferingResponse = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "This is the base offering",
+                        "packages": [
+                            {
+                                "identifier": "custom_package",
+                                "platform_product_identifier": "com.test.custom"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = customOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product.price.amountMicros).isEqualTo(249_990_000)
+        assertThat(product.period).isNull()
+    }
+
+    @Test
+    fun `preview mode infers package type from product identifier`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val customOfferingWithMonthlyProductId = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "This is the base offering",
+                        "packages": [
+                            {
+                                "identifier": "custom_package",
+                                "platform_product_identifier": "com.test.monthly_subscription"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = customOfferingWithMonthlyProductId,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product.price.amountMicros).isEqualTo(5_990_000)
+        assertThat(product.period).isEqualTo(Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"))
+    }
+
+    // endregion UI Preview Mode
 
     // region helpers
 

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offerings
 
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.utils.objects
 import kotlinx.serialization.SerializationException
 import org.json.JSONException
 import org.json.JSONObject
@@ -47,6 +49,7 @@ internal class OfferingsFactory(
             } else {
                 getStoreProductsById(
                     productIds = allRequestedProductIdentifiers,
+                    offeringsJSON = offeringsJSON,
                     onCompleted = { productsById ->
                         try {
                             val notFoundProductIds = allRequestedProductIdentifiers
@@ -61,7 +64,8 @@ internal class OfferingsFactory(
                                     }
                                 }
 
-                            val offerings = offeringParser.createOfferings(
+                            val parser = if (appConfig.uiPreviewMode) previewOfferingParser else offeringParser
+                            val offerings = parser.createOfferings(
                                 offeringsJSON,
                                 productsById,
                                 originalDataSource,
@@ -132,9 +136,15 @@ internal class OfferingsFactory(
 
     private fun getStoreProductsById(
         productIds: Set<String>,
+        offeringsJSON: JSONObject,
         onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        if (appConfig.uiPreviewMode) {
+            val productsById = createPreviewProducts(productIds, offeringsJSON)
+            onCompleted(productsById)
+            return
+        }
         billing.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = productIds,
@@ -169,5 +179,50 @@ internal class OfferingsFactory(
                 onError(it)
             },
         )
+    }
+
+    private fun createPreviewProducts(
+        productIds: Set<String>,
+        offeringsJSON: JSONObject,
+    ): Map<String, List<StoreProduct>> {
+        val packageTypeByProductId = extractPackageTypeByProductId(offeringsJSON)
+        return productIds.associateWith { productId ->
+            val packageType = packageTypeByProductId[productId]
+                ?: PreviewProductSpec.inferFromProductId(productId)
+            listOf(PreviewProductSpec.fromPackageType(packageType).toTestStoreProduct(productId))
+        }
+    }
+
+    private val packageTypeByIdentifier: Map<String, PackageType> =
+        PackageType.values()
+            .mapNotNull { it.identifier?.let { id -> id to it } }
+            .toMap()
+
+    private fun extractPackageTypeByProductId(offeringsJson: JSONObject): Map<String, PackageType> {
+        val offerings = offeringsJson.optJSONArray("offerings") ?: return emptyMap()
+
+        return offerings.objects()
+            .mapNotNull { it.optJSONArray("packages") }
+            .flatMap { it.objects() }
+            .mapNotNull { pkg ->
+                val productId = pkg.nonBlankString("platform_product_identifier") ?: return@mapNotNull null
+                val identifier = pkg.nonBlankString("identifier") ?: return@mapNotNull null
+                val type = packageTypeByIdentifier[identifier] ?: return@mapNotNull null
+                productId to type
+            }
+            .toMap()
+    }
+
+    private fun JSONObject.nonBlankString(key: String): String? =
+        optString(key).trim().takeIf { it.isNotEmpty() }
+
+    private val previewOfferingParser = object : OfferingParser() {
+        override fun findMatchingProduct(
+            productsById: Map<String, List<StoreProduct>>,
+            packageJson: JSONObject,
+        ): StoreProduct? {
+            val productIdentifier = packageJson.getString("platform_product_identifier")
+            return productsById[productIdentifier]?.firstOrNull()
+        }
     }
 }
