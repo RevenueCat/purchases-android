@@ -153,7 +153,7 @@ internal class PurchasesFactory(
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
-            if (diagnosticsEnabled && !appConfig.uiPreviewMode && isAndroidNOrNewer()) {
+            if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode) && isAndroidNOrNewer()) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
                 diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
@@ -162,7 +162,7 @@ internal class PurchasesFactory(
                     diagnosticsHelper,
                     eventsDispatcher,
                 )
-            } else if (diagnosticsEnabled && !appConfig.uiPreviewMode) {
+            } else if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode)) {
                 warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
@@ -504,5 +504,13 @@ internal class PurchasesFactory(
             }
             return Thread(wrapperRunnable, threadName)
         }
+    }
+
+    companion object {
+        @VisibleForTesting
+        internal fun shouldInitializeDiagnostics(
+            diagnosticsEnabled: Boolean,
+            uiPreviewMode: Boolean,
+        ): Boolean = diagnosticsEnabled && !uiPreviewMode
     }
 }
