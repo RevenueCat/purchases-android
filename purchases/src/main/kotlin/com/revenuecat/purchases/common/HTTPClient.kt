@@ -479,6 +479,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
+            "X-UI-Preview-Mode" to if (appConfig.uiPreviewMode) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
