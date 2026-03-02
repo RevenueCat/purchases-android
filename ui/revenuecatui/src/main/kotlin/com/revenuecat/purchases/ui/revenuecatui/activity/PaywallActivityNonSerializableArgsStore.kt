@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 
 internal data class PaywallActivityNonSerializableArgs(
-    val purchaseLogic: PurchaseLogic? = null,
+    val purchaseLogic: PaywallPurchaseLogic? = null,
     val listener: PaywallListener? = null,
 )
 

@@ -254,6 +254,7 @@ internal class PurchasesFactory(
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
