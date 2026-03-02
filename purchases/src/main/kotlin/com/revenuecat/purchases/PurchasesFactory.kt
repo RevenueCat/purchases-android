@@ -303,6 +303,7 @@ internal class PurchasesFactory(
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
