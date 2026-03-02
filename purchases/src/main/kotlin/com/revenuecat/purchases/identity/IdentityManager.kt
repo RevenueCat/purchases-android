@@ -164,6 +164,17 @@ internal class IdentityManager(
     }
 
     fun switchUser(newAppUserID: String) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID ||
+            newAppUserID == UI_PREVIEW_MODE_APP_USER_ID
+        ) {
+            errorLog(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ),
+            )
+            return
+        }
         debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }

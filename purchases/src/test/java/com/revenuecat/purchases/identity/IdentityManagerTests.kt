@@ -709,6 +709,17 @@ class IdentityManagerTests {
         assertThat(identityManager.currentUserIsAnonymous()).isFalse
     }
 
+    @Test
+    fun `switchUser blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        identityManager.switchUser("other-user")
+
+        verify(exactly = 0) { mockDeviceCache.clearCachesForAppUserID(any()) }
+        assertThat(identityManager.currentAppUserID).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
     // endregion
 
     // region aliasCurrentUserIdTo
