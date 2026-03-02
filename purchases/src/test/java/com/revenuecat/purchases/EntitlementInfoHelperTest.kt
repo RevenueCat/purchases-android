@@ -905,6 +905,8 @@ class EntitlementInfoHelperTest {
         assertThat(info.activeSubscriptions).isEmpty()
         assertThat(info.allExpirationDatesByProduct).isEmpty()
         assertThat(info.allPurchaseDatesByProduct).isEmpty()
+        assertThat(info.subscriptionsByProductIdentifier).isEmpty()
+        assertThat(info.nonSubscriptionTransactions).isEmpty()
         assertThat(info.originalAppUserId).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
         assertThat(info.managementURL).isNull()
         assertThat(info.originalPurchaseDate).isNull()

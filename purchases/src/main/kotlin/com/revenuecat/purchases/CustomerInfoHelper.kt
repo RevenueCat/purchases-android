@@ -345,6 +345,7 @@ internal class CustomerInfoHelper(
                     put(
                         "subscriber",
                         JSONObject().apply {
+                            put("subscriptions", JSONObject())
                             put("non_subscriptions", JSONObject())
                         },
                     )
