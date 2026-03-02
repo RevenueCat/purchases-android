@@ -41,9 +41,9 @@ import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListene
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -326,10 +326,10 @@ fun AppInfoScreenPreview() {
                     ),
                 )
 
-            override fun logIn(newAppUserId: String) { }
-            override fun logOut() { }
-            override fun switchApiKey(newApiKey: String) { }
-            override fun refresh() { }
+            override fun logIn(newAppUserId: String) {}
+            override fun logOut() {}
+            override fun switchApiKey(newApiKey: String) {}
+            override fun refresh() {}
         },
         tappedOnCustomerCenter = {},
     )
