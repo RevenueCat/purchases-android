@@ -118,6 +118,39 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `onAppForegrounded is no-op in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        every { mockIdentityManager.currentAppUserID } returns appUserId
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(
+            appInBackground = true,
+            firstTimeInForeground = true,
+        )
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), callback = any())
+        }
+        verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
+        verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
+    }
+
+    @Test
+    fun `onAppBackgrounded skips attribution sync and event flushing in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        every { mockIdentityManager.currentAppUserID } returns appUserId
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
+        assertThat(appConfig.isAppBackgrounded).isTrue
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
+    }
+
     // endregion
 
     // region activity lifecycle

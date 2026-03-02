@@ -286,8 +286,10 @@ internal class PurchasesOrchestrator(
             DebugEvent(name = DebugEventName.APP_BACKGROUNDED),
         )
         appConfig.isAppBackgrounded = true
-        synchronizeSubscriberAttributesIfNeeded()
-        flushEvents(Delay.NONE)
+        if (!appConfig.uiPreviewMode) {
+            synchronizeSubscriberAttributesIfNeeded()
+            flushEvents(Delay.NONE)
+        }
     }
 
     /** @suppress */
@@ -301,6 +303,8 @@ internal class PurchasesOrchestrator(
         appConfig.isAppBackgrounded = false
 
         enqueue {
+            if (appConfig.uiPreviewMode) return@enqueue
+
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
@@ -1644,6 +1648,7 @@ internal class PurchasesOrchestrator(
     }
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
+        if (appConfig.uiPreviewMode) return
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 

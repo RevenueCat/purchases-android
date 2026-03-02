@@ -450,6 +450,7 @@ internal open class BasePurchasesTest {
         anonymous: Boolean,
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
+        uiPreviewMode: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
         enableSimulatedStore: Boolean = false,
@@ -467,6 +468,7 @@ internal open class BasePurchasesTest {
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
+                uiPreviewMode = uiPreviewMode,
             )
         )
         val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
