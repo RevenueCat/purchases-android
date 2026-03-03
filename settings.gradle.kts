@@ -109,7 +109,9 @@ dependencyResolutionManagement {
                         artifact()
                     }
                     content {
-                        includeGroup("com.samsung.iap")
+                        includeGroup("com.samsung.android")
+                    }
+                }
                     }
                 }
             }

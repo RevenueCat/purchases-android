@@ -50,7 +50,7 @@ if (isCiBuild) {
     }
 
     dependencies {
-        add(samsungIapDownload.name, "com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
+        add(samsungIapDownload.name, "com.samsung.android:samsung-iap:$samsungIapVersion@aar")
     }
 
     tasks.register<Sync>("downloadSamsungIapAar") {
