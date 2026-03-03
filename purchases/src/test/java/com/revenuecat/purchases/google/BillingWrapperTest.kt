@@ -1133,6 +1133,124 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `purchase with offering context then failure then purchase without context does not include stale context`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        } just Runs
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        // 1. Purchase with offering context, but the purchase fails
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(
+            BillingClient.BillingResponseCode.DEVELOPER_ERROR.buildResult(),
+            null,
+        )
+
+        // 2. Purchase the same product without offering context (direct product purchase)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            null,
+        )
+
+        val purchases = listOf(stubGooglePurchase(
+            productIds = listOf(purchasingData.productId),
+        ))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList(),
+        )
+
+        val slot = slot<List<StoreTransaction>>()
+        every {
+            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+        } just Runs
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        // 3. The stale offering context from the failed purchase should NOT be in the transaction
+        assertThat(slot.captured).hasSize(1)
+        assertThat(slot.captured[0].presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `purchase with offering context then cancellation then purchase without context does not include stale context`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        } just Runs
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        // 1. Purchase with offering context, but the user cancels
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(
+            BillingClient.BillingResponseCode.USER_CANCELED.buildResult(),
+            null,
+        )
+
+        // 2. Purchase the same product without offering context
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            null,
+        )
+
+        val purchases = listOf(stubGooglePurchase(
+            productIds = listOf(purchasingData.productId),
+        ))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList(),
+        )
+
+        val slot = slot<List<StoreTransaction>>()
+        every {
+            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+        } just Runs
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        // 3. The stale offering context from the cancelled purchase should NOT be in the transaction
+        assertThat(slot.captured).hasSize(1)
+        assertThat(slot.captured[0].presentedOfferingContext).isNull()
+    }
+
+    @Test
     fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()
