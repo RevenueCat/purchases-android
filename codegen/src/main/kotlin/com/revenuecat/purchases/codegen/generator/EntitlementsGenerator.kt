@@ -50,7 +50,8 @@ internal class EntitlementsGenerator(
             .addFileComment("Auto-generated extension properties for EntitlementInfos.")
 
         for (entitlement in entitlements) {
-            val propName = NamingConfig.toIdentifier(entitlement.lookupKey, namingStyle)
+            val propNameRaw = NamingConfig.toUnescapedIdentifier(entitlement.lookupKey, namingStyle)
+            val propName = NamingConfig.escapeIfReservedKeyword(propNameRaw)
 
             fileBuilder.addProperty(
                 PropertySpec.builder(propName, entitlementInfo.copy(nullable = true))
@@ -64,7 +65,9 @@ internal class EntitlementsGenerator(
                     .build()
             )
 
-            val activePropName = "is${propName.replaceFirstChar { it.uppercase() }}Active"
+            val activePropName = NamingConfig.escapeIfReservedKeyword(
+                "is${propNameRaw.replaceFirstChar { it.uppercase() }}Active"
+            )
             fileBuilder.addProperty(
                 PropertySpec.builder(activePropName, Boolean::class)
                     .receiver(entitlementInfos)

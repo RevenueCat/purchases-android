@@ -108,6 +108,7 @@ class EntitlementsGeneratorTest {
         generate(listOf(ent("class", "Class Entitlement")))
         val content = extFile().readText()
         assertContains(content, "`class`")
+        assertContains(content, "isClassActive")
     }
 
     @Test

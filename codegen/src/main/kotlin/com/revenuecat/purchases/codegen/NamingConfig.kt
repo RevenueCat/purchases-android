@@ -10,14 +10,18 @@ internal object NamingConfig {
     )
 
     internal fun toIdentifier(raw: String, style: NamingStyle): String {
+        val sanitized = toUnescapedIdentifier(raw, style)
+        return escapeIfReservedKeyword(sanitized)
+    }
+
+    internal fun toUnescapedIdentifier(raw: String, style: NamingStyle): String {
         val stripped = stripPrefix(raw)
         val converted = when (style) {
             NamingStyle.CAMEL_CASE -> snakeToCamel(stripped)
             NamingStyle.SNAKE_CASE -> camelToSnake(stripped)
             NamingStyle.AS_IS -> stripped
         }
-        val sanitized = sanitize(converted)
-        return if (sanitized in KOTLIN_RESERVED) "`$sanitized`" else sanitized
+        return sanitize(converted)
     }
 
     internal fun toConstant(raw: String): String {
@@ -25,6 +29,10 @@ internal object NamingConfig {
         val upper = stripped.replace(Regex("[^a-zA-Z0-9]"), "_").uppercase()
         val sanitized = if (upper.isEmpty() || upper.first().isDigit()) "_$upper" else upper
         return if (sanitized in KOTLIN_RESERVED) "`$sanitized`" else sanitized
+    }
+
+    internal fun escapeIfReservedKeyword(identifier: String): String {
+        return if (identifier in KOTLIN_RESERVED) "`$identifier`" else identifier
     }
 
     private fun stripPrefix(input: String): String {

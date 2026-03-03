@@ -100,6 +100,13 @@ class CustomerInfoExtGeneratorTest {
         assertContains(content, "rc_monthly")
     }
 
+    @Test
+    fun `reserved keyword entitlement name produces valid active property`() {
+        generate(listOf(ent("class", "Class Entitlement")))
+        val content = extFile().readText()
+        assertContains(content, "isClassActive")
+    }
+
     // --- helpers ---
 
     private fun generate(

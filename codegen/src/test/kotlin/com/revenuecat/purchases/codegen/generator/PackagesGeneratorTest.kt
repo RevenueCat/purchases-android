@@ -137,6 +137,13 @@ class PackagesGeneratorTest {
     }
 
     @Test
+    fun `reserved keyword names produce valid composite identifiers`() {
+        generate(listOf(offeringWithPackages("in", listOf(pkg("class", "Class")))))
+        val content = pkgIdFile("RCInPackageId").readText()
+        assertContains(content, "inClass")
+    }
+
+    @Test
     fun `generates separate files for multiple offerings`() {
         generate(
             listOf(

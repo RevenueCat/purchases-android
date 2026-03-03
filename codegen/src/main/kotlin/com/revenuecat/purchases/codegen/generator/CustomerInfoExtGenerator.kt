@@ -21,8 +21,10 @@ internal class CustomerInfoExtGenerator(
             .addFileComment("Auto-generated extension properties for CustomerInfo.")
 
         for (entitlement in entitlements) {
-            val propName = NamingConfig.toIdentifier(entitlement.lookupKey, namingStyle)
-            val activePropName = "is${propName.replaceFirstChar { it.uppercase() }}Active"
+            val propName = NamingConfig.toUnescapedIdentifier(entitlement.lookupKey, namingStyle)
+            val activePropName = NamingConfig.escapeIfReservedKeyword(
+                "is${propName.replaceFirstChar { it.uppercase() }}Active"
+            )
 
             fileBuilder.addProperty(
                 PropertySpec.builder(activePropName, Boolean::class)

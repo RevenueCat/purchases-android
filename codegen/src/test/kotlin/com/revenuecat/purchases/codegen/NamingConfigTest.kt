@@ -84,6 +84,16 @@ class NamingConfigTest {
         assertEquals("`val`", NamingConfig.toIdentifier("val", NamingStyle.SNAKE_CASE))
     }
 
+    @Test
+    fun `toUnescapedIdentifier does not backtick-wrap reserved keyword`() {
+        assertEquals("class", NamingConfig.toUnescapedIdentifier("class", NamingStyle.AS_IS))
+    }
+
+    @Test
+    fun `escapeIfReservedKeyword backtick-wraps reserved keyword`() {
+        assertEquals("`class`", NamingConfig.escapeIfReservedKeyword("class"))
+    }
+
     // --- Sanitization ---
 
     @Test

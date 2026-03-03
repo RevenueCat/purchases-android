@@ -29,9 +29,9 @@ internal class PackagesGenerator(
     private fun generateForOffering(offeringSchema: OfferingSchema, outputDir: File) {
         // offeringIdent is used as a prefix for extension property names to prevent
         // collisions when multiple offerings share a package lookupKey (e.g. "$rc_monthly").
-        val offeringIdent = NamingConfig.toIdentifier(offeringSchema.lookupKey, namingStyle)
+        val offeringIdent = NamingConfig.toUnescapedIdentifier(offeringSchema.lookupKey, namingStyle)
         val offeringIdentCap = offeringIdent.replaceFirstChar { it.uppercase() }
-        val objectName = "RC${offeringIdentCap}PackageId"
+        val objectName = NamingConfig.escapeIfReservedKeyword("RC${offeringIdentCap}PackageId")
         val fileName = objectName
 
         val objectBuilder = TypeSpec.objectBuilder(objectName)
@@ -59,8 +59,10 @@ internal class PackagesGenerator(
             // package lookupKey produce distinct extension names, e.g.:
             //   defaultMonthly  (offering "default",      package "$rc_monthly")
             //   premiumMonthly  (offering "premium",      package "$rc_monthly")
-            val pkgIdent = NamingConfig.toIdentifier(pkg.lookupKey, namingStyle)
-            val propName = "${offeringIdent}${pkgIdent.replaceFirstChar { it.uppercase() }}"
+            val pkgIdent = NamingConfig.toUnescapedIdentifier(pkg.lookupKey, namingStyle)
+            val propName = NamingConfig.escapeIfReservedKeyword(
+                "${offeringIdent}${pkgIdent.replaceFirstChar { it.uppercase() }}"
+            )
 
             fileBuilder.addProperty(
                 PropertySpec.builder(propName, rcPackage.copy(nullable = true))
