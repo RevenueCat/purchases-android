@@ -112,8 +112,6 @@ dependencyResolutionManagement {
                         includeGroup("com.samsung.android")
                     }
                 }
-                    }
-                }
             }
         }
     }
