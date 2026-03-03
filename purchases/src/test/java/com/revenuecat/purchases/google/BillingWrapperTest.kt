@@ -1251,6 +1251,96 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `failure for one product does not clear another product's purchase context`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        } just Runs
+
+        val storeProductA = createStoreProductWithoutOffers(productId = "product_a")
+        val purchasingDataA = storeProductA.subscriptionOptions!!.first().purchasingData
+
+        val storeProductB = createStoreProductWithoutOffers(productId = "product_b")
+        val purchasingDataB = storeProductB.subscriptionOptions!!.first().purchasingData
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        // 1. Cache context for product A
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingDataA,
+            null,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        assertThat(wrapper.purchaseContext).containsKey("product_a")
+
+        // 2. Cache context for product B (overwrites pendingPurchaseProductId)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingDataB,
+            null,
+            PresentedOfferingContext("offering_b"),
+        )
+
+        assertThat(wrapper.purchaseContext).containsKey("product_a")
+        assertThat(wrapper.purchaseContext).containsKey("product_b")
+
+        // 3. Failure removes only product B's context (the pending one)
+        purchasesUpdatedListener!!.onPurchasesUpdated(
+            BillingClient.BillingResponseCode.USER_CANCELED.buildResult(),
+            null,
+        )
+
+        assertThat(wrapper.purchaseContext).containsKey("product_a")
+        assertThat(wrapper.purchaseContext).doesNotContainKey("product_b")
+    }
+
+    @Test
+    fun `successful purchase with offering context preserves context in StoreTransaction`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        val purchases = listOf(stubGooglePurchase(
+            productIds = listOf(purchasingData.productId),
+        ))
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            purchases,
+            emptyList(),
+        )
+
+        val slot = slot<List<StoreTransaction>>()
+        every {
+            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+        } just Runs
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        assertThat(slot.captured).hasSize(1)
+        assertThat(slot.captured[0].presentedOfferingContext?.offeringIdentifier).isEqualTo("offering_a")
+    }
+
+    @Test
     fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()
