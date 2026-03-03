@@ -1,9 +1,10 @@
 ---
-name: 🐛 Bug report
+name: "\U0001F41B Bug report"
 about: Filling a bug report
-title: ""
+title: ''
 labels: bug
-assignees: ""
+assignees: ''
+
 ---
 
 - [ ] I have updated Purchases SDK to the latest version
