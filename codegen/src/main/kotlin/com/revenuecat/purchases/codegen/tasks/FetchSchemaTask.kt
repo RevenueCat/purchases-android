@@ -45,11 +45,11 @@ public abstract class FetchSchemaTask : DefaultTask() {
     public fun fetch() {
         val key = apiKey.orNull?.takeIf { it.isNotBlank() }
             ?: throw GradleException(
-                "revenuecat.apiKey must be configured in your build script."
+                "revenuecat.apiKey must be configured in your build script.",
             )
         val projectIdValue = projectId.orNull?.takeIf { it.isNotBlank() }
             ?: throw GradleException(
-                "revenuecat.projectId must be configured in your build script."
+                "revenuecat.projectId must be configured in your build script.",
             )
 
         val cache = SchemaCache(cacheDir.get().asFile)
@@ -68,12 +68,12 @@ public abstract class FetchSchemaTask : DefaultTask() {
 
             val schema = ProjectSchema(
                 entitlements = entitlements,
-                offerings = offerings
+                offerings = offerings,
             )
 
             cache.write(schema)
             logger.lifecycle(
-                "Fetched ${entitlements.size} entitlements and ${offerings.size} offerings from RevenueCat."
+                "Fetched ${entitlements.size} entitlements and ${offerings.size} offerings from RevenueCat.",
             )
         } catch (e: Exception) {
             handleFetchError(e, cache)
@@ -93,12 +93,12 @@ public abstract class FetchSchemaTask : DefaultTask() {
                         ?: ""
                     logger.warn(
                         "Failed to fetch RevenueCat schema (${e.message}). " +
-                            "Using stale cached data$ageDesc."
+                            "Using stale cached data$ageDesc.",
                     )
                 } else {
                     logger.warn(
                         "Failed to fetch RevenueCat schema (${e.message}). " +
-                            "No cache available, skipping code generation."
+                            "No cache available, skipping code generation.",
                     )
                 }
             }

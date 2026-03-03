@@ -37,7 +37,7 @@ class RevenueCatCodeGenPluginFunctionalTest {
         File(projectDir, "build.gradle.kts").writeText(
             """
             plugins {
-                id("com.revenuecat.codegen")
+                id("com.revenuecat.purchases.codegen")
             }
 
             revenuecat {

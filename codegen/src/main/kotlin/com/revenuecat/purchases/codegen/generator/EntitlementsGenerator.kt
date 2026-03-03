@@ -13,7 +13,7 @@ import java.io.File
 
 internal class EntitlementsGenerator(
     private val packageName: String,
-    private val namingStyle: NamingStyle
+    private val namingStyle: NamingStyle,
 ) {
 
     private val entitlementInfos = ClassName("com.revenuecat.purchases", "EntitlementInfos")
@@ -35,7 +35,7 @@ internal class EntitlementsGenerator(
                     .addModifiers(KModifier.CONST)
                     .initializer("%S", entitlement.lookupKey)
                     .addKdoc("%L", entitlement.displayName)
-                    .build()
+                    .build(),
             )
         }
 
@@ -58,10 +58,10 @@ internal class EntitlementsGenerator(
                     .getter(
                         FunSpec.getterBuilder()
                             .addStatement("return this[%S]", entitlement.lookupKey)
-                            .build()
+                            .build(),
                     )
                     .addKdoc("%L", entitlement.displayName)
-                    .build()
+                    .build(),
             )
 
             val activePropName = "is${propName.replaceFirstChar { it.uppercase() }}Active"
@@ -71,10 +71,10 @@ internal class EntitlementsGenerator(
                     .getter(
                         FunSpec.getterBuilder()
                             .addStatement("return this[%S]?.isActive == true", entitlement.lookupKey)
-                            .build()
+                            .build(),
                     )
                     .addKdoc("Whether the %L entitlement is currently active.", entitlement.displayName)
-                    .build()
+                    .build(),
             )
         }
 

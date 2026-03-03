@@ -13,7 +13,7 @@ import java.io.File
 
 internal class PackagesGenerator(
     private val packageName: String,
-    private val namingStyle: NamingStyle
+    private val namingStyle: NamingStyle,
 ) {
 
     private val offering = ClassName("com.revenuecat.purchases", "Offering")
@@ -37,7 +37,7 @@ internal class PackagesGenerator(
         val objectBuilder = TypeSpec.objectBuilder(objectName)
             .addKdoc(
                 "Auto-generated package ID constants for the %L offering.",
-                offeringSchema.displayName
+                offeringSchema.displayName,
             )
 
         for (pkg in offeringSchema.packages) {
@@ -47,7 +47,7 @@ internal class PackagesGenerator(
                     .addModifiers(KModifier.CONST)
                     .initializer("%S", pkg.lookupKey)
                     .addKdoc("%L", pkg.displayName)
-                    .build()
+                    .build(),
             )
         }
 
@@ -68,10 +68,10 @@ internal class PackagesGenerator(
                     .getter(
                         FunSpec.getterBuilder()
                             .addStatement("return this.getPackage(%S)", pkg.lookupKey)
-                            .build()
+                            .build(),
                     )
                     .addKdoc("%L package from %L offering.", pkg.displayName, offeringSchema.displayName)
-                    .build()
+                    .build(),
             )
         }
 

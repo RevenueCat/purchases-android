@@ -44,7 +44,7 @@ internal class SchemaCache(private val cacheDir: File) {
             val data = json.getJSONObject("data")
             ProjectSchema(
                 entitlements = parseEntitlements(data.getJSONArray("entitlements")),
-                offerings = parseOfferings(data.getJSONArray("offerings"))
+                offerings = parseOfferings(data.getJSONArray("offerings")),
             )
         } catch (e: Exception) {
             null
@@ -70,7 +70,7 @@ internal class SchemaCache(private val cacheDir: File) {
             EntitlementSchema(
                 id = obj.getString("id"),
                 lookupKey = obj.getString("lookupKey"),
-                displayName = obj.getString("displayName")
+                displayName = obj.getString("displayName"),
             )
         }
     }
@@ -83,7 +83,7 @@ internal class SchemaCache(private val cacheDir: File) {
                 lookupKey = obj.getString("lookupKey"),
                 displayName = obj.getString("displayName"),
                 isCurrent = obj.getBoolean("isCurrent"),
-                packages = parsePackages(obj.getJSONArray("packages"))
+                packages = parsePackages(obj.getJSONArray("packages")),
             )
         }
     }
@@ -94,7 +94,7 @@ internal class SchemaCache(private val cacheDir: File) {
             PackageSchema(
                 id = obj.getString("id"),
                 lookupKey = obj.getString("lookupKey"),
-                displayName = obj.getString("displayName")
+                displayName = obj.getString("displayName"),
             )
         }
     }
@@ -102,11 +102,13 @@ internal class SchemaCache(private val cacheDir: File) {
     private fun serializeEntitlements(list: List<EntitlementSchema>): JSONArray {
         return JSONArray().apply {
             list.forEach { e ->
-                put(JSONObject().apply {
-                    put("id", e.id)
-                    put("lookupKey", e.lookupKey)
-                    put("displayName", e.displayName)
-                })
+                put(
+                    JSONObject().apply {
+                        put("id", e.id)
+                        put("lookupKey", e.lookupKey)
+                        put("displayName", e.displayName)
+                    },
+                )
             }
         }
     }
@@ -114,13 +116,15 @@ internal class SchemaCache(private val cacheDir: File) {
     private fun serializeOfferings(list: List<OfferingSchema>): JSONArray {
         return JSONArray().apply {
             list.forEach { o ->
-                put(JSONObject().apply {
-                    put("id", o.id)
-                    put("lookupKey", o.lookupKey)
-                    put("displayName", o.displayName)
-                    put("isCurrent", o.isCurrent)
-                    put("packages", serializePackages(o.packages))
-                })
+                put(
+                    JSONObject().apply {
+                        put("id", o.id)
+                        put("lookupKey", o.lookupKey)
+                        put("displayName", o.displayName)
+                        put("isCurrent", o.isCurrent)
+                        put("packages", serializePackages(o.packages))
+                    },
+                )
             }
         }
     }
@@ -128,11 +132,13 @@ internal class SchemaCache(private val cacheDir: File) {
     private fun serializePackages(list: List<PackageSchema>): JSONArray {
         return JSONArray().apply {
             list.forEach { p ->
-                put(JSONObject().apply {
-                    put("id", p.id)
-                    put("lookupKey", p.lookupKey)
-                    put("displayName", p.displayName)
-                })
+                put(
+                    JSONObject().apply {
+                        put("id", p.id)
+                        put("lookupKey", p.lookupKey)
+                        put("displayName", p.displayName)
+                    },
+                )
             }
         }
     }

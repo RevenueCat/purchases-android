@@ -16,7 +16,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
 
         val fetchTask: TaskProvider<FetchSchemaTask> = project.tasks.register(
             "rcFetchSchema",
-            FetchSchemaTask::class.java
+            FetchSchemaTask::class.java,
         ) { task ->
             task.apiKey.set(extension.apiKey)
             task.projectId.set(extension.projectId)
@@ -27,7 +27,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
 
         val generateTask: TaskProvider<GenerateCodeTask> = project.tasks.register(
             "rcGenerateCode",
-            GenerateCodeTask::class.java
+            GenerateCodeTask::class.java,
         ) { task ->
             task.packageName.set(extension.packageName)
             task.namingStyle.set(extension.namingStyle)
@@ -57,7 +57,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
     private fun wireToAndroid(
         project: Project,
         generateTask: TaskProvider<GenerateCodeTask>,
-        outputDir: java.io.File
+        outputDir: java.io.File,
     ) {
         // Try the modern AndroidComponents API first. Only fall back to the legacy
         // source-set API when AndroidComponents is unavailable, to avoid registering
@@ -68,24 +68,27 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
             if (androidComponents != null) {
                 val method = androidComponents.javaClass.getMethod(
                     "onVariants",
-                    kotlin.jvm.functions.Function1::class.java
+                    kotlin.jvm.functions.Function1::class.java,
                 )
                 @Suppress("UNCHECKED_CAST")
-                method.invoke(androidComponents, { variant: Any ->
-                    try {
-                        val sourcesMethod = variant.javaClass.getMethod("getSources")
-                        val sources = sourcesMethod.invoke(variant)
-                        val kotlinMethod = sources.javaClass.getMethod("getKotlin")
-                        val kotlin = kotlinMethod.invoke(sources)
-                        val addStaticSourceDirectory = kotlin.javaClass.getMethod(
-                            "addStaticSourceDirectory",
-                            String::class.java
-                        )
-                        addStaticSourceDirectory.invoke(kotlin, outputDir.absolutePath)
-                    } catch (e: Exception) {
-                        project.logger.debug("Could not wire via AndroidComponents API: ${e.message}")
-                    }
-                } as kotlin.jvm.functions.Function1<Any, Unit>)
+                method.invoke(
+                    androidComponents,
+                    { variant: Any ->
+                        try {
+                            val sourcesMethod = variant.javaClass.getMethod("getSources")
+                            val sources = sourcesMethod.invoke(variant)
+                            val kotlinMethod = sources.javaClass.getMethod("getKotlin")
+                            val kotlin = kotlinMethod.invoke(sources)
+                            val addStaticSourceDirectory = kotlin.javaClass.getMethod(
+                                "addStaticSourceDirectory",
+                                String::class.java,
+                            )
+                            addStaticSourceDirectory.invoke(kotlin, outputDir.absolutePath)
+                        } catch (e: Exception) {
+                            project.logger.debug("Could not wire via AndroidComponents API: ${e.message}")
+                        }
+                    } as kotlin.jvm.functions.Function1<Any, Unit>,
+                )
                 wiredViaComponents = true
             }
         } catch (e: Exception) {
@@ -107,7 +110,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
                     srcDirMethod.invoke(kotlin, outputDir)
                 } catch (e: Exception) {
                     project.logger.warn(
-                        "Could not add generated source directory to Android source sets: ${e.message}"
+                        "Could not add generated source directory to Android source sets: ${e.message}",
                     )
                 }
             }
@@ -119,10 +122,11 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
         // rcGenerateCode, causing Gradle's implicit dependency validation to fail.
         project.tasks.configureEach { task ->
             if (task.name.endsWith("Kotlin") && (
-                task.name.startsWith("compile") ||
-                task.name.startsWith("ksp") ||
-                task.name.startsWith("kapt")
-            )) {
+                    task.name.startsWith("compile") ||
+                        task.name.startsWith("ksp") ||
+                        task.name.startsWith("kapt")
+                    )
+            ) {
                 task.dependsOn(generateTask)
             }
         }
@@ -131,7 +135,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
     private fun wireToKotlinJvm(
         project: Project,
         generateTask: TaskProvider<GenerateCodeTask>,
-        outputDir: java.io.File
+        outputDir: java.io.File,
     ) {
         // For Kotlin JVM / pure JVM projects
         try {

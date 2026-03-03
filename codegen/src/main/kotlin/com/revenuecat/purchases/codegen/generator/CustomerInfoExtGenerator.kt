@@ -11,7 +11,7 @@ import java.io.File
 
 internal class CustomerInfoExtGenerator(
     private val packageName: String,
-    private val namingStyle: NamingStyle
+    private val namingStyle: NamingStyle,
 ) {
 
     private val customerInfo = ClassName("com.revenuecat.purchases", "CustomerInfo")
@@ -31,15 +31,15 @@ internal class CustomerInfoExtGenerator(
                         FunSpec.getterBuilder()
                             .addStatement(
                                 "return this.entitlements[%S]?.isActive == true",
-                                entitlement.lookupKey
+                                entitlement.lookupKey,
                             )
-                            .build()
+                            .build(),
                     )
                     .addKdoc(
                         "Whether the %L entitlement is currently active for this customer.",
-                        entitlement.displayName
+                        entitlement.displayName,
                     )
-                    .build()
+                    .build(),
             )
         }
 

@@ -6,7 +6,7 @@ internal object NamingConfig {
         "as", "break", "class", "continue", "do", "else", "false", "for",
         "fun", "if", "in", "interface", "is", "null", "object", "package",
         "return", "super", "this", "throw", "true", "try", "typealias",
-        "typeof", "val", "var", "when", "while"
+        "typeof", "val", "var", "when", "while",
     )
 
     internal fun toIdentifier(raw: String, style: NamingStyle): String {

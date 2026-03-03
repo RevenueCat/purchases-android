@@ -7,7 +7,7 @@ import java.net.URI
 
 internal class RevenueCatApiClient(
     private val apiKey: String,
-    private val baseUrl: String = "https://api.revenuecat.com/v2"
+    private val baseUrl: String = "https://api.revenuecat.com/v2",
 ) {
 
     private companion object {
@@ -21,7 +21,7 @@ internal class RevenueCatApiClient(
             EntitlementSchema(
                 id = json.getString("id"),
                 lookupKey = json.getString("lookup_key"),
-                displayName = json.optString("display_name", json.getString("lookup_key"))
+                displayName = json.optString("display_name", json.getString("lookup_key")),
             )
         }
     }
@@ -33,7 +33,7 @@ internal class RevenueCatApiClient(
                 lookupKey = json.getString("lookup_key"),
                 displayName = json.optString("display_name", json.getString("lookup_key")),
                 isCurrent = json.optBoolean("is_current", false),
-                packages = emptyList()
+                packages = emptyList(),
             )
         }
 
@@ -49,7 +49,7 @@ internal class RevenueCatApiClient(
             PackageSchema(
                 id = json.getString("id"),
                 lookupKey = json.getString("lookup_key"),
-                displayName = json.optString("display_name", json.getString("lookup_key"))
+                displayName = json.optString("display_name", json.getString("lookup_key")),
             )
         }
     }
@@ -60,7 +60,7 @@ internal class RevenueCatApiClient(
      */
     private fun <T> fetchPaginated(
         initialUrl: String,
-        mapper: (JSONObject) -> T
+        mapper: (JSONObject) -> T,
     ): List<T> {
         val results = mutableListOf<T>()
         var nextUrl: String? = initialUrl
@@ -76,8 +76,8 @@ internal class RevenueCatApiClient(
 
             // next_page is a full URL or null/empty
             val nextPage = json.opt("next_page")
-            nextUrl = if (nextPage != null && nextPage != JSONObject.NULL
-                && nextPage.toString().isNotEmpty() && nextPage.toString() != "null"
+            nextUrl = if (nextPage != null && nextPage != JSONObject.NULL &&
+                nextPage.toString().isNotEmpty() && nextPage.toString() != "null"
             ) {
                 nextPage.toString()
             } else {
@@ -138,7 +138,7 @@ internal class RevenueCatApiClient(
             if (responseCode != 200) {
                 val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: ""
                 throw RuntimeException(
-                    "RevenueCat API returned HTTP $responseCode for $url: $errorBody"
+                    "RevenueCat API returned HTTP $responseCode for $url: $errorBody",
                 )
             }
 
@@ -150,6 +150,6 @@ internal class RevenueCatApiClient(
 
     private class RateLimitException(
         url: String,
-        val backoffMs: Long
+        val backoffMs: Long,
     ) : RuntimeException("Rate limited on $url (backoff: ${backoffMs}ms)")
 }

@@ -13,7 +13,7 @@ import java.io.File
 
 internal class OfferingsGenerator(
     private val packageName: String,
-    private val namingStyle: NamingStyle
+    private val namingStyle: NamingStyle,
 ) {
 
     private val offerings = ClassName("com.revenuecat.purchases", "Offerings")
@@ -35,7 +35,7 @@ internal class OfferingsGenerator(
                     .addModifiers(KModifier.CONST)
                     .initializer("%S", offering.lookupKey)
                     .addKdoc("%L", offering.displayName)
-                    .build()
+                    .build(),
             )
         }
 
@@ -58,10 +58,10 @@ internal class OfferingsGenerator(
                     .getter(
                         FunSpec.getterBuilder()
                             .addStatement("return this.getOffering(%S)", offeringSchema.lookupKey)
-                            .build()
+                            .build(),
                     )
                     .addKdoc("%L", offeringSchema.displayName)
-                    .build()
+                    .build(),
             )
         }
 

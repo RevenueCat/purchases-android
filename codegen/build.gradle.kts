@@ -26,7 +26,7 @@ dependencies {
 gradlePlugin {
     plugins {
         create("revenuecatCodegen") {
-            id = "com.revenuecat.codegen"
+            id = "com.revenuecat.purchases.codegen"
             implementationClass = "com.revenuecat.purchases.codegen.RevenueCatCodeGenPlugin"
         }
     }
