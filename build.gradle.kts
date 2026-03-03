@@ -42,27 +42,11 @@ val isCiBuild = providers.environmentVariable("CI").orNull.equals("true", ignore
 if (isCiBuild) {
     val samsungIapVersion = libs.versions.samsungIap.get()
     val samsungIapFilename = "samsung-iap-$samsungIapVersion.aar"
-    val samsungIapMavenUrl = providers.environmentVariable("SAMSUNG_IAP_MAVEN_URL").orNull
-        ?: throw GradleException("SAMSUNG_IAP_MAVEN_URL must be set when CI=true.")
-    val ghPackagesUser = providers.environmentVariable("READ_GH_PACKAGES_USER").orNull
-        ?: throw GradleException("READ_GH_PACKAGES_USER must be set when CI=true.")
-    val ghPackagesPat = providers.environmentVariable("READ_GH_PACKAGES_PAT").orNull
-        ?: throw GradleException("READ_GH_PACKAGES_PAT must be set when CI=true.")
 
     val samsungIapDownload by configurations.creating {
         isCanBeConsumed = false
         isCanBeResolved = true
         isTransitive = false
-    }
-
-    repositories {
-        maven {
-            url = uri(samsungIapMavenUrl)
-            credentials {
-                username = ghPackagesUser
-                password = ghPackagesPat
-            }
-        }
     }
 
     dependencies {
@@ -74,6 +58,18 @@ if (isCiBuild) {
         description = "Downloads the Samsung IAP AAR into the root libs directory when running in CI."
 
         doFirst {
+            val missingEnvVars = listOf(
+                "SAMSUNG_IAP_MAVEN_URL" to providers.environmentVariable("SAMSUNG_IAP_MAVEN_URL").orNull,
+                "READ_GH_PACKAGES_USER" to providers.environmentVariable("READ_GH_PACKAGES_USER").orNull,
+                "READ_GH_PACKAGES_PAT" to providers.environmentVariable("READ_GH_PACKAGES_PAT").orNull,
+            ).filter { it.second.isNullOrBlank() }.map { it.first }
+            if (missingEnvVars.isNotEmpty()) {
+                throw GradleException(
+                    "Missing required environment variable(s) for Samsung IAP download: " +
+                        missingEnvVars.joinToString(", "),
+                )
+            }
+
             val resolvedFiles = samsungIapDownload.resolve()
             if (resolvedFiles.size != 1) {
                 throw GradleException(
