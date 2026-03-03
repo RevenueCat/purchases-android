@@ -114,6 +114,9 @@ internal class BillingWrapper(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var pendingPurchaseProductId: String? = null
+
     private val serviceRequests =
         ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
 
@@ -321,6 +324,7 @@ internal class BillingWrapper(
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
                 subscriptionOptionIdForProductIDs,
             )
+            pendingPurchaseProductId = productId
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
@@ -691,7 +695,8 @@ internal class BillingWrapper(
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
 
             synchronized(this@BillingWrapper) {
-                purchaseContext.clear()
+                pendingPurchaseProductId?.let { purchaseContext.remove(it) }
+                pendingPurchaseProductId = null
             }
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(purchasesError)
         }
@@ -902,6 +907,7 @@ internal class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val context = purchaseContext.remove(purchase.firstProductId)
+            pendingPurchaseProductId = null
             context?.productType?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(context),
