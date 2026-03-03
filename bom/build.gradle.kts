@@ -25,5 +25,6 @@ dependencies {
         api(project(":ui:debugview"))
         api(project(":feature:amazon"))
         api(project(":feature:admob"))
+        api(project(":codegen"))
     }
 }
