@@ -1,3 +1,5 @@
+import org.gradle.api.GradleException
+
 buildscript {
     extra["compileVersion"] = 35
     extra["minVersion"] = 21
@@ -33,6 +35,68 @@ dependencies {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.buildDir)
+}
+
+val isCiBuild = providers.environmentVariable("CI").orNull.equals("true", ignoreCase = true)
+
+if (isCiBuild) {
+    val samsungIapVersion = libs.versions.samsungIap.get()
+    val samsungIapFilename = "samsung-iap-$samsungIapVersion.aar"
+    val samsungIapMavenUrl = providers.environmentVariable("SAMSUNG_IAP_MAVEN_URL").orNull
+        ?: throw GradleException("SAMSUNG_IAP_MAVEN_URL must be set when CI=true.")
+    val ghPackagesUser = providers.environmentVariable("READ_GH_PACKAGES_USER").orNull
+        ?: throw GradleException("READ_GH_PACKAGES_USER must be set when CI=true.")
+    val ghPackagesPat = providers.environmentVariable("READ_GH_PACKAGES_PAT").orNull
+        ?: throw GradleException("READ_GH_PACKAGES_PAT must be set when CI=true.")
+
+    val samsungIapDownload by configurations.creating {
+        isCanBeConsumed = false
+        isCanBeResolved = true
+        isTransitive = false
+    }
+
+    repositories {
+        maven {
+            url = uri(samsungIapMavenUrl)
+            credentials {
+                username = ghPackagesUser
+                password = ghPackagesPat
+            }
+        }
+    }
+
+    dependencies {
+        add(samsungIapDownload.name, "com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
+    }
+
+    tasks.register<Sync>("downloadSamsungIapAar") {
+        group = "build setup"
+        description = "Downloads the Samsung IAP AAR into the root libs directory when running in CI."
+
+        doFirst {
+            val resolvedFiles = samsungIapDownload.resolve()
+            if (resolvedFiles.size != 1) {
+                throw GradleException(
+                    "Expected exactly one Samsung IAP AAR artifact, but resolved ${resolvedFiles.size}: " +
+                        resolvedFiles.joinToString { it.name },
+                )
+            }
+        }
+
+        from(samsungIapDownload)
+        into(layout.projectDirectory.dir("libs"))
+        rename { samsungIapFilename }
+
+        doLast {
+            val outputFile = layout.projectDirectory.file("libs/$samsungIapFilename").asFile
+            if (!outputFile.exists()) {
+                throw GradleException("Samsung IAP AAR was not copied to ${outputFile.path}.")
+            }
+            if (outputFile.length() <= 0L) {
+                throw GradleException("Samsung IAP AAR at ${outputFile.path} is empty.")
+            }
+        }
+    }
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
