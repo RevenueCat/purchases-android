@@ -105,6 +105,9 @@ dependencyResolutionManagement {
                         username = ghPackagesUser
                         password = ghPackagesPat
                     }
+                    metadataSources {
+                        artifact()
+                    }
                     content {
                         includeGroup("com.samsung.iap")
                     }
