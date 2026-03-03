@@ -419,7 +419,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "override with multiple conditions applies when all conditions match",
+                "overrides with multiple conditions that are all applicable should override previous overrides",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -445,7 +445,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 )
             ),
             arrayOf(
-                "override with multiple conditions does not apply when not all conditions match",
+                "overrides with multiple conditions that are not all applicable should not override previous overrides",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
@@ -1360,6 +1360,46 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = null,
                 ),
             ),
+            arrayOf(
+                "intro_offer with operator=equals value=true: should apply when IntroOfferMultiple",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferMultiple,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "intro_offer with operator=equals value=true: should not apply when PromoOfferSingle",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.IntroOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferSingle,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
 
             // Extended PromoOffer condition tests
             arrayOf(
@@ -1518,6 +1558,46 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     ),
                     windowSize = COMPACT,
                     offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=equals value=true: should apply when PromoOfferMultiple",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = PromoOfferMultiple,
+                    state = DEFAULT,
+                    expected = promoOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "promo_offer with operator=equals value=true: should not apply when IntroOfferSingle",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.PromoOffer(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    value = true,
+                                ),
+                            ),
+                            properties = promoOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferSingle,
                     state = DEFAULT,
                     expected = null,
                 ),
