@@ -265,6 +265,39 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `does not add UI preview mode header if disabled`() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names()).doesNotContain("X-UI-Preview-Mode")
+    }
+
+    @Test
+    fun `adds UI preview mode header if enabled`() {
+        client = createClient(appConfig = createAppConfig(uiPreviewMode = true))
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-UI-Preview-Mode")).isEqualTo("true")
+    }
+
+    @Test
     fun addsETagHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
