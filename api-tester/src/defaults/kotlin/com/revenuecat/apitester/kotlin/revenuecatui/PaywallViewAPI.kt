@@ -7,7 +7,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
 
@@ -27,7 +27,7 @@ private class PaywallViewAPI {
         listener: PaywallListener,
         fontProvider: FontProvider,
         shouldDisplayDismissButton: Boolean?,
-        purchaseLogic: PurchaseLogic,
+        purchaseLogic: PaywallPurchaseLogic,
     ) {
         PaywallView(context)
         PaywallView(context, attrs)
@@ -59,7 +59,7 @@ private class PaywallViewAPI {
         dismissHandler: () -> Unit,
         presentedOfferingContext: PresentedOfferingContext?,
         customVariables: Map<String, CustomVariableValue>,
-        purchaseLogic: PurchaseLogic,
+        purchaseLogic: PaywallPurchaseLogic,
     ) {
         paywallView.setPaywallListener(null)
         paywallView.setPaywallListener(paywallListener)

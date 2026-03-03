@@ -8,7 +8,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchIfNeededOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -140,7 +140,7 @@ private class PaywallActivityLauncherAPI {
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
         paywallDisplayCallback: PaywallDisplayCallback,
-        purchaseLogic: PurchaseLogic,
+        purchaseLogic: PaywallPurchaseLogic,
         listener: PaywallListener,
     ) {
         val customVariables = mapOf("key" to CustomVariableValue.String("value"))

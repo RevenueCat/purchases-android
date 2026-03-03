@@ -27,6 +27,17 @@ class AppStyleExtractorTests {
     }
 
     @Test
+    fun `extractProminentColors returns colors for large bitmap`() {
+        val bitmap = createTestBitmap(
+            color = AndroidColor.rgb(200, 50, 50),
+            width = 400,
+            height = 400,
+        )
+        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap, count = 1)
+        assertThat(colors).hasSize(1)
+    }
+
+    @Test
     fun `extractProminentColors filters out near-black colors`() {
         val bitmap = createTestBitmap(AndroidColor.BLACK)
         val colors = AppStyleExtractor.extractProminentColorsSync(bitmap)
@@ -131,8 +142,12 @@ class AppStyleExtractorTests {
         assertThat(selected).isEqualTo(Color.Red)
     }
 
-    private fun createTestBitmap(color: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+    private fun createTestBitmap(
+        color: Int,
+        width: Int = 100,
+        height: Int = 100,
+    ): Bitmap {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(color)
         return bitmap
     }
