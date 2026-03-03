@@ -75,7 +75,7 @@ public abstract class FetchSchemaTask : DefaultTask() {
             logger.lifecycle(
                 "Fetched ${entitlements.size} entitlements and ${offerings.size} offerings from RevenueCat.",
             )
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             handleFetchError(e, cache)
         }
     }

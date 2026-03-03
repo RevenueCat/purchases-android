@@ -14,6 +14,9 @@ internal class RevenueCatApiClient(
         private const val MAX_RETRIES = 5
         private const val INITIAL_BACKOFF_MS = 1_000L
         private const val REQUEST_DELAY_MS = 500L
+        private const val CONNECTION_TIMEOUT_MS = 30_000
+        private const val HTTP_OK = 200
+        private const val HTTP_TOO_MANY_REQUESTS = 429
     }
 
     internal fun fetchEntitlements(projectId: String): List<EntitlementSchema> {
@@ -76,9 +79,9 @@ internal class RevenueCatApiClient(
 
             // next_page is a full URL or null/empty
             val nextPage = json.opt("next_page")
-            nextUrl = if (nextPage != null && nextPage != JSONObject.NULL &&
+            val hasNextPage = nextPage != null && nextPage != JSONObject.NULL &&
                 nextPage.toString().isNotEmpty() && nextPage.toString() != "null"
-            ) {
+            nextUrl = if (hasNextPage) {
                 nextPage.toString()
             } else {
                 null
@@ -113,7 +116,7 @@ internal class RevenueCatApiClient(
             }
         }
 
-        throw lastException ?: RuntimeException("Failed to fetch $url after $MAX_RETRIES retries")
+        throw lastException ?: error("Failed to fetch $url after $MAX_RETRIES retries")
     }
 
     private fun httpGet(url: String): String {
@@ -122,11 +125,11 @@ internal class RevenueCatApiClient(
             connection.requestMethod = "GET"
             connection.setRequestProperty("Authorization", "Bearer $apiKey")
             connection.setRequestProperty("Accept", "application/json")
-            connection.connectTimeout = 30_000
-            connection.readTimeout = 30_000
+            connection.connectTimeout = CONNECTION_TIMEOUT_MS
+            connection.readTimeout = CONNECTION_TIMEOUT_MS
 
             val responseCode = connection.responseCode
-            if (responseCode == 429) {
+            if (responseCode == HTTP_TOO_MANY_REQUESTS) {
                 val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: ""
                 val backoffMs = try {
                     JSONObject(errorBody).optLong("backoff_ms", 0)
@@ -135,11 +138,9 @@ internal class RevenueCatApiClient(
                 }
                 throw RateLimitException(url, backoffMs)
             }
-            if (responseCode != 200) {
+            if (responseCode != HTTP_OK) {
                 val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: ""
-                throw RuntimeException(
-                    "RevenueCat API returned HTTP $responseCode for $url: $errorBody",
-                )
+                error("RevenueCat API returned HTTP $responseCode for $url: $errorBody")
             }
 
             return connection.inputStream.bufferedReader().readText()

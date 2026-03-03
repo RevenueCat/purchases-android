@@ -62,8 +62,20 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
         // Try the modern AndroidComponents API first. Only fall back to the legacy
         // source-set API when AndroidComponents is unavailable, to avoid registering
         // the output directory twice (which would cause duplicate compilation inputs).
-        var wiredViaComponents = false
-        try {
+        val wiredViaComponents = tryWireViaAndroidComponents(project, outputDir)
+
+        // Fallback: add to source sets directly — only when AndroidComponents wiring did not run.
+        if (!wiredViaComponents) {
+            wireViaLegacySourceSets(project, outputDir)
+        }
+
+        // Ensure all Kotlin-processing tasks (compile, KSP, KAPT) depend on code generation.
+        configureKotlinTaskDependencies(project, generateTask)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun tryWireViaAndroidComponents(project: Project, outputDir: java.io.File): Boolean {
+        return try {
             val androidComponents = project.extensions.findByName("androidComponents")
             if (androidComponents != null) {
                 val method = androidComponents.javaClass.getMethod(
@@ -74,6 +86,7 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
                 method.invoke(
                     androidComponents,
                     { variant: Any ->
+                        @Suppress("TooGenericExceptionCaught")
                         try {
                             val sourcesMethod = variant.javaClass.getMethod("getSources")
                             val sources = sourcesMethod.invoke(variant)
@@ -89,49 +102,57 @@ public class RevenueCatCodeGenPlugin : Plugin<Project> {
                         }
                     } as kotlin.jvm.functions.Function1<Any, Unit>,
                 )
-                wiredViaComponents = true
+                true
+            } else {
+                false
             }
         } catch (e: Exception) {
             project.logger.debug("AndroidComponents wiring failed, falling back to source set: ${e.message}")
+            false
         }
+    }
 
-        // Fallback: add to source sets directly — only when AndroidComponents wiring did not run.
-        if (!wiredViaComponents) {
-            val android = project.extensions.findByName("android")
-            if (android != null) {
-                try {
-                    val sourceSetsMethod = android.javaClass.getMethod("getSourceSets")
-                    val sourceSets = sourceSetsMethod.invoke(android)
-                    val getByNameMethod = sourceSets.javaClass.getMethod("getByName", String::class.java)
-                    val mainSourceSet = getByNameMethod.invoke(sourceSets, "main")
-                    val kotlinSrcDirs = mainSourceSet.javaClass.getMethod("getKotlin")
-                    val kotlin = kotlinSrcDirs.invoke(mainSourceSet)
-                    val srcDirMethod = kotlin.javaClass.getMethod("srcDir", Any::class.java)
-                    srcDirMethod.invoke(kotlin, outputDir)
-                } catch (e: Exception) {
-                    project.logger.warn(
-                        "Could not add generated source directory to Android source sets: ${e.message}",
-                    )
-                }
+    @Suppress("TooGenericExceptionCaught")
+    private fun wireViaLegacySourceSets(project: Project, outputDir: java.io.File) {
+        val android = project.extensions.findByName("android")
+        if (android != null) {
+            try {
+                val sourceSetsMethod = android.javaClass.getMethod("getSourceSets")
+                val sourceSets = sourceSetsMethod.invoke(android)
+                val getByNameMethod = sourceSets.javaClass.getMethod("getByName", String::class.java)
+                val mainSourceSet = getByNameMethod.invoke(sourceSets, "main")
+                val kotlinSrcDirs = mainSourceSet.javaClass.getMethod("getKotlin")
+                val kotlin = kotlinSrcDirs.invoke(mainSourceSet)
+                val srcDirMethod = kotlin.javaClass.getMethod("srcDir", Any::class.java)
+                srcDirMethod.invoke(kotlin, outputDir)
+            } catch (e: Exception) {
+                project.logger.warn(
+                    "Could not add generated source directory to Android source sets: ${e.message}",
+                )
             }
         }
+    }
 
-        // Ensure all Kotlin-processing tasks (compile, KSP, KAPT) depend on code generation.
-        // KSP tasks are named ksp*Kotlin and KAPT tasks kapt*Kotlin — they both consume
-        // the generated source directory but would otherwise have no implicit dependency on
-        // rcGenerateCode, causing Gradle's implicit dependency validation to fail.
+    // KSP tasks are named ksp*Kotlin and KAPT tasks kapt*Kotlin — they both consume
+    // the generated source directory but would otherwise have no implicit dependency on
+    // rcGenerateCode, causing Gradle's implicit dependency validation to fail.
+    private fun configureKotlinTaskDependencies(
+        project: Project,
+        generateTask: TaskProvider<GenerateCodeTask>,
+    ) {
         project.tasks.configureEach { task ->
-            if (task.name.endsWith("Kotlin") && (
-                    task.name.startsWith("compile") ||
-                        task.name.startsWith("ksp") ||
-                        task.name.startsWith("kapt")
-                    )
-            ) {
+            val isKotlinTask = task.name.endsWith("Kotlin") && (
+                task.name.startsWith("compile") ||
+                    task.name.startsWith("ksp") ||
+                    task.name.startsWith("kapt")
+                )
+            if (isKotlinTask) {
                 task.dependsOn(generateTask)
             }
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun wireToKotlinJvm(
         project: Project,
         generateTask: TaskProvider<GenerateCodeTask>,

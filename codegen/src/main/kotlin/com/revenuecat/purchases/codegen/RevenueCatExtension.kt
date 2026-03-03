@@ -6,6 +6,10 @@ import javax.inject.Inject
 
 public abstract class RevenueCatExtension @Inject public constructor(objects: ObjectFactory) {
 
+    private companion object {
+        private const val DEFAULT_CACHE_TTL_MINUTES = 60L
+    }
+
     public val apiKey: Property<String> = objects.property(String::class.java)
 
     public val projectId: Property<String> = objects.property(String::class.java)
@@ -14,7 +18,7 @@ public abstract class RevenueCatExtension @Inject public constructor(objects: Ob
         .convention("com.revenuecat.generated")
 
     public val cacheTtlMinutes: Property<Long> = objects.property(Long::class.java)
-        .convention(60L)
+        .convention(DEFAULT_CACHE_TTL_MINUTES)
 
     public val offlineMode: Property<OfflineMode> = objects.property(OfflineMode::class.java)
         .convention(OfflineMode.USE_CACHE_OR_SKIP)

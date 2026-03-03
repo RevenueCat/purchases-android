@@ -10,15 +10,20 @@ import java.io.File
 
 internal class SchemaCache(private val cacheDir: File) {
 
+    private companion object {
+        private const val MS_PER_MINUTE = 60_000L
+    }
+
     private val cacheFile: File
         get() = File(cacheDir, "revenuecat-schema.json")
 
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     internal fun isValid(ttlMinutes: Long): Boolean {
         if (!cacheFile.exists()) return false
         return try {
             val json = JSONObject(cacheFile.readText())
             val timestamp = json.getLong("timestamp")
-            val ageMinutes = (System.currentTimeMillis() - timestamp) / 60_000
+            val ageMinutes = (System.currentTimeMillis() - timestamp) / MS_PER_MINUTE
             ageMinutes < ttlMinutes
         } catch (e: Exception) {
             // Corrupted or unreadable cache — treat as invalid so a fresh fetch is triggered
@@ -27,16 +32,18 @@ internal class SchemaCache(private val cacheDir: File) {
     }
 
     /** Returns the age of the cached data in minutes, or null if the cache doesn't exist or is unreadable. */
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     internal fun cacheAgeMinutes(): Long? {
         if (!cacheFile.exists()) return null
         return try {
             val timestamp = JSONObject(cacheFile.readText()).getLong("timestamp")
-            (System.currentTimeMillis() - timestamp) / 60_000
+            (System.currentTimeMillis() - timestamp) / MS_PER_MINUTE
         } catch (e: Exception) {
             null
         }
     }
 
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     internal fun read(): ProjectSchema? {
         if (!cacheFile.exists()) return null
         return try {
