@@ -227,7 +227,8 @@ internal class PaywallActivity : ComponentActivity() {
         }
     }
 
-    private fun onDismissRequest(exitOffering: Offering?) {
+    private fun onDismissRequest(exitOffering: Offering?, result: PaywallResult?) {
+        result?.let { setResult(RESULT_OK, createResultIntent(it)) }
         if (exitOffering != null) {
             launchExitOfferActivity(exitOffering)
         } else {
