@@ -127,6 +127,30 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
 }
 
 /**
+ * Sets Appstack attribution params and then fetches the configured offerings for this user. This method is intended
+ * to be called with the result of `AppstackAttributionSdk.getAttributionParams()`.
+ *
+ * Coroutine friendly version of [Purchases.setAppstackAttributionParams].
+ *
+ * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error syncing attributes or fetching offerings.
+ * @return The [Offerings] fetched after setting Appstack attribution params.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<*, *>?): Offerings {
+    return suspendCoroutine { continuation ->
+        setAppstackAttributionParams(
+            data,
+            syncAttributesAndOfferingsListener(
+                onSuccess = continuation::resume,
+                onError = { continuation.resumeWithException(PurchasesException(it)) },
+            ),
+        )
+    }
+}
+
+/**
  * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
  * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
  *
