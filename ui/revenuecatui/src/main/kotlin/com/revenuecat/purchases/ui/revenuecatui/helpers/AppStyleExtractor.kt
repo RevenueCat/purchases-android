@@ -73,12 +73,16 @@ internal object AppStyleExtractor {
         if (totalPixels == 0) return emptyList()
 
         val colorCounts = mutableMapOf<Int, Int>()
-        val sampleStep = maxOf(1, totalPixels / ColorExtractionConstants.MAX_PIXEL_SAMPLES)
-        val pixels = IntArray(totalPixels)
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val sampleStep = maxOf(
+            1L,
+            (totalPixels.toLong() + ColorExtractionConstants.MAX_PIXEL_SAMPLES - 1L) /
+                ColorExtractionConstants.MAX_PIXEL_SAMPLES,
+        ).toInt()
 
-        for (pixelIndex in pixels.indices step sampleStep) {
-            val key = quantizedColorKeyOrNull(pixels[pixelIndex])
+        for (pixelIndex in 0 until totalPixels step sampleStep) {
+            val x = pixelIndex % width
+            val y = pixelIndex / width
+            val key = quantizedColorKeyOrNull(bitmap.getPixel(x, y))
             if (key != null) {
                 colorCounts[key] = colorCounts.getOrDefault(key, 0) + 1
             }

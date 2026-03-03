@@ -10,8 +10,6 @@ import kotlin.math.sqrt
  * Constants for color extraction algorithm.
  */
 internal object ColorExtractionConstants {
-    const val BITS_PER_COMPONENT = 8
-    const val BYTES_PER_PIXEL = 4
     const val COLOR_COMPONENT_MASK = 0xFF
     const val RED_CHANNEL_SHIFT = 16
     const val GREEN_CHANNEL_SHIFT = 8
