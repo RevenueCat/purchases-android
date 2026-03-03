@@ -140,6 +140,14 @@ internal class PaywallActivity : ComponentActivity() {
                 }
             }
 
+            override fun onRestoreInitiated(resume: Resumable) {
+                if (userListener != null) {
+                    userListener.onRestoreInitiated(resume)
+                } else {
+                    resume()
+                }
+            }
+
             override fun onPurchaseStarted(rcPackage: Package) {
                 userListener?.onPurchaseStarted(rcPackage)
             }

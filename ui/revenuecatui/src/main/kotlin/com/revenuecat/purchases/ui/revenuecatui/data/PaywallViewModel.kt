@@ -330,6 +330,17 @@ internal class PaywallViewModelImpl(
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
+        val shouldResume = suspendCoroutine { continuation ->
+            listener?.onRestoreInitiated { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+
+        if (!shouldResume) {
+            Logger.d("Restore cancelled listener.onRestoreInitiated returned false")
+            finishAction()
+            return
+        }
         try {
             val customRestoreHandler: (suspend (CustomerInfo) -> PurchaseLogicResult)? =
                 purchaseLogic?.let { it::performRestore }

@@ -70,6 +70,8 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import java.util.Date
 import java.util.Locale
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
@@ -499,6 +501,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun restorePurchases() {
+        if (!shouldResumeRestorePurchases(listener, "listener") ||
+            !shouldResumeRestorePurchases(purchases.customerCenterListener, "purchases.customerCenterListener")
+        ) {
+            return
+        }
         notifyListenersForRestoreStarted()
 
         _state.update { currentState ->
@@ -546,6 +553,21 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    private suspend fun shouldResumeRestorePurchases(
+        listener: CustomerCenterListener?,
+        listenerName: String,
+    ): Boolean {
+        val shouldResume = suspendCoroutine { continuation ->
+            listener?.onRestoreInitiated { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+        if (!shouldResume) {
+            Logger.d("Restore cancelled $listenerName.onRestoreInitiated returned false")
+        }
+        return shouldResume
     }
 
     private fun supportedPaths(
