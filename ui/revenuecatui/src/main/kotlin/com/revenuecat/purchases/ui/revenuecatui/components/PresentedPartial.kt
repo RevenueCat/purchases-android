@@ -137,29 +137,29 @@ private fun ComponentOverride.Condition.evaluate(
     ComponentOverride.Condition.Expanded,
     -> windowSize.applicableConditions.contains(this)
     ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
-    is ComponentOverride.Condition.IntroOffer -> evaluate(offerEligibility)
+    ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
+    is ComponentOverride.Condition.IntroOfferCondition -> evaluate(offerEligibility)
     ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
-    is ComponentOverride.Condition.PromoOffer -> evaluate(offerEligibility)
+    ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
+    is ComponentOverride.Condition.PromoOfferCondition -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     ComponentOverride.Condition.Unsupported -> false
 }
 
-private fun ComponentOverride.Condition.IntroOffer.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.IntroOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isIntroOffer
-    val conditionValue = value ?: true
-    return when (operator ?: ComponentOverride.EqualityOperator.EQUALS) {
-        ComponentOverride.EqualityOperator.EQUALS -> eligibility == conditionValue
-        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != conditionValue
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != value
     }
 }
 
-private fun ComponentOverride.Condition.PromoOffer.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.PromoOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isPromoOffer
-    val conditionValue = value ?: true
-    return when (operator ?: ComponentOverride.EqualityOperator.EQUALS) {
-        ComponentOverride.EqualityOperator.EQUALS -> eligibility == conditionValue
-        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != conditionValue
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != value
     }
 }
 
