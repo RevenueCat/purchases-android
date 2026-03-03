@@ -50,6 +50,10 @@ parameters:
     type: enum
     enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
+  paywall_tester_track:
+    type: enum
+    enum: [internal, alpha, beta, production]
+    default: alpha
 
 commands:
   install-sdkman:
@@ -1170,7 +1174,7 @@ workflows:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
         - publish-paywall-tester-release:
-            track: "alpha"
+            track: << pipeline.parameters.paywall_tester_track >>
 
   manual-rct-tester-release:
     when:
