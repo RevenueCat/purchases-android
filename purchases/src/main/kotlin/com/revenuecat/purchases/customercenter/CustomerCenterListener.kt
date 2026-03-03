@@ -9,6 +9,18 @@ import com.revenuecat.purchases.PurchasesError
 public interface CustomerCenterListener {
 
     /**
+     * Called when a restore purchases operation is about to be initiated.
+     * This allows the app to perform any necessary preparation (e.g., authentication) before proceeding.
+     *
+     * @param resume A callback that must be invoked to continue with the restore flow.
+     *               If not called, the restore flow will not proceed.
+     */
+    public fun onRestoreInitiated(resume: Resumable) {
+        // Default implementation immediately resumes
+        resume()
+    }
+
+    /**
      * Called when a restore purchases operation is initiated by the user in the Customer Center.
      */
     public fun onRestoreStarted() {

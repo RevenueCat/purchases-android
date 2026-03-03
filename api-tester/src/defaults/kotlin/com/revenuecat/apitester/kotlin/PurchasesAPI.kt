@@ -31,6 +31,7 @@ import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -333,6 +334,9 @@ private class PurchasesAPI {
 
     fun checkCustomerCenter() {
         val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
         }
@@ -347,6 +351,9 @@ private class PurchasesAPI {
             }
 
             override fun onRestoreFailed(error: PurchasesError) {
+            }
+
+            override fun onRestoreInitiated(resume: Resumable) {
             }
 
             override fun onRestoreStarted() {

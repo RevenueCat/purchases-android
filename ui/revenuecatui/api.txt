@@ -68,6 +68,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onPurchaseError(com.revenuecat.purchases.PurchasesError error);
     method public default void onPurchasePackageInitiated(com.revenuecat.purchases.Package rcPackage, com.revenuecat.purchases.ui.revenuecatui.utils.Resumable resume);
     method public default void onPurchaseStarted(com.revenuecat.purchases.Package rcPackage);
+    method public default void onRestoreInitiated(com.revenuecat.purchases.ui.revenuecatui.utils.Resumable resume);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreError(com.revenuecat.purchases.PurchasesError error);
     method public default void onRestoreStarted();

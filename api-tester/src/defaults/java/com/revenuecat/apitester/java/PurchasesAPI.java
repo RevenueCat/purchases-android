@@ -20,6 +20,7 @@ import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
+import com.revenuecat.purchases.customercenter.Resumable;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
@@ -214,6 +215,10 @@ final class PurchasesAPI {
     static void checkCustomerCenter() {
         CustomerCenterListener customerInfoListener = new CustomerCenterListener() {
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
+            }
+
+            @Override
             public void onRestoreStarted() {
             }
         };
@@ -232,6 +237,10 @@ final class PurchasesAPI {
 
             @Override
             public void onRestoreFailed(@NonNull PurchasesError error) {
+            }
+
+            @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
             }
 
             @Override

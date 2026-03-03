@@ -11,6 +11,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -58,6 +59,10 @@ public class CustomerCenterView : CompatComposeView {
     private var dismissHandler: (() -> Unit)? = null
     private var customerCenterListener: CustomerCenterListener? = null
     private val internalListener = object : CustomerCenterListener {
+        override fun onRestoreInitiated(resume: Resumable) {
+            customerCenterListener?.onRestoreInitiated(resume) ?: resume()
+        }
+
         override fun onRestoreStarted() {
             customerCenterListener?.onRestoreStarted()
         }

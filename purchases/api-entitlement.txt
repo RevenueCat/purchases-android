@@ -873,12 +873,18 @@ package com.revenuecat.purchases.customercenter {
     property public final String? purchaseIdentifier;
   }
 
+  public fun interface Resumable {
+    method public default operator void invoke(optional boolean shouldResume);
+    method public void resume(boolean shouldResume);
+  }
+
   public interface CustomerCenterListener {
     method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
     method public default void onManagementOptionSelected(com.revenuecat.purchases.customercenter.CustomerCenterManagementOption action);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreFailed(com.revenuecat.purchases.PurchasesError error);
+    method public default void onRestoreInitiated(com.revenuecat.purchases.customercenter.Resumable resume);
     method public default void onRestoreStarted();
     method public default void onShowingManageSubscriptions();
   }
