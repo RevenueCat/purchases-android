@@ -747,7 +747,12 @@ internal class StyleFactory(
             border = borderStyles,
             shadow = shadowStyles,
             badge = badge,
-            scrollOrientation = component.overflow?.toOrientation(component.dimension),
+            // HACK: temporarily force scroll for fixed-height stacks to test overflow
+            scrollOrientation = if (component.size.height is SizeConstraint.Fixed) {
+                StackComponent.Overflow.SCROLL.toOrientation(component.dimension)
+            } else {
+                component.overflow?.toOrientation(component.dimension)
+            },
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,

@@ -486,9 +486,12 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val systemBarInsets = WindowInsets.systemBars
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     // Show the right container composable depending on the dimension.
-    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+    // outerMod: applied before scroll (border, background, shadow, margin)
+    // innerMod: applied after scroll (padding)
+    val stack: @Composable (Modifier, Modifier) -> Unit = { outerMod, innerMod ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
@@ -497,7 +500,8 @@ private fun MainStackComponent(
             Box(
                 modifier = modifier
                     .size(stackState.size)
-                    .then(rootModifier),
+                    .then(outerMod)
+                    .then(innerMod),
             )
         } else {
             when (val dimension = stackState.dimension) {
@@ -507,10 +511,11 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                     modifier = modifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                        .then(outerMod)
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                            clip(composeShape).scrollable(state, orientation)
                         }
-                        .then(rootModifier),
+                        .then(innerMod),
                 ) {
                     items(stackState.children) { _, child ->
                         ComponentView(
@@ -533,10 +538,11 @@ private fun MainStackComponent(
                     spacing = stackState.spacing,
                     modifier = modifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                        .then(outerMod)
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                            clip(composeShape).scrollable(state, orientation)
                         }
-                        .then(rootModifier),
+                        .then(innerMod),
                 ) {
                     items(stackState.children) { index, child ->
                         ComponentView(
@@ -566,10 +572,11 @@ private fun MainStackComponent(
                             horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
                             verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
                         )
+                        .then(outerMod)
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                            clip(composeShape).scrollable(state, orientation)
                         }
-                        .then(rootModifier),
+                        .then(innerMod),
                     contentAlignment = dimension.alignment.toAlignment(),
                 ) {
                     stackState.children.forEach { child ->
@@ -590,7 +597,6 @@ private fun MainStackComponent(
     }
 
     val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = if (shouldApplyShadow) {
         stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -632,8 +638,8 @@ private fun MainStackComponent(
                     .then(borderModifier),
             ) {
                 stack(
-                    Modifier
-                        .then(innerShapeModifier)
+                    Modifier,
+                    innerShapeModifier
                         .conditional(stackState.applyBottomWindowInsets) {
                             windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
                         },
@@ -642,8 +648,8 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
-                    .then(borderModifier)
-                    .then(innerShapeModifier)
+                    .then(borderModifier),
+                innerShapeModifier
                     .conditional(stackState.applyBottomWindowInsets) {
                         windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
                     },
@@ -657,7 +663,7 @@ private fun MainStackComponent(
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(Modifier.then(innerShapeModifier))
+                stack(Modifier, innerShapeModifier)
             }
 
             StackComponentView(
@@ -675,7 +681,7 @@ private fun MainStackComponent(
                 .clip(composeShape),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(borderModifier.then(innerShapeModifier))
+                stack(borderModifier, innerShapeModifier)
             }
             overlay()
         }
