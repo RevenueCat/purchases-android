@@ -690,6 +690,9 @@ internal class BillingWrapper(
 
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
 
+            synchronized(this@BillingWrapper) {
+                purchaseContext.clear()
+            }
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(purchasesError)
         }
     }
@@ -898,7 +901,7 @@ internal class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            val context = purchaseContext[purchase.firstProductId]
+            val context = purchaseContext.remove(purchase.firstProductId)
             context?.productType?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(context),
