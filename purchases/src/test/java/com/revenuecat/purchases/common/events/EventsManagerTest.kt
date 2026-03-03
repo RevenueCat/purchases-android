@@ -25,6 +25,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
@@ -599,6 +600,44 @@ class EventsManagerTest {
                 + "\n"
                 + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking custom paywall impression event adds it to file with appSessionId`() {
+        val fixedId = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009")
+        val fixedDate = Date(1699270688884)
+        val customPaywallImpressionEvent = CustomPaywallImpressionEvent(
+            creationData = CustomPaywallImpressionEvent.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+        )
+
+        eventsManager.track(customPaywallImpressionEvent)
+
+        checkFileContents(
+            """{"type":"custom_paywall_impression","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"paywall_id":"my-paywall"}}""".trimIndent() + "\n",
+        )
+    }
+
+    @Test
+    fun `tracking custom paywall impression event with null paywallId adds it to file`() {
+        val fixedId = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009")
+        val fixedDate = Date(1699270688884)
+        val customPaywallImpressionEvent = CustomPaywallImpressionEvent(
+            creationData = CustomPaywallImpressionEvent.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallImpressionEvent.Data(paywallId = null),
+        )
+
+        eventsManager.track(customPaywallImpressionEvent)
+
+        checkFileContents(
+            """{"type":"custom_paywall_impression","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884}}""".trimIndent() + "\n",
         )
     }
 

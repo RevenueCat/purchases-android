@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Event
@@ -43,6 +44,15 @@ internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("ad")
     data class Ad(val event: BackendEvent.Ad) : BackendStoredEvent()
+
+    /**
+     * Represents a stored event related to a custom paywall impression.
+     *
+     * @property event The `BackendEvent.CustomPaywallImpression` event that is being stored.
+     */
+    @Serializable
+    @SerialName("custom_paywall_impression")
+    data class CustomPaywallImpression(val event: BackendEvent.CustomPaywallImpression) : BackendStoredEvent()
 }
 
 /**
@@ -56,6 +66,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
         is BackendStoredEvent.Paywalls -> { this.event }
         is BackendStoredEvent.CustomerCenter -> { this.event }
         is BackendStoredEvent.Ad -> { this.event }
+        is BackendStoredEvent.CustomPaywallImpression -> { this.event }
     }
 }
 
@@ -280,6 +291,32 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             appUserID = appUserID,
             appSessionID = appSessionID,
             mediatorErrorCode = mediatorErrorCode,
+        ),
+    )
+}
+
+/**
+ * Converts a `CustomPaywallImpressionEvent` into a `BackendStoredEvent.CustomPaywallImpression` instance.
+ *
+ * @receiver The `CustomPaywallImpressionEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @param appSessionID The session ID of the app session when this event occurred.
+ * @return A `BackendStoredEvent.CustomPaywallImpression` containing a `BackendEvent.CustomPaywallImpression`.
+ */
+@JvmSynthetic
+internal fun CustomPaywallImpressionEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.CustomPaywallImpression(
+        BackendEvent.CustomPaywallImpression(
+            id = creationData.id.toString(),
+            version = BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION,
+            type = "custom_paywall_impression",
+            appUserID = appUserID,
+            appSessionId = appSessionID,
+            timestamp = creationData.date.time,
+            paywallId = data.paywallId,
         ),
     )
 }
