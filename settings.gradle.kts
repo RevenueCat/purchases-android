@@ -98,7 +98,10 @@ dependencyResolutionManagement {
             val ghPackagesUser = System.getenv("READ_GH_PACKAGES_USER")
             val ghPackagesPat = System.getenv("READ_GH_PACKAGES_PAT")
 
-            if (!samsungIapMavenUrl.isNullOrBlank() && !ghPackagesUser.isNullOrBlank() && !ghPackagesPat.isNullOrBlank()) {
+            if (!samsungIapMavenUrl.isNullOrBlank() &&
+                !ghPackagesUser.isNullOrBlank() &&
+                !ghPackagesPat.isNullOrBlank()
+            ) {
                 maven {
                     url = uri(samsungIapMavenUrl)
                     credentials {
