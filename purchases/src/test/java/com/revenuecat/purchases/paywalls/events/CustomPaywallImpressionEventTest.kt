@@ -81,7 +81,7 @@ class CustomPaywallImpressionEventTest {
         assertThat(customStoredEvent.event.version).isEqualTo(BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION)
         assertThat(customStoredEvent.event.type).isEqualTo("custom_paywall_impression")
         assertThat(customStoredEvent.event.appUserID).isEqualTo(appUserID)
-        assertThat(customStoredEvent.event.appSessionId).isEqualTo(appSessionID)
+        assertThat(customStoredEvent.event.appSessionID).isEqualTo(appSessionID)
         assertThat(customStoredEvent.event.timestamp).isEqualTo(fixedDate.time)
         assertThat(customStoredEvent.event.paywallId).isEqualTo("my-paywall")
     }
@@ -123,7 +123,7 @@ class CustomPaywallImpressionEventTest {
         assertThat(decodedEvent.version).isEqualTo(BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION)
         assertThat(decodedEvent.type).isEqualTo("custom_paywall_impression")
         assertThat(decodedEvent.appUserID).isEqualTo(appUserID)
-        assertThat(decodedEvent.appSessionId).isEqualTo(appSessionID)
+        assertThat(decodedEvent.appSessionID).isEqualTo(appSessionID)
         assertThat(decodedEvent.timestamp).isEqualTo(fixedDate.time)
         assertThat(decodedEvent.paywallId).isEqualTo("my-paywall")
     }
@@ -175,7 +175,7 @@ class CustomPaywallImpressionEventTest {
     }
 
     @Test
-    fun `toBackendStoredEvent includes appSessionId in JSON`() {
+    fun `toBackendStoredEvent includes appSessionID in JSON`() {
         val event = CustomPaywallImpressionEvent(
             creationData = CustomPaywallImpressionEvent.CreationData(
                 id = fixedId,

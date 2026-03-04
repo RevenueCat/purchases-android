@@ -604,7 +604,7 @@ class EventsManagerTest {
     }
 
     @Test
-    fun `tracking custom paywall impression event adds it to file with appSessionId`() {
+    fun `tracking custom paywall impression event adds it to file with appSessionID`() {
         val fixedId = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009")
         val fixedDate = Date(1699270688884)
         val customPaywallImpressionEvent = CustomPaywallImpressionEvent(
