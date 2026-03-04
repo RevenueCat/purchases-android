@@ -369,6 +369,17 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
 
+                // Legacy intro_offer/promo_offer with extra operator+value fields are silently
+                // ignored and deserialized as plain objects (backward compat)
+                arrayOf(
+                    """{ "type": "intro_offer", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.IntroOffer,
+                ),
+                arrayOf(
+                    """{ "type": "promo_offer", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.PromoOffer,
+                ),
+
                 // IntroOfferCondition with operator and value
                 arrayOf(
                     """{ "type": "intro_offer_condition", "operator": "=", "value": true }""",
