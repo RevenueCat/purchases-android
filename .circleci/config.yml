@@ -212,6 +212,14 @@ commands:
             git submodule init << parameters.path >>
             git submodule update << parameters.path >>
 
+  trust-github-key:
+    steps:
+      - run:
+          name: Trust GitHub key
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -t ed25519,ecdsa,rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+            
 jobs:
 
   assemble-magic-weather-compose-sample-app:
@@ -264,9 +272,10 @@ jobs:
 
   prepare-tests:
     <<: *android-executor
-    shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -668,6 +677,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -771,6 +781,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - attach_workspace:
@@ -785,7 +796,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
@@ -828,6 +838,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - run:
@@ -837,7 +848,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Set GitHub token environment variable
           command: |
@@ -909,11 +919,11 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
