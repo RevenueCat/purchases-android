@@ -255,6 +255,11 @@ internal class EventsManager(
 
         if (storedEvents.isEmpty()) {
             verboseLog { "No new events to sync." }
+            if (batchNumber == 1) {
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(name = DebugEventName.FLUSH_SKIPPED_NO_EVENTS),
+                )
+            }
             flushInProgress.set(false)
             return
         }
@@ -265,6 +270,12 @@ internal class EventsManager(
             delay,
             {
                 verboseLog { "New event flush (batch $batchNumber): success." }
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(
+                        name = DebugEventName.FLUSH_COMPLETED,
+                        properties = mapOf("batch_number" to batchNumber.toString()),
+                    ),
+                )
                 enqueue {
                     fileHelper.clear(storedEventsWithNullValues.size)
                     // Continue flushing next batch

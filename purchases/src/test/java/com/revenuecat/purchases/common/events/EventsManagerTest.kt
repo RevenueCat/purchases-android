@@ -891,4 +891,63 @@ class EventsManagerTest {
         val flushErrors = receivedEvents.filter { it.name == DebugEventName.FLUSH_ERROR }
         assertThat(flushErrors).isEmpty()
     }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener is notified with FLUSH_COMPLETED on successful flush`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val flushCompleted = receivedEvents.filter { it.name == DebugEventName.FLUSH_COMPLETED }
+        assertThat(flushCompleted).hasSize(1)
+        assertThat(flushCompleted.first().properties["batch_number"]).isEqualTo("1")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener receives FLUSH_COMPLETED for each batch with correct batch_number`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        for (i in 0..99) {
+            eventsManager.track(paywallEvent)
+        }
+        eventsManager.flushEvents()
+
+        val flushCompleted = receivedEvents.filter { it.name == DebugEventName.FLUSH_COMPLETED }
+        assertThat(flushCompleted).hasSize(2)
+        assertThat(flushCompleted[0].properties["batch_number"]).isEqualTo("1")
+        assertThat(flushCompleted[1].properties["batch_number"]).isEqualTo("2")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener receives FLUSH_SKIPPED_NO_EVENTS when no events to flush`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        eventsManager.flushEvents()
+
+        val skippedEvents = receivedEvents.filter { it.name == DebugEventName.FLUSH_SKIPPED_NO_EVENTS }
+        assertThat(skippedEvents).hasSize(1)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `debugEventListener does not receive FLUSH_SKIPPED_NO_EVENTS when events are flushed`() {
+        val receivedEvents = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { receivedEvents.add(it) }
+
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        eventsManager.flushEvents()
+
+        val skippedEvents = receivedEvents.filter { it.name == DebugEventName.FLUSH_SKIPPED_NO_EVENTS }
+        assertThat(skippedEvents).isEmpty()
+    }
 }
