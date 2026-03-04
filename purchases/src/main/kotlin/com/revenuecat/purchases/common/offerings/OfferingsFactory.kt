@@ -144,7 +144,7 @@ internal class OfferingsFactory(
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
                 jsonPackagesArray.getJSONObject(j)
-                    .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
+                    .nonBlankString("platform_product_identifier")?.let {
                         productIds.add(it)
                     }
             }
