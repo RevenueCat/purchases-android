@@ -75,15 +75,18 @@ class CustomPaywallImpressionEventTest {
 
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
-        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.CustomPaywallImpression::class.java)
-        val customStoredEvent = storedEvent as BackendStoredEvent.CustomPaywallImpression
-        assertThat(customStoredEvent.event.id).isEqualTo(fixedId.toString())
-        assertThat(customStoredEvent.event.version).isEqualTo(BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION)
-        assertThat(customStoredEvent.event.type).isEqualTo("custom_paywall_impression")
-        assertThat(customStoredEvent.event.appUserID).isEqualTo(appUserID)
-        assertThat(customStoredEvent.event.appSessionID).isEqualTo(appSessionID)
-        assertThat(customStoredEvent.event.timestamp).isEqualTo(fixedDate.time)
-        assertThat(customStoredEvent.event.paywallId).isEqualTo("my-paywall")
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywallImpression(
+            BackendEvent.CustomPaywallImpression(
+                id = fixedId.toString(),
+                version = BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION,
+                type = "custom_paywall_impression",
+                appUserID = appUserID,
+                appSessionID = appSessionID,
+                timestamp = fixedDate.time,
+                paywallId = "my-paywall",
+            ),
+        )
+        assertThat(storedEvent).isEqualTo(expectedStoredEvent)
     }
 
     @Test
@@ -98,9 +101,18 @@ class CustomPaywallImpressionEventTest {
 
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
-        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.CustomPaywallImpression::class.java)
-        val customStoredEvent = storedEvent as BackendStoredEvent.CustomPaywallImpression
-        assertThat(customStoredEvent.event.paywallId).isNull()
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywallImpression(
+            BackendEvent.CustomPaywallImpression(
+                id = fixedId.toString(),
+                version = BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION,
+                type = "custom_paywall_impression",
+                appUserID = appUserID,
+                appSessionID = appSessionID,
+                timestamp = fixedDate.time,
+                paywallId = null,
+            ),
+        )
+        assertThat(storedEvent).isEqualTo(expectedStoredEvent)
     }
 
     @Test
