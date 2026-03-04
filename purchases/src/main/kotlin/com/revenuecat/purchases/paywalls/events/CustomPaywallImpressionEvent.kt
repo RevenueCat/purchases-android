@@ -7,13 +7,6 @@ import java.util.Date
 import java.util.UUID
 
 /**
- * Parameters for tracking a custom paywall impression event.
- */
-internal data class CustomPaywallImpressionParams(
-    val paywallId: String? = null,
-)
-
-/**
  * Type representing a custom paywall impression event. Meant for tracking custom paywall views.
  */
 @OptIn(InternalRevenueCatAPI::class)
