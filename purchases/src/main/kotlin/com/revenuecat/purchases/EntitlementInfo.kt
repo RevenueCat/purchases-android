@@ -239,9 +239,11 @@ public enum class Store {
     /**
      * For entitlement granted via the Galaxy store.
      */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     GALAXY,
     ;
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     internal val stringValue: String
         get() = when (this) {
             APP_STORE -> "app_store"
@@ -258,6 +260,7 @@ public enum class Store {
             GALAXY -> "galaxy"
         }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @get:JvmSynthetic
     internal val managementUrl: String?
         get() = when (this) {
@@ -267,6 +270,7 @@ public enum class Store {
         }
 
     internal companion object {
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         @JvmSynthetic
         public fun fromString(text: String): Store {
             return when (text) {

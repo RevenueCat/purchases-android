@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import dev.drewhamilton.poko.Poko
 
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class GalaxyStoreProduct(
 

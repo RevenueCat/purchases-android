@@ -54,6 +54,7 @@ public enum class GalaxyReplacementMode : ReplacementMode {
     DEFERRED,
     ;
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public companion object {
         /**
          * The default replacement mode for Galaxy Store subscription changes.
