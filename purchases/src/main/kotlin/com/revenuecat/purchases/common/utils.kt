@@ -22,19 +22,18 @@ internal fun Context.getLocale(): Locale? =
     }
 
 @InternalRevenueCatAPI
-fun String.sha1() =
+public fun String.sha1(): String =
     MessageDigest.getInstance("SHA-1")
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
 @InternalRevenueCatAPI
-fun String.sha256() =
+public fun String.sha256(): String =
     MessageDigest.getInstance("SHA-256")
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
-
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
 

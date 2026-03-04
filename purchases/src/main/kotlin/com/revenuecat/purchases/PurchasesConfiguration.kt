@@ -27,17 +27,17 @@ public open class PurchasesConfiguration(builder: Builder) {
             PurchasesAreCompletedBy.REVENUECAT -> false
             PurchasesAreCompletedBy.MY_APP -> true
         }
-    val purchasesAreCompletedBy: PurchasesAreCompletedBy
-    val showInAppMessagesAutomatically: Boolean
-    val service: ExecutorService?
-    val store: Store
-    val diagnosticsEnabled: Boolean
-    val dangerousSettings: DangerousSettings
-    val verificationMode: EntitlementVerificationMode
-    val pendingTransactionsForPrepaidPlansEnabled: Boolean
-    val automaticDeviceIdentifierCollectionEnabled: Boolean
-    val preferredUILocaleOverride: String?
-    val galaxyBillingMode: GalaxyBillingMode
+    public val purchasesAreCompletedBy: PurchasesAreCompletedBy
+    public val showInAppMessagesAutomatically: Boolean
+    public val service: ExecutorService?
+    public val store: Store
+    public val diagnosticsEnabled: Boolean
+    public val dangerousSettings: DangerousSettings
+    public val verificationMode: EntitlementVerificationMode
+    public val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    public val automaticDeviceIdentifierCollectionEnabled: Boolean
+    public val preferredUILocaleOverride: String?
+    public val galaxyBillingMode: GalaxyBillingMode
 
     init {
         this.context =
@@ -314,7 +314,7 @@ public open class PurchasesConfiguration(builder: Builder) {
          * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
          * @see GalaxyBillingMode
          */
-        fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode) = apply {
+        public fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode): Builder = apply {
             this.galaxyBillingMode = galaxyBillingMode
         }
 

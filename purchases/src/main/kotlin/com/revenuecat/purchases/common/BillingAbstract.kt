@@ -15,52 +15,52 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
 @InternalRevenueCatAPI
-typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
+public typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 @InternalRevenueCatAPI
-abstract class BillingAbstract(
+public abstract class BillingAbstract(
     protected val purchasesStateProvider: PurchasesStateProvider,
 ) {
 
     @get:Synchronized
     @set:Synchronized
     @Volatile
-    var stateListener: StateListener? = null
+    public var stateListener: StateListener? = null
 
     @get:Synchronized
     @Volatile
-    var purchasesUpdatedListener: PurchasesUpdatedListener? = null
+    public var purchasesUpdatedListener: PurchasesUpdatedListener? = null
 
-    interface StateListener {
-        fun onConnected()
+    public interface StateListener {
+        public fun onConnected()
     }
 
-    abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
+    public abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
 
-    abstract fun startConnection()
+    public abstract fun startConnection()
 
     protected abstract fun endConnection()
 
-    fun close() {
+    public fun close() {
         purchasesUpdatedListener = null
         endConnection()
     }
 
-    abstract fun queryAllPurchases(
+    public abstract fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     )
 
-    abstract fun queryProductDetailsAsync(
+    public abstract fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     )
 
-    abstract fun consumeAndSave(
+    public abstract fun consumeAndSave(
         finishTransactions: Boolean,
         purchase: StoreTransaction,
         shouldConsume: Boolean,
@@ -68,7 +68,7 @@ abstract class BillingAbstract(
     )
 
     @SuppressWarnings("LongParameterList")
-    abstract fun findPurchaseInPurchaseHistory(
+    public abstract fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         productId: String,
@@ -77,7 +77,7 @@ abstract class BillingAbstract(
     )
 
     @SuppressWarnings("LongParameterList")
-    abstract fun makePurchaseAsync(
+    public abstract fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
         purchasingData: PurchasingData,
@@ -86,9 +86,9 @@ abstract class BillingAbstract(
         isPersonalizedPrice: Boolean? = null,
     )
 
-    abstract fun isConnected(): Boolean
+    public abstract fun isConnected(): Boolean
 
-    abstract fun queryPurchases(
+    public abstract fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -99,7 +99,7 @@ abstract class BillingAbstract(
      * the correct product ID the RevenueCat backend expects for a specific purchase.
      * Google doesn't need normalization so we return the productID by default
      */
-    open fun normalizePurchaseData(
+    public open fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
         storeUserID: String,
@@ -109,7 +109,7 @@ abstract class BillingAbstract(
         onSuccess(productID)
     }
 
-    abstract fun showInAppMessagesIfNeeded(
+    public abstract fun showInAppMessagesIfNeeded(
         activity: Activity,
         inAppMessageTypes: List<InAppMessageType>,
         subscriptionStatusChange: () -> Unit,
@@ -119,20 +119,20 @@ abstract class BillingAbstract(
      * Obtain store country code in ISO 3166-1-alpha-2 standard format.
      * Null if there has been an error.
      */
-    abstract fun getStorefront(
+    public abstract fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     )
 
-    open fun getAmazonLWAConsentStatus(
+    public open fun getAmazonLWAConsentStatus(
         onSuccess: (AmazonLWAConsentStatus) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
         onSuccess(AmazonLWAConsentStatus.UNAVAILABLE)
     }
 
-    interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<StoreTransaction>)
-        fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
+    public interface PurchasesUpdatedListener {
+        public fun onPurchasesUpdated(purchases: List<StoreTransaction>)
+        public fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 }

@@ -4,12 +4,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.util.Date
 
 @InternalRevenueCatAPI
-interface DateProvider {
-    val now: Date
+public interface DateProvider {
+    public val now: Date
 }
 
 @InternalRevenueCatAPI
-class DefaultDateProvider : DateProvider {
+public class DefaultDateProvider : DateProvider {
     override val now: Date
         get() = Date()
 }
