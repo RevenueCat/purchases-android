@@ -26,6 +26,24 @@ internal class OfferingsFactory(
     private val appConfig: AppConfig,
 ) {
 
+    private val packageTypeByIdentifier: Map<String, PackageType> =
+        PackageType.values()
+            .mapNotNull { it.identifier?.let { id -> id to it } }
+            .toMap()
+
+    // The default OfferingParser matches products using base plan IDs (Google Play logic),
+    // which doesn't apply to mock products. In preview mode we key products purely by
+    // platform_product_identifier, so we override findMatchingProduct accordingly.
+    private val previewOfferingParser = object : OfferingParser() {
+        override fun findMatchingProduct(
+            productsById: Map<String, List<StoreProduct>>,
+            packageJson: JSONObject,
+        ): StoreProduct? {
+            val productIdentifier = packageJson.getString("platform_product_identifier")
+            return productsById[productIdentifier]?.firstOrNull()
+        }
+    }
+
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
@@ -193,11 +211,9 @@ internal class OfferingsFactory(
         }
     }
 
-    private val packageTypeByIdentifier: Map<String, PackageType> =
-        PackageType.values()
-            .mapNotNull { it.identifier?.let { id -> id to it } }
-            .toMap()
-
+    // Walks the offerings JSON to map each product ID to its PackageType using the package
+    // identifier (e.g. $rc_monthly). This lets us assign the correct mock price per package
+    // type rather than falling back to inference from the product ID string alone.
     private fun extractPackageTypeByProductId(offeringsJson: JSONObject): Map<String, PackageType> {
         val offerings = offeringsJson.optJSONArray("offerings") ?: return emptyMap()
 
@@ -215,14 +231,4 @@ internal class OfferingsFactory(
 
     private fun JSONObject.nonBlankString(key: String): String? =
         optString(key).trim().takeIf { it.isNotEmpty() }
-
-    private val previewOfferingParser = object : OfferingParser() {
-        override fun findMatchingProduct(
-            productsById: Map<String, List<StoreProduct>>,
-            packageJson: JSONObject,
-        ): StoreProduct? {
-            val productIdentifier = packageJson.getString("platform_product_identifier")
-            return productsById[productIdentifier]?.firstOrNull()
-        }
-    }
 }
