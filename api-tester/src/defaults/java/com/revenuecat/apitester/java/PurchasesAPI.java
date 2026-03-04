@@ -195,11 +195,6 @@ final class PurchasesAPI {
             public void onError(@NonNull PurchasesError error) {}
         };
 
-        Map<String, Object> mapStringAny = new HashMap<>();
-        purchases.setAppstackAttributionParams(mapStringAny, callback);
-
-        purchases.setAppstackAttributionParams(null, callback);
-
         Map<String, String> mapStringString = new HashMap<>();
         purchases.setAppstackAttributionParams(mapStringString, callback);
     }

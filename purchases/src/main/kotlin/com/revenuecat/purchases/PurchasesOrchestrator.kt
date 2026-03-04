@@ -1105,7 +1105,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun setAppstackAttributionParams(
-        data: Map<*, *>?,
+        data: Map<String, String>,
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppstackAttributionParams") }

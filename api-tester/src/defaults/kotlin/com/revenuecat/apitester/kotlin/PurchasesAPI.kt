@@ -295,38 +295,8 @@ private class PurchasesAPI {
             override fun onError(error: PurchasesError) {}
         }
 
-        val mapStringAny: Map<String, Any> = emptyMap()
-        purchases.setAppstackAttributionParams(mapStringAny, callback)
-
-        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
-        purchases.setAppstackAttributionParams(mapNullableKeyAny, callback)
-
-        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
-        purchases.setAppstackAttributionParams(mapNullableKeyNullableValue, callback)
-
-        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
-        purchases.setAppstackAttributionParams(nullableMapNullableKeyNullableValue, callback)
-
-        val nullableMapStringAny: Map<String, Any>? = emptyMap()
-        purchases.setAppstackAttributionParams(nullableMapStringAny, callback)
-
         val mapStringString: Map<String, String> = emptyMap()
         purchases.setAppstackAttributionParams(mapStringString, callback)
-
-        val mapStringNullableString: Map<String, String?> = emptyMap()
-        purchases.setAppstackAttributionParams(mapStringNullableString, callback)
-
-        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
-        purchases.setAppstackAttributionParams(mapNullableKeyNullableString, callback)
-
-        val mapStringInt: Map<String, Int> = emptyMap()
-        purchases.setAppstackAttributionParams(mapStringInt, callback)
-
-        val mapStringNullableInt: Map<String, Int?> = emptyMap()
-        purchases.setAppstackAttributionParams(mapStringNullableInt, callback)
-
-        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
-        purchases.setAppstackAttributionParams(mapNullableKeyNullableInt, callback)
     }
 
     @Suppress("ForbiddenComment")

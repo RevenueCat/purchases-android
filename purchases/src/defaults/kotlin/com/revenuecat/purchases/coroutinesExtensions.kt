@@ -130,6 +130,9 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
  * Sets Appstack attribution params and then fetches the configured offerings for this user. This method is intended
  * to be called with the result of `AppstackAttributionSdk.getAttributionParams()`.
  *
+ * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+ * cached offerings will be returned instead.
+ *
  * Coroutine friendly version of [Purchases.setAppstackAttributionParams].
  *
  * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
@@ -138,7 +141,7 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<*, *>?): Offerings {
+public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String, String>): Offerings {
     return suspendCoroutine { continuation ->
         setAppstackAttributionParams(
             data,

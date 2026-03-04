@@ -931,13 +931,15 @@ public class Purchases internal constructor(
 
     /**
      * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
-     * fresh offerings (unless rate-limited as those would be cached) so that Appstack-based targeting
-     * is applied before the callback returns.
+     * fresh offerings so that Appstack-based targeting is applied before the callback returns.
+     *
+     * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+     * cached offerings will be returned instead.
      *
      * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
-     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
-     * this method will never unset any attributes, even if passed `null`. To unset an attribute, call the
-     * individual setter with a `null` value.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes.
+     * Note that this method will never unset any attributes. To unset an attribute, call the individual
+     * setter with a `null` value.
      *
      * The following RevenueCat attributes will be set based on the Appstack data:
      * - `$appstackId`: From `appstack_id` (also triggers device identifier collection)
@@ -956,7 +958,7 @@ public class Purchases internal constructor(
      * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
      */
     public fun setAppstackAttributionParams(
-        data: Map<*, *>?,
+        data: Map<String, String>,
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         purchasesOrchestrator.setAppstackAttributionParams(data, callback)

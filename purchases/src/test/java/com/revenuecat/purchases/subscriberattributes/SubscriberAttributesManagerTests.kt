@@ -1128,15 +1128,6 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppstackAttributionParams with null map does nothing`() {
-        underTest.setAppstackAttributionParams(appUserID, null, mockk(relaxed = true))
-
-        verify(exactly = 0) {
-            mockDeviceCache.setAttributes(any(), any())
-        }
-    }
-
-    @Test
     fun `setAppstackAttributionParams with empty map does nothing`() {
         underTest.setAppstackAttributionParams(appUserID, emptyMap<String, String>(), mockk(relaxed = true))
 
@@ -1199,42 +1190,6 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppstackAttributionParams handles null values in map`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        underTest.setAppstackAttributionParams(
-            appUserID,
-            mapOf("appstack_adnetwork" to null, "appstack_campaign" to "test"),
-            mockk(relaxed = true),
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(2)
-        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
-        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
-        assertThat(captured["\$mediaSource"]).isNull()
-        assertThat(captured["appstack_adnetwork"]).isNull()
-    }
-
-    @Test
-    fun `setAppstackAttributionParams handles null keys in map`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        underTest.setAppstackAttributionParams(
-            appUserID,
-            mapOf(null to "value", "appstack_campaign" to "test"),
-            mockk(relaxed = true),
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(2)
-        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
-        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
-    }
-
-    @Test
     fun `setAppstackAttributionParams handles blank string values`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
@@ -1273,55 +1228,6 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAppstackAttributionParams handles Integer values`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        underTest.setAppstackAttributionParams(
-            appUserID,
-            mapOf<String?, Any?>("fbclid" to 12345),
-            mockk(relaxed = true),
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(1)
-        assertThat(captured["fbclid"]?.value).isEqualTo("12345")
-    }
-
-    @Test
-    fun `setAppstackAttributionParams handles Long values`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        underTest.setAppstackAttributionParams(
-            appUserID,
-            mapOf<String?, Any?>("gclid" to 123456789012345L),
-            mockk(relaxed = true),
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(1)
-        assertThat(captured["gclid"]?.value).isEqualTo("123456789012345")
-    }
-
-    @Test
-    fun `setAppstackAttributionParams handles Boolean values`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        underTest.setAppstackAttributionParams(
-            appUserID,
-            mapOf<String?, Any?>("appstack_campaign" to true),
-            mockk(relaxed = true),
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(2)
-        assertThat(captured["\$campaign"]?.value).isEqualTo("true")
-        assertThat(captured["appstack_campaign"]?.value).isEqualTo("true")
-    }
-
-    @Test
     fun `setAppstackAttributionParams ignores fields with only unrecognized keys`() {
         underTest.setAppstackAttributionParams(appUserID, mapOf("unknown_field" to "value"), mockk(relaxed = true))
 
@@ -1357,7 +1263,7 @@ class SubscriberAttributesManagerTests {
 
         underTest.setAppstackAttributionParams(
             appUserID,
-            mapOf<String?, Any?>(
+            mapOf(
                 "appstack_id" to "device_123",
                 "appstack_adnetwork" to "google",
                 "appstack_campaign" to "promo_2024",
