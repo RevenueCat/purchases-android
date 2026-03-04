@@ -25,6 +25,7 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitRestoreResult
+import com.revenuecat.purchases.awaitSetAppstackAttributionParams
 import com.revenuecat.purchases.awaitStorefrontLocale
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
@@ -216,6 +217,8 @@ private class PurchasesAPI {
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
         val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
         val storefrontLocale: Locale = purchases.awaitStorefrontLocale()
+        var offeringsWithAppstackTargeting: Offerings =
+            purchases.awaitSetAppstackAttributionParams(mapOf("key" to "value"))
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
