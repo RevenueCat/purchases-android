@@ -47,9 +47,12 @@ public class ComponentOverride<T : PartialComponent>(
         public object Expanded : Condition
 
         @Serializable
-        public data class IntroOffer(
-            public val operator: EqualityOperator? = null,
-            public val value: Boolean? = null,
+        public object IntroOffer : Condition
+
+        @Serializable
+        public data class IntroOfferCondition(
+            public val operator: EqualityOperator,
+            public val value: Boolean,
         ) : Condition
 
         @Serializable
@@ -59,9 +62,12 @@ public class ComponentOverride<T : PartialComponent>(
         public object Selected : Condition
 
         @Serializable
-        public data class PromoOffer(
-            public val operator: EqualityOperator? = null,
-            public val value: Boolean? = null,
+        public object PromoOffer : Condition
+
+        @Serializable
+        public data class PromoOfferCondition(
+            public val operator: EqualityOperator,
+            public val value: Boolean,
         ) : Condition
 
         @Serializable
@@ -90,11 +96,13 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "medium" to { Condition.Medium.serializer() },
         "expanded" to { Condition.Expanded.serializer() },
         "intro_offer" to { Condition.IntroOffer.serializer() },
+        "intro_offer_condition" to { Condition.IntroOfferCondition.serializer() },
         "multiple_intro_offers" to { Condition.MultiplePhaseOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
         "promo_offer" to { Condition.PromoOffer.serializer() },
-        "selected_package" to { Condition.SelectedPackage.serializer() },
-        "variable" to { Condition.Variable.serializer() },
+        "promo_offer_condition" to { Condition.PromoOfferCondition.serializer() },
+        "selected_package_condition" to { Condition.SelectedPackage.serializer() },
+        "variable_condition" to { Condition.Variable.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

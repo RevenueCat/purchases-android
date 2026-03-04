@@ -100,7 +100,7 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                                 properties = PartialTextComponent(fontName = FontAlias("intro font")),
                             ),
                             ComponentOverride(
@@ -126,7 +126,7 @@ internal class ComponentOverridesTests {
                             ComponentOverride(
                                 conditions = listOf(
                                     ComponentOverride.Condition.Selected,
-                                    ComponentOverride.Condition.IntroOffer(),
+                                    ComponentOverride.Condition.IntroOffer,
                                 ),
                                 properties = PartialTextComponent(fontName = FontAlias("compact font")),
                             ),
@@ -150,19 +150,19 @@ internal class ComponentOverridesTests {
                             [
                               {
                                 "conditions": [
-                                  { "type": "selected_package", "operator": "in", "packages": ["pkg_a"] }
+                                  { "type": "selected_package_condition", "operator": "in", "packages": ["pkg_a"] }
                                 ],
                                 "properties": { "font_name": "selected package font" }
                               },
                               {
                                 "conditions": [
-                                  { "type": "variable", "operator": "=", "variable": "theme", "value": "dark" }
+                                  { "type": "variable_condition", "operator": "=", "variable": "theme", "value": "dark" }
                                 ],
                                 "properties": { "font_name": "variable font" }
                               },
                               {
                                 "conditions": [
-                                  { "type": "intro_offer", "operator": "=", "value": true }
+                                  { "type": "intro_offer_condition", "operator": "=", "value": true }
                                 ],
                                 "properties": { "font_name": "intro offer with operator font" }
                               }
@@ -192,7 +192,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.IntroOffer(
+                                    ComponentOverride.Condition.IntroOfferCondition(
                                         operator = ComponentOverride.EqualityOperator.EQUALS,
                                         value = true,
                                     ),
@@ -298,7 +298,7 @@ internal class ComponentOverridesTests {
                         """.trimIndent(),
                         expected = listOf(
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
                                 properties = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             ),
                             ComponentOverride(
@@ -362,33 +362,44 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"compact\" }", ComponentOverride.Condition.Compact),
                 arrayOf("{ \"type\": \"medium\" }", ComponentOverride.Condition.Medium),
                 arrayOf("{ \"type\": \"expanded\" }", ComponentOverride.Condition.Expanded),
-                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer()),
+                arrayOf("{ \"type\": \"intro_offer\" }", ComponentOverride.Condition.IntroOffer),
                 arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultiplePhaseOffers),
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
-                arrayOf("{ \"type\": \"promo_offer\" }", ComponentOverride.Condition.PromoOffer()),
+                arrayOf("{ \"type\": \"promo_offer\" }", ComponentOverride.Condition.PromoOffer),
                 arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
                 arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
 
-                // IntroOffer with operator and value
+                // Legacy intro_offer/promo_offer with extra operator+value fields are silently
+                // ignored and deserialized as plain objects (backward compat)
                 arrayOf(
                     """{ "type": "intro_offer", "operator": "=", "value": true }""",
-                    ComponentOverride.Condition.IntroOffer(
+                    ComponentOverride.Condition.IntroOffer,
+                ),
+                arrayOf(
+                    """{ "type": "promo_offer", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.PromoOffer,
+                ),
+
+                // IntroOfferCondition with operator and value
+                arrayOf(
+                    """{ "type": "intro_offer_condition", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.IntroOfferCondition(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         value = true,
                     ),
                 ),
                 arrayOf(
-                    """{ "type": "intro_offer", "operator": "!=", "value": false }""",
-                    ComponentOverride.Condition.IntroOffer(
+                    """{ "type": "intro_offer_condition", "operator": "!=", "value": false }""",
+                    ComponentOverride.Condition.IntroOfferCondition(
                         operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                         value = false,
                     ),
                 ),
 
-                // PromoOffer with operator and value
+                // PromoOfferCondition with operator and value
                 arrayOf(
-                    """{ "type": "promo_offer", "operator": "=", "value": true }""",
-                    ComponentOverride.Condition.PromoOffer(
+                    """{ "type": "promo_offer_condition", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.PromoOfferCondition(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         value = true,
                     ),
@@ -396,14 +407,14 @@ internal class ComponentOverridesTests {
 
                 // SelectedPackage
                 arrayOf(
-                    """{ "type": "selected_package", "operator": "in", "packages": ["pkg_a", "pkg_b"] }""",
+                    """{ "type": "selected_package_condition", "operator": "in", "packages": ["pkg_a", "pkg_b"] }""",
                     ComponentOverride.Condition.SelectedPackage(
                         operator = ComponentOverride.ArrayOperator.IN,
                         packages = listOf("pkg_a", "pkg_b"),
                     ),
                 ),
                 arrayOf(
-                    """{ "type": "selected_package", "operator": "not in", "packages": ["pkg_c"] }""",
+                    """{ "type": "selected_package_condition", "operator": "not in", "packages": ["pkg_c"] }""",
                     ComponentOverride.Condition.SelectedPackage(
                         operator = ComponentOverride.ArrayOperator.NOT_IN,
                         packages = listOf("pkg_c"),
@@ -412,7 +423,7 @@ internal class ComponentOverridesTests {
 
                 // Variable with string value
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "plan_type", "value": "premium" }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "plan_type", "value": "premium" }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "plan_type",
@@ -421,7 +432,7 @@ internal class ComponentOverridesTests {
                 ),
                 // Variable with int value
                 arrayOf(
-                    """{ "type": "variable", "operator": "!=", "variable": "level", "value": 5 }""",
+                    """{ "type": "variable_condition", "operator": "!=", "variable": "level", "value": 5 }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                         variable = "level",
@@ -430,7 +441,7 @@ internal class ComponentOverridesTests {
                 ),
                 // Variable with double value
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "score", "value": 9.5 }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "score", "value": 9.5 }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "score",
@@ -439,7 +450,7 @@ internal class ComponentOverridesTests {
                 ),
                 // Variable with boolean value
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "is_vip", "value": true }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "is_vip", "value": true }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "is_vip",
@@ -449,7 +460,7 @@ internal class ComponentOverridesTests {
 
                 // Variable with extra unknown fields deserializes successfully
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "plan", "value": "premium", "some_new_field": 42 }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "plan", "value": "premium", "some_new_field": 42 }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "plan",
@@ -458,7 +469,7 @@ internal class ComponentOverridesTests {
                 ),
                 // SelectedPackage with extra unknown fields deserializes successfully
                 arrayOf(
-                    """{ "type": "selected_package", "operator": "in", "packages": ["a"], "future_field": true }""",
+                    """{ "type": "selected_package_condition", "operator": "in", "packages": ["a"], "future_field": true }""",
                     ComponentOverride.Condition.SelectedPackage(
                         operator = ComponentOverride.ArrayOperator.IN,
                         packages = listOf("a"),
@@ -467,25 +478,25 @@ internal class ComponentOverridesTests {
 
                 // Known type with unknown operator falls back to Unsupported
                 arrayOf(
-                    """{ "type": "selected_package", "operator": "contains", "packages": ["a"] }""",
+                    """{ "type": "selected_package_condition", "operator": "contains", "packages": ["a"] }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "variable", "operator": ">", "variable": "x", "value": 1 }""",
+                    """{ "type": "variable_condition", "operator": ">", "variable": "x", "value": 1 }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "intro_offer", "operator": ">=", "value": true }""",
+                    """{ "type": "intro_offer_condition", "operator": ">=", "value": true }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "promo_offer", "operator": ">=", "value": true }""",
+                    """{ "type": "promo_offer_condition", "operator": ">=", "value": true }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
 
                 // Variable with null value deserializes (JsonNull is a JsonPrimitive); won't match any variable type
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "x", "value": null }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "x", "value": null }""",
                     ComponentOverride.Condition.Variable(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         variable = "x",
@@ -494,25 +505,25 @@ internal class ComponentOverridesTests {
                 ),
                 // Known type with missing required fields falls back to Unsupported
                 arrayOf(
-                    """{ "type": "selected_package" }""",
+                    """{ "type": "selected_package_condition" }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "variable", "operator": "=" }""",
+                    """{ "type": "variable_condition", "operator": "=" }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
 
                 // Known type with changed field types falls back to Unsupported
                 arrayOf(
-                    """{ "type": "selected_package", "operator": "in", "packages": "not_an_array" }""",
+                    """{ "type": "selected_package_condition", "operator": "in", "packages": "not_an_array" }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "x", "value": [1, 2] }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "x", "value": [1, 2] }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
-                    """{ "type": "variable", "operator": "=", "variable": "x", "value": {"nested": true} }""",
+                    """{ "type": "variable_condition", "operator": "=", "variable": "x", "value": {"nested": true} }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
 

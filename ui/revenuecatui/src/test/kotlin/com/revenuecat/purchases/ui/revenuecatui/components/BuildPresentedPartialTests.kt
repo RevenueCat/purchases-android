@@ -169,13 +169,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             }
             introOffer?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = it,
                 ))
             }
             promoOffer?.let {
                 overrides.add(PresentedOverride(
-                    conditions = listOf(ComponentOverride.Condition.PromoOffer()),
+                    conditions = listOf(ComponentOverride.Condition.PromoOffer),
                     properties = it,
                 ))
             }
@@ -1169,14 +1169,46 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
-            // Extended IntroOffer condition tests
+            // IntroOffer (legacy object) tests
             arrayOf(
-                "intro_offer with operator=equals value=true: should apply when eligible",
+                "intro_offer: should apply when eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = IntroOfferSingle,
+                    state = DEFAULT,
+                    expected = introOfferPartial,
+                ),
+            ),
+            arrayOf(
+                "intro_offer: should not apply when not eligible",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                            properties = introOfferPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    expected = null,
+                ),
+            ),
+
+            // IntroOfferCondition (with operator and value) tests
+            arrayOf(
+                "intro_offer_condition with operator=equals value=true: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1191,12 +1223,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "intro_offer with operator=equals value=false: should apply when not eligible",
+                "intro_offer_condition with operator=equals value=false: should apply when not eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1211,12 +1243,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "intro_offer with operator=equals value=false: should not apply when eligible",
+                "intro_offer_condition with operator=equals value=false: should not apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1231,12 +1263,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "intro_offer with operator=not_equals value=true: should apply when not eligible",
+                "intro_offer_condition with operator=not_equals value=true: should apply when not eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = true,
                                 ),
@@ -1250,28 +1282,30 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = introOfferPartial,
                 ),
             ),
+
+            // PromoOffer (legacy object) tests
             arrayOf(
-                "intro_offer legacy (no operator): should apply when eligible",
+                "promo_offer: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.IntroOffer()),
-                            properties = introOfferPartial,
+                            conditions = listOf(ComponentOverride.Condition.PromoOffer),
+                            properties = promoOfferPartial,
                         ),
                     ),
                     windowSize = COMPACT,
-                    offerEligibility = IntroOfferSingle,
+                    offerEligibility = PromoOfferSingle,
                     state = DEFAULT,
-                    expected = introOfferPartial,
+                    expected = promoOfferPartial,
                 ),
             ),
             arrayOf(
-                "intro_offer legacy (no operator): should not apply when not eligible",
+                "promo_offer: should not apply when not eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
-                            conditions = listOf(ComponentOverride.Condition.IntroOffer()),
-                            properties = introOfferPartial,
+                            conditions = listOf(ComponentOverride.Condition.PromoOffer),
+                            properties = promoOfferPartial,
                         ),
                     ),
                     windowSize = COMPACT,
@@ -1401,14 +1435,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
-            // Extended PromoOffer condition tests
+            // PromoOfferCondition (with operator and value) tests
             arrayOf(
-                "promo_offer with operator=equals value=true: should apply when eligible",
+                "promo_offer_condition with operator=equals value=true: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1423,12 +1457,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "promo_offer with operator=equals value=false: should apply when not eligible",
+                "promo_offer_condition with operator=equals value=false: should apply when not eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1443,12 +1477,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
-                "promo_offer with operator=not_equals value=false: should apply when eligible",
+                "promo_offer_condition with operator=not_equals value=false: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferCondition(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
