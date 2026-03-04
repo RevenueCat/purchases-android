@@ -29,6 +29,7 @@ pluginManagement {
 }
 
 val samsungIapSdkDir = file("$rootDir/libs")
+val isCiBuild = System.getenv("CI").equals("true", ignoreCase = true)
 
 /**
  * Returns true only when the expected Samsung IAP AAR (versioned from
@@ -90,6 +91,31 @@ dependencyResolutionManagement {
         // Local Samsung IAP SDK AAR
         flatDir {
             dirs(samsungIapSdkDir)
+        }
+
+        if (isCiBuild) {
+            val samsungIapMavenUrl = System.getenv("SAMSUNG_IAP_MAVEN_URL")
+            val ghPackagesUser = System.getenv("READ_GH_PACKAGES_USER")
+            val ghPackagesPat = System.getenv("READ_GH_PACKAGES_PAT")
+
+            if (!samsungIapMavenUrl.isNullOrBlank() &&
+                !ghPackagesUser.isNullOrBlank() &&
+                !ghPackagesPat.isNullOrBlank()
+            ) {
+                maven {
+                    url = uri(samsungIapMavenUrl)
+                    credentials {
+                        username = ghPackagesUser
+                        password = ghPackagesPat
+                    }
+                    metadataSources {
+                        artifact()
+                    }
+                    content {
+                        includeGroup("com.samsung.android")
+                    }
+                }
+            }
         }
     }
 }
