@@ -142,7 +142,7 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
-    ComponentOverride.Condition.Unsupported -> false
+    is ComponentOverride.Condition.Unsupported -> false
 }
 
 private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {

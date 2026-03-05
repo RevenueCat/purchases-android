@@ -473,4 +473,15 @@ private fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (thi
 }
 
 private fun List<ComponentOverride<*>>.hasUnsupportedCondition(): Boolean =
-    any { override -> override.conditions.any { it is ComponentOverride.Condition.Unsupported } }
+    any { override ->
+        override.conditions.any {
+            (it is ComponentOverride.Condition.Unsupported).also { isUnsupported ->
+                if (isUnsupported) {
+                    Logger.w(
+                        "Found unsupported condition type: " +
+                            "'${(it as ComponentOverride.Condition.Unsupported).originalType}'",
+                    )
+                }
+            }
+        }
+    }

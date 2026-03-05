@@ -1113,7 +1113,7 @@ class PaywallComponentDataValidationTests {
                                 color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
                                 overrides = listOf(
                                     ComponentOverride(
-                                        conditions = listOf(ComponentOverride.Condition.Unsupported),
+                                        conditions = listOf(ComponentOverride.Condition.Unsupported("unknown")),
                                         properties = PartialTextComponent(visible = false),
                                     ),
                                 ),
