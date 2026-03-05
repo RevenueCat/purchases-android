@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.galaxy.conversions
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.GalaxyPurchasingData
 import com.revenuecat.purchases.galaxy.GalaxyStoreProduct
@@ -21,6 +22,7 @@ import java.util.HashSet
 private const val ELIGIBILITY_PRICING_FREE_TRIAL = "FreeTrial"
 private const val ELIGIBILITY_PRICING_TIERED_PRICE = "TieredPrice"
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun ProductVo.toStoreProduct(
     promotionEligibilities: List<PromotionEligibilityVo>? = null,
 ): StoreProduct {

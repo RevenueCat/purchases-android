@@ -49,7 +49,7 @@ import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import com.revenuecat.purchases.api.BuildConfig as PurchasesBuildConfig
 import com.samsung.android.sdk.iap.lib.BuildConfig as SamsungBuildConfig
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,

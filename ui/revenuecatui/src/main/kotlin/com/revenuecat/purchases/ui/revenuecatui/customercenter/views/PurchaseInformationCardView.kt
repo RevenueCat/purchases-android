@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -143,6 +144,7 @@ private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Lo
         Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.MAC_APP_STORE
         Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.GOOGLE_PLAY_STORE
         Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.AMAZON_STORE
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         Store.GALAXY -> CustomerCenterConfigData.Localization.CommonLocalizedString.GALAXY_STORE
         Store.PROMOTIONAL -> CustomerCenterConfigData.Localization.CommonLocalizedString.CARD_STORE_PROMOTIONAL
         Store.STRIPE,
